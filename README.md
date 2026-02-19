@@ -77,6 +77,11 @@ uv run marv memory query --scope-id u1 --query "简洁回答"
 uv run marv ops stop-services
 uv run marv ops package-migration --output-dir ./dist/migrations
 
+# scheduler heartbeat (OpenClaw-style)
+uv run marv heartbeat show
+uv run marv heartbeat set --mode interval --interval-seconds 30
+uv run marv heartbeat set --mode cron --cron "*/2 * * * *" --core-health-enabled --resume-approved-tools-enabled
+
 # permissions (OpenClaw-like)
 uv run marv permissions show
 uv run marv permissions set-default --security allowlist --ask on-miss --ask-fallback deny
@@ -88,6 +93,7 @@ uv run marv permissions eval --agent telegram:123456 --tool mock_external_write
 ```
 
 详细说明：`docs/PERMISSIONS.md`
+心跳调度说明：`docs/HEARTBEAT.md`
 
 ## Telegram Adapter (MVP)
 通过 Telegram Bot 长轮询把消息转发到 Edge API，再将回复发回聊天。
@@ -131,5 +137,6 @@ GitHub Actions: `.github/workflows/ci.yml`
 - Patch config: `backend/patch/`
 - Memory: `backend/memory/`
 - Permissions: `backend/permissions/exec_approvals.py`
+- Heartbeat scheduler: `backend/heartbeat/runtime.py`
 - Telegram gateway: `backend/gateway/telegram.py`
 - Console: `frontend/app/`

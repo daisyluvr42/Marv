@@ -21,6 +21,7 @@ from backend.agent.config import get_settings
 from backend.agent.processor import process_task
 from backend.agent.queue import task_queue
 from backend.agent.state import create_task, get_task, now_ts, upsert_conversation
+from backend.heartbeat.runtime import get_heartbeat_config_path, heartbeat_runtime
 from backend.ledger.events import InputEvent, PatchCommittedEvent, PatchRolledBackEvent
 from backend.ledger.store import append_event
 from backend.ledger.store import query_events
@@ -50,9 +51,11 @@ async def lifespan(_: FastAPI):
     sync_tools_registry()
     task_queue.set_processor(process_task)
     await task_queue.start()
+    await heartbeat_runtime.start()
     try:
         yield
     finally:
+        await heartbeat_runtime.stop()
         await task_queue.stop()
 
 
@@ -118,9 +121,35 @@ class AuditRenderRequest(BaseModel):
     task_id: str
 
 
+class HeartbeatConfigUpdateRequest(BaseModel):
+    enabled: bool | None = None
+    mode: str | None = None
+    interval_seconds: int | None = None
+    cron: str | None = None
+    core_health_enabled: bool | None = None
+    resume_approved_tools_enabled: bool | None = None
+    emit_events: bool | None = None
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/v1/system/heartbeat")
+async def system_heartbeat_status() -> dict[str, object]:
+    status = heartbeat_runtime.status()
+    status["config_path"] = str(get_heartbeat_config_path())
+    return status
+
+
+@app.post("/v1/system/heartbeat/config")
+async def system_heartbeat_update(body: HeartbeatConfigUpdateRequest, request: Request) -> dict[str, object]:
+    require_owner(request)
+    updates = body.model_dump(exclude_none=True)
+    status = await heartbeat_runtime.update_config(updates)
+    status["config_path"] = str(get_heartbeat_config_path())
+    return status
 
 
 @app.get("/v1/audit/conversations/{conversation_id}/timeline")

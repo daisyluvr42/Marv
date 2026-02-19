@@ -62,14 +62,17 @@ def _request_json(
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    with _client(args) as client:
-        response = client.request(
-            method,
-            path,
-            headers=_headers(args),
-            json=json_body,
-            params=params,
-        )
+    try:
+        with _client(args) as client:
+            response = client.request(
+                method,
+                path,
+                headers=_headers(args),
+                json=json_body,
+                params=params,
+            )
+    except httpx.RequestError as exc:
+        raise SystemExit(f"request failed: {exc}") from exc
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
@@ -732,6 +735,33 @@ def cmd_permissions_allowlist_sync_readonly(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_heartbeat_show(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/heartbeat"))
+    return 0
+
+
+def cmd_heartbeat_set(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {}
+    if args.enabled is not None:
+        payload["enabled"] = args.enabled
+    if args.mode is not None:
+        payload["mode"] = args.mode
+    if args.interval_seconds is not None:
+        payload["interval_seconds"] = args.interval_seconds
+    if args.cron is not None:
+        payload["cron"] = args.cron
+    if args.core_health_enabled is not None:
+        payload["core_health_enabled"] = args.core_health_enabled
+    if args.resume_approved_tools_enabled is not None:
+        payload["resume_approved_tools_enabled"] = args.resume_approved_tools_enabled
+    if args.emit_events is not None:
+        payload["emit_events"] = args.emit_events
+    if not payload:
+        raise SystemExit("no heartbeat fields provided")
+    _print_json(_request_json(args, "POST", "/v1/system/heartbeat/config", json_body=payload))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="marv", description="CLI for Blackbox Edge Runtime")
     parser.add_argument("--edge-base-url", default=DEFAULT_EDGE_BASE_URL)
@@ -903,6 +933,20 @@ def build_parser() -> argparse.ArgumentParser:
     perm_preset.add_argument("--name", required=True, choices=sorted(OPENCLAW_PRESETS.keys()))
     perm_preset.add_argument("--agent", help="Apply preset to one agent; omit to apply to defaults")
     perm_preset.set_defaults(func=cmd_permissions_preset)
+
+    heartbeat = sub.add_parser("heartbeat", help="APScheduler heartbeat runtime configuration")
+    heartbeat_sub = heartbeat.add_subparsers(dest="heartbeat_command", required=True)
+    heartbeat_show = heartbeat_sub.add_parser("show", help="Show heartbeat runtime status and config")
+    heartbeat_show.set_defaults(func=cmd_heartbeat_show)
+    heartbeat_set = heartbeat_sub.add_parser("set", help="Update heartbeat config and reload scheduler")
+    heartbeat_set.add_argument("--enabled", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.add_argument("--mode", choices=["interval", "cron"])
+    heartbeat_set.add_argument("--interval-seconds", type=int)
+    heartbeat_set.add_argument("--cron")
+    heartbeat_set.add_argument("--core-health-enabled", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.add_argument("--resume-approved-tools-enabled", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.add_argument("--emit-events", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.set_defaults(func=cmd_heartbeat_set)
 
     return parser
 

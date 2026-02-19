@@ -69,3 +69,14 @@ class PatchRolledBackEvent(BaseEvent):
 
     def __post_init__(self) -> None:
         self.type = "PatchRolledBackEvent"
+
+
+@dataclass
+class HeartbeatEvent(BaseEvent):
+    component: str = ""
+    status: str = ""
+    latency_ms: int = 0
+    details: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.type = "HeartbeatEvent"

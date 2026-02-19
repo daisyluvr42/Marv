@@ -292,3 +292,42 @@ def test_tool_permission_allowlist_off_denies(tmp_path, monkeypatch) -> None:
         )
         assert denied.status_code == 403
         assert "Tool blocked by exec policy" in denied.text
+
+
+def test_heartbeat_config_owner_update(tmp_path, monkeypatch) -> None:
+    heartbeat_path = tmp_path / "heartbeat-config.json"
+    monkeypatch.setenv("EDGE_HEARTBEAT_CONFIG_PATH", str(heartbeat_path))
+    monkeypatch.setenv("HEARTBEAT_ENABLED", "false")
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        status = client.get("/v1/system/heartbeat")
+        assert status.status_code == 200
+        assert status.json()["config_path"] == str(heartbeat_path)
+
+        member_update = client.post(
+            "/v1/system/heartbeat/config",
+            json={"enabled": True, "mode": "interval", "interval_seconds": 30},
+            headers=_headers(role="member", actor_id="member-1"),
+        )
+        assert member_update.status_code == 403
+
+        owner_update = client.post(
+            "/v1/system/heartbeat/config",
+            json={
+                "enabled": True,
+                "mode": "interval",
+                "interval_seconds": 30,
+                "core_health_enabled": True,
+                "resume_approved_tools_enabled": False,
+                "emit_events": False,
+            },
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert owner_update.status_code == 200
+        payload = owner_update.json()
+        assert payload["config"]["enabled"] is True
+        assert payload["config"]["mode"] == "interval"
+        assert payload["config"]["interval_seconds"] == 30
+        assert payload["config"]["resume_approved_tools_enabled"] is False
+        assert payload["config"]["emit_events"] is False
