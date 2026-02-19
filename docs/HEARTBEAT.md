@@ -1,6 +1,6 @@
 # Heartbeat Scheduler (APScheduler / Cron)
 
-系统已改为 Marv 风格的周期心跳任务，由 APScheduler 驱动。
+系统已改为 Openclaw 风格的周期心跳任务，由 APScheduler 驱动。
 
 ## 初始化机制
 - 首次启动 Edge 时，若不存在心跳配置文件，会从环境变量生成默认配置：

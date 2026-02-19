@@ -29,7 +29,7 @@ Marv 是一个本地优先（local-first）的 Agent 运行时，提供完整的
 - `backend/memory/`：记忆写入、检索、生命周期治理与观测
 - `backend/sandbox/`：执行模式配置（auto/local/sandbox）
 - `backend/scheduler/`：定时任务存储与 APScheduler 运行时
-- `backend/permissions/`：Marv 风格执行权限策略
+- `backend/permissions/`：Openclaw 风格执行权限策略
 - `backend/patch/`：配置 patch proposal/revision/effective config
 - `backend/ledger/`：事件模型与审计时间线
 - `backend/storage/`：SQLModel 模型与 DB 初始化
@@ -206,7 +206,7 @@ uv run marv approvals policy-set --mode all
 uv run marv approvals policy-set --mode risky --risky-risks external_write,exec,network
 ```
 
-### 6.3 权限策略（Marv 风格）
+### 6.3 权限策略（Openclaw 风格）
 
 ```bash
 uv run marv permissions show

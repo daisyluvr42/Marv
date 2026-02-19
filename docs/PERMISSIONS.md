@@ -1,6 +1,6 @@
-# Permissions (Marv-style)
+# Permissions (Openclaw-style)
 
-项目支持 Marv 风格的执行权限策略，主要控制工具执行是否直接放行、拒绝、或进入审批。
+项目支持 Openclaw 风格的执行权限策略，主要控制工具执行是否直接放行、拒绝、或进入审批。
 
 策略文件：
 - 默认路径：`data/exec-approvals.json`
