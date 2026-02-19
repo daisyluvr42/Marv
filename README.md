@@ -70,6 +70,10 @@ uv run marv memory write --scope-id u1 --content "我偏好简洁回答" --requi
 uv run marv memory candidates --status pending
 uv run marv memory approve <candidate_id>
 uv run marv memory query --scope-id u1 --query "简洁回答"
+
+# local ops (interactive confirmation required)
+uv run marv ops stop-services
+uv run marv ops package-migration --output-dir ./dist/migrations
 ```
 
 ## Telegram Adapter (MVP)

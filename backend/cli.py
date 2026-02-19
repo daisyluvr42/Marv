@@ -1,15 +1,23 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
+from pathlib import Path
+import shutil
+import socket
+import subprocess
 import sys
+import tarfile
+import tempfile
 from typing import Any
 
 import httpx
 
 
 DEFAULT_EDGE_BASE_URL = os.getenv("EDGE_BASE_URL", "http://127.0.0.1:8000")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _headers(args: argparse.Namespace) -> dict[str, str]:
@@ -61,6 +69,99 @@ def _parse_json_args(text: str | None) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise SystemExit("--args must be a JSON object")
     return value
+
+
+def _confirm_or_exit(message: str) -> None:
+    try:
+        answer = input(f"{message}\nType YES to continue: ").strip()
+    except EOFError as exc:  # pragma: no cover - interactive guard
+        raise SystemExit("confirmation required: input stream is not available") from exc
+    if answer != "YES":
+        raise SystemExit("operation canceled")
+
+
+def _resolve_edge_db_path(project_root: Path) -> Path:
+    data_dir = Path(os.getenv("EDGE_DATA_DIR", str(project_root / "data"))).expanduser().resolve()
+    default_db_path = data_dir / "edge.db"
+    return Path(os.getenv("EDGE_DB_PATH", str(default_db_path))).expanduser().resolve()
+
+
+def _pid_is_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def _running_services(project_root: Path) -> list[dict[str, Any]]:
+    pid_dir = project_root / ".run"
+    services: list[dict[str, Any]] = []
+    for name in ("core", "edge", "telegram"):
+        pid_file = pid_dir / f"{name}.pid"
+        if not pid_file.exists():
+            continue
+        try:
+            pid = int(pid_file.read_text(encoding="utf-8").strip())
+        except ValueError:
+            continue
+        services.append(
+            {
+                "name": name,
+                "pid": pid,
+                "alive": _pid_is_alive(pid),
+            }
+        )
+    return services
+
+
+def _create_migration_archive(project_root: Path, edge_db_path: Path, output_dir: Path) -> dict[str, Any]:
+    timestamp = dt.datetime.now(dt.UTC).strftime("%Y%m%d_%H%M%S")
+    bundle_name = f"marv_migration_{timestamp}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = (output_dir / f"{bundle_name}.tar.gz").resolve()
+
+    with tempfile.TemporaryDirectory(prefix="marv_migration_") as temp_dir:
+        bundle_root = Path(temp_dir) / bundle_name
+        (bundle_root / "data").mkdir(parents=True, exist_ok=True)
+        copied_db_path = bundle_root / "data" / "edge.db"
+        shutil.copy2(edge_db_path, copied_db_path)
+        included_files = ["data/edge.db"]
+
+        env_example = project_root / ".env.example"
+        if env_example.exists():
+            shutil.copy2(env_example, bundle_root / ".env.example")
+            included_files.append(".env.example")
+
+        deploy_doc = project_root / "docs" / "DEPLOY_MACBOOK_PRO_M1.md"
+        if deploy_doc.exists():
+            (bundle_root / "docs").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(deploy_doc, bundle_root / "docs" / "DEPLOY_MACBOOK_PRO_M1.md")
+            included_files.append("docs/DEPLOY_MACBOOK_PRO_M1.md")
+
+        manifest = {
+            "bundle_name": bundle_name,
+            "created_at_utc": dt.datetime.now(dt.UTC).isoformat(),
+            "source_host": socket.gethostname(),
+            "source_project_root": str(project_root.resolve()),
+            "source_edge_db_path": str(edge_db_path),
+            "files": included_files,
+        }
+        manifest_path = bundle_root / "manifest.json"
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
+
+        with tarfile.open(archive_path, mode="w:gz") as tar:
+            tar.add(bundle_root, arcname=bundle_name)
+
+    return {
+        "bundle_name": bundle_name,
+        "archive_path": str(archive_path),
+        "archive_size_bytes": archive_path.stat().st_size,
+    }
 
 
 def cmd_health(args: argparse.Namespace) -> int:
@@ -269,6 +370,58 @@ def cmd_memory_reject(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ops_stop_services(_: argparse.Namespace) -> int:
+    script_path = PROJECT_ROOT / "scripts" / "stop_stack.sh"
+    if not script_path.exists():
+        raise SystemExit(f"stop script not found: {script_path}")
+
+    services = _running_services(PROJECT_ROOT)
+    alive = [item for item in services if item["alive"]]
+    if alive:
+        service_text = ", ".join(f'{item["name"]}({item["pid"]})' for item in alive)
+    else:
+        service_text = "no running service detected from pid files"
+
+    _confirm_or_exit(
+        "This will stop local services via scripts/stop_stack.sh.\n"
+        f"Detected: {service_text}"
+    )
+    try:
+        subprocess.run(["bash", str(script_path)], cwd=PROJECT_ROOT, check=True)
+    except subprocess.CalledProcessError as exc:  # pragma: no cover - shell wrapper
+        raise SystemExit(f"failed to stop services: {exc}") from exc
+    _print_json({"status": "ok", "action": "stop_services", "script": str(script_path)})
+    return 0
+
+
+def cmd_ops_package_migration(args: argparse.Namespace) -> int:
+    edge_db_path = _resolve_edge_db_path(PROJECT_ROOT)
+    if not edge_db_path.exists():
+        raise SystemExit(f"edge db not found: {edge_db_path}")
+
+    output_dir = Path(args.output_dir).expanduser().resolve()
+    _confirm_or_exit(
+        "This will package migration bundle from local runtime data.\n"
+        f"Source DB: {edge_db_path}\n"
+        f"Output dir: {output_dir}"
+    )
+
+    archive = _create_migration_archive(PROJECT_ROOT, edge_db_path=edge_db_path, output_dir=output_dir)
+    _print_json(
+        {
+            "status": "ok",
+            "action": "package_migration",
+            **archive,
+            "next_steps": [
+                "Copy archive to target machine",
+                "Extract archive and replace target data/edge.db",
+                "Start stack with scripts/start_stack.sh",
+            ],
+        }
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="marv", description="CLI for Blackbox Edge Runtime")
     parser.add_argument("--edge-base-url", default=DEFAULT_EDGE_BASE_URL)
@@ -375,6 +528,14 @@ def build_parser() -> argparse.ArgumentParser:
     memory_reject = memory_sub.add_parser("reject", help="Reject candidate")
     memory_reject.add_argument("candidate_id")
     memory_reject.set_defaults(func=cmd_memory_reject)
+
+    ops = sub.add_parser("ops", help="Local operations")
+    ops_sub = ops.add_subparsers(dest="ops_command", required=True)
+    ops_pack = ops_sub.add_parser("package-migration", help="Create migration tarball from local edge db")
+    ops_pack.add_argument("--output-dir", default=str(PROJECT_ROOT / "dist" / "migrations"))
+    ops_pack.set_defaults(func=cmd_ops_package_migration)
+    ops_stop = ops_sub.add_parser("stop-services", help="Stop local core/edge/telegram services")
+    ops_stop.set_defaults(func=cmd_ops_stop_services)
 
     return parser
 
