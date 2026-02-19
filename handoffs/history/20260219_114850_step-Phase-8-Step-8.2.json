@@ -1,0 +1,261 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 8 - Step 8.2",
+      "title": "幂等与续跑",
+      "status": "done",
+      "acceptance_criteria": [
+        "tool_call_id 幂等",
+        "pending_approval 在重启后可继续批准并执行"
+      ]
+    },
+    "next_step": {
+      "id": "COMPLETED",
+      "title": "Implementation Plan 全部步骤完成",
+      "reason": "Phase 0-8 步骤均已实现并通过 smoke 验证"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [
+      "本机 Node 版本为 v25.2.1，高于技术栈建议 v20.11.1；当前构建通过但建议后续对齐。",
+      "ToolRegistry 模型字段 schema_json 与 SQLModel 命名冲突会触发 warning（不影响功能）。"
+    ],
+    "notes": [
+      "已补充 scripts/smoke_test.sh 覆盖 Agent/Tools/Approvals/Config/Memory/Audit。",
+      "前端依赖已安装于 frontend/node_modules，本地可直接 npm run dev/build。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        ".python-version",
+        "pyproject.toml",
+        "uv.lock",
+        "backend/__init__.py",
+        "backend/agent/__init__.py",
+        "backend/agent/api.py",
+        "backend/agent/auth.py",
+        "backend/agent/config.py",
+        "backend/agent/processor.py",
+        "backend/agent/queue.py",
+        "backend/agent/state.py",
+        "backend/approvals/__init__.py",
+        "backend/approvals/service.py",
+        "backend/audit/__init__.py",
+        "backend/audit/render.py",
+        "backend/core_client/__init__.py",
+        "backend/core_client/openai_compat.py",
+        "backend/ledger/__init__.py",
+        "backend/ledger/events.py",
+        "backend/ledger/store.py",
+        "backend/memory/__init__.py",
+        "backend/memory/embeddings.py",
+        "backend/memory/store.py",
+        "backend/patch/__init__.py",
+        "backend/patch/proposals.py",
+        "backend/patch/state.py",
+        "backend/storage/__init__.py",
+        "backend/storage/db.py",
+        "backend/storage/models.py",
+        "backend/tools/__init__.py",
+        "backend/tools/builtin.py",
+        "backend/tools/registry.py",
+        "backend/tools/runner.py",
+        "core/__init__.py",
+        "core/api.py",
+        "core/backends/__init__.py",
+        "core/backends/base.py",
+        "core/backends/mock.py",
+        "core/backends/mock_v2.py",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "frontend/tsconfig.json",
+        "frontend/next-env.d.ts",
+        "frontend/next.config.mjs",
+        "frontend/postcss.config.js",
+        "frontend/tailwind.config.ts",
+        "frontend/app/globals.css",
+        "frontend/app/layout.tsx",
+        "frontend/app/page.tsx",
+        "frontend/app/chat/page.tsx",
+        "frontend/app/tasks/page.tsx",
+        "frontend/app/approvals/page.tsx",
+        "frontend/app/memory/page.tsx",
+        "frontend/app/config/page.tsx",
+        "frontend/app/tools/page.tsx",
+        "frontend/components/sidebar.tsx",
+        "scripts/smoke_test.sh",
+        "handoffs/history/20260219_114850_step-Phase-8-Step-8.2.json"
+      ],
+      "modified": [
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync",
+        "cd frontend && npm install --no-fund --no-audit"
+      ],
+      "run": [
+        "uv run uvicorn core.api:app --port 9000",
+        "CORE_BASE_URL=http://127.0.0.1:9000 uv run uvicorn backend.agent.api:app --port 8000",
+        "cd frontend && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run dev"
+      ],
+      "test": [
+        "uv run python -m compileall backend core",
+        "cd frontend && npm run build"
+      ],
+      "smoke": [
+        "EDGE_BASE_URL=http://127.0.0.1:8029 bash scripts/smoke_test.sh"
+      ]
+    },
+    "api_endpoints_touched": [
+      "GET /health",
+      "GET /v1/agent/tasks/{task_id}",
+      "GET /v1/agent/tasks/{task_id}/events",
+      "POST /v1/agent/messages",
+      "GET /v1/audit/conversations/{conversation_id}/timeline",
+      "POST /v1/audit/render",
+      "GET /v1/tools",
+      "POST /v1/tools:execute",
+      "GET /v1/approvals",
+      "POST /v1/approvals/{approval_id}:approve",
+      "POST /v1/approvals/{approval_id}:reject",
+      "GET /v1/config/revisions",
+      "POST /v1/config/patches:propose",
+      "POST /v1/config/patches:commit",
+      "POST /v1/config/revisions:rollback",
+      "POST /v1/memory/write",
+      "POST /v1/memory/query",
+      "GET /v1/memory/candidates",
+      "POST /v1/memory/candidates/{id}:approve",
+      "POST /v1/memory/candidates/{id}:reject",
+      "core: GET /health",
+      "core: POST /v1/chat/completions",
+      "core: POST /v1/embeddings"
+    ],
+    "db_tables_touched": [
+      "conversations",
+      "tasks",
+      "ledger_events",
+      "tools_registry",
+      "tool_calls",
+      "approvals",
+      "config_seed",
+      "config_revisions",
+      "patch_proposals",
+      "memory_items",
+      "memory_candidates"
+    ],
+    "events_emitted": [
+      "InputEvent",
+      "PlanEvent",
+      "RouteEvent",
+      "CompletionEvent",
+      "PatchCommittedEvent",
+      "PatchRolledBackEvent"
+    ]
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "edge_mvp_pipeline",
+        "status": "passed",
+        "output": "Input -> Plan -> Route -> Completion 全链路完成"
+      },
+      {
+        "name": "core_backend_switch",
+        "status": "passed",
+        "output": "CORE_BACKEND=mock 与 mock_v2 输出不同，切换生效"
+      },
+      {
+        "name": "approval_rbac",
+        "status": "passed",
+        "output": "member approve=403, owner approve=200"
+      },
+      {
+        "name": "patch_commit_rollback",
+        "status": "passed",
+        "output": "commit 后 response_style=concise；rollback 后恢复 balanced"
+      },
+      {
+        "name": "memory_candidates_and_query",
+        "status": "passed",
+        "output": "candidate 审批后进入 memory_items 并可 query 命中"
+      },
+      {
+        "name": "core_fallback",
+        "status": "passed",
+        "output": "Core 关闭时任务仍 completed，并记录 fallback route 与可读回退文本"
+      },
+      {
+        "name": "idempotency_and_resume",
+        "status": "passed",
+        "output": "tool_call_id 二次请求命中 idempotent_hit；重启后 pending approval 可批准执行"
+      },
+      {
+        "name": "frontend_build",
+        "status": "passed",
+        "output": "frontend npm run build 通过"
+      },
+      {
+        "name": "smoke_script",
+        "status": "passed",
+        "output": "scripts/smoke_test.sh 全部阶段通过"
+      }
+    ],
+    "logs": [
+      "已完成 Phase 0-8 所有实现步骤并通过脚本化验收",
+      "历史快照已持续写入 handoffs/history"
+    ]
+  },
+  "handoff": {
+    "summary": "IMPLEMENTATION_PLAN 已执行至完成态：后端 Edge/Core MVP、工具+审批+RBAC、配置补丁、记忆、审计、前端控制台、可靠性与幂等恢复均已落地。",
+    "what_was_done": [
+      "构建 Edge FastAPI + SQLite + ledger + queue + Core client + message pipeline",
+      "构建 Core OpenAI 兼容 API 与可插拔 backend",
+      "实现 tools registry/execute、approvals、owner/member auth",
+      "实现 patch propose/commit/rollback 与 effective config",
+      "实现 memory write/query/candidates 与审批",
+      "实现 audit render 与 task SSE 事件流",
+      "实现 Next.js Console（Chat/Tasks/Approvals/Memory/Config/Tools）",
+      "实现 Core fallback、tool_call_id 幂等与重启后审批续跑",
+      "新增 scripts/smoke_test.sh"
+    ],
+    "how_to_verify": [
+      "启动 core + edge + frontend 后进行手工联调",
+      "运行：EDGE_BASE_URL=http://127.0.0.1:8000 bash scripts/smoke_test.sh",
+      "前端运行：cd frontend && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run dev"
+    ],
+    "known_issues": [
+      "ToolRegistry 的 schema_json 字段命名会产生 warning，建议后续迁移改名并补 migration。"
+    ],
+    "rollback_plan": [
+      "回滚到上一稳定版本时，删除新增 backend/core/frontend/scripts 文件并恢复 HANDOFF.JSON",
+      "清理运行数据：rm -rf data/edge.db frontend/node_modules frontend/.next"
+    ]
+  }
+}

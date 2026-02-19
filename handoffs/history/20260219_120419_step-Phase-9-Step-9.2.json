@@ -1,0 +1,126 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 9 - Step 9.2",
+      "title": "Hardening（告警清理 + 版本钉住 + 仓库忽略规则）",
+      "status": "done",
+      "acceptance_criteria": [
+        "ToolRegistry 不再触发 schema_json 命名冲突 warning",
+        "仓库提供 Node 版本建议文件",
+        "仓库忽略运行产物与依赖目录"
+      ]
+    },
+    "next_step": {
+      "id": "COMPLETED",
+      "title": "当前可继续项已完成",
+      "reason": "实现计划与本轮 hardening 均已完成，等待新的产品需求"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [
+      "当前机器 Node 实际版本仍是 v25.2.1；已通过 .nvmrc 标注目标 v20.11.1。"
+    ],
+    "notes": [
+      "Phase 0-8 功能已完成并通过 smoke 脚本。",
+      "本步完成模型字段冲突清理与仓库工程化硬化。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        ".nvmrc",
+        ".gitignore",
+        "handoffs/history/20260219_120419_step-Phase-9-Step-9.2.json"
+      ],
+      "modified": [
+        "backend/storage/models.py",
+        "backend/tools/registry.py",
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "uv run uvicorn core.api:app --port 9031",
+        "CORE_BASE_URL=http://127.0.0.1:9031 uv run uvicorn backend.agent.api:app --port 8031"
+      ],
+      "test": [
+        "uv run python -m compileall backend core",
+        "PYTHONWARNINGS=error uv run python -c \"from backend.storage.models import ToolRegistry; print(ToolRegistry.__name__)\""
+      ],
+      "smoke": [
+        "EDGE_BASE_URL=http://127.0.0.1:8031 bash scripts/smoke_test.sh"
+      ]
+    },
+    "api_endpoints_touched": [],
+    "db_tables_touched": [
+      "tools_registry"
+    ],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "schema_warning_removed",
+        "status": "passed",
+        "command": "PYTHONWARNINGS=error uv run python -c \"from backend.storage.models import ToolRegistry\"",
+        "output": "ToolRegistry import passed without warning"
+      },
+      {
+        "name": "regression_smoke",
+        "status": "passed",
+        "command": "EDGE_BASE_URL=http://127.0.0.1:8031 bash scripts/smoke_test.sh",
+        "output": "[smoke] done"
+      }
+    ],
+    "logs": [
+      "ToolRegistry 属性改为 schema_payload，列名仍为 schema_json（兼容既有表结构）。",
+      "新增 .nvmrc 与 .gitignore。"
+    ]
+  },
+  "handoff": {
+    "summary": "继续任务后已完成一轮 hardening：清理 ToolRegistry 命名告警、补 Node 版本钉住文件、补仓库忽略规则。",
+    "what_was_done": [
+      "ToolRegistry 字段从 schema_json 改为 schema_payload，并映射到数据库列 schema_json",
+      "同步更新 backend/tools/registry.py 字段读写",
+      "新增 .nvmrc（20.11.1）",
+      "新增 .gitignore（.venv/data/node_modules/.next/__pycache__ 等）"
+    ],
+    "how_to_verify": [
+      "运行：PYTHONWARNINGS=error uv run python -c \"from backend.storage.models import ToolRegistry\"",
+      "运行：EDGE_BASE_URL=http://127.0.0.1:8031 bash scripts/smoke_test.sh",
+      "确认仓库存在 .nvmrc 与 .gitignore"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "恢复 backend/storage/models.py 与 backend/tools/registry.py 到变更前版本",
+      "删除 .nvmrc 与 .gitignore",
+      "恢复 HANDOFF.JSON"
+    ]
+  }
+}

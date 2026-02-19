@@ -1,0 +1,107 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 0 - Step 0.1",
+      "title": "初始化仓库结构",
+      "status": "done",
+      "acceptance_criteria": [
+        "创建 backend/ frontend/ core/（或 core 目录合并策略明确）",
+        "根目录存在 6 个文档（PRD/APP_FLOW/TECH_STACK/FRONTEND_GUIDELINES/BACKEND_STRUCTURE/IMPLEMENTATION_PLAN）与 SKILL.md",
+        "仓库能执行基本命令（空项目不报错）"
+      ]
+    },
+    "next_step": {
+      "id": "Phase 0 - Step 0.2",
+      "title": "Python 环境与依赖锁定（uv）",
+      "reason": "Step 0.1 已完成，进入依赖与运行环境锁定"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [],
+    "notes": [
+      "本 HANDOFF.JSON 是任务推进的唯一事实来源；每完成一步都要更新并写入 handoffs/history 快照。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "backend/.gitkeep",
+        "frontend/.gitkeep",
+        "core/.gitkeep",
+        "handoffs/history/20260219_101625_step-Phase-0-Step-0.1.json"
+      ],
+      "modified": [
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "mkdir -p backend frontend core handoffs/history && touch backend/.gitkeep frontend/.gitkeep core/.gitkeep"
+      ],
+      "run": [
+        "ls -la backend frontend core"
+      ],
+      "test": [],
+      "smoke": [
+        "test -d backend && test -d frontend && test -d core && test -f PRD.md && test -f APP_FLOW.md && test -f TECH_STACK.md && test -f FRONTEND_GUIDELINES.md && test -f BACKEND_STRUCTURE.md && test -f IMPLEMENTATION_PLAN.md && echo 'smoke:ok'"
+      ]
+    },
+    "api_endpoints_touched": [],
+    "db_tables_touched": [],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "step_0_1_structure_smoke",
+        "status": "passed",
+        "command": "test -d backend && test -d frontend && test -d core && test -f PRD.md && test -f APP_FLOW.md && test -f TECH_STACK.md && test -f FRONTEND_GUIDELINES.md && test -f BACKEND_STRUCTURE.md && test -f IMPLEMENTATION_PLAN.md && echo 'smoke:ok'",
+        "output": "smoke:ok"
+      }
+    ],
+    "logs": [
+      "目录创建成功：backend/frontend/core",
+      "文档存在性检查通过，基础命令可执行"
+    ]
+  },
+  "handoff": {
+    "summary": "Phase 0 Step 0.1 已完成：初始化仓库结构并完成最小可运行性验证。",
+    "what_was_done": [
+      "创建 backend/ frontend/ core/ 目录并添加 .gitkeep",
+      "创建 handoffs/history/ 目录用于交接快照",
+      "执行目录与根文档完整性 smoke 校验"
+    ],
+    "how_to_verify": [
+      "运行：ls -la backend frontend core",
+      "运行：test -d backend && test -d frontend && test -d core && test -f PRD.md && test -f APP_FLOW.md && test -f TECH_STACK.md && test -f FRONTEND_GUIDELINES.md && test -f BACKEND_STRUCTURE.md && test -f IMPLEMENTATION_PLAN.md && echo 'smoke:ok'"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "删除新增目录与占位文件：rm -rf backend frontend core",
+      "如需恢复交接状态，可从版本库还原 HANDOFF.JSON"
+    ]
+  }
+}

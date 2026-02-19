@@ -1,0 +1,117 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 1 - Step 1.4",
+      "title": "task queue（最小队列 + worker）",
+      "status": "done",
+      "acceptance_criteria": [
+        "可 enqueue task",
+        "状态从 queued -> running -> completed",
+        "GET /v1/agent/tasks/{task_id} 可查询"
+      ]
+    },
+    "next_step": {
+      "id": "Phase 1 - Step 1.5",
+      "title": "Core Client（HTTP 调用）",
+      "reason": "任务队列已打通，进入 Core 通信层"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [],
+    "notes": [
+      "worker 当前为单消费者最小实现，符合 MVP 串行处理路径。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "backend/agent/state.py",
+        "backend/agent/queue.py",
+        "handoffs/history/20260219_104535_step-Phase-1-Step-1.4.json"
+      ],
+      "modified": [
+        "backend/agent/api.py",
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8014"
+      ],
+      "test": [
+        "uv run python - <<'PY'\nimport asyncio\nfrom backend.agent.queue import task_queue\nfrom backend.agent.state import create_task, get_task\nfrom backend.storage.db import init_db\n\nasync def main() -> None:\n    init_db()\n    await task_queue.start()\n    task = create_task('conv_step1_4')\n    observed = [get_task(task.id).status]\n    await task_queue.enqueue_task(task.id)\n    for _ in range(40):\n        current = get_task(task.id)\n        if current is not None and observed[-1] != current.status:\n            observed.append(current.status)\n        if current is not None and current.status == 'completed':\n            break\n        await asyncio.sleep(0.05)\n    print(observed)\n    await task_queue.stop()\n\nasyncio.run(main())\nPY"
+      ],
+      "smoke": [
+        "TASK_ID=$(uv run python - <<'PY'\nfrom sqlmodel import select\nfrom backend.storage.db import get_session\nfrom backend.storage.models import Task\nwith get_session() as session:\n    task = session.exec(select(Task).order_by(Task.created_at.desc())).first()\n    print(task.id)\nPY\n); uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8014 > /tmp/marv_step1_4_uvicorn.log 2>&1 & pid=$!; ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do if curl -fsS \"http://127.0.0.1:8014/v1/agent/tasks/$TASK_ID\" >/tmp/marv_step1_4_task.json 2>/dev/null; then ok=1; break; fi; sleep 1; done; kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; test \"$ok\" = \"1\"; cat /tmp/marv_step1_4_task.json"
+      ]
+    },
+    "api_endpoints_touched": [
+      "GET /v1/agent/tasks/{task_id}"
+    ],
+    "db_tables_touched": [
+      "tasks"
+    ],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "task_state_transition",
+        "status": "passed",
+        "output": "['queued', 'running', 'completed']"
+      },
+      {
+        "name": "task_status_api",
+        "status": "passed",
+        "output": "GET /v1/agent/tasks/{task_id} 返回 completed 任务详情"
+      }
+    ],
+    "logs": [
+      "最小队列 worker 可消费任务并更新状态",
+      "任务查询 API 正常"
+    ]
+  },
+  "handoff": {
+    "summary": "Phase 1 Step 1.4 已完成：task queue 与 worker 可用。",
+    "what_was_done": [
+      "新增 task 状态管理（create/update/get）",
+      "新增异步队列与后台 worker",
+      "新增任务状态查询接口"
+    ],
+    "how_to_verify": [
+      "运行测试脚本，确认状态流转 queued/running/completed",
+      "调用 GET /v1/agent/tasks/{task_id} 查看任务状态"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "删除 backend/agent/state.py 与 backend/agent/queue.py",
+      "恢复 backend/agent/api.py 与 HANDOFF.JSON"
+    ]
+  }
+}

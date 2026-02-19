@@ -1,0 +1,132 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 1 - Step 1.6",
+      "title": "Agent messages API",
+      "status": "done",
+      "acceptance_criteria": [
+        "POST /v1/agent/messages 可 upsert conversation + 入队",
+        "worker 写入 PlanEvent/RouteEvent/CompletionEvent",
+        "任务可完成并在 timeline 看到全链路"
+      ]
+    },
+    "next_step": {
+      "id": "Phase 2 - Step 2.1",
+      "title": "Core FastAPI 骨架",
+      "reason": "Edge MVP 链路已打通，进入 Core 本体 API"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [],
+    "notes": [
+      "当前 worker 默认 route 到 CORE_BASE_URL /v1/chat/completions。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "backend/agent/processor.py",
+        "handoffs/history/20260219_104946_step-Phase-1-Step-1.6.json"
+      ],
+      "modified": [
+        "backend/agent/api.py",
+        "backend/agent/state.py",
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "CORE_BASE_URL=http://127.0.0.1:9011 uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8015"
+      ],
+      "test": [
+        "curl -X POST http://127.0.0.1:8015/v1/agent/messages -H 'Content-Type: application/json' -d '{\"message\":\"hello-core\"}'",
+        "curl http://127.0.0.1:8015/v1/agent/tasks/{task_id}",
+        "curl http://127.0.0.1:8015/v1/audit/conversations/{conversation_id}/timeline"
+      ],
+      "smoke": [
+        "cat > /tmp/marv_mock_core.py <<'PY'\nimport json\nfrom http.server import BaseHTTPRequestHandler, HTTPServer\nclass Handler(BaseHTTPRequestHandler):\n    def do_GET(self):\n        if self.path == '/health':\n            body = json.dumps({'status': 'ok'}).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n            return\n        self.send_error(404)\n    def do_POST(self):\n        if self.path == '/v1/chat/completions':\n            length = int(self.headers.get('Content-Length', '0'))\n            payload = json.loads(self.rfile.read(length) or b'{}')\n            text = payload.get('messages', [{}])[-1].get('content', '')\n            body = json.dumps({'id': 'chatcmpl_mock', 'choices': [{'message': {'role': 'assistant', 'content': f'core-reply:{text}'}}]}).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n            return\n        self.send_error(404)\n    def log_message(self, format, *args):\n        return\nif __name__ == '__main__':\n    server = HTTPServer(('127.0.0.1', 9011), Handler)\n    try:\n        server.serve_forever()\n    finally:\n        server.server_close()\nPY\nuv run python /tmp/marv_mock_core.py > /tmp/marv_mock_core.log 2>&1 & core_pid=$!; CORE_BASE_URL=http://127.0.0.1:9011 uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8015 > /tmp/marv_step1_6_edge.log 2>&1 & edge_pid=$!; ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do if curl -fsS http://127.0.0.1:8015/health >/dev/null 2>&1; then ok=1; break; fi; sleep 1; done; test \"$ok\" = \"1\"; MSG=$(curl -fsS -X POST http://127.0.0.1:8015/v1/agent/messages -H 'Content-Type: application/json' -d '{\"message\":\"hello-core\",\"channel\":\"web\",\"actor_id\":\"owner_1\"}'); TASK_ID=$(echo \"$MSG\" | jq -r '.task_id'); CONV_ID=$(echo \"$MSG\" | jq -r '.conversation_id'); for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do STATUS_JSON=$(curl -fsS \"http://127.0.0.1:8015/v1/agent/tasks/$TASK_ID\"); STATUS=$(echo \"$STATUS_JSON\" | jq -r '.status'); if [ \"$STATUS\" = \"completed\" ]; then break; fi; sleep 1; done; TIMELINE=$(curl -fsS \"http://127.0.0.1:8015/v1/audit/conversations/$CONV_ID/timeline\"); kill $edge_pid >/dev/null 2>&1 || true; wait $edge_pid >/dev/null 2>&1 || true; kill $core_pid >/dev/null 2>&1 || true; wait $core_pid >/dev/null 2>&1 || true; echo \"$TIMELINE\" | jq '{count, types: [.events[].type], completion: (.events[] | select(.type==\"CompletionEvent\") | .payload.response_text)}'"
+      ]
+    },
+    "api_endpoints_touched": [
+      "POST /v1/agent/messages",
+      "GET /v1/agent/tasks/{task_id}",
+      "GET /v1/audit/conversations/{conversation_id}/timeline"
+    ],
+    "db_tables_touched": [
+      "conversations",
+      "tasks",
+      "ledger_events"
+    ],
+    "events_emitted": [
+      "InputEvent",
+      "PlanEvent",
+      "RouteEvent",
+      "CompletionEvent"
+    ]
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "message_pipeline",
+        "status": "passed",
+        "output": "task 最终状态 completed"
+      },
+      {
+        "name": "ledger_full_chain",
+        "status": "passed",
+        "output": "[InputEvent, PlanEvent, RouteEvent, CompletionEvent]"
+      },
+      {
+        "name": "completion_payload",
+        "status": "passed",
+        "output": "core-reply:hello-core"
+      }
+    ],
+    "logs": [
+      "消息接口可创建会话与任务并入队",
+      "worker 可调用 core 并写入全链路事件"
+    ]
+  },
+  "handoff": {
+    "summary": "Phase 1 Step 1.6 已完成：消息->任务->Core->回复链路可用。",
+    "what_was_done": [
+      "实现 POST /v1/agent/messages",
+      "新增任务处理器 process_task（Plan/Route/Completion）",
+      "会话 upsert 与任务状态流转完整接入"
+    ],
+    "how_to_verify": [
+      "启动 mock core + edge，发送消息并轮询 task 状态",
+      "查询 timeline，确认 4 类事件均存在"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "恢复 backend/agent/api.py、backend/agent/state.py 并删除 backend/agent/processor.py"
+    ]
+  }
+}

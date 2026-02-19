@@ -1,0 +1,118 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 0 - Step 0.2",
+      "title": "Python 环境与依赖锁定（uv）",
+      "status": "done",
+      "acceptance_criteria": [
+        "uv sync 成功",
+        "uv run python -c \"import fastapi\" 成功"
+      ]
+    },
+    "next_step": {
+      "id": "Phase 1 - Step 1.1",
+      "title": "FastAPI 服务骨架（Edge）",
+      "reason": "依赖与运行时已锁定，开始实现 Edge API 骨架"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [
+      "系统 Python 默认为 3.14.2；项目已通过 .python-version 与 uv 固定到 3.12.8。"
+    ],
+    "notes": [
+      "本 HANDOFF.JSON 是任务推进的唯一事实来源；每完成一步都要更新并写入 handoffs/history 快照。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        ".python-version",
+        "pyproject.toml",
+        "uv.lock",
+        "handoffs/history/20260219_103345_step-Phase-0-Step-0.2.json"
+      ],
+      "modified": [
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "uv --version",
+        "python3 --version"
+      ],
+      "test": [
+        "uv run python -c \"import fastapi; print(fastapi.__version__)\""
+      ],
+      "smoke": [
+        "uv sync",
+        "uv run python -c \"import fastapi\""
+      ]
+    },
+    "api_endpoints_touched": [],
+    "db_tables_touched": [],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "uv_sync",
+        "status": "passed",
+        "command": "uv sync"
+      },
+      {
+        "name": "fastapi_import",
+        "status": "passed",
+        "command": "uv run python -c \"import fastapi; print(fastapi.__version__)\"",
+        "output": "0.115.8"
+      }
+    ],
+    "logs": [
+      "uv 已自动安装并使用 CPython 3.12.8",
+      "已生成 uv.lock 并完成依赖安装"
+    ]
+  },
+  "handoff": {
+    "summary": "Phase 0 Step 0.2 已完成：Python/uv 环境与依赖已锁定。",
+    "what_was_done": [
+      "新增 .python-version=3.12.8",
+      "新增 pyproject.toml 并锁定 TECH_STACK 指定依赖版本",
+      "生成 uv.lock，完成 uv sync",
+      "执行 fastapi 导入验收"
+    ],
+    "how_to_verify": [
+      "运行：uv sync",
+      "运行：uv run python -c \"import fastapi; print(fastapi.__version__)\""
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "删除 .venv、uv.lock、pyproject.toml 与 .python-version",
+      "从版本控制恢复 HANDOFF.JSON"
+    ]
+  }
+}

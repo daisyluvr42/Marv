@@ -1,0 +1,132 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 9 - Step 9.3",
+      "title": "Quality Gates（测试覆盖 + CI + 生命周期告警清理）",
+      "status": "done",
+      "acceptance_criteria": [
+        "后端有可重复运行的自动化测试",
+        "CI 工作流可执行后端测试与前端构建",
+        "FastAPI on_event 弃用告警清理"
+      ]
+    },
+    "next_step": {
+      "id": "COMPLETED",
+      "title": "当前可继续项已完成",
+      "reason": "功能、可靠性、测试与 CI 已落地，等待新的产品需求"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [
+      "当前机器 Node 实际版本仍是 v25.2.1；仓库已通过 .nvmrc 锁定建议版本 20.11.1。"
+    ],
+    "notes": [
+      "新增 tests/test_api_flows.py 覆盖关键 API 行为。",
+      "新增 GitHub Actions CI，减少回归风险。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "tests/conftest.py",
+        "tests/test_api_flows.py",
+        ".github/workflows/ci.yml",
+        "README.md",
+        "handoffs/history/20260219_121234_step-Phase-9-Step-9.3.json"
+      ],
+      "modified": [
+        "backend/agent/api.py",
+        "backend/agent/queue.py",
+        "pyproject.toml",
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync",
+        "cd frontend && npm ci"
+      ],
+      "run": [
+        "uv run uvicorn core.api:app --port 9000",
+        "CORE_BASE_URL=http://127.0.0.1:9000 uv run uvicorn backend.agent.api:app --port 8000",
+        "cd frontend && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run dev"
+      ],
+      "test": [
+        "uv run pytest -q",
+        "cd frontend && npm run build"
+      ],
+      "smoke": [
+        "EDGE_BASE_URL=http://127.0.0.1:8000 bash scripts/smoke_test.sh"
+      ]
+    },
+    "api_endpoints_touched": [],
+    "db_tables_touched": [],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "backend_pytest",
+        "status": "passed",
+        "command": "uv run pytest -q",
+        "output": "5 passed"
+      },
+      {
+        "name": "frontend_build",
+        "status": "passed",
+        "command": "cd frontend && npm run build",
+        "output": "next build succeeded"
+      }
+    ],
+    "logs": [
+      "测试覆盖了消息链路、审批/RBAC、配置补丁、记忆候选、工具幂等。",
+      "FastAPI startup/shutdown 已迁移为 lifespan，消除 on_event 弃用告警。",
+      "CI workflow 可在 push/PR 自动执行后端与前端校验。"
+    ]
+  },
+  "handoff": {
+    "summary": "继续任务后完成 Quality Gates：自动化测试、CI、lifespan 重构和 README 交付文档。",
+    "what_was_done": [
+      "新增 tests/test_api_flows.py 与 tests/conftest.py",
+      "修复 task queue 跨事件循环问题（每次启动重新绑定 queue）",
+      "将 FastAPI on_event 迁移到 lifespan",
+      "新增 .github/workflows/ci.yml",
+      "新增 README.md 运行与测试指引"
+    ],
+    "how_to_verify": [
+      "运行：uv run pytest -q",
+      "运行：cd frontend && npm run build",
+      "查看：.github/workflows/ci.yml",
+      "查看：README.md"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "删除 tests/ 与 .github/workflows/ci.yml、README.md",
+      "恢复 backend/agent/api.py、backend/agent/queue.py、pyproject.toml",
+      "恢复 HANDOFF.JSON"
+    ]
+  }
+}

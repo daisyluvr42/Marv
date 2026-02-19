@@ -1,0 +1,111 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 1 - Step 1.5",
+      "title": "Core Client（HTTP 调用）",
+      "status": "done",
+      "acceptance_criteria": [
+        "Edge 能调用 Core /health",
+        "Edge 能调用 /v1/chat/completions（mock）",
+        "具备超时与重试"
+      ]
+    },
+    "next_step": {
+      "id": "Phase 1 - Step 1.6",
+      "title": "Agent messages API",
+      "reason": "Core 调用层已可用，进入消息入队与全链路事件"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [],
+    "notes": [
+      "CoreClient 采用 tenacity + httpx，默认 CORE_BASE_URL=http://localhost:9000。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "backend/core_client/__init__.py",
+        "backend/core_client/openai_compat.py",
+        "handoffs/history/20260219_104706_step-Phase-1-Step-1.5.json"
+      ],
+      "modified": [
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "export CORE_BASE_URL=http://localhost:9000"
+      ],
+      "test": [
+        "uv run python - <<'PY'\nimport asyncio\nimport json\nimport os\nimport threading\nfrom http.server import BaseHTTPRequestHandler, HTTPServer\n\nos.environ['CORE_BASE_URL'] = 'http://127.0.0.1:9010'\nfrom backend.core_client.openai_compat import CoreClient\n\nclass Handler(BaseHTTPRequestHandler):\n    def do_GET(self):\n        if self.path == '/health':\n            body = json.dumps({'status': 'ok', 'service': 'mock-core'}).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n            return\n        self.send_error(404)\n    def do_POST(self):\n        if self.path == '/v1/chat/completions':\n            length = int(self.headers.get('Content-Length', '0'))\n            payload = json.loads(self.rfile.read(length) or b'{}')\n            text = payload.get('messages', [{}])[-1].get('content', '')\n            body = json.dumps({'id': 'chatcmpl_mock', 'choices': [{'message': {'role': 'assistant', 'content': f'echo:{text}'}}]}).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n            return\n        self.send_error(404)\n    def log_message(self, format, *args):\n        return\n\nserver = HTTPServer(('127.0.0.1', 9010), Handler)\nthread = threading.Thread(target=server.serve_forever, daemon=True)\nthread.start()\n\nasync def main() -> None:\n    client = CoreClient()\n    print(await client.health_check())\n    result = await client.chat_completions(messages=[{'role': 'user', 'content': 'ping'}])\n    print(result['choices'][0]['message']['content'])\n\ntry:\n    asyncio.run(main())\nfinally:\n    server.shutdown()\n    server.server_close()\nPY"
+      ],
+      "smoke": [
+        "uv run python -c \"from backend.core_client.openai_compat import get_core_client; print(type(get_core_client()).__name__)\""
+      ]
+    },
+    "api_endpoints_touched": [],
+    "db_tables_touched": [],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "core_health_check",
+        "status": "passed",
+        "output": "{'status': 'ok', 'service': 'mock-core'}"
+      },
+      {
+        "name": "core_chat_completions",
+        "status": "passed",
+        "output": "echo:ping"
+      }
+    ],
+    "logs": [
+      "CoreClient 能在 mock core 上完成 health 与 completions 调用",
+      "重试策略已配置（timeout/connect/status 错误重试）"
+    ]
+  },
+  "handoff": {
+    "summary": "Phase 1 Step 1.5 已完成：Core HTTP 客户端已接入。",
+    "what_was_done": [
+      "新增 CoreClient（health_check/chat_completions）",
+      "实现超时、指数退避重试",
+      "提供 get_core_client 单例"
+    ],
+    "how_to_verify": [
+      "起一个 mock core 服务后，调用 health_check 与 chat_completions",
+      "确认返回正常 JSON 并有 assistant 回复"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "删除 backend/core_client 目录并恢复 HANDOFF.JSON"
+    ]
+  }
+}

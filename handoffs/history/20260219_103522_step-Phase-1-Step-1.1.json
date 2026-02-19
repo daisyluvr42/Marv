@@ -1,0 +1,110 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 1 - Step 1.1",
+      "title": "FastAPI 服务骨架（Edge）",
+      "status": "done",
+      "acceptance_criteria": [
+        "backend/agent/api.py 存在 FastAPI app",
+        "/health 返回 ok",
+        "uvicorn backend.agent.api:app --reload 可启动"
+      ]
+    },
+    "next_step": {
+      "id": "Phase 1 - Step 1.2",
+      "title": "SQLite 初始化与 migrations",
+      "reason": "API 骨架已就绪，进入持久化层初始化"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [],
+    "notes": [
+      "基础配置通过环境变量读取：EDGE_DATA_DIR/EDGE_DB_PATH/CORE_BASE_URL。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "backend/__init__.py",
+        "backend/agent/__init__.py",
+        "backend/agent/config.py",
+        "backend/agent/api.py",
+        "handoffs/history/20260219_103522_step-Phase-1-Step-1.1.json"
+      ],
+      "modified": [
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8011"
+      ],
+      "test": [
+        "curl -sS http://127.0.0.1:8011/health"
+      ],
+      "smoke": [
+        "uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8011 > /tmp/marv_step1_1_uvicorn.log 2>&1 & pid=$!; sleep 2; curl -sS http://127.0.0.1:8011/health; rc=$?; kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; exit $rc"
+      ]
+    },
+    "api_endpoints_touched": [
+      "GET /health"
+    ],
+    "db_tables_touched": [],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "health_endpoint",
+        "status": "passed",
+        "command": "curl -sS http://127.0.0.1:8011/health",
+        "output": "{\"status\":\"ok\"}"
+      }
+    ],
+    "logs": [
+      "uvicorn 启动成功并可响应 /health"
+    ]
+  },
+  "handoff": {
+    "summary": "Phase 1 Step 1.1 已完成：Edge FastAPI 骨架就绪。",
+    "what_was_done": [
+      "实现 backend/agent/api.py（FastAPI + /health + startup 初始化）",
+      "实现 backend/agent/config.py（data dir/env vars/core URL）",
+      "补充 backend 包初始化文件"
+    ],
+    "how_to_verify": [
+      "运行：uv run uvicorn backend.agent.api:app --host 127.0.0.1 --port 8011",
+      "运行：curl -sS http://127.0.0.1:8011/health"
+    ],
+    "known_issues": [],
+    "rollback_plan": [
+      "删除新增 backend 代码文件并恢复 HANDOFF.JSON"
+    ]
+  }
+}
