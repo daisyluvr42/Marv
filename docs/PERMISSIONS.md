@@ -22,9 +22,15 @@
 uv run marv permissions set-default --security allowlist --ask on-miss --ask-fallback deny
 uv run marv permissions allowlist add --agent main --pattern mock_web_search
 uv run marv permissions set-agent --agent telegram:123456 --security full --ask off
+uv run marv permissions eval --agent telegram:123456 --tool mock_external_write
 ```
 
 决策结果：
 - `allow`: 直接执行
 - `ask`: 生成 `pending_approval`，需 owner 审批后执行
 - `deny`: 直接返回 403
+
+OpenClaw 交互增强：
+- `permissions preset --name strict|balanced|full`
+- `permissions allowlist sync-readonly --agent main`（把所有 read_only 工具加入 allowlist）
+- `tools exec --prompt-approval`：当返回 `pending_approval` 时，CLI 立即提示 approve/reject/skip

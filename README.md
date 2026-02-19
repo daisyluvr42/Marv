@@ -55,6 +55,8 @@ uv run marv chat send --message "你好" --follow
 # list tools and execute read-only tool
 uv run marv tools list
 uv run marv tools exec --tool mock_web_search --args '{"query":"llm"}'
+# if pending_approval, prompt approve/reject in place
+uv run marv tools exec --tool mock_external_write --args '{"target":"file://x","content":"abc"}' --prompt-approval
 
 # approvals
 uv run marv approvals list --status pending
@@ -79,7 +81,10 @@ uv run marv ops package-migration --output-dir ./dist/migrations
 uv run marv permissions show
 uv run marv permissions set-default --security allowlist --ask on-miss --ask-fallback deny
 uv run marv permissions allowlist add --agent main --pattern mock_web_search
+uv run marv permissions allowlist sync-readonly --agent main
+uv run marv permissions preset --name balanced
 uv run marv permissions set-agent --agent telegram:123456 --security full --ask off
+uv run marv permissions eval --agent telegram:123456 --tool mock_external_write
 ```
 
 详细说明：`docs/PERMISSIONS.md`

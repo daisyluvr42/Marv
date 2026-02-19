@@ -61,6 +61,9 @@ def normalize_config(raw: dict[str, Any] | None) -> dict[str, Any]:
             if not agent:
                 continue
             normalized_agents[agent] = _merge_policy(value if isinstance(value, dict) else {})
+        # OpenClaw compatibility: migrate legacy `default` scope to `main`.
+        if "default" in normalized_agents and DEFAULT_MAIN_AGENT not in normalized_agents:
+            normalized_agents[DEFAULT_MAIN_AGENT] = normalized_agents.pop("default")
         base["agents"] = normalized_agents
     return base
 
@@ -93,40 +96,56 @@ def save_exec_approvals(config: dict[str, Any], path: Path | None = None) -> Pat
 
 
 def get_agent_policy(config: dict[str, Any], actor_id: str) -> dict[str, Any]:
+    policy, _ = get_agent_policy_with_source(config, actor_id)
+    return policy
+
+
+def get_agent_policy_with_source(config: dict[str, Any], actor_id: str) -> tuple[dict[str, Any], str]:
     normalized = normalize_config(config)
     agents = normalized.get("agents", {})
     if isinstance(agents, dict):
         if actor_id in agents and isinstance(agents[actor_id], dict):
-            return _merge_policy(agents[actor_id])
+            return _merge_policy(agents[actor_id]), f"agents.{actor_id}"
         if DEFAULT_MAIN_AGENT in agents and isinstance(agents[DEFAULT_MAIN_AGENT], dict):
-            return _merge_policy(agents[DEFAULT_MAIN_AGENT])
-    return _merge_policy(normalized.get("defaults"))
+            return _merge_policy(agents[DEFAULT_MAIN_AGENT]), f"agents.{DEFAULT_MAIN_AGENT}"
+    return _merge_policy(normalized.get("defaults")), "defaults"
 
 
-def evaluate_tool_permission(config: dict[str, Any], *, actor_id: str, tool_name: str) -> dict[str, str]:
-    policy = get_agent_policy(config, actor_id)
+def evaluate_tool_permission(config: dict[str, Any], *, actor_id: str, tool_name: str) -> dict[str, Any]:
+    policy, policy_source = get_agent_policy_with_source(config, actor_id)
     tool = tool_name.strip()
     allowlist = [item for item in policy["allowlist"] if item]
-    allowed_by_allowlist = any(fnmatchcase(tool, pattern) for pattern in allowlist)
+    lowered_tool = tool.lower()
+    matched_pattern = next((pattern for pattern in allowlist if fnmatchcase(lowered_tool, pattern.lower())), None)
+    allowed_by_allowlist = matched_pattern is not None
 
     security = policy["security"]
     ask = policy["ask"]
 
     if security == "deny":
-        return {"decision": "deny", "reason": "security=deny"}
+        return {"decision": "deny", "reason": "security=deny", "policy_source": policy_source}
 
     if security == "full":
         if ask == "always":
-            return {"decision": "ask", "reason": "ask=always"}
-        return {"decision": "allow", "reason": "security=full"}
+            return {"decision": "ask", "reason": "ask=always", "policy_source": policy_source}
+        return {"decision": "allow", "reason": "security=full", "policy_source": policy_source}
 
     # security=allowlist
     if allowed_by_allowlist:
         if ask == "always":
-            return {"decision": "ask", "reason": "allowlist_hit + ask=always"}
-        return {"decision": "allow", "reason": "allowlist_hit"}
+            return {
+                "decision": "ask",
+                "reason": "allowlist_hit + ask=always",
+                "policy_source": policy_source,
+                "matched_pattern": matched_pattern,
+            }
+        return {
+            "decision": "allow",
+            "reason": "allowlist_hit",
+            "policy_source": policy_source,
+            "matched_pattern": matched_pattern,
+        }
 
     if ask in {"always", "on-miss"}:
-        return {"decision": "ask", "reason": "allowlist_miss"}
-    return {"decision": "deny", "reason": "allowlist_miss + ask=off"}
-
+        return {"decision": "ask", "reason": "allowlist_miss", "policy_source": policy_source}
+    return {"decision": "deny", "reason": "allowlist_miss + ask=off", "policy_source": policy_source}

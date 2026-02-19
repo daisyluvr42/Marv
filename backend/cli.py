@@ -20,15 +20,23 @@ from backend.permissions.exec_approvals import (
     VALID_ASK,
     VALID_ASK_FALLBACK,
     VALID_SECURITY,
+    evaluate_tool_permission,
+    get_agent_policy_with_source,
     get_exec_approvals_path,
     load_exec_approvals,
     normalize_config,
     save_exec_approvals,
 )
+from backend.tools.registry import list_tools, scan_tools
 
 
 DEFAULT_EDGE_BASE_URL = os.getenv("EDGE_BASE_URL", "http://127.0.0.1:8000")
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+OPENCLAW_PRESETS: dict[str, dict[str, str]] = {
+    "strict": {"security": "allowlist", "ask": "always", "ask_fallback": "deny"},
+    "balanced": {"security": "allowlist", "ask": "on-miss", "ask_fallback": "deny"},
+    "full": {"security": "full", "ask": "off", "ask_fallback": "full"},
+}
 
 
 def _headers(args: argparse.Namespace) -> dict[str, str]:
@@ -98,6 +106,40 @@ def _validate_choice(value: str | None, valid: set[str], name: str) -> str | Non
     if lowered not in valid:
         raise SystemExit(f"invalid {name}: {value}. valid: {sorted(valid)}")
     return lowered
+
+
+def _maybe_prompt_approval(args: argparse.Namespace, *, approval_id: str) -> None:
+    if not sys.stdin.isatty():
+        return
+    prompt = (
+        f"approval pending: {approval_id}\n"
+        "Choose action: [a]pprove / [r]eject / [s]kip (default s): "
+    )
+    try:
+        answer = input(prompt).strip().lower()
+    except EOFError:
+        return
+    if answer in {"", "s", "skip"}:
+        return
+    if answer in {"a", "approve"}:
+        payload = _request_json(
+            args,
+            "POST",
+            f"/v1/approvals/{approval_id}:approve",
+            json_body={"actor_id": args.actor_id},
+        )
+        _print_json({"approval_action": "approved", "approval": payload})
+        return
+    if answer in {"r", "reject"}:
+        payload = _request_json(
+            args,
+            "POST",
+            f"/v1/approvals/{approval_id}:reject",
+            json_body={"actor_id": args.actor_id},
+        )
+        _print_json({"approval_action": "rejected", "approval": payload})
+        return
+    print("unknown action, skipped")
 
 
 def _resolve_edge_db_path(project_root: Path) -> Path:
@@ -271,7 +313,15 @@ def cmd_tools_exec(args: argparse.Namespace) -> int:
         "task_id": args.task_id,
         "tool_call_id": args.tool_call_id,
     }
-    _print_json(_request_json(args, "POST", "/v1/tools:execute", json_body=payload))
+    response = _request_json(args, "POST", "/v1/tools:execute", json_body=payload)
+    _print_json(response)
+    if (
+        args.prompt_approval
+        and response.get("status") == "pending_approval"
+        and isinstance(response.get("approval_id"), str)
+        and response.get("approval_id")
+    ):
+        _maybe_prompt_approval(args, approval_id=str(response["approval_id"]))
     return 0
 
 
@@ -593,6 +643,95 @@ def cmd_permissions_allowlist_remove(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_permissions_eval(args: argparse.Namespace) -> int:
+    actor = args.agent.strip()
+    tool = args.tool.strip()
+    if not actor:
+        raise SystemExit("agent cannot be empty")
+    if not tool:
+        raise SystemExit("tool cannot be empty")
+    config = load_exec_approvals()
+    policy, source = get_agent_policy_with_source(config, actor)
+    decision = evaluate_tool_permission(config, actor_id=actor, tool_name=tool)
+    _print_json(
+        {
+            "path": str(get_exec_approvals_path()),
+            "agent": actor,
+            "tool": tool,
+            "policy_source": source,
+            "effective_policy": policy,
+            "decision": decision,
+        }
+    )
+    return 0
+
+
+def _set_policy_preset(target: dict[str, Any], preset: str) -> dict[str, Any]:
+    if preset not in OPENCLAW_PRESETS:
+        raise SystemExit(f"unknown preset: {preset}. valid={sorted(OPENCLAW_PRESETS)}")
+    data = OPENCLAW_PRESETS[preset]
+    target["security"] = data["security"]
+    target["ask"] = data["ask"]
+    target["ask_fallback"] = data["ask_fallback"]
+    if "allowlist" not in target or not isinstance(target["allowlist"], list):
+        target["allowlist"] = []
+    return target
+
+
+def cmd_permissions_preset(args: argparse.Namespace) -> int:
+    preset = args.name.strip().lower()
+    config = load_exec_approvals()
+    if args.agent:
+        agent = args.agent.strip()
+        if not agent:
+            raise SystemExit("agent cannot be empty")
+        agents = config.get("agents", {})
+        if not isinstance(agents, dict):
+            agents = {}
+        policy = agents.get(agent, {})
+        if not isinstance(policy, dict):
+            policy = {}
+        agents[agent] = _set_policy_preset(policy, preset)
+        config["agents"] = agents
+        path = save_exec_approvals(config)
+        _print_json({"status": "ok", "path": str(path), "preset": preset, "agent": agent, "policy": agents[agent]})
+        return 0
+
+    defaults = config.get("defaults", {})
+    if not isinstance(defaults, dict):
+        defaults = {}
+    config["defaults"] = _set_policy_preset(defaults, preset)
+    path = save_exec_approvals(config)
+    _print_json({"status": "ok", "path": str(path), "preset": preset, "defaults": config["defaults"]})
+    return 0
+
+
+def cmd_permissions_allowlist_sync_readonly(args: argparse.Namespace) -> int:
+    config = load_exec_approvals()
+    policy, agent_key = _resolve_agent_policy_for_allowlist(config, args.agent)
+    existing = [str(item).strip() for item in policy.get("allowlist", []) if str(item).strip()]
+    scan_tools()
+    readonly_names = [
+        item["name"]
+        for item in list_tools()
+        if item.get("risk") == "read_only" and isinstance(item.get("name"), str) and item.get("name")
+    ]
+    merged = sorted(set(existing + readonly_names))
+    policy["allowlist"] = merged
+    config = normalize_config(config)
+    path = save_exec_approvals(config)
+    _print_json(
+        {
+            "status": "ok",
+            "path": str(path),
+            "agent": agent_key,
+            "added": sorted(set(readonly_names) - set(existing)),
+            "allowlist": merged,
+        }
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="marv", description="CLI for Blackbox Edge Runtime")
     parser.add_argument("--edge-base-url", default=DEFAULT_EDGE_BASE_URL)
@@ -642,6 +781,12 @@ def build_parser() -> argparse.ArgumentParser:
     tools_exec.add_argument("--args", help='JSON object, e.g. \'{"query":"hello"}\'')
     tools_exec.add_argument("--task-id")
     tools_exec.add_argument("--tool-call-id")
+    tools_exec.add_argument(
+        "--prompt-approval",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="When tool execution returns pending_approval, prompt to approve/reject immediately",
+    )
     tools_exec.set_defaults(func=cmd_tools_exec)
 
     approvals = sub.add_parser("approvals", help="Approvals")
@@ -715,6 +860,11 @@ def build_parser() -> argparse.ArgumentParser:
     perm_show.add_argument("--agent")
     perm_show.set_defaults(func=cmd_permissions_show)
 
+    perm_eval = permissions_sub.add_parser("eval", help="Evaluate effective decision for one agent/tool pair")
+    perm_eval.add_argument("--agent", required=True)
+    perm_eval.add_argument("--tool", required=True)
+    perm_eval.set_defaults(func=cmd_permissions_eval)
+
     perm_default = permissions_sub.add_parser("set-default", help="Update default execution policy")
     perm_default.add_argument("--security", choices=sorted(VALID_SECURITY))
     perm_default.add_argument("--ask", choices=sorted(VALID_ASK))
@@ -742,6 +892,17 @@ def build_parser() -> argparse.ArgumentParser:
     perm_allowlist_remove.add_argument("--pattern", required=True)
     perm_allowlist_remove.add_argument("--agent", default=DEFAULT_MAIN_AGENT)
     perm_allowlist_remove.set_defaults(func=cmd_permissions_allowlist_remove)
+    perm_allowlist_sync = perm_allowlist_sub.add_parser(
+        "sync-readonly",
+        help="Add all read_only tools into allowlist for selected agent",
+    )
+    perm_allowlist_sync.add_argument("--agent", default=DEFAULT_MAIN_AGENT)
+    perm_allowlist_sync.set_defaults(func=cmd_permissions_allowlist_sync_readonly)
+
+    perm_preset = permissions_sub.add_parser("preset", help="Apply OpenClaw-like preset policy")
+    perm_preset.add_argument("--name", required=True, choices=sorted(OPENCLAW_PRESETS.keys()))
+    perm_preset.add_argument("--agent", help="Apply preset to one agent; omit to apply to defaults")
+    perm_preset.set_defaults(func=cmd_permissions_preset)
 
     return parser
 
