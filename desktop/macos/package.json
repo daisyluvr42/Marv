@@ -1,0 +1,13 @@
+{
+  "name": "marv-desktop-macos",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "ELECTRON_START_URL=${ELECTRON_START_URL:-http://127.0.0.1:3000} electron .",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^36.2.0"
+  }
+}

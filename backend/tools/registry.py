@@ -69,6 +69,19 @@ def get_tool_function(name: str) -> Callable[..., Any] | None:
     return TOOL_FUNCTIONS.get(name)
 
 
+def register_runtime_tool(
+    *,
+    name: str,
+    risk: str,
+    schema: dict[str, Any],
+    func: Callable[..., Any],
+    version: str = "runtime",
+    enabled: bool = True,
+) -> None:
+    TOOL_REGISTRY[name] = ToolSpec(name=name, risk=risk, schema=schema, version=version, enabled=enabled)
+    TOOL_FUNCTIONS[name] = func
+
+
 def sync_tools_registry() -> None:
     with get_session() as session:
         for tool_data in list_tools():

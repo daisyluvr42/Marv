@@ -1,0 +1,140 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 12 - Step 12.2",
+      "title": "记忆作用方式对齐 OpenClaw（自动提取/自动检索/自动注入）",
+      "status": "done",
+      "acceptance_criteria": [
+        "任务推理前自动检索结构化记忆并注入 system prompt",
+        "记忆检索支持 user/conversation/channel 多作用域合并与去重排序",
+        "显式记忆表达（如 记住...）可自动提取并写入结构化记忆",
+        "补充自动记忆注入与自动提取回归测试"
+      ]
+    },
+    "next_step": {
+      "id": "COMPLETED",
+      "title": "等待实机压力回放",
+      "reason": "记忆闭环已改为自动利用；下一步建议在 Telegram 实流量下调 top_k/min_score"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [
+      "自动提取采用规则引擎，覆盖率受表达方式影响；后续可升级为 LLM 抽取器。",
+      "memory 检索引入额外 embedding 计算，若命中量大可能增加单轮延迟。",
+      "若低相关记忆 score 阈值设置过低，可能引入噪声上下文。"
+    ],
+    "notes": [
+      "memory 由手动 query 改为任务链路自动 query + 注入。",
+      "去重策略由 content 归一化匹配驱动，可避免重复记忆膨胀。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "handoffs/history/20260219_154732_step-Phase-12-Step-12.2.json"
+      ],
+      "modified": [
+        "backend/agent/processor.py",
+        "backend/memory/store.py",
+        "tests/test_api_flows.py",
+        "README.md",
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "uv run marv chat send --message \"记住 我偏好短句回答\" --conversation-id telegram:123:0 --channel telegram --channel-id 123 --user-id 456 --follow",
+        "uv run marv memory query --scope-type user --scope-id 456 --query \"短句回答\" --top-k 5",
+        "uv run marv ops probe --message \"给我建议\" --conversation-id telegram:123:0 --channel telegram --channel-id 123 --user-id 456"
+      ],
+      "test": [
+        "uv run pytest -q"
+      ],
+      "smoke": [
+        "发送显式记忆语句并确认 memory_items 出现新记录",
+        "再次对话时检查 Core 收到额外 memory system message",
+        "观察 PlanEvent 中 memory_hits 字段是否反映检索命中"
+      ]
+    },
+    "api_endpoints_touched": [],
+    "db_tables_touched": [
+      "memory_items",
+      "memory_candidates"
+    ],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "backend_tests",
+        "status": "passed",
+        "output": "uv run pytest -q -> 24 passed"
+      },
+      {
+        "name": "memory_injection_test",
+        "status": "passed",
+        "output": "test_runtime_memory_is_auto_injected_into_system_prompt"
+      },
+      {
+        "name": "memory_extraction_test",
+        "status": "passed",
+        "output": "test_explicit_memory_extraction_persists_without_manual_write"
+      }
+    ],
+    "logs": [
+      "processor 在每次推理前执行跨作用域记忆检索并注入系统上下文。",
+      "memory store 新增去重写入与混合召回排序。"
+    ]
+  },
+  "handoff": {
+    "summary": "记忆系统已从手动调用升级为自动闭环，作用方式向 OpenClaw 靠齐并保持结构化存储优势。",
+    "what_was_done": [
+      "新增跨作用域记忆检索 query_memory_multi（user/conversation/channel）",
+      "新增混合评分（向量+词面+置信度）与内容去重",
+      "processor 自动注入 memory system prompt",
+      "processor 自动提取显式记忆表达并写入 memory",
+      "write/approve 流程加入重复内容去重与置信度更新",
+      "新增两条回归测试覆盖自动注入与自动提取"
+    ],
+    "how_to_verify": [
+      "运行：uv run pytest -q",
+      "运行：uv run marv chat send --message \"记住 我偏好短句回答\" --conversation-id telegram:<chat_id>:0 --channel telegram --channel-id <chat_id> --user-id <user_id> --follow",
+      "运行：uv run marv memory query --scope-type user --scope-id <user_id> --query \"短句回答\" --top-k 5",
+      "运行：uv run marv ops probe --message \"给我建议\" --conversation-id telegram:<chat_id>:0 --channel telegram --channel-id <chat_id> --user-id <user_id>"
+    ],
+    "known_issues": [
+      "规则抽取器暂未覆盖复杂长句和跨句推理。"
+    ],
+    "rollback_plan": [
+      "回退 backend/agent/processor.py、backend/memory/store.py、tests/test_api_flows.py、README.md",
+      "恢复 HANDOFF.JSON",
+      "重新执行 uv run pytest -q"
+    ]
+  }
+}

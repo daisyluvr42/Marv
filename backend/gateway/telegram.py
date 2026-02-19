@@ -8,6 +8,8 @@ from typing import Any
 
 import httpx
 
+from backend.gateway.pairing import parse_pair_command, pairing_required, touch_pairing, verify_pair_code
+
 
 def _parse_bool(value: str | None, default: bool) -> bool:
     if value is None:
@@ -63,6 +65,7 @@ class TelegramSettings:
     owner_user_ids: set[int]
     allowed_chat_ids: set[int]
     drop_pending_updates_on_start: bool
+    require_pairing: bool
 
     @classmethod
     def from_env(cls) -> "TelegramSettings":
@@ -80,6 +83,7 @@ class TelegramSettings:
             owner_user_ids=_parse_int_set(os.getenv("TELEGRAM_OWNER_IDS")),
             allowed_chat_ids=_parse_int_set(os.getenv("TELEGRAM_ALLOWED_CHAT_IDS")),
             drop_pending_updates_on_start=_parse_bool(os.getenv("TELEGRAM_DROP_PENDING_ON_START"), True),
+            require_pairing=pairing_required(),
         )
 
 
@@ -220,6 +224,43 @@ class TelegramGateway:
         if thread_id is not None:
             thread_id = int(thread_id)
 
+        if self.settings.require_pairing:
+            paired = touch_pairing(chat_id=str(chat_id), user_id=str(user_id))
+            if not paired:
+                pair_code = parse_pair_command(text)
+                if pair_code is None:
+                    self._send_message(
+                        tg_client,
+                        chat_id=chat_id,
+                        text="Pairing required. Send /pair <code> first.",
+                        reply_to_message_id=int(message["message_id"]) if "message_id" in message else None,
+                    )
+                    return
+                if not pair_code:
+                    self._send_message(
+                        tg_client,
+                        chat_id=chat_id,
+                        text="Usage: /pair <code>",
+                        reply_to_message_id=int(message["message_id"]) if "message_id" in message else None,
+                    )
+                    return
+                result = verify_pair_code(code=pair_code, chat_id=str(chat_id), user_id=str(user_id))
+                if not result.ok:
+                    self._send_message(
+                        tg_client,
+                        chat_id=chat_id,
+                        text=f"Pairing failed: {result.reason}",
+                        reply_to_message_id=int(message["message_id"]) if "message_id" in message else None,
+                    )
+                    return
+                self._send_message(
+                    tg_client,
+                    chat_id=chat_id,
+                    text="Pairing succeeded. You can talk to the agent now.",
+                    reply_to_message_id=int(message["message_id"]) if "message_id" in message else None,
+                )
+                return
+
         edge_headers = {
             "X-Actor-Id": f"telegram:{user_id}",
             "X-Actor-Role": role,
@@ -292,4 +333,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

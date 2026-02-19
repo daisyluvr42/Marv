@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from typing import Any
 
 import httpx
@@ -315,6 +316,8 @@ def cmd_tools_exec(args: argparse.Namespace) -> int:
         "args": _parse_json_args(args.args),
         "task_id": args.task_id,
         "tool_call_id": args.tool_call_id,
+        "session_id": args.session_id,
+        "execution_mode": args.execution_mode,
     }
     response = _request_json(args, "POST", "/v1/tools:execute", json_body=payload)
     _print_json(response)
@@ -335,12 +338,17 @@ def cmd_approvals_list(args: argparse.Namespace) -> int:
 
 
 def cmd_approvals_approve(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {"actor_id": args.actor_id}
+    if args.grant_scope:
+        payload["grant_scope"] = args.grant_scope
+    if args.grant_ttl_seconds is not None:
+        payload["grant_ttl_seconds"] = args.grant_ttl_seconds
     _print_json(
         _request_json(
             args,
             "POST",
             f"/v1/approvals/{args.approval_id}:approve",
-            json_body={"actor_id": args.actor_id},
+            json_body=payload,
         )
     )
     return 0
@@ -355,6 +363,40 @@ def cmd_approvals_reject(args: argparse.Namespace) -> int:
             json_body={"actor_id": args.actor_id},
         )
     )
+    return 0
+
+
+def cmd_approvals_grants_list(args: argparse.Namespace) -> int:
+    params: dict[str, Any] = {"limit": args.limit}
+    if args.status:
+        params["status"] = args.status
+    if args.actor:
+        params["actor_id"] = args.actor
+    if args.session_id:
+        params["session_id"] = args.session_id
+    _print_json(_request_json(args, "GET", "/v1/system/approvals/grants", params=params))
+    return 0
+
+
+def cmd_approvals_grants_revoke(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/system/approvals/grants/{args.grant_id}:revoke"))
+    return 0
+
+
+def cmd_approvals_policy_show(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/approvals/policy"))
+    return 0
+
+
+def cmd_approvals_policy_set(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {}
+    if args.mode:
+        payload["mode"] = args.mode
+    if args.risky_risks:
+        payload["risky_risks"] = [item.strip() for item in args.risky_risks.split(",") if item.strip()]
+    if not payload:
+        raise SystemExit("no approval policy fields provided")
+    _print_json(_request_json(args, "POST", "/v1/system/approvals/policy", json_body=payload))
     return 0
 
 
@@ -403,6 +445,20 @@ def cmd_config_revisions(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_config_effective(args: argparse.Namespace) -> int:
+    params: dict[str, Any] = {
+        "channel": args.channel,
+    }
+    if args.conversation_id:
+        params["conversation_id"] = args.conversation_id
+    if args.channel_id:
+        params["channel_id"] = args.channel_id
+    if args.user_id:
+        params["user_id"] = args.user_id
+    _print_json(_request_json(args, "GET", "/v1/config/effective", params=params))
+    return 0
+
+
 def cmd_memory_write(args: argparse.Namespace) -> int:
     payload = {
         "scope_type": args.scope_type,
@@ -440,6 +496,294 @@ def cmd_memory_approve(args: argparse.Namespace) -> int:
 
 def cmd_memory_reject(args: argparse.Namespace) -> int:
     _print_json(_request_json(args, "POST", f"/v1/memory/candidates/{args.candidate_id}:reject"))
+    return 0
+
+
+def cmd_memory_items(args: argparse.Namespace) -> int:
+    params: dict[str, Any] = {"limit": args.limit}
+    if args.scope_type:
+        params["scope_type"] = args.scope_type
+    if args.scope_id:
+        params["scope_id"] = args.scope_id
+    if args.kind:
+        params["kind"] = args.kind
+    _print_json(_request_json(args, "GET", "/v1/memory/items", params=params))
+    return 0
+
+
+def cmd_memory_update(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {}
+    if args.content is not None:
+        payload["content"] = args.content
+    if args.kind is not None:
+        payload["kind"] = args.kind
+    if args.confidence is not None:
+        payload["confidence"] = args.confidence
+    if not payload:
+        raise SystemExit("provide at least one of --content/--kind/--confidence")
+    _print_json(_request_json(args, "POST", f"/v1/memory/items/{args.item_id}:update", json_body=payload))
+    return 0
+
+
+def cmd_memory_delete(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/memory/items/{args.item_id}:delete"))
+    return 0
+
+
+def cmd_memory_forget(args: argparse.Namespace) -> int:
+    payload = {
+        "scope_type": args.scope_type,
+        "scope_id": args.scope_id,
+        "query": args.query,
+        "threshold": args.threshold,
+        "max_delete": args.max_delete,
+    }
+    _print_json(_request_json(args, "POST", "/v1/memory/forget", json_body=payload))
+    return 0
+
+
+def cmd_memory_decay(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {
+        "half_life_days": args.half_life_days,
+        "min_confidence": args.min_confidence,
+    }
+    if args.scope_type:
+        payload["scope_type"] = args.scope_type
+    if args.scope_id:
+        payload["scope_id"] = args.scope_id
+    _print_json(_request_json(args, "POST", "/v1/memory/decay", json_body=payload))
+    return 0
+
+
+def cmd_memory_metrics(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/memory/metrics", params={"window_hours": args.window_hours}))
+    return 0
+
+
+def cmd_session_list(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/agent/sessions", params={"limit": args.limit}))
+    return 0
+
+
+def cmd_session_get(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", f"/v1/agent/sessions/{args.conversation_id}"))
+    return 0
+
+
+def cmd_session_archive(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/agent/sessions/{args.conversation_id}:archive"))
+    return 0
+
+
+def cmd_session_spawn(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {"name": args.name}
+    if args.channel is not None:
+        payload["channel"] = args.channel
+    if args.channel_id is not None:
+        payload["channel_id"] = args.channel_id
+    if args.user_id is not None:
+        payload["user_id"] = args.user_id
+    if args.thread_id is not None:
+        payload["thread_id"] = args.thread_id
+    _print_json(_request_json(args, "POST", f"/v1/agent/sessions/{args.conversation_id}:spawn", json_body=payload))
+    return 0
+
+
+def cmd_session_send(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {"message": args.message, "actor_id": args.actor_id}
+    _print_json(
+        _request_json(
+            args,
+            "POST",
+            f"/v1/agent/sessions/{args.conversation_id}:send",
+            json_body=payload,
+            params={"wait": args.wait, "wait_timeout_seconds": args.wait_timeout_seconds},
+        )
+    )
+    return 0
+
+
+def cmd_session_history(args: argparse.Namespace) -> int:
+    _print_json(
+        _request_json(
+            args,
+            "GET",
+            f"/v1/agent/sessions/{args.conversation_id}/history",
+            params={"limit": args.limit},
+        )
+    )
+    return 0
+
+
+def cmd_schedule_list(args: argparse.Namespace) -> int:
+    params: dict[str, Any] = {"limit": args.limit}
+    if args.status:
+        params["status"] = args.status
+    _print_json(_request_json(args, "GET", "/v1/scheduled/tasks", params=params))
+    return 0
+
+
+def cmd_schedule_create(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {
+        "name": args.name,
+        "prompt": args.prompt,
+        "cron": args.cron,
+        "timezone": args.timezone,
+        "channel": args.channel,
+        "status": "active" if args.enabled else "paused",
+    }
+    if args.conversation_id:
+        payload["conversation_id"] = args.conversation_id
+    if args.channel_id:
+        payload["channel_id"] = args.channel_id
+    if args.user_id:
+        payload["user_id"] = args.user_id
+    if args.thread_id:
+        payload["thread_id"] = args.thread_id
+    _print_json(_request_json(args, "POST", "/v1/scheduled/tasks", json_body=payload))
+    return 0
+
+
+def cmd_schedule_pause(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/scheduled/tasks/{args.schedule_id}:pause"))
+    return 0
+
+
+def cmd_schedule_resume(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/scheduled/tasks/{args.schedule_id}:resume"))
+    return 0
+
+
+def cmd_schedule_run(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/scheduled/tasks/{args.schedule_id}:run"))
+    return 0
+
+
+def cmd_schedule_delete(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/scheduled/tasks/{args.schedule_id}:delete"))
+    return 0
+
+
+def cmd_telegram_pair_code_create(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {"ttl_seconds": args.ttl_seconds}
+    if args.chat_id:
+        payload["chat_id"] = args.chat_id
+    if args.user_id:
+        payload["user_id"] = args.user_id
+    _print_json(_request_json(args, "POST", "/v1/system/telegram/pairings/codes", json_body=payload))
+    return 0
+
+
+def cmd_telegram_pairings_list(args: argparse.Namespace) -> int:
+    params: dict[str, Any] = {}
+    if args.chat_id:
+        params["chat_id"] = args.chat_id
+    if args.user_id:
+        params["user_id"] = args.user_id
+    _print_json(_request_json(args, "GET", "/v1/system/telegram/pairings", params=params or None))
+    return 0
+
+
+def cmd_telegram_pairings_codes(args: argparse.Namespace) -> int:
+    params = {"status": args.status} if args.status else None
+    _print_json(_request_json(args, "GET", "/v1/system/telegram/pairings/codes", params=params))
+    return 0
+
+
+def cmd_telegram_pairings_revoke(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", f"/v1/system/telegram/pairings/{args.pairing_id}:revoke"))
+    return 0
+
+
+def cmd_im_channels(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/gateway/im/channels"))
+    return 0
+
+
+def cmd_im_ingest(args: argparse.Namespace) -> int:
+    payload: dict[str, Any]
+    if args.payload_json:
+        payload = _parse_json_args(args.payload_json)
+    else:
+        if not args.message or not args.channel_id or not args.user_id:
+            raise SystemExit("when --payload-json is not provided, --message --channel-id --user-id are required")
+        payload = {
+            "text": args.message,
+            "channel_id": args.channel_id,
+            "user_id": args.user_id,
+        }
+        if args.thread_id:
+            payload["thread_id"] = args.thread_id
+        if args.conversation_id:
+            payload["conversation_id"] = args.conversation_id
+        if args.actor_id_override:
+            payload["actor_id"] = args.actor_id_override
+
+    params: dict[str, Any] = {"wait": args.wait, "wait_timeout_seconds": args.wait_timeout_seconds}
+    _print_json(
+        _request_json(
+            args,
+            "POST",
+            f"/v1/gateway/im/{args.channel}/inbound",
+            json_body=payload,
+            params=params,
+        )
+    )
+    return 0
+
+
+def cmd_skills_list(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/skills"))
+    return 0
+
+
+def cmd_skills_import(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {}
+    if args.source_path:
+        payload["source_path"] = args.source_path
+    if args.source_name:
+        payload["source_name"] = args.source_name
+    if args.git_url:
+        payload["git_url"] = args.git_url
+    if args.git_subdir:
+        payload["git_subdir"] = args.git_subdir
+    if not payload:
+        raise SystemExit("provide --source-path or --git-url")
+    _print_json(_request_json(args, "POST", "/v1/skills/import", json_body=payload))
+    return 0
+
+
+def cmd_skills_sync_upstream(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", "/v1/skills/sync-upstream", json_body={}))
+    return 0
+
+
+def cmd_system_core_providers(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/core/providers"))
+    return 0
+
+
+def cmd_system_ipc_reload(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/ipc-tools"))
+    return 0
+
+
+def cmd_execution_show(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/execution-mode"))
+    return 0
+
+
+def cmd_execution_set(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {}
+    if args.mode:
+        payload["mode"] = args.mode
+    if args.docker_image:
+        payload["docker_image"] = args.docker_image
+    if args.network_enabled is not None:
+        payload["network_enabled"] = args.network_enabled
+    if not payload:
+        raise SystemExit("no execution fields provided")
+    _print_json(_request_json(args, "POST", "/v1/system/execution-mode", json_body=payload))
     return 0
 
 
@@ -493,6 +837,125 @@ def cmd_ops_package_migration(args: argparse.Namespace) -> int:
         }
     )
     return 0
+
+
+def _extract_task_probe_summary(events: list[dict[str, Any]], task_id: str) -> dict[str, Any]:
+    input_ts: int | None = None
+    completion_ts: int | None = None
+    completion_text: str | None = None
+    plan: str | None = None
+    route: str | None = None
+
+    for event in events:
+        if event.get("task_id") != task_id:
+            continue
+        event_type = event.get("type")
+        payload = event.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        if event_type == "InputEvent":
+            ts_value = event.get("ts")
+            if isinstance(ts_value, int):
+                input_ts = ts_value
+        elif event_type == "PlanEvent":
+            plan_value = payload.get("plan")
+            if isinstance(plan_value, str) and plan_value.strip():
+                plan = plan_value.strip()
+        elif event_type == "RouteEvent":
+            route_value = payload.get("route")
+            if isinstance(route_value, str) and route_value.strip():
+                route = route_value.strip()
+        elif event_type == "CompletionEvent":
+            ts_value = event.get("ts")
+            if isinstance(ts_value, int):
+                completion_ts = ts_value
+            text_value = payload.get("response_text")
+            if isinstance(text_value, str) and text_value.strip():
+                completion_text = text_value.strip()
+
+    event_latency_ms = None
+    if input_ts is not None and completion_ts is not None:
+        event_latency_ms = max(0, completion_ts - input_ts)
+
+    return {
+        "input_ts": input_ts,
+        "completion_ts": completion_ts,
+        "event_latency_ms": event_latency_ms,
+        "completion_text": completion_text,
+        "plan": plan,
+        "route": route,
+    }
+
+
+def cmd_ops_probe(args: argparse.Namespace) -> int:
+    payload = {
+        "message": args.message,
+        "conversation_id": args.conversation_id,
+        "channel": args.channel,
+        "channel_id": args.channel_id,
+        "user_id": args.user_id,
+        "thread_id": args.thread_id,
+    }
+    message_response = _request_json(args, "POST", "/v1/agent/messages", json_body=payload)
+    task_id = message_response.get("task_id")
+    conversation_id = message_response.get("conversation_id")
+    if not isinstance(task_id, str) or not task_id:
+        raise SystemExit(f"invalid task_id from edge: {message_response}")
+    if not isinstance(conversation_id, str) or not conversation_id:
+        raise SystemExit(f"invalid conversation_id from edge: {message_response}")
+
+    started_at = time.monotonic()
+    deadline = started_at + args.timeout_seconds
+    last_task_payload: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        status_payload = _request_json(args, "GET", f"/v1/agent/tasks/{task_id}")
+        last_task_payload = status_payload
+        status = status_payload.get("status")
+        if status in {"completed", "failed"}:
+            break
+        time.sleep(args.poll_interval_seconds)
+
+    if not last_task_payload:
+        raise SystemExit(f"task status unavailable: {task_id}")
+    final_status = last_task_payload.get("status")
+    wall_time_ms = int((time.monotonic() - started_at) * 1000)
+    if final_status not in {"completed", "failed"}:
+        raise SystemExit(f"task timeout after {wall_time_ms}ms: task_id={task_id}")
+
+    timeline_payload = _request_json(args, "GET", f"/v1/audit/conversations/{conversation_id}/timeline")
+    timeline_events = timeline_payload.get("events", [])
+    if not isinstance(timeline_events, list):
+        timeline_events = []
+    summary = _extract_task_probe_summary(
+        [event for event in timeline_events if isinstance(event, dict)],
+        task_id=task_id,
+    )
+
+    output: dict[str, Any] = {
+        "task_id": task_id,
+        "conversation_id": conversation_id,
+        "status": final_status,
+        "wall_time_ms": wall_time_ms,
+        "event_latency_ms": summary["event_latency_ms"],
+        "current_stage": last_task_payload.get("current_stage"),
+        "last_error": last_task_payload.get("last_error"),
+        "plan": summary["plan"],
+        "route": summary["route"],
+        "completion_text": summary["completion_text"],
+    }
+
+    if args.include_effective_config:
+        effective_params: dict[str, Any] = {"conversation_id": conversation_id, "channel": args.channel}
+        if args.channel_id:
+            effective_params["channel_id"] = args.channel_id
+        if args.user_id:
+            effective_params["user_id"] = args.user_id
+        effective_payload = _request_json(args, "GET", "/v1/config/effective", params=effective_params)
+        output["channel_scope_id"] = effective_payload.get("channel_scope_id")
+        output["effective_config"] = effective_payload.get("effective_config")
+
+    _print_json(output)
+    return 0 if final_status == "completed" else 2
 
 
 def _update_policy(
@@ -756,6 +1219,12 @@ def cmd_heartbeat_set(args: argparse.Namespace) -> int:
         payload["resume_approved_tools_enabled"] = args.resume_approved_tools_enabled
     if args.emit_events is not None:
         payload["emit_events"] = args.emit_events
+    if args.memory_decay_enabled is not None:
+        payload["memory_decay_enabled"] = args.memory_decay_enabled
+    if args.memory_decay_half_life_days is not None:
+        payload["memory_decay_half_life_days"] = args.memory_decay_half_life_days
+    if args.memory_decay_min_confidence is not None:
+        payload["memory_decay_min_confidence"] = args.memory_decay_min_confidence
     if not payload:
         raise SystemExit("no heartbeat fields provided")
     _print_json(_request_json(args, "POST", "/v1/system/heartbeat/config", json_body=payload))
@@ -811,6 +1280,8 @@ def build_parser() -> argparse.ArgumentParser:
     tools_exec.add_argument("--args", help='JSON object, e.g. \'{"query":"hello"}\'')
     tools_exec.add_argument("--task-id")
     tools_exec.add_argument("--tool-call-id")
+    tools_exec.add_argument("--session-id", help="Conversation/session id for isolated workspace enforcement")
+    tools_exec.add_argument("--execution-mode", choices=["auto", "local", "sandbox"], help="IPC tool execution mode override")
     tools_exec.add_argument(
         "--prompt-approval",
         action=argparse.BooleanOptionalAction,
@@ -826,10 +1297,27 @@ def build_parser() -> argparse.ArgumentParser:
     approvals_list.set_defaults(func=cmd_approvals_list)
     approvals_approve = approvals_sub.add_parser("approve", help="Approve an approval id")
     approvals_approve.add_argument("approval_id")
+    approvals_approve.add_argument("--grant-scope", choices=["one_time", "session", "actor"])
+    approvals_approve.add_argument("--grant-ttl-seconds", type=int)
     approvals_approve.set_defaults(func=cmd_approvals_approve)
     approvals_reject = approvals_sub.add_parser("reject", help="Reject an approval id")
     approvals_reject.add_argument("approval_id")
     approvals_reject.set_defaults(func=cmd_approvals_reject)
+    approvals_grants = approvals_sub.add_parser("grants", help="List approval grants")
+    approvals_grants.add_argument("--status", default="active")
+    approvals_grants.add_argument("--actor")
+    approvals_grants.add_argument("--session-id")
+    approvals_grants.add_argument("--limit", type=int, default=100)
+    approvals_grants.set_defaults(func=cmd_approvals_grants_list)
+    approvals_revoke_grant = approvals_sub.add_parser("revoke-grant", help="Revoke one approval grant")
+    approvals_revoke_grant.add_argument("grant_id")
+    approvals_revoke_grant.set_defaults(func=cmd_approvals_grants_revoke)
+    approvals_policy_show = approvals_sub.add_parser("policy-show", help="Show approval policy mode")
+    approvals_policy_show.set_defaults(func=cmd_approvals_policy_show)
+    approvals_policy_set = approvals_sub.add_parser("policy-set", help="Update approval policy mode")
+    approvals_policy_set.add_argument("--mode", choices=["policy", "all", "risky"])
+    approvals_policy_set.add_argument("--risky-risks", help="Comma separated risk names")
+    approvals_policy_set.set_defaults(func=cmd_approvals_policy_set)
 
     config = sub.add_parser("config", help="Patch config actions")
     config_sub = config.add_subparsers(dest="config_command", required=True)
@@ -848,6 +1336,12 @@ def build_parser() -> argparse.ArgumentParser:
     config_revisions.add_argument("--scope-type")
     config_revisions.add_argument("--scope-id")
     config_revisions.set_defaults(func=cmd_config_revisions)
+    config_effective = config_sub.add_parser("effective", help="Show effective runtime config for one context")
+    config_effective.add_argument("--conversation-id")
+    config_effective.add_argument("--channel", default="web")
+    config_effective.add_argument("--channel-id")
+    config_effective.add_argument("--user-id")
+    config_effective.set_defaults(func=cmd_config_effective)
 
     memory = sub.add_parser("memory", help="Memory actions")
     memory_sub = memory.add_subparsers(dest="memory_command", required=True)
@@ -874,6 +1368,155 @@ def build_parser() -> argparse.ArgumentParser:
     memory_reject = memory_sub.add_parser("reject", help="Reject candidate")
     memory_reject.add_argument("candidate_id")
     memory_reject.set_defaults(func=cmd_memory_reject)
+    memory_items = memory_sub.add_parser("items", help="List memory items")
+    memory_items.add_argument("--scope-type")
+    memory_items.add_argument("--scope-id")
+    memory_items.add_argument("--kind")
+    memory_items.add_argument("--limit", type=int, default=100)
+    memory_items.set_defaults(func=cmd_memory_items)
+    memory_update = memory_sub.add_parser("update", help="Update memory item")
+    memory_update.add_argument("item_id")
+    memory_update.add_argument("--content")
+    memory_update.add_argument("--kind")
+    memory_update.add_argument("--confidence", type=float)
+    memory_update.set_defaults(func=cmd_memory_update)
+    memory_delete = memory_sub.add_parser("delete", help="Delete memory item")
+    memory_delete.add_argument("item_id")
+    memory_delete.set_defaults(func=cmd_memory_delete)
+    memory_forget = memory_sub.add_parser("forget", help="Forget memories by semantic query")
+    memory_forget.add_argument("--scope-type", default="user")
+    memory_forget.add_argument("--scope-id", required=True)
+    memory_forget.add_argument("--query", required=True)
+    memory_forget.add_argument("--threshold", type=float, default=0.75)
+    memory_forget.add_argument("--max-delete", type=int, default=20)
+    memory_forget.set_defaults(func=cmd_memory_forget)
+    memory_decay = memory_sub.add_parser("decay", help="Apply confidence decay to memory items")
+    memory_decay.add_argument("--half-life-days", type=int, default=90)
+    memory_decay.add_argument("--min-confidence", type=float, default=0.2)
+    memory_decay.add_argument("--scope-type")
+    memory_decay.add_argument("--scope-id")
+    memory_decay.set_defaults(func=cmd_memory_decay)
+    memory_metrics = memory_sub.add_parser("metrics", help="Show memory metrics")
+    memory_metrics.add_argument("--window-hours", type=int, default=24)
+    memory_metrics.set_defaults(func=cmd_memory_metrics)
+
+    sessions = sub.add_parser("sessions", help="Session workspace actions")
+    sessions_sub = sessions.add_subparsers(dest="sessions_command", required=True)
+    sessions_list = sessions_sub.add_parser("list", help="List conversation workspaces")
+    sessions_list.add_argument("--limit", type=int, default=100)
+    sessions_list.set_defaults(func=cmd_session_list)
+    sessions_get = sessions_sub.add_parser("get", help="Get one conversation workspace")
+    sessions_get.add_argument("conversation_id")
+    sessions_get.set_defaults(func=cmd_session_get)
+    sessions_archive = sessions_sub.add_parser("archive", help="Archive one conversation workspace")
+    sessions_archive.add_argument("conversation_id")
+    sessions_archive.set_defaults(func=cmd_session_archive)
+    sessions_spawn = sessions_sub.add_parser("spawn", help="Spawn one subagent session from parent conversation")
+    sessions_spawn.add_argument("conversation_id", help="Parent conversation id")
+    sessions_spawn.add_argument("--name", default="worker")
+    sessions_spawn.add_argument("--channel")
+    sessions_spawn.add_argument("--channel-id")
+    sessions_spawn.add_argument("--user-id")
+    sessions_spawn.add_argument("--thread-id")
+    sessions_spawn.set_defaults(func=cmd_session_spawn)
+    sessions_send = sessions_sub.add_parser("send", help="Send message to one existing session")
+    sessions_send.add_argument("conversation_id")
+    sessions_send.add_argument("--message", required=True)
+    sessions_send.add_argument("--wait", action=argparse.BooleanOptionalAction, default=False)
+    sessions_send.add_argument("--wait-timeout-seconds", type=float, default=120.0)
+    sessions_send.set_defaults(func=cmd_session_send)
+    sessions_history = sessions_sub.add_parser("history", help="Read one session conversation history")
+    sessions_history.add_argument("conversation_id")
+    sessions_history.add_argument("--limit", type=int, default=100)
+    sessions_history.set_defaults(func=cmd_session_history)
+
+    schedule = sub.add_parser("schedule", help="Cron scheduled task management")
+    schedule_sub = schedule.add_subparsers(dest="schedule_command", required=True)
+    schedule_list = schedule_sub.add_parser("list", help="List scheduled tasks")
+    schedule_list.add_argument("--status")
+    schedule_list.add_argument("--limit", type=int, default=200)
+    schedule_list.set_defaults(func=cmd_schedule_list)
+    schedule_create = schedule_sub.add_parser("create", help="Create one scheduled task")
+    schedule_create.add_argument("--name", required=True)
+    schedule_create.add_argument("--prompt", required=True)
+    schedule_create.add_argument("--cron", required=True, help='crontab format, e.g. "*/10 * * * *"')
+    schedule_create.add_argument("--timezone", default="UTC")
+    schedule_create.add_argument("--conversation-id")
+    schedule_create.add_argument("--channel", default="web")
+    schedule_create.add_argument("--channel-id")
+    schedule_create.add_argument("--user-id")
+    schedule_create.add_argument("--thread-id")
+    schedule_create.add_argument("--enabled", action=argparse.BooleanOptionalAction, default=True)
+    schedule_create.set_defaults(func=cmd_schedule_create)
+    schedule_pause = schedule_sub.add_parser("pause", help="Pause one scheduled task")
+    schedule_pause.add_argument("schedule_id")
+    schedule_pause.set_defaults(func=cmd_schedule_pause)
+    schedule_resume = schedule_sub.add_parser("resume", help="Resume one scheduled task")
+    schedule_resume.add_argument("schedule_id")
+    schedule_resume.set_defaults(func=cmd_schedule_resume)
+    schedule_run = schedule_sub.add_parser("run", help="Run one scheduled task immediately")
+    schedule_run.add_argument("schedule_id")
+    schedule_run.set_defaults(func=cmd_schedule_run)
+    schedule_delete = schedule_sub.add_parser("delete", help="Delete one scheduled task")
+    schedule_delete.add_argument("schedule_id")
+    schedule_delete.set_defaults(func=cmd_schedule_delete)
+
+    skills = sub.add_parser("skills", help="Skill ecosystem management")
+    skills_sub = skills.add_subparsers(dest="skills_command", required=True)
+    skills_list = skills_sub.add_parser("list", help="List installed skills")
+    skills_list.set_defaults(func=cmd_skills_list)
+    skills_import = skills_sub.add_parser("import", help="Import skills from local directory or git repo")
+    skills_import.add_argument("--source-path")
+    skills_import.add_argument("--source-name")
+    skills_import.add_argument("--git-url")
+    skills_import.add_argument("--git-subdir", default="")
+    skills_import.set_defaults(func=cmd_skills_import)
+    skills_sync = skills_sub.add_parser("sync-upstream", help="Sync skills from OpenClaw and LobsterAI")
+    skills_sync.set_defaults(func=cmd_skills_sync_upstream)
+
+    im = sub.add_parser("im", help="Multi-channel IM ingress")
+    im_sub = im.add_subparsers(dest="im_command", required=True)
+    im_channels = im_sub.add_parser("channels", help="List supported IM channels")
+    im_channels.set_defaults(func=cmd_im_channels)
+    im_ingest = im_sub.add_parser("ingest", help="Ingest one inbound message into runtime")
+    im_ingest.add_argument("--channel", required=True, choices=["telegram", "discord", "slack", "dingtalk", "feishu", "webchat"])
+    im_ingest.add_argument("--message")
+    im_ingest.add_argument("--channel-id")
+    im_ingest.add_argument("--user-id")
+    im_ingest.add_argument("--thread-id")
+    im_ingest.add_argument("--conversation-id")
+    im_ingest.add_argument("--actor-id-override")
+    im_ingest.add_argument("--payload-json", help='Raw JSON payload object (overrides --message/--channel-id/--user-id)')
+    im_ingest.add_argument("--wait", action=argparse.BooleanOptionalAction, default=True)
+    im_ingest.add_argument("--wait-timeout-seconds", type=float, default=120.0)
+    im_ingest.set_defaults(func=cmd_im_ingest)
+
+    telegram = sub.add_parser("telegram", help="Telegram pairing operations")
+    telegram_sub = telegram.add_subparsers(dest="telegram_command", required=True)
+    telegram_pair = telegram_sub.add_parser("pair", help="Manage pairing codes")
+    telegram_pair_sub = telegram_pair.add_subparsers(dest="telegram_pair_command", required=True)
+    telegram_pair_create = telegram_pair_sub.add_parser("create-code", help="Create a pairing code")
+    telegram_pair_create.add_argument("--chat-id")
+    telegram_pair_create.add_argument("--user-id")
+    telegram_pair_create.add_argument("--ttl-seconds", type=int, default=900)
+    telegram_pair_create.set_defaults(func=cmd_telegram_pair_code_create)
+    telegram_pair_codes = telegram_pair_sub.add_parser("codes", help="List pairing codes")
+    telegram_pair_codes.add_argument("--status")
+    telegram_pair_codes.set_defaults(func=cmd_telegram_pairings_codes)
+    telegram_pair_list = telegram_pair_sub.add_parser("list", help="List active pairings")
+    telegram_pair_list.add_argument("--chat-id")
+    telegram_pair_list.add_argument("--user-id")
+    telegram_pair_list.set_defaults(func=cmd_telegram_pairings_list)
+    telegram_pair_revoke = telegram_pair_sub.add_parser("revoke", help="Revoke one pairing")
+    telegram_pair_revoke.add_argument("pairing_id")
+    telegram_pair_revoke.set_defaults(func=cmd_telegram_pairings_revoke)
+
+    system = sub.add_parser("system", help="System diagnostics")
+    system_sub = system.add_subparsers(dest="system_command", required=True)
+    system_core = system_sub.add_parser("core-providers", help="Show provider fallback matrix")
+    system_core.set_defaults(func=cmd_system_core_providers)
+    system_ipc = system_sub.add_parser("ipc-reload", help="Reload IPC tools from config")
+    system_ipc.set_defaults(func=cmd_system_ipc_reload)
 
     ops = sub.add_parser("ops", help="Local operations")
     ops_sub = ops.add_subparsers(dest="ops_command", required=True)
@@ -882,6 +1525,17 @@ def build_parser() -> argparse.ArgumentParser:
     ops_pack.set_defaults(func=cmd_ops_package_migration)
     ops_stop = ops_sub.add_parser("stop-services", help="Stop local core/edge/telegram services")
     ops_stop.set_defaults(func=cmd_ops_stop_services)
+    ops_probe = ops_sub.add_parser("probe", help="Run one end-to-end runtime probe and print latency summary")
+    ops_probe.add_argument("--message", required=True)
+    ops_probe.add_argument("--conversation-id")
+    ops_probe.add_argument("--channel", default="web")
+    ops_probe.add_argument("--channel-id")
+    ops_probe.add_argument("--user-id")
+    ops_probe.add_argument("--thread-id")
+    ops_probe.add_argument("--timeout-seconds", type=float, default=60.0)
+    ops_probe.add_argument("--poll-interval-seconds", type=float, default=0.5)
+    ops_probe.add_argument("--include-effective-config", action=argparse.BooleanOptionalAction, default=True)
+    ops_probe.set_defaults(func=cmd_ops_probe)
 
     permissions = sub.add_parser("permissions", help="OpenClaw-like execution permission policies")
     permissions_sub = permissions.add_subparsers(dest="permissions_command", required=True)
@@ -946,7 +1600,20 @@ def build_parser() -> argparse.ArgumentParser:
     heartbeat_set.add_argument("--core-health-enabled", action=argparse.BooleanOptionalAction, default=None)
     heartbeat_set.add_argument("--resume-approved-tools-enabled", action=argparse.BooleanOptionalAction, default=None)
     heartbeat_set.add_argument("--emit-events", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.add_argument("--memory-decay-enabled", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.add_argument("--memory-decay-half-life-days", type=int)
+    heartbeat_set.add_argument("--memory-decay-min-confidence", type=float)
     heartbeat_set.set_defaults(func=cmd_heartbeat_set)
+
+    execution = sub.add_parser("execution", help="Execution mode / sandbox runtime configuration")
+    execution_sub = execution.add_subparsers(dest="execution_command", required=True)
+    execution_show = execution_sub.add_parser("show", help="Show current execution mode config")
+    execution_show.set_defaults(func=cmd_execution_show)
+    execution_set = execution_sub.add_parser("set", help="Update execution mode config")
+    execution_set.add_argument("--mode", choices=["auto", "local", "sandbox"])
+    execution_set.add_argument("--docker-image")
+    execution_set.add_argument("--network-enabled", action=argparse.BooleanOptionalAction, default=None)
+    execution_set.set_defaults(func=cmd_execution_set)
 
     return parser
 

@@ -1,0 +1,821 @@
+{
+  "source_root": "/private/tmp/marv_benchmark/lobsterai_1771494517/SKILLs",
+  "source_key": "lobsterai",
+  "imported_count": 16,
+  "blocked_count": 0,
+  "imported": [
+    {
+      "skill_path": "canvas-design",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/canvas-design",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Lora-Italic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/InstrumentSerif-Italic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/WorkSans-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/CrimsonPro-Italic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/RedHatMono-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Outfit-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Boldonse-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/RedHatMono-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Outfit-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/JetBrainsMono-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/IBMPlexSerif-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/YoungSerif-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Italiana-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Lora-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/IBMPlexSerif-BoldItalic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/JetBrainsMono-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/CrimsonPro-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/InstrumentSans-Italic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Jura-Light.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/IBMPlexMono-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/WorkSans-BoldItalic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Silkscreen-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/PixelifySans-Medium.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/PoiretOne-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/BricolageGrotesque-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/IBMPlexMono-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/CrimsonPro-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/InstrumentSerif-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/InstrumentSans-BoldItalic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/IBMPlexSerif-Italic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/DMMono-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/NationalPark-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/InstrumentSans-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/LibreBaskerville-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/EricaOne-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/NothingYouCouldDo-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/WorkSans-Italic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Gloock-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/SmoochSans-Medium.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Tektur-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/GeistMono-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Lora-BoldItalic.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/BricolageGrotesque-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/NationalPark-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/BigShoulders-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/GeistMono-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Lora-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/ArsenalSC-Regular.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Tektur-Medium.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/Jura-Medium.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/InstrumentSans-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/BigShoulders-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/IBMPlexSerif-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        },
+        {
+          "severity": "warning",
+          "path": "canvas-fonts/WorkSans-Bold.ttf",
+          "reason": "unclassified extension: .ttf"
+        }
+      ]
+    },
+    {
+      "skill_path": "create-plan",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/create-plan",
+      "issues": []
+    },
+    {
+      "skill_path": "develop-web-game",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/develop-web-game",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "assets/game.png",
+          "reason": "unclassified extension: .png"
+        },
+        {
+          "severity": "warning",
+          "path": "assets/game-small.svg",
+          "reason": "unclassified extension: .svg"
+        }
+      ]
+    },
+    {
+      "skill_path": "docx",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/docx",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-sdtdatahash-2020.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-2012.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-2010.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-cid-2016.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-symex-2015.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-cex-2018.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-2018.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/mce/mc.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/pml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-chart.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/sml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/wml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-picture.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-main.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-main.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/xml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-math.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-coreProperties.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-relationships.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-contentTypes.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-digSig.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "scripts/templates/comments.xml",
+          "reason": "unclassified extension: .xml"
+        },
+        {
+          "severity": "warning",
+          "path": "scripts/templates/commentsExtensible.xml",
+          "reason": "unclassified extension: .xml"
+        },
+        {
+          "severity": "warning",
+          "path": "scripts/templates/commentsExtended.xml",
+          "reason": "unclassified extension: .xml"
+        },
+        {
+          "severity": "warning",
+          "path": "scripts/templates/commentsIds.xml",
+          "reason": "unclassified extension: .xml"
+        },
+        {
+          "severity": "warning",
+          "path": "scripts/templates/people.xml",
+          "reason": "unclassified extension: .xml"
+        }
+      ]
+    },
+    {
+      "skill_path": "frontend-design",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/frontend-design",
+      "issues": []
+    },
+    {
+      "skill_path": "imap-smtp-email",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/imap-smtp-email",
+      "issues": []
+    },
+    {
+      "skill_path": "local-tools",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/local-tools",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "scripts/calendar.ps1",
+          "reason": "unclassified extension: .ps1"
+        }
+      ]
+    },
+    {
+      "skill_path": "pdf",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/pdf",
+      "issues": []
+    },
+    {
+      "skill_path": "playwright",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/playwright",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "assets/playwright-small.svg",
+          "reason": "unclassified extension: .svg"
+        },
+        {
+          "severity": "warning",
+          "path": "assets/playwright.png",
+          "reason": "unclassified extension: .png"
+        }
+      ]
+    },
+    {
+      "skill_path": "pptx",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/pptx",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-sdtdatahash-2020.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-2012.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-2010.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-cid-2016.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-symex-2015.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-cex-2018.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/microsoft/wml-2018.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/mce/mc.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/pml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-chart.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/sml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/wml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-picture.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-main.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/vml-main.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/xml.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-math.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-coreProperties.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-relationships.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-contentTypes.xsd",
+          "reason": "unclassified extension: .xsd"
+        },
+        {
+          "severity": "warning",
+          "path": "ooxml/schemas/ecma/fouth-edition/opc-digSig.xsd",
+          "reason": "unclassified extension: .xsd"
+        }
+      ]
+    },
+    {
+      "skill_path": "remotion",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/remotion",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "rules/assets/text-animations-typewriter.tsx",
+          "reason": "unclassified extension: .tsx"
+        },
+        {
+          "severity": "warning",
+          "path": "rules/assets/text-animations-word-highlight.tsx",
+          "reason": "unclassified extension: .tsx"
+        },
+        {
+          "severity": "warning",
+          "path": "rules/assets/charts-bar-chart.tsx",
+          "reason": "unclassified extension: .tsx"
+        }
+      ]
+    },
+    {
+      "skill_path": "scheduled-task",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/scheduled-task",
+      "issues": []
+    },
+    {
+      "skill_path": "skill-creator",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/skill-creator",
+      "issues": []
+    },
+    {
+      "skill_path": "weather",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/weather",
+      "issues": []
+    },
+    {
+      "skill_path": "web-search",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/web-search",
+      "issues": []
+    },
+    {
+      "skill_path": "xlsx",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/lobsterai/xlsx",
+      "issues": []
+    }
+  ],
+  "blocked": []
+}

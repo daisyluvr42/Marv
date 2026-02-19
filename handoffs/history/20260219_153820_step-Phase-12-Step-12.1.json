@@ -1,0 +1,149 @@
+{
+  "project": {
+    "name": "blackbox-agent-runtime",
+    "version": "0.1.0",
+    "docs_source_of_truth": [
+      "PRD.md",
+      "APP_FLOW.md",
+      "TECH_STACK.md",
+      "FRONTEND_GUIDELINES.md",
+      "BACKEND_STRUCTURE.md",
+      "IMPLEMENTATION_PLAN.md",
+      "SKILL.md"
+    ]
+  },
+  "execution": {
+    "mode": "autopilot",
+    "current_step": {
+      "id": "Phase 12 - Step 12.1",
+      "title": "实机联调与参数调优工具链",
+      "status": "done",
+      "acceptance_criteria": [
+        "新增运行态有效配置查询接口，支持 conversation/channel/user 联合解析",
+        "CLI 新增单次探针命令，可输出端到端耗时与关键事件摘要",
+        "提供实机检查脚本与批量调优脚本，支持结果落盘回放",
+        "补充文档与回归测试覆盖联调关键链路"
+      ]
+    },
+    "next_step": {
+      "id": "COMPLETED",
+      "title": "等待 Telegram 实机回放与参数收敛",
+      "reason": "联调/调优工具链已就位，下一步在真实聊天流量下迭代 heartbeat 与 persona 参数"
+    },
+    "constraints": {
+      "tech_stack_locked": true,
+      "no_editable_bootstrap_files": true,
+      "event_sourcing_required": true,
+      "atomic_lane_required": true
+    }
+  },
+  "state": {
+    "blockers": [],
+    "risks": [
+      "当前 core mock backend 主要 echo 用户输入，persona 风格变化在回复文本上的可见性取决于后端是否遵循 system 消息。",
+      "批量调优脚本默认会向指定 channel scope 提交 patch，建议先在测试 chat_id 执行。",
+      "实机检查脚本依赖 jq 和有效 TELEGRAM_BOT_TOKEN。"
+    ],
+    "notes": [
+      "新增 /v1/config/effective 用于直接观察运行态叠加后的 effective_config。",
+      "新增 marv ops probe 统一输出 wall_time_ms/event_latency_ms/plan/route/completion_text。"
+    ]
+  },
+  "artifacts": {
+    "changed_files": {
+      "added": [
+        "docs/LIVE_TUNING.md",
+        "scripts/live_tuning.sh",
+        "scripts/telegram_live_check.sh",
+        "handoffs/history/20260219_153820_step-Phase-12-Step-12.1.json"
+      ],
+      "modified": [
+        "README.md",
+        "backend/agent/api.py",
+        "backend/cli.py",
+        "docs/TELEGRAM_SETUP.md",
+        "tests/test_api_flows.py",
+        "HANDOFF.JSON"
+      ],
+      "deleted": []
+    },
+    "commands": {
+      "setup": [
+        "uv sync"
+      ],
+      "run": [
+        "uv run marv config effective --channel telegram --channel-id 123456 --user-id 7890",
+        "uv run marv ops probe --message \"联调探针\" --conversation-id telegram:123456:0 --channel telegram --channel-id 123456 --user-id 7890",
+        "bash scripts/telegram_live_check.sh | jq",
+        "TUNE_CHANNEL_ID=123456 TUNE_USER_ID=7890 TUNE_RUNS=5 bash scripts/live_tuning.sh"
+      ],
+      "test": [
+        "uv run pytest -q"
+      ],
+      "smoke": [
+        "调用 /v1/config/effective 验证 channel/user/conversation 层叠加结果与预期一致",
+        "执行 marv ops probe 并确认输出含 event_latency_ms 与 completion_text",
+        "执行 telegram_live_check.sh，确认 Bot API 连通与 telegram 进程状态",
+        "执行 live_tuning.sh 生成 logs/live_tuning_*.jsonl 并检查平均耗时输出"
+      ]
+    },
+    "api_endpoints_touched": [
+      "GET /v1/config/effective"
+    ],
+    "db_tables_touched": [],
+    "events_emitted": []
+  },
+  "verification": {
+    "status": "passed",
+    "results": [
+      {
+        "name": "backend_tests",
+        "status": "passed",
+        "output": "uv run pytest -q -> 22 passed"
+      },
+      {
+        "name": "cli_surface",
+        "status": "passed",
+        "output": "marv config 新增 effective，marv ops 新增 probe，help 输出正常"
+      },
+      {
+        "name": "script_syntax",
+        "status": "passed",
+        "output": "bash -n scripts/live_tuning.sh && bash -n scripts/telegram_live_check.sh"
+      }
+    ],
+    "logs": [
+      "新增 runtime effective config 观测面，便于定位 persona 分层叠加是否命中。",
+      "新增单次与批量探针流程，可量化调参前后耗时变化。"
+    ]
+  },
+  "handoff": {
+    "summary": "已交付 Telegram 实机联调与参数调优所需的观测接口、CLI 探针和批量脚本。",
+    "what_was_done": [
+      "新增 API: GET /v1/config/effective",
+      "新增 CLI: marv config effective",
+      "新增 CLI: marv ops probe（自动等待任务完成并汇总关键指标）",
+      "新增脚本: scripts/telegram_live_check.sh",
+      "新增脚本: scripts/live_tuning.sh（批量探针 + JSONL 结果）",
+      "新增文档: docs/LIVE_TUNING.md，并更新 README 与 Telegram setup 入口",
+      "新增测试: test_config_effective_runtime_endpoint_layered_resolution"
+    ],
+    "how_to_verify": [
+      "运行：uv run pytest -q",
+      "运行：uv run marv config effective --channel telegram --channel-id <chat_id> --user-id <telegram_user_id>",
+      "运行：uv run marv ops probe --message \"联调探针\" --conversation-id telegram:<chat_id>:0 --channel telegram --channel-id <chat_id> --user-id <telegram_user_id>",
+      "运行：bash scripts/telegram_live_check.sh | jq",
+      "运行：TUNE_CHANNEL_ID=<chat_id> TUNE_USER_ID=<telegram_user_id> TUNE_RUNS=5 bash scripts/live_tuning.sh"
+    ],
+    "known_issues": [
+      "若未安装 jq，两个联调脚本会提前退出。",
+      "若 Telegram 未出现真实用户入站消息，getUpdates latest 可能为空。"
+    ],
+    "rollback_plan": [
+      "回退 backend/agent/api.py、backend/cli.py、tests/test_api_flows.py",
+      "移除 docs/LIVE_TUNING.md、scripts/live_tuning.sh、scripts/telegram_live_check.sh",
+      "回退 README.md、docs/TELEGRAM_SETUP.md、HANDOFF.JSON",
+      "重新执行 uv run pytest -q"
+    ]
+  }
+}

@@ -14,9 +14,18 @@ data/
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+desktop/macos/node_modules/
 
 # macOS
 .DS_Store
 
 # Local workspace metadata
 .obsidian/
+
+# Project bootstrap docs (keep local, do not track)
+/APP_FLOW.md
+/BACKEND_STRUCTURE.md
+/FRONTEND_GUIDELINES.md
+/IMPLEMENTATION_PLAN.md
+/PRD.md
+/TECH_STACK.md

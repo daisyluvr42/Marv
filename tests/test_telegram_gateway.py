@@ -43,6 +43,7 @@ def test_split_text_respects_chunk_size() -> None:
         owner_user_ids=set(),
         allowed_chat_ids=set(),
         drop_pending_updates_on_start=True,
+        require_pairing=False,
     )
     gateway = TelegramGateway(settings=settings)
     text = "x" * 8500
@@ -50,4 +51,3 @@ def test_split_text_respects_chunk_size() -> None:
     assert len(chunks) == 3
     assert sum(len(item) for item in chunks) == len(text)
     assert all(len(item) <= 3900 for item in chunks)
-

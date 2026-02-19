@@ -15,6 +15,7 @@ from backend.approvals.service import list_approvals
 from backend.core_client.openai_compat import get_core_client
 from backend.ledger.events import HeartbeatEvent
 from backend.ledger.store import append_event
+from backend.memory.store import apply_memory_confidence_decay
 from backend.storage.db import get_session
 from backend.storage.models import ToolCall
 from backend.tools.runner import execute_existing_tool_call
@@ -42,6 +43,9 @@ def _default_config_from_env() -> dict[str, Any]:
             "core_health_enabled": _env_bool("HEARTBEAT_CORE_HEALTH_ENABLED", True),
             "resume_approved_tools_enabled": _env_bool("HEARTBEAT_RESUME_APPROVED_TOOLS_ENABLED", True),
             "emit_events": _env_bool("HEARTBEAT_EMIT_EVENTS", True),
+            "memory_decay_enabled": _env_bool("HEARTBEAT_MEMORY_DECAY_ENABLED", False),
+            "memory_decay_half_life_days": int(os.getenv("HEARTBEAT_MEMORY_DECAY_HALF_LIFE_DAYS", "90")),
+            "memory_decay_min_confidence": float(os.getenv("HEARTBEAT_MEMORY_DECAY_MIN_CONFIDENCE", "0.2")),
         }
     )
 
@@ -55,6 +59,9 @@ def normalize_heartbeat_config(raw: dict[str, Any] | None) -> dict[str, Any]:
         "core_health_enabled": True,
         "resume_approved_tools_enabled": True,
         "emit_events": True,
+        "memory_decay_enabled": False,
+        "memory_decay_half_life_days": 90,
+        "memory_decay_min_confidence": 0.2,
     }
     if not isinstance(raw, dict):
         return defaults
@@ -83,6 +90,18 @@ def normalize_heartbeat_config(raw: dict[str, Any] | None) -> dict[str, Any]:
         normalized["resume_approved_tools_enabled"] = raw["resume_approved_tools_enabled"]
     if isinstance(raw.get("emit_events"), bool):
         normalized["emit_events"] = raw["emit_events"]
+    if isinstance(raw.get("memory_decay_enabled"), bool):
+        normalized["memory_decay_enabled"] = raw["memory_decay_enabled"]
+    try:
+        half_life_days = int(raw.get("memory_decay_half_life_days", normalized["memory_decay_half_life_days"]))
+    except (TypeError, ValueError):
+        half_life_days = normalized["memory_decay_half_life_days"]
+    normalized["memory_decay_half_life_days"] = max(1, min(3650, half_life_days))
+    try:
+        min_confidence = float(raw.get("memory_decay_min_confidence", normalized["memory_decay_min_confidence"]))
+    except (TypeError, ValueError):
+        min_confidence = normalized["memory_decay_min_confidence"]
+    normalized["memory_decay_min_confidence"] = max(0.0, min(1.0, min_confidence))
     return normalized
 
 
@@ -195,12 +214,18 @@ class HeartbeatRuntime:
         payload: dict[str, Any] = {
             "core": None,
             "resume_approved_tools": None,
+            "memory_decay": None,
         }
 
         if self._config.get("core_health_enabled", True):
             payload["core"] = await self._check_core_health()
         if self._config.get("resume_approved_tools_enabled", True):
             payload["resume_approved_tools"] = self._resume_approved_tool_calls()
+        if self._config.get("memory_decay_enabled", False):
+            payload["memory_decay"] = apply_memory_confidence_decay(
+                half_life_days=int(self._config.get("memory_decay_half_life_days", 90)),
+                min_confidence=float(self._config.get("memory_decay_min_confidence", 0.2)),
+            )
 
         self._last_run_ts = now_ts()
         self._last_payload = payload
@@ -276,4 +301,3 @@ class HeartbeatRuntime:
 
 
 heartbeat_runtime = HeartbeatRuntime()
-

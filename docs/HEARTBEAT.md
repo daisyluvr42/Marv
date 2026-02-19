@@ -1,6 +1,6 @@
 # Heartbeat Scheduler (APScheduler / Cron)
 
-系统已改为 OpenClaw 风格的周期心跳任务，由 APScheduler 驱动。
+系统已改为 Marv 风格的周期心跳任务，由 APScheduler 驱动。
 
 ## 初始化机制
 - 首次启动 Edge 时，若不存在心跳配置文件，会从环境变量生成默认配置：
@@ -18,6 +18,9 @@
 - `HEARTBEAT_CORE_HEALTH_ENABLED`
 - `HEARTBEAT_RESUME_APPROVED_TOOLS_ENABLED`
 - `HEARTBEAT_EMIT_EVENTS`
+- `HEARTBEAT_MEMORY_DECAY_ENABLED`
+- `HEARTBEAT_MEMORY_DECAY_HALF_LIFE_DAYS`
+- `HEARTBEAT_MEMORY_DECAY_MIN_CONFIDENCE`
 
 ## 运行后修改（热更新）
 ```bash
@@ -25,6 +28,7 @@ uv run marv heartbeat show
 uv run marv heartbeat set --mode interval --interval-seconds 30
 uv run marv heartbeat set --mode cron --cron "*/2 * * * *"
 uv run marv heartbeat set --no-emit-events
+uv run marv heartbeat set --memory-decay-enabled --memory-decay-half-life-days 60 --memory-decay-min-confidence 0.25
 ```
 
 `heartbeat set` 会写入配置文件并立即重载调度器。

@@ -1,0 +1,275 @@
+{
+  "source_root": "/private/tmp/marv_benchmark/openclaw_1771494517/skills",
+  "source_key": "openclaw",
+  "imported_count": 52,
+  "blocked_count": 0,
+  "imported": [
+    {
+      "skill_path": "1password",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/1password",
+      "issues": []
+    },
+    {
+      "skill_path": "apple-notes",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/apple-notes",
+      "issues": []
+    },
+    {
+      "skill_path": "apple-reminders",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/apple-reminders",
+      "issues": []
+    },
+    {
+      "skill_path": "bear-notes",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/bear-notes",
+      "issues": []
+    },
+    {
+      "skill_path": "blogwatcher",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/blogwatcher",
+      "issues": []
+    },
+    {
+      "skill_path": "blucli",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/blucli",
+      "issues": []
+    },
+    {
+      "skill_path": "bluebubbles",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/bluebubbles",
+      "issues": []
+    },
+    {
+      "skill_path": "camsnap",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/camsnap",
+      "issues": []
+    },
+    {
+      "skill_path": "canvas",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/canvas",
+      "issues": []
+    },
+    {
+      "skill_path": "clawhub",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/clawhub",
+      "issues": []
+    },
+    {
+      "skill_path": "coding-agent",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/coding-agent",
+      "issues": []
+    },
+    {
+      "skill_path": "discord",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/discord",
+      "issues": []
+    },
+    {
+      "skill_path": "eightctl",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/eightctl",
+      "issues": []
+    },
+    {
+      "skill_path": "food-order",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/food-order",
+      "issues": []
+    },
+    {
+      "skill_path": "gemini",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/gemini",
+      "issues": []
+    },
+    {
+      "skill_path": "gh-issues",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/gh-issues",
+      "issues": []
+    },
+    {
+      "skill_path": "gifgrep",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/gifgrep",
+      "issues": []
+    },
+    {
+      "skill_path": "github",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/github",
+      "issues": []
+    },
+    {
+      "skill_path": "gog",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/gog",
+      "issues": []
+    },
+    {
+      "skill_path": "goplaces",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/goplaces",
+      "issues": []
+    },
+    {
+      "skill_path": "healthcheck",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/healthcheck",
+      "issues": []
+    },
+    {
+      "skill_path": "himalaya",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/himalaya",
+      "issues": []
+    },
+    {
+      "skill_path": "imsg",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/imsg",
+      "issues": []
+    },
+    {
+      "skill_path": "mcporter",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/mcporter",
+      "issues": []
+    },
+    {
+      "skill_path": "model-usage",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/model-usage",
+      "issues": []
+    },
+    {
+      "skill_path": "nano-banana-pro",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/nano-banana-pro",
+      "issues": []
+    },
+    {
+      "skill_path": "nano-pdf",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/nano-pdf",
+      "issues": []
+    },
+    {
+      "skill_path": "notion",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/notion",
+      "issues": []
+    },
+    {
+      "skill_path": "obsidian",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/obsidian",
+      "issues": []
+    },
+    {
+      "skill_path": "openai-image-gen",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/openai-image-gen",
+      "issues": []
+    },
+    {
+      "skill_path": "openai-whisper",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/openai-whisper",
+      "issues": []
+    },
+    {
+      "skill_path": "openai-whisper-api",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/openai-whisper-api",
+      "issues": []
+    },
+    {
+      "skill_path": "openhue",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/openhue",
+      "issues": []
+    },
+    {
+      "skill_path": "oracle",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/oracle",
+      "issues": []
+    },
+    {
+      "skill_path": "ordercli",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/ordercli",
+      "issues": []
+    },
+    {
+      "skill_path": "peekaboo",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/peekaboo",
+      "issues": []
+    },
+    {
+      "skill_path": "sag",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/sag",
+      "issues": []
+    },
+    {
+      "skill_path": "session-logs",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/session-logs",
+      "issues": []
+    },
+    {
+      "skill_path": "sherpa-onnx-tts",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/sherpa-onnx-tts",
+      "issues": [
+        {
+          "severity": "warning",
+          "path": "bin/sherpa-onnx-tts",
+          "reason": "unclassified extension: [none]"
+        }
+      ]
+    },
+    {
+      "skill_path": "skill-creator",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/skill-creator",
+      "issues": []
+    },
+    {
+      "skill_path": "slack",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/slack",
+      "issues": []
+    },
+    {
+      "skill_path": "songsee",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/songsee",
+      "issues": []
+    },
+    {
+      "skill_path": "sonoscli",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/sonoscli",
+      "issues": []
+    },
+    {
+      "skill_path": "spotify-player",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/spotify-player",
+      "issues": []
+    },
+    {
+      "skill_path": "summarize",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/summarize",
+      "issues": []
+    },
+    {
+      "skill_path": "things-mac",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/things-mac",
+      "issues": []
+    },
+    {
+      "skill_path": "tmux",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/tmux",
+      "issues": []
+    },
+    {
+      "skill_path": "trello",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/trello",
+      "issues": []
+    },
+    {
+      "skill_path": "video-frames",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/video-frames",
+      "issues": []
+    },
+    {
+      "skill_path": "voice-call",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/voice-call",
+      "issues": []
+    },
+    {
+      "skill_path": "wacli",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/wacli",
+      "issues": []
+    },
+    {
+      "skill_path": "weather",
+      "destination": "/Users/daisyluvr/Documents/Marv/skill/modules/openclaw/weather",
+      "issues": []
+    }
+  ],
+  "blocked": []
+}

@@ -15,6 +15,7 @@ class Settings:
     core_base_url: str
     request_timeout_seconds: float
     max_retries: int
+    core_provider_matrix_json: str
 
 
 @lru_cache(maxsize=1)
@@ -24,6 +25,7 @@ def get_settings() -> Settings:
     core_base_url = os.getenv("CORE_BASE_URL", "http://localhost:9000").rstrip("/")
     request_timeout_seconds = float(os.getenv("CORE_REQUEST_TIMEOUT_SECONDS", "5"))
     max_retries = int(os.getenv("CORE_MAX_RETRIES", "1"))
+    core_provider_matrix_json = os.getenv("CORE_PROVIDER_MATRIX_JSON", "").strip()
 
     return Settings(
         data_dir=data_dir,
@@ -31,4 +33,5 @@ def get_settings() -> Settings:
         core_base_url=core_base_url,
         request_timeout_seconds=request_timeout_seconds,
         max_retries=max_retries,
+        core_provider_matrix_json=core_provider_matrix_json,
     )
