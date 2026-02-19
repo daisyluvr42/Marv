@@ -42,6 +42,11 @@ cd frontend && npm run build
 EDGE_BASE_URL=http://127.0.0.1:8000 bash scripts/smoke_test.sh
 ```
 
+## MacBook Pro M1 Deployment
+- 部署文档：`docs/DEPLOY_MACBOOK_PRO_M1.md`
+- 自举脚本：`scripts/bootstrap_mbp_m1.sh`
+- 后端栈启动/停止：`scripts/start_stack.sh` / `scripts/stop_stack.sh`
+
 ## CI
 GitHub Actions: `.github/workflows/ci.yml`
 - backend: `uv sync` + `uv run pytest -q`
