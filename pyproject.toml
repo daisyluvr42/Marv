@@ -24,6 +24,7 @@ dependencies = [
 
 [project.scripts]
 marv = "backend.cli:main"
+marv-telegram = "backend.gateway.telegram:main"
 
 [build-system]
 requires = ["setuptools>=68"]

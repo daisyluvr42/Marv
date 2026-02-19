@@ -19,8 +19,12 @@ bash scripts/bootstrap_mbp_m1.sh
 ## 3. 启动后端栈（Core + Edge）
 ```bash
 cd $HOME/Marv
+cp .env.example .env
+# 编辑 .env，填入 TELEGRAM_BOT_TOKEN（如需 Telegram）
 bash scripts/start_stack.sh
 ```
+
+如果 `.env` 中包含 `TELEGRAM_BOT_TOKEN`，`start_stack.sh` 会自动启动 Telegram 适配器（`marv-telegram`），日志位于 `logs/telegram.log`。
 
 前端开发模式：
 ```bash

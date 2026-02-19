@@ -8,6 +8,7 @@ __pycache__/
 # Runtime data
 data/
 *.log
+.env
 
 # Node / Next.js
 frontend/node_modules/

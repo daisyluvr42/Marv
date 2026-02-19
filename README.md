@@ -72,6 +72,29 @@ uv run marv memory approve <candidate_id>
 uv run marv memory query --scope-id u1 --query "简洁回答"
 ```
 
+## Telegram Adapter (MVP)
+通过 Telegram Bot 长轮询把消息转发到 Edge API，再将回复发回聊天。
+
+- 详细配置：`docs/TELEGRAM_SETUP.md`
+
+```bash
+cd /path/to/Marv
+cp .env.example .env
+# 编辑 .env，至少配置 TELEGRAM_BOT_TOKEN
+```
+
+单独启动 Telegram 适配器：
+```bash
+EDGE_BASE_URL=http://127.0.0.1:8000 TELEGRAM_BOT_TOKEN=xxx uv run marv-telegram
+```
+
+随栈一键启动（推荐）：
+```bash
+cd /path/to/Marv
+bash scripts/start_stack.sh
+# 若 .env 内存在 TELEGRAM_BOT_TOKEN，将自动拉起 telegram 进程
+```
+
 ## MacBook Pro M1 Deployment
 - 部署文档：`docs/DEPLOY_MACBOOK_PRO_M1.md`
 - 自举脚本：`scripts/bootstrap_mbp_m1.sh`
@@ -90,4 +113,5 @@ GitHub Actions: `.github/workflows/ci.yml`
 - Approvals: `backend/approvals/`
 - Patch config: `backend/patch/`
 - Memory: `backend/memory/`
+- Telegram gateway: `backend/gateway/telegram.py`
 - Console: `frontend/app/`
