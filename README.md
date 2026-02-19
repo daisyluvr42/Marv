@@ -95,6 +95,8 @@ uv run marv permissions eval --agent telegram:123456 --tool mock_external_write
 详细说明：`docs/PERMISSIONS.md`
 心跳调度说明：`docs/HEARTBEAT.md`
 
+Persona 生效机制：Seed + committed patches 会在每次推理前编译为 `system` 消息注入 Core，请见 `backend/agent/processor.py`。
+
 ## Telegram Adapter (MVP)
 通过 Telegram Bot 长轮询把消息转发到 Edge API，再将回复发回聊天。
 

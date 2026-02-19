@@ -46,6 +46,26 @@ class _DummyCoreClient:
         }
 
 
+class _CapturingCoreClient:
+    last_messages: list[dict[str, str]] = []
+
+    async def health_check(self) -> dict[str, str]:
+        return {"status": "ok"}
+
+    async def chat_completions(self, messages: list[dict[str, str]], stream: bool = False, model: str = "mock") -> dict[str, object]:
+        self.__class__.last_messages = messages
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "captured",
+                    }
+                }
+            ]
+        }
+
+
 def test_message_pipeline_records_completion_event(monkeypatch) -> None:
     monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _DummyCoreClient())
     from backend.agent.api import app
@@ -331,3 +351,41 @@ def test_heartbeat_config_owner_update(tmp_path, monkeypatch) -> None:
         assert payload["config"]["interval_seconds"] == 30
         assert payload["config"]["resume_approved_tools_enabled"] is False
         assert payload["config"]["emit_events"] is False
+
+
+def test_persona_config_injected_into_system_prompt(monkeypatch) -> None:
+    monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _CapturingCoreClient())
+    from backend.agent.api import app
+
+    conv_id = f"conv_persona_{uuid4().hex}"
+    with TestClient(app) as client:
+        proposal = client.post(
+            "/v1/config/patches:propose",
+            json={"natural_language": "更简洁", "scope_type": "channel", "scope_id": "web:default"},
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert proposal.status_code == 200
+        proposal_id = proposal.json()["proposal_id"]
+        committed = client.post(
+            "/v1/config/patches:commit",
+            json={"proposal_id": proposal_id},
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert committed.status_code == 200
+
+        message = client.post(
+            "/v1/agent/messages",
+            json={"message": "persona-check", "conversation_id": conv_id, "channel": "web"},
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert message.status_code == 200
+        task_id = message.json()["task_id"]
+        task = _poll_task_completed(client, task_id)
+        assert task["status"] == "completed"
+
+    assert len(_CapturingCoreClient.last_messages) == 2
+    assert _CapturingCoreClient.last_messages[0]["role"] == "system"
+    assert "identity=blackbox-agent" in _CapturingCoreClient.last_messages[0]["content"]
+    assert "response_style=concise" in _CapturingCoreClient.last_messages[0]["content"]
+    assert _CapturingCoreClient.last_messages[1]["role"] == "user"
+    assert _CapturingCoreClient.last_messages[1]["content"] == "persona-check"

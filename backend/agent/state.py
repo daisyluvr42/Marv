@@ -85,3 +85,8 @@ def update_task_status(
 def get_task(task_id: str) -> Task | None:
     with get_session() as session:
         return session.exec(select(Task).where(Task.id == task_id)).first()
+
+
+def get_conversation(conversation_id: str) -> Conversation | None:
+    with get_session() as session:
+        return session.exec(select(Conversation).where(Conversation.id == conversation_id)).first()

@@ -104,6 +104,38 @@ def get_effective_config(scope_type: str, scope_id: str) -> dict[str, object]:
     return effective
 
 
+def get_effective_config_for_runtime(
+    *,
+    conversation_id: str,
+    channel: str,
+    channel_id: str | None = None,
+    user_id: str | None = None,
+) -> dict[str, object]:
+    effective = copy.deepcopy(read_seed())
+    revisions = sorted(list_revisions(), key=lambda item: item.created_at)
+
+    channel_scope_id = f"{channel}:{channel_id or 'default'}"
+    scoped_layers: list[tuple[str, str]] = [("channel", channel_scope_id)]
+    if user_id:
+        scoped_layers.append(("user", user_id))
+    scoped_layers.append(("conversation", conversation_id))
+
+    for revision in revisions:
+        if revision.status != "committed":
+            continue
+        if revision.scope_type == "global":
+            _merge_patch(effective, json.loads(revision.patch_json))
+
+    for scope_type, scope_id in scoped_layers:
+        for revision in revisions:
+            if revision.status != "committed":
+                continue
+            if revision.scope_type == scope_type and revision.scope_id == scope_id:
+                _merge_patch(effective, json.loads(revision.patch_json))
+
+    return effective
+
+
 def _merge_patch(target: dict[str, object], patch: dict[str, object]) -> None:
     for key, value in patch.items():
         if isinstance(value, dict) and isinstance(target.get(key), dict):
