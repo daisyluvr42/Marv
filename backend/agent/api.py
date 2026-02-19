@@ -25,6 +25,7 @@ from backend.ledger.events import InputEvent, PatchCommittedEvent, PatchRolledBa
 from backend.ledger.store import append_event
 from backend.ledger.store import query_events
 from backend.memory.store import approve_candidate, list_candidates, query_memory, reject_candidate, write_memory
+from backend.permissions.exec_approvals import evaluate_tool_permission, load_exec_approvals
 from backend.patch.proposals import create_patch_proposal, get_patch_proposal, update_patch_proposal_status
 from backend.patch.state import (
     create_revision,
@@ -246,14 +247,24 @@ async def tools_execute(body: ToolExecuteRequest, request: Request) -> dict[str,
     spec = get_tool_spec(body.tool)
     if spec is None:
         raise HTTPException(status_code=404, detail=f"Tool not found: {body.tool}")
+
     if spec.risk == "external_write":
         if actor.role != "owner":
             raise HTTPException(status_code=403, detail="Member cannot execute external_write tools")
+
+    perm_cfg = load_exec_approvals()
+    perm = evaluate_tool_permission(perm_cfg, actor_id=body.actor_id or actor.actor_id, tool_name=body.tool)
+    if perm["decision"] == "deny":
+        raise HTTPException(status_code=403, detail=f"Tool blocked by exec policy: {perm['reason']}")
+
+    require_approval = spec.risk == "external_write" or perm["decision"] == "ask"
+    if require_approval:
+        summary = f"{body.tool} requires approval ({perm['reason']})"
         approval = create_approval(
             approval_type="tool_execute",
-            summary=f"{body.tool} requires approval",
+            summary=summary,
             actor_id=body.actor_id or actor.actor_id,
-            constraints={"tool": body.tool, "one_time": True},
+            constraints={"tool": body.tool, "one_time": True, "policy_reason": perm["reason"]},
         )
         tool_call = create_tool_call(
             task_id=body.task_id,
@@ -268,6 +279,7 @@ async def tools_execute(body: ToolExecuteRequest, request: Request) -> dict[str,
             "status": "pending_approval",
             "approval_id": approval.approval_id,
             "tool": body.tool,
+            "policy_reason": perm["reason"],
         }
 
     try:

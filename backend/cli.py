@@ -15,6 +15,17 @@ from typing import Any
 
 import httpx
 
+from backend.permissions.exec_approvals import (
+    DEFAULT_MAIN_AGENT,
+    VALID_ASK,
+    VALID_ASK_FALLBACK,
+    VALID_SECURITY,
+    get_exec_approvals_path,
+    load_exec_approvals,
+    normalize_config,
+    save_exec_approvals,
+)
+
 
 DEFAULT_EDGE_BASE_URL = os.getenv("EDGE_BASE_URL", "http://127.0.0.1:8000")
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -78,6 +89,15 @@ def _confirm_or_exit(message: str) -> None:
         raise SystemExit("confirmation required: input stream is not available") from exc
     if answer != "YES":
         raise SystemExit("operation canceled")
+
+
+def _validate_choice(value: str | None, valid: set[str], name: str) -> str | None:
+    if value is None:
+        return None
+    lowered = value.strip().lower()
+    if lowered not in valid:
+        raise SystemExit(f"invalid {name}: {value}. valid: {sorted(valid)}")
+    return lowered
 
 
 def _resolve_edge_db_path(project_root: Path) -> Path:
@@ -422,6 +442,157 @@ def cmd_ops_package_migration(args: argparse.Namespace) -> int:
     return 0
 
 
+def _update_policy(
+    policy: dict[str, Any],
+    *,
+    security: str | None = None,
+    ask: str | None = None,
+    ask_fallback: str | None = None,
+) -> dict[str, Any]:
+    if security is not None:
+        policy["security"] = _validate_choice(security, VALID_SECURITY, "security")
+    if ask is not None:
+        policy["ask"] = _validate_choice(ask, VALID_ASK, "ask")
+    if ask_fallback is not None:
+        policy["ask_fallback"] = _validate_choice(ask_fallback, VALID_ASK_FALLBACK, "ask_fallback")
+    if "allowlist" not in policy or not isinstance(policy["allowlist"], list):
+        policy["allowlist"] = []
+    return policy
+
+
+def cmd_permissions_show(args: argparse.Namespace) -> int:
+    config = load_exec_approvals()
+    if args.agent:
+        agent = args.agent.strip()
+        if not agent:
+            raise SystemExit("agent cannot be empty")
+        policies = config.get("agents", {})
+        if not isinstance(policies, dict) or agent not in policies:
+            raise SystemExit(f"agent policy not found: {agent}")
+        _print_json({"path": str(get_exec_approvals_path()), "agent": agent, "policy": policies[agent]})
+        return 0
+    _print_json({"path": str(get_exec_approvals_path()), "config": config})
+    return 0
+
+
+def cmd_permissions_set_default(args: argparse.Namespace) -> int:
+    config = load_exec_approvals()
+    defaults = config.get("defaults", {})
+    if not isinstance(defaults, dict):
+        defaults = {}
+    config["defaults"] = _update_policy(
+        defaults,
+        security=args.security,
+        ask=args.ask,
+        ask_fallback=args.ask_fallback,
+    )
+    path = save_exec_approvals(config)
+    _print_json({"status": "ok", "path": str(path), "defaults": config["defaults"]})
+    return 0
+
+
+def cmd_permissions_set_agent(args: argparse.Namespace) -> int:
+    agent = args.agent.strip()
+    if not agent:
+        raise SystemExit("agent cannot be empty")
+    config = load_exec_approvals()
+    agents = config.get("agents", {})
+    if not isinstance(agents, dict):
+        agents = {}
+    policy = agents.get(agent, {})
+    if not isinstance(policy, dict):
+        policy = {}
+    agents[agent] = _update_policy(
+        policy,
+        security=args.security,
+        ask=args.ask,
+        ask_fallback=args.ask_fallback,
+    )
+    config["agents"] = agents
+    path = save_exec_approvals(config)
+    _print_json({"status": "ok", "path": str(path), "agent": agent, "policy": agents[agent]})
+    return 0
+
+
+def cmd_permissions_unset_agent(args: argparse.Namespace) -> int:
+    agent = args.agent.strip()
+    if not agent:
+        raise SystemExit("agent cannot be empty")
+    if agent == DEFAULT_MAIN_AGENT:
+        raise SystemExit("cannot unset reserved agent policy: main")
+    config = load_exec_approvals()
+    agents = config.get("agents", {})
+    if not isinstance(agents, dict) or agent not in agents:
+        raise SystemExit(f"agent policy not found: {agent}")
+    del agents[agent]
+    config["agents"] = agents
+    path = save_exec_approvals(config)
+    _print_json({"status": "ok", "path": str(path), "removed_agent": agent})
+    return 0
+
+
+def _resolve_agent_policy_for_allowlist(config: dict[str, Any], agent: str | None) -> tuple[dict[str, Any], str]:
+    agent_key = (agent or DEFAULT_MAIN_AGENT).strip()
+    if not agent_key:
+        raise SystemExit("agent cannot be empty")
+    agents = config.get("agents", {})
+    if not isinstance(agents, dict):
+        agents = {}
+    policy = agents.get(agent_key, {})
+    if not isinstance(policy, dict):
+        policy = {}
+    agents[agent_key] = _update_policy(policy)
+    config["agents"] = agents
+    return agents[agent_key], agent_key
+
+
+def cmd_permissions_allowlist_add(args: argparse.Namespace) -> int:
+    pattern = args.pattern.strip()
+    if not pattern:
+        raise SystemExit("pattern cannot be empty")
+    config = load_exec_approvals()
+    policy, agent_key = _resolve_agent_policy_for_allowlist(config, args.agent)
+    allowlist = [str(item).strip() for item in policy.get("allowlist", []) if str(item).strip()]
+    if pattern not in allowlist:
+        allowlist.append(pattern)
+    policy["allowlist"] = sorted(set(allowlist))
+    config = normalize_config(config)
+    path = save_exec_approvals(config)
+    _print_json(
+        {
+            "status": "ok",
+            "path": str(path),
+            "agent": agent_key,
+            "allowlist": policy["allowlist"],
+        }
+    )
+    return 0
+
+
+def cmd_permissions_allowlist_remove(args: argparse.Namespace) -> int:
+    pattern = args.pattern.strip()
+    if not pattern:
+        raise SystemExit("pattern cannot be empty")
+    config = load_exec_approvals()
+    policy, agent_key = _resolve_agent_policy_for_allowlist(config, args.agent)
+    allowlist = [str(item).strip() for item in policy.get("allowlist", []) if str(item).strip()]
+    if pattern not in allowlist:
+        raise SystemExit(f"pattern not found in allowlist: {pattern}")
+    allowlist = [item for item in allowlist if item != pattern]
+    policy["allowlist"] = allowlist
+    config = normalize_config(config)
+    path = save_exec_approvals(config)
+    _print_json(
+        {
+            "status": "ok",
+            "path": str(path),
+            "agent": agent_key,
+            "allowlist": policy["allowlist"],
+        }
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="marv", description="CLI for Blackbox Edge Runtime")
     parser.add_argument("--edge-base-url", default=DEFAULT_EDGE_BASE_URL)
@@ -536,6 +707,41 @@ def build_parser() -> argparse.ArgumentParser:
     ops_pack.set_defaults(func=cmd_ops_package_migration)
     ops_stop = ops_sub.add_parser("stop-services", help="Stop local core/edge/telegram services")
     ops_stop.set_defaults(func=cmd_ops_stop_services)
+
+    permissions = sub.add_parser("permissions", help="OpenClaw-like execution permission policies")
+    permissions_sub = permissions.add_subparsers(dest="permissions_command", required=True)
+
+    perm_show = permissions_sub.add_parser("show", help="Show permission config or one agent policy")
+    perm_show.add_argument("--agent")
+    perm_show.set_defaults(func=cmd_permissions_show)
+
+    perm_default = permissions_sub.add_parser("set-default", help="Update default execution policy")
+    perm_default.add_argument("--security", choices=sorted(VALID_SECURITY))
+    perm_default.add_argument("--ask", choices=sorted(VALID_ASK))
+    perm_default.add_argument("--ask-fallback", choices=sorted(VALID_ASK_FALLBACK))
+    perm_default.set_defaults(func=cmd_permissions_set_default)
+
+    perm_agent = permissions_sub.add_parser("set-agent", help="Create/update actor-specific policy")
+    perm_agent.add_argument("--agent", required=True)
+    perm_agent.add_argument("--security", choices=sorted(VALID_SECURITY))
+    perm_agent.add_argument("--ask", choices=sorted(VALID_ASK))
+    perm_agent.add_argument("--ask-fallback", choices=sorted(VALID_ASK_FALLBACK))
+    perm_agent.set_defaults(func=cmd_permissions_set_agent)
+
+    perm_unset = permissions_sub.add_parser("unset-agent", help="Remove actor-specific policy")
+    perm_unset.add_argument("--agent", required=True)
+    perm_unset.set_defaults(func=cmd_permissions_unset_agent)
+
+    perm_allowlist = permissions_sub.add_parser("allowlist", help="Manage allowlist patterns")
+    perm_allowlist_sub = perm_allowlist.add_subparsers(dest="permissions_allowlist_command", required=True)
+    perm_allowlist_add = perm_allowlist_sub.add_parser("add", help="Add allowlist pattern")
+    perm_allowlist_add.add_argument("--pattern", required=True)
+    perm_allowlist_add.add_argument("--agent", default=DEFAULT_MAIN_AGENT)
+    perm_allowlist_add.set_defaults(func=cmd_permissions_allowlist_add)
+    perm_allowlist_remove = perm_allowlist_sub.add_parser("remove", help="Remove allowlist pattern")
+    perm_allowlist_remove.add_argument("--pattern", required=True)
+    perm_allowlist_remove.add_argument("--agent", default=DEFAULT_MAIN_AGENT)
+    perm_allowlist_remove.set_defaults(func=cmd_permissions_allowlist_remove)
 
     return parser
 

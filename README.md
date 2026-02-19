@@ -74,7 +74,15 @@ uv run marv memory query --scope-id u1 --query "简洁回答"
 # local ops (interactive confirmation required)
 uv run marv ops stop-services
 uv run marv ops package-migration --output-dir ./dist/migrations
+
+# permissions (OpenClaw-like)
+uv run marv permissions show
+uv run marv permissions set-default --security allowlist --ask on-miss --ask-fallback deny
+uv run marv permissions allowlist add --agent main --pattern mock_web_search
+uv run marv permissions set-agent --agent telegram:123456 --security full --ask off
 ```
+
+详细说明：`docs/PERMISSIONS.md`
 
 ## Telegram Adapter (MVP)
 通过 Telegram Bot 长轮询把消息转发到 Edge API，再将回复发回聊天。
@@ -117,5 +125,6 @@ GitHub Actions: `.github/workflows/ci.yml`
 - Approvals: `backend/approvals/`
 - Patch config: `backend/patch/`
 - Memory: `backend/memory/`
+- Permissions: `backend/permissions/exec_approvals.py`
 - Telegram gateway: `backend/gateway/telegram.py`
 - Console: `frontend/app/`

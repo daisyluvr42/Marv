@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from uuid import uuid4
 
@@ -227,3 +228,67 @@ def test_tool_execute_idempotent_hit() -> None:
         second_payload = second.json()
         assert second_payload["tool_call_id"] == fixed_tool_call_id
         assert second_payload["idempotent_hit"] is True
+
+
+def test_tool_permission_allowlist_on_miss_requires_approval(tmp_path, monkeypatch) -> None:
+    policy_file = tmp_path / "exec-approvals.json"
+    policy_file.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "defaults": {
+                    "security": "allowlist",
+                    "ask": "on-miss",
+                    "ask_fallback": "deny",
+                    "allowlist": ["mock_web_search"],
+                },
+                "agents": {},
+            },
+            ensure_ascii=True,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("EDGE_EXEC_APPROVALS_PATH", str(policy_file))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        blocked_to_approval = client.post(
+            "/v1/tools:execute",
+            json={"tool": "mock_external_write", "args": {"target": "file://x", "content": "abc"}},
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert blocked_to_approval.status_code == 200
+        payload = blocked_to_approval.json()
+        assert payload["status"] == "pending_approval"
+        assert payload["policy_reason"] == "allowlist_miss"
+
+
+def test_tool_permission_allowlist_off_denies(tmp_path, monkeypatch) -> None:
+    policy_file = tmp_path / "exec-approvals.json"
+    policy_file.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "defaults": {
+                    "security": "allowlist",
+                    "ask": "off",
+                    "ask_fallback": "deny",
+                    "allowlist": ["mock_web_search"],
+                },
+                "agents": {},
+            },
+            ensure_ascii=True,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("EDGE_EXEC_APPROVALS_PATH", str(policy_file))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        denied = client.post(
+            "/v1/tools:execute",
+            json={"tool": "mock_external_write", "args": {"target": "file://x", "content": "abc"}},
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert denied.status_code == 403
+        assert "Tool blocked by exec policy" in denied.text
