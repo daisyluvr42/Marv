@@ -34,6 +34,7 @@ Marv 是一个本地优先（local-first）的 Agent 运行时，提供完整的
 - `backend/ledger/`：事件模型与审计时间线
 - `backend/storage/`：SQLModel 模型与 DB 初始化
 - `backend/skills/`：技能导入、同步、安全扫描
+- `backend/packages/`：插件包契约扫描、运行时 hook 加载
 
 ### 2.2 前端与客户端
 
@@ -311,6 +312,9 @@ uv run marv execution set --mode sandbox --docker-image python:3.12-alpine --no-
 
 ```bash
 uv run marv system core-providers
+uv run marv system core-capabilities
+uv run marv system core-models
+uv run marv system core-auth
 uv run marv system ipc-reload
 
 uv run marv heartbeat show
@@ -321,6 +325,13 @@ uv run marv heartbeat set --mode cron --cron "*/2 * * * *" --core-health-enabled
 uv run marv ops probe --message "联调探针" --channel telegram --channel-id 123456 --user-id 7890
 uv run marv ops stop-services
 uv run marv ops package-migration --output-dir ./dist/migrations
+```
+
+### 6.12 插件包契约（pi-mono 风格）
+
+```bash
+uv run marv packages list
+uv run marv packages reload
 ```
 
 ## 7. 技能生态（重点）
@@ -398,6 +409,8 @@ EDGE_BASE_URL=http://127.0.0.1:8000 bash scripts/smoke_test.sh
 - 沙箱执行：`docs/SANDBOX.md`
 - 定时任务：`docs/SCHEDULED_TASKS.md`
 - Subagent：`docs/SUBAGENTS.md`
+- PI-core 重塑路线：`docs/PI_CORE_RESHAPE.md`
+- 插件包契约：`docs/PACKAGES.md`
 - Skill 生态：`docs/SKILLS_ECOSYSTEM.md`
 - MacOS + iOS 客户端：`docs/MACOS_IOS_CLIENTS.md`
 - Telegram 配置：`docs/TELEGRAM_SETUP.md`

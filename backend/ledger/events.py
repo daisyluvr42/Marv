@@ -52,6 +52,15 @@ class CompletionEvent(BaseEvent):
 
 
 @dataclass
+class PiTurnEvent(BaseEvent):
+    stage: str = ""
+    details: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.type = "PiTurnEvent"
+
+
+@dataclass
 class PatchCommittedEvent(BaseEvent):
     proposal_id: str = ""
     revision: str = ""

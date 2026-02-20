@@ -10,7 +10,7 @@ from backend.agent.state import get_conversation, get_task, now_ts, update_task_
 from backend.approvals.policy import decide_approval_mode, load_approval_policy
 from backend.approvals.service import create_approval, find_matching_approval_grant
 from backend.core_client.openai_compat import get_core_client
-from backend.ledger.events import CompletionEvent, InputEvent, PlanEvent, RouteEvent
+from backend.ledger.events import CompletionEvent, InputEvent, PiTurnEvent, PlanEvent, RouteEvent
 from backend.ledger.store import append_event, query_events
 from backend.memory.store import (
     extract_memory_candidates,
@@ -20,6 +20,7 @@ from backend.memory.store import (
     write_memory,
 )
 from backend.patch.state import get_effective_config_for_runtime
+from backend.pi_core import build_pi_turn_context, compact_turn_context, to_openai_messages
 from backend.permissions.exec_approvals import evaluate_tool_permission, load_exec_approvals
 from backend.tools.registry import get_tool_spec, list_tools
 from backend.tools.runner import create_tool_call, execute_tool_call
@@ -111,10 +112,35 @@ async def process_task(task_id: str) -> None:
         await core_client.health_check()
         loop_prompt = _build_tool_loop_system_prompt(loop_config=loop_config)
         system_prompt = persona_prompt if not loop_prompt else f"{persona_prompt}\n\n{loop_prompt}"
-        messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
-        if memory_prompt:
-            messages.append({"role": "system", "content": memory_prompt})
-        messages.append({"role": "user", "content": user_input})
+        pi_context = build_pi_turn_context(
+            system_prompt=system_prompt,
+            memory_prompt=memory_prompt,
+            user_input=user_input,
+            metadata={
+                "conversation_id": task.conversation_id,
+                "task_id": task_id,
+                "engine": "pi_compatible",
+            },
+        )
+        pi_context = compact_turn_context(
+            pi_context,
+            max_messages=max(16, int(loop_config["max_steps"]) * 6),
+        )
+        messages = to_openai_messages(pi_context)
+        append_event(
+            PiTurnEvent(
+                conversation_id=task.conversation_id,
+                task_id=task_id,
+                ts=now_ts(),
+                stage="context_ready",
+                details={
+                    "system_prompt_count": len(pi_context.system_prompts),
+                    "message_count": len(pi_context.messages),
+                    "openai_message_count": len(messages),
+                    "engine": str(pi_context.metadata.get("engine", "pi_compatible")),
+                },
+            )
+        )
         response_text = await _run_agent_loop(
             core_client=core_client,
             messages=messages,

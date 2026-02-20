@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
@@ -23,6 +25,12 @@ class ProviderEndpoint:
     priority: int = 100
     model_default: str | None = None
     models_by_tier: dict[str, str] = field(default_factory=dict)
+    auth_header: str = "Authorization"
+    auth_scheme: str = "Bearer"
+    auth_env: str | None = None
+    api_key_env: str | None = None
+    oauth_token_env: str | None = None
+    static_headers: dict[str, str] = field(default_factory=dict)
 
 
 class CoreClient:
@@ -82,9 +90,114 @@ class CoreClient:
                     "priority": item.priority,
                     "model_default": item.model_default,
                     "models_by_tier": item.models_by_tier,
+                    "models": _collect_provider_models(item),
+                    "route_tiers": _collect_provider_route_tiers(item),
+                    "auth_header": item.auth_header,
+                    "auth_scheme": item.auth_scheme,
+                    "auth_env": item.auth_env,
+                    "api_key_env": item.api_key_env,
+                    "oauth_token_env": item.oauth_token_env,
+                    "static_headers": item.static_headers,
                 }
                 for item in self._providers
             ],
+        }
+
+    def provider_capabilities(self) -> dict[str, object]:
+        providers: list[dict[str, object]] = []
+        locality_counts: dict[str, int] = {"local": 0, "cloud": 0}
+        auth_counts: dict[str, int] = {"api": 0, "oauth": 0, "none": 0}
+        tier_counts: dict[str, int] = {"local_light": 0, "local_main": 0, "cloud_high": 0}
+
+        for item in self._providers:
+            models = _collect_provider_models(item)
+            route_tiers = _collect_provider_route_tiers(item)
+            locality_counts[item.locality] = locality_counts.get(item.locality, 0) + 1
+            auth_counts[item.auth_mode] = auth_counts.get(item.auth_mode, 0) + 1
+            tier_counts[item.tier] = tier_counts.get(item.tier, 0) + 1
+            providers.append(
+                {
+                    "name": item.name,
+                    "base_url": item.base_url,
+                    "tier": item.tier,
+                    "locality": item.locality,
+                    "auth_mode": item.auth_mode,
+                    "priority": item.priority,
+                    "route_tiers": route_tiers,
+                    "models": models,
+                    "supports": {
+                        "chat_completions": True,
+                        "embeddings": True,
+                    },
+                }
+            )
+
+        return {
+            "count": len(providers),
+            "providers": providers,
+            "summary": {
+                "locality": locality_counts,
+                "auth_mode": auth_counts,
+                "tier": tier_counts,
+            },
+        }
+
+    def model_catalog(self) -> dict[str, object]:
+        models: list[dict[str, object]] = []
+        for item in sorted(self._providers, key=lambda entry: (entry.priority, entry.name)):
+            route_map: dict[str, str] = {}
+            for tier, model in item.models_by_tier.items():
+                route_map[tier] = model
+            if item.model_default:
+                route_map.setdefault(item.tier, item.model_default)
+
+            by_model: dict[str, list[str]] = {}
+            for tier, model in route_map.items():
+                by_model.setdefault(model, []).append(tier)
+            if item.model_default:
+                by_model.setdefault(item.model_default, [])
+
+            for model, tiers in sorted(by_model.items()):
+                models.append(
+                    {
+                        "provider": item.name,
+                        "model": model,
+                        "tiers": sorted(set(tiers)),
+                        "default_model": bool(item.model_default and model == item.model_default),
+                        "locality": item.locality,
+                        "auth_mode": item.auth_mode,
+                        "priority": item.priority,
+                    }
+                )
+
+        return {
+            "count": len(models),
+            "models": models,
+        }
+
+    def provider_auth_status(self) -> dict[str, object]:
+        providers: list[dict[str, object]] = []
+        loaded_count = 0
+        for item in self._providers:
+            token, loaded_from = _resolve_provider_token(item)
+            loaded = bool(token)
+            if loaded:
+                loaded_count += 1
+            providers.append(
+                {
+                    "name": item.name,
+                    "auth_mode": item.auth_mode,
+                    "auth_header": item.auth_header,
+                    "auth_scheme": item.auth_scheme,
+                    "auth_env_candidates": _auth_env_candidates(item),
+                    "credential_loaded": loaded,
+                    "loaded_from_env": loaded_from,
+                }
+            )
+        return {
+            "count": len(providers),
+            "credential_loaded_count": loaded_count,
+            "providers": providers,
         }
 
     async def _request(
@@ -132,7 +245,12 @@ class CoreClient:
         ):
             with attempt:
                 async with httpx.AsyncClient(base_url=provider.base_url, timeout=provider.timeout_seconds) as client:
-                    response = await client.request(method, path, json=json)
+                    response = await client.request(
+                        method,
+                        path,
+                        json=json,
+                        headers=_build_provider_headers(provider),
+                    )
                     if response.status_code >= 500 or response.status_code == 429:
                         response.raise_for_status()
                     elif response.status_code >= 400:
@@ -171,6 +289,19 @@ def _load_providers(settings: Any) -> list[ProviderEndpoint]:
                 auth_mode = _normalize_auth_mode(item.get("auth_mode"))
                 if auth_mode is None:
                     auth_mode = "oauth" if "oauth" in str(item.get("name", "")).lower() else "api"
+                auth_header_raw = item.get("auth_header")
+                auth_header = str(auth_header_raw).strip() if isinstance(auth_header_raw, str) else "Authorization"
+                if not auth_header:
+                    auth_header = "Authorization"
+                auth_scheme_raw = item.get("auth_scheme")
+                if isinstance(auth_scheme_raw, str):
+                    auth_scheme = auth_scheme_raw.strip()
+                else:
+                    auth_scheme = "Bearer" if auth_header.lower() == "authorization" and auth_mode != "none" else ""
+                auth_env = str(item.get("auth_env", "")).strip() or None
+                api_key_env = str(item.get("api_key_env", "")).strip() or None
+                oauth_token_env = str(item.get("oauth_token_env", "")).strip() or None
+                static_headers = _normalize_static_headers(item.get("headers"))
                 priority = item.get("priority", idx * 10)
                 if not isinstance(priority, int):
                     priority = idx * 10
@@ -190,6 +321,12 @@ def _load_providers(settings: Any) -> list[ProviderEndpoint]:
                         priority=priority,
                         model_default=model_default,
                         models_by_tier=models_by_tier,
+                        auth_header=auth_header,
+                        auth_scheme=auth_scheme,
+                        auth_env=auth_env,
+                        api_key_env=api_key_env,
+                        oauth_token_env=oauth_token_env,
+                        static_headers=static_headers,
                     )
                 )
     if providers:
@@ -320,6 +457,99 @@ def _order_providers(
         return (tier_score, locality_penalty, provider.priority, provider.name)
 
     return sorted(candidates, key=score)
+
+
+def _collect_provider_models(provider: ProviderEndpoint) -> list[str]:
+    models: list[str] = []
+    seen: set[str] = set()
+    if provider.model_default and provider.model_default not in seen:
+        models.append(provider.model_default)
+        seen.add(provider.model_default)
+    for model in provider.models_by_tier.values():
+        if model not in seen:
+            models.append(model)
+            seen.add(model)
+    return models
+
+
+def _collect_provider_route_tiers(provider: ProviderEndpoint) -> list[str]:
+    tiers = {provider.tier}
+    tiers.update(provider.models_by_tier.keys())
+    normalized = [item for item in tiers if item in {"local_light", "local_main", "cloud_high"}]
+    return sorted(normalized)
+
+
+def _normalize_static_headers(value: object) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    headers: dict[str, str] = {}
+    for key, item in value.items():
+        if not isinstance(key, str) or not isinstance(item, str):
+            continue
+        header_key = key.strip()
+        header_value = item.strip()
+        if not header_key or not header_value:
+            continue
+        headers[header_key] = header_value
+    return headers
+
+
+def _auth_env_candidates(provider: ProviderEndpoint) -> list[str]:
+    candidates: list[str] = []
+    seen: set[str] = set()
+    for key in [
+        provider.auth_env,
+        provider.oauth_token_env if provider.auth_mode == "oauth" else None,
+        provider.api_key_env if provider.auth_mode == "api" else None,
+        _default_provider_auth_env(provider),
+    ]:
+        if not key:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append(key)
+    return candidates
+
+
+def _default_provider_auth_env(provider: ProviderEndpoint) -> str | None:
+    slug = _provider_env_slug(provider.name)
+    if not slug:
+        return None
+    if provider.auth_mode == "oauth":
+        return f"CORE_PROVIDER_{slug}_OAUTH_TOKEN"
+    if provider.auth_mode == "api":
+        return f"CORE_PROVIDER_{slug}_API_KEY"
+    return None
+
+
+def _provider_env_slug(name: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_")
+    return cleaned.upper()
+
+
+def _resolve_provider_token(provider: ProviderEndpoint) -> tuple[str | None, str | None]:
+    if provider.auth_mode == "none":
+        return None, None
+    for env_key in _auth_env_candidates(provider):
+        token = os.getenv(env_key, "").strip()
+        if token:
+            return token, env_key
+    return None, None
+
+
+def _build_provider_headers(provider: ProviderEndpoint) -> dict[str, str] | None:
+    headers = dict(provider.static_headers)
+    token, _ = _resolve_provider_token(provider)
+    if token:
+        header_name = provider.auth_header.strip() or "Authorization"
+        scheme = provider.auth_scheme.strip()
+        if header_name.lower() == "authorization":
+            header_value = f"{scheme} {token}" if scheme else token
+        else:
+            header_value = token if not scheme else f"{scheme} {token}"
+        headers[header_name] = header_value
+    return headers or None
 
 
 _core_client = CoreClient()

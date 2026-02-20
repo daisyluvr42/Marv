@@ -29,7 +29,10 @@ def load_ipc_tools() -> list[str]:
         return []
     if not isinstance(payload, list):
         return []
+    return load_ipc_tools_from_payload(payload, source=f"file:{path}")
 
+
+def load_ipc_tools_from_payload(payload: list[dict[str, Any]], *, source: str = "runtime") -> list[str]:
     loaded: list[str] = []
     for item in payload:
         if not isinstance(item, dict):
@@ -52,7 +55,7 @@ def load_ipc_tools() -> list[str]:
             risk=risk,
             schema=schema,
             func=_build_ipc_tool(command=[str(part) for part in command], timeout_seconds=timeout_seconds),
-            version="ipc-v1",
+            version=f"ipc-v1@{source}",
             enabled=bool(item.get("enabled", True)),
         )
         loaded.append(name)

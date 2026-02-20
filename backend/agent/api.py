@@ -85,6 +85,7 @@ from backend.patch.state import (
     list_revisions,
     update_revision_status,
 )
+from backend.packages.manager import get_packages_root, list_installed_packages, load_runtime_packages
 from backend.sandbox.runtime import (
     get_execution_config_path,
     load_execution_config,
@@ -118,6 +119,7 @@ async def lifespan(_: FastAPI):
     ensure_seed()
     scan_tools()
     ipc_loaded = load_ipc_tools()
+    packages_runtime = load_runtime_packages()
     sync_tools_registry()
     task_queue.set_processor(process_task)
     await task_queue.start()
@@ -125,6 +127,11 @@ async def lifespan(_: FastAPI):
     await heartbeat_runtime.start()
     if ipc_loaded:
         print(f"loaded ipc tools: {','.join(sorted(ipc_loaded))}")
+    if int(packages_runtime.get("loaded_count", 0)) > 0:
+        print(
+            "loaded packages: "
+            + ",".join(str(item.get("name", "")) for item in packages_runtime.get("loaded", []) if isinstance(item, dict))
+        )
     try:
         yield
     finally:
@@ -415,6 +422,21 @@ async def system_heartbeat_update(body: HeartbeatConfigUpdateRequest, request: R
 @app.get("/v1/system/core/providers")
 async def system_core_providers() -> dict[str, object]:
     return get_core_client().provider_status()
+
+
+@app.get("/v1/system/core/capabilities")
+async def system_core_capabilities() -> dict[str, object]:
+    return get_core_client().provider_capabilities()
+
+
+@app.get("/v1/system/core/models")
+async def system_core_models() -> dict[str, object]:
+    return get_core_client().model_catalog()
+
+
+@app.get("/v1/system/core/auth")
+async def system_core_auth() -> dict[str, object]:
+    return get_core_client().provider_auth_status()
 
 
 @app.get("/v1/system/ipc-tools")
@@ -847,6 +869,24 @@ async def scheduled_tasks_delete(schedule_id: str, request: Request) -> dict[str
         "status": "deleted",
         "runtime": runtime,
     }
+
+
+@app.get("/v1/packages")
+async def packages_list() -> dict[str, object]:
+    items = list_installed_packages()
+    return {
+        "root": str(get_packages_root()),
+        "count": len(items),
+        "packages": items,
+    }
+
+
+@app.post("/v1/packages:reload")
+async def packages_reload(request: Request) -> dict[str, object]:
+    require_owner(request)
+    report = load_runtime_packages()
+    sync_tools_registry()
+    return report
 
 
 @app.get("/v1/skills")

@@ -758,8 +758,33 @@ def cmd_skills_sync_upstream(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_packages_list(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/packages"))
+    return 0
+
+
+def cmd_packages_reload(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "POST", "/v1/packages:reload", json_body={}))
+    return 0
+
+
 def cmd_system_core_providers(args: argparse.Namespace) -> int:
     _print_json(_request_json(args, "GET", "/v1/system/core/providers"))
+    return 0
+
+
+def cmd_system_core_capabilities(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/core/capabilities"))
+    return 0
+
+
+def cmd_system_core_models(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/core/models"))
+    return 0
+
+
+def cmd_system_core_auth(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/system/core/auth"))
     return 0
 
 
@@ -1474,6 +1499,13 @@ def build_parser() -> argparse.ArgumentParser:
     skills_sync = skills_sub.add_parser("sync-upstream", help="Sync skills from OpenClaw and LobsterAI")
     skills_sync.set_defaults(func=cmd_skills_sync_upstream)
 
+    packages = sub.add_parser("packages", help="Package contract management")
+    packages_sub = packages.add_subparsers(dest="packages_command", required=True)
+    packages_list = packages_sub.add_parser("list", help="List installed runtime packages")
+    packages_list.set_defaults(func=cmd_packages_list)
+    packages_reload = packages_sub.add_parser("reload", help="Reload runtime package hooks")
+    packages_reload.set_defaults(func=cmd_packages_reload)
+
     im = sub.add_parser("im", help="Multi-channel IM ingress")
     im_sub = im.add_subparsers(dest="im_command", required=True)
     im_channels = im_sub.add_parser("channels", help="List supported IM channels")
@@ -1515,6 +1547,12 @@ def build_parser() -> argparse.ArgumentParser:
     system_sub = system.add_subparsers(dest="system_command", required=True)
     system_core = system_sub.add_parser("core-providers", help="Show provider fallback matrix")
     system_core.set_defaults(func=cmd_system_core_providers)
+    system_core_caps = system_sub.add_parser("core-capabilities", help="Show provider capability summary")
+    system_core_caps.set_defaults(func=cmd_system_core_capabilities)
+    system_core_models = system_sub.add_parser("core-models", help="Show model catalog across providers")
+    system_core_models.set_defaults(func=cmd_system_core_models)
+    system_core_auth = system_sub.add_parser("core-auth", help="Show provider auth credential loading status")
+    system_core_auth.set_defaults(func=cmd_system_core_auth)
     system_ipc = system_sub.add_parser("ipc-reload", help="Reload IPC tools from config")
     system_ipc.set_defaults(func=cmd_system_ipc_reload)
 

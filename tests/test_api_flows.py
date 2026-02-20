@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from uuid import uuid4
 
@@ -255,6 +256,7 @@ def test_message_pipeline_records_completion_event(monkeypatch) -> None:
         types = [event["type"] for event in payload["events"]]
         assert "InputEvent" in types
         assert "PlanEvent" in types
+        assert "PiTurnEvent" in types
         assert "RouteEvent" in types
         assert "CompletionEvent" in types
         completion = [event for event in payload["events"] if event["type"] == "CompletionEvent"][-1]
@@ -826,6 +828,69 @@ def test_skills_import_endpoint_with_security_scan(tmp_path, monkeypatch) -> Non
         assert listed.json()["count"] == 1
 
 
+def test_packages_endpoints_list_and_reload(tmp_path, monkeypatch) -> None:
+    packages_root = tmp_path / "packages"
+    package_dir = packages_root / "demo-package"
+    package_dir.mkdir(parents=True, exist_ok=True)
+    ipc_config = package_dir / "tools" / "ipc-tools.json"
+    ipc_config.parent.mkdir(parents=True, exist_ok=True)
+    ipc_config.write_text(
+        json.dumps(
+            [
+                {
+                    "name": "pkg_demo_tool",
+                    "risk": "read_only",
+                    "command": [
+                        sys.executable,
+                        "-c",
+                        "import json,sys; p=json.load(sys.stdin); print(json.dumps({'status':'ok','echo':p.get('args',{})}))",
+                    ],
+                    "schema": {"type": "object", "properties": {"value": {"type": "string"}}},
+                }
+            ],
+            ensure_ascii=True,
+        ),
+        encoding="utf-8",
+    )
+    (package_dir / "MARV_PACKAGE.json").write_text(
+        json.dumps(
+            {
+                "name": "demo-package",
+                "version": "0.1.0",
+                "enabled": True,
+                "capabilities": ["ipc_tools"],
+                "hooks": {"ipc_tools": "tools/ipc-tools.json"},
+            },
+            ensure_ascii=True,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("EDGE_PACKAGES_ROOT", str(packages_root))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        listed = client.get("/v1/packages")
+        assert listed.status_code == 200
+        listed_payload = listed.json()
+        assert listed_payload["count"] == 1
+        assert listed_payload["packages"][0]["name"] == "demo-package"
+
+        denied_reload = client.post("/v1/packages:reload", headers=_headers(role="member", actor_id="member-1"))
+        assert denied_reload.status_code == 403
+
+        reloaded = client.post("/v1/packages:reload", headers=_headers(role="owner", actor_id="owner-1"))
+        assert reloaded.status_code == 200
+        reload_payload = reloaded.json()
+        assert reload_payload["loaded_count"] == 1
+        assert reload_payload["ipc_tools_loaded_count"] >= 1
+
+        tools = client.get("/v1/tools")
+        assert tools.status_code == 200
+        names = [item["name"] for item in tools.json()["tools"]]
+        assert "pkg_demo_tool" in names
+
+
 def test_persona_config_injected_into_system_prompt(monkeypatch) -> None:
     monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _CapturingCoreClient())
     from backend.agent.api import app
@@ -1153,6 +1218,24 @@ def test_session_workspace_and_core_provider_endpoints(monkeypatch) -> None:
         providers = client.get("/v1/system/core/providers", headers=_headers(role="owner", actor_id="owner-1"))
         assert providers.status_code == 200
         assert providers.json()["count"] >= 1
+
+        capabilities = client.get("/v1/system/core/capabilities", headers=_headers(role="owner", actor_id="owner-1"))
+        assert capabilities.status_code == 200
+        cap_payload = capabilities.json()
+        assert cap_payload["count"] >= 1
+        assert "summary" in cap_payload
+
+        models = client.get("/v1/system/core/models", headers=_headers(role="owner", actor_id="owner-1"))
+        assert models.status_code == 200
+        model_payload = models.json()
+        assert "count" in model_payload
+        assert "models" in model_payload
+
+        auth = client.get("/v1/system/core/auth", headers=_headers(role="owner", actor_id="owner-1"))
+        assert auth.status_code == 200
+        auth_payload = auth.json()
+        assert "count" in auth_payload
+        assert "providers" in auth_payload
 
 
 def test_subagent_spawn_send_and_history(monkeypatch) -> None:
