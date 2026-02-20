@@ -14,6 +14,9 @@ Marv 是一个本地优先（local-first）的 Agent 运行时，提供完整的
 - 定时任务：Cron 调度，自动投递到现有任务链路
 - 多会话隔离：session workspace + subagent（spawn/send/history）
 - 记忆闭环：提取/检索/治理（update/delete/forget/decay）+ metrics
+- 推理路由：前置意图分类 + 本地优先 + 多轮失败自动升级云端
+- PI-core 兼容层：统一 turn context 转换与结构化 turn 事件
+- 插件包契约层：包目录扫描 + runtime hook（当前支持 IPC tools hook）
 - 技能生态：支持通用 `SKILL.md` 导入，含恶意模式前置扫描
 - MacOS + iOS 端形态：macOS Electron 壳 + iOS PWA
 
@@ -23,6 +26,7 @@ Marv 是一个本地优先（local-first）的 Agent 运行时，提供完整的
 
 - `backend/agent/`：主 API、任务队列、会话流程、runtime 编排
 - `backend/core_client/`：Core provider 调用与 fallback/retry
+- `backend/pi_core/`：pi-mono 风格兼容核心（turn context 与消息转换）
 - `backend/gateway/`：Telegram 网关、统一 IM ingress、配对逻辑
 - `backend/tools/`：工具注册/执行、IPC 动态工具桥接
 - `backend/approvals/`：审批、grant、审批策略模式
@@ -131,6 +135,8 @@ EDGE_BASE_URL=http://127.0.0.1:8000 TELEGRAM_BOT_TOKEN=<token> uv run marv-teleg
 - `CORE_BASE_URL`：Edge 调 Core 的基础地址
 - `EDGE_DATA_DIR` / `EDGE_DB_PATH`：运行数据目录与 DB 路径
 - `CORE_PROVIDER_MATRIX_JSON`：provider fallback/retry 矩阵
+- `CORE_PROVIDER_<NAME>_API_KEY`：provider 级 API 凭据（自动匹配）
+- `CORE_PROVIDER_<NAME>_OAUTH_TOKEN`：provider 级 OAuth token（自动匹配）
 - `TELEGRAM_BOT_TOKEN`：Telegram 网关 token
 - `TELEGRAM_REQUIRE_PAIRING=true|false`：是否启用配对认证
 - `EDGE_EXEC_APPROVALS_PATH`：执行权限策略文件路径
@@ -138,6 +144,14 @@ EDGE_BASE_URL=http://127.0.0.1:8000 TELEGRAM_BOT_TOKEN=<token> uv run marv-teleg
 - `EDGE_EXECUTION_CONFIG_PATH`：执行模式配置文件路径
 - `EDGE_IPC_TOOLS_PATH`：IPC 工具配置路径
 - `EDGE_SKILLS_ROOT`：技能安装目录（默认 `./skill/modules`）
+- `EDGE_PACKAGES_ROOT`：插件包根目录（默认 `./packages`）
+
+### 5.1 Provider 鉴权与路由提示
+
+- `GET /v1/system/core/providers`：provider 基础信息与路由元数据
+- `GET /v1/system/core/capabilities`：provider 能力摘要
+- `GET /v1/system/core/models`：模型目录视图
+- `GET /v1/system/core/auth`：凭据加载状态（不返回明文 token）
 
 ## 6. CLI 使用总览
 
@@ -353,7 +367,7 @@ uv run marv skills import --source-path ./path/to/skills --source-name custom
 # 从 Git 导入
 uv run marv skills import --git-url https://github.com/example/repo.git --git-subdir skills --source-name upstream
 
-# 同步上游（Marv + LobsterAI）
+# 同步上游（Openclaw + LobsterAI）
 uv run marv skills sync-upstream
 ```
 
