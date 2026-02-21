@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 from uuid import uuid4
@@ -233,6 +234,27 @@ class _DynamicRoutingReflectStallCoreClient:
         }
 
 
+class _AutoSubagentCoreClient:
+    calls: list[str] = []
+
+    async def health_check(self) -> dict[str, str]:
+        return {"status": "ok"}
+
+    async def chat_completions(self, messages: list[dict[str, str]], stream: bool = False, model: str = "mock") -> dict[str, object]:
+        last = str(messages[-1].get("content", "")) if messages else ""
+        self.__class__.calls.append(last)
+        lowered = last.lower()
+        if "role: blueprint" in lowered:
+            content = "blueprint-ok: 已完成分解与验收标准。"
+        elif "role: executor" in lowered:
+            content = "executor-ok: 已按蓝图执行并产出证据。"
+        elif "role: supervisor" in lowered:
+            content = "supervisor-ok: 结论可信，可交付用户。"
+        else:
+            content = "single-agent-fallback"
+        return {"choices": [{"message": {"role": "assistant", "content": content}}]}
+
+
 def test_message_pipeline_records_completion_event(monkeypatch) -> None:
     monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _DummyCoreClient())
     from backend.agent.api import app
@@ -315,6 +337,110 @@ def test_im_ingress_respects_token_auth(monkeypatch) -> None:
         )
         assert allowed.status_code == 200
         assert allowed.json()["channel"] == "webchat"
+
+
+def test_im_ingress_sender_allowlist_policy(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _DummyCoreClient())
+    monkeypatch.delenv("IM_INGRESS_TOKEN", raising=False)
+    monkeypatch.delenv("IM_INGRESS_TOKENS_JSON", raising=False)
+    monkeypatch.delenv("IM_INGRESS_SECURITY_JSON", raising=False)
+    monkeypatch.setenv("EDGE_IM_SECURITY_PATH", str(tmp_path / "im-security.json"))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        updated = client.post(
+            "/v1/gateway/im/security",
+            json={"channel": "discord", "dm_policy": "allowlist", "allow_from": ["u-allow"]},
+            headers=_headers(),
+        )
+        assert updated.status_code == 200
+        assert updated.json()["policy"]["dm_policy"] == "allowlist"
+
+        denied = client.post(
+            "/v1/gateway/im/discord/inbound",
+            json={"text": "blocked", "channel_id": "room-1", "user_id": "u-deny"},
+            params={"wait": False},
+        )
+        assert denied.status_code == 403
+        assert "allowlist policy denied sender" in denied.json()["detail"]
+
+        allowed = client.post(
+            "/v1/gateway/im/discord/inbound",
+            json={"text": "allowed", "channel_id": "room-1", "user_id": "u-allow"},
+            params={"wait": False},
+        )
+        assert allowed.status_code == 200
+        assert allowed.json()["channel"] == "discord"
+
+
+def test_im_ingress_telegram_pairing_policy_requires_pair(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _DummyCoreClient())
+    monkeypatch.delenv("IM_INGRESS_TOKEN", raising=False)
+    monkeypatch.delenv("IM_INGRESS_TOKENS_JSON", raising=False)
+    monkeypatch.delenv("IM_INGRESS_SECURITY_JSON", raising=False)
+    monkeypatch.setenv("EDGE_IM_SECURITY_PATH", str(tmp_path / "im-security.json"))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        updated = client.post(
+            "/v1/gateway/im/security",
+            json={"channel": "telegram", "dm_policy": "pairing", "clear_allow_from": True},
+            headers=_headers(),
+        )
+        assert updated.status_code == 200
+        assert updated.json()["policy"]["dm_policy"] == "pairing"
+
+        denied = client.post(
+            "/v1/gateway/im/telegram/inbound",
+            json={"text": "need-pair", "chat_id": "123", "user_id": "456"},
+            params={"wait": False},
+        )
+        assert denied.status_code == 403
+        assert "pairing required" in denied.json()["detail"]
+
+
+def test_im_security_update_add_and_remove_allow_from(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("IM_INGRESS_SECURITY_JSON", raising=False)
+    monkeypatch.setenv("EDGE_IM_SECURITY_PATH", str(tmp_path / "im-security.json"))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        initial = client.post(
+            "/v1/gateway/im/security",
+            json={"channel": "webchat", "dm_policy": "allowlist", "allow_from": ["u1"]},
+            headers=_headers(),
+        )
+        assert initial.status_code == 200
+
+        merged = client.post(
+            "/v1/gateway/im/security",
+            json={"channel": "webchat", "add_allow_from": ["u2"], "remove_allow_from": ["u1"]},
+            headers=_headers(),
+        )
+        assert merged.status_code == 200
+        assert merged.json()["policy"]["allow_from"] == ["u2"]
+
+        fetched = client.get("/v1/gateway/im/security")
+        assert fetched.status_code == 200
+        assert fetched.json()["config"]["channels"]["webchat"]["allow_from"] == ["u2"]
+
+
+def test_im_security_update_rejects_when_env_override_enabled(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv(
+        "IM_INGRESS_SECURITY_JSON",
+        '{"defaults":{"dm_policy":"open","allow_from":[]},"channels":{"discord":{"dm_policy":"allowlist","allow_from":["u1"]}}}',
+    )
+    monkeypatch.setenv("EDGE_IM_SECURITY_PATH", str(tmp_path / "im-security.json"))
+    from backend.agent.api import app
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/v1/gateway/im/security",
+            json={"channel": "discord", "add_allow_from": ["u2"]},
+            headers=_headers(),
+        )
+        assert response.status_code == 409
+        assert "clear env override" in response.json()["detail"]
 
 
 def test_external_write_requires_owner_and_approval_flow() -> None:
@@ -1279,6 +1405,78 @@ def test_subagent_spawn_send_and_history(monkeypatch) -> None:
         types = [item["type"] for item in history.json()["events"]]
         assert "InputEvent" in types
         assert "CompletionEvent" in types
+
+
+def test_auto_subagents_orchestrates_and_recalls_children(monkeypatch) -> None:
+    _AutoSubagentCoreClient.calls = []
+    monkeypatch.setattr("backend.agent.processor.get_core_client", lambda: _AutoSubagentCoreClient())
+    from backend.agent.api import app
+    from backend.patch.state import create_revision
+
+    conv_id = f"conv_auto_subagents_{uuid4().hex}"
+    with TestClient(app) as client:
+        create_revision(
+            scope_type="conversation",
+            scope_id=conv_id,
+            actor_id="owner-1",
+            patch={
+                "auto_subagents": {
+                    "enabled": True,
+                    "complexity_threshold": 1,
+                    "min_input_chars": 1,
+                    "trigger_intents": ["simple", "standard", "complex", "extreme"],
+                    "child_timeout_seconds": 30,
+                }
+            },
+            explanation="enable auto subagents for test conversation",
+            risk_level="low",
+            status="committed",
+        )
+
+        sent = client.post(
+            "/v1/agent/messages",
+            json={
+                "message": "请你设计一个复杂、多阶段、可审计的执行方案并完成交付。",
+                "conversation_id": conv_id,
+                "channel": "web",
+            },
+            headers=_headers(role="owner", actor_id="owner-1"),
+        )
+        assert sent.status_code == 200
+        task_id = sent.json()["task_id"]
+        task = _poll_task_completed(client, task_id)
+        assert task["status"] == "completed"
+
+        audit = client.post("/v1/audit/render", json={"task_id": task_id}, headers=_headers(role="owner", actor_id="owner-1"))
+        assert audit.status_code == 200
+        payload = audit.json()
+        completion = [item for item in payload["timeline"] if item["type"] == "CompletionEvent"][-1]
+        assert completion["payload"]["response_text"] == "supervisor-ok: 结论可信，可交付用户。"
+
+        route_events = [item for item in payload["timeline"] if item["type"] == "RouteEvent"]
+        routes = [str(item["payload"].get("route", "")) for item in route_events]
+        spawn_routes = [route for route in routes if route.startswith("auto_subagents:spawn:")]
+        recall_routes = [route for route in routes if route.startswith("auto_subagents:recalled:")]
+        assert len(spawn_routes) == 3
+        assert len(recall_routes) == 3
+
+        spawned_ids: list[str] = []
+        for route in spawn_routes:
+            match = re.match(r"^auto_subagents:spawn:[^:]+:(.+)$", route)
+            assert match is not None
+            spawned_ids.append(match.group(1))
+
+        for child_conv_id in spawned_ids:
+            session_get = client.get(
+                f"/v1/agent/sessions/{child_conv_id}",
+                headers=_headers(role="owner", actor_id="owner-1"),
+            )
+            assert session_get.status_code == 200
+            assert session_get.json()["status"] == "archived"
+
+    assert any("ROLE: blueprint" in call for call in _AutoSubagentCoreClient.calls)
+    assert any("ROLE: executor" in call for call in _AutoSubagentCoreClient.calls)
+    assert any("ROLE: supervisor" in call for call in _AutoSubagentCoreClient.calls)
 
 
 def test_telegram_pairing_endpoints() -> None:

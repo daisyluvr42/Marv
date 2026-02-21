@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+import copy
 import json
 import re
 import time
 from typing import Any
+from uuid import uuid4
 
-from backend.agent.session_runtime import get_session_workspace
-from backend.agent.state import get_conversation, get_task, now_ts, update_task_status
+from backend.agent.session_runtime import ensure_session_workspace, get_session_workspace, mark_session_archived
+from backend.agent.state import create_task, get_conversation, get_task, now_ts, update_task_status, upsert_conversation
 from backend.approvals.policy import decide_approval_mode, load_approval_policy
 from backend.approvals.service import create_approval, find_matching_approval_grant
 from backend.core_client.openai_compat import get_core_client
@@ -24,9 +27,17 @@ from backend.pi_core import build_pi_turn_context, compact_turn_context, to_open
 from backend.permissions.exec_approvals import evaluate_tool_permission, load_exec_approvals
 from backend.tools.registry import get_tool_spec, list_tools
 from backend.tools.runner import create_tool_call, execute_tool_call
+from marv.engine.reflection import Blueprint, get_skill_engine
 
 
-async def process_task(task_id: str) -> None:
+async def process_task(
+    task_id: str,
+    *,
+    effective_config_override: dict[str, object] | None = None,
+    core_client_override: Any | None = None,
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
+) -> None:
     task = get_task(task_id)
     if task is None:
         return
@@ -34,19 +45,25 @@ async def process_task(task_id: str) -> None:
     channel = conversation.channel if conversation else "web"
     channel_id = conversation.channel_id if conversation else None
     user_id = conversation.user_id if conversation else None
+    thread_id = conversation.thread_id if conversation else None
 
-    effective_config = get_effective_config_for_runtime(
-        conversation_id=task.conversation_id,
-        channel=channel,
-        channel_id=channel_id,
-        user_id=user_id,
-    )
+    if effective_config_override is None:
+        effective_config = get_effective_config_for_runtime(
+            conversation_id=task.conversation_id,
+            channel=channel,
+            channel_id=channel_id,
+            user_id=user_id,
+        )
+    else:
+        effective_config = dict(effective_config_override)
     persona_prompt = _build_persona_system_prompt(effective_config)
     response_style = str(effective_config.get("response_style", "balanced"))
     user_input, requester_actor_id = _get_task_input_context(conversation_id=task.conversation_id, task_id=task_id)
     memory_config = _resolve_memory_runtime_config(effective_config)
     loop_config = _resolve_tool_loop_config(effective_config)
     routing_config = _resolve_model_routing_config(effective_config)
+    skill_router_config = _resolve_skill_router_config(effective_config)
+    auto_subagents_config = _resolve_auto_subagents_config(effective_config)
 
     memory_entries: list[dict[str, object]] = []
     memory_scopes: list[tuple[str, str, float]] = []
@@ -84,6 +101,17 @@ async def process_task(task_id: str) -> None:
         f", routing_enabled={routing_state['enabled']}, intent={routing_state['intent']},"
         f" initial_tier={routing_state['base_tier']}, initial_locality={routing_state['base_locality']}"
     )
+    skill_plan_suffix = (
+        f", skill_router_enabled={skill_router_config['enabled']},"
+        f" skill_router_min_score={skill_router_config['min_score']},"
+        f" skill_router_max_steps={skill_router_config['max_steps']},"
+        f" skill_router_semantic_match={skill_router_config['semantic_match']}"
+    )
+    auto_subagents_plan_suffix = (
+        f", auto_subagents_enabled={auto_subagents_config['enabled']},"
+        f" auto_subagents_threshold={auto_subagents_config['complexity_threshold']},"
+        f" auto_subagents_child_timeout={auto_subagents_config['child_timeout_seconds']}"
+    )
     append_event(
         PlanEvent(
             conversation_id=task.conversation_id,
@@ -92,7 +120,7 @@ async def process_task(task_id: str) -> None:
             plan=(
                 "Generate response via core chat completion with "
                 f"persona(response_style={response_style})"
-                f"{memory_plan_suffix}{loop_plan_suffix}{routing_plan_suffix}"
+                f"{memory_plan_suffix}{loop_plan_suffix}{routing_plan_suffix}{skill_plan_suffix}{auto_subagents_plan_suffix}"
             ),
         )
     )
@@ -108,7 +136,7 @@ async def process_task(task_id: str) -> None:
                 latency_ms=memory_lookup_latency_ms,
             )
 
-        core_client = get_core_client()
+        core_client = core_client_override or get_core_client()
         await core_client.health_check()
         loop_prompt = _build_tool_loop_system_prompt(loop_config=loop_config)
         system_prompt = persona_prompt if not loop_prompt else f"{persona_prompt}\n\n{loop_prompt}"
@@ -141,15 +169,55 @@ async def process_task(task_id: str) -> None:
                 },
             )
         )
-        response_text = await _run_agent_loop(
+        response_text, skill_mode_used = await _maybe_run_skill_sop(
             core_client=core_client,
-            messages=messages,
+            user_input=user_input,
             task_id=task_id,
             conversation_id=task.conversation_id,
             requester_actor_id=requester_actor_id,
-            loop_config=loop_config,
             routing_state=routing_state,
+            skill_router_config=skill_router_config,
+            exec_approvals_override=exec_approvals_override,
+            approval_policy_override=approval_policy_override,
         )
+        if response_text is None:
+            response_text = await _maybe_run_auto_subagents(
+                core_client=core_client,
+                task_id=task_id,
+                conversation_id=task.conversation_id,
+                channel=channel,
+                channel_id=channel_id,
+                user_id=user_id,
+                thread_id=thread_id,
+                requester_actor_id=requester_actor_id,
+                user_input=user_input,
+                routing_state=routing_state,
+                effective_config=effective_config,
+                auto_subagents_config=auto_subagents_config,
+                exec_approvals_override=exec_approvals_override,
+                approval_policy_override=approval_policy_override,
+            )
+        if response_text is None:
+            response_text = await _run_agent_loop(
+                core_client=core_client,
+                messages=messages,
+                task_id=task_id,
+                conversation_id=task.conversation_id,
+                requester_actor_id=requester_actor_id,
+                loop_config=loop_config,
+                routing_state=routing_state,
+                exec_approvals_override=exec_approvals_override,
+                approval_policy_override=approval_policy_override,
+            )
+        elif skill_mode_used:
+            append_event(
+                RouteEvent(
+                    conversation_id=task.conversation_id,
+                    task_id=task_id,
+                    ts=now_ts(),
+                    route=f"skill_router:completed:{skill_mode_used}",
+                )
+            )
         append_event(
             CompletionEvent(
                 conversation_id=task.conversation_id,
@@ -326,6 +394,85 @@ def _resolve_model_routing_config(effective_config: dict[str, object]) -> dict[s
     }
 
 
+def _resolve_skill_router_config(effective_config: dict[str, object]) -> dict[str, object]:
+    raw = effective_config.get("skill_router")
+    if not isinstance(raw, dict):
+        raw = {}
+    min_score = raw.get("min_score", 0.9)
+    if not isinstance(min_score, (int, float)):
+        min_score = 0.9
+    max_steps = raw.get("max_steps", 8)
+    if not isinstance(max_steps, int):
+        max_steps = 8
+    return {
+        "enabled": bool(raw.get("enabled", True)),
+        "min_score": max(0.5, min(0.99, float(min_score))),
+        "max_steps": max(1, min(20, max_steps)),
+        "semantic_match": bool(raw.get("semantic_match", False)),
+    }
+
+
+def _resolve_auto_subagents_config(effective_config: dict[str, object]) -> dict[str, object]:
+    raw = effective_config.get("auto_subagents")
+    if not isinstance(raw, dict):
+        raw = {}
+
+    complexity_threshold = raw.get("complexity_threshold", 7)
+    if not isinstance(complexity_threshold, int):
+        complexity_threshold = 7
+
+    min_input_chars = raw.get("min_input_chars", 180)
+    if not isinstance(min_input_chars, int):
+        min_input_chars = 180
+
+    max_result_chars = raw.get("max_result_chars", 3200)
+    if not isinstance(max_result_chars, int):
+        max_result_chars = 3200
+
+    child_timeout_seconds = raw.get("child_timeout_seconds", 120.0)
+    if isinstance(child_timeout_seconds, bool) or not isinstance(child_timeout_seconds, (int, float)):
+        child_timeout_seconds = 120.0
+
+    return {
+        "enabled": bool(raw.get("enabled", False)),
+        "complexity_threshold": max(1, min(20, complexity_threshold)),
+        "min_input_chars": max(0, min(8000, min_input_chars)),
+        "trigger_intents": _resolve_intent_list(raw.get("trigger_intents"), default=["complex", "extreme"]),
+        "max_result_chars": max(400, min(12000, max_result_chars)),
+        "child_timeout_seconds": max(10.0, min(1800.0, float(child_timeout_seconds))),
+        "auto_archive_children": bool(raw.get("auto_archive_children", True)),
+    }
+
+
+def _should_trigger_auto_subagents(
+    *,
+    user_input: str,
+    routing_state: dict[str, object],
+    auto_subagents_config: dict[str, object],
+) -> tuple[bool, str]:
+    raw = user_input.strip()
+    if not raw:
+        return False, "empty_input"
+
+    intent = str(routing_state.get("intent", "simple")).strip().lower() or "simple"
+    allowed_intents = auto_subagents_config.get("trigger_intents")
+    if isinstance(allowed_intents, list) and intent not in allowed_intents:
+        return False, f"intent_filtered:{intent}"
+
+    complexity_score = int(routing_state.get("complexity_score", 0))
+    context_score = int(routing_state.get("context_score", 0))
+    total_score = complexity_score + context_score
+    threshold = int(auto_subagents_config.get("complexity_threshold", 7))
+    if total_score < threshold:
+        return False, f"score_below_threshold:{total_score}<{threshold}"
+
+    min_chars = int(auto_subagents_config.get("min_input_chars", 180))
+    if len(raw) < min_chars:
+        return False, f"input_too_short:{len(raw)}<{min_chars}"
+
+    return True, f"intent={intent},score={total_score},len={len(raw)}"
+
+
 def _build_routing_state(
     *,
     user_input: str,
@@ -489,6 +636,23 @@ def _resolve_keyword_list(value: object, *, default: list[str]) -> list[str]:
     return results or list(default)
 
 
+def _resolve_intent_list(value: object, *, default: list[str]) -> list[str]:
+    allowed = {"simple", "standard", "complex", "extreme"}
+    if not isinstance(value, list):
+        return list(default)
+    values: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        intent = item.strip().lower()
+        if not intent or intent not in allowed or intent in seen:
+            continue
+        seen.add(intent)
+        values.append(intent)
+    return values or list(default)
+
+
 def _count_keyword_hits(text: str, keywords: object) -> int:
     if not isinstance(keywords, list):
         return 0
@@ -532,6 +696,563 @@ def _build_tool_loop_system_prompt(*, loop_config: dict[str, object]) -> str:
     )
 
 
+async def _maybe_run_skill_sop(
+    *,
+    core_client: Any,
+    user_input: str,
+    task_id: str,
+    conversation_id: str,
+    requester_actor_id: str,
+    routing_state: dict[str, object],
+    skill_router_config: dict[str, object],
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
+) -> tuple[str | None, str | None]:
+    if not bool(skill_router_config.get("enabled", True)):
+        return None, None
+    try:
+        matched = await get_skill_engine().match_blueprint(
+            intent_text=user_input,
+            min_score=float(skill_router_config.get("min_score", 0.9)),
+            allow_semantic=bool(skill_router_config.get("semantic_match", False)),
+        )
+    except Exception:
+        matched = None
+    if matched is None:
+        append_event(
+            RouteEvent(
+                conversation_id=conversation_id,
+                task_id=task_id,
+                ts=now_ts(),
+                route="skill_router:miss",
+            )
+        )
+        return None, None
+
+    blueprint = matched.get("blueprint")
+    if not isinstance(blueprint, Blueprint):
+        return None, None
+    blueprint_id = str(matched.get("blueprint_id", "")).strip()
+    score = float(matched.get("score", 0.0))
+    append_event(
+        RouteEvent(
+            conversation_id=conversation_id,
+            task_id=task_id,
+            ts=now_ts(),
+            route=f"skill_router:hit:{blueprint.name}:score={score:.3f}",
+        )
+    )
+    result_text, success = await _execute_skill_blueprint(
+        core_client=core_client,
+        blueprint=blueprint,
+        user_input=user_input,
+        task_id=task_id,
+        conversation_id=conversation_id,
+        requester_actor_id=requester_actor_id,
+        routing_state=routing_state,
+        max_steps=int(skill_router_config.get("max_steps", 8)),
+        exec_approvals_override=exec_approvals_override,
+        approval_policy_override=approval_policy_override,
+    )
+    if blueprint_id:
+        await get_skill_engine().record_execution_result(blueprint_id, success=success)
+    if result_text is None:
+        return None, None
+    return result_text, blueprint_id
+
+
+async def _maybe_run_auto_subagents(
+    *,
+    core_client: Any,
+    task_id: str,
+    conversation_id: str,
+    channel: str,
+    channel_id: str | None,
+    user_id: str | None,
+    thread_id: str | None,
+    requester_actor_id: str,
+    user_input: str,
+    routing_state: dict[str, object],
+    effective_config: dict[str, object],
+    auto_subagents_config: dict[str, object],
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
+) -> str | None:
+    if not bool(auto_subagents_config.get("enabled", False)):
+        return None
+
+    should_run, reason = _should_trigger_auto_subagents(
+        user_input=user_input,
+        routing_state=routing_state,
+        auto_subagents_config=auto_subagents_config,
+    )
+    if not should_run:
+        append_event(
+            RouteEvent(
+                conversation_id=conversation_id,
+                task_id=task_id,
+                ts=now_ts(),
+                route=f"auto_subagents:skip:{reason}",
+            )
+        )
+        return None
+
+    append_event(
+        RouteEvent(
+            conversation_id=conversation_id,
+            task_id=task_id,
+            ts=now_ts(),
+            route=f"auto_subagents:trigger:{reason}",
+        )
+    )
+    append_event(
+        PlanEvent(
+            conversation_id=conversation_id,
+            task_id=task_id,
+            ts=now_ts(),
+            plan="auto_subagents flow: blueprint -> executor -> supervisor",
+        )
+    )
+
+    child_config = _build_subagent_child_config(effective_config)
+    timeout_seconds = float(auto_subagents_config.get("child_timeout_seconds", 120.0))
+    max_result_chars = int(auto_subagents_config.get("max_result_chars", 3200))
+    spawned_children: list[tuple[str, str]] = []
+
+    try:
+        blueprint_result = await _run_auto_subagent_role(
+            role="blueprint",
+            prompt=_build_blueprint_prompt(user_input),
+            parent_task_id=task_id,
+            parent_conversation_id=conversation_id,
+            channel=channel,
+            channel_id=channel_id,
+            user_id=user_id,
+            thread_id=thread_id,
+            requester_actor_id=requester_actor_id,
+            child_effective_config=child_config,
+            timeout_seconds=timeout_seconds,
+            core_client=core_client,
+            exec_approvals_override=exec_approvals_override,
+            approval_policy_override=approval_policy_override,
+        )
+        spawned_children.append(("blueprint", str(blueprint_result["conversation_id"])))
+        blueprint_text = _truncate_text(str(blueprint_result.get("completion_text", "")).strip(), max_chars=max_result_chars)
+        if not blueprint_text:
+            append_event(
+                RouteEvent(
+                    conversation_id=conversation_id,
+                    task_id=task_id,
+                    ts=now_ts(),
+                    route="auto_subagents:blueprint_empty",
+                )
+            )
+            return None
+
+        executor_result = await _run_auto_subagent_role(
+            role="executor",
+            prompt=_build_executor_prompt(user_input=user_input, blueprint_text=blueprint_text),
+            parent_task_id=task_id,
+            parent_conversation_id=conversation_id,
+            channel=channel,
+            channel_id=channel_id,
+            user_id=user_id,
+            thread_id=thread_id,
+            requester_actor_id=requester_actor_id,
+            child_effective_config=child_config,
+            timeout_seconds=timeout_seconds,
+            core_client=core_client,
+            exec_approvals_override=exec_approvals_override,
+            approval_policy_override=approval_policy_override,
+        )
+        spawned_children.append(("executor", str(executor_result["conversation_id"])))
+        executor_text = _truncate_text(str(executor_result.get("completion_text", "")).strip(), max_chars=max_result_chars)
+        if not executor_text:
+            append_event(
+                RouteEvent(
+                    conversation_id=conversation_id,
+                    task_id=task_id,
+                    ts=now_ts(),
+                    route="auto_subagents:executor_empty",
+                )
+            )
+            return None
+
+        supervisor_result = await _run_auto_subagent_role(
+            role="supervisor",
+            prompt=_build_supervisor_prompt(
+                user_input=user_input,
+                blueprint_text=blueprint_text,
+                executor_text=executor_text,
+            ),
+            parent_task_id=task_id,
+            parent_conversation_id=conversation_id,
+            channel=channel,
+            channel_id=channel_id,
+            user_id=user_id,
+            thread_id=thread_id,
+            requester_actor_id=requester_actor_id,
+            child_effective_config=child_config,
+            timeout_seconds=timeout_seconds,
+            core_client=core_client,
+            exec_approvals_override=exec_approvals_override,
+            approval_policy_override=approval_policy_override,
+        )
+        spawned_children.append(("supervisor", str(supervisor_result["conversation_id"])))
+        supervisor_text = _truncate_text(str(supervisor_result.get("completion_text", "")).strip(), max_chars=max_result_chars)
+
+        final_text = supervisor_text or executor_text or blueprint_text
+        if not final_text:
+            return None
+        append_event(
+            RouteEvent(
+                conversation_id=conversation_id,
+                task_id=task_id,
+                ts=now_ts(),
+                route="auto_subagents:completed",
+            )
+        )
+        return final_text
+    except Exception as exc:
+        append_event(
+            RouteEvent(
+                conversation_id=conversation_id,
+                task_id=task_id,
+                ts=now_ts(),
+                route=f"auto_subagents:error:{type(exc).__name__}",
+            )
+        )
+        return None
+    finally:
+        if bool(auto_subagents_config.get("auto_archive_children", True)):
+            for role, child_conversation_id in spawned_children:
+                archived = mark_session_archived(child_conversation_id)
+                archive_status = "ok" if archived is not None else "missing"
+                append_event(
+                    RouteEvent(
+                        conversation_id=conversation_id,
+                        task_id=task_id,
+                        ts=now_ts(),
+                        route=f"auto_subagents:recalled:{role}:{child_conversation_id}:{archive_status}",
+                    )
+                )
+
+
+async def _run_auto_subagent_role(
+    *,
+    role: str,
+    prompt: str,
+    parent_task_id: str,
+    parent_conversation_id: str,
+    channel: str,
+    channel_id: str | None,
+    user_id: str | None,
+    thread_id: str | None,
+    requester_actor_id: str,
+    child_effective_config: dict[str, object],
+    timeout_seconds: float,
+    core_client: Any,
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
+) -> dict[str, object]:
+    child_conversation_id = _spawn_subagent_conversation(
+        parent_conversation_id=parent_conversation_id,
+        role=role,
+        channel=channel,
+        channel_id=channel_id,
+        user_id=user_id,
+        thread_id=thread_id,
+        actor_id=requester_actor_id,
+    )
+    append_event(
+        RouteEvent(
+            conversation_id=parent_conversation_id,
+            task_id=parent_task_id,
+            ts=now_ts(),
+            route=f"auto_subagents:spawn:{role}:{child_conversation_id}",
+        )
+    )
+
+    child_task = create_task(conversation_id=child_conversation_id, status="queued", stage="plan")
+    append_event(
+        InputEvent(
+            conversation_id=child_conversation_id,
+            task_id=child_task.id,
+            ts=now_ts(),
+            actor_id=f"subagent::{role}",
+            message=prompt,
+        )
+    )
+
+    timeout_happened = False
+    try:
+        await asyncio.wait_for(
+            process_task(
+                child_task.id,
+                effective_config_override=child_effective_config,
+                core_client_override=core_client,
+                exec_approvals_override=exec_approvals_override,
+                approval_policy_override=approval_policy_override,
+            ),
+            timeout=max(10.0, timeout_seconds),
+        )
+    except asyncio.TimeoutError:
+        timeout_happened = True
+        update_task_status(
+            task_id=child_task.id,
+            status="failed",
+            stage="answer",
+            last_error=f"auto_subagents timeout for role={role}",
+        )
+        append_event(
+            RouteEvent(
+                conversation_id=parent_conversation_id,
+                task_id=parent_task_id,
+                ts=now_ts(),
+                route=f"auto_subagents:timeout:{role}:{child_conversation_id}",
+            )
+        )
+    except Exception as exc:
+        update_task_status(
+            task_id=child_task.id,
+            status="failed",
+            stage="answer",
+            last_error=f"auto_subagents role={role} failed: {exc}",
+        )
+        append_event(
+            RouteEvent(
+                conversation_id=parent_conversation_id,
+                task_id=parent_task_id,
+                ts=now_ts(),
+                route=f"auto_subagents:role_error:{role}:{type(exc).__name__}",
+            )
+        )
+
+    child_task_state = get_task(child_task.id)
+    child_status = str(child_task_state.status) if child_task_state is not None else ("failed" if timeout_happened else "unknown")
+    child_last_error = str(child_task_state.last_error) if child_task_state and child_task_state.last_error else None
+    completion_text = _extract_completion_text_for_task(conversation_id=child_conversation_id, task_id=child_task.id)
+    append_event(
+        RouteEvent(
+            conversation_id=parent_conversation_id,
+            task_id=parent_task_id,
+            ts=now_ts(),
+            route=f"auto_subagents:role_done:{role}:{child_status}",
+        )
+    )
+    return {
+        "role": role,
+        "conversation_id": child_conversation_id,
+        "task_id": child_task.id,
+        "status": child_status,
+        "last_error": child_last_error,
+        "completion_text": completion_text,
+    }
+
+
+def _build_subagent_child_config(effective_config: dict[str, object]) -> dict[str, object]:
+    child = copy.deepcopy(effective_config)
+
+    raw_auto = child.get("auto_subagents")
+    auto_cfg = dict(raw_auto) if isinstance(raw_auto, dict) else {}
+    auto_cfg["enabled"] = False
+    child["auto_subagents"] = auto_cfg
+
+    raw_loop = child.get("tool_loop")
+    loop_cfg = dict(raw_loop) if isinstance(raw_loop, dict) else {}
+    loop_cfg["enabled"] = False
+    child["tool_loop"] = loop_cfg
+
+    raw_skill_router = child.get("skill_router")
+    skill_cfg = dict(raw_skill_router) if isinstance(raw_skill_router, dict) else {}
+    skill_cfg["enabled"] = False
+    child["skill_router"] = skill_cfg
+
+    return child
+
+
+def _spawn_subagent_conversation(
+    *,
+    parent_conversation_id: str,
+    role: str,
+    channel: str,
+    channel_id: str | None,
+    user_id: str | None,
+    thread_id: str | None,
+    actor_id: str,
+) -> str:
+    role_name = _safe_subagent_name(role)
+    child_conversation_id = f"subagent:{parent_conversation_id}:{role_name}:{uuid4().hex[:8]}"
+    upsert_conversation(
+        conversation_id=child_conversation_id,
+        channel=channel,
+        channel_id=channel_id,
+        user_id=user_id,
+        thread_id=thread_id,
+    )
+    ensure_session_workspace(conversation_id=child_conversation_id, actor_id=actor_id)
+    return child_conversation_id
+
+
+def _extract_completion_text_for_task(*, conversation_id: str, task_id: str) -> str:
+    events = query_events(conversation_id=conversation_id, task_id=task_id)
+    for event in reversed(events):
+        if event.type != "CompletionEvent":
+            continue
+        try:
+            payload = json.loads(event.payload_json)
+        except json.JSONDecodeError:
+            continue
+        text = str(payload.get("response_text", "")).strip()
+        if text:
+            return text
+    return ""
+
+
+def _build_blueprint_prompt(user_input: str) -> str:
+    return (
+        "ROLE: blueprint\n"
+        "你是规划分身。你的职责是把需求拆解为可执行蓝图，不做实现。\n"
+        "请输出：目标、里程碑、验收标准、关键风险。\n\n"
+        f"用户任务：\n{user_input}"
+    )
+
+
+def _build_executor_prompt(*, user_input: str, blueprint_text: str) -> str:
+    return (
+        "ROLE: executor\n"
+        "你是执行分身。请严格按照蓝图完成任务，并给出执行结果与证据。\n"
+        "请输出：执行摘要、关键步骤、证据、未完成项。\n\n"
+        f"用户任务：\n{user_input}\n\n"
+        f"蓝图输入：\n{blueprint_text}"
+    )
+
+
+def _build_supervisor_prompt(*, user_input: str, blueprint_text: str, executor_text: str) -> str:
+    return (
+        "ROLE: supervisor\n"
+        "你是监督分身。请对蓝图与执行结果做一致性审查，指出缺口并给出最终答复。\n"
+        "如果证据不足，请明确说明不确定点。\n"
+        "请输出用户可直接阅读的最终结果。\n\n"
+        f"用户任务：\n{user_input}\n\n"
+        f"蓝图：\n{blueprint_text}\n\n"
+        f"执行结果：\n{executor_text}"
+    )
+
+
+def _safe_subagent_name(name: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", name.strip()).strip("-.").lower()
+    return cleaned or "worker"
+
+
+def _truncate_text(text: str, *, max_chars: int) -> str:
+    if max_chars <= 0:
+        return text
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "...(truncated)"
+
+
+async def _execute_skill_blueprint(
+    *,
+    core_client: Any,
+    blueprint: Blueprint,
+    user_input: str,
+    task_id: str,
+    conversation_id: str,
+    requester_actor_id: str,
+    routing_state: dict[str, object],
+    max_steps: int,
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
+) -> tuple[str | None, bool]:
+    digests: list[dict[str, object]] = []
+    steps = list(blueprint.steps)[: max(1, max_steps)]
+    for index, step in enumerate(steps):
+        tool_name = str(step.get("tool_name", "")).strip()
+        if not tool_name:
+            return None, False
+        spec = get_tool_spec(tool_name)
+        step_risk = str(step.get("risk", spec.risk if spec is not None else "unknown"))
+        if _permission_level_from_risk(step_risk) > int(blueprint.min_permission_level):
+            append_event(
+                RouteEvent(
+                    conversation_id=conversation_id,
+                    task_id=task_id,
+                    ts=now_ts(),
+                    route=f"skill_router:blocked_permission:{tool_name}",
+                )
+            )
+            return None, False
+
+        raw_args = step.get("arguments", {})
+        args = _render_blueprint_args(raw_args, user_input=user_input)
+        if not isinstance(args, dict):
+            args = {}
+        outcome = _execute_tool_in_loop(
+            task_id=task_id,
+            conversation_id=conversation_id,
+            requester_actor_id=requester_actor_id,
+            tool_name=tool_name,
+            args=args,
+            exec_approvals_override=exec_approvals_override,
+            approval_policy_override=approval_policy_override,
+        )
+        append_event(
+            RouteEvent(
+                conversation_id=conversation_id,
+                task_id=task_id,
+                ts=now_ts(),
+                route=f"skill_router:step:{index + 1}:{tool_name}:{outcome.get('status', 'unknown')}",
+            )
+        )
+        if str(outcome.get("status")) == "pending_approval":
+            approval_id = str(outcome.get("approval_id", "")).strip()
+            reason = str(outcome.get("policy_reason", "")).strip()
+            message = (
+                f"命中技能路径 `{blueprint.name}`，但步骤 `{tool_name}` 需要审批（{approval_id}）。"
+                f"原因：{reason}。"
+            )
+            return message, False
+        if str(outcome.get("status")) != "ok":
+            return None, False
+        digests.append(_tool_outcome_digest(tool_name=tool_name, outcome=outcome))
+
+    route_tier, preferred_locality, allow_cloud_fallback = _route_hints_from_state(routing_state)
+    digest_text = json.dumps(digests, ensure_ascii=False)
+    messages = [
+        {
+            "role": "system",
+            "content": "You are operating in fast SOP mode. Produce final answer from structured tool digests only.",
+        },
+        {
+            "role": "user",
+            "content": (
+                f"User request:\n{user_input}\n\n"
+                f"SOP name: {blueprint.name}\n"
+                f"Tool digests (no raw third-party content):\n{digest_text}\n\n"
+                "Return the final answer for the user."
+            ),
+        },
+    ]
+    try:
+        response = await _invoke_chat_completions_with_route(
+            core_client=core_client,
+            messages=messages,
+            route_tier=route_tier,
+            preferred_locality=preferred_locality,
+            allow_cloud_fallback=allow_cloud_fallback,
+        )
+        text_value = (
+            response.get("choices", [{}])[0].get("message", {}).get("content", "").strip() if isinstance(response, dict) else ""
+        )
+        if text_value:
+            return text_value, True
+    except Exception:
+        pass
+    return "已按历史成功路径执行完成。", True
+
+
 async def _run_agent_loop(
     *,
     core_client: Any,
@@ -541,6 +1262,8 @@ async def _run_agent_loop(
     requester_actor_id: str,
     loop_config: dict[str, object],
     routing_state: dict[str, object],
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
 ) -> str:
     max_steps = int(loop_config["max_steps"])
     max_tool_calls = int(loop_config["max_tool_calls"])
@@ -707,6 +1430,8 @@ async def _run_agent_loop(
             requester_actor_id=requester_actor_id,
             tool_name=tool_name,
             args=arguments,
+            exec_approvals_override=exec_approvals_override,
+            approval_policy_override=approval_policy_override,
         )
         append_event(
             RouteEvent(
@@ -1137,6 +1862,39 @@ def _build_protocol_repair_prompt(*, raw_response: str, remaining_repairs: int, 
     )
 
 
+def _render_blueprint_args(value: object, *, user_input: str) -> object:
+    if isinstance(value, dict):
+        return {str(key): _render_blueprint_args(item, user_input=user_input) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_render_blueprint_args(item, user_input=user_input) for item in value]
+    if isinstance(value, str):
+        return value.replace("{{user_input}}", user_input)
+    return value
+
+
+def _permission_level_from_risk(risk: str) -> int:
+    return 1 if risk.strip().lower() == "read_only" else 2
+
+
+def _tool_outcome_digest(*, tool_name: str, outcome: dict[str, object]) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "tool": tool_name,
+        "status": str(outcome.get("status", "")),
+    }
+    result = outcome.get("result")
+    if isinstance(result, dict):
+        payload["result_shape"] = {"type": "object", "keys": sorted([str(key) for key in result.keys()])[:24]}
+    elif isinstance(result, list):
+        payload["result_shape"] = {"type": "array", "length": len(result)}
+    elif result is None:
+        payload["result_shape"] = {"type": "null"}
+    else:
+        payload["result_shape"] = {"type": type(result).__name__}
+    if outcome.get("approval_id"):
+        payload["approval_id"] = str(outcome.get("approval_id"))
+    return payload
+
+
 def _execute_tool_in_loop(
     *,
     task_id: str,
@@ -1144,6 +1902,8 @@ def _execute_tool_in_loop(
     requester_actor_id: str,
     tool_name: str,
     args: dict[str, object],
+    exec_approvals_override: dict[str, object] | None = None,
+    approval_policy_override: dict[str, object] | None = None,
 ) -> dict[str, object]:
     spec = get_tool_spec(tool_name)
     if spec is None:
@@ -1155,7 +1915,7 @@ def _execute_tool_in_loop(
         if workspace is not None and workspace.workspace_path:
             resolved_args["__marv_session_workspace"] = workspace.workspace_path
 
-    perm_cfg = load_exec_approvals()
+    perm_cfg = exec_approvals_override if isinstance(exec_approvals_override, dict) else load_exec_approvals()
     perm = evaluate_tool_permission(perm_cfg, actor_id=requester_actor_id, tool_name=tool_name)
     if perm["decision"] == "deny":
         return {
@@ -1169,7 +1929,7 @@ def _execute_tool_in_loop(
         tool_name=tool_name,
         session_id=conversation_id,
     )
-    approval_policy = load_approval_policy()
+    approval_policy = approval_policy_override if isinstance(approval_policy_override, dict) else load_approval_policy()
     require_approval, policy_reason = decide_approval_mode(
         policy=approval_policy,
         tool_risk=spec.risk,

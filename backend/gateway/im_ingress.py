@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
 SUPPORTED_IM_CHANNELS = {"telegram", "discord", "slack", "dingtalk", "feishu", "webchat"}
+VALID_DM_POLICIES = {"open", "allowlist", "pairing"}
 
 
 class IngressError(RuntimeError):
@@ -53,6 +55,105 @@ def verify_ingress_auth(*, channel: str, headers: dict[str, str]) -> None:
     if provided == expected:
         return
     raise IngressAuthError("invalid or missing ingress token")
+
+
+def get_ingress_security_path() -> Path:
+    value = os.getenv("EDGE_IM_SECURITY_PATH")
+    if value:
+        return Path(value).expanduser().resolve()
+    data_dir = Path(os.getenv("EDGE_DATA_DIR", "./data")).expanduser().resolve()
+    return data_dir / "im-security.json"
+
+
+def normalize_ingress_security_config(raw: dict[str, Any] | None) -> dict[str, Any]:
+    defaults = {
+        "version": 1,
+        "defaults": {
+            "dm_policy": "open",
+            "allow_from": [],
+        },
+        "channels": {},
+    }
+    if not isinstance(raw, dict):
+        return defaults
+
+    normalized = {
+        "version": int(raw.get("version", 1)),
+        "defaults": _normalize_ingress_policy(raw.get("defaults")),
+        "channels": {},
+    }
+    channels = raw.get("channels")
+    if not isinstance(channels, dict):
+        return normalized
+    for key, value in channels.items():
+        channel = str(key).strip().lower()
+        if channel not in SUPPORTED_IM_CHANNELS:
+            continue
+        normalized["channels"][channel] = _normalize_ingress_policy(value)
+    return normalized
+
+
+def load_ingress_security_config(path: Path | None = None) -> dict[str, Any]:
+    env_payload = os.getenv("IM_INGRESS_SECURITY_JSON", "").strip()
+    if env_payload:
+        try:
+            decoded = json.loads(env_payload)
+        except json.JSONDecodeError:
+            decoded = None
+        return normalize_ingress_security_config(decoded if isinstance(decoded, dict) else None)
+
+    file_path = path or get_ingress_security_path()
+    if not file_path.exists():
+        return normalize_ingress_security_config(None)
+    try:
+        payload = json.loads(file_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return normalize_ingress_security_config(None)
+    return normalize_ingress_security_config(payload if isinstance(payload, dict) else None)
+
+
+def save_ingress_security_config(config: dict[str, Any], path: Path | None = None) -> Path:
+    normalized = normalize_ingress_security_config(config)
+    file_path = path or get_ingress_security_path()
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text(json.dumps(normalized, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
+    return file_path
+
+
+def resolve_ingress_policy(channel: str, config: dict[str, Any] | None = None) -> dict[str, Any]:
+    channel_key = channel.strip().lower()
+    normalized = normalize_ingress_security_config(config or load_ingress_security_config())
+    defaults = normalized.get("defaults")
+    policy = defaults if isinstance(defaults, dict) else _normalize_ingress_policy(None)
+    channels = normalized.get("channels")
+    if isinstance(channels, dict):
+        channel_policy = channels.get(channel_key)
+        if isinstance(channel_policy, dict):
+            policy = _normalize_ingress_policy(channel_policy)
+    return policy
+
+
+def verify_ingress_sender(*, channel: str, message: IngressMessage) -> None:
+    policy = resolve_ingress_policy(channel)
+    mode = str(policy.get("dm_policy", "open")).strip().lower()
+    if mode == "open":
+        return
+
+    allow_from = policy.get("allow_from", [])
+    if _allow_from_match(message=message, entries=allow_from if isinstance(allow_from, list) else []):
+        return
+
+    # OpenClaw-style "pairing" mode: Telegram can pass when active pair exists.
+    if mode == "pairing" and message.channel == "telegram":
+        from backend.gateway.pairing import touch_pairing
+
+        if touch_pairing(chat_id=message.channel_id, user_id=message.user_id):
+            return
+        raise IngressAuthError("pairing required: sender is not paired, use /pair <code> first")
+
+    if mode == "pairing":
+        raise IngressAuthError("pairing-like policy denied sender (not in allow_from)")
+    raise IngressAuthError("allowlist policy denied sender (not in allow_from)")
 
 
 def parse_ingress_payload(channel: str, payload: dict[str, Any]) -> IngressMessage:
@@ -267,3 +368,43 @@ def _extract_bearer_token(value: str | None) -> str | None:
         token = text[7:].strip()
         return token or None
     return None
+
+
+def _normalize_ingress_policy(raw: Any) -> dict[str, Any]:
+    policy = {"dm_policy": "open", "allow_from": []}
+    if not isinstance(raw, dict):
+        return policy
+    candidate_mode = str(raw.get("dm_policy", "")).strip().lower()
+    if candidate_mode in VALID_DM_POLICIES:
+        policy["dm_policy"] = candidate_mode
+    allow_from = raw.get("allow_from")
+    if isinstance(allow_from, list):
+        normalized_entries: list[str] = []
+        seen: set[str] = set()
+        for item in allow_from:
+            entry = str(item).strip()
+            if not entry:
+                continue
+            lowered = entry.lower()
+            if lowered in seen:
+                continue
+            seen.add(lowered)
+            normalized_entries.append(entry)
+        policy["allow_from"] = normalized_entries
+    return policy
+
+
+def _allow_from_match(*, message: IngressMessage, entries: list[Any]) -> bool:
+    if not entries:
+        return False
+    user = message.user_id.strip().lower()
+    channel_user = f"{message.channel_id}:{message.user_id}".strip().lower()
+    for raw in entries:
+        entry = str(raw).strip().lower()
+        if not entry:
+            continue
+        if entry == "*":
+            return True
+        if entry in {user, channel_user}:
+            return True
+    return False

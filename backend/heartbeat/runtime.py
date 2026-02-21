@@ -19,6 +19,7 @@ from backend.memory.store import apply_memory_confidence_decay
 from backend.storage.db import get_session
 from backend.storage.models import ToolCall
 from backend.tools.runner import execute_existing_tool_call
+from marv.engine.reflection import get_skill_engine
 
 
 VALID_MODES = {"interval", "cron"}
@@ -46,6 +47,11 @@ def _default_config_from_env() -> dict[str, Any]:
             "memory_decay_enabled": _env_bool("HEARTBEAT_MEMORY_DECAY_ENABLED", False),
             "memory_decay_half_life_days": int(os.getenv("HEARTBEAT_MEMORY_DECAY_HALF_LIFE_DAYS", "90")),
             "memory_decay_min_confidence": float(os.getenv("HEARTBEAT_MEMORY_DECAY_MIN_CONFIDENCE", "0.2")),
+            "skill_distill_enabled": _env_bool("HEARTBEAT_SKILL_DISTILL_ENABLED", False),
+            "skill_distill_window_hours": int(os.getenv("HEARTBEAT_SKILL_DISTILL_WINDOW_HOURS", "24")),
+            "skill_distill_min_occurrences": int(os.getenv("HEARTBEAT_SKILL_DISTILL_MIN_OCCURRENCES", "4")),
+            "skill_distill_max_patterns": int(os.getenv("HEARTBEAT_SKILL_DISTILL_MAX_PATTERNS", "8")),
+            "skill_distill_max_distill": int(os.getenv("HEARTBEAT_SKILL_DISTILL_MAX_DISTILL", "3")),
         }
     )
 
@@ -62,6 +68,11 @@ def normalize_heartbeat_config(raw: dict[str, Any] | None) -> dict[str, Any]:
         "memory_decay_enabled": False,
         "memory_decay_half_life_days": 90,
         "memory_decay_min_confidence": 0.2,
+        "skill_distill_enabled": False,
+        "skill_distill_window_hours": 24,
+        "skill_distill_min_occurrences": 4,
+        "skill_distill_max_patterns": 8,
+        "skill_distill_max_distill": 3,
     }
     if not isinstance(raw, dict):
         return defaults
@@ -102,6 +113,28 @@ def normalize_heartbeat_config(raw: dict[str, Any] | None) -> dict[str, Any]:
     except (TypeError, ValueError):
         min_confidence = normalized["memory_decay_min_confidence"]
     normalized["memory_decay_min_confidence"] = max(0.0, min(1.0, min_confidence))
+    if isinstance(raw.get("skill_distill_enabled"), bool):
+        normalized["skill_distill_enabled"] = raw["skill_distill_enabled"]
+    try:
+        window_hours = int(raw.get("skill_distill_window_hours", normalized["skill_distill_window_hours"]))
+    except (TypeError, ValueError):
+        window_hours = normalized["skill_distill_window_hours"]
+    normalized["skill_distill_window_hours"] = max(1, min(168, window_hours))
+    try:
+        min_occurrences = int(raw.get("skill_distill_min_occurrences", normalized["skill_distill_min_occurrences"]))
+    except (TypeError, ValueError):
+        min_occurrences = normalized["skill_distill_min_occurrences"]
+    normalized["skill_distill_min_occurrences"] = max(2, min(20, min_occurrences))
+    try:
+        max_patterns = int(raw.get("skill_distill_max_patterns", normalized["skill_distill_max_patterns"]))
+    except (TypeError, ValueError):
+        max_patterns = normalized["skill_distill_max_patterns"]
+    normalized["skill_distill_max_patterns"] = max(1, min(50, max_patterns))
+    try:
+        max_distill = int(raw.get("skill_distill_max_distill", normalized["skill_distill_max_distill"]))
+    except (TypeError, ValueError):
+        max_distill = normalized["skill_distill_max_distill"]
+    normalized["skill_distill_max_distill"] = max(1, min(20, max_distill))
     return normalized
 
 
@@ -215,6 +248,7 @@ class HeartbeatRuntime:
             "core": None,
             "resume_approved_tools": None,
             "memory_decay": None,
+            "skill_distill": None,
         }
 
         if self._config.get("core_health_enabled", True):
@@ -226,6 +260,16 @@ class HeartbeatRuntime:
                 half_life_days=int(self._config.get("memory_decay_half_life_days", 90)),
                 min_confidence=float(self._config.get("memory_decay_min_confidence", 0.2)),
             )
+        if self._config.get("skill_distill_enabled", False):
+            try:
+                payload["skill_distill"] = await get_skill_engine().run_cycle(
+                    window_hours=int(self._config.get("skill_distill_window_hours", 24)),
+                    min_occurrences=int(self._config.get("skill_distill_min_occurrences", 4)),
+                    max_patterns=int(self._config.get("skill_distill_max_patterns", 8)),
+                    max_distill=int(self._config.get("skill_distill_max_distill", 3)),
+                )
+            except Exception as exc:  # pragma: no cover - defensive path
+                payload["skill_distill"] = {"status": "error", "error": str(exc)}
 
         self._last_run_ts = now_ts()
         self._last_payload = payload

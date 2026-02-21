@@ -54,6 +54,15 @@ DEFAULT_SEED = {
         "escalate_after_reflect_rounds": 2,
         "escalate_after_local_failures": 1,
     },
+    "auto_subagents": {
+        "enabled": False,
+        "complexity_threshold": 7,
+        "min_input_chars": 180,
+        "trigger_intents": ["complex", "extreme"],
+        "max_result_chars": 3200,
+        "child_timeout_seconds": 120.0,
+        "auto_archive_children": True,
+    },
 }
 
 

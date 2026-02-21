@@ -18,6 +18,7 @@ Marv 是一个本地优先（local-first）的 Agent 运行时，提供完整的
 - PI-core 兼容层：统一 turn context 转换与结构化 turn 事件
 - 插件包契约层：包目录扫描 + runtime hook（当前支持 IPC tools hook）
 - 技能生态：支持通用 `SKILL.md` 导入，含恶意模式前置扫描
+- 技能蒸馏：心跳驱动从成功轨迹提炼可复用 Blueprint，安全固化并可路由复用
 - MacOS + iOS 端形态：macOS Electron 壳 + iOS PWA
 
 ## 2. 模块介绍
@@ -100,14 +101,39 @@ npm install
 
 ## 4. 启动方式
 
-### 4.1 推荐：一键启动栈
+### 4.1 推荐：开箱即用（首次向导 + 一键启动）
+
+```bash
+cd Marv
+uv run marv ops quickstart
+```
+
+说明：
+- 首次执行会进入交互向导并生成 `.env`
+- 自动启动 `core + edge + frontend`（若配置了 `TELEGRAM_BOT_TOKEN` 也会启动 Telegram）
+- Console 默认地址：`http://127.0.0.1:3000/chat`
+
+常用参数：
+- `--yes`：非交互，直接使用默认值
+- `--wizard`：即使已有 `.env` 也重新跑向导
+- `--no-frontend`：只启动后端栈
+- `--skip-frontend-install`：跳过前端依赖自动安装
+
+停止服务：
+
+```bash
+cd Marv
+bash scripts/stop_stack.sh
+```
+
+### 4.2 兼容方式：仅启动后端栈
 
 ```bash
 cd Marv
 bash scripts/start_stack.sh
 ```
 
-### 4.2 手动启动（开发态）
+### 4.3 手动启动（开发态）
 
 ```bash
 # terminal 1
@@ -123,7 +149,7 @@ cd Marv/frontend
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-### 4.3 可选：Telegram Adapter
+### 4.4 可选：Telegram Adapter
 
 ```bash
 cd Marv
@@ -143,8 +169,11 @@ EDGE_BASE_URL=http://127.0.0.1:8000 TELEGRAM_BOT_TOKEN=<token> uv run marv-teleg
 - `EDGE_APPROVAL_POLICY_PATH`：审批模式策略文件路径
 - `EDGE_EXECUTION_CONFIG_PATH`：执行模式配置文件路径
 - `EDGE_IPC_TOOLS_PATH`：IPC 工具配置路径
+- `IM_INGRESS_TOKEN` / `IM_INGRESS_TOKENS_JSON`：IM ingress webhook 鉴权 token（建议至少配置其一）
+- `EDGE_IM_SECURITY_PATH` / `IM_INGRESS_SECURITY_JSON`：IM sender 准入策略（`dm_policy=open|allowlist|pairing` + `allow_from`）
 - `EDGE_SKILLS_ROOT`：技能安装目录（默认 `./skill/modules`）
 - `EDGE_PACKAGES_ROOT`：插件包根目录（默认 `./packages`）
+- `HEARTBEAT_SKILL_DISTILL_ENABLED`：是否启用技能蒸馏流水线（默认 false）
 
 ### 5.1 Provider 鉴权与路由提示
 
@@ -303,6 +332,11 @@ uv run marv im ingest --channel discord --message "hi" --channel-id room-1 --use
 
 # 原始 payload
 uv run marv im ingest --channel slack --payload-json '{"event":{"text":"hello","channel":"C1","user":"U1"}}' --wait
+
+# sender 安全策略（OpenClaw 风格）
+uv run marv im security-show
+uv run marv im security-set --channel discord --dm-policy allowlist --allow-from "u-1,u-2"
+uv run marv im security-set --channel telegram --dm-policy pairing --clear-allow-from
 ```
 
 ### 6.9 Telegram 配对
@@ -334,8 +368,12 @@ uv run marv system ipc-reload
 uv run marv heartbeat show
 uv run marv heartbeat set --mode interval --interval-seconds 30
 uv run marv heartbeat set --mode cron --cron "*/2 * * * *" --core-health-enabled --resume-approved-tools-enabled
+uv run marv heartbeat set --skill-distill-enabled --skill-distill-window-hours 24 --skill-distill-min-occurrences 4
 
 # 本地运维
+uv run marv ops quickstart
+uv run marv ops doctor
+uv run marv ops doctor --fix --strict
 uv run marv ops probe --message "联调探针" --channel telegram --channel-id 123456 --user-id 7890
 uv run marv ops stop-services
 uv run marv ops package-migration --output-dir ./dist/migrations

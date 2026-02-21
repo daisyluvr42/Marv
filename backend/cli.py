@@ -16,6 +16,15 @@ from typing import Any
 
 import httpx
 
+from backend.approvals.policy import (
+    load_approval_policy,
+    save_approval_policy,
+)
+from backend.evolution.cli import best_evolution, run_evolution
+from backend.gateway.im_ingress import (
+    load_ingress_security_config,
+    normalize_ingress_security_config,
+)
 from backend.permissions.exec_approvals import (
     DEFAULT_MAIN_AGENT,
     VALID_ASK,
@@ -28,11 +37,33 @@ from backend.permissions.exec_approvals import (
     normalize_config,
     save_exec_approvals,
 )
+from backend.sandbox.runtime import (
+    load_execution_config,
+    save_execution_config,
+)
 from backend.tools.registry import list_tools, scan_tools
 
 
 DEFAULT_EDGE_BASE_URL = os.getenv("EDGE_BASE_URL", "http://127.0.0.1:8000")
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DOCTOR_STATUS_ORDER = ("ok", "warn", "fail", "skip")
+DOCTOR_HEARTBEAT_DEFAULTS: dict[str, Any] = {
+    "enabled": True,
+    "mode": "interval",
+    "interval_seconds": 60,
+    "cron": "*/1 * * * *",
+    "core_health_enabled": True,
+    "resume_approved_tools_enabled": True,
+    "emit_events": True,
+    "memory_decay_enabled": False,
+    "memory_decay_half_life_days": 90,
+    "memory_decay_min_confidence": 0.2,
+    "skill_distill_enabled": False,
+    "skill_distill_window_hours": 24,
+    "skill_distill_min_occurrences": 4,
+    "skill_distill_max_patterns": 8,
+    "skill_distill_max_distill": 3,
+}
 OPENCLAW_PRESETS: dict[str, dict[str, str]] = {
     "strict": {"security": "allowlist", "ask": "always", "ask_fallback": "deny"},
     "balanced": {"security": "allowlist", "ask": "on-miss", "ask_fallback": "deny"},
@@ -92,6 +123,12 @@ def _parse_json_args(text: str | None) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise SystemExit("--args must be a JSON object")
     return value
+
+
+def _split_csv_values(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 def _confirm_or_exit(message: str) -> None:
@@ -167,7 +204,7 @@ def _pid_is_alive(pid: int) -> bool:
 def _running_services(project_root: Path) -> list[dict[str, Any]]:
     pid_dir = project_root / ".run"
     services: list[dict[str, Any]] = []
-    for name in ("core", "edge", "telegram"):
+    for name in ("core", "edge", "telegram", "frontend"):
         pid_file = pid_dir / f"{name}.pid"
         if not pid_file.exists():
             continue
@@ -459,6 +496,18 @@ def cmd_config_effective(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_evolve_run(args: argparse.Namespace) -> int:
+    payload = run_evolution(config_path=args.config, out_path=args.out, dry_run=args.dry_run)
+    _print_json(payload)
+    return 0
+
+
+def cmd_evolve_best(args: argparse.Namespace) -> int:
+    payload = best_evolution(run_id=args.run, top_k=args.top_k)
+    _print_json(payload)
+    return 0
+
+
 def cmd_memory_write(args: argparse.Namespace) -> int:
     payload = {
         "scope_type": args.scope_type,
@@ -732,6 +781,31 @@ def cmd_im_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_im_security_show(args: argparse.Namespace) -> int:
+    _print_json(_request_json(args, "GET", "/v1/gateway/im/security"))
+    return 0
+
+
+def cmd_im_security_set(args: argparse.Namespace) -> int:
+    payload: dict[str, Any] = {}
+    if args.channel is not None:
+        payload["channel"] = args.channel
+    if args.dm_policy is not None:
+        payload["dm_policy"] = args.dm_policy
+    if args.allow_from is not None:
+        payload["allow_from"] = _split_csv_values(args.allow_from)
+    if args.add_allow_from is not None:
+        payload["add_allow_from"] = _split_csv_values(args.add_allow_from)
+    if args.remove_allow_from is not None:
+        payload["remove_allow_from"] = _split_csv_values(args.remove_allow_from)
+    if args.clear_allow_from:
+        payload["clear_allow_from"] = True
+    if not payload:
+        raise SystemExit("no security fields provided")
+    _print_json(_request_json(args, "POST", "/v1/gateway/im/security", json_body=payload))
+    return 0
+
+
 def cmd_skills_list(args: argparse.Namespace) -> int:
     _print_json(_request_json(args, "GET", "/v1/skills"))
     return 0
@@ -809,6 +883,249 @@ def cmd_execution_set(args: argparse.Namespace) -> int:
     if not payload:
         raise SystemExit("no execution fields provided")
     _print_json(_request_json(args, "POST", "/v1/system/execution-mode", json_body=payload))
+    return 0
+
+
+def _load_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in line:
+            continue
+        key, raw_value = line.split("=", 1)
+        env_key = key.strip()
+        if not env_key:
+            continue
+        value = raw_value.strip()
+        if len(value) >= 2 and ((value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")):
+            value = value[1:-1]
+        values[env_key] = value
+    return values
+
+
+def _encode_env_value(value: str) -> str:
+    cleaned = value.strip()
+    if cleaned == "":
+        return ""
+    if any(ch in cleaned for ch in ['"', "'", " ", "#", ";"]):
+        return json.dumps(cleaned, ensure_ascii=True)
+    return cleaned
+
+
+def _write_env_file(*, env_path: Path, values: dict[str, str], template_path: Path) -> None:
+    lines: list[str] = []
+    consumed: set[str] = set()
+    if template_path.exists():
+        for line in template_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in line:
+                lines.append(line)
+                continue
+            key, _ = line.split("=", 1)
+            env_key = key.strip()
+            if env_key in values:
+                lines.append(f"{env_key}={_encode_env_value(values[env_key])}")
+                consumed.add(env_key)
+            else:
+                lines.append(line)
+    else:
+        lines.append("# Generated by marv ops quickstart")
+
+    remaining_keys = sorted([key for key in values.keys() if key not in consumed])
+    if remaining_keys and lines and lines[-1].strip():
+        lines.append("")
+    for key in remaining_keys:
+        lines.append(f"{key}={_encode_env_value(values[key])}")
+
+    env_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _ask_text(*, prompt: str, default: str, assume_yes: bool) -> str:
+    if assume_yes or not sys.stdin.isatty():
+        return default
+    answer = input(f"{prompt} [{default}]: ").strip()
+    return answer or default
+
+
+def _ask_bool(*, prompt: str, default: bool, assume_yes: bool) -> bool:
+    if assume_yes or not sys.stdin.isatty():
+        return default
+    suffix = "Y/n" if default else "y/N"
+    answer = input(f"{prompt} ({suffix}): ").strip().lower()
+    if not answer:
+        return default
+    return answer in {"y", "yes", "1", "true", "on"}
+
+
+def _run_quickstart_wizard(
+    *,
+    env_path: Path,
+    template_path: Path,
+    assume_yes: bool,
+    with_telegram: bool,
+) -> dict[str, str]:
+    existing = _load_env_file(env_path)
+    defaults = {
+        "EDGE_BASE_URL": existing.get("EDGE_BASE_URL", "http://127.0.0.1:8000"),
+        "CORE_BASE_URL": existing.get("CORE_BASE_URL", "http://127.0.0.1:9000"),
+        "TELEGRAM_BOT_TOKEN": existing.get("TELEGRAM_BOT_TOKEN", ""),
+        "TELEGRAM_OWNER_IDS": existing.get("TELEGRAM_OWNER_IDS", ""),
+        "TELEGRAM_REQUIRE_PAIRING": existing.get("TELEGRAM_REQUIRE_PAIRING", "false"),
+        "EDGE_EXECUTION_MODE": existing.get("EDGE_EXECUTION_MODE", "auto"),
+        "CORE_PROVIDER_MATRIX_JSON": existing.get("CORE_PROVIDER_MATRIX_JSON", ""),
+    }
+    if not assume_yes:
+        print("Marv first-run setup")
+        print("Press Enter to accept defaults.")
+
+    edge_base_url = _ask_text(
+        prompt="Edge API base URL",
+        default=defaults["EDGE_BASE_URL"],
+        assume_yes=assume_yes,
+    )
+    core_base_url = _ask_text(
+        prompt="Core API base URL",
+        default=defaults["CORE_BASE_URL"],
+        assume_yes=assume_yes,
+    )
+
+    enable_telegram_default = with_telegram or bool(defaults["TELEGRAM_BOT_TOKEN"])
+    enable_telegram = _ask_bool(
+        prompt="Enable Telegram adapter now",
+        default=enable_telegram_default,
+        assume_yes=assume_yes,
+    )
+    telegram_token = defaults["TELEGRAM_BOT_TOKEN"] if enable_telegram else ""
+    telegram_owner_ids = defaults["TELEGRAM_OWNER_IDS"] if enable_telegram else ""
+    telegram_require_pairing = defaults["TELEGRAM_REQUIRE_PAIRING"] if enable_telegram else "false"
+    if enable_telegram:
+        telegram_token = _ask_text(
+            prompt="Telegram bot token",
+            default=telegram_token or "replace_with_bot_token",
+            assume_yes=assume_yes,
+        )
+        telegram_owner_ids = _ask_text(
+            prompt="Telegram owner user IDs (comma separated, optional)",
+            default=telegram_owner_ids,
+            assume_yes=assume_yes,
+        )
+        telegram_require_pairing = "true" if _ask_bool(
+            prompt="Require Telegram pairing",
+            default=(str(telegram_require_pairing).strip().lower() in {"1", "true", "yes", "on"}),
+            assume_yes=assume_yes,
+        ) else "false"
+
+    execution_mode = _ask_text(
+        prompt="Execution mode (auto/local/sandbox)",
+        default=defaults["EDGE_EXECUTION_MODE"],
+        assume_yes=assume_yes,
+    ).strip().lower()
+    if execution_mode not in {"auto", "local", "sandbox"}:
+        execution_mode = "auto"
+
+    configure_matrix = _ask_bool(
+        prompt="Configure CORE_PROVIDER_MATRIX_JSON now (advanced)",
+        default=bool(defaults["CORE_PROVIDER_MATRIX_JSON"]),
+        assume_yes=assume_yes,
+    )
+    provider_matrix_json = defaults["CORE_PROVIDER_MATRIX_JSON"] if configure_matrix else ""
+    if configure_matrix:
+        provider_matrix_json = _ask_text(
+            prompt="CORE_PROVIDER_MATRIX_JSON (one-line JSON array)",
+            default=provider_matrix_json,
+            assume_yes=assume_yes,
+        )
+        if provider_matrix_json:
+            try:
+                decoded = json.loads(provider_matrix_json)
+            except json.JSONDecodeError as exc:
+                raise SystemExit(f"invalid CORE_PROVIDER_MATRIX_JSON: {exc}") from exc
+            if not isinstance(decoded, list):
+                raise SystemExit("invalid CORE_PROVIDER_MATRIX_JSON: must be a JSON array")
+
+    merged = existing.copy()
+    merged.update(
+        {
+            "EDGE_BASE_URL": edge_base_url,
+            "CORE_BASE_URL": core_base_url,
+            "TELEGRAM_BOT_TOKEN": telegram_token,
+            "TELEGRAM_OWNER_IDS": telegram_owner_ids,
+            "TELEGRAM_REQUIRE_PAIRING": telegram_require_pairing,
+            "EDGE_EXECUTION_MODE": execution_mode,
+            "CORE_PROVIDER_MATRIX_JSON": provider_matrix_json,
+        }
+    )
+    _write_env_file(env_path=env_path, values=merged, template_path=template_path)
+    return merged
+
+
+def cmd_ops_quickstart(args: argparse.Namespace) -> int:
+    env_path = PROJECT_ROOT / ".env"
+    env_example_path = PROJECT_ROOT / ".env.example"
+    should_run_wizard = args.wizard or not env_path.exists()
+    if should_run_wizard:
+        _run_quickstart_wizard(
+            env_path=env_path,
+            template_path=env_example_path,
+            assume_yes=args.yes,
+            with_telegram=args.with_telegram,
+        )
+
+    start_script = PROJECT_ROOT / "scripts" / "start_all.sh"
+    if not start_script.exists():
+        raise SystemExit(f"start script not found: {start_script}")
+    env = os.environ.copy()
+    env["MARV_START_FRONTEND"] = "false" if args.no_frontend else "true"
+    env["MARV_INSTALL_FRONTEND_DEPS"] = "false" if args.skip_frontend_install else "true"
+    try:
+        subprocess.run(["bash", str(start_script)], cwd=PROJECT_ROOT, check=True, env=env)
+    except subprocess.CalledProcessError as exc:  # pragma: no cover - shell wrapper
+        raise SystemExit(f"failed to start stack: {exc}") from exc
+
+    expected_services = ["core", "edge"]
+    if not args.no_frontend:
+        expected_services.append("frontend")
+    deadline = time.monotonic() + 8.0
+    alive_names: set[str] = set()
+    while time.monotonic() < deadline:
+        alive_names = {
+            str(item["name"])
+            for item in _running_services(PROJECT_ROOT)
+            if bool(item.get("alive"))
+        }
+        if all(name in alive_names for name in expected_services):
+            break
+        time.sleep(0.2)
+    missing = [name for name in expected_services if name not in alive_names]
+    if missing:
+        raise SystemExit(
+            "quickstart started but some services are not alive: "
+            + ",".join(missing)
+            + ". Check logs under ./logs/"
+        )
+
+    frontend_url = "disabled"
+    if "frontend" in alive_names:
+        frontend_url = "http://127.0.0.1:3000/chat"
+    _print_json(
+        {
+            "status": "ok",
+            "action": "quickstart",
+            "wizard_ran": should_run_wizard,
+            "env_path": str(env_path),
+            "edge_url": "http://127.0.0.1:8000",
+            "core_url": "http://127.0.0.1:9000",
+            "console_url": frontend_url,
+            "alive_services": sorted(alive_names),
+            "next_steps": [
+                "Run `uv run marv health`",
+                "Open console URL and send first message",
+                "Stop services with `bash scripts/stop_stack.sh`",
+            ],
+        }
+    )
     return 0
 
 
@@ -981,6 +1298,1257 @@ def cmd_ops_probe(args: argparse.Namespace) -> int:
 
     _print_json(output)
     return 0 if final_status == "completed" else 2
+
+
+def _doctor_add_check(
+    checks: list[dict[str, Any]],
+    *,
+    check_id: str,
+    status: str,
+    summary: str,
+    details: list[str] | None = None,
+    fix: str | None = None,
+) -> None:
+    if status not in DOCTOR_STATUS_ORDER:
+        raise ValueError(f"invalid doctor status: {status}")
+    payload: dict[str, Any] = {
+        "id": check_id,
+        "status": status,
+        "summary": summary,
+    }
+    if details:
+        payload["details"] = [item for item in details if item]
+    if fix:
+        payload["fix"] = fix
+    checks.append(payload)
+
+
+def _doctor_read_json_file(path: Path) -> tuple[Any | None, str | None]:
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return None, f"unable to read file: {exc}"
+    try:
+        return json.loads(raw), None
+    except json.JSONDecodeError as exc:
+        return None, f"invalid JSON: {exc}"
+
+
+def _doctor_resolve_env_value(*, key: str, env_values: dict[str, str], default: str = "") -> str:
+    runtime = os.getenv(key)
+    if runtime is not None and runtime.strip():
+        return runtime.strip()
+    from_file = env_values.get(key)
+    if from_file is not None and from_file.strip():
+        return from_file.strip()
+    return default
+
+
+def _doctor_resolve_data_dir(*, project_root: Path, env_values: dict[str, str]) -> Path:
+    raw = _doctor_resolve_env_value(
+        key="EDGE_DATA_DIR",
+        env_values=env_values,
+        default=str(project_root / "data"),
+    )
+    return Path(raw).expanduser().resolve()
+
+
+def _doctor_resolve_path(
+    *,
+    key: str,
+    env_values: dict[str, str],
+    default_path: Path,
+) -> Path:
+    raw = _doctor_resolve_env_value(key=key, env_values=env_values, default=str(default_path))
+    return Path(raw).expanduser().resolve()
+
+
+def _doctor_parse_bool(value: str | None, *, default: bool) -> bool:
+    if value is None:
+        return default
+    lowered = value.strip().lower()
+    if not lowered:
+        return default
+    return lowered in {"1", "true", "yes", "y", "on"}
+
+
+def _doctor_parse_int(value: str | None, *, default: int) -> int:
+    if value is None:
+        return default
+    try:
+        return int(value.strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _doctor_parse_float(value: str | None, *, default: float) -> float:
+    if value is None:
+        return default
+    try:
+        return float(value.strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _doctor_heartbeat_defaults_from_env(env_values: dict[str, str]) -> dict[str, Any]:
+    defaults = dict(DOCTOR_HEARTBEAT_DEFAULTS)
+    defaults["enabled"] = _doctor_parse_bool(
+        _doctor_resolve_env_value(key="HEARTBEAT_ENABLED", env_values=env_values, default="true"),
+        default=True,
+    )
+    defaults["mode"] = _doctor_resolve_env_value(
+        key="HEARTBEAT_MODE",
+        env_values=env_values,
+        default=str(DOCTOR_HEARTBEAT_DEFAULTS["mode"]),
+    ).strip().lower() or "interval"
+    if defaults["mode"] not in {"interval", "cron"}:
+        defaults["mode"] = "interval"
+    defaults["interval_seconds"] = max(
+        5,
+        min(
+            86400,
+            _doctor_parse_int(
+                _doctor_resolve_env_value(key="HEARTBEAT_INTERVAL_SECONDS", env_values=env_values, default="60"),
+                default=60,
+            ),
+        ),
+    )
+    defaults["cron"] = _doctor_resolve_env_value(
+        key="HEARTBEAT_CRON",
+        env_values=env_values,
+        default=str(DOCTOR_HEARTBEAT_DEFAULTS["cron"]),
+    ).strip() or str(DOCTOR_HEARTBEAT_DEFAULTS["cron"])
+    defaults["core_health_enabled"] = _doctor_parse_bool(
+        _doctor_resolve_env_value(key="HEARTBEAT_CORE_HEALTH_ENABLED", env_values=env_values, default="true"),
+        default=True,
+    )
+    defaults["resume_approved_tools_enabled"] = _doctor_parse_bool(
+        _doctor_resolve_env_value(
+            key="HEARTBEAT_RESUME_APPROVED_TOOLS_ENABLED",
+            env_values=env_values,
+            default="true",
+        ),
+        default=True,
+    )
+    defaults["emit_events"] = _doctor_parse_bool(
+        _doctor_resolve_env_value(key="HEARTBEAT_EMIT_EVENTS", env_values=env_values, default="true"),
+        default=True,
+    )
+    defaults["memory_decay_enabled"] = _doctor_parse_bool(
+        _doctor_resolve_env_value(key="HEARTBEAT_MEMORY_DECAY_ENABLED", env_values=env_values, default="false"),
+        default=False,
+    )
+    defaults["memory_decay_half_life_days"] = max(
+        1,
+        min(
+            3650,
+            _doctor_parse_int(
+                _doctor_resolve_env_value(
+                    key="HEARTBEAT_MEMORY_DECAY_HALF_LIFE_DAYS",
+                    env_values=env_values,
+                    default="90",
+                ),
+                default=90,
+            ),
+        ),
+    )
+    defaults["memory_decay_min_confidence"] = max(
+        0.0,
+        min(
+            1.0,
+            _doctor_parse_float(
+                _doctor_resolve_env_value(
+                    key="HEARTBEAT_MEMORY_DECAY_MIN_CONFIDENCE",
+                    env_values=env_values,
+                    default="0.2",
+                ),
+                default=0.2,
+            ),
+        ),
+    )
+    defaults["skill_distill_enabled"] = _doctor_parse_bool(
+        _doctor_resolve_env_value(
+            key="HEARTBEAT_SKILL_DISTILL_ENABLED",
+            env_values=env_values,
+            default="false",
+        ),
+        default=False,
+    )
+    defaults["skill_distill_window_hours"] = max(
+        1,
+        min(
+            168,
+            _doctor_parse_int(
+                _doctor_resolve_env_value(
+                    key="HEARTBEAT_SKILL_DISTILL_WINDOW_HOURS",
+                    env_values=env_values,
+                    default="24",
+                ),
+                default=24,
+            ),
+        ),
+    )
+    defaults["skill_distill_min_occurrences"] = max(
+        2,
+        min(
+            20,
+            _doctor_parse_int(
+                _doctor_resolve_env_value(
+                    key="HEARTBEAT_SKILL_DISTILL_MIN_OCCURRENCES",
+                    env_values=env_values,
+                    default="4",
+                ),
+                default=4,
+            ),
+        ),
+    )
+    defaults["skill_distill_max_patterns"] = max(
+        1,
+        min(
+            50,
+            _doctor_parse_int(
+                _doctor_resolve_env_value(
+                    key="HEARTBEAT_SKILL_DISTILL_MAX_PATTERNS",
+                    env_values=env_values,
+                    default="8",
+                ),
+                default=8,
+            ),
+        ),
+    )
+    defaults["skill_distill_max_distill"] = max(
+        1,
+        min(
+            20,
+            _doctor_parse_int(
+                _doctor_resolve_env_value(
+                    key="HEARTBEAT_SKILL_DISTILL_MAX_DISTILL",
+                    env_values=env_values,
+                    default="3",
+                ),
+                default=3,
+            ),
+        ),
+    )
+    return defaults
+
+
+def _doctor_write_json_file(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
+
+
+def _doctor_check_health(base_url: str, *, timeout_seconds: float) -> tuple[bool, str]:
+    url = base_url.rstrip("/") + "/health"
+    try:
+        with httpx.Client(timeout=timeout_seconds) as client:
+            response = client.get(url)
+            response.raise_for_status()
+            payload = response.json()
+    except Exception as exc:
+        return False, f"{url}: {exc}"
+    if isinstance(payload, dict) and str(payload.get("status", "")).strip().lower() == "ok":
+        return True, f"{url}: status=ok"
+    return True, f"{url}: reachable"
+
+
+def _doctor_summarize(checks: list[dict[str, Any]]) -> dict[str, Any]:
+    counts = {name: 0 for name in DOCTOR_STATUS_ORDER}
+    for item in checks:
+        status = str(item.get("status", "")).strip().lower()
+        if status in counts:
+            counts[status] += 1
+    if counts["fail"] > 0:
+        overall = "fail"
+    elif counts["warn"] > 0:
+        overall = "warn"
+    else:
+        overall = "ok"
+    return {
+        "overall": overall,
+        "counts": counts,
+    }
+
+
+def _doctor_exit_code(*, summary: dict[str, Any], strict: bool) -> int:
+    counts = summary.get("counts", {})
+    fail_count = int(counts.get("fail", 0))
+    warn_count = int(counts.get("warn", 0))
+    if fail_count > 0:
+        return 2
+    if strict and warn_count > 0:
+        return 2
+    return 0
+
+
+def _build_doctor_report(
+    *,
+    project_root: Path,
+    edge_base_url: str,
+    actor_id: str,
+    actor_role: str,
+    timeout_seconds: float,
+    skip_network: bool,
+    apply_fixes: bool,
+) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = []
+    env_path = project_root / ".env"
+    env_values = _load_env_file(env_path)
+
+    if env_path.exists():
+        _doctor_add_check(
+            checks,
+            check_id="setup.env_file",
+            status="ok",
+            summary=f"loaded .env ({len(env_values)} keys)",
+            details=[str(env_path)],
+        )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="setup.env_file",
+            status="warn",
+            summary=".env not found",
+            details=[str(env_path)],
+            fix="Run `uv run marv ops quickstart --wizard` to generate local runtime settings.",
+        )
+
+    uv_path = shutil.which("uv")
+    if uv_path:
+        _doctor_add_check(
+            checks,
+            check_id="setup.runtime_binary",
+            status="ok",
+            summary="`uv` executable found",
+            details=[uv_path],
+        )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="setup.runtime_binary",
+            status="fail",
+            summary="`uv` executable not found in PATH",
+            fix="Install `uv` and ensure it is available in PATH.",
+        )
+
+    data_dir = _doctor_resolve_data_dir(project_root=project_root, env_values=env_values)
+    if data_dir.exists() and not data_dir.is_dir():
+        _doctor_add_check(
+            checks,
+            check_id="runtime.data_dir",
+            status="fail",
+            summary="runtime data path exists but is not a directory",
+            details=[str(data_dir)],
+            fix="Set `EDGE_DATA_DIR` to a directory path.",
+        )
+    elif data_dir.exists():
+        _doctor_add_check(
+            checks,
+            check_id="runtime.data_dir",
+            status="ok",
+            summary="runtime data directory ready",
+            details=[str(data_dir)],
+        )
+    else:
+        if apply_fixes:
+            data_dir.mkdir(parents=True, exist_ok=True)
+            _doctor_add_check(
+                checks,
+                check_id="runtime.data_dir",
+                status="ok",
+                summary="runtime data directory created",
+                details=[str(data_dir)],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="runtime.data_dir",
+                status="warn",
+                summary="runtime data directory missing",
+                details=[str(data_dir)],
+                fix="Run `uv run marv ops doctor --fix` to create missing runtime files.",
+            )
+
+    edge_db_path = _doctor_resolve_path(
+        key="EDGE_DB_PATH",
+        env_values=env_values,
+        default_path=data_dir / "edge.db",
+    )
+    if edge_db_path.exists():
+        _doctor_add_check(
+            checks,
+            check_id="runtime.edge_db",
+            status="ok",
+            summary="edge database file found",
+            details=[f"path={edge_db_path}", f"size_bytes={edge_db_path.stat().st_size}"],
+        )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="runtime.edge_db",
+            status="warn",
+            summary="edge database not found (will be created on first startup)",
+            details=[str(edge_db_path)],
+            fix="Start stack once with `uv run marv ops quickstart --yes`.",
+        )
+
+    exec_approvals_path = _doctor_resolve_path(
+        key="EDGE_EXEC_APPROVALS_PATH",
+        env_values=env_values,
+        default_path=data_dir / "exec-approvals.json",
+    )
+    approval_policy_path = _doctor_resolve_path(
+        key="EDGE_APPROVAL_POLICY_PATH",
+        env_values=env_values,
+        default_path=data_dir / "approval-policy.json",
+    )
+    execution_config_path = _doctor_resolve_path(
+        key="EDGE_EXECUTION_CONFIG_PATH",
+        env_values=env_values,
+        default_path=data_dir / "execution-config.json",
+    )
+    heartbeat_config_path = _doctor_resolve_path(
+        key="EDGE_HEARTBEAT_CONFIG_PATH",
+        env_values=env_values,
+        default_path=data_dir / "heartbeat-config.json",
+    )
+    ingress_security_path = _doctor_resolve_path(
+        key="EDGE_IM_SECURITY_PATH",
+        env_values=env_values,
+        default_path=data_dir / "im-security.json",
+    )
+    ipc_tools_path = _doctor_resolve_path(
+        key="EDGE_IPC_TOOLS_PATH",
+        env_values=env_values,
+        default_path=data_dir / "ipc-tools.json",
+    )
+
+    if apply_fixes:
+        if not exec_approvals_path.exists():
+            save_exec_approvals(load_exec_approvals(path=exec_approvals_path), path=exec_approvals_path)
+        if not approval_policy_path.exists():
+            save_approval_policy(load_approval_policy(path=approval_policy_path), path=approval_policy_path)
+        if not execution_config_path.exists():
+            save_execution_config(load_execution_config(path=execution_config_path), path=execution_config_path)
+        if not heartbeat_config_path.exists():
+            _doctor_write_json_file(heartbeat_config_path, _doctor_heartbeat_defaults_from_env(env_values))
+
+    exec_policy: dict[str, Any] | None = None
+    if not exec_approvals_path.exists():
+        _doctor_add_check(
+            checks,
+            check_id="config.exec_approvals",
+            status="warn",
+            summary="execution approvals file missing",
+            details=[str(exec_approvals_path)],
+            fix="Run `uv run marv ops doctor --fix` to scaffold default policy.",
+        )
+    else:
+        payload, error = _doctor_read_json_file(exec_approvals_path)
+        if error:
+            _doctor_add_check(
+                checks,
+                check_id="config.exec_approvals",
+                status="fail",
+                summary="execution approvals file is invalid",
+                details=[str(exec_approvals_path), error],
+                fix="Fix JSON syntax or re-run `uv run marv ops doctor --fix` after removing the broken file.",
+            )
+        elif not isinstance(payload, dict):
+            _doctor_add_check(
+                checks,
+                check_id="config.exec_approvals",
+                status="fail",
+                summary="execution approvals file must be a JSON object",
+                details=[str(exec_approvals_path)],
+            )
+        else:
+            exec_policy = load_exec_approvals(path=exec_approvals_path)
+            defaults = exec_policy.get("defaults", {})
+            details = [str(exec_approvals_path)]
+            if isinstance(defaults, dict):
+                details.append(
+                    "defaults="
+                    + ",".join(
+                        [
+                            f"security={defaults.get('security')}",
+                            f"ask={defaults.get('ask')}",
+                            f"ask_fallback={defaults.get('ask_fallback')}",
+                        ]
+                    )
+                )
+            _doctor_add_check(
+                checks,
+                check_id="config.exec_approvals",
+                status="ok",
+                summary="execution approvals loaded",
+                details=details,
+            )
+
+    approval_policy: dict[str, Any] | None = None
+    if not approval_policy_path.exists():
+        _doctor_add_check(
+            checks,
+            check_id="config.approval_policy",
+            status="warn",
+            summary="approval policy file missing",
+            details=[str(approval_policy_path)],
+            fix="Run `uv run marv ops doctor --fix` to scaffold default policy.",
+        )
+    else:
+        payload, error = _doctor_read_json_file(approval_policy_path)
+        if error:
+            _doctor_add_check(
+                checks,
+                check_id="config.approval_policy",
+                status="fail",
+                summary="approval policy file is invalid",
+                details=[str(approval_policy_path), error],
+            )
+        elif not isinstance(payload, dict):
+            _doctor_add_check(
+                checks,
+                check_id="config.approval_policy",
+                status="fail",
+                summary="approval policy must be a JSON object",
+                details=[str(approval_policy_path)],
+            )
+        else:
+            approval_policy = load_approval_policy(path=approval_policy_path)
+            _doctor_add_check(
+                checks,
+                check_id="config.approval_policy",
+                status="ok",
+                summary="approval policy loaded",
+                details=[str(approval_policy_path), f"mode={approval_policy.get('mode', 'policy')}"],
+            )
+
+    execution_policy: dict[str, Any] | None = None
+    if not execution_config_path.exists():
+        _doctor_add_check(
+            checks,
+            check_id="config.execution",
+            status="warn",
+            summary="execution config file missing",
+            details=[str(execution_config_path)],
+            fix="Run `uv run marv ops doctor --fix` to scaffold execution config.",
+        )
+    else:
+        payload, error = _doctor_read_json_file(execution_config_path)
+        if error:
+            _doctor_add_check(
+                checks,
+                check_id="config.execution",
+                status="fail",
+                summary="execution config file is invalid",
+                details=[str(execution_config_path), error],
+            )
+        elif not isinstance(payload, dict):
+            _doctor_add_check(
+                checks,
+                check_id="config.execution",
+                status="fail",
+                summary="execution config must be a JSON object",
+                details=[str(execution_config_path)],
+            )
+        else:
+            execution_policy = load_execution_config(path=execution_config_path)
+            _doctor_add_check(
+                checks,
+                check_id="config.execution",
+                status="ok",
+                summary="execution config loaded",
+                details=[
+                    str(execution_config_path),
+                    f"mode={execution_policy.get('mode', 'auto')}",
+                    f"docker_image={execution_policy.get('docker_image', '')}",
+                    f"network_enabled={execution_policy.get('network_enabled', False)}",
+                ],
+            )
+
+    if not heartbeat_config_path.exists():
+        _doctor_add_check(
+            checks,
+            check_id="config.heartbeat",
+            status="warn",
+            summary="heartbeat config file missing",
+            details=[str(heartbeat_config_path)],
+            fix="Run `uv run marv ops doctor --fix` to scaffold heartbeat config.",
+        )
+    else:
+        payload, error = _doctor_read_json_file(heartbeat_config_path)
+        if error:
+            _doctor_add_check(
+                checks,
+                check_id="config.heartbeat",
+                status="fail",
+                summary="heartbeat config file is invalid",
+                details=[str(heartbeat_config_path), error],
+            )
+        elif not isinstance(payload, dict):
+            _doctor_add_check(
+                checks,
+                check_id="config.heartbeat",
+                status="fail",
+                summary="heartbeat config must be a JSON object",
+                details=[str(heartbeat_config_path)],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="config.heartbeat",
+                status="ok",
+                summary="heartbeat config loaded",
+                details=[str(heartbeat_config_path), f"enabled={payload.get('enabled', True)}"],
+            )
+
+    if ipc_tools_path.exists():
+        payload, error = _doctor_read_json_file(ipc_tools_path)
+        if error:
+            _doctor_add_check(
+                checks,
+                check_id="config.ipc_tools",
+                status="fail",
+                summary="IPC tools file is invalid",
+                details=[str(ipc_tools_path), error],
+            )
+        elif not isinstance(payload, list):
+            _doctor_add_check(
+                checks,
+                check_id="config.ipc_tools",
+                status="fail",
+                summary="IPC tools payload must be a JSON array",
+                details=[str(ipc_tools_path)],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="config.ipc_tools",
+                status="ok",
+                summary="IPC tools config loaded",
+                details=[str(ipc_tools_path), f"tool_count={len(payload)}"],
+            )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="config.ipc_tools",
+            status="skip",
+            summary="IPC tools file not configured",
+            details=[str(ipc_tools_path)],
+        )
+
+    if exec_policy is None:
+        _doctor_add_check(
+            checks,
+            check_id="security.exec_defaults",
+            status="skip",
+            summary="execution policy check skipped (config unavailable)",
+        )
+    else:
+        default_policy, source = get_agent_policy_with_source(exec_policy, DEFAULT_MAIN_AGENT)
+        security = str(default_policy.get("security", "full")).strip().lower()
+        ask = str(default_policy.get("ask", "off")).strip().lower()
+        if security == "full" and ask == "off":
+            _doctor_add_check(
+                checks,
+                check_id="security.exec_defaults",
+                status="warn",
+                summary="default execution policy is permissive (security=full, ask=off)",
+                details=[f"policy_source={source}"],
+                fix="Use `uv run marv permissions preset --name balanced` to tighten defaults.",
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="security.exec_defaults",
+                status="ok",
+                summary="execution defaults are not fully permissive",
+                details=[f"policy_source={source}", f"security={security}", f"ask={ask}"],
+            )
+
+    if approval_policy is None:
+        _doctor_add_check(
+            checks,
+            check_id="security.approval_mode",
+            status="skip",
+            summary="approval mode check skipped (policy unavailable)",
+        )
+    else:
+        mode = str(approval_policy.get("mode", "policy")).strip().lower()
+        if mode == "all":
+            _doctor_add_check(
+                checks,
+                check_id="security.approval_mode",
+                status="warn",
+                summary="approval mode is set to all (high friction)",
+                details=[str(approval_policy_path)],
+                fix="Use `uv run marv approvals policy-set --mode policy` for balanced defaults.",
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="security.approval_mode",
+                status="ok",
+                summary="approval mode loaded",
+                details=[f"mode={mode}"],
+            )
+
+    ingress_security_env = _doctor_resolve_env_value(
+        key="IM_INGRESS_SECURITY_JSON",
+        env_values=env_values,
+        default="",
+    )
+    ingress_security: dict[str, Any] | None = None
+    if ingress_security_env:
+        try:
+            decoded_security = json.loads(ingress_security_env)
+        except json.JSONDecodeError as exc:
+            _doctor_add_check(
+                checks,
+                check_id="config.im_security",
+                status="fail",
+                summary="IM_INGRESS_SECURITY_JSON is invalid",
+                details=[str(exc)],
+                fix="Set IM_INGRESS_SECURITY_JSON to a valid JSON object.",
+            )
+        else:
+            if isinstance(decoded_security, dict):
+                ingress_security = normalize_ingress_security_config(decoded_security)
+                channels = ingress_security.get("channels")
+                channel_count = len(channels) if isinstance(channels, dict) else 0
+                _doctor_add_check(
+                    checks,
+                    check_id="config.im_security",
+                    status="ok",
+                    summary="IM ingress security loaded from env",
+                    details=[f"configured_channels={channel_count}"],
+                )
+            else:
+                _doctor_add_check(
+                    checks,
+                    check_id="config.im_security",
+                    status="fail",
+                    summary="IM_INGRESS_SECURITY_JSON must be a JSON object",
+                )
+    elif ingress_security_path.exists():
+        payload, error = _doctor_read_json_file(ingress_security_path)
+        if error:
+            _doctor_add_check(
+                checks,
+                check_id="config.im_security",
+                status="fail",
+                summary="IM security policy file is invalid",
+                details=[str(ingress_security_path), error],
+            )
+        elif not isinstance(payload, dict):
+            _doctor_add_check(
+                checks,
+                check_id="config.im_security",
+                status="fail",
+                summary="IM security policy must be a JSON object",
+                details=[str(ingress_security_path)],
+            )
+        else:
+            ingress_security = load_ingress_security_config(path=ingress_security_path)
+            channels = ingress_security.get("channels")
+            channel_count = len(channels) if isinstance(channels, dict) else 0
+            _doctor_add_check(
+                checks,
+                check_id="config.im_security",
+                status="ok",
+                summary="IM security policy loaded",
+                details=[str(ingress_security_path), f"configured_channels={channel_count}"],
+            )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="config.im_security",
+            status="skip",
+            summary="IM security policy file not configured",
+            details=[str(ingress_security_path)],
+        )
+
+    if ingress_security is not None:
+        channels = ingress_security.get("channels")
+        channel_policies = channels if isinstance(channels, dict) else {}
+        restrictive = []
+        missing_allow = []
+        for channel_name, raw_policy in channel_policies.items():
+            if not isinstance(channel_name, str) or not isinstance(raw_policy, dict):
+                continue
+            mode = str(raw_policy.get("dm_policy", "open")).strip().lower()
+            allow_from = raw_policy.get("allow_from")
+            allow_count = len(allow_from) if isinstance(allow_from, list) else 0
+            if mode != "open":
+                restrictive.append(f"{channel_name}:{mode}")
+            if mode in {"allowlist", "pairing"} and allow_count == 0 and not (channel_name == "telegram" and mode == "pairing"):
+                missing_allow.append(channel_name)
+        if missing_allow:
+            _doctor_add_check(
+                checks,
+                check_id="security.ingress_policy",
+                status="warn",
+                summary="some IM channels use restrictive policy but have empty allow_from",
+                details=[f"channels={','.join(sorted(missing_allow))}"],
+                fix="Use `uv run marv im security-set --channel <name> --add-allow-from <id>`.",
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="security.ingress_policy",
+                status="ok",
+                summary="IM ingress sender policy loaded",
+                details=[f"restricted={','.join(sorted(restrictive)) or 'none'}"],
+            )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="security.ingress_policy",
+            status="skip",
+            summary="IM ingress sender policy check skipped",
+        )
+
+    ingress_token = _doctor_resolve_env_value(key="IM_INGRESS_TOKEN", env_values=env_values, default="")
+    ingress_tokens_json = _doctor_resolve_env_value(key="IM_INGRESS_TOKENS_JSON", env_values=env_values, default="")
+    if ingress_tokens_json:
+        try:
+            parsed_tokens = json.loads(ingress_tokens_json)
+        except json.JSONDecodeError as exc:
+            _doctor_add_check(
+                checks,
+                check_id="security.ingress_auth",
+                status="fail",
+                summary="IM_INGRESS_TOKENS_JSON is invalid",
+                details=[str(exc)],
+                fix="Set IM_INGRESS_TOKENS_JSON to a valid JSON object.",
+            )
+        else:
+            if isinstance(parsed_tokens, dict) and parsed_tokens:
+                _doctor_add_check(
+                    checks,
+                    check_id="security.ingress_auth",
+                    status="ok",
+                    summary="IM ingress token map configured",
+                    details=[f"channel_rules={len(parsed_tokens)}"],
+                )
+            else:
+                _doctor_add_check(
+                    checks,
+                    check_id="security.ingress_auth",
+                    status="warn",
+                    summary="IM_INGRESS_TOKENS_JSON is empty",
+                    fix="Set channel tokens or IM_INGRESS_TOKEN before exposing ingress endpoints.",
+                )
+    elif ingress_token:
+        _doctor_add_check(
+            checks,
+            check_id="security.ingress_auth",
+            status="ok",
+            summary="global IM ingress token configured",
+        )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="security.ingress_auth",
+            status="warn",
+            summary="IM ingress authentication token is not configured",
+            fix="Set IM_INGRESS_TOKEN or IM_INGRESS_TOKENS_JSON before opening ingress to external webhooks.",
+        )
+
+    telegram_token = _doctor_resolve_env_value(key="TELEGRAM_BOT_TOKEN", env_values=env_values, default="")
+    if telegram_token and telegram_token != "replace_with_bot_token":
+        telegram_pairing_enabled = _doctor_parse_bool(
+            _doctor_resolve_env_value(
+                key="TELEGRAM_REQUIRE_PAIRING",
+                env_values=env_values,
+                default="false",
+            ),
+            default=False,
+        )
+        if telegram_pairing_enabled:
+            _doctor_add_check(
+                checks,
+                check_id="security.telegram_pairing",
+                status="ok",
+                summary="Telegram pairing protection is enabled",
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="security.telegram_pairing",
+                status="warn",
+                summary="Telegram bot is configured but pairing protection is disabled",
+                fix="Set TELEGRAM_REQUIRE_PAIRING=true to enforce first-contact pairing.",
+            )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="security.telegram_pairing",
+            status="skip",
+            summary="Telegram bot token not configured",
+        )
+
+    services = _running_services(project_root)
+    alive_services = [item for item in services if bool(item.get("alive"))]
+    stale_services = [item for item in services if not bool(item.get("alive"))]
+    if stale_services:
+        _doctor_add_check(
+            checks,
+            check_id="runtime.services",
+            status="warn",
+            summary="stale pid files detected",
+            details=[f"{item['name']}({item['pid']})" for item in stale_services],
+            fix="Run `uv run marv ops stop-services` to clean stale runtime pid files.",
+        )
+    elif alive_services:
+        _doctor_add_check(
+            checks,
+            check_id="runtime.services",
+            status="ok",
+            summary="managed runtime services are running",
+            details=[f"{item['name']}({item['pid']})" for item in alive_services],
+        )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="runtime.services",
+            status="warn",
+            summary="no managed runtime services are running",
+            fix="Start services with `uv run marv ops quickstart --yes`.",
+        )
+
+    if execution_policy is None:
+        _doctor_add_check(
+            checks,
+            check_id="runtime.sandbox",
+            status="skip",
+            summary="sandbox runtime check skipped (execution config unavailable)",
+        )
+    else:
+        mode = str(execution_policy.get("mode", "auto")).strip().lower()
+        docker_available = shutil.which("docker") is not None
+        if mode == "sandbox" and not docker_available:
+            _doctor_add_check(
+                checks,
+                check_id="runtime.sandbox",
+                status="fail",
+                summary="execution mode is sandbox but Docker is unavailable",
+                fix="Install Docker or switch to local mode via `uv run marv execution set --mode local`.",
+            )
+        elif mode == "auto" and not docker_available:
+            _doctor_add_check(
+                checks,
+                check_id="runtime.sandbox",
+                status="warn",
+                summary="execution mode is auto and Docker is unavailable",
+                details=["auto mode will fallback to local execution only"],
+            )
+        elif mode in {"sandbox", "auto"} and docker_available:
+            _doctor_add_check(
+                checks,
+                check_id="runtime.sandbox",
+                status="ok",
+                summary="Docker runtime available for sandbox execution",
+                details=[f"mode={mode}"],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="runtime.sandbox",
+                status="skip",
+                summary="sandbox runtime not required (mode=local)",
+            )
+
+    skills_root = _doctor_resolve_path(
+        key="EDGE_SKILLS_ROOT",
+        env_values=env_values,
+        default_path=project_root / "skill" / "modules",
+    )
+    if skills_root.exists() and skills_root.is_dir():
+        skill_count = sum(1 for _ in skills_root.rglob("SKILL.md"))
+        _doctor_add_check(
+            checks,
+            check_id="workspace.skills_root",
+            status="ok",
+            summary="skills workspace available",
+            details=[str(skills_root), f"skill_count={skill_count}"],
+        )
+    else:
+        if apply_fixes:
+            skills_root.mkdir(parents=True, exist_ok=True)
+            _doctor_add_check(
+                checks,
+                check_id="workspace.skills_root",
+                status="ok",
+                summary="skills workspace created",
+                details=[str(skills_root)],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="workspace.skills_root",
+                status="warn",
+                summary="skills workspace directory missing",
+                details=[str(skills_root)],
+                fix="Run `uv run marv ops doctor --fix` to create the directory.",
+            )
+
+    packages_root = _doctor_resolve_path(
+        key="EDGE_PACKAGES_ROOT",
+        env_values=env_values,
+        default_path=project_root / "packages",
+    )
+    if packages_root.exists() and packages_root.is_dir():
+        package_count = len([item for item in packages_root.iterdir() if item.is_dir()])
+        _doctor_add_check(
+            checks,
+            check_id="workspace.packages_root",
+            status="ok",
+            summary="packages workspace available",
+            details=[str(packages_root), f"package_dirs={package_count}"],
+        )
+    else:
+        _doctor_add_check(
+            checks,
+            check_id="workspace.packages_root",
+            status="skip",
+            summary="packages workspace directory missing",
+            details=[str(packages_root)],
+        )
+
+    edge_health_ok = False
+    if skip_network:
+        _doctor_add_check(
+            checks,
+            check_id="network.edge_health",
+            status="skip",
+            summary="edge health check skipped (--skip-network)",
+        )
+        _doctor_add_check(
+            checks,
+            check_id="network.core_health",
+            status="skip",
+            summary="core health check skipped (--skip-network)",
+        )
+        _doctor_add_check(
+            checks,
+            check_id="network.core_auth",
+            status="skip",
+            summary="core auth check skipped (--skip-network)",
+        )
+    else:
+        edge_ok, edge_message = _doctor_check_health(edge_base_url, timeout_seconds=timeout_seconds)
+        edge_health_ok = edge_ok
+        if edge_ok:
+            _doctor_add_check(
+                checks,
+                check_id="network.edge_health",
+                status="ok",
+                summary="edge health endpoint reachable",
+                details=[edge_message],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="network.edge_health",
+                status="fail",
+                summary="edge health endpoint unreachable",
+                details=[edge_message],
+                fix="Start edge service with `uv run marv ops quickstart --yes`.",
+            )
+
+        core_base_url = _doctor_resolve_env_value(
+            key="CORE_BASE_URL",
+            env_values=env_values,
+            default="http://127.0.0.1:9000",
+        )
+        core_ok, core_message = _doctor_check_health(core_base_url, timeout_seconds=timeout_seconds)
+        if core_ok:
+            _doctor_add_check(
+                checks,
+                check_id="network.core_health",
+                status="ok",
+                summary="core health endpoint reachable",
+                details=[core_message],
+            )
+        else:
+            _doctor_add_check(
+                checks,
+                check_id="network.core_health",
+                status="warn",
+                summary="core health endpoint unreachable",
+                details=[core_message],
+            )
+
+        if not edge_health_ok:
+            _doctor_add_check(
+                checks,
+                check_id="network.core_auth",
+                status="skip",
+                summary="core auth check skipped (edge unavailable)",
+            )
+        else:
+            try:
+                with httpx.Client(base_url=edge_base_url.rstrip("/"), timeout=timeout_seconds) as client:
+                    response = client.get(
+                        "/v1/system/core/auth",
+                        headers={
+                            "X-Actor-Id": actor_id,
+                            "X-Actor-Role": actor_role,
+                        },
+                    )
+                    response.raise_for_status()
+                    auth_payload = response.json()
+            except Exception as exc:
+                _doctor_add_check(
+                    checks,
+                    check_id="network.core_auth",
+                    status="warn",
+                    summary="unable to query edge core auth status",
+                    details=[str(exc)],
+                )
+            else:
+                provider_count = int(auth_payload.get("count", 0)) if isinstance(auth_payload, dict) else 0
+                loaded_count = (
+                    int(auth_payload.get("credential_loaded_count", 0)) if isinstance(auth_payload, dict) else 0
+                )
+                providers = auth_payload.get("providers", []) if isinstance(auth_payload, dict) else []
+                unloaded = []
+                if isinstance(providers, list):
+                    for item in providers:
+                        if not isinstance(item, dict):
+                            continue
+                        if not bool(item.get("credential_loaded")):
+                            unloaded.append(str(item.get("name", "unknown")))
+                if provider_count <= 0:
+                    _doctor_add_check(
+                        checks,
+                        check_id="network.core_auth",
+                        status="warn",
+                        summary="no core providers configured",
+                        fix="Set CORE_PROVIDER_MATRIX_JSON or provider env variables before production use.",
+                    )
+                elif loaded_count <= 0:
+                    _doctor_add_check(
+                        checks,
+                        check_id="network.core_auth",
+                        status="warn",
+                        summary="core providers configured but credentials are not loaded",
+                        details=[f"providers={provider_count}"],
+                        fix="Set CORE_PROVIDER_<NAME>_API_KEY or CORE_PROVIDER_<NAME>_OAUTH_TOKEN.",
+                    )
+                elif unloaded:
+                    _doctor_add_check(
+                        checks,
+                        check_id="network.core_auth",
+                        status="warn",
+                        summary="some core providers are missing credentials",
+                        details=[f"loaded={loaded_count}/{provider_count}", f"missing={','.join(unloaded)}"],
+                    )
+                else:
+                    _doctor_add_check(
+                        checks,
+                        check_id="network.core_auth",
+                        status="ok",
+                        summary="core provider credentials loaded",
+                        details=[f"loaded={loaded_count}/{provider_count}"],
+                    )
+
+    summary = _doctor_summarize(checks)
+    return {
+        "status": summary["overall"],
+        "summary": summary["counts"],
+        "checks": checks,
+        "flags": {
+            "strict": False,
+            "skip_network": skip_network,
+            "fix_applied": apply_fixes,
+            "timeout_seconds": timeout_seconds,
+        },
+        "paths": {
+            "project_root": str(project_root),
+            "env_path": str(env_path),
+            "data_dir": str(data_dir),
+            "edge_db_path": str(edge_db_path),
+            "exec_approvals_path": str(exec_approvals_path),
+            "approval_policy_path": str(approval_policy_path),
+            "execution_config_path": str(execution_config_path),
+            "heartbeat_config_path": str(heartbeat_config_path),
+            "ingress_security_path": str(ingress_security_path),
+            "ipc_tools_path": str(ipc_tools_path),
+        },
+        "generated_at": dt.datetime.now(dt.UTC).isoformat(),
+    }
+
+
+def _print_doctor_report(report: dict[str, Any]) -> None:
+    print("Marv doctor")
+    checks = report.get("checks", [])
+    if not isinstance(checks, list):
+        checks = []
+    labels = {
+        "ok": "OK",
+        "warn": "WARN",
+        "fail": "FAIL",
+        "skip": "SKIP",
+    }
+    for item in checks:
+        if not isinstance(item, dict):
+            continue
+        status = str(item.get("status", "skip")).strip().lower()
+        label = labels.get(status, status.upper())
+        check_id = str(item.get("id", "unknown"))
+        summary = str(item.get("summary", "")).strip()
+        print(f"[{label}] {check_id}: {summary}")
+        details = item.get("details", [])
+        if isinstance(details, list):
+            for detail in details:
+                text = str(detail).strip()
+                if text:
+                    print(f"  - {text}")
+        fix = item.get("fix")
+        if isinstance(fix, str) and fix.strip():
+            print(f"  fix: {fix.strip()}")
+
+    summary = report.get("summary", {})
+    if isinstance(summary, dict):
+        print(
+            "Summary: "
+            + ", ".join(
+                [
+                    f"ok={int(summary.get('ok', 0))}",
+                    f"warn={int(summary.get('warn', 0))}",
+                    f"fail={int(summary.get('fail', 0))}",
+                    f"skip={int(summary.get('skip', 0))}",
+                ]
+            )
+        )
+    print(f"Overall: {report.get('status', 'unknown')}")
+
+
+def cmd_ops_doctor(args: argparse.Namespace) -> int:
+    report = _build_doctor_report(
+        project_root=PROJECT_ROOT,
+        edge_base_url=args.edge_base_url,
+        actor_id=args.actor_id,
+        actor_role=args.actor_role,
+        timeout_seconds=max(0.5, float(args.timeout_seconds)),
+        skip_network=bool(args.skip_network),
+        apply_fixes=bool(args.fix),
+    )
+    report_flags = report.get("flags", {})
+    if isinstance(report_flags, dict):
+        report_flags["strict"] = bool(args.strict)
+
+    if args.json_output:
+        _print_json(report)
+    else:
+        _print_doctor_report(report)
+
+    return _doctor_exit_code(
+        summary={"counts": report.get("summary", {})},
+        strict=bool(args.strict),
+    )
 
 
 def _update_policy(
@@ -1250,6 +2818,16 @@ def cmd_heartbeat_set(args: argparse.Namespace) -> int:
         payload["memory_decay_half_life_days"] = args.memory_decay_half_life_days
     if args.memory_decay_min_confidence is not None:
         payload["memory_decay_min_confidence"] = args.memory_decay_min_confidence
+    if args.skill_distill_enabled is not None:
+        payload["skill_distill_enabled"] = args.skill_distill_enabled
+    if args.skill_distill_window_hours is not None:
+        payload["skill_distill_window_hours"] = args.skill_distill_window_hours
+    if args.skill_distill_min_occurrences is not None:
+        payload["skill_distill_min_occurrences"] = args.skill_distill_min_occurrences
+    if args.skill_distill_max_patterns is not None:
+        payload["skill_distill_max_patterns"] = args.skill_distill_max_patterns
+    if args.skill_distill_max_distill is not None:
+        payload["skill_distill_max_distill"] = args.skill_distill_max_distill
     if not payload:
         raise SystemExit("no heartbeat fields provided")
     _print_json(_request_json(args, "POST", "/v1/system/heartbeat/config", json_body=payload))
@@ -1367,6 +2945,18 @@ def build_parser() -> argparse.ArgumentParser:
     config_effective.add_argument("--channel-id")
     config_effective.add_argument("--user-id")
     config_effective.set_defaults(func=cmd_config_effective)
+
+    evolve = sub.add_parser("evolve", help="Patch-native evolution runs")
+    evolve_sub = evolve.add_subparsers(dest="evolve_command", required=True)
+    evolve_run = evolve_sub.add_parser("run", help="Run offline evolution search")
+    evolve_run.add_argument("--config", required=True, help="Path to evolution run config JSON")
+    evolve_run.add_argument("--out", help="Optional output path for summarized top individuals")
+    evolve_run.add_argument("--dry-run", action=argparse.BooleanOptionalAction, default=False)
+    evolve_run.set_defaults(func=cmd_evolve_run)
+    evolve_best = evolve_sub.add_parser("best", help="Show top individuals for one evolution run")
+    evolve_best.add_argument("--run", required=True, help="Evolution run id")
+    evolve_best.add_argument("--top-k", type=int, default=5)
+    evolve_best.set_defaults(func=cmd_evolve_best)
 
     memory = sub.add_parser("memory", help="Memory actions")
     memory_sub = memory.add_subparsers(dest="memory_command", required=True)
@@ -1522,6 +3112,16 @@ def build_parser() -> argparse.ArgumentParser:
     im_ingest.add_argument("--wait", action=argparse.BooleanOptionalAction, default=True)
     im_ingest.add_argument("--wait-timeout-seconds", type=float, default=120.0)
     im_ingest.set_defaults(func=cmd_im_ingest)
+    im_security_show = im_sub.add_parser("security-show", help="Show IM ingress sender security policy")
+    im_security_show.set_defaults(func=cmd_im_security_show)
+    im_security_set = im_sub.add_parser("security-set", help="Update IM ingress sender security policy")
+    im_security_set.add_argument("--channel", help="Channel id or defaults/*")
+    im_security_set.add_argument("--dm-policy", choices=["open", "allowlist", "pairing"])
+    im_security_set.add_argument("--allow-from", help="Replace allow_from with comma-separated entries")
+    im_security_set.add_argument("--add-allow-from", help="Add comma-separated allow_from entries")
+    im_security_set.add_argument("--remove-allow-from", help="Remove comma-separated allow_from entries")
+    im_security_set.add_argument("--clear-allow-from", action="store_true")
+    im_security_set.set_defaults(func=cmd_im_security_set)
 
     telegram = sub.add_parser("telegram", help="Telegram pairing operations")
     telegram_sub = telegram.add_subparsers(dest="telegram_command", required=True)
@@ -1561,7 +3161,17 @@ def build_parser() -> argparse.ArgumentParser:
     ops_pack = ops_sub.add_parser("package-migration", help="Create migration tarball from local edge db")
     ops_pack.add_argument("--output-dir", default=str(PROJECT_ROOT / "dist" / "migrations"))
     ops_pack.set_defaults(func=cmd_ops_package_migration)
-    ops_stop = ops_sub.add_parser("stop-services", help="Stop local core/edge/telegram services")
+    ops_quickstart = ops_sub.add_parser(
+        "quickstart",
+        help="First-run setup wizard + one-command start for core/edge/frontend",
+    )
+    ops_quickstart.add_argument("--wizard", action="store_true")
+    ops_quickstart.add_argument("--yes", action="store_true")
+    ops_quickstart.add_argument("--with-telegram", action="store_true")
+    ops_quickstart.add_argument("--no-frontend", action="store_true")
+    ops_quickstart.add_argument("--skip-frontend-install", action="store_true")
+    ops_quickstart.set_defaults(func=cmd_ops_quickstart)
+    ops_stop = ops_sub.add_parser("stop-services", help="Stop local core/edge/telegram/frontend services")
     ops_stop.set_defaults(func=cmd_ops_stop_services)
     ops_probe = ops_sub.add_parser("probe", help="Run one end-to-end runtime probe and print latency summary")
     ops_probe.add_argument("--message", required=True)
@@ -1574,6 +3184,36 @@ def build_parser() -> argparse.ArgumentParser:
     ops_probe.add_argument("--poll-interval-seconds", type=float, default=0.5)
     ops_probe.add_argument("--include-effective-config", action=argparse.BooleanOptionalAction, default=True)
     ops_probe.set_defaults(func=cmd_ops_probe)
+    ops_doctor = ops_sub.add_parser(
+        "doctor",
+        help="Run OpenClaw-style runtime diagnostics (config, security, health)",
+    )
+    ops_doctor.add_argument(
+        "--json-output",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Emit machine-readable JSON report",
+    )
+    ops_doctor.add_argument(
+        "--strict",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Exit with non-zero status when warnings are present",
+    )
+    ops_doctor.add_argument(
+        "--fix",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Create missing runtime config files with safe defaults",
+    )
+    ops_doctor.add_argument(
+        "--skip-network",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Skip edge/core HTTP health and auth checks",
+    )
+    ops_doctor.add_argument("--timeout-seconds", type=float, default=3.0, help="HTTP timeout for network checks")
+    ops_doctor.set_defaults(func=cmd_ops_doctor)
 
     permissions = sub.add_parser("permissions", help="OpenClaw-like execution permission policies")
     permissions_sub = permissions.add_subparsers(dest="permissions_command", required=True)
@@ -1641,6 +3281,11 @@ def build_parser() -> argparse.ArgumentParser:
     heartbeat_set.add_argument("--memory-decay-enabled", action=argparse.BooleanOptionalAction, default=None)
     heartbeat_set.add_argument("--memory-decay-half-life-days", type=int)
     heartbeat_set.add_argument("--memory-decay-min-confidence", type=float)
+    heartbeat_set.add_argument("--skill-distill-enabled", action=argparse.BooleanOptionalAction, default=None)
+    heartbeat_set.add_argument("--skill-distill-window-hours", type=int)
+    heartbeat_set.add_argument("--skill-distill-min-occurrences", type=int)
+    heartbeat_set.add_argument("--skill-distill-max-patterns", type=int)
+    heartbeat_set.add_argument("--skill-distill-max-distill", type=int)
     heartbeat_set.set_defaults(func=cmd_heartbeat_set)
 
     execution = sub.add_parser("execution", help="Execution mode / sandbox runtime configuration")

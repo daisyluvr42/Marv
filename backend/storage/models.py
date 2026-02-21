@@ -243,3 +243,56 @@ class ScheduledTask(SQLModel, table=True):
     last_task_id: Optional[str] = None
     last_error: Optional[str] = None
     next_run_at: Optional[int] = Field(default=None, index=True)
+
+
+class SkillBlueprint(SQLModel, table=True):
+    __tablename__ = "skill_blueprints"
+
+    blueprint_id: str = Field(primary_key=True)
+    name: str = Field(index=True)
+    version: int = Field(index=True, default=1)
+    status: str = Field(index=True, default="candidate")  # candidate | production | archived
+    intent_hash: str = Field(index=True)
+    intent_embedding_json: str
+    blueprint_json: str
+    success_criteria_json: str = "{}"
+    variables_json: str = "{}"
+    min_permission_level: int = Field(index=True, default=1)
+    source_tool_risks_json: str = "[]"
+    source_event_ids_json: str = "[]"
+    hit_count: int = 0
+    success_count: int = 0
+    created_at: int = Field(index=True)
+    updated_at: int = Field(index=True)
+
+
+class EvolutionRun(SQLModel, table=True):
+    __tablename__ = "evolution_runs"
+
+    run_id: str = Field(primary_key=True)
+    created_at: int = Field(index=True)
+    updated_at: int = Field(index=True)
+    status: str = Field(index=True)
+    suite_path: str
+    seed: int
+    config_json: str
+    summary_json: str = "{}"
+    best_individual_id: Optional[str] = Field(default=None, index=True)
+    best_fitness: Optional[float] = Field(default=None, index=True)
+
+
+class EvolutionIndividual(SQLModel, table=True):
+    __tablename__ = "evolution_individuals"
+
+    individual_id: str = Field(primary_key=True)
+    run_id: str = Field(index=True)
+    generation: int = Field(index=True)
+    status: str = Field(index=True)
+    patch_json: str
+    metadata_json: str = "{}"
+    parent_ids_json: str = "[]"
+    fitness: Optional[float] = Field(default=None, index=True)
+    metrics_json: str = "{}"
+    error: Optional[str] = None
+    created_at: int = Field(index=True)
+    updated_at: int = Field(index=True)

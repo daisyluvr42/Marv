@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from backend.agent.processor import (
+    _resolve_auto_subagents_config,
     _build_routing_state,
     _classify_routing_intent,
     _maybe_escalate_routing_state,
@@ -68,3 +69,10 @@ def test_routing_state_escalates_after_step_threshold() -> None:
     assert reason is not None
     assert reason.startswith("multi_round_timeout")
     assert routing_state["cloud_escalated"] is True
+
+
+def test_resolve_auto_subagents_defaults_to_disabled() -> None:
+    config = _resolve_auto_subagents_config({})
+    assert config["enabled"] is False
+    assert config["complexity_threshold"] >= 1
+    assert "complex" in config["trigger_intents"]

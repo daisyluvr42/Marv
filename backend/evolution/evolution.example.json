@@ -1,0 +1,29 @@
+{
+  "suite_path": "backend/evolution/evaluators/data/sample_suite.json",
+  "seed": 17,
+  "population_size": 4,
+  "generations": 1,
+  "elitism": 1,
+  "tournament_k": 2,
+  "mutation_rate": 0.7,
+  "crossover_rate": 0.75,
+  "concurrency": 2,
+  "top_k": 5,
+  "early_stop_fitness": null,
+  "dry_run": false,
+  "actor_id": "evolution",
+  "cost_norm_cap": 50,
+  "risk_norm_cap": 10,
+  "base_patch_doc": {
+    "approvals": {
+      "mode": "risky"
+    },
+    "sandbox": {
+      "mode": "auto"
+    },
+    "tools": {
+      "allowlist": ["mock_web_search"]
+    }
+  },
+  "model_choices": ["mock", "gpt-4.1", "gpt-4o-mini"]
+}

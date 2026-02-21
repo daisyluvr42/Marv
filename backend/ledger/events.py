@@ -89,3 +89,12 @@ class HeartbeatEvent(BaseEvent):
 
     def __post_init__(self) -> None:
         self.type = "HeartbeatEvent"
+
+
+@dataclass
+class EvolutionEvent(BaseEvent):
+    stage: str = ""
+    details: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.type = "EvolutionEvent"

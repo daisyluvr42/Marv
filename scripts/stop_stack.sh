@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PID_DIR="$ROOT_DIR/.run"
 
-for name in telegram edge core; do
+for name in frontend telegram edge core; do
   pid_file="$PID_DIR/$name.pid"
   if [ -f "$pid_file" ]; then
     pid="$(cat "$pid_file")"

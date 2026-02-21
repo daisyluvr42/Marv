@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -41,12 +42,17 @@ from backend.agent.session_runtime import (
 from backend.core_client.openai_compat import get_core_client
 from backend.gateway.im_ingress import (
     SUPPORTED_IM_CHANNELS,
+    VALID_DM_POLICIES,
     IngressAuthError,
     IngressError,
     IngressIgnored,
+    get_ingress_security_path,
+    load_ingress_security_config,
     parse_ingress_payload,
     parse_slack_url_verification,
+    save_ingress_security_config,
     verify_ingress_auth,
+    verify_ingress_sender,
 )
 from backend.gateway.pairing import (
     create_pair_code,
@@ -238,6 +244,11 @@ class HeartbeatConfigUpdateRequest(BaseModel):
     memory_decay_enabled: bool | None = None
     memory_decay_half_life_days: int | None = None
     memory_decay_min_confidence: float | None = None
+    skill_distill_enabled: bool | None = None
+    skill_distill_window_hours: int | None = None
+    skill_distill_min_occurrences: int | None = None
+    skill_distill_max_patterns: int | None = None
+    skill_distill_max_distill: int | None = None
 
 
 class TelegramPairCodeCreateRequest(BaseModel):
@@ -290,6 +301,15 @@ class SkillImportRequest(BaseModel):
     source_name: str | None = None
     git_url: str | None = None
     git_subdir: str = ""
+
+
+class IngressSecurityUpdateRequest(BaseModel):
+    channel: str | None = None
+    dm_policy: str | None = None
+    allow_from: list[str] | None = None
+    add_allow_from: list[str] | None = None
+    remove_allow_from: list[str] | None = None
+    clear_allow_from: bool = False
 
 
 def _extract_completion_text(audit_payload: dict[str, object]) -> str | None:
@@ -950,9 +970,117 @@ async def skills_sync_upstream(request: Request) -> dict[str, object]:
 
 @app.get("/v1/gateway/im/channels")
 async def gateway_im_channels() -> dict[str, object]:
+    security = load_ingress_security_config()
+    channels_cfg = security.get("channels")
+    configured_channels = len(channels_cfg) if isinstance(channels_cfg, dict) else 0
     return {
         "count": len(SUPPORTED_IM_CHANNELS),
         "channels": sorted(SUPPORTED_IM_CHANNELS),
+        "security_path": str(get_ingress_security_path()),
+        "security_configured_channels": configured_channels,
+    }
+
+
+@app.get("/v1/gateway/im/security")
+async def gateway_im_security() -> dict[str, object]:
+    config = load_ingress_security_config()
+    channels = config.get("channels")
+    return {
+        "path": str(get_ingress_security_path()),
+        "config": config,
+        "valid_dm_policies": sorted(VALID_DM_POLICIES),
+        "configured_channels": sorted(channels.keys()) if isinstance(channels, dict) else [],
+    }
+
+
+@app.post("/v1/gateway/im/security")
+async def gateway_im_security_update(body: IngressSecurityUpdateRequest, request: Request) -> dict[str, object]:
+    require_owner(request)
+    if os.getenv("IM_INGRESS_SECURITY_JSON", "").strip():
+        raise HTTPException(
+            status_code=409,
+            detail="IM_INGRESS_SECURITY_JSON is set; clear env override before persisting policy updates",
+        )
+    if (
+        body.dm_policy is None
+        and body.allow_from is None
+        and body.add_allow_from is None
+        and body.remove_allow_from is None
+        and not body.clear_allow_from
+    ):
+        raise HTTPException(status_code=400, detail="no security fields provided")
+
+    config = load_ingress_security_config()
+    defaults = config.get("defaults")
+    if not isinstance(defaults, dict):
+        defaults = {"dm_policy": "open", "allow_from": []}
+    channels = config.get("channels")
+    if not isinstance(channels, dict):
+        channels = {}
+    config["defaults"] = defaults
+    config["channels"] = channels
+
+    channel_value = (body.channel or "").strip().lower()
+    target: dict[str, object]
+    target_scope: str
+    if not channel_value or channel_value in {"*", "defaults"}:
+        target = defaults
+        target_scope = "defaults"
+    else:
+        if channel_value not in SUPPORTED_IM_CHANNELS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"unsupported channel: {channel_value}. valid={sorted(SUPPORTED_IM_CHANNELS)}",
+            )
+        existing = channels.get(channel_value)
+        if not isinstance(existing, dict):
+            existing = {}
+        channels[channel_value] = existing
+        target = existing
+        target_scope = channel_value
+
+    if body.dm_policy is not None:
+        mode = body.dm_policy.strip().lower()
+        if mode not in VALID_DM_POLICIES:
+            raise HTTPException(status_code=400, detail=f"invalid dm_policy: {mode}. valid={sorted(VALID_DM_POLICIES)}")
+        target["dm_policy"] = mode
+
+    current_allow = target.get("allow_from")
+    allow_entries = [str(item).strip() for item in current_allow if str(item).strip()] if isinstance(current_allow, list) else []
+    if body.clear_allow_from:
+        allow_entries = []
+    if body.allow_from is not None:
+        allow_entries = [str(item).strip() for item in body.allow_from if str(item).strip()]
+    if body.add_allow_from:
+        allow_entries.extend(str(item).strip() for item in body.add_allow_from if str(item).strip())
+    if body.remove_allow_from:
+        remove_set = {str(item).strip().lower() for item in body.remove_allow_from if str(item).strip()}
+        allow_entries = [item for item in allow_entries if item.strip().lower() not in remove_set]
+    dedup_seen: set[str] = set()
+    dedup_allow: list[str] = []
+    for item in allow_entries:
+        lowered = item.lower()
+        if lowered in dedup_seen:
+            continue
+        dedup_seen.add(lowered)
+        dedup_allow.append(item)
+    target["allow_from"] = dedup_allow
+
+    path = save_ingress_security_config(config)
+    normalized = load_ingress_security_config(path)
+    normalized_channels = normalized.get("channels")
+    if not isinstance(normalized_channels, dict):
+        normalized_channels = {}
+    if target_scope == "defaults":
+        target_payload = normalized.get("defaults")
+    else:
+        target_payload = normalized_channels.get(target_scope)
+
+    return {
+        "path": str(path),
+        "scope": target_scope,
+        "policy": target_payload if isinstance(target_payload, dict) else {"dm_policy": "open", "allow_from": []},
+        "config": normalized,
     }
 
 
@@ -982,6 +1110,7 @@ async def gateway_im_inbound(
             headers={key.lower(): value for key, value in request.headers.items()},
         )
         message = parse_ingress_payload(normalized_channel, payload)
+        verify_ingress_sender(channel=normalized_channel, message=message)
     except IngressIgnored as exc:
         return {"status": "ignored", "reason": str(exc), "channel": normalized_channel}
     except IngressAuthError as exc:
