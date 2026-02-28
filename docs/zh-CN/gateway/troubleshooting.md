@@ -743,7 +743,7 @@ marv gateway restart           # 或：marv gateway
 
 _"你试过关掉再开吗？"_ — 每个 IT 人员都这么说
 
-🦞🔧
+🤖🔧
 
 ### 浏览器无法启动（Linux）
 

@@ -1529,7 +1529,7 @@ exec ssh -T gateway-host imsg "$@"
 ```json5
 {
   messages: {
-    responsePrefix: "🦞", // 或 "auto"
+    responsePrefix: "🤖", // 或 "auto"
     ackReaction: "👀",
     ackReactionScope: "group-mentions",
     removeAckAfterReply: false,
@@ -3361,4 +3361,4 @@ Cron 是 Gateway 网关自有的唤醒和定时任务调度器。参见 [Cron �
 
 ---
 
-_下一步：[智能体运行时](/concepts/agent)_ 🦞
+_下一步：[智能体运行时](/concepts/agent)_ 🤖

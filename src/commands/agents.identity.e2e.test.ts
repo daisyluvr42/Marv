@@ -133,7 +133,7 @@ describe("agents set-identity command", () => {
         workspace,
         fromIdentity: true,
         name: "Nova",
-        emoji: "🦞",
+        emoji: "🤖",
         avatar: "https://example.com/override.png",
       },
       runtime,
@@ -142,7 +142,7 @@ describe("agents set-identity command", () => {
     expect(getWrittenMainIdentity()).toEqual({
       name: "Nova",
       theme: "space lobster",
-      emoji: "🦞",
+      emoji: "🤖",
       avatar: "https://example.com/override.png",
     });
   });

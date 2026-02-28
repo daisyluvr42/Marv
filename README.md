@@ -1,32 +1,11 @@
-# 🦞 Marv — Personal Multi-Channel AI Assistant
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/marv/marv/main/docs/assets/marv-logo-text-dark.png">
-    <img src="https://raw.githubusercontent.com/marv/marv/main/docs/assets/marv-logo-text.png" alt="Marv" width="500">
-  </picture>
-</p>
+# 🤖 Marv — Personal Multi-Channel AI Assistant
 
 <p align="center">
   <strong>EXFOLIATE! EXFOLIATE!</strong>
 </p>
 
-<p align="center">
-  <a href="https://github.com/marv/marv/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/marv/marv/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
-  <a href="https://github.com/marv/marv/releases"><img src="https://img.shields.io/github/v/release/marv/marv?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
-  <a href="https://discord.gg/clawd"><img src="https://img.shields.io/discord/1456350064065904867?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge" alt="Discord"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
-</p>
-
 **Marv** is a self-hosted AI gateway that lets one assistant live across the chat surfaces you already use.
 Run it locally (or on your own server), connect channels, and message your agent from anywhere.
-
-- Website: [marv.ai](https://marv.ai)
-- Docs: [docs.marv.ai](https://docs.marv.ai)
-- Getting started: [https://docs.marv.ai/start/getting-started](https://docs.marv.ai/start/getting-started)
-- CLI reference: [https://docs.marv.ai/cli](https://docs.marv.ai/cli)
-- Channel docs: [https://docs.marv.ai/channels](https://docs.marv.ai/channels)
-- Security: [https://docs.marv.ai/gateway/security](https://docs.marv.ai/gateway/security)
 
 ## Why Marv
 
@@ -50,6 +29,318 @@ Chat apps (WhatsApp/Telegram/Discord/Slack/...) + WebChat + device nodes
 ```
 
 The Gateway is the control plane: sessions, routing, channels, tool access, and health.
+
+## User Installation, Deployment, and Operations Guide
+
+This section is a complete end-user flow:
+
+1. Install Marv
+2. Deploy and start the Gateway
+3. Configure auth/safety and connect channels
+4. Run daily operations (status/logs/restart/update/backup)
+
+### 0) Requirements
+
+- Node.js **22.12.0+**
+- macOS, Linux, or Windows (WSL2 recommended for Windows)
+- Docker (optional, only for Docker deployment)
+
+Check runtime:
+
+```bash
+node -v
+npm -v
+```
+
+### 1) Install Marv
+
+#### Option A (recommended): Installer script
+
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
+
+# Windows (PowerShell)
+iwr -useb https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.ps1 | iex
+```
+
+#### Option B: npm / pnpm global install
+
+```bash
+npm install -g "git+https://github.com/daisyluvr42/Marv.git#main"
+# or
+pnpm add -g "github:daisyluvr42/Marv#main"
+```
+
+Then run onboarding:
+
+```bash
+marv onboard --install-daemon
+```
+
+#### Option C: From source (development / contributors)
+
+```bash
+git clone https://github.com/daisyluvr42/Marv.git
+cd Marv
+pnpm install
+pnpm ui:build
+pnpm build
+pnpm marv onboard --install-daemon
+```
+
+#### Option D: Docker deployment
+
+From repo root:
+
+```bash
+./docker-setup.sh
+```
+
+Manual Docker Compose path:
+
+```bash
+docker build -t marv:local -f Dockerfile .
+docker compose run --rm openclaw-cli onboard
+docker compose up -d openclaw-gateway
+```
+
+#### Option E: 24/7 VPS deployment
+
+If you want always-on remote hosting (for example Hetzner), use the production VPS guide.
+
+---
+
+### 2) Deploy and start the Gateway
+
+#### Local foreground run
+
+```bash
+marv gateway --port 18789
+# debug logs to terminal
+marv gateway --port 18789 --verbose
+```
+
+#### Service/supervised run (recommended for daily use)
+
+```bash
+marv gateway install
+marv gateway restart
+marv gateway status
+```
+
+Onboarding (`marv onboard --install-daemon`) already installs service mode for most users.
+
+#### Verify health
+
+```bash
+marv gateway status
+marv status
+marv channels status --probe
+marv health
+marv logs --follow
+```
+
+Healthy baseline: gateway is running and probe/health checks are OK.
+
+#### Open Control UI
+
+```bash
+marv dashboard
+```
+
+Default local URL: `http://127.0.0.1:18789/`
+
+#### Remote access to a remote gateway host
+
+Preferred: VPN/Tailscale.
+Fallback: SSH tunnel.
+
+```bash
+ssh -N -L 18789:127.0.0.1:18789 user@host
+```
+
+After tunneling, connect locally to `ws://127.0.0.1:18789`.
+
+---
+
+### 3) Initial configuration and security setup
+
+#### Run wizard setup
+
+```bash
+marv onboard
+# or for config-only wizard
+marv configure
+```
+
+#### Config CLI basics
+
+```bash
+marv config get agents.defaults.workspace
+marv config set agents.defaults.heartbeat.every "2h"
+marv config unset tools.web.search.apiKey
+```
+
+Main config path: `~/.marv/marv.json`
+
+#### Recommended DM safety policy
+
+Use pairing mode for DMs (default on major channels):
+
+```json5
+{
+  channels: {
+    telegram: {
+      enabled: true,
+      dmPolicy: "pairing",
+    },
+  },
+}
+```
+
+Approve pairing requests:
+
+```bash
+marv pairing list telegram
+marv pairing approve telegram <CODE>
+```
+
+---
+
+### 4) Connect channels (quick recipes)
+
+Marv supports built-in and extension-backed channels.
+
+#### WhatsApp
+
+```bash
+marv channels login --channel whatsapp
+marv gateway
+```
+
+Optional account-scoped login:
+
+```bash
+marv channels login --channel whatsapp --account work
+```
+
+#### Telegram
+
+1. Create token with `@BotFather`.
+2. Set token and start gateway:
+
+```bash
+marv config set channels.telegram.botToken '"123:abc"' --json
+marv config set channels.telegram.enabled true --json
+marv gateway
+```
+
+3. Approve first DM pairing code:
+
+```bash
+marv pairing list telegram
+marv pairing approve telegram <CODE>
+```
+
+#### Discord
+
+1. Create bot app in Discord Developer Portal and get token.
+2. Configure and start:
+
+```bash
+marv config set channels.discord.token '"YOUR_BOT_TOKEN"' --json
+marv config set channels.discord.enabled true --json
+marv gateway restart
+```
+
+3. Approve pairing:
+
+```bash
+marv pairing list discord
+marv pairing approve discord <CODE>
+```
+
+#### Extension channels (Matrix/Teams/Zalo/etc.)
+
+Install plugin first, then configure that channel.
+
+```bash
+marv plugins list
+marv plugins install <path-or-spec>
+```
+
+---
+
+### 5) Daily operations (runbook)
+
+#### Core ops commands
+
+```bash
+marv status
+marv health
+marv doctor
+marv gateway status --deep
+marv logs --follow
+marv channels status --probe
+```
+
+#### Start/stop/restart
+
+```bash
+marv gateway stop
+marv gateway restart
+marv gateway status
+```
+
+#### Send messages / run agent
+
+```bash
+marv message send --target +15555550123 --message "Hello from Marv"
+marv agent --message "Summarize today's issues" --thinking high
+```
+
+#### Update safely
+
+```bash
+# installer path
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
+
+# or package manager path
+npm i -g "git+https://github.com/daisyluvr42/Marv.git#main"
+# or
+pnpm add -g "github:daisyluvr42/Marv#main"
+
+marv doctor
+marv gateway restart
+marv health
+```
+
+#### Backup paths (important)
+
+Back up these directories/files before major upgrades or migrations:
+
+- `~/.marv/marv.json`
+- `~/.marv/credentials/`
+- `~/.marv/workspace/`
+
+---
+
+### 6) Troubleshooting checklist
+
+```bash
+marv doctor
+marv gateway status --deep
+marv channels status --probe
+marv logs --follow
+```
+
+Common quick fixes:
+
+- `marv` not found: ensure global npm/pnpm bin is in `PATH`
+- port conflict: start with `marv gateway --force`
+- auth error on remote access: confirm gateway token/password in client settings
+- post-update issues: run `marv doctor`, then restart gateway
 
 ## Supported Channels
 
@@ -82,58 +373,13 @@ Extension/plugin channels (available in this repo and docs):
 - Zalo Personal
 - WebChat (gateway web surface)
 
-Full list and setup guides:
-[https://docs.marv.ai/channels](https://docs.marv.ai/channels)
-
-## Quick Start
-
-Runtime requirement: **Node.js 22.12.0+**.
-
-### 1) Install
-
-```bash
-# macOS/Linux
-curl -fsSL https://marv.ai/install.sh | bash
-
-# Windows (PowerShell)
-iwr -useb https://marv.ai/install.ps1 | iex
-```
-
-Or install from npm directly:
-
-```bash
-npm install -g marv@latest
-# or: pnpm add -g marv@latest
-```
-
-### 2) Run onboarding
-
-```bash
-marv onboard --install-daemon
-```
-
-### 3) Verify gateway and open UI
-
-```bash
-marv gateway status
-marv dashboard
-```
-
-Local Control UI default: `http://127.0.0.1:18789/`
-
-### 4) Optional: connect a channel and send a test message
-
-```bash
-marv channels login --channel whatsapp
-marv message send --target +15555550123 --message "Hello from Marv"
-```
-
 ## Common CLI Commands
 
 ```bash
-# Core setup
+# Setup
 marv setup
 marv onboard
+marv configure
 marv doctor
 
 # Gateway
@@ -143,7 +389,7 @@ marv gateway health
 
 # Messaging and agent
 marv message send --target <id> --message "..."
-marv agent --message "Summarize today's issues" --thinking high
+marv agent --message "Ship checklist" --thinking high
 
 # Channels / plugins
 marv channels list
@@ -158,29 +404,6 @@ marv logs
 marv update
 ```
 
-Complete command docs:
-[https://docs.marv.ai/cli](https://docs.marv.ai/cli)
-
-## Install From Source (Development)
-
-```bash
-git clone https://github.com/marv/marv.git
-cd marv
-pnpm install
-pnpm ui:build
-pnpm build
-
-# Run CLI from source
-pnpm marv --help
-pnpm marv onboard --install-daemon
-```
-
-Useful dev loop:
-
-```bash
-pnpm gateway:watch
-```
-
 ## Development Commands
 
 ```bash
@@ -190,6 +413,7 @@ pnpm check            # format check + type-aware lint
 pnpm test             # Test suite
 pnpm test:coverage    # Coverage run
 pnpm ui:dev           # Control UI dev server
+pnpm gateway:watch    # Gateway watch/dev loop
 ```
 
 ## Repository Layout
@@ -211,12 +435,6 @@ Marv exposes a plugin SDK via `marv/plugin-sdk` and supports extensions from:
 - `~/.marv/extensions`
 - `<workspace>/.marv/extensions`
 
-Start here:
-
-- Plugin CLI: [https://docs.marv.ai/cli/plugins](https://docs.marv.ai/cli/plugins)
-- Plugin manifest/schema: [https://docs.marv.ai/plugins/manifest](https://docs.marv.ai/plugins/manifest)
-- Plugin tooling overview: [https://docs.marv.ai/tools/plugin](https://docs.marv.ai/tools/plugin)
-
 ## Security
 
 Marv connects to real messaging surfaces. Treat inbound messages as untrusted input.
@@ -224,9 +442,6 @@ Marv connects to real messaging surfaces. Treat inbound messages as untrusted in
 - Run `marv security audit` for local checks.
 - Keep gateway bind mode loopback unless you intentionally configure remote access.
 - Prefer pairing/allowlists for DM safety.
-
-Security docs:
-[https://docs.marv.ai/gateway/security](https://docs.marv.ai/gateway/security)
 
 ## Release Channels
 
@@ -244,8 +459,6 @@ marv update --channel stable|beta|dev
 
 - Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - Security policy: [`SECURITY.md`](SECURITY.md)
-- GitHub issues: [https://github.com/marv/marv/issues](https://github.com/marv/marv/issues)
-- Discord: [https://discord.gg/clawd](https://discord.gg/clawd)
 
 ## License
 

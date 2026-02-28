@@ -112,4 +112,4 @@ Marv 复用 pi-mono 代码库的部分内容（模型/工具），但**会话管
 
 ---
 
-_下一篇：[群聊](/channels/group-messages)_ 🦞
+_下一篇：[群聊](/channels/group-messages)_ 🤖

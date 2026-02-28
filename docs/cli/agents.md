@@ -51,7 +51,7 @@ marv agents set-identity --workspace ~/.openclaw/workspace --from-identity
 Override fields explicitly:
 
 ```bash
-marv agents set-identity --agent main --name "Marv" --emoji "🦞" --avatar avatars/marv.png
+marv agents set-identity --agent main --name "Marv" --emoji "🤖" --avatar avatars/marv.png
 ```
 
 Config sample:
@@ -65,7 +65,7 @@ Config sample:
         identity: {
           name: "Marv",
           theme: "space lobster",
-          emoji: "🦞",
+          emoji: "🤖",
           avatar: "avatars/marv.png",
         },
       },

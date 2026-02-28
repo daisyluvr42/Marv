@@ -272,7 +272,7 @@ export async function launchOpenClawChrome(
         name: profile.name,
         color: profile.color,
       });
-      log.info(`🦞 marv browser profile decorated (${profile.color})`);
+      log.info(`🤖 marv browser profile decorated (${profile.color})`);
     } catch (err) {
       log.warn(`marv browser profile decoration failed: ${String(err)}`);
     }
@@ -307,7 +307,7 @@ export async function launchOpenClawChrome(
 
   const pid = proc.pid ?? -1;
   log.info(
-    `🦞 marv browser started (${exe.kind}) profile "${profile.name}" on 127.0.0.1:${profile.cdpPort} (pid ${pid})`,
+    `🤖 marv browser started (${exe.kind}) profile "${profile.name}" on 127.0.0.1:${profile.cdpPort} (pid ${pid})`,
   );
 
   return {

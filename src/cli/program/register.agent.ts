@@ -155,7 +155,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.marv.ai/cli/agent")
         `
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
-  ['marv agents set-identity --agent main --name "Marv" --emoji "🦞"', "Set name + emoji."],
+  ['marv agents set-identity --agent main --name "Marv" --emoji "🤖"', "Set name + emoji."],
   ["marv agents set-identity --agent main --avatar avatars/marv.png", "Set avatar path."],
   [
     "marv agents set-identity --workspace ~/.marv/workspace --from-identity",

@@ -5,7 +5,7 @@ read_when:
 title: "Marv"
 ---
 
-# Marv 🦞
+# Marv 🤖
 
 <p align="center">
     <img

@@ -12,7 +12,7 @@ x-i18n:
   workflow: 15
 ---
 
-# Marv 🦞
+# Marv 🤖
 
 <p align="center">
     <img

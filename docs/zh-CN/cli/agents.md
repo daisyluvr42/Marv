@@ -58,7 +58,7 @@ marv agents set-identity --workspace ~/.openclaw/workspace --from-identity
 显式覆盖字段：
 
 ```bash
-marv agents set-identity --agent main --name "Marv" --emoji "🦞" --avatar avatars/marv.png
+marv agents set-identity --agent main --name "Marv" --emoji "🤖" --avatar avatars/marv.png
 ```
 
 配置示例：
@@ -72,7 +72,7 @@ marv agents set-identity --agent main --name "Marv" --emoji "🦞" --avatar avat
         identity: {
           name: "Marv",
           theme: "space lobster",
-          emoji: "🦞",
+          emoji: "🤖",
           avatar: "avatars/marv.png",
         },
       },
