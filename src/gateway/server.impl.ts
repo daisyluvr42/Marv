@@ -55,7 +55,7 @@ import type { startBrowserControlServerIfEnabled } from "./server-browser.js";
 import { createChannelManager } from "./server-channels.js";
 import { createAgentEventHandler } from "./server-chat.js";
 import { createGatewayCloseHandler } from "./server-close.js";
-import { buildGatewayCronService } from "./server-cron.js";
+import { buildGatewayCronService, ensureSoulMemoryMaintenanceCronJob } from "./server-cron.js";
 import { startGatewayDiscovery } from "./server-discovery-runtime.js";
 import { applyGatewayLaneConcurrency } from "./server-lanes.js";
 import { startGatewayMaintenanceTimers } from "./server-maintenance.js";
@@ -533,7 +533,16 @@ export async function startGatewayServer(
       });
 
   if (!minimalTestGateway) {
-    void cron.start().catch((err) => logCron.error(`failed to start: ${String(err)}`));
+    void cron
+      .start()
+      .then(async () => {
+        try {
+          await ensureSoulMemoryMaintenanceCronJob({ cron });
+        } catch (err) {
+          logCron.warn(`failed to ensure soul-memory maintenance cron job: ${String(err)}`);
+        }
+      })
+      .catch((err) => logCron.error(`failed to start: ${String(err)}`));
   }
 
   // Recover pending outbound deliveries from previous crash/restart.

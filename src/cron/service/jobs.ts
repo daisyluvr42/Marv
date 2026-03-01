@@ -75,8 +75,12 @@ function resolveEveryAnchorMs(params: {
 }
 
 export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "payload">) {
-  if (job.sessionTarget === "main" && job.payload.kind !== "systemEvent") {
-    throw new Error('main cron jobs require payload.kind="systemEvent"');
+  if (
+    job.sessionTarget === "main" &&
+    job.payload.kind !== "systemEvent" &&
+    job.payload.kind !== "systemTask"
+  ) {
+    throw new Error('main cron jobs require payload.kind="systemEvent" or "systemTask"');
   }
   if (job.sessionTarget === "isolated" && job.payload.kind !== "agentTurn") {
     throw new Error('isolated cron jobs require payload.kind="agentTurn"');
@@ -450,6 +454,14 @@ function mergeCronPayload(existing: CronPayload, patch: CronPayloadPatch): CronP
     return { kind: "systemEvent", text };
   }
 
+  if (patch.kind === "systemTask") {
+    if (existing.kind !== "systemTask") {
+      return buildPayloadFromPatch(patch);
+    }
+    const task = patch.task ?? existing.task;
+    return { kind: "systemTask", task };
+  }
+
   if (existing.kind !== "agentTurn") {
     return buildPayloadFromPatch(patch);
   }
@@ -532,6 +544,13 @@ function buildPayloadFromPatch(patch: CronPayloadPatch): CronPayload {
       throw new Error('cron.update payload.kind="systemEvent" requires text');
     }
     return { kind: "systemEvent", text: patch.text };
+  }
+
+  if (patch.kind === "systemTask") {
+    if (patch.task !== "soulMemoryMaintenance") {
+      throw new Error('cron.update payload.kind="systemTask" requires a supported task');
+    }
+    return { kind: "systemTask", task: patch.task };
   }
 
   if (typeof patch.message !== "string" || patch.message.length === 0) {

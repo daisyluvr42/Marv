@@ -30,7 +30,7 @@ vi.mock("../infra/net/fetch-guard.js", () => ({
   fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
 }));
 
-import { buildGatewayCronService } from "./server-cron.js";
+import { buildGatewayCronService, ensureSoulMemoryMaintenanceCronJob } from "./server-cron.js";
 
 describe("buildGatewayCronService", () => {
   beforeEach(() => {
@@ -135,6 +135,103 @@ describe("buildGatewayCronService", () => {
           signal: expect.any(AbortSignal),
         },
       });
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("ensures managed soul-memory maintenance cron job exists", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-maintenance-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+    } as OpenClawConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureSoulMemoryMaintenanceCronJob({ cron: state.cron });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const maintenance = jobs.find(
+        (job) => job.payload.kind === "systemTask" && job.payload.task === "soulMemoryMaintenance",
+      );
+      expect(maintenance).toBeDefined();
+      if (!maintenance) {
+        throw new Error("maintenance job missing");
+      }
+      expect(maintenance.enabled).toBe(true);
+      expect(maintenance.sessionTarget).toBe("main");
+      expect(maintenance.wakeMode).toBe("next-heartbeat");
+      expect(maintenance.delivery).toBeUndefined();
+      expect(maintenance.schedule.kind).toBe("cron");
+      if (maintenance.schedule.kind === "cron") {
+        expect(maintenance.schedule.expr).toBe("20 3 * * *");
+        expect(maintenance.schedule.staggerMs).toBe(0);
+      }
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("repairs drifted managed soul-memory maintenance job shape", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-maintenance-repair-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+    } as OpenClawConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await state.cron.add({
+        name: "bad maintenance",
+        enabled: false,
+        deleteAfterRun: true,
+        schedule: { kind: "cron", expr: "0 2 * * *", staggerMs: 60_000 },
+        sessionTarget: "main",
+        wakeMode: "now",
+        payload: { kind: "systemTask", task: "soulMemoryMaintenance" },
+        delivery: { mode: "webhook", to: "https://example.invalid/bad" },
+      });
+
+      await ensureSoulMemoryMaintenanceCronJob({ cron: state.cron });
+
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const maintenance = jobs.find(
+        (job) => job.payload.kind === "systemTask" && job.payload.task === "soulMemoryMaintenance",
+      );
+      expect(maintenance).toBeDefined();
+      if (!maintenance) {
+        throw new Error("maintenance job missing");
+      }
+      expect(maintenance.name).toBe("Soul Memory Maintenance");
+      expect(maintenance.enabled).toBe(true);
+      expect(maintenance.deleteAfterRun).toBe(false);
+      expect(maintenance.wakeMode).toBe("next-heartbeat");
+      expect(maintenance.delivery).toBeUndefined();
+      expect(maintenance.schedule.kind).toBe("cron");
+      if (maintenance.schedule.kind === "cron") {
+        expect(maintenance.schedule.expr).toBe("20 3 * * *");
+        expect(maintenance.schedule.staggerMs).toBe(0);
+      }
     } finally {
       state.cron.stop();
     }

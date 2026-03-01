@@ -246,6 +246,20 @@ describe("normalizeCronJobCreate", () => {
     expect(delivery.mode).toBe("announce");
   });
 
+  it("defaults systemTask payloads to main session target", () => {
+    const normalized = normalizeCronJobCreate({
+      name: "soul maintenance",
+      enabled: true,
+      schedule: { kind: "cron", expr: "20 3 * * *" },
+      payload: {
+        kind: "systemTask",
+        task: "soulMemoryMaintenance",
+      },
+    }) as unknown as Record<string, unknown>;
+
+    expect(normalized.sessionTarget).toBe("main");
+  });
+
   it("migrates legacy delivery fields to delivery", () => {
     const normalized = normalizeCronJobCreate({
       name: "legacy deliver",
@@ -399,6 +413,18 @@ describe("normalizeCronJobPatch", () => {
     expect(payload.kind).toBeUndefined();
     expect(payload.channel).toBe("telegram");
     expect(payload.to).toBe("+15550001111");
+  });
+
+  it("infers systemTask kind for task-only payload patches", () => {
+    const normalized = normalizeCronJobPatch({
+      payload: {
+        task: "soulMemoryMaintenance",
+      },
+    }) as unknown as Record<string, unknown>;
+
+    const payload = normalized.payload as Record<string, unknown>;
+    expect(payload.kind).toBe("systemTask");
+    expect(payload.task).toBe("soulMemoryMaintenance");
   });
 
   it("preserves null sessionKey patches and trims string values", () => {

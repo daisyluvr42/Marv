@@ -457,6 +457,16 @@ async function executeJobCore(
   job: CronJob,
 ): Promise<CronRunOutcome & CronRunTelemetry> {
   if (job.sessionTarget === "main") {
+    if (job.payload.kind === "systemTask") {
+      if (!state.deps.runSystemTask) {
+        return { status: "skipped", error: "system task runner not configured" };
+      }
+      return await state.deps.runSystemTask({
+        job,
+        task: job.payload.task,
+      });
+    }
+
     const text = resolveJobPayloadTextForMain(job);
     if (!text) {
       const kind = job.payload.kind;

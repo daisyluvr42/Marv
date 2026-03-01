@@ -4,6 +4,7 @@ import type {
   CronJob,
   CronJobCreate,
   CronJobPatch,
+  CronSystemTask,
   CronRunOutcome,
   CronRunStatus,
   CronRunTelemetry,
@@ -75,6 +76,10 @@ export type CronServiceDeps = {
     } & CronRunOutcome &
       CronRunTelemetry
   >;
+  runSystemTask?: (params: {
+    job: CronJob;
+    task: CronSystemTask;
+  }) => Promise<CronRunOutcome & CronRunTelemetry>;
   onEvent?: (evt: CronEvent) => void;
 };
 

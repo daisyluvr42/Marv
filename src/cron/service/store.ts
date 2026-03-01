@@ -86,18 +86,27 @@ function normalizePayloadKind(payload: Record<string, unknown>) {
     payload.kind = "systemEvent";
     return true;
   }
+  if (raw === "systemtask") {
+    payload.kind = "systemTask";
+    return true;
+  }
   return false;
 }
 
 function inferPayloadIfMissing(raw: Record<string, unknown>) {
   const message = typeof raw.message === "string" ? raw.message.trim() : "";
   const text = typeof raw.text === "string" ? raw.text.trim() : "";
+  const task = typeof raw.task === "string" ? raw.task.trim() : "";
   if (message) {
     raw.payload = { kind: "agentTurn", message };
     return true;
   }
   if (text) {
     raw.payload = { kind: "systemEvent", text };
+    return true;
+  }
+  if (task === "soulMemoryMaintenance") {
+    raw.payload = { kind: "systemTask", task };
     return true;
   }
   return false;
@@ -209,6 +218,9 @@ function stripLegacyTopLevelFields(raw: Record<string, unknown>) {
   if ("provider" in raw) {
     delete raw.provider;
   }
+  if ("task" in raw) {
+    delete raw.task;
+  }
 }
 
 async function getFileMtimeMs(path: string): Promise<number | null> {
@@ -303,6 +315,9 @@ export async function ensureLoaded(
         } else if (typeof payloadRecord.text === "string" && payloadRecord.text.trim()) {
           payloadRecord.kind = "systemEvent";
           mutated = true;
+        } else if (payloadRecord.task === "soulMemoryMaintenance") {
+          payloadRecord.kind = "systemTask";
+          mutated = true;
         }
       }
       if (payloadRecord.kind === "agentTurn") {
@@ -323,7 +338,8 @@ export async function ensureLoaded(
       "channel" in raw ||
       "to" in raw ||
       "bestEffortDeliver" in raw ||
-      "provider" in raw;
+      "provider" in raw ||
+      "task" in raw;
     if (hadLegacyTopLevelFields) {
       stripLegacyTopLevelFields(raw);
       mutated = true;

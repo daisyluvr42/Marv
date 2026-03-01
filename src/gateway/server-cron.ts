@@ -11,6 +11,7 @@ import { runCronIsolatedAgentTurn } from "../cron/isolated-agent.js";
 import { appendCronRunLog, resolveCronRunLogPath } from "../cron/run-log.js";
 import { CronService } from "../cron/service.js";
 import { resolveCronStorePath } from "../cron/store.js";
+import type { CronJobCreate } from "../cron/types.js";
 import { normalizeHttpWebhookUrl } from "../cron/webhook-url.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { runHeartbeatOnce } from "../infra/heartbeat-runner.js";
@@ -19,6 +20,10 @@ import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { getChildLogger } from "../logging.js";
+import {
+  formatSoulMemoryMaintenanceSummary,
+  runSoulMemoryMaintenance,
+} from "../memory/soul-memory-maintenance.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
 
@@ -29,6 +34,10 @@ export type GatewayCronState = {
 };
 
 const CRON_WEBHOOK_TIMEOUT_MS = 10_000;
+const SOUL_MAINTENANCE_JOB_NAME = "Soul Memory Maintenance";
+const SOUL_MAINTENANCE_JOB_DESCRIPTION =
+  "Daily deterministic maintenance for soul memory (decay, prune, promotion).";
+const SOUL_MAINTENANCE_CRON_EXPR = "20 3 * * *";
 
 function redactWebhookUrl(url: string): string {
   try {
@@ -197,6 +206,28 @@ export function buildGatewayCronService(params: {
         lane: "cron",
       });
     },
+    runSystemTask: async ({ job, task }) => {
+      if (task !== "soulMemoryMaintenance") {
+        return { status: "skipped", error: "unsupported system task" };
+      }
+      const runtimeConfig = loadConfig();
+      const report = runSoulMemoryMaintenance({
+        cfg: runtimeConfig,
+        nowMs: Date.now(),
+        agentId: job.agentId,
+      });
+      if (report.agents.length > 0 && report.failedAgents >= report.agents.length) {
+        return {
+          status: "error",
+          error: "soul maintenance failed for all agents",
+          summary: formatSoulMemoryMaintenanceSummary(report),
+        };
+      }
+      return {
+        status: "ok",
+        summary: formatSoulMemoryMaintenanceSummary(report),
+      };
+    },
     log: getChildLogger({ module: "cron", storePath }),
     onEvent: (evt) => {
       params.broadcast("cron", evt, { dropIfSlow: true });
@@ -311,4 +342,96 @@ export function buildGatewayCronService(params: {
   });
 
   return { cron, storePath, cronEnabled };
+}
+
+export async function ensureSoulMemoryMaintenanceCronJob(params: {
+  cron: CronService;
+  log?: { info: (obj: unknown, msg?: string) => void; warn: (obj: unknown, msg?: string) => void };
+}) {
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  const status = await params.cron.status();
+  if (!status.enabled) {
+    return;
+  }
+
+  const existingJobs = await params.cron.list({ includeDisabled: true });
+  const managed = existingJobs.find(
+    (job) => job.payload.kind === "systemTask" && job.payload.task === "soulMemoryMaintenance",
+  );
+
+  if (!managed) {
+    const desired: CronJobCreate = {
+      name: SOUL_MAINTENANCE_JOB_NAME,
+      description: SOUL_MAINTENANCE_JOB_DESCRIPTION,
+      enabled: true,
+      deleteAfterRun: false,
+      schedule: {
+        kind: "cron",
+        expr: SOUL_MAINTENANCE_CRON_EXPR,
+        staggerMs: 0,
+      },
+      sessionTarget: "main",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "systemTask",
+        task: "soulMemoryMaintenance",
+      },
+    };
+    const created = await params.cron.add(desired);
+    logger.info(
+      { jobId: created.id, nextRunAtMs: created.state.nextRunAtMs ?? null },
+      "cron: added managed soul-memory maintenance job",
+    );
+    return;
+  }
+
+  const needsScheduleUpdate =
+    managed.schedule.kind !== "cron" ||
+    managed.schedule.expr !== SOUL_MAINTENANCE_CRON_EXPR ||
+    (managed.schedule.staggerMs ?? 0) !== 0;
+  const needsShapeUpdate =
+    !managed.enabled ||
+    managed.deleteAfterRun !== false ||
+    managed.sessionTarget !== "main" ||
+    managed.wakeMode !== "next-heartbeat" ||
+    managed.payload.kind !== "systemTask" ||
+    managed.payload.task !== "soulMemoryMaintenance" ||
+    managed.delivery !== undefined;
+  const needsMetadataUpdate =
+    managed.name !== SOUL_MAINTENANCE_JOB_NAME ||
+    managed.description !== SOUL_MAINTENANCE_JOB_DESCRIPTION;
+
+  if (!needsScheduleUpdate && !needsShapeUpdate && !needsMetadataUpdate) {
+    return;
+  }
+
+  const patch: Parameters<CronService["update"]>[1] = {};
+  if (needsMetadataUpdate) {
+    patch.name = SOUL_MAINTENANCE_JOB_NAME;
+    patch.description = SOUL_MAINTENANCE_JOB_DESCRIPTION;
+  }
+  if (needsScheduleUpdate) {
+    patch.schedule = {
+      kind: "cron",
+      expr: SOUL_MAINTENANCE_CRON_EXPR,
+      staggerMs: 0,
+    };
+  }
+  if (needsShapeUpdate) {
+    patch.enabled = true;
+    patch.deleteAfterRun = false;
+    patch.sessionTarget = "main";
+    patch.wakeMode = "next-heartbeat";
+    patch.payload = {
+      kind: "systemTask",
+      task: "soulMemoryMaintenance",
+    };
+    patch.delivery = { mode: "none" };
+  }
+
+  const updated = await params.cron.update(managed.id, patch);
+  logger.info(
+    { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
+    "cron: updated managed soul-memory maintenance job",
+  );
 }

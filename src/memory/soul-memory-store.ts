@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fsSync from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
@@ -57,6 +58,7 @@ const FUSION_WEIGHT_SUM =
 const EMBEDDING_DIMS = 128;
 const SOUL_MEMORY_PATH_PREFIX = "soul-memory/";
 const SOUL_MEMORY_FTS_TABLE = "memory_items_fts";
+const SOUL_MEMORY_VEC_TABLE = "memory_items_vec";
 const SOUL_MEMORY_ENTITY_TABLE = "memory_item_entities";
 const SOUL_MEMORY_SCOPE_HITS_TABLE = "memory_scope_hits";
 const SOUL_MEMORY_REF_TABLE = "memory_item_refs";
@@ -67,6 +69,23 @@ const MEMORY_REF_TOKEN_RE = /\[ref:(mem_[a-z0-9]+)\]/gi;
 const RRF_RANK_CONSTANT = 40;
 const VECTOR_RRF_WEIGHT = 0.6;
 const BM25_RRF_WEIGHT = 0.4;
+const CANDIDATE_FULL_SCAN_MAX_ROWS = 2000;
+const CANDIDATE_MIN_LIMIT = 160;
+const CANDIDATE_MAX_LIMIT = 960;
+const CANDIDATE_PER_TOPK_MULTIPLIER = 24;
+const RECENT_CANDIDATE_SHARE = 0.35;
+
+const require = createRequire(import.meta.url);
+
+type SoulVectorState = {
+  available: boolean;
+  attempted: boolean;
+  dims?: number;
+  extensionPath?: string;
+  loadError?: string;
+};
+
+const soulVectorStateByDbPath = new Map<string, SoulVectorState>();
 
 type SourceProfile = {
   confidence: number;
@@ -348,7 +367,8 @@ export function writeSoulMemory(params: {
       return getSoulMemoryItemInternal(db, existing.id);
     }
 
-    const embedding = JSON.stringify(embedText(content));
+    const embeddingVec = embedText(content);
+    const embedding = JSON.stringify(embeddingVec);
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
     db.prepare(
       "INSERT INTO memory_items (" +
@@ -370,6 +390,7 @@ export function writeSoulMemory(params: {
     );
     upsertItemEntities(db, id, content);
     upsertItemReferences(db, id, content, nowMs);
+    upsertSoulMemoryVector(db, id, embeddingVec);
     return getSoulMemoryItemInternal(db, id);
   } finally {
     db.close();
@@ -482,9 +503,30 @@ export function querySoulMemoryMulti(params: {
 
   const db = openSoulMemoryDb(params.agentId);
   try {
-    const rows = db
-      .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items`)
-      .all() as MemoryItemRow[];
+    const bm25ById = searchByBm25({
+      db,
+      query: cleanedQuery,
+      limit: Math.max(topK * 8, 40),
+    });
+    const totalItems = countMemoryItemsInternal(db);
+    const useCandidateQuery = totalItems > CANDIDATE_FULL_SCAN_MAX_ROWS;
+    const rows = useCandidateQuery
+      ? loadMemoryRowsByIds(
+          db,
+          buildCandidateMemoryIds({
+            db,
+            queryVec,
+            bm25ById,
+            scopes: uniqueScopes,
+            topK,
+          }),
+        )
+      : (db
+          .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items`)
+          .all() as MemoryItemRow[]);
+    if (rows.length === 0) {
+      return [];
+    }
 
     type Candidate = {
       item: SoulMemoryItem;
@@ -547,11 +589,6 @@ export function querySoulMemoryMulti(params: {
         score: candidate.vectorScore * 0.9 + candidate.lexicalScore * 0.1,
       })),
     );
-    const bm25ById = searchByBm25({
-      db,
-      query: cleanedQuery,
-      limit: Math.max(topK * 8, 40),
-    });
     const graphById = computeGraphScores({
       db,
       query: cleanedQuery,
@@ -669,6 +706,117 @@ export function querySoulMemoryMulti(params: {
   }
 }
 
+function countMemoryItemsInternal(db: DatabaseSync): number {
+  const row = db.prepare("SELECT COUNT(*) as c FROM memory_items").get() as
+    | { c?: number }
+    | undefined;
+  return Number(row?.c ?? 0);
+}
+
+function resolveCandidateLimit(topK: number): number {
+  const scaled = Math.max(CANDIDATE_MIN_LIMIT, Math.floor(topK * CANDIDATE_PER_TOPK_MULTIPLIER));
+  return Math.min(CANDIDATE_MAX_LIMIT, scaled);
+}
+
+function addCandidateIds(target: Set<string>, ids: Iterable<string>, maxSize: number): void {
+  for (const id of ids) {
+    const normalized = id.trim();
+    if (!normalized || target.has(normalized)) {
+      continue;
+    }
+    target.add(normalized);
+    if (target.size >= maxSize) {
+      return;
+    }
+  }
+}
+
+function buildCandidateMemoryIds(params: {
+  db: DatabaseSync;
+  queryVec: number[];
+  bm25ById: Map<string, { rank: number; score: number }>;
+  scopes: SoulMemoryScope[];
+  topK: number;
+}): string[] {
+  const candidateLimit = resolveCandidateLimit(params.topK);
+  const candidateIds = new Set<string>();
+  const vectorById = searchByVector({
+    db: params.db,
+    queryVec: params.queryVec,
+    limit: candidateLimit,
+  });
+  addCandidateIds(candidateIds, vectorById.keys(), candidateLimit);
+  addCandidateIds(candidateIds, params.bm25ById.keys(), candidateLimit);
+
+  if (params.scopes.length > 0 && candidateIds.size < candidateLimit) {
+    const scopedLimit = Math.max(1, Math.floor(candidateLimit * RECENT_CANDIDATE_SHARE));
+    addCandidateIds(
+      candidateIds,
+      listRecentMemoryIds({
+        db: params.db,
+        scopes: params.scopes,
+        limit: scopedLimit,
+      }),
+      candidateLimit,
+    );
+  }
+  if (candidateIds.size < candidateLimit) {
+    addCandidateIds(
+      candidateIds,
+      listRecentMemoryIds({
+        db: params.db,
+        limit: candidateLimit - candidateIds.size,
+      }),
+      candidateLimit,
+    );
+  }
+  return [...candidateIds];
+}
+
+function loadMemoryRowsByIds(db: DatabaseSync, memoryIds: string[]): MemoryItemRow[] {
+  if (memoryIds.length === 0) {
+    return [];
+  }
+  const placeholders = memoryIds.map(() => "?").join(", ");
+  return db
+    .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id IN (${placeholders})`)
+    .all(...memoryIds) as MemoryItemRow[];
+}
+
+function listRecentMemoryIds(params: {
+  db: DatabaseSync;
+  limit: number;
+  scopes?: SoulMemoryScope[];
+}): string[] {
+  const limit = Math.max(0, Math.floor(params.limit));
+  if (limit <= 0) {
+    return [];
+  }
+  let where = "";
+  let values: string[] = [];
+  if (params.scopes && params.scopes.length > 0) {
+    const scoped = buildScopedAliasClause({ scopes: params.scopes, alias: "" });
+    where = `WHERE ${scoped.clause}`;
+    values = scoped.values;
+  }
+  type Row = { id?: string };
+  const rows = params.db
+    .prepare(
+      "SELECT id FROM memory_items " +
+        where +
+        " ORDER BY COALESCE(last_accessed_at, created_at) DESC LIMIT ?",
+    )
+    .all(...values, limit) as Row[];
+  const out: string[] = [];
+  for (const row of rows) {
+    const id = String(row.id ?? "").trim();
+    if (id) {
+      out.push(id);
+    }
+  }
+  return out;
+}
+
 export function countSoulMemoryItems(params: {
   agentId: string;
   scopeType?: string;
@@ -700,13 +848,13 @@ function openSoulMemoryDb(agentId: string): DatabaseSync {
   const dbPath = resolveSoulMemoryDbPath(agentId);
   fsSync.mkdirSync(path.dirname(dbPath), { recursive: true });
   const { DatabaseSync } = requireNodeSqlite();
-  const db = new DatabaseSync(dbPath);
+  const db = new DatabaseSync(dbPath, { allowExtension: true });
   db.exec("PRAGMA foreign_keys = ON;");
-  ensureSoulMemorySchema(db);
+  ensureSoulMemorySchema(db, dbPath);
   return db;
 }
 
-function ensureSoulMemorySchema(db: DatabaseSync): void {
+function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
   db.exec(
     "CREATE TABLE IF NOT EXISTS memory_items (" +
       "id TEXT PRIMARY KEY, " +
@@ -776,6 +924,7 @@ function ensureSoulMemorySchema(db: DatabaseSync): void {
     `CREATE INDEX IF NOT EXISTS idx_soul_memory_refs_target ON ${SOUL_MEMORY_REF_TABLE} (target_memory_id);`,
   );
   ensureSoulMemoryFts(db);
+  ensureSoulMemoryVec(db, dbPath);
 }
 
 function ensureMemoryItemsColumn(db: DatabaseSync, column: string, definition: string): void {
@@ -827,11 +976,115 @@ function ensureSoulMemoryFts(db: DatabaseSync): void {
   }
 }
 
+function ensureSoulMemoryVec(db: DatabaseSync, dbPath: string): void {
+  if (!ensureSoulVectorReady(db, dbPath, EMBEDDING_DIMS)) {
+    return;
+  }
+  const hadTable = hasSoulMemoryVecTable(db);
+  db.exec(
+    `CREATE VIRTUAL TABLE IF NOT EXISTS ${SOUL_MEMORY_VEC_TABLE} USING vec0(` +
+      "id TEXT PRIMARY KEY, " +
+      `embedding FLOAT[${EMBEDDING_DIMS}]` +
+      ")",
+  );
+  if (!hadTable) {
+    rebuildSoulMemoryVectors(db);
+  }
+}
+
+function vectorToBlob(embedding: number[]): Buffer {
+  return Buffer.from(new Float32Array(embedding).buffer);
+}
+
+function ensureSoulVectorReady(db: DatabaseSync, dbPath: string, dimensions: number): boolean {
+  const current = soulVectorStateByDbPath.get(dbPath) ?? {
+    available: false,
+    attempted: false,
+  };
+  if (current.attempted && !current.available) {
+    return false;
+  }
+
+  try {
+    db.enableLoadExtension(true);
+    if (current.available && current.extensionPath) {
+      db.loadExtension(current.extensionPath);
+      soulVectorStateByDbPath.set(dbPath, {
+        ...current,
+        attempted: true,
+        available: true,
+        dims: dimensions,
+      });
+      return true;
+    }
+
+    const sqliteVec = require("sqlite-vec") as {
+      load: (database: DatabaseSync) => void;
+      getLoadablePath?: () => string;
+    };
+    const extensionPath =
+      typeof sqliteVec.getLoadablePath === "function" ? sqliteVec.getLoadablePath() : undefined;
+    sqliteVec.load(db);
+    soulVectorStateByDbPath.set(dbPath, {
+      attempted: true,
+      available: true,
+      dims: dimensions,
+      extensionPath,
+    });
+    return true;
+  } catch (err) {
+    soulVectorStateByDbPath.set(dbPath, {
+      attempted: true,
+      available: false,
+      loadError: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
+}
+
+function rebuildSoulMemoryVectors(db: DatabaseSync): void {
+  if (!hasSoulMemoryVecTable(db)) {
+    return;
+  }
+  type Row = { id?: string; embedding_json?: string };
+  const rows = db.prepare("SELECT id, embedding_json FROM memory_items").all() as Row[];
+  if (rows.length === 0) {
+    return;
+  }
+  const deleteStmt = db.prepare(`DELETE FROM ${SOUL_MEMORY_VEC_TABLE} WHERE id = ?`);
+  const insertStmt = db.prepare(
+    `INSERT INTO ${SOUL_MEMORY_VEC_TABLE} (id, embedding) VALUES (?, ?)`,
+  );
+  for (const row of rows) {
+    const id = String(row.id ?? "").trim();
+    if (!id) {
+      continue;
+    }
+    const embedding = parseEmbedding(String(row.embedding_json ?? ""));
+    if (embedding.length === 0) {
+      continue;
+    }
+    try {
+      deleteStmt.run(id);
+      insertStmt.run(id, vectorToBlob(embedding));
+    } catch {
+      // Keep memory table usable if vector row sync fails for individual records.
+    }
+  }
+}
+
 function hasSoulMemoryFtsTable(db: DatabaseSync): boolean {
   const row = db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
     .get(SOUL_MEMORY_FTS_TABLE) as { name?: string } | undefined;
   return row?.name === SOUL_MEMORY_FTS_TABLE;
+}
+
+function hasSoulMemoryVecTable(db: DatabaseSync): boolean {
+  const row = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(SOUL_MEMORY_VEC_TABLE) as { name?: string } | undefined;
+  return row?.name === SOUL_MEMORY_VEC_TABLE;
 }
 
 function upsertItemEntities(db: DatabaseSync, memoryId: string, content: string): void {
@@ -865,6 +1118,41 @@ function upsertItemReferences(
   );
   for (const targetId of refs) {
     stmt.run(sourceMemoryId, targetId, nowMs);
+  }
+}
+
+function upsertSoulMemoryVector(db: DatabaseSync, memoryId: string, embedding: number[]): void {
+  if (!memoryId || embedding.length === 0 || !hasSoulMemoryVecTable(db)) {
+    return;
+  }
+  try {
+    db.prepare(`DELETE FROM ${SOUL_MEMORY_VEC_TABLE} WHERE id = ?`).run(memoryId);
+    db.prepare(`INSERT INTO ${SOUL_MEMORY_VEC_TABLE} (id, embedding) VALUES (?, ?)`).run(
+      memoryId,
+      vectorToBlob(embedding),
+    );
+  } catch {
+    // Keep retrieval functional even when sqlite-vec is unavailable at runtime.
+  }
+}
+
+function deleteSoulMemoryVectorRows(db: DatabaseSync, memoryIds: string[]): void {
+  if (memoryIds.length === 0 || !hasSoulMemoryVecTable(db)) {
+    return;
+  }
+  try {
+    const stmt = db.prepare(`DELETE FROM ${SOUL_MEMORY_VEC_TABLE} WHERE id = ?`);
+    const seen = new Set<string>();
+    for (const memoryId of memoryIds) {
+      const normalized = memoryId.trim();
+      if (!normalized || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      stmt.run(normalized);
+    }
+  } catch {
+    // Ignore vector cleanup failures; primary row deletion still happens on memory_items.
   }
 }
 
@@ -965,15 +1253,23 @@ function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): number {
     return 0;
   }
   const seen = new Set<string>();
-  const deleteStmt = db.prepare("DELETE FROM memory_items WHERE id = ?");
-  let deleted = 0;
+  const unique: string[] = [];
   for (const memoryId of memoryIds) {
     const trimmed = memoryId.trim();
     if (!trimmed || seen.has(trimmed)) {
       continue;
     }
     seen.add(trimmed);
-    const result = deleteStmt.run(trimmed) as { changes?: number };
+    unique.push(trimmed);
+  }
+  if (unique.length === 0) {
+    return 0;
+  }
+  deleteSoulMemoryVectorRows(db, unique);
+  const deleteStmt = db.prepare("DELETE FROM memory_items WHERE id = ?");
+  let deleted = 0;
+  for (const memoryId of unique) {
+    const result = deleteStmt.run(memoryId) as { changes?: number };
     deleted += Number(result.changes ?? 0);
   }
   return deleted;
@@ -1736,6 +2032,43 @@ function searchByBm25(params: {
   }
 }
 
+function searchByVector(params: {
+  db: DatabaseSync;
+  queryVec: number[];
+  limit: number;
+}): Map<string, { rank: number; distance: number; score: number }> {
+  if (params.queryVec.length === 0 || params.limit <= 0 || !hasSoulMemoryVecTable(params.db)) {
+    return new Map();
+  }
+  type VectorRow = { id?: string; dist?: number | null };
+  try {
+    const rows = params.db
+      .prepare(
+        `SELECT m.id AS id, vec_distance_cosine(v.embedding, ?) AS dist ` +
+          `FROM ${SOUL_MEMORY_VEC_TABLE} v ` +
+          "JOIN memory_items m ON m.id = v.id " +
+          "ORDER BY dist ASC LIMIT ?",
+      )
+      .all(vectorToBlob(params.queryVec), params.limit) as VectorRow[];
+    const out = new Map<string, { rank: number; distance: number; score: number }>();
+    for (const row of rows) {
+      const id = String(row.id ?? "").trim();
+      if (!id || out.has(id)) {
+        continue;
+      }
+      const distance = Number(row.dist ?? 1);
+      out.set(id, {
+        rank: out.size + 1,
+        distance,
+        score: clamp(1 - distance, 0, 1),
+      });
+    }
+    return out;
+  } catch {
+    return new Map();
+  }
+}
+
 function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length === 0 || b.length === 0 || a.length !== b.length) {
     return 0;
@@ -2025,15 +2358,14 @@ export function applySoulMemoryConfidenceDecay(params: {
       .all(...values) as MemoryItemRow[];
 
     let updated = 0;
-    let deleted = 0;
+    const staleIds: string[] = [];
     for (const row of rows) {
       const item = rowToMemoryItem(row);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
       const decayed = computeCurrentClarity(item, ageDays, soulConfig);
       if (shouldPruneMemoryItem(item, ageDays, soulConfig)) {
-        db.prepare("DELETE FROM memory_items WHERE id = ?").run(item.id);
-        deleted += 1;
+        staleIds.push(item.id);
         continue;
       }
       if (Math.abs(decayed - item.confidence) <= 1e-8) {
@@ -2042,6 +2374,7 @@ export function applySoulMemoryConfidenceDecay(params: {
       db.prepare("UPDATE memory_items SET confidence = ? WHERE id = ?").run(decayed, item.id);
       updated += 1;
     }
+    const deleted = pruneSoulMemoryItems(db, staleIds);
     return { updated, deleted };
   } finally {
     db.close();

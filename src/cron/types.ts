@@ -51,8 +51,11 @@ export type CronRunOutcome = {
   sessionKey?: string;
 };
 
+export type CronSystemTask = "soulMemoryMaintenance";
+
 export type CronPayload =
   | { kind: "systemEvent"; text: string }
+  | { kind: "systemTask"; task: CronSystemTask }
   | {
       kind: "agentTurn";
       message: string;
@@ -69,6 +72,7 @@ export type CronPayload =
 
 export type CronPayloadPatch =
   | { kind: "systemEvent"; text?: string }
+  | { kind: "systemTask"; task?: CronSystemTask }
   | {
       kind: "agentTurn";
       message?: string;

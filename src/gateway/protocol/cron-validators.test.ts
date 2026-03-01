@@ -20,6 +20,15 @@ describe("cron protocol validators", () => {
     expect(validateCronAddParams(minimalAddParams)).toBe(true);
   });
 
+  it("accepts systemTask payloads for internal maintenance jobs", () => {
+    expect(
+      validateCronAddParams({
+        ...minimalAddParams,
+        payload: { kind: "systemTask", task: "soulMemoryMaintenance" },
+      }),
+    ).toBe(true);
+  });
+
   it("rejects add params when required scheduling fields are missing", () => {
     const { wakeMode: _wakeMode, ...withoutWakeMode } = minimalAddParams;
     expect(validateCronAddParams(withoutWakeMode)).toBe(false);

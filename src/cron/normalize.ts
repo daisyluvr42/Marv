@@ -81,6 +81,8 @@ function coercePayload(payload: UnknownRecord) {
     next.kind = "agentTurn";
   } else if (kindRaw === "systemevent") {
     next.kind = "systemEvent";
+  } else if (kindRaw === "systemtask") {
+    next.kind = "systemTask";
   } else if (kindRaw) {
     next.kind = kindRaw;
   }
@@ -96,9 +98,16 @@ function coercePayload(payload: UnknownRecord) {
       next.kind = "agentTurn";
     } else if (hasText) {
       next.kind = "systemEvent";
+    } else if (next.task === "soulMemoryMaintenance") {
+      next.kind = "systemTask";
     } else if (hasAgentTurnHint) {
       // Accept partial agentTurn payload patches that only tweak agent-turn-only fields.
       next.kind = "agentTurn";
+    }
+  }
+  if ("task" in next) {
+    if (next.task !== "soulMemoryMaintenance") {
+      delete next.task;
     }
   }
   if (typeof next.message === "string") {
@@ -283,6 +292,7 @@ function stripLegacyTopLevelFields(next: UnknownRecord) {
   delete next.to;
   delete next.bestEffortDeliver;
   delete next.provider;
+  delete next.task;
 }
 
 export function normalizeCronJobInput(
@@ -363,10 +373,13 @@ export function normalizeCronJobInput(
   if (!("payload" in next) || !isRecord(next.payload)) {
     const message = typeof next.message === "string" ? next.message.trim() : "";
     const text = typeof next.text === "string" ? next.text.trim() : "";
+    const task = typeof next.task === "string" ? next.task.trim() : "";
     if (message) {
       next.payload = { kind: "agentTurn", message };
     } else if (text) {
       next.payload = { kind: "systemEvent", text };
+    } else if (task === "soulMemoryMaintenance") {
+      next.payload = { kind: "systemTask", task };
     }
   }
 
@@ -403,7 +416,12 @@ export function normalizeCronJobInput(
     ) {
       next.name = inferLegacyName({
         schedule: next.schedule as { kind?: unknown; everyMs?: unknown; expr?: unknown },
-        payload: next.payload as { kind?: unknown; text?: unknown; message?: unknown },
+        payload: next.payload as {
+          kind?: unknown;
+          text?: unknown;
+          message?: unknown;
+          task?: unknown;
+        },
       });
     } else if (typeof next.name === "string") {
       const trimmed = next.name.trim();
@@ -414,6 +432,9 @@ export function normalizeCronJobInput(
     if (!next.sessionTarget && isRecord(next.payload)) {
       const kind = typeof next.payload.kind === "string" ? next.payload.kind : "";
       if (kind === "systemEvent") {
+        next.sessionTarget = "main";
+      }
+      if (kind === "systemTask") {
         next.sessionTarget = "main";
       }
       if (kind === "agentTurn") {
