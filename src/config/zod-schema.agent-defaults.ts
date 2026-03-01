@@ -5,12 +5,15 @@ import {
   AgentModelSchema,
   MemorySearchSchema,
 } from "./zod-schema.agent-runtime.js";
+import { AutoRoutingSchema } from "./zod-schema.auto-routing.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
   CliBackendSchema,
   HumanDelaySchema,
 } from "./zod-schema.core.js";
+
+export { AutoRoutingSchema };
 
 export const AgentDefaultsSchema = z
   .object({
@@ -105,6 +108,7 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
+    autoRouting: AutoRoutingSchema,
     thinkingDefault: z
       .union([
         z.literal("off"),

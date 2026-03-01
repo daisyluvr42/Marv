@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { AgentModelSchema } from "./zod-schema.agent-model.js";
+import { AutoRoutingSchema } from "./zod-schema.auto-routing.js";
 import {
   GroupChatSchema,
   HumanDelaySchema,
@@ -598,6 +599,7 @@ export const AgentEntrySchema = z
     workspace: z.string().optional(),
     agentDir: z.string().optional(),
     model: AgentModelSchema.optional(),
+    autoRouting: AutoRoutingSchema,
     skills: z.array(z.string()).optional(),
     memorySearch: MemorySearchSchema,
     humanDelay: HumanDelaySchema.optional(),

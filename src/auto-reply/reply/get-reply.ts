@@ -4,6 +4,7 @@ import {
   resolveSessionAgentId,
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
+import { resolveAutoRouting } from "../../agents/auto-routing.js";
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -95,6 +96,22 @@ export async function getReplyFromConfig(
       provider = heartbeatRef.ref.provider;
       model = heartbeatRef.ref.model;
       hasResolvedHeartbeatModelOverride = true;
+    }
+  }
+
+  // Auto-routing: classify message complexity and override model (skip for heartbeats).
+  if (!opts?.isHeartbeat) {
+    const autoRoutingResult = await resolveAutoRouting({
+      prompt: ctx.Body ?? "",
+      hasImages: (ctx.MediaPaths?.length ?? 0) > 0 || (ctx.MediaUrls?.length ?? 0) > 0,
+      config: cfg,
+      agentId,
+      defaultProvider: provider,
+      defaultModel: model,
+    });
+    if (autoRoutingResult.routed) {
+      provider = autoRoutingResult.provider ?? provider;
+      model = autoRoutingResult.model ?? model;
     }
   }
 

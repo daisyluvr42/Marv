@@ -10,6 +10,7 @@ import {
   markAuthProfileGood,
   markAuthProfileUsed,
 } from "../auth-profiles.js";
+import { resolveAutoRouting } from "../auto-routing.js";
 import {
   CONTEXT_WINDOW_HARD_MIN_TOKENS,
   CONTEXT_WINDOW_WARN_BELOW_TOKENS,
@@ -217,6 +218,27 @@ export async function runEmbeddedPiAgent(
         (params.config?.agents?.defaults?.model?.fallbacks?.length ?? 0) > 0;
       await ensureOpenClawModelsJson(params.config, agentDir);
 
+      // Auto-routing: classify message complexity and override model if configured.
+      const autoRoutingResult = await resolveAutoRouting({
+        prompt: params.prompt,
+        hasImages: (params.images?.length ?? 0) > 0,
+        config: params.config,
+        agentId: workspaceResolution.agentId,
+        defaultProvider: provider,
+        defaultModel: modelId,
+      });
+      if (autoRoutingResult.routed) {
+        if (autoRoutingResult.provider) {
+          provider = autoRoutingResult.provider;
+        }
+        if (autoRoutingResult.model) {
+          modelId = autoRoutingResult.model;
+        }
+        log.info(
+          `[auto-routing] complexity=${autoRoutingResult.complexity} → ${provider}/${modelId}`,
+        );
+      }
+
       // Run before_model_resolve hooks early so plugins can override the
       // provider/model before resolveModel().
       //
@@ -332,7 +354,13 @@ export async function runEmbeddedPiAgent(
           : [undefined];
       let profileIndex = 0;
 
-      const initialThinkLevel = params.thinkLevel ?? "off";
+      // Apply auto-routing thinking override when user hasn't set an explicit directive.
+      const initialThinkLevel =
+        params.thinkLevel ??
+        (autoRoutingResult.routed && autoRoutingResult.thinking
+          ? autoRoutingResult.thinking
+          : undefined) ??
+        "off";
       let thinkLevel = initialThinkLevel;
       const attemptedThinking = new Set<ThinkLevel>();
       let apiKeyInfo: ApiKeyInfo | null = null;

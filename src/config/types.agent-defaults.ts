@@ -12,6 +12,41 @@ import type {
 } from "./types.sandbox.js";
 import type { MemorySearchConfig } from "./types.tools.js";
 
+export type AutoRoutingComplexity = "simple" | "moderate" | "complex" | "expert";
+
+export type AutoRoutingRule = {
+  /** Complexity tier this rule matches. */
+  complexity: AutoRoutingComplexity;
+  /** Model to use (provider/model string). */
+  model: string;
+  /** Optional thinking level override for this tier. */
+  thinking?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+};
+
+export type AutoRoutingThresholds = {
+  /** Max message length (chars) for "simple" tier (default: 200). */
+  simpleMaxChars?: number;
+  /** Max message length (chars) for "moderate" tier (default: 600). */
+  moderateMaxChars?: number;
+  /** Max message length (chars) for "complex" tier (default: 1500). */
+  complexMaxChars?: number;
+  /** Regex patterns that bump complexity (e.g., code/technical markers). */
+  complexPatterns?: string[];
+};
+
+export type AutoRoutingConfig = {
+  /** Enable auto model routing (default: false). */
+  enabled?: boolean;
+  /** Classifier mode: "rules" uses heuristic analysis (default), "llm" uses a lightweight model. */
+  classifier?: "rules" | "llm";
+  /** Model used for LLM classification (provider/model string). Only used when classifier is "llm". */
+  classifierModel?: string;
+  /** Routing rules per complexity tier. */
+  rules?: AutoRoutingRule[];
+  /** Complexity thresholds for the heuristic classifier. */
+  thresholds?: AutoRoutingThresholds;
+};
+
 export type AgentModelEntryConfig = {
   alias?: string;
   /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
@@ -164,6 +199,8 @@ export type AgentDefaultsConfig = {
   compaction?: AgentCompactionConfig;
   /** Vector memory search configuration (per-agent overrides supported). */
   memorySearch?: MemorySearchConfig;
+  /** Auto model routing: classify message complexity and route to appropriate model. */
+  autoRouting?: AutoRoutingConfig;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   /** Default verbose level when no /verbose directive is present. */

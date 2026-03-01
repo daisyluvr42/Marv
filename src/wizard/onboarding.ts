@@ -402,6 +402,12 @@ export async function runOnboardingWizard(
 
   await warnIfModelConfigLooksOff(nextConfig, prompter);
 
+  // Auto model routing (advanced/guided flows only).
+  if (flow !== "quickstart") {
+    const { promptAutoRouting } = await import("../commands/onboard-auto-routing.js");
+    nextConfig = await promptAutoRouting({ config: nextConfig, prompter });
+  }
+
   const { configureGatewayForOnboarding } = await import("./onboarding.gateway-config.js");
   const gateway = await configureGatewayForOnboarding({
     flow,
