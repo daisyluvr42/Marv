@@ -8,6 +8,11 @@ export type MemorySearchResult = {
   snippet: string;
   source: MemorySource;
   citation?: string;
+  salienceScore?: number;
+  salienceDecay?: number;
+  salienceReinforcement?: number;
+  referenceBoost?: number;
+  references?: string[];
 };
 
 export type MemoryEmbeddingProbeResult = {

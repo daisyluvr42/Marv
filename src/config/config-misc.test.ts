@@ -72,6 +72,27 @@ describe("web search provider config", () => {
   });
 });
 
+describe("memory soul tuning schema", () => {
+  it("accepts configurable soul memory tuning fields", () => {
+    const res = validateConfigObject({
+      memory: {
+        soul: {
+          p0AllowedKinds: ["preference", "principle"],
+          p1ClarityHalfLifeDays: 60,
+          p2ClarityHalfLifeDays: 12,
+          p1ToP0MinAgeDays: 120,
+          crossScopePenalty: 0.35,
+          p0TierMultiplier: 1.3,
+          referenceExpansionEnabled: true,
+          referenceMaxHops: 2,
+          referenceBoostWeight: 0.25,
+        },
+      },
+    });
+    expect(res.ok).toBe(true);
+  });
+});
+
 describe("talk.voiceAliases", () => {
   it("accepts a string map of voice aliases", () => {
     const res = validateConfigObject({

@@ -85,10 +85,44 @@ const MemoryQmdSchema = z
   })
   .strict();
 
+const MemorySoulSchema = z
+  .object({
+    p0AllowedKinds: z.array(z.string()).optional(),
+    forgetConfidenceThreshold: z.number().min(0).max(1).optional(),
+    forgetStreakHalfLives: z.number().positive().optional(),
+    p0ClarityHalfLifeDays: z.number().positive().optional(),
+    p1ClarityHalfLifeDays: z.number().positive().optional(),
+    p2ClarityHalfLifeDays: z.number().positive().optional(),
+    p0RecallRelevanceThreshold: z.number().min(0).max(1).optional(),
+    p2ToP1MinClarity: z.number().min(0).max(1).optional(),
+    p2ToP1MinAgeDays: z.number().nonnegative().optional(),
+    p2ToP1MinScopeCount: z.number().int().positive().optional(),
+    p1ToP0MinClarity: z.number().min(0).max(1).optional(),
+    p1ToP0MinAgeDays: z.number().nonnegative().optional(),
+    p0ScopePenalty: z.number().min(0).optional(),
+    crossScopePenalty: z.number().min(0).optional(),
+    matchScopePenalty: z.number().min(0).optional(),
+    p0TierMultiplier: z.number().min(0).optional(),
+    p1TierMultiplier: z.number().min(0).optional(),
+    p2TierMultiplier: z.number().min(0).optional(),
+    scoreSimilarityWeight: z.number().min(0).optional(),
+    scoreDecayWeight: z.number().min(0).optional(),
+    reinforcementLogWeight: z.number().min(0).optional(),
+    referenceExpansionEnabled: z.boolean().optional(),
+    referenceMaxHops: z.number().int().nonnegative().optional(),
+    referenceEdgeDecay: z.number().min(0).max(1).optional(),
+    referenceBoostWeight: z.number().min(0).optional(),
+    referenceMaxBoost: z.number().min(0).optional(),
+    referenceSeedTopKMultiplier: z.number().int().positive().optional(),
+  })
+  .strict();
+
 const MemorySchema = z
   .object({
     backend: z.union([z.literal("builtin"), z.literal("qmd")]).optional(),
     citations: z.union([z.literal("auto"), z.literal("on"), z.literal("off")]).optional(),
+    p0AllowedKinds: z.array(z.string()).optional(),
+    soul: MemorySoulSchema.optional(),
     qmd: MemoryQmdSchema.optional(),
   })
   .strict()

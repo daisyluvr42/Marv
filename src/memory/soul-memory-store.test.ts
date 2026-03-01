@@ -7,6 +7,7 @@ import {
   buildSoulMemoryPath,
   getSoulMemoryItem,
   listSoulMemoryItems,
+  listSoulMemoryReferences,
   parseSoulMemoryPath,
   promoteSoulMemories,
   querySoulMemoryMulti,
@@ -47,6 +48,7 @@ describe("soul-memory-store", () => {
     expect(first).not.toBeNull();
     expect(first?.tier).toBe("P0");
     expect(first?.confidence).toBeCloseTo(0.95);
+    expect(first?.reinforcementCount).toBe(1);
 
     const second = writeSoulMemory({
       agentId: "main",
@@ -57,6 +59,8 @@ describe("soul-memory-store", () => {
       source: "core_preference",
     });
     expect(second?.id).toBe(first?.id);
+    expect(second?.reinforcementCount).toBe(2);
+    expect(second?.lastReinforcedAt).not.toBeNull();
 
     const all = listSoulMemoryItems({
       agentId: "main",
@@ -67,6 +71,194 @@ describe("soul-memory-store", () => {
     expect(all).toHaveLength(1);
   });
 
+  it("increments reinforcement_count on retrieval and applies configurable reinforcement boost", () => {
+    const item = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "deploy checklist includes rollback validation",
+      source: "manual_log",
+    });
+    expect(item).not.toBeNull();
+    if (!item) {
+      throw new Error("item missing");
+    }
+    expect(item.reinforcementCount).toBe(1);
+
+    const first = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "deploy checklist includes rollback validation",
+      topK: 1,
+      minScore: 0,
+    });
+    expect(first).toHaveLength(1);
+    expect(first[0]?.reinforcementCount).toBe(1);
+    expect(first[0]?.reinforcementFactor).toBeCloseTo(1);
+
+    const second = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "deploy checklist includes rollback validation",
+      topK: 1,
+      minScore: 0,
+    });
+    expect(second).toHaveLength(1);
+    expect(second[0]?.reinforcementCount).toBe(2);
+    expect(second[0]?.reinforcementFactor ?? 0).toBeGreaterThan(1);
+    expect((second[0]?.score ?? 0) > (first[0]?.score ?? 0)).toBe(true);
+
+    const noBoost = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "deploy checklist includes rollback validation",
+      topK: 1,
+      minScore: 0,
+      soulConfig: {
+        reinforcementLogWeight: 0,
+      },
+    });
+    expect(noBoost).toHaveLength(1);
+    expect(noBoost[0]?.reinforcementCount).toBeGreaterThanOrEqual(3);
+    expect(noBoost[0]?.reinforcementFactor).toBeCloseTo(1);
+
+    const refreshed = getSoulMemoryItem({ agentId: "main", itemId: item.id });
+    expect(refreshed?.reinforcementCount).toBeGreaterThanOrEqual(4);
+    expect(refreshed?.lastReinforcedAt).not.toBeNull();
+  });
+
+  it("exposes explicit salience score from reinforcement and time decay", () => {
+    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
+    const item = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "salience tracking memory item",
+      source: "manual_log",
+      nowMs: createdMs,
+    });
+    expect(item).not.toBeNull();
+
+    const fresh = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "salience tracking memory item",
+      topK: 1,
+      minScore: 0,
+      nowMs: createdMs + 1 * 24 * 60 * 60 * 1000,
+    });
+    expect(fresh).toHaveLength(1);
+    expect(fresh[0]?.salienceScore ?? 0).toBeGreaterThan(0);
+    expect(fresh[0]?.salienceDecay ?? 0).toBeGreaterThan(0);
+    expect(fresh[0]?.salienceReinforcement ?? 0).toBeGreaterThanOrEqual(1);
+
+    const stale = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "salience tracking memory item",
+      topK: 1,
+      minScore: 0,
+      nowMs: createdMs + 180 * 24 * 60 * 60 * 1000,
+    });
+    expect(stale).toHaveLength(1);
+    expect((stale[0]?.salienceDecay ?? 0) < (fresh[0]?.salienceDecay ?? 0)).toBe(true);
+  });
+
+  it("tracks [ref:item_id] citation links and returns them in query results", () => {
+    const base = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "base decision entry",
+      source: "manual_log",
+    });
+    expect(base).not.toBeNull();
+    if (!base) {
+      throw new Error("base item missing");
+    }
+
+    const linked = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: `follow-up note pointing to [ref:${base.id}]`,
+      source: "manual_log",
+    });
+    expect(linked).not.toBeNull();
+    if (!linked) {
+      throw new Error("linked item missing");
+    }
+
+    const refs = listSoulMemoryReferences({ agentId: "main", itemId: linked.id });
+    expect(refs).toEqual([base.id]);
+
+    const results = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "follow-up note pointing",
+      topK: 1,
+      minScore: 0,
+    });
+    expect(results).toHaveLength(1);
+    expect(results[0]?.references).toContain(base.id);
+  });
+
+  it("expands multi-hop references and applies chain-weight boost during search", () => {
+    const c = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "core rollback policy anchor",
+      source: "manual_log",
+    });
+    expect(c).not.toBeNull();
+    if (!c) {
+      throw new Error("c missing");
+    }
+
+    const b = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: `intermediate deployment checklist [ref:${c.id}]`,
+      source: "manual_log",
+    });
+    expect(b).not.toBeNull();
+    if (!b) {
+      throw new Error("b missing");
+    }
+
+    const a = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: `urgent hotfix procedure [ref:${b.id}]`,
+      source: "manual_log",
+    });
+    expect(a).not.toBeNull();
+
+    const results = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "urgent hotfix procedure",
+      topK: 3,
+      minScore: 0,
+    });
+    expect(results).toHaveLength(3);
+
+    const cResult = results.find((entry) => entry.id === c.id);
+    expect(cResult).toBeDefined();
+    expect(cResult?.referenceBoost ?? 0).toBeGreaterThan(0);
+    expect(cResult?.score ?? 0).toBeGreaterThan(0);
+  });
+
   it("prefers slower-decay P0 memory over P2 for stale records", () => {
     const oldMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = oldMs + 30 * 24 * 60 * 60 * 1000;
@@ -74,7 +266,7 @@ describe("soul-memory-store", () => {
       agentId: "main",
       scopeType: "agent",
       scopeId: "main",
-      kind: "note",
+      kind: "preference",
       content: "alpha preference p0",
       source: "core_preference",
       nowMs: oldMs,
@@ -102,6 +294,39 @@ describe("soul-memory-store", () => {
     });
     expect(results).toHaveLength(2);
     expect(results[0]?.tier).toBe("P0");
+  });
+
+  it("downgrades core_preference writes to P1 when kind is not soul-level", () => {
+    const item = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "ephemeral scratch line that should not enter P0",
+      source: "core_preference",
+    });
+    expect(item).not.toBeNull();
+    expect(item?.tier).toBe("P1");
+    expect(item?.source).toBe("manual_log");
+    expect(item?.confidence).toBeCloseTo(0.85);
+  });
+
+  it("allows configured non-default kinds to enter P0", () => {
+    const item = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "stable canonical project note",
+      source: "core_preference",
+      soulConfig: {
+        p0AllowedKinds: ["note"],
+      },
+    });
+    expect(item).not.toBeNull();
+    expect(item?.tier).toBe("P0");
+    expect(item?.source).toBe("core_preference");
+    expect(item?.confidence).toBeCloseTo(0.95);
   });
 
   it("applies last-access time decay to demote stale memories", () => {
@@ -244,6 +469,39 @@ describe("soul-memory-store", () => {
     expect((results[0]?.score ?? 0) > (results[1]?.score ?? 0)).toBe(true);
   });
 
+  it("applies configurable scope penalty coefficients", () => {
+    writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "ops runbook sync policy",
+      source: "manual_log",
+    });
+    writeSoulMemory({
+      agentId: "main",
+      scopeType: "project",
+      scopeId: "other",
+      kind: "note",
+      content: "ops runbook sync policy for project other",
+      source: "manual_log",
+    });
+
+    const results = querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "ops runbook sync policy",
+      topK: 2,
+      minScore: 0,
+      soulConfig: {
+        crossScopePenalty: 0.55,
+      },
+    });
+    expect(results).toHaveLength(2);
+    const crossScope = results.find((entry) => entry.scopeId === "other");
+    expect(crossScope?.scopePenalty).toBeCloseTo(0.55);
+  });
+
   it("boosts dormant P0 memory when relevance suddenly spikes", () => {
     const baseMs = Date.UTC(2024, 0, 1, 0, 0, 0);
     const nowMs = baseMs + 720 * 24 * 60 * 60 * 1000;
@@ -366,6 +624,48 @@ describe("soul-memory-store", () => {
     expect(promoted?.tier).toBe("P0");
   });
 
+  it("applies configurable P1 to P0 age gating", () => {
+    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
+    const nowMs = createdMs + 60 * 24 * 60 * 60 * 1000;
+    const item = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "principle",
+      content: "always include rollback notes in release docs",
+      source: "manual_log",
+      nowMs: createdMs,
+    });
+    expect(item).not.toBeNull();
+    if (!item) {
+      throw new Error("item missing");
+    }
+
+    querySoulMemoryMulti({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "always include rollback notes in release docs",
+      topK: 1,
+      minScore: 0,
+      nowMs: createdMs + 59 * 24 * 60 * 60 * 1000,
+    });
+
+    const defaultSummary = promoteSoulMemories({
+      agentId: "main",
+      nowMs,
+    });
+    expect(defaultSummary.p0ApprovalCandidates.some((entry) => entry.id === item.id)).toBe(false);
+
+    const configuredSummary = promoteSoulMemories({
+      agentId: "main",
+      nowMs,
+      soulConfig: {
+        p1ToP0MinAgeDays: 30,
+      },
+    });
+    expect(configuredSummary.p0ApprovalCandidates.some((entry) => entry.id === item.id)).toBe(true);
+  });
+
   it("prunes stale P1/P2 but keeps P0 entries", () => {
     const createdMs = Date.UTC(2024, 0, 1, 0, 0, 0);
     const nowMs = createdMs + 800 * 24 * 60 * 60 * 1000;
@@ -402,7 +702,7 @@ describe("soul-memory-store", () => {
     expect(getSoulMemoryItem({ agentId: "main", itemId: p0.id })).not.toBeNull();
   });
 
-  it("requires 5 half-lives under 0.05 before pruning P2", () => {
+  it("requires sustained low confidence before pruning P2", () => {
     const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const p2 = writeSoulMemory({
       agentId: "main",
@@ -418,18 +718,52 @@ describe("soul-memory-store", () => {
       throw new Error("item missing");
     }
 
-    const at100Days = applySoulMemoryConfidenceDecay({
+    const at45Days = applySoulMemoryConfidenceDecay({
       agentId: "main",
-      nowMs: createdMs + 100 * 24 * 60 * 60 * 1000,
+      nowMs: createdMs + 45 * 24 * 60 * 60 * 1000,
     });
-    expect(at100Days.deleted).toBe(0);
+    expect(at45Days.deleted).toBe(0);
     expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).not.toBeNull();
 
-    const at130Days = applySoulMemoryConfidenceDecay({
+    const at60Days = applySoulMemoryConfidenceDecay({
       agentId: "main",
-      nowMs: createdMs + 130 * 24 * 60 * 60 * 1000,
+      nowMs: createdMs + 60 * 24 * 60 * 60 * 1000,
     });
-    expect(at130Days.deleted).toBeGreaterThanOrEqual(1);
+    expect(at60Days.deleted).toBeGreaterThanOrEqual(1);
+    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).toBeNull();
+  });
+
+  it("applies configurable pruning windows", () => {
+    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
+    const p2 = writeSoulMemory({
+      agentId: "main",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "note",
+      content: "temporary extraction candidate",
+      source: "auto_extraction",
+      nowMs: createdMs,
+    });
+    expect(p2).not.toBeNull();
+    if (!p2) {
+      throw new Error("item missing");
+    }
+
+    const baseline = applySoulMemoryConfidenceDecay({
+      agentId: "main",
+      nowMs: createdMs + 10 * 24 * 60 * 60 * 1000,
+    });
+    expect(baseline.deleted).toBe(0);
+
+    const aggressive = applySoulMemoryConfidenceDecay({
+      agentId: "main",
+      nowMs: createdMs + 10 * 24 * 60 * 60 * 1000,
+      soulConfig: {
+        p2ClarityHalfLifeDays: 2,
+        forgetStreakHalfLives: 1,
+      },
+    });
+    expect(aggressive.deleted).toBeGreaterThanOrEqual(1);
     expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).toBeNull();
   });
 

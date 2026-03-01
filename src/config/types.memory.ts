@@ -7,7 +7,39 @@ export type MemoryQmdSearchMode = "query" | "search" | "vsearch";
 export type MemoryConfig = {
   backend?: MemoryBackend;
   citations?: MemoryCitationsMode;
+  p0AllowedKinds?: string[];
+  soul?: MemorySoulConfig;
   qmd?: MemoryQmdConfig;
+};
+
+export type MemorySoulConfig = {
+  p0AllowedKinds?: string[];
+  forgetConfidenceThreshold?: number;
+  forgetStreakHalfLives?: number;
+  p0ClarityHalfLifeDays?: number;
+  p1ClarityHalfLifeDays?: number;
+  p2ClarityHalfLifeDays?: number;
+  p0RecallRelevanceThreshold?: number;
+  p2ToP1MinClarity?: number;
+  p2ToP1MinAgeDays?: number;
+  p2ToP1MinScopeCount?: number;
+  p1ToP0MinClarity?: number;
+  p1ToP0MinAgeDays?: number;
+  p0ScopePenalty?: number;
+  crossScopePenalty?: number;
+  matchScopePenalty?: number;
+  p0TierMultiplier?: number;
+  p1TierMultiplier?: number;
+  p2TierMultiplier?: number;
+  scoreSimilarityWeight?: number;
+  scoreDecayWeight?: number;
+  reinforcementLogWeight?: number;
+  referenceExpansionEnabled?: boolean;
+  referenceMaxHops?: number;
+  referenceEdgeDecay?: number;
+  referenceBoostWeight?: number;
+  referenceMaxBoost?: number;
+  referenceSeedTopKMultiplier?: number;
 };
 
 export type MemoryQmdConfig = {

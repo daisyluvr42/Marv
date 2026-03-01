@@ -208,6 +208,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional override path to sqlite-vec extension library (.dylib/.so/.dll).",
   "agents.defaults.memorySearch.query.hybrid.enabled":
     "Enable hybrid BM25 + vector search for memory (default: true).",
+  "agents.defaults.memorySearch.query.precheck.enabled":
+    "Run a lightweight pre-check before memory_search to decide if retrieval is needed (default: false).",
+  "agents.defaults.memorySearch.query.precheck.rewrite":
+    "When pre-check is enabled, normalize/rewrite the query before retrieval (default: true).",
+  "agents.defaults.memorySearch.query.precheck.minQueryChars":
+    "When pre-check is enabled, short non-memory queries below this length skip retrieval (default: 6).",
   "agents.defaults.memorySearch.query.hybrid.vectorWeight":
     "Weight for vector similarity when merging results (0-1).",
   "agents.defaults.memorySearch.query.hybrid.textWeight":
@@ -219,6 +225,53 @@ export const FIELD_HELP: Record<string, string> = {
   memory: "Memory backend configuration (global).",
   "memory.backend": 'Memory backend ("builtin" for Marv embeddings, "qmd" for QMD sidecar).',
   "memory.citations": 'Default citation behavior ("auto", "on", or "off").',
+  "memory.p0AllowedKinds":
+    "Deprecated alias for memory.soul.p0AllowedKinds. Values are normalized to lowercase.",
+  "memory.soul": "Structured soul-memory tuning for decay, promotion, and retrieval scoring.",
+  "memory.soul.p0AllowedKinds":
+    "Allowed memory kinds that may enter P0/SOUL tier. Values are normalized to lowercase. Default: preference, principle, identity, policy, guardrail.",
+  "memory.soul.forgetConfidenceThreshold":
+    "Prune candidate threshold after clarity decay (default: 0.1). Lower values retain memories longer.",
+  "memory.soul.forgetStreakHalfLives":
+    "How many half-lives a memory must stay below forgetConfidenceThreshold before pruning (default: 3).",
+  "memory.soul.p0ClarityHalfLifeDays": "P0 clarity half-life in days (default: 365).",
+  "memory.soul.p1ClarityHalfLifeDays": "P1 clarity half-life in days (default: 45).",
+  "memory.soul.p2ClarityHalfLifeDays": "P2 clarity half-life in days (default: 10).",
+  "memory.soul.p0RecallRelevanceThreshold":
+    "Minimum relevance needed to trigger P0 recall boost (default: 0.7).",
+  "memory.soul.p2ToP1MinClarity":
+    "Minimum clarity required for P2 to P1 promotion (default: 0.75).",
+  "memory.soul.p2ToP1MinAgeDays": "Minimum memory age in days for P2 to P1 promotion (default: 7).",
+  "memory.soul.p2ToP1MinScopeCount":
+    "Minimum distinct scope hits required for P2 to P1 promotion (default: 2).",
+  "memory.soul.p1ToP0MinClarity":
+    "Minimum clarity required for P1 to P0 promotion (default: 0.75).",
+  "memory.soul.p1ToP0MinAgeDays":
+    "Minimum memory age in days for P1 to P0 promotion (default: 150).",
+  "memory.soul.p0ScopePenalty":
+    "Scope penalty for global/user memories outside active scope (default: 0.8).",
+  "memory.soul.crossScopePenalty": "Scope penalty for unrelated scopes (default: 0.2).",
+  "memory.soul.matchScopePenalty": "Scope penalty for exact scope matches (default: 1.0).",
+  "memory.soul.p0TierMultiplier": "Ranking multiplier for P0 tier (default: 1.2).",
+  "memory.soul.p1TierMultiplier": "Ranking multiplier for P1 tier (default: 1.0).",
+  "memory.soul.p2TierMultiplier": "Ranking multiplier for P2 tier (default: 0.75).",
+  "memory.soul.scoreSimilarityWeight":
+    "Exponent for similarity contribution in final score (default: 1.0).",
+  "memory.soul.scoreDecayWeight": "Exponent for decay contribution in final score (default: 1.0).",
+  "memory.soul.reinforcementLogWeight":
+    "Multiplier applied to log-scaled reinforcement_count in final score (default: 0.2).",
+  "memory.soul.referenceExpansionEnabled":
+    "Enable multi-hop reference expansion (A->B->C) during retrieval re-ranking (default: true).",
+  "memory.soul.referenceMaxHops":
+    "Maximum reference hops for expansion (default: 2). Higher values increase recall and latency.",
+  "memory.soul.referenceEdgeDecay":
+    "Per-hop decay factor for propagated reference influence (0-1, default: 0.8).",
+  "memory.soul.referenceBoostWeight":
+    "Multiplier applied to propagated reference influence before boosting score (default: 0.3).",
+  "memory.soul.referenceMaxBoost":
+    "Maximum cumulative reference boost applied to one memory score (default: 0.6).",
+  "memory.soul.referenceSeedTopKMultiplier":
+    "How many top results become expansion seeds (topK * multiplier, default: 2).",
   "memory.qmd.command": "Path to the qmd binary (default: resolves from PATH).",
   "memory.qmd.includeDefaultMemory":
     "Whether to automatically index MEMORY.md + memory/**/*.md (default: true).",

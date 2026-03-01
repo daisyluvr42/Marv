@@ -16,24 +16,33 @@ const TIER_P0 = "P0";
 const TIER_P1 = "P1";
 const TIER_P2 = "P2";
 
-const FORGET_CONFIDENCE_THRESHOLD = 0.05;
-const FORGET_STREAK_HALF_LIVES = 5;
+const FORGET_CONFIDENCE_THRESHOLD = 0.1;
+const FORGET_STREAK_HALF_LIVES = 3;
 const DEFAULT_INJECT_THRESHOLD = 0.65;
 const P0_CLARITY_HALF_LIFE_DAYS = 365;
-const P1_CLARITY_HALF_LIFE_DAYS = 60;
-const P2_CLARITY_HALF_LIFE_DAYS = 15;
-const P0_RECALL_RELEVANCE_THRESHOLD = 0.8;
-const P2_TO_P1_MIN_CLARITY = 0.9;
-const P2_TO_P1_MIN_AGE_DAYS = 14;
-const P2_TO_P1_MIN_SCOPE_COUNT = 3;
-const P1_TO_P0_MIN_CLARITY = 0.8;
-const P1_TO_P0_MIN_AGE_DAYS = 300;
+const P1_CLARITY_HALF_LIFE_DAYS = 45;
+const P2_CLARITY_HALF_LIFE_DAYS = 10;
+const P0_RECALL_RELEVANCE_THRESHOLD = 0.7;
+const P2_TO_P1_MIN_CLARITY = 0.75;
+const P2_TO_P1_MIN_AGE_DAYS = 7;
+const P2_TO_P1_MIN_SCOPE_COUNT = 2;
+const P1_TO_P0_MIN_CLARITY = 0.75;
+const P1_TO_P0_MIN_AGE_DAYS = 150;
 const P0_SCOPE_PENALTY = 0.8;
 const CROSS_SCOPE_PENALTY = 0.2;
 const MATCH_SCOPE_PENALTY = 1;
-const P0_TIER_MULTIPLIER = 1.25;
+const P0_TIER_MULTIPLIER = 1.2;
 const P1_TIER_MULTIPLIER = 1;
-const P2_TIER_MULTIPLIER = 0.85;
+const P2_TIER_MULTIPLIER = 0.75;
+const SCORE_SIMILARITY_WEIGHT = 1;
+const SCORE_DECAY_WEIGHT = 1;
+const REINFORCEMENT_LOG_WEIGHT = 0.2;
+const REFERENCE_EXPANSION_ENABLED = true;
+const REFERENCE_MAX_HOPS = 2;
+const REFERENCE_EDGE_DECAY = 0.8;
+const REFERENCE_BOOST_WEIGHT = 0.3;
+const REFERENCE_MAX_BOOST = 0.6;
+const REFERENCE_SEED_TOPK_MULTIPLIER = 2;
 const FUSION_VECTOR_WEIGHT = 0.32;
 const FUSION_LEXICAL_WEIGHT = 0.15;
 const FUSION_BM25_WEIGHT = 0.15;
@@ -50,6 +59,11 @@ const SOUL_MEMORY_PATH_PREFIX = "soul-memory/";
 const SOUL_MEMORY_FTS_TABLE = "memory_items_fts";
 const SOUL_MEMORY_ENTITY_TABLE = "memory_item_entities";
 const SOUL_MEMORY_SCOPE_HITS_TABLE = "memory_scope_hits";
+const SOUL_MEMORY_REF_TABLE = "memory_item_refs";
+const MEMORY_ITEM_SELECT_COLUMNS =
+  "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
+  "created_at, last_accessed_at, reinforcement_count, last_reinforced_at";
+const MEMORY_REF_TOKEN_RE = /\[ref:(mem_[a-z0-9]+)\]/gi;
 const RRF_RANK_CONSTANT = 40;
 const VECTOR_RRF_WEIGHT = 0.6;
 const BM25_RRF_WEIGHT = 0.4;
@@ -65,6 +79,15 @@ const SOURCE_PROFILE: Record<SoulMemorySource, SourceProfile> = {
   [SOURCE_MIGRATION]: { confidence: 0.85, tier: TIER_P1 },
   [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5, tier: TIER_P2 },
 };
+
+// P0 is reserved for durable soul-level facts/policies only.
+const DEFAULT_P0_ALLOWED_KINDS = new Set<string>([
+  "preference",
+  "principle",
+  "identity",
+  "policy",
+  "guardrail",
+]);
 
 const ENTITY_EN_STOPWORDS = new Set<string>([
   "this",
@@ -119,6 +142,8 @@ type MemoryItemRow = {
   source: string;
   created_at: number;
   last_accessed_at: number | null;
+  reinforcement_count: number;
+  last_reinforced_at: number | null;
 };
 
 export type SoulMemorySource =
@@ -146,6 +171,8 @@ export type SoulMemoryItem = {
   source: SoulMemorySource;
   createdAt: number;
   lastAccessedAt: number | null;
+  reinforcementCount: number;
+  lastReinforcedAt: number | null;
 };
 
 export type SoulMemoryQueryResult = SoulMemoryItem & {
@@ -162,6 +189,12 @@ export type SoulMemoryQueryResult = SoulMemoryItem & {
   tierMultiplier: number;
   wasRecallBoosted: boolean;
   timeDecay: number;
+  salienceScore: number;
+  salienceDecay: number;
+  salienceReinforcement: number;
+  reinforcementFactor: number;
+  referenceBoost: number;
+  references: string[];
   ageDays: number;
 };
 
@@ -178,6 +211,66 @@ export type SoulMemoryPromotionSummary = {
   p0PromotionIds: string[];
   p0ApprovalCandidates: SoulMemoryPromotionCandidate[];
   skillExtractionCandidates: string[];
+};
+
+export type SoulMemoryConfig = {
+  p0AllowedKinds?: string[];
+  forgetConfidenceThreshold?: number;
+  forgetStreakHalfLives?: number;
+  p0ClarityHalfLifeDays?: number;
+  p1ClarityHalfLifeDays?: number;
+  p2ClarityHalfLifeDays?: number;
+  p0RecallRelevanceThreshold?: number;
+  p2ToP1MinClarity?: number;
+  p2ToP1MinAgeDays?: number;
+  p2ToP1MinScopeCount?: number;
+  p1ToP0MinClarity?: number;
+  p1ToP0MinAgeDays?: number;
+  p0ScopePenalty?: number;
+  crossScopePenalty?: number;
+  matchScopePenalty?: number;
+  p0TierMultiplier?: number;
+  p1TierMultiplier?: number;
+  p2TierMultiplier?: number;
+  scoreSimilarityWeight?: number;
+  scoreDecayWeight?: number;
+  reinforcementLogWeight?: number;
+  referenceExpansionEnabled?: boolean;
+  referenceMaxHops?: number;
+  referenceEdgeDecay?: number;
+  referenceBoostWeight?: number;
+  referenceMaxBoost?: number;
+  referenceSeedTopKMultiplier?: number;
+};
+
+type ResolvedSoulMemoryConfig = {
+  p0AllowedKinds: Set<string>;
+  forgetConfidenceThreshold: number;
+  forgetStreakHalfLives: number;
+  p0ClarityHalfLifeDays: number;
+  p1ClarityHalfLifeDays: number;
+  p2ClarityHalfLifeDays: number;
+  p0RecallRelevanceThreshold: number;
+  p2ToP1MinClarity: number;
+  p2ToP1MinAgeDays: number;
+  p2ToP1MinScopeCount: number;
+  p1ToP0MinClarity: number;
+  p1ToP0MinAgeDays: number;
+  p0ScopePenalty: number;
+  crossScopePenalty: number;
+  matchScopePenalty: number;
+  p0TierMultiplier: number;
+  p1TierMultiplier: number;
+  p2TierMultiplier: number;
+  scoreSimilarityWeight: number;
+  scoreDecayWeight: number;
+  reinforcementLogWeight: number;
+  referenceExpansionEnabled: boolean;
+  referenceMaxHops: number;
+  referenceEdgeDecay: number;
+  referenceBoostWeight: number;
+  referenceMaxBoost: number;
+  referenceSeedTopKMultiplier: number;
 };
 
 export function buildSoulMemoryPath(itemId: string): string {
@@ -210,6 +303,9 @@ export function writeSoulMemory(params: {
   confidence?: number;
   source?: string;
   nowMs?: number;
+  soulConfig?: SoulMemoryConfig;
+  // Deprecated alias; prefer soulConfig.p0AllowedKinds.
+  p0AllowedKinds?: string[];
 }): SoulMemoryItem | null {
   const content = params.content.trim();
   if (!content) {
@@ -220,10 +316,15 @@ export function writeSoulMemory(params: {
     source: params.source,
     inputConfidence: params.confidence ?? SOURCE_PROFILE[SOURCE_MANUAL_LOG].confidence,
   });
-  const sourceProfile = SOURCE_PROFILE[source];
   const scopeType = normalizeScopeValue(params.scopeType);
   const scopeId = normalizeScopeValue(params.scopeId);
   const kind = normalizeScopeValue(params.kind);
+  const soulConfig = resolveSoulMemoryConfig({
+    ...params.soulConfig,
+    p0AllowedKinds: params.soulConfig?.p0AllowedKinds ?? params.p0AllowedKinds,
+  });
+  const normalizedSource = normalizeSourceForKind(source, kind, soulConfig.p0AllowedKinds);
+  const sourceProfile = SOURCE_PROFILE[normalizedSource];
   const normalizedContent = normalizeText(content);
 
   const db = openSoulMemoryDb(params.agentId);
@@ -238,20 +339,12 @@ export function writeSoulMemory(params: {
     if (existing) {
       const nextConfidence = Math.max(existing.confidence, sourceProfile.confidence);
       const nextTier = sourceProfile.tier;
-      const nextSource = source;
-      const changed =
-        nextConfidence !== existing.confidence ||
-        nextTier !== existing.tier ||
-        nextSource !== existing.source;
-      if (!changed) {
-        return existing;
-      }
-      db.prepare("UPDATE memory_items SET confidence = ?, tier = ?, source = ? WHERE id = ?").run(
-        nextConfidence,
-        nextTier,
-        nextSource,
-        existing.id,
-      );
+      const nextSource = normalizedSource;
+      db.prepare(
+        "UPDATE memory_items SET confidence = ?, tier = ?, source = ?, " +
+          "reinforcement_count = COALESCE(reinforcement_count, 1) + 1, last_reinforced_at = ? " +
+          "WHERE id = ?",
+      ).run(nextConfidence, nextTier, nextSource, nowMs, existing.id);
       return getSoulMemoryItemInternal(db, existing.id);
     }
 
@@ -259,8 +352,9 @@ export function writeSoulMemory(params: {
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
     db.prepare(
       "INSERT INTO memory_items (" +
-        "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, created_at, last_accessed_at" +
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)",
+        "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
+        "created_at, last_accessed_at, reinforcement_count, last_reinforced_at" +
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?)",
     ).run(
       id,
       scopeType,
@@ -270,10 +364,12 @@ export function writeSoulMemory(params: {
       embedding,
       sourceProfile.confidence,
       sourceProfile.tier,
-      source,
+      normalizedSource,
+      nowMs,
       nowMs,
     );
     upsertItemEntities(db, id, content);
+    upsertItemReferences(db, id, content, nowMs);
     return getSoulMemoryItemInternal(db, id);
   } finally {
     db.close();
@@ -319,12 +415,29 @@ export function listSoulMemoryItems(params: {
     const limit = Math.max(1, Math.min(500, Math.floor(params.limit ?? 200)));
     const rows = db
       .prepare(
-        "SELECT id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
-          "created_at, last_accessed_at FROM memory_items " +
+        `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items ` +
           `${where} ORDER BY created_at DESC LIMIT ?`,
       )
       .all(...values, limit) as MemoryItemRow[];
     return rows.map((row) => rowToMemoryItem(row));
+  } finally {
+    db.close();
+  }
+}
+
+export function listSoulMemoryReferences(params: { agentId: string; itemId: string }): string[] {
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    type Row = { target_memory_id?: string };
+    const rows = db
+      .prepare(
+        `SELECT target_memory_id FROM ${SOUL_MEMORY_REF_TABLE} ` +
+          "WHERE source_memory_id = ? ORDER BY target_memory_id ASC",
+      )
+      .all(params.itemId) as Row[];
+    return rows
+      .map((row) => String(row.target_memory_id ?? "").trim())
+      .filter((value) => Boolean(value));
   } finally {
     db.close();
   }
@@ -338,6 +451,7 @@ export function querySoulMemoryMulti(params: {
   minScore?: number;
   ttlDays?: number;
   nowMs?: number;
+  soulConfig?: SoulMemoryConfig;
 }): SoulMemoryQueryResult[] {
   const topK = Math.max(0, Math.floor(params.topK));
   if (topK <= 0) {
@@ -356,6 +470,7 @@ export function querySoulMemoryMulti(params: {
     ? Math.max(0, Math.floor(params.ttlDays as number))
     : 0;
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
+  const soulConfig = resolveSoulMemoryConfig(params.soulConfig);
   const queryVec = embedText(cleanedQuery);
   const activeScopeKeySet = new Set<string>(
     uniqueScopes.map((scope) => scopeKey(scope.scopeType, scope.scopeId)),
@@ -368,10 +483,7 @@ export function querySoulMemoryMulti(params: {
   const db = openSoulMemoryDb(params.agentId);
   try {
     const rows = db
-      .prepare(
-        "SELECT id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, created_at, last_accessed_at " +
-          "FROM memory_items",
-      )
+      .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items`)
       .all() as MemoryItemRow[];
 
     type Candidate = {
@@ -380,6 +492,7 @@ export function querySoulMemoryMulti(params: {
       lexicalScore: number;
       scopePenalty: number;
       clarityScore: number;
+      decayFactor: number;
       ageDays: number;
     };
 
@@ -393,8 +506,9 @@ export function querySoulMemoryMulti(params: {
         continue;
       }
 
-      const clarityScore = computeCurrentClarity(item, ageDays);
-      if (shouldPruneMemoryItem(item, ageDays)) {
+      const decayFactor = clarityDecayFactor(item.tier, ageDays, soulConfig);
+      const clarityScore = computeCurrentClarity(item, ageDays, soulConfig);
+      if (shouldPruneMemoryItem(item, ageDays, soulConfig)) {
         staleMemoryIds.push(item.id);
         continue;
       }
@@ -406,11 +520,15 @@ export function querySoulMemoryMulti(params: {
         item,
         vectorScore,
         lexicalScore,
-        scopePenalty: resolveScopePenalty({
-          item,
-          activeScopeKeySet,
-        }),
+        scopePenalty: resolveScopePenalty(
+          {
+            item,
+            activeScopeKeySet,
+          },
+          soulConfig,
+        ),
         clarityScore,
+        decayFactor,
         ageDays,
       });
     }
@@ -441,7 +559,7 @@ export function querySoulMemoryMulti(params: {
     });
     const clusterById = computeClusterScores([...candidatesById.values()]);
 
-    const dedup = new Map<string, SoulMemoryQueryResult>();
+    const scoredById = new Map<string, SoulMemoryQueryResult>();
     for (const candidate of candidatesById.values()) {
       const bm25 = bm25ById.get(candidate.item.id);
       const vectorRank = vectorRankById.get(candidate.item.id) ?? Number.POSITIVE_INFINITY;
@@ -460,15 +578,33 @@ export function querySoulMemoryMulti(params: {
       const relevanceScore = clamp(fusionSemanticMatch * candidate.scopePenalty, 0, 1);
       let clarityScore = candidate.clarityScore;
       let wasRecallBoosted = false;
-      if (candidate.item.tier === TIER_P0 && relevanceScore >= P0_RECALL_RELEVANCE_THRESHOLD) {
+      let decayFactor = candidate.decayFactor;
+      if (
+        candidate.item.tier === TIER_P0 &&
+        relevanceScore >= soulConfig.p0RecallRelevanceThreshold
+      ) {
+        decayFactor = 1;
         clarityScore = 1;
         wasRecallBoosted = true;
       }
-      const tierMultiplier = tierPriorityFactor(candidate.item.tier);
-      const score = clamp(tierMultiplier * clarityScore * relevanceScore, 0, 1.5);
-      if (score < minScore) {
-        continue;
-      }
+      const similarityScore = computeWeightedScore(
+        relevanceScore,
+        soulConfig.scoreSimilarityWeight,
+      );
+      const decayScore = computeWeightedScore(decayFactor, soulConfig.scoreDecayWeight);
+      const reinforcementFactor = computeReinforcementFactor(
+        candidate.item.reinforcementCount,
+        soulConfig,
+      );
+      const salienceDecay = decayScore;
+      const salienceReinforcement = reinforcementFactor;
+      const salienceScore = salienceDecay * salienceReinforcement;
+      const tierMultiplier = tierPriorityFactor(candidate.item.tier, soulConfig);
+      const score = clamp(
+        tierMultiplier * candidate.item.confidence * similarityScore * salienceScore,
+        0,
+        1.5,
+      );
       const result: SoulMemoryQueryResult = {
         ...candidate.item,
         score,
@@ -483,10 +619,34 @@ export function querySoulMemoryMulti(params: {
         clarityScore,
         tierMultiplier,
         wasRecallBoosted,
-        timeDecay: clarityDecayFactor(candidate.item.tier, candidate.ageDays),
+        timeDecay: decayFactor,
+        salienceScore,
+        salienceDecay,
+        salienceReinforcement,
+        reinforcementFactor,
+        referenceBoost: 0,
+        references: [],
         ageDays: candidate.ageDays,
       };
-      const dedupKey = normalizeText(candidate.item.content);
+      scoredById.set(candidate.item.id, result);
+    }
+
+    if (scoredById.size === 0) {
+      return [];
+    }
+    applyReferenceExpansion({
+      db,
+      scoredById,
+      topK,
+      soulConfig,
+    });
+
+    const dedup = new Map<string, SoulMemoryQueryResult>();
+    for (const result of scoredById.values()) {
+      if (result.score < minScore) {
+        continue;
+      }
+      const dedupKey = normalizeText(result.content);
       const existing = dedup.get(dedupKey);
       if (!existing || result.score > existing.score) {
         dedup.set(dedupKey, result);
@@ -494,6 +654,13 @@ export function querySoulMemoryMulti(params: {
     }
 
     const ranked = [...dedup.values()].toSorted((a, b) => b.score - a.score).slice(0, topK);
+    const referencesByMemoryId = loadReferencesBySourceIds(
+      db,
+      ranked.map((entry) => entry.id),
+    );
+    for (const entry of ranked) {
+      entry.references = referencesByMemoryId.get(entry.id) ?? [];
+    }
     reinforceRetrievedItems(db, ranked, nowMs);
     recordScopeHits(db, ranked, activeScopeId, nowMs);
     return ranked;
@@ -552,8 +719,16 @@ function ensureSoulMemorySchema(db: DatabaseSync): void {
       "tier TEXT NOT NULL DEFAULT 'P1', " +
       "source TEXT NOT NULL DEFAULT 'manual_log', " +
       "created_at INTEGER NOT NULL, " +
-      "last_accessed_at INTEGER" +
+      "last_accessed_at INTEGER, " +
+      "reinforcement_count INTEGER NOT NULL DEFAULT 1, " +
+      "last_reinforced_at INTEGER" +
       ");",
+  );
+  ensureMemoryItemsColumn(db, "reinforcement_count", "INTEGER NOT NULL DEFAULT 1");
+  ensureMemoryItemsColumn(db, "last_reinforced_at", "INTEGER");
+  db.exec(
+    "UPDATE memory_items SET reinforcement_count = 1 " +
+      "WHERE reinforcement_count IS NULL OR reinforcement_count < 1",
   );
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_soul_memory_scope ON memory_items (scope_type, scope_id);",
@@ -588,7 +763,27 @@ function ensureSoulMemorySchema(db: DatabaseSync): void {
   db.exec(
     `CREATE INDEX IF NOT EXISTS idx_soul_memory_entities_entity ON ${SOUL_MEMORY_ENTITY_TABLE} (entity);`,
   );
+  db.exec(
+    `CREATE TABLE IF NOT EXISTS ${SOUL_MEMORY_REF_TABLE} (` +
+      "source_memory_id TEXT NOT NULL, " +
+      "target_memory_id TEXT NOT NULL, " +
+      "created_at INTEGER NOT NULL, " +
+      "PRIMARY KEY (source_memory_id, target_memory_id), " +
+      "FOREIGN KEY (source_memory_id) REFERENCES memory_items(id) ON DELETE CASCADE" +
+      ");",
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_soul_memory_refs_target ON ${SOUL_MEMORY_REF_TABLE} (target_memory_id);`,
+  );
   ensureSoulMemoryFts(db);
+}
+
+function ensureMemoryItemsColumn(db: DatabaseSync, column: string, definition: string): void {
+  const rows = db.prepare("PRAGMA table_info(memory_items)").all() as Array<{ name?: string }>;
+  if (rows.some((row) => row.name === column)) {
+    return;
+  }
+  db.exec(`ALTER TABLE memory_items ADD COLUMN ${column} ${definition}`);
 }
 
 function ensureSoulMemoryFts(db: DatabaseSync): void {
@@ -653,12 +848,29 @@ function upsertItemEntities(db: DatabaseSync, memoryId: string, content: string)
   }
 }
 
+function upsertItemReferences(
+  db: DatabaseSync,
+  sourceMemoryId: string,
+  content: string,
+  nowMs: number,
+): void {
+  db.prepare(`DELETE FROM ${SOUL_MEMORY_REF_TABLE} WHERE source_memory_id = ?`).run(sourceMemoryId);
+  const refs = extractMemoryReferenceIds(content).filter((targetId) => targetId !== sourceMemoryId);
+  if (refs.length === 0) {
+    return;
+  }
+  const stmt = db.prepare(
+    `INSERT OR IGNORE INTO ${SOUL_MEMORY_REF_TABLE} (source_memory_id, target_memory_id, created_at) ` +
+      "VALUES (?, ?, ?)",
+  );
+  for (const targetId of refs) {
+    stmt.run(sourceMemoryId, targetId, nowMs);
+  }
+}
+
 function getSoulMemoryItemInternal(db: DatabaseSync, itemId: string): SoulMemoryItem | null {
   const row = db
-    .prepare(
-      "SELECT id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, created_at, last_accessed_at " +
-        "FROM memory_items WHERE id = ?",
-    )
+    .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id = ?`)
     .get(itemId) as MemoryItemRow | undefined;
   return row ? rowToMemoryItem(row) : null;
 }
@@ -672,8 +884,8 @@ function findExistingMemoryItem(params: {
 }): SoulMemoryItem | null {
   const rows = params.db
     .prepare(
-      "SELECT id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, created_at, last_accessed_at " +
-        "FROM memory_items WHERE scope_type = ? AND scope_id = ? AND kind = ?",
+      `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items ` +
+        "WHERE scope_type = ? AND scope_id = ? AND kind = ?",
     )
     .all(params.scopeType, params.scopeId, params.kind) as MemoryItemRow[];
   for (const row of rows) {
@@ -693,10 +905,14 @@ function reinforceRetrievedItems(
     return;
   }
   const boosted = db.prepare(
-    "UPDATE memory_items SET last_accessed_at = ?, confidence = 1.0 WHERE id = ?",
+    "UPDATE memory_items SET " +
+      "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
+      "confidence = 1.0 WHERE id = ?",
   );
   const reinforce = db.prepare(
-    "UPDATE memory_items SET last_accessed_at = ?, confidence = MIN(1.0, confidence + 0.05) WHERE id = ?",
+    "UPDATE memory_items SET " +
+      "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
+      "confidence = MIN(1.0, confidence + 0.05) WHERE id = ?",
   );
   const handled = new Set<string>();
   for (const result of results) {
@@ -706,10 +922,10 @@ function reinforceRetrievedItems(
     }
     handled.add(itemId);
     if (result.wasRecallBoosted) {
-      boosted.run(nowMs, itemId);
+      boosted.run(nowMs, nowMs, itemId);
       continue;
     }
-    reinforce.run(nowMs, itemId);
+    reinforce.run(nowMs, nowMs, itemId);
   }
 }
 
@@ -764,6 +980,7 @@ function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): number {
 }
 
 function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
+  const reinforcementCount = Math.max(1, Math.floor(Number(row.reinforcement_count ?? 1)));
   return {
     id: String(row.id),
     scopeType: String(row.scope_type),
@@ -775,6 +992,8 @@ function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
     source: normalizeSource(String(row.source)),
     createdAt: Number(row.created_at ?? 0),
     lastAccessedAt: row.last_accessed_at == null ? null : Number(row.last_accessed_at),
+    reinforcementCount,
+    lastReinforcedAt: row.last_reinforced_at == null ? null : Number(row.last_reinforced_at),
   };
 }
 
@@ -797,6 +1016,144 @@ function normalizeSource(value: string): SoulMemorySource {
     return normalized;
   }
   return SOURCE_MANUAL_LOG;
+}
+
+function normalizeSourceForKind(
+  source: SoulMemorySource,
+  kind: string,
+  p0AllowedKinds: Set<string>,
+): SoulMemorySource {
+  if (source !== SOURCE_CORE_PREFERENCE) {
+    return source;
+  }
+  if (p0AllowedKinds.has(kind)) {
+    return source;
+  }
+  return SOURCE_MANUAL_LOG;
+}
+
+function resolveP0AllowedKinds(raw?: string[]): Set<string> {
+  if (!raw || raw.length === 0) {
+    return DEFAULT_P0_ALLOWED_KINDS;
+  }
+  const normalized = new Set(raw.map((entry) => normalizeScopeValue(entry)).filter(Boolean));
+  return normalized.size > 0 ? normalized : DEFAULT_P0_ALLOWED_KINDS;
+}
+
+function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConfig {
+  const config = raw ?? {};
+  return {
+    p0AllowedKinds: resolveP0AllowedKinds(config.p0AllowedKinds),
+    forgetConfidenceThreshold: resolveBoundedNumber(
+      config.forgetConfidenceThreshold,
+      FORGET_CONFIDENCE_THRESHOLD,
+      0,
+      1,
+    ),
+    forgetStreakHalfLives: resolveBoundedNumber(
+      config.forgetStreakHalfLives,
+      FORGET_STREAK_HALF_LIVES,
+      0.1,
+    ),
+    p0ClarityHalfLifeDays: resolveBoundedNumber(
+      config.p0ClarityHalfLifeDays,
+      P0_CLARITY_HALF_LIFE_DAYS,
+      1,
+    ),
+    p1ClarityHalfLifeDays: resolveBoundedNumber(
+      config.p1ClarityHalfLifeDays,
+      P1_CLARITY_HALF_LIFE_DAYS,
+      1,
+    ),
+    p2ClarityHalfLifeDays: resolveBoundedNumber(
+      config.p2ClarityHalfLifeDays,
+      P2_CLARITY_HALF_LIFE_DAYS,
+      1,
+    ),
+    p0RecallRelevanceThreshold: resolveBoundedNumber(
+      config.p0RecallRelevanceThreshold,
+      P0_RECALL_RELEVANCE_THRESHOLD,
+      0,
+      1,
+    ),
+    p2ToP1MinClarity: resolveBoundedNumber(config.p2ToP1MinClarity, P2_TO_P1_MIN_CLARITY, 0, 1),
+    p2ToP1MinAgeDays: resolveBoundedInteger(config.p2ToP1MinAgeDays, P2_TO_P1_MIN_AGE_DAYS, 0),
+    p2ToP1MinScopeCount: resolveBoundedInteger(
+      config.p2ToP1MinScopeCount,
+      P2_TO_P1_MIN_SCOPE_COUNT,
+      1,
+    ),
+    p1ToP0MinClarity: resolveBoundedNumber(config.p1ToP0MinClarity, P1_TO_P0_MIN_CLARITY, 0, 1),
+    p1ToP0MinAgeDays: resolveBoundedInteger(config.p1ToP0MinAgeDays, P1_TO_P0_MIN_AGE_DAYS, 0),
+    p0ScopePenalty: resolveBoundedNumber(config.p0ScopePenalty, P0_SCOPE_PENALTY, 0),
+    crossScopePenalty: resolveBoundedNumber(config.crossScopePenalty, CROSS_SCOPE_PENALTY, 0),
+    matchScopePenalty: resolveBoundedNumber(config.matchScopePenalty, MATCH_SCOPE_PENALTY, 0),
+    p0TierMultiplier: resolveBoundedNumber(config.p0TierMultiplier, P0_TIER_MULTIPLIER, 0),
+    p1TierMultiplier: resolveBoundedNumber(config.p1TierMultiplier, P1_TIER_MULTIPLIER, 0),
+    p2TierMultiplier: resolveBoundedNumber(config.p2TierMultiplier, P2_TIER_MULTIPLIER, 0),
+    scoreSimilarityWeight: resolveBoundedNumber(
+      config.scoreSimilarityWeight,
+      SCORE_SIMILARITY_WEIGHT,
+      0,
+    ),
+    scoreDecayWeight: resolveBoundedNumber(config.scoreDecayWeight, SCORE_DECAY_WEIGHT, 0),
+    reinforcementLogWeight: resolveBoundedNumber(
+      config.reinforcementLogWeight,
+      REINFORCEMENT_LOG_WEIGHT,
+      0,
+    ),
+    referenceExpansionEnabled:
+      config.referenceExpansionEnabled === undefined
+        ? REFERENCE_EXPANSION_ENABLED
+        : Boolean(config.referenceExpansionEnabled),
+    referenceMaxHops: resolveBoundedInteger(config.referenceMaxHops, REFERENCE_MAX_HOPS, 0, 5),
+    referenceEdgeDecay: resolveBoundedNumber(config.referenceEdgeDecay, REFERENCE_EDGE_DECAY, 0, 1),
+    referenceBoostWeight: resolveBoundedNumber(
+      config.referenceBoostWeight,
+      REFERENCE_BOOST_WEIGHT,
+      0,
+    ),
+    referenceMaxBoost: resolveBoundedNumber(config.referenceMaxBoost, REFERENCE_MAX_BOOST, 0),
+    referenceSeedTopKMultiplier: resolveBoundedInteger(
+      config.referenceSeedTopKMultiplier,
+      REFERENCE_SEED_TOPK_MULTIPLIER,
+      1,
+      10,
+    ),
+  };
+}
+
+function resolveBoundedNumber(value: unknown, fallback: number, min: number, max?: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  const numeric = value;
+  if (numeric < min) {
+    return fallback;
+  }
+  if (max != null && numeric > max) {
+    return fallback;
+  }
+  return numeric;
+}
+
+function resolveBoundedInteger(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max?: number,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  const numeric = Math.floor(value);
+  if (numeric < min) {
+    return fallback;
+  }
+  if (max != null && numeric > max) {
+    return fallback;
+  }
+  return numeric;
 }
 
 function normalizeScopeValue(value: string): string {
@@ -843,28 +1200,39 @@ function resolveMemorySource(params: {
   return SOURCE_MANUAL_LOG;
 }
 
-function clarityDecayFactor(tier: SoulMemoryTier, ageDays: number): number {
+function clarityDecayFactor(
+  tier: SoulMemoryTier,
+  ageDays: number,
+  soulConfig: ResolvedSoulMemoryConfig,
+): number {
   const normalizedAgeDays = Math.max(0, ageDays);
   const halfLifeDays =
     tier === TIER_P0
-      ? P0_CLARITY_HALF_LIFE_DAYS
+      ? soulConfig.p0ClarityHalfLifeDays
       : tier === TIER_P2
-        ? P2_CLARITY_HALF_LIFE_DAYS
-        : P1_CLARITY_HALF_LIFE_DAYS;
+        ? soulConfig.p2ClarityHalfLifeDays
+        : soulConfig.p1ClarityHalfLifeDays;
   const factor = 0.5 ** (normalizedAgeDays / halfLifeDays);
   return clamp(factor, 0, 1);
 }
 
-function computeCurrentClarity(item: SoulMemoryItem, ageDays: number): number {
-  return clamp(item.confidence * clarityDecayFactor(item.tier, ageDays), 0, 1);
+function computeCurrentClarity(
+  item: SoulMemoryItem,
+  ageDays: number,
+  soulConfig: ResolvedSoulMemoryConfig,
+): number {
+  return clamp(item.confidence * clarityDecayFactor(item.tier, ageDays, soulConfig), 0, 1);
 }
 
-function resolveTierHalfLifeDays(tier: SoulMemoryTier): number | null {
+function resolveTierHalfLifeDays(
+  tier: SoulMemoryTier,
+  soulConfig: ResolvedSoulMemoryConfig,
+): number | null {
   if (tier === TIER_P1) {
-    return P1_CLARITY_HALF_LIFE_DAYS;
+    return soulConfig.p1ClarityHalfLifeDays;
   }
   if (tier === TIER_P2) {
-    return P2_CLARITY_HALF_LIFE_DAYS;
+    return soulConfig.p2ClarityHalfLifeDays;
   }
   return null;
 }
@@ -888,45 +1256,73 @@ function computeBelowThresholdDurationDays(params: {
   return Math.max(0, ageDays - crossingAgeDays);
 }
 
-function shouldPruneMemoryItem(item: SoulMemoryItem, ageDays: number): boolean {
-  const halfLifeDays = resolveTierHalfLifeDays(item.tier);
+function shouldPruneMemoryItem(
+  item: SoulMemoryItem,
+  ageDays: number,
+  soulConfig: ResolvedSoulMemoryConfig,
+): boolean {
+  const halfLifeDays = resolveTierHalfLifeDays(item.tier, soulConfig);
   if (!halfLifeDays || !Number.isFinite(halfLifeDays) || halfLifeDays <= 0) {
     return false;
   }
-  const clarity = computeCurrentClarity(item, ageDays);
-  if (clarity >= FORGET_CONFIDENCE_THRESHOLD) {
+  const clarity = computeCurrentClarity(item, ageDays, soulConfig);
+  if (clarity >= soulConfig.forgetConfidenceThreshold) {
     return false;
   }
   const belowThresholdDays = computeBelowThresholdDurationDays({
     item,
     ageDays,
-    threshold: FORGET_CONFIDENCE_THRESHOLD,
+    threshold: soulConfig.forgetConfidenceThreshold,
     halfLifeDays,
   });
-  return belowThresholdDays >= halfLifeDays * FORGET_STREAK_HALF_LIVES;
+  return belowThresholdDays >= halfLifeDays * soulConfig.forgetStreakHalfLives;
 }
 
-function tierPriorityFactor(tier: SoulMemoryTier): number {
+function tierPriorityFactor(tier: SoulMemoryTier, soulConfig: ResolvedSoulMemoryConfig): number {
   if (tier === TIER_P0) {
-    return P0_TIER_MULTIPLIER;
+    return soulConfig.p0TierMultiplier;
   }
   if (tier === TIER_P2) {
-    return P2_TIER_MULTIPLIER;
+    return soulConfig.p2TierMultiplier;
   }
-  return P1_TIER_MULTIPLIER;
+  return soulConfig.p1TierMultiplier;
 }
 
-function resolveScopePenalty(params: {
-  item: SoulMemoryItem;
-  activeScopeKeySet: Set<string>;
-}): number {
+function resolveScopePenalty(
+  params: {
+    item: SoulMemoryItem;
+    activeScopeKeySet: Set<string>;
+  },
+  soulConfig: ResolvedSoulMemoryConfig,
+): number {
   if (params.activeScopeKeySet.has(scopeKey(params.item.scopeType, params.item.scopeId))) {
-    return MATCH_SCOPE_PENALTY;
+    return soulConfig.matchScopePenalty;
   }
   if (params.item.scopeType === "global" || params.item.scopeType === "user") {
-    return P0_SCOPE_PENALTY;
+    return soulConfig.p0ScopePenalty;
   }
-  return CROSS_SCOPE_PENALTY;
+  return soulConfig.crossScopePenalty;
+}
+
+function computeWeightedScore(value: number, weight: number): number {
+  const normalizedValue = clamp(value, 0, 1);
+  if (!Number.isFinite(weight) || weight === 1) {
+    return normalizedValue;
+  }
+  return clamp(normalizedValue ** weight, 0, 1);
+}
+
+function computeReinforcementFactor(
+  reinforcementCount: number,
+  soulConfig: ResolvedSoulMemoryConfig,
+): number {
+  const normalizedCount = Math.max(1, Math.floor(reinforcementCount));
+  if (soulConfig.reinforcementLogWeight <= 0) {
+    return 1;
+  }
+  const logBoost = Math.log1p(Math.max(0, normalizedCount - 1));
+  const factor = 1 + logBoost * soulConfig.reinforcementLogWeight;
+  return Math.max(1, factor);
 }
 
 function computeFusionSemanticMatch(params: {
@@ -1080,6 +1476,119 @@ function loadEntitiesForMemoryIds(db: DatabaseSync, memoryIds: string[]): Map<st
     bucket.add(entity);
   }
   return out;
+}
+
+function loadReferencesBySourceIds(db: DatabaseSync, sourceIds: string[]): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  if (sourceIds.length === 0) {
+    return out;
+  }
+  const placeholders = sourceIds.map(() => "?").join(", ");
+  type Row = { source_memory_id?: string; target_memory_id?: string };
+  const rows = db
+    .prepare(
+      `SELECT source_memory_id, target_memory_id FROM ${SOUL_MEMORY_REF_TABLE} ` +
+        `WHERE source_memory_id IN (${placeholders}) ` +
+        "ORDER BY source_memory_id ASC, target_memory_id ASC",
+    )
+    .all(...sourceIds) as Row[];
+  for (const row of rows) {
+    const sourceId = String(row.source_memory_id ?? "").trim();
+    const targetId = String(row.target_memory_id ?? "").trim();
+    if (!sourceId || !targetId) {
+      continue;
+    }
+    const bucket = out.get(sourceId);
+    if (!bucket) {
+      out.set(sourceId, [targetId]);
+      continue;
+    }
+    if (!bucket.includes(targetId)) {
+      bucket.push(targetId);
+    }
+  }
+  return out;
+}
+
+function applyReferenceExpansion(params: {
+  db: DatabaseSync;
+  scoredById: Map<string, SoulMemoryQueryResult>;
+  topK: number;
+  soulConfig: ResolvedSoulMemoryConfig;
+}): void {
+  if (
+    !params.soulConfig.referenceExpansionEnabled ||
+    params.soulConfig.referenceMaxHops <= 0 ||
+    params.soulConfig.referenceBoostWeight <= 0 ||
+    params.soulConfig.referenceEdgeDecay <= 0 ||
+    params.scoredById.size === 0
+  ) {
+    return;
+  }
+
+  const sorted = [...params.scoredById.values()].toSorted((a, b) => b.score - a.score);
+  const seedLimit = Math.max(
+    params.topK,
+    Math.min(
+      sorted.length,
+      Math.floor(params.topK * params.soulConfig.referenceSeedTopKMultiplier),
+    ),
+  );
+  const seeds = sorted.slice(0, seedLimit).filter((entry) => entry.score > 0);
+  if (seeds.length === 0) {
+    return;
+  }
+
+  let frontier = new Map<string, number>();
+  for (const seed of seeds) {
+    const existing = frontier.get(seed.id) ?? 0;
+    if (seed.score > existing) {
+      frontier.set(seed.id, seed.score);
+    }
+  }
+
+  const boostById = new Map<string, number>();
+  for (let hop = 1; hop <= params.soulConfig.referenceMaxHops && frontier.size > 0; hop += 1) {
+    const refsBySource = loadReferencesBySourceIds(params.db, [...frontier.keys()]);
+    const nextFrontier = new Map<string, number>();
+    for (const [sourceId, sourceInfluence] of frontier) {
+      const targets = refsBySource.get(sourceId) ?? [];
+      for (const targetId of targets) {
+        if (!targetId || targetId === sourceId) {
+          continue;
+        }
+        const propagated = sourceInfluence * params.soulConfig.referenceEdgeDecay;
+        if (propagated <= 0) {
+          continue;
+        }
+        const boostDelta = propagated * params.soulConfig.referenceBoostWeight;
+        if (boostDelta > 0 && params.scoredById.has(targetId)) {
+          const previousBoost = boostById.get(targetId) ?? 0;
+          boostById.set(
+            targetId,
+            Math.min(params.soulConfig.referenceMaxBoost, previousBoost + boostDelta),
+          );
+        }
+        const previousFrontier = nextFrontier.get(targetId) ?? 0;
+        if (propagated > previousFrontier) {
+          nextFrontier.set(targetId, propagated);
+        }
+      }
+    }
+    frontier = nextFrontier;
+  }
+
+  for (const [itemId, boost] of boostById) {
+    if (boost <= 0) {
+      continue;
+    }
+    const result = params.scoredById.get(itemId);
+    if (!result) {
+      continue;
+    }
+    result.referenceBoost = boost;
+    result.score = clamp(result.score + boost, 0, 1.5);
+  }
 }
 
 function loadRelatedEntityWeights(params: {
@@ -1305,6 +1814,20 @@ function tokenize(value: string): Set<string> {
   return out;
 }
 
+function extractMemoryReferenceIds(value: string): string[] {
+  const refs = new Set<string>();
+  const regex = new RegExp(MEMORY_REF_TOKEN_RE.source, MEMORY_REF_TOKEN_RE.flags);
+  for (const match of value.matchAll(regex)) {
+    const itemId = String(match[1] ?? "")
+      .trim()
+      .toLowerCase();
+    if (/^mem_[a-z0-9]+$/.test(itemId)) {
+      refs.add(itemId);
+    }
+  }
+  return [...refs];
+}
+
 function embedText(value: string): number[] {
   const tokens = tokenize(value);
   if (tokens.size === 0) {
@@ -1358,17 +1881,21 @@ export function promoteSoulMemories(params: {
   nowMs?: number;
   autoApproveP0?: boolean;
   approvedP0Ids?: string[];
+  soulConfig?: SoulMemoryConfig;
+  // Deprecated alias; prefer soulConfig.p0AllowedKinds.
+  p0AllowedKinds?: string[];
 }): SoulMemoryPromotionSummary {
   const db = openSoulMemoryDb(params.agentId);
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
   const autoApproveP0 = params.autoApproveP0 === true;
   const approvedP0Ids = new Set((params.approvedP0Ids ?? []).map((entry) => entry.trim()));
+  const soulConfig = resolveSoulMemoryConfig({
+    ...params.soulConfig,
+    p0AllowedKinds: params.soulConfig?.p0AllowedKinds ?? params.p0AllowedKinds,
+  });
   try {
     const rows = db
-      .prepare(
-        "SELECT id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, created_at, last_accessed_at " +
-          "FROM memory_items",
-      )
+      .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items`)
       .all() as MemoryItemRow[];
     if (rows.length === 0) {
       return {
@@ -1396,14 +1923,17 @@ export function promoteSoulMemories(params: {
       }
       const hitSummary = scopeHitSummary.get(item.id);
       const distinctScopeHits = hitSummary?.distinctScopeHits ?? 0;
-      if (distinctScopeHits < P2_TO_P1_MIN_SCOPE_COUNT) {
+      if (distinctScopeHits < soulConfig.p2ToP1MinScopeCount) {
         continue;
       }
       const survivalAgeDays = Math.max(0, (nowMs - item.createdAt) / MILLIS_PER_DAY);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const clarityAgeDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      const clarityScore = computeCurrentClarity(item, clarityAgeDays);
-      if (survivalAgeDays < P2_TO_P1_MIN_AGE_DAYS || clarityScore < P2_TO_P1_MIN_CLARITY) {
+      const clarityScore = computeCurrentClarity(item, clarityAgeDays, soulConfig);
+      if (
+        survivalAgeDays < soulConfig.p2ToP1MinAgeDays ||
+        clarityScore < soulConfig.p2ToP1MinClarity
+      ) {
         continue;
       }
       promoteP1Stmt.run(TIER_P1, item.id);
@@ -1418,11 +1948,17 @@ export function promoteSoulMemories(params: {
       if (item.tier !== TIER_P1 || promotedInRun.has(item.id)) {
         continue;
       }
+      if (!soulConfig.p0AllowedKinds.has(item.kind)) {
+        continue;
+      }
       const survivalAgeDays = Math.max(0, (nowMs - item.createdAt) / MILLIS_PER_DAY);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const clarityAgeDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      const clarityScore = computeCurrentClarity(item, clarityAgeDays);
-      if (survivalAgeDays < P1_TO_P0_MIN_AGE_DAYS || clarityScore < P1_TO_P0_MIN_CLARITY) {
+      const clarityScore = computeCurrentClarity(item, clarityAgeDays, soulConfig);
+      if (
+        survivalAgeDays < soulConfig.p1ToP0MinAgeDays ||
+        clarityScore < soulConfig.p1ToP0MinClarity
+      ) {
         continue;
       }
       const distinctScopeHits = scopeHitSummary.get(item.id)?.distinctScopeHits ?? 0;
@@ -1467,9 +2003,11 @@ export function applySoulMemoryConfidenceDecay(params: {
   scopeType?: string;
   scopeId?: string;
   nowMs?: number;
+  soulConfig?: SoulMemoryConfig;
 }): { updated: number; deleted: number } {
   const db = openSoulMemoryDb(params.agentId);
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
+  const soulConfig = resolveSoulMemoryConfig(params.soulConfig);
   try {
     const clauses: string[] = [];
     const values: string[] = [];
@@ -1483,10 +2021,7 @@ export function applySoulMemoryConfidenceDecay(params: {
     }
     const where = clauses.length > 0 ? ` WHERE ${clauses.join(" AND ")}` : "";
     const rows = db
-      .prepare(
-        "SELECT id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, created_at, last_accessed_at " +
-          `FROM memory_items${where}`,
-      )
+      .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items${where}`)
       .all(...values) as MemoryItemRow[];
 
     let updated = 0;
@@ -1495,8 +2030,8 @@ export function applySoulMemoryConfidenceDecay(params: {
       const item = rowToMemoryItem(row);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      const decayed = computeCurrentClarity(item, ageDays);
-      if (shouldPruneMemoryItem(item, ageDays)) {
+      const decayed = computeCurrentClarity(item, ageDays, soulConfig);
+      if (shouldPruneMemoryItem(item, ageDays, soulConfig)) {
         db.prepare("DELETE FROM memory_items WHERE id = ?").run(item.id);
         deleted += 1;
         continue;

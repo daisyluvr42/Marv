@@ -11,7 +11,11 @@ import { resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import { resolveStateDir } from "../../../config/paths.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
-import { buildSoulMemoryPath, writeSoulMemory } from "../../../memory/soul-memory-store.js";
+import {
+  buildSoulMemoryPath,
+  type SoulMemoryConfig,
+  writeSoulMemory,
+} from "../../../memory/soul-memory-store.js";
 import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
 import { hasInterSessionUserProvenance } from "../../../sessions/input-provenance.js";
 import { resolveHookConfig } from "../../config.js";
@@ -19,6 +23,26 @@ import type { HookHandler } from "../../hooks.js";
 import { generateSlugViaLLM } from "../../llm-slug-generator.js";
 
 const log = createSubsystemLogger("hooks/session-memory");
+
+function resolveMemorySoulConfig(cfg?: OpenClawConfig): SoulMemoryConfig | undefined {
+  const memoryConfig = cfg?.memory;
+  if (!memoryConfig) {
+    return undefined;
+  }
+  const legacyP0AllowedKinds = Array.isArray(memoryConfig.p0AllowedKinds)
+    ? memoryConfig.p0AllowedKinds
+    : undefined;
+  if (!memoryConfig.soul) {
+    return legacyP0AllowedKinds ? { p0AllowedKinds: legacyP0AllowedKinds } : undefined;
+  }
+  if (memoryConfig.soul.p0AllowedKinds || !legacyP0AllowedKinds) {
+    return memoryConfig.soul;
+  }
+  return {
+    ...memoryConfig.soul,
+    p0AllowedKinds: legacyP0AllowedKinds,
+  };
+}
 
 /**
  * Read recent messages from session file for slug generation
@@ -292,6 +316,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
     }
 
     const entry = entryParts.join("\n");
+    const soulConfig = resolveMemorySoulConfig(cfg);
     const memoryItem = writeSoulMemory({
       agentId,
       scopeType: "agent",
@@ -300,6 +325,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
       content: entry,
       confidence: 0.78,
       source: "manual_log",
+      soulConfig,
     });
     if (!memoryItem) {
       log.warn("Session summary was empty; skipped soul-memory write.");

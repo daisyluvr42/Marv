@@ -342,6 +342,14 @@ export type MemorySearchConfig = {
   query?: {
     maxResults?: number;
     minScore?: number;
+    precheck?: {
+      /** Pre-check whether memory retrieval is needed (default: false). */
+      enabled?: boolean;
+      /** Heuristic query rewrite before retrieval (default: true when precheck is enabled). */
+      rewrite?: boolean;
+      /** Skip retrieval for very short non-memory queries (default: 6). */
+      minQueryChars?: number;
+    };
     hybrid?: {
       /** Enable hybrid BM25 + vector search (default: true). */
       enabled?: boolean;

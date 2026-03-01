@@ -80,8 +80,51 @@ describe("memory search config", () => {
     expect(resolved?.chunking.overlap).toBe(100);
     expect(resolved?.query.maxResults).toBe(8);
     expect(resolved?.query.minScore).toBe(0.2);
+    expect(resolved?.query.precheck).toEqual({
+      enabled: false,
+      rewrite: true,
+      minQueryChars: 6,
+    });
     expect(resolved?.store.vector.enabled).toBe(true);
     expect(resolved?.store.vector.extensionPath).toBe("/opt/sqlite-vec.dylib");
+  });
+
+  it("merges precheck defaults and agent overrides", () => {
+    const cfg = asConfig({
+      agents: {
+        defaults: {
+          memorySearch: {
+            query: {
+              precheck: {
+                enabled: true,
+                rewrite: true,
+                minQueryChars: 8,
+              },
+            },
+          },
+        },
+        list: [
+          {
+            id: "main",
+            default: true,
+            memorySearch: {
+              query: {
+                precheck: {
+                  rewrite: false,
+                  minQueryChars: 4,
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+    const resolved = resolveMemorySearchConfig(cfg, "main");
+    expect(resolved?.query.precheck).toEqual({
+      enabled: true,
+      rewrite: false,
+      minQueryChars: 4,
+    });
   });
 
   it("merges extra memory paths from defaults and overrides", () => {

@@ -57,6 +57,11 @@ export type ResolvedMemorySearchConfig = {
   query: {
     maxResults: number;
     minScore: number;
+    precheck: {
+      enabled: boolean;
+      rewrite: boolean;
+      minQueryChars: number;
+    };
     hybrid: {
       enabled: boolean;
       vectorWeight: number;
@@ -88,6 +93,9 @@ const DEFAULT_SESSION_DELTA_BYTES = 100_000;
 const DEFAULT_SESSION_DELTA_MESSAGES = 50;
 const DEFAULT_MAX_RESULTS = 6;
 const DEFAULT_MIN_SCORE = 0.35;
+const DEFAULT_QUERY_PRECHECK_ENABLED = false;
+const DEFAULT_QUERY_PRECHECK_REWRITE = true;
+const DEFAULT_QUERY_PRECHECK_MIN_CHARS = 6;
 const DEFAULT_HYBRID_ENABLED = true;
 const DEFAULT_HYBRID_VECTOR_WEIGHT = 0.7;
 const DEFAULT_HYBRID_TEXT_WEIGHT = 0.3;
@@ -230,6 +238,20 @@ function mergeConfig(
   const query = {
     maxResults: overrides?.query?.maxResults ?? defaults?.query?.maxResults ?? DEFAULT_MAX_RESULTS,
     minScore: overrides?.query?.minScore ?? defaults?.query?.minScore ?? DEFAULT_MIN_SCORE,
+    precheck: {
+      enabled:
+        overrides?.query?.precheck?.enabled ??
+        defaults?.query?.precheck?.enabled ??
+        DEFAULT_QUERY_PRECHECK_ENABLED,
+      rewrite:
+        overrides?.query?.precheck?.rewrite ??
+        defaults?.query?.precheck?.rewrite ??
+        DEFAULT_QUERY_PRECHECK_REWRITE,
+      minQueryChars:
+        overrides?.query?.precheck?.minQueryChars ??
+        defaults?.query?.precheck?.minQueryChars ??
+        DEFAULT_QUERY_PRECHECK_MIN_CHARS,
+    },
   };
   const hybrid = {
     enabled:
@@ -276,6 +298,7 @@ function mergeConfig(
 
   const overlap = clampNumber(chunking.overlap, 0, Math.max(0, chunking.tokens - 1));
   const minScore = clampNumber(query.minScore, 0, 1);
+  const precheckMinQueryChars = clampInt(query.precheck.minQueryChars, 1, 200);
   const vectorWeight = clampNumber(hybrid.vectorWeight, 0, 1);
   const textWeight = clampNumber(hybrid.textWeight, 0, 1);
   const sum = vectorWeight + textWeight;
@@ -316,6 +339,11 @@ function mergeConfig(
     query: {
       ...query,
       minScore,
+      precheck: {
+        enabled: Boolean(query.precheck.enabled),
+        rewrite: Boolean(query.precheck.rewrite),
+        minQueryChars: precheckMinQueryChars,
+      },
       hybrid: {
         enabled: Boolean(hybrid.enabled),
         vectorWeight: normalizedVectorWeight,

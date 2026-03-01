@@ -7,8 +7,10 @@ import { getMemorySearchManager } from "../../memory/index.js";
 import {
   buildSoulMemoryPath,
   getSoulMemoryItem,
+  listSoulMemoryReferences,
   parseSoulMemoryPath,
   querySoulMemoryMulti,
+  type SoulMemoryConfig,
   writeSoulMemory,
   type SoulMemoryItem,
   type SoulMemoryQueryResult,
@@ -58,6 +60,26 @@ function resolveMemoryToolContext(options: { config?: OpenClawConfig; agentSessi
   return { cfg, agentId };
 }
 
+function resolveMemorySoulConfig(cfg: OpenClawConfig): SoulMemoryConfig | undefined {
+  const memoryConfig = cfg.memory;
+  if (!memoryConfig) {
+    return undefined;
+  }
+  const legacyP0AllowedKinds = Array.isArray(memoryConfig.p0AllowedKinds)
+    ? memoryConfig.p0AllowedKinds
+    : undefined;
+  if (!memoryConfig.soul) {
+    return legacyP0AllowedKinds ? { p0AllowedKinds: legacyP0AllowedKinds } : undefined;
+  }
+  if (memoryConfig.soul.p0AllowedKinds || !legacyP0AllowedKinds) {
+    return memoryConfig.soul;
+  }
+  return {
+    ...memoryConfig.soul,
+    p0AllowedKinds: legacyP0AllowedKinds,
+  };
+}
+
 export function createMemorySearchTool(options: {
   config?: OpenClawConfig;
   agentSessionKey?: string;
@@ -67,6 +89,11 @@ export function createMemorySearchTool(options: {
     return null;
   }
   const { cfg, agentId } = ctx;
+  const soulConfig = resolveMemorySoulConfig(cfg);
+  const memorySearchCfg = resolveMemorySearchConfig(cfg, agentId);
+  if (!memorySearchCfg) {
+    return null;
+  }
   return {
     label: "Memory Search",
     name: "memory_search",
@@ -75,6 +102,19 @@ export function createMemorySearchTool(options: {
     parameters: MemorySearchSchema,
     execute: async (_toolCallId, params) => {
       const query = readStringParam(params, "query", { required: true });
+      const precheckDecision = evaluateMemorySearchPrecheck({
+        query,
+        cfg: memorySearchCfg,
+      });
+      if (!precheckDecision.shouldSearch) {
+        return jsonResult({
+          results: [],
+          skipped: true,
+          reason: precheckDecision.reason,
+          mode: "precheck_skip",
+        });
+      }
+      const effectiveQuery = precheckDecision.query;
       const requestedMaxResults = readNumberParam(params, "maxResults", { integer: true });
       const maxResults = Math.max(1, Math.min(32, Math.trunc(requestedMaxResults ?? 6)));
       const minScore = readNumberParam(params, "minScore");
@@ -87,9 +127,10 @@ export function createMemorySearchTool(options: {
       const soulResults = querySoulMemoryMulti({
         agentId,
         scopes: resolveSoulScopes({ agentId, sessionKey: options.agentSessionKey }),
-        query,
+        query: effectiveQuery,
         topK: maxResults,
         minScore: minScore ?? undefined,
+        soulConfig,
       }).map((entry) => toSoulSearchResult(entry));
 
       const managerResult = await getMemorySearchManager({
@@ -102,7 +143,7 @@ export function createMemorySearchTool(options: {
       let managerStatus: ReturnType<NonNullable<typeof manager>["status"]> | undefined;
       if (manager && soulResults.length < maxResults) {
         try {
-          managerResults = await manager.search(query, {
+          managerResults = await manager.search(effectiveQuery, {
             maxResults,
             minScore: minScore ?? undefined,
             sessionKey: options.agentSessionKey,
@@ -148,9 +189,83 @@ export function createMemorySearchTool(options: {
         fallback: managerStatus?.fallback,
         citations: citationsMode,
         mode,
+        rewrittenQuery: precheckDecision.rewritten ? effectiveQuery : undefined,
       });
     },
   };
+}
+
+type MemorySearchPrecheckDecision = {
+  shouldSearch: boolean;
+  reason: "disabled" | "memory-cue" | "general-query" | "small-talk" | "query-too-short";
+  query: string;
+  rewritten: boolean;
+};
+
+function evaluateMemorySearchPrecheck(params: {
+  query: string;
+  cfg: ReturnType<typeof resolveMemorySearchConfig>;
+}): MemorySearchPrecheckDecision {
+  const normalized = params.query.trim().replace(/\s+/g, " ");
+  const precheck = params.cfg?.query.precheck;
+  if (!precheck?.enabled) {
+    return {
+      shouldSearch: true,
+      reason: "disabled",
+      query: normalized,
+      rewritten: false,
+    };
+  }
+  const lowered = normalized.toLowerCase();
+  if (SMALL_TALK_QUERY_RE.test(lowered)) {
+    return {
+      shouldSearch: false,
+      reason: "small-talk",
+      query: normalized,
+      rewritten: false,
+    };
+  }
+  const hasMemoryCue = MEMORY_CUE_RE.test(lowered);
+  if (!hasMemoryCue && normalized.length < precheck.minQueryChars) {
+    return {
+      shouldSearch: false,
+      reason: "query-too-short",
+      query: normalized,
+      rewritten: false,
+    };
+  }
+  const rewrittenQuery = precheck.rewrite ? rewriteMemorySearchQuery(normalized) : normalized;
+  return {
+    shouldSearch: true,
+    reason: hasMemoryCue ? "memory-cue" : "general-query",
+    query: rewrittenQuery,
+    rewritten: rewrittenQuery !== normalized,
+  };
+}
+
+const SMALL_TALK_QUERY_RE =
+  /^(hi|hello|hey|yo|thanks|thank you|ok|okay|cool|nice|great|sounds good|good morning|good night|bye|goodbye)[.!? ]*$/i;
+const MEMORY_CUE_RE =
+  /\b(remember|recall|previous|earlier|history|past|before|last time|last week|last month|what did we|we discussed|my preference|my preferences|todo|decision|decisions|profile|habit|habits|identity|policy|guardrail)\b/i;
+
+function rewriteMemorySearchQuery(query: string): string {
+  let rewritten = query
+    .replace(/^(please|can you|could you|would you|kindly)\s+/i, "")
+    .replace(/^(do you\s+)?(remember|recall)\s+/i, "")
+    .replace(/[?]+\s*$/g, "")
+    .trim();
+  if (!rewritten) {
+    return query;
+  }
+  const lowered = rewritten.toLowerCase();
+  if (
+    /\b(what|which|when|where|who|how)\b/.test(lowered) &&
+    /\b(we|i|my|our|me)\b/.test(lowered) &&
+    !/\b(previous|earlier|history|memory|remember|recall)\b/.test(lowered)
+  ) {
+    rewritten = `${rewritten} from prior conversations and saved memory`;
+  }
+  return rewritten;
 }
 
 export function createMemoryGetTool(options: {
@@ -183,9 +298,11 @@ export function createMemoryGetTool(options: {
             error: "path required",
           });
         }
+        const references = listSoulMemoryReferences({ agentId, itemId: soulId });
         return jsonResult({
           path: relPath,
           text: sliceTextByLines(item.content, from ?? undefined, lines ?? undefined),
+          references,
         });
       }
 
@@ -219,7 +336,8 @@ export function createMemoryWriteTool(options: {
   if (!ctx) {
     return null;
   }
-  const { agentId } = ctx;
+  const { agentId, cfg } = ctx;
+  const soulConfig = resolveMemorySoulConfig(cfg);
   return {
     label: "Memory Write",
     name: "memory_write",
@@ -256,6 +374,7 @@ export function createMemoryWriteTool(options: {
         content,
         confidence: confidence ?? undefined,
         source: source ?? undefined,
+        soulConfig,
       });
       if (!item) {
         return jsonResult({
@@ -268,6 +387,7 @@ export function createMemoryWriteTool(options: {
         agentId,
         sessionKey: options.agentSessionKey,
       });
+      const references = listSoulMemoryReferences({ agentId, itemId: item.id });
       return jsonResult({
         ok: true,
         id: item.id,
@@ -278,6 +398,7 @@ export function createMemoryWriteTool(options: {
         tier: item.tier,
         source: item.source,
         confidence: item.confidence,
+        references,
       });
     },
   };
@@ -350,13 +471,22 @@ function toSoulSearchResult(entry: SoulMemoryQueryResult): MemorySearchResult {
   const path = buildSoulMemoryPath(entry.id);
   const lines = entry.content.split("\n");
   const endLine = Math.max(1, lines.length);
-  const snippet = truncateUtf16Safe(entry.content.trim(), 700);
+  const refSuffix =
+    entry.references.length > 0
+      ? `\n\nRefs: ${entry.references.map((refId) => `[ref:${refId}]`).join(" ")}`
+      : "";
+  const snippet = truncateUtf16Safe(`${entry.content.trim()}${refSuffix}`, 700);
   return {
     path,
     startLine: 1,
     endLine,
     score: entry.score,
     snippet,
+    salienceScore: entry.salienceScore,
+    salienceDecay: entry.salienceDecay,
+    salienceReinforcement: entry.salienceReinforcement,
+    referenceBoost: entry.referenceBoost,
+    references: entry.references,
     // Keep compatibility with existing MemorySource union.
     source: "memory",
   };
