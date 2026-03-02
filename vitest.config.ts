@@ -69,7 +69,7 @@ export default defineConfig({
             "test/**/*.test.ts",
             "ui/src/ui/views/usage-render-details.test.ts",
           ],
-          exclude: [...baseExclude, "**/*.live.test.ts", "src/gateway/**"],
+          exclude: [...baseExclude, "**/*.live.test.ts", "src/core/gateway/**"],
         },
       }),
       defineProject({
@@ -88,7 +88,7 @@ export default defineConfig({
           ...sharedProjectTest,
           name: "gateway",
           pool: "forks",
-          include: ["src/gateway/**/*.test.ts"],
+          include: ["src/core/gateway/**/*.test.ts"],
           exclude: [...baseExclude, "**/*.live.test.ts"],
         },
       }),
