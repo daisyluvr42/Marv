@@ -6,7 +6,7 @@ import type { MarvConfig } from "../config/config.js";
 import { getMemorySearchManager, type MemoryIndexManager } from "./index.js";
 import { buildFileEntry } from "./internal.js";
 
-vi.mock("./embeddings.js", () => {
+vi.mock("./embeddings/embeddings.js", () => {
   return {
     createEmbeddingProvider: async () => ({
       requestedProvider: "openai",

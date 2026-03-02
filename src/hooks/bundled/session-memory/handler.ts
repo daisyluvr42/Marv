@@ -15,7 +15,7 @@ import {
   buildSoulMemoryPath,
   type SoulMemoryConfig,
   writeSoulMemory,
-} from "../../../memory/soul-memory-store.js";
+} from "../../../memory/storage/soul-memory-store.js";
 import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
 import { hasInterSessionUserProvenance } from "../../../sessions/input-provenance.js";
 import { resolveHookConfig } from "../../config.js";

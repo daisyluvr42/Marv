@@ -21,7 +21,7 @@ const writeSoulMemoryMock = vi.hoisted(() =>
   })),
 );
 
-vi.mock("../../../memory/soul-memory-store.js", () => ({
+vi.mock("../../../memory/storage/soul-memory-store.js", () => ({
   writeSoulMemory: writeSoulMemoryMock,
   buildSoulMemoryPath: (id: string) => `soul-memory/${id}`,
 }));

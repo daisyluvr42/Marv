@@ -3,13 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../config/config.js";
+import { createOpenAIEmbeddingProviderMock } from "./embeddings/test-embeddings-mock.js";
 import { getMemorySearchManager, type MemoryIndexManager } from "./index.js";
-import { createOpenAIEmbeddingProviderMock } from "./test-embeddings-mock.js";
 
 const embedBatch = vi.fn(async () => []);
 const embedQuery = vi.fn(async () => [0.2, 0.2, 0.2]);
 
-vi.mock("./embeddings.js", () => ({
+vi.mock("./embeddings/embeddings.js", () => ({
   createEmbeddingProvider: async () =>
     createOpenAIEmbeddingProviderMock({
       embedQuery,

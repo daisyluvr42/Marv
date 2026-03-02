@@ -45,7 +45,7 @@ vi.mock("../../memory/index.js", () => {
   };
 });
 
-vi.mock("../../memory/soul-memory-store.js", () => {
+vi.mock("../../memory/storage/soul-memory-store.js", () => {
   return {
     querySoulMemoryMulti: (..._args: unknown[]) => soulSearchImpl(),
     getSoulMemoryItem: ({ itemId }: { itemId: string }) => soulReadImpl(itemId),

@@ -23,7 +23,7 @@ import { getChildLogger } from "../logging.js";
 import {
   formatSoulMemoryMaintenanceSummary,
   runSoulMemoryMaintenance,
-} from "../memory/soul-memory-maintenance.js";
+} from "../memory/storage/soul-memory-maintenance.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
 

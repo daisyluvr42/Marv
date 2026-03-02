@@ -17,11 +17,11 @@ vi.mock("chokidar", () => ({
   watch: watchMock,
 }));
 
-vi.mock("./sqlite-vec.js", () => ({
+vi.mock("./storage/sqlite-vec.js", () => ({
   loadSqliteVecExtension: async () => ({ ok: false, error: "sqlite-vec disabled in tests" }),
 }));
 
-vi.mock("./embeddings.js", () => ({
+vi.mock("./embeddings/embeddings.js", () => ({
   createEmbeddingProvider: async () => ({
     requestedProvider: "openai",
     provider: {

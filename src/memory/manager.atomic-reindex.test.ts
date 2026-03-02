@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../config/config.js";
-import { getEmbedBatchMock, resetEmbeddingMocks } from "./embedding.test-mocks.js";
+import { getEmbedBatchMock, resetEmbeddingMocks } from "./embeddings/embedding.test-mocks.js";
 import type { MemoryIndexManager } from "./index.js";
 import { getRequiredMemoryIndexManager } from "./test-manager-helpers.js";
 

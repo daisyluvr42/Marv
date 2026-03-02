@@ -8,6 +8,6 @@ vi.mock("chokidar", () => ({
   watch: () => ({ on: () => {}, close: async () => {} }),
 }));
 
-vi.mock("./sqlite-vec.js", () => ({
+vi.mock("./storage/sqlite-vec.js", () => ({
   loadSqliteVecExtension: async () => ({ ok: false, error: "sqlite-vec disabled in tests" }),
 }));

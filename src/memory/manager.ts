@@ -14,12 +14,12 @@ import {
   type GeminiEmbeddingClient,
   type OpenAiEmbeddingClient,
   type VoyageEmbeddingClient,
-} from "./embeddings.js";
-import { bm25RankToScore, buildFtsQuery, mergeHybridResults } from "./hybrid.js";
+} from "./embeddings/embeddings.js";
+import { MemoryManagerEmbeddingOps } from "./embeddings/manager-embedding-ops.js";
 import { isMemoryPath, normalizeExtraMemoryPaths } from "./internal.js";
-import { MemoryManagerEmbeddingOps } from "./manager-embedding-ops.js";
-import { searchKeyword, searchVector } from "./manager-search.js";
-import { extractKeywords } from "./query-expansion.js";
+import { bm25RankToScore, buildFtsQuery, mergeHybridResults } from "./search/hybrid.js";
+import { searchKeyword, searchVector } from "./search/manager-search.js";
+import { extractKeywords } from "./search/query-expansion.js";
 import type {
   MemoryEmbeddingProbeResult,
   MemoryProviderStatus,

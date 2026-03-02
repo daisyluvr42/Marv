@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { resolveStateDir } from "../config/paths.js";
-import { requireNodeSqlite } from "../memory/sqlite.js";
+import { requireNodeSqlite } from "../memory/storage/sqlite.js";
 
 export type LedgerEventRecord = {
   id: number;

@@ -3,7 +3,7 @@ import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { requireNodeSqlite } from "../memory/sqlite.js";
+import { requireNodeSqlite } from "../memory/storage/sqlite.js";
 import { resolveStateDir } from "./paths.js";
 import type { MarvConfig } from "./types.marv.js";
 

@@ -1,0 +1,358 @@
+# src/ 目录重组方案
+
+> 当前 `src/` 包含 **51 个子目录 + 17 个散文件**，共 **~3276 个文件**，全部平铺在一级。本文档梳理现状、映射到领域分组、并评估重组的风险和收益。
+
+## 一、现状地图
+
+### 当前 src/ 顶级目录完整清单
+
+| 目录 | 文件数 | 当前职责 |
+|------|--------|----------|
+| `agents/` | 586 | Agent 运行时：PiEmbeddedRunner、tool 定义、system prompt、sandbox、skills、model 选择、subagent |
+| `gateway/` | 250 | WebSocket/HTTP server、认证、路由、session 管理、MCP memory endpoint、hooks mapping |
+| `commands/` | 281 | CLI 子命令实现：onboard、doctor、status、channels、models 等 |
+| `cli/` | 219 | CLI 基础设施：program.ts、各种 -cli.ts 模块、browser-cli、daemon-cli |
+| `config/` | 159 | 配置加载/验证/schema/类型、session 持久化、env substitution、legacy migration |
+| `infra/` | 246 | 基础设施大杂烩：heartbeat、update、bonjour、ports、restart、outbound、push-apns、tailscale |
+| `channels/` | 103 | Channel 抽象层：dock、registry、plugins、allowlist |
+| `browser/` | 105 | Browser 自动化：Playwright、CDP、Chrome、extension relay |
+| `telegram/` | 85 | Telegram adapter |
+| `discord/` | 84 | Discord adapter |
+| `memory/` | 81 | 记忆系统：embedding、hybrid search、QMD、soul memory store |
+| `slack/` | 80 | Slack adapter |
+| `cron/` | 64 | 定时任务引擎 |
+| `line/` | 46 | LINE adapter |
+| `hooks/` | 40 | Hook 系统：安装、加载、Gmail 集成 |
+| `tui/` | 38 | 终端 UI |
+| `daemon/` | 32 | 守护进程：launchd、systemd、schtasks |
+| `signal/` | 31 | Signal adapter |
+| `media/` | 27 | 媒体处理：image-ops、fetch、mime、store |
+| `web/` | 78 | Web 渠道实现 |
+| `shared/` | 25 | 共享工具类 |
+| `process/` | 24 | 进程管理：exec、kill-tree、supervisor |
+| `security/` | 23 | 安全审计：audit、dm-policy、fix |
+| `auto-reply/` | 224 | 自动回复引擎 |
+| `imessage/` | 22 | iMessage adapter |
+| `logging/` | 20 | 日志系统 |
+| `plugins/` | 55 | 插件系统 |
+| `plugin-sdk/` | 18 | 插件 SDK |
+| `terminal/` | 16 | 终端工具 |
+| `markdown/` | 14 | Markdown 处理 |
+| `media-understanding/` | 43 | 媒体理解(AI) |
+| `link-understanding/` | 7 | 链接理解 |
+| `acp/` | 12 | Agent Communication Protocol |
+| `providers/` | 9 | Provider 特定逻辑(GitHub Copilot, Google, Qwen) |
+| `routing/` | 6 | 消息路由 |
+| `pairing/` | 7 | 设备配对 |
+| `wizard/` | 13 | 安装向导 |
+| `canvas-host/` | 6 | Canvas 宿主 |
+| `node-host/` | 6 | Node 宿主 |
+| `sessions/` | 8 | Session 策略补充 |
+| `types/` | 9 | 第三方类型声明 (.d.ts) |
+| `compat/` | 1 | 兼容层 |
+| `ledger/` | 2 | 账本 |
+| `macos/` | 4 | macOS 特定 |
+| `docs/` | 1 | 内嵌文档 |
+| `test-helpers/` | 2 | 测试工具 |
+| `test-utils/` | 11 | 测试工具 |
+| `tts/` | 4 | TTS |
+| `utils/` | 27 | 通用工具 |
+| `scripts/` | 1 | 脚本 |
+
+### 散文件（应归入模块）
+
+| 文件 | 建议归属 |
+|------|----------|
+| `index.ts` | 保留（入口） |
+| `entry.ts` | 保留（入口） |
+| `channel-web.ts` | → `channels/web/` |
+| `globals.ts` | → `core/globals.ts` 或 `shared/` |
+| `runtime.ts` | → `core/` |
+| `extensionAPI.ts` | → `plugins/` |
+| `polls.ts` / `polls.test.ts` | → `channels/plugins/` 或 `shared/` |
+| `logger.ts` / `logger.test.ts` | → `logging/` |
+| `logging.ts` | → `logging/` |
+| `utils.ts` / `utils.test.ts` | → `utils/` |
+| `version.ts` / `version.test.ts` | → `infra/` |
+| `docker-setup.test.ts` / `dockerfile.test.ts` | → `infra/` 或 `test/` |
+
+---
+
+## 二、建议的领域分组方案
+
+```
+src/
+├── index.ts                    # 保留
+├── entry.ts                    # 保留
+│
+├── core/
+│   ├── gateway/                # ← gateway/
+│   ├── session/                # ← sessions/ + gateway/session-*.ts + config/sessions/
+│   ├── config/                 # ← config/ (不含 sessions)
+│   ├── routing/                # ← routing/
+│   ├── security/               # ← security/
+│   └── shared/                 # ← shared/ + globals.ts + runtime.ts
+│
+├── agent/
+│   ├── runner/                 # ← agents/pi-embedded-runner* + pi-embedded-subscribe*
+│   ├── tools/                  # ← agents/pi-tools* + bash-tools* + marv-tools* + channel-tools*
+│   ├── prompt/                 # ← agents/system-prompt* + identity* + skills*
+│   ├── model/                  # ← agents/model-* + models-config* + providers/
+│   ├── sandbox/                # ← agents/sandbox* 
+│   ├── subagent/               # ← agents/subagent-*
+│   └── workspace/              # ← agents/workspace*
+│
+├── memory/
+│   ├── search/                 # ← memory/hybrid* + search-manager* + mmr* + query-*
+│   ├── storage/                # ← memory/sqlite* + soul-memory-store* + session-files*
+│   ├── embeddings/             # ← memory/embeddings-* + batch-* + embedding-*
+│   ├── sync/                   # ← memory/manager* + sync-*
+│   └── api/                    # ← gateway/mcp-memory-http* + tools-invoke-http*
+│
+├── channels/
+│   ├── _interface.ts           # ← channels/dock.ts + registry.ts
+│   ├── common/                 # ← channels/ (allowlist, config, plugins, etc.)
+│   ├── discord/                # ← discord/
+│   ├── telegram/               # ← telegram/
+│   ├── slack/                  # ← slack/
+│   ├── signal/                 # ← signal/
+│   ├── whatsapp/               # ← web/ (不是当前的 whatsapp/ — 见下文)
+│   ├── imessage/               # ← imessage/
+│   ├── line/                   # ← line/
+│   └── web/                    # ← channel-web.ts + channels/web/
+│
+├── cli/
+│   ├── program.ts              # ← cli/program.ts
+│   ├── commands/               # ← commands/ + cli/*-cli.ts
+│   └── tui/                    # ← tui/
+│
+├── media/                      # ← media/ + media-understanding/ + link-understanding/
+│
+├── infra/
+│   ├── daemon/                 # ← daemon/
+│   ├── process/                # ← process/
+│   ├── cron/                   # ← cron/
+│   ├── hooks/                  # ← hooks/
+│   ├── update/                 # ← infra/update-*
+│   ├── heartbeat/              # ← infra/heartbeat-*
+│   └── common/                 # ← infra/ 剩余 (ports, dotenv, env, home-dir, etc.)
+│
+├── browser/                    # ← browser/ (保持独立)
+│
+├── plugins/                    # ← plugins/ + plugin-sdk/ + extensionAPI.ts
+│
+├── auto-reply/                 # ← auto-reply/ (保持独立)
+│
+└── _support/
+    ├── types/                  # ← types/ (.d.ts)
+    ├── logging/                # ← logging/ + logger.ts + logging.ts
+    ├── utils/                  # ← utils/ + utils.ts
+    ├── compat/                 # ← compat/
+    └── test-utils/             # ← test-helpers/ + test-utils/
+```
+
+---
+
+## 三、现状 vs 目标对照表
+
+```mermaid
+graph LR
+    subgraph 现在_平铺
+        A[agents/ 586]
+        B[gateway/ 250]
+        C[commands/ 281]
+        D[config/ 159]
+        E[infra/ 246]
+        F["discord/ telegram/ slack/ ..."]
+        G[memory/ 81]
+    end
+    
+    subgraph 目标_领域
+        A1[agent/runner]
+        A2[agent/tools]
+        A3[agent/prompt]
+        A4[agent/model]
+        B1[core/gateway]
+        B2[core/session]
+        B3[core/config]
+        C1[cli/commands]
+        E1[infra/daemon]
+        E2[infra/process]
+        E3[infra/heartbeat]
+        F1[channels/discord]
+        F2[channels/telegram]
+        G1[memory/search]
+        G2[memory/storage]
+        G3[memory/embeddings]
+    end
+    
+    A --> A1 & A2 & A3 & A4
+    B --> B1 & B2
+    C --> C1
+    D --> B3
+    E --> E1 & E2 & E3
+    F --> F1 & F2
+    G --> G1 & G2 & G3
+```
+
+---
+
+## 四、关键原则与依赖方向
+
+```
+                  ┌────────────┐
+                  │ _support/  │ ← 零依赖基础层
+                  │ (logging,  │
+                  │  utils,    │
+                  │  types)    │
+                  └─────┬──────┘
+                        │
+              ┌─────────┼─────────┐
+              │         │         │
+        ┌─────▼──┐  ┌───▼───┐  ┌─▼──────┐
+        │  core/ │  │memory/│  │ media/ │
+        │(config,│  │       │  │        │
+        │gateway,│  │       │  │        │
+        │session)│  │       │  │        │
+        └──┬─────┘  └───┬───┘  └───┬────┘
+           │            │          │
+     ┌─────▼────────────▼──────────▼──────┐
+     │              agent/                │
+     │  (runner, tools, prompt, model)    │
+     └─────────────────┬──────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+  ┌─────▼─────┐  ┌────▼────┐  ┌─────▼─────┐
+  │ channels/ │  │   cli/  │  │  infra/   │
+  │ (各渠道)   │  │         │  │           │
+  └───────────┘  └─────────┘  └───────────┘
+```
+
+**核心规则**：
+- `channels/telegram/` 只依赖 `channels/_interface.ts` + 第三方库 (grammy)，**不直接 import agent/**
+- `memory/` 只依赖 `_support/` 和 `core/config/`，**不知道 channel 的存在**
+- `agent/` 可依赖 `core/` 和 `memory/`，是业务逻辑的汇合点
+- `cli/` 和 `infra/` 是顶层，可以依赖任何内层
+
+---
+
+## 五、风险评估与建议
+
+> [!CAUTION]
+> 此重组涉及 **~3276 个文件**，几乎所有 import 路径都需要更新。这是一个 **超高风险** 的重构操作。
+
+### 风险
+
+| 风险项 | 级别 | 说明 |
+|--------|------|------|
+| Import 路径批量修改 | 🔴 极高 | 所有相对路径 import 需要更新，一处遗漏即编译失败 |
+| 测试基底崩塌 | 🔴 极高 | 大量 test-harness 和 mock 引用相对路径 |
+| 分支冲突 | 🟠 高 | 如果有多人并行开发，merge 将几乎不可能 |
+| tsconfig paths 调整 | 🟡 中 | barrel export 和 path alias 都需同步更新 |
+| CI/CD 管道 | 🟡 中 | build 脚本、Dockerfile 中的路径引用 |
+
+### 建议策略
+
+> [!IMPORTANT]
+> **不建议一次性全量移动**。建议采用**渐进式**策略：
+
+1. **Phase 0 ：先清理散文件** — 把 17 个顶级散文件归入现有目录（低风险，高回报）
+2. **Phase 1 ：Channels 提取** — 把 `discord/`, `telegram/`, `slack/`, `signal/`, `imessage/`, `line/`, `web/` 移入 `channels/` 下的子目录（这些模块相对独立，耦合低）
+3. **Phase 2 ：Memory 细分** — 把 `memory/` 内部按 search/storage/embeddings 建子目录
+4. **Phase 3 ：Agents 拆分** — 最大最危险的一步，把 586 个文件的 `agents/` 拆为 runner/tools/prompt/model/sandbox
+5. **Phase 4 ：Gateway + Config → Core** — 把 gateway 和 config 包入 core/
+6. **Phase 5 ：Infra 细分** — 把 246 个文件的 infra/ 按 daemon/heartbeat/update 拆分
+
+每个 Phase 结束后：
+- `tsc --noEmit` 确保编译通过
+- `vitest run` 确保测试全绿
+- 提交一个干净的 commit
+
+---
+
+## 六、是否现在执行？
+
+这份文档是**分析和规划**，目的是帮你理清 `src/` 的结构。
+
+关于是否真的执行重组，需要你确认：
+1. 当前是否有多人并行在 `src/` 上开发？（如是，必须在开发间隙执行）
+2. 你倾向于哪种粒度——仅做概念上的分组文档（不动代码），还是真的要移动文件？
+3. 如果要移动，从哪个 Phase 开始？
+
+---
+
+## Verification Plan
+
+如需执行重组，每个阶段验证如下：
+
+### Automated Tests
+```bash
+# 每阶段完成后执行
+npx tsc --noEmit           # TypeScript 编译检查
+npx vitest run             # 全量单元测试
+npx vitest run --config vitest.e2e.config.ts  # E2E 测试
+```
+
+### Manual Verification
+- 检查 `import` 路径无残留旧路径：`grep -r "from ['\"]\.\./" src/ | head -50`
+- 确认 build 产物正常：`npm run build`
+
+---
+
+## Phase 2 Walkthrough（2026-03-02）
+
+本阶段已按计划完成 `memory/` 的内部细分，目标是把平铺文件按语义归类到 `search / storage / embeddings`，同时保持对外行为不变。
+
+### 1) 目录重组结果
+
+已在 `src/memory/` 下新增并使用：
+
+- `src/memory/embeddings/`
+- `src/memory/search/`
+- `src/memory/storage/`
+
+迁移后保留在 `src/memory/` 根目录的内容主要是对外入口和跨域核心：
+
+- `index.ts`, `manager.ts`, `types.ts`, `internal.ts`, `backend-config.ts`, `status-format.ts`
+- 以及 manager 相关测试与辅助测试文件
+
+### 2) 文件迁移策略
+
+- Embeddings 相关文件迁移到 `embeddings/`：
+  - `batch-*`, `embedding-*`, `embeddings-*`, `node-llama.ts`, `openai-batch.ts`, `provider-key.ts`
+  - `manager-embedding-ops.ts` 也一起迁移
+- Search 相关文件迁移到 `search/`：
+  - `hybrid.ts`, `mmr.ts`, `query-expansion.ts`, `search-manager.ts`
+  - `qmd-*` 系列和 `temporal-decay.ts`
+  - `manager-search.ts`
+- Storage 相关文件迁移到 `storage/`：
+  - `sqlite*.ts`, `session-files.ts`, `memory-schema.ts`, `soul-memory-*`
+  - `sync-*` 系列和 `manager-sync-ops.ts`
+
+### 3) Import 修复方法
+
+- 使用“旧路径 -> 新路径”的 rename 映射进行批量改写，统一修复：
+  - `src/memory` 内部跨模块引用
+  - 外部模块对 memory 子模块的直接引用（如 `memory-tool`, `gateway`, `ledger`, `hooks`）
+- 核心入口手动确认并更新：
+  - `src/memory/index.ts` 改为导出 `./search/search-manager.js`
+  - `src/memory/manager.ts` 改为引用 `./embeddings/*`、`./search/*`
+  - `src/memory/manager-cache-key.ts` 改为引用 `./embeddings/headers-fingerprint.js`
+
+### 4) 验证结果
+
+执行结果如下：
+
+- `npx tsc --noEmit`
+  - 与本次 memory 迁移相关的报错已清零
+  - 当前剩余报错为仓库既有的非 memory 问题（`daemon/*`, `gateway/*`, `infra/*` 等）
+- `pnpm test -- src/memory`
+  - 24 个 memory 测试文件全部通过（197 tests passed）
+- `pnpm build`
+  - 仍被既有问题阻断：`Cannot resolve entry module src/extensionAPI.ts`
+  - 该失败在本次 phase 之前已存在，非 memory 重组引入
+
+### 5) 本阶段结论
+
+Phase 2（Memory 细分）已完成：目录结构完成重组、引用已修复、memory 相关测试全绿，可在此基础上继续执行 Phase 3（Agents 拆分）。

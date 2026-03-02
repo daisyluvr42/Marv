@@ -15,7 +15,7 @@ import {
   type SoulMemoryItem,
   type SoulMemoryQueryResult,
   type SoulMemoryScope,
-} from "../../memory/soul-memory-store.js";
+} from "../../memory/storage/soul-memory-store.js";
 import type { MemorySearchResult } from "../../memory/types.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { truncateUtf16Safe } from "../../utils.js";

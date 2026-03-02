@@ -7,7 +7,7 @@ import "./test-runtime-mocks.js";
 
 let embedBatchCalls = 0;
 
-vi.mock("./embeddings.js", () => {
+vi.mock("./embeddings/embeddings.js", () => {
   const embedText = (text: string) => {
     const lower = text.toLowerCase();
     const alpha = lower.split("alpha").length - 1;

@@ -1,5 +1,5 @@
 import type { ResolvedMemorySearchConfig } from "../agents/memory-search.js";
-import { fingerprintHeaderNames } from "./headers-fingerprint.js";
+import { fingerprintHeaderNames } from "./embeddings/headers-fingerprint.js";
 import { hashText } from "./internal.js";
 
 export function computeMemoryManagerCacheKey(params: {
