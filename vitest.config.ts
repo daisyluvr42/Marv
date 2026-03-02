@@ -1,13 +1,33 @@
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { defineConfig, defineProject } from "vitest/config";
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isWindows = process.platform === "win32";
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
+const defaultMaxWorkers = isCI ? ciWorkers : localWorkers;
+const liveEnabled = process.env.MARV_LIVE_TEST === "1" || process.env.CLAWDBOT_LIVE_TEST === "1";
+
+const baseExclude = [
+  "dist/**",
+  "apps/**",
+  "**/node_modules/**",
+  "**/vendor/**",
+  "dist/Marv.app/**",
+  "**/*.e2e.test.ts",
+] as const;
+
+const sharedProjectTest = {
+  testTimeout: 120_000,
+  hookTimeout: isWindows ? 180_000 : 120_000,
+  unstubEnvs: true,
+  unstubGlobals: true,
+  setupFiles: ["test/setup.ts"],
+  maxWorkers: defaultMaxWorkers,
+} as const;
 
 export default defineConfig({
   resolve: {
@@ -24,31 +44,48 @@ export default defineConfig({
     ],
   },
   test: {
-    testTimeout: 120_000,
-    hookTimeout: isWindows ? 180_000 : 120_000,
-    // Many suites rely on `vi.stubEnv(...)` and expect it to be scoped to the test.
-    // This is especially important under `pool=vmForks` where env leaks cross-file.
-    unstubEnvs: true,
-    // Same rationale as unstubEnvs: avoid cross-test pollution under vmForks.
-    unstubGlobals: true,
-    pool: "forks",
-    maxWorkers: isCI ? ciWorkers : localWorkers,
-    include: [
-      "src/**/*.test.ts",
-      "extensions/**/*.test.ts",
-      "test/**/*.test.ts",
-      "ui/src/ui/views/usage-render-details.test.ts",
-    ],
-    setupFiles: ["test/setup.ts"],
-    exclude: [
-      "dist/**",
-      "apps/macos/**",
-      "apps/macos/.build/**",
-      "**/node_modules/**",
-      "**/vendor/**",
-      "dist/Marv.app/**",
-      "**/*.live.test.ts",
-      "**/*.e2e.test.ts",
+    projects: [
+      defineProject({
+        test: {
+          ...sharedProjectTest,
+          name: "unit",
+          pool: "forks",
+          include: [
+            "src/**/*.test.ts",
+            "test/**/*.test.ts",
+            "ui/src/ui/views/usage-render-details.test.ts",
+          ],
+          exclude: [...baseExclude, "**/*.live.test.ts", "src/gateway/**", "extensions/**"],
+        },
+      }),
+      defineProject({
+        test: {
+          ...sharedProjectTest,
+          name: "extensions",
+          pool: "vmForks",
+          include: ["extensions/**/*.test.ts"],
+          exclude: [...baseExclude, "**/*.live.test.ts"],
+        },
+      }),
+      defineProject({
+        test: {
+          ...sharedProjectTest,
+          name: "gateway",
+          pool: "forks",
+          include: ["src/gateway/**/*.test.ts"],
+          exclude: [...baseExclude, "**/*.live.test.ts"],
+        },
+      }),
+      defineProject({
+        test: {
+          ...sharedProjectTest,
+          name: "live",
+          pool: "forks",
+          maxWorkers: 1,
+          include: liveEnabled ? ["src/**/*.live.test.ts"] : [],
+          exclude: baseExclude,
+        },
+      }),
     ],
     coverage: {
       provider: "v8",

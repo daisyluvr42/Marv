@@ -65,7 +65,9 @@ const runs = [
             "vitest",
             "run",
             "--config",
-            "vitest.unit.config.ts",
+            "vitest.config.ts",
+            "--project",
+            "unit",
             "--pool=vmForks",
             ...(disableIsolation ? ["--isolate=false"] : []),
             ...unitIsolatedFiles.flatMap((file) => ["--exclude", file]),
@@ -77,7 +79,9 @@ const runs = [
             "vitest",
             "run",
             "--config",
-            "vitest.unit.config.ts",
+            "vitest.config.ts",
+            "--project",
+            "unit",
             "--pool=forks",
             ...unitIsolatedFiles,
           ],
@@ -86,7 +90,7 @@ const runs = [
     : [
         {
           name: "unit",
-          args: ["vitest", "run", "--config", "vitest.unit.config.ts"],
+          args: ["vitest", "run", "--config", "vitest.config.ts", "--project", "unit"],
         },
       ]),
   {
@@ -95,7 +99,9 @@ const runs = [
       "vitest",
       "run",
       "--config",
-      "vitest.extensions.config.ts",
+      "vitest.config.ts",
+      "--project",
+      "extensions",
       ...(useVmForks ? ["--pool=vmForks"] : []),
     ],
   },
@@ -105,7 +111,9 @@ const runs = [
       "vitest",
       "run",
       "--config",
-      "vitest.gateway.config.ts",
+      "vitest.config.ts",
+      "--project",
+      "gateway",
       // Gateway tests are sensitive to vmForks behavior (global state + env stubs).
       // Keep them on process forks for determinism even when other suites use vmForks.
       "--pool=forks",
@@ -119,8 +127,7 @@ const shardCount = isWindowsCi
     : 2
   : 1;
 const windowsCiArgs = isWindowsCi ? ["--dangerouslyIgnoreUnhandledErrors"] : [];
-const silentArgs =
-  process.env.MARV_TEST_SHOW_PASSED_LOGS === "1" ? [] : ["--silent=passed-only"];
+const silentArgs = process.env.MARV_TEST_SHOW_PASSED_LOGS === "1" ? [] : ["--silent=passed-only"];
 const rawPassthroughArgs = process.argv.slice(2);
 const passthroughArgs =
   rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
