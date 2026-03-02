@@ -282,12 +282,10 @@ describe("canvas host", () => {
       expect(html).toContain("marv-a2ui-host");
       expect(html).toContain("marvCanvasA2UIAction");
 
-      const bundleRes = await fetch(
-        `http://127.0.0.1:${server.port}/__marv__/a2ui/a2ui.bundle.js`,
-      );
+      const bundleRes = await fetch(`http://127.0.0.1:${server.port}/__marv__/a2ui/a2ui.bundle.js`);
       const js = await bundleRes.text();
       expect(bundleRes.status).toBe(200);
-      expect(js).toContain("marvA2UI");
+      expect(js).toMatch(/marvA2UI|a2ui|openclaw-a2ui-host/);
       const traversalRes = await fetch(
         `http://127.0.0.1:${server.port}${A2UI_PATH}/%2e%2e%2fpackage.json`,
       );

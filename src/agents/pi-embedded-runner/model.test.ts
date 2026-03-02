@@ -374,7 +374,7 @@ describe("resolveModel", () => {
     expect(result.model).toBeUndefined();
     expect(result.error).toContain("Unknown model: ollama/gemma3:4b");
     expect(result.error).toContain("OLLAMA_API_KEY");
-    expect(result.error).toContain("docs: /providers/ollama");
+    expect(result.error).toContain("See: /providers/ollama");
   });
 
   it("includes auth hint for unknown vllm models", () => {

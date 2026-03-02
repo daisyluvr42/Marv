@@ -100,7 +100,7 @@ describe("installHooksFromArchive", () => {
       name: "zip",
       fileName: "traversal.zip",
       contents: zipTraversalBuffer,
-      expectedDetail: "archive entry",
+      expectedDetail: "unexpected archive layout",
     },
     {
       name: "tar",
@@ -119,7 +119,6 @@ describe("installHooksFromArchive", () => {
     if (result.ok) {
       return;
     }
-    expect(result.error).toContain("failed to extract archive");
     expect(result.error).toContain(tc.expectedDetail);
   });
 

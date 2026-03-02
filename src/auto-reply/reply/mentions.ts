@@ -66,7 +66,11 @@ export function buildMentionRegexes(cfg: MarvConfig | undefined, agentId?: strin
 }
 
 export function normalizeMentionText(text: string): string {
-  return (text ?? "").replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f]/g, "").toLowerCase();
+  const normalized = (text ?? "")
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f]/g, "")
+    .toLowerCase();
+  // Keep legacy mention compatibility so old "openclaw" mentions still trigger Marv.
+  return normalized.replaceAll("openclaw", "marv");
 }
 
 export function matchesMentionPatterns(text: string, mentionRegexes: RegExp[]): boolean {

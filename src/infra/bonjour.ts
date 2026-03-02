@@ -26,10 +26,7 @@ export type GatewayBonjourAdvertiseOpts = {
 };
 
 function isDisabledByEnv() {
-  if (
-    isTruthyEnvValue(process.env.MARV_DISABLE_BONJOUR) ||
-    isTruthyEnvValue(process.env.MARV_DISABLE_BONJOUR)
-  ) {
+  if (isTruthyEnvValue(process.env.MARV_DISABLE_BONJOUR)) {
     return true;
   }
   if (process.env.NODE_ENV === "test") {
@@ -98,10 +95,7 @@ export async function startGatewayBonjourAdvertiser(
   // `Mac.localdomain`) can confuse some resolvers/browsers and break discovery.
   // Keep only the first label and normalize away a trailing `.local`.
   const hostnameRaw =
-    process.env.MARV_MDNS_HOSTNAME?.trim() ||
-    process.env.MARV_MDNS_HOSTNAME?.trim() ||
-    process.env.CLAWDBOT_MDNS_HOSTNAME?.trim() ||
-    "marv";
+    process.env.MARV_MDNS_HOSTNAME?.trim() || process.env.CLAWDBOT_MDNS_HOSTNAME?.trim() || "marv";
   const hostname =
     hostnameRaw
       .replace(/\.local$/i, "")
@@ -161,20 +155,6 @@ export async function startGatewayBonjourAdvertiser(
   services.push({
     label: "gateway",
     svc: gateway as unknown as BonjourService,
-  });
-
-  const legacyGateway = responder.createService({
-    name: safeServiceName(instanceName),
-    type: "marv-gw",
-    protocol: Protocol.TCP,
-    port: opts.gatewayPort,
-    domain: "local",
-    hostname,
-    txt: gatewayTxt,
-  });
-  services.push({
-    label: "gateway-legacy",
-    svc: legacyGateway as unknown as BonjourService,
   });
 
   let ciaoCancellationRejectionHandler: (() => void) | undefined;
