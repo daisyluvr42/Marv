@@ -44,7 +44,7 @@ export async function createMatrixClient(params: {
   localTimeoutMs?: number;
   accountId?: string | null;
 }): Promise<MatrixClient> {
-  ensureMatrixSdkLoggingConfigured();
+  await ensureMatrixSdkLoggingConfigured();
   const env = process.env;
 
   // Create storage provider
