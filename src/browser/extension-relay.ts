@@ -239,10 +239,11 @@ export function getChromeExtensionRelayAuthHeaders(url: string): Record<string, 
   if (!token) {
     return {};
   }
-  return {
-    [RELAY_AUTH_HEADER]: token,
-    [LEGACY_RELAY_AUTH_HEADER]: token,
-  };
+  const headers: Record<string, string> = { [RELAY_AUTH_HEADER]: token };
+  if (LEGACY_RELAY_AUTH_HEADER !== RELAY_AUTH_HEADER) {
+    headers[LEGACY_RELAY_AUTH_HEADER] = token;
+  }
+  return headers;
 }
 
 export async function ensureChromeExtensionRelayServer(opts: {

@@ -73,7 +73,6 @@ function candidateBinDirs(opts: EnsureMarvPathOpts): { prepend: string[]; append
   // disabled by default; if an operator explicitly enables it, only append (never prepend).
   const allowProjectLocalBin =
     opts.allowProjectLocalBin === true ||
-    isTruthyEnvValue(process.env.MARV_ALLOW_PROJECT_LOCAL_BIN) ||
     isTruthyEnvValue(process.env.MARV_ALLOW_PROJECT_LOCAL_BIN);
   if (allowProjectLocalBin) {
     const localBinDir = path.join(cwd, "node_modules", ".bin");
@@ -111,13 +110,9 @@ function candidateBinDirs(opts: EnsureMarvPathOpts): { prepend: string[]; append
  * under launchd/minimal environments (and inside the macOS app bundle).
  */
 export function ensureMarvCliOnPath(opts: EnsureMarvPathOpts = {}) {
-  if (
-    isTruthyEnvValue(process.env.MARV_PATH_BOOTSTRAPPED) ||
-    isTruthyEnvValue(process.env.MARV_PATH_BOOTSTRAPPED)
-  ) {
+  if (isTruthyEnvValue(process.env.MARV_PATH_BOOTSTRAPPED)) {
     return;
   }
-  process.env.MARV_PATH_BOOTSTRAPPED = "1";
   process.env.MARV_PATH_BOOTSTRAPPED = "1";
 
   const existing = opts.pathEnv ?? process.env.PATH ?? "";
@@ -131,5 +126,3 @@ export function ensureMarvCliOnPath(opts: EnsureMarvPathOpts = {}) {
     process.env.PATH = merged;
   }
 }
-
-export const ensureMarvCliOnPath = ensureMarvCliOnPath;

@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 
 export const POSIX_MARV_TMP_DIR = "/tmp/marv";
-export const POSIX_MARV_TMP_DIR = "/tmp/marv";
 
 type ResolvePreferredMarvTmpDirOptions = {
   accessSync?: (path: string, mode?: number) => void;
@@ -67,7 +66,7 @@ export function resolvePreferredMarvTmpDir(
     return path.join(base, suffix);
   };
 
-  const preferredCandidates = [POSIX_MARV_TMP_DIR, POSIX_MARV_TMP_DIR];
+  const preferredCandidates = [POSIX_MARV_TMP_DIR];
   for (const preferredPath of preferredCandidates) {
     try {
       const preferred = lstatSync(preferredPath);

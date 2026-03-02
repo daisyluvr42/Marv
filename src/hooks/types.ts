@@ -26,8 +26,6 @@ export type MarvHookMetadata = {
   install?: HookInstallSpec[];
 };
 
-export type MarvHookMetadata = MarvHookMetadata;
-
 export type HookInvocationPolicy = {
   enabled: boolean;
 };

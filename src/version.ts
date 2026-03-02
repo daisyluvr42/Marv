@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
 
 declare const __MARV_VERSION__: string | undefined;
-declare const __MARV_VERSION__: string | undefined;
 const CORE_PACKAGE_NAME = "marv";
 
 const PACKAGE_JSON_CANDIDATES = [
@@ -81,13 +80,8 @@ export function resolveRuntimeServiceVersion(
   fallback = "dev",
 ): string {
   return (
-    firstNonEmpty(
-      env["MARV_VERSION"],
-      env["MARV_SERVICE_VERSION"],
-      env["MARV_VERSION"],
-      env["MARV_SERVICE_VERSION"],
-      env["npm_package_version"],
-    ) ?? fallback
+    firstNonEmpty(env["MARV_VERSION"], env["MARV_SERVICE_VERSION"], env["npm_package_version"]) ??
+    fallback
   );
 }
 
@@ -96,8 +90,6 @@ export function resolveRuntimeServiceVersion(
 // - Dev/npm builds: package.json.
 export const VERSION =
   (typeof __MARV_VERSION__ === "string" && __MARV_VERSION__) ||
-  (typeof __MARV_VERSION__ === "string" && __MARV_VERSION__) ||
-  process.env.MARV_BUNDLED_VERSION ||
   process.env.MARV_BUNDLED_VERSION ||
   resolveVersionFromModuleUrl(import.meta.url) ||
   "0.0.0";

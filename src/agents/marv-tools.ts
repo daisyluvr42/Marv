@@ -182,5 +182,3 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
 
   return [...tools, ...pluginTools];
 }
-
-export const createMarvTools = createMarvTools;

@@ -135,7 +135,6 @@ export type MarvPackageManifest = {
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
 };
-export type MarvPackageManifest = MarvPackageManifest;
 
 export type ManifestKey = typeof MANIFEST_KEY;
 

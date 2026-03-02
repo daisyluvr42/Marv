@@ -196,7 +196,7 @@ export async function ensureSandboxBrowser(params: {
       name: containerName,
       cfg: browserDockerCfg,
       scopeKey: params.scopeKey,
-      labels: { "marv.sandboxBrowser": "1", "marv.sandboxBrowser": "1" },
+      labels: { "marv.sandboxBrowser": "1" },
       configHash: expectedHash,
     });
     const mainMountSuffix =
@@ -219,14 +219,9 @@ export async function ensureSandboxBrowser(params: {
       args.push("-p", `127.0.0.1::${params.cfg.browser.noVncPort}`);
     }
     args.push("-e", `MARV_BROWSER_HEADLESS=${params.cfg.browser.headless ? "1" : "0"}`);
-    args.push("-e", `MARV_BROWSER_HEADLESS=${params.cfg.browser.headless ? "1" : "0"}`);
-    args.push("-e", `MARV_BROWSER_ENABLE_NOVNC=${params.cfg.browser.enableNoVnc ? "1" : "0"}`);
     args.push("-e", `MARV_BROWSER_ENABLE_NOVNC=${params.cfg.browser.enableNoVnc ? "1" : "0"}`);
     args.push("-e", `MARV_BROWSER_CDP_PORT=${params.cfg.browser.cdpPort}`);
-    args.push("-e", `MARV_BROWSER_CDP_PORT=${params.cfg.browser.cdpPort}`);
     args.push("-e", `MARV_BROWSER_VNC_PORT=${params.cfg.browser.vncPort}`);
-    args.push("-e", `MARV_BROWSER_VNC_PORT=${params.cfg.browser.vncPort}`);
-    args.push("-e", `MARV_BROWSER_NOVNC_PORT=${params.cfg.browser.noVncPort}`);
     args.push("-e", `MARV_BROWSER_NOVNC_PORT=${params.cfg.browser.noVncPort}`);
     args.push(browserImage);
     await execDocker(args);

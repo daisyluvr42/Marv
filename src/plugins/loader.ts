@@ -234,12 +234,9 @@ export function loadMarvPlugins(options: PluginLoadOptions = {}): PluginRegistry
       ...(pluginSdkAlias || pluginSdkAccountIdAlias
         ? {
             alias: {
-              ...(pluginSdkAlias
-                ? { "marv/plugin-sdk": pluginSdkAlias, "marv/plugin-sdk": pluginSdkAlias }
-                : {}),
+              ...(pluginSdkAlias ? { "marv/plugin-sdk": pluginSdkAlias } : {}),
               ...(pluginSdkAccountIdAlias
                 ? {
-                    "marv/plugin-sdk/account-id": pluginSdkAccountIdAlias,
                     "marv/plugin-sdk/account-id": pluginSdkAccountIdAlias,
                   }
                 : {}),

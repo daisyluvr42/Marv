@@ -104,10 +104,6 @@ export function readSessionMessages(
             kind: "compaction",
             id: typeof parsed.id === "string" ? parsed.id : undefined,
           },
-          __marv: {
-            kind: "compaction",
-            id: typeof parsed.id === "string" ? parsed.id : undefined,
-          },
         });
       }
     } catch {

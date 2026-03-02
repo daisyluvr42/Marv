@@ -59,28 +59,6 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "web_fetch",
     "image",
   ],
-  // Legacy alias kept for older configs.
-  "group:marv": [
-    "browser",
-    "canvas",
-    "nodes",
-    "cron",
-    "message",
-    "gateway",
-    "agents_list",
-    "sessions_list",
-    "sessions_history",
-    "sessions_send",
-    "sessions_spawn",
-    "subagents",
-    "session_status",
-    "memory_search",
-    "memory_get",
-    "memory_write",
-    "web_search",
-    "web_fetch",
-    "image",
-  ],
 };
 
 const OWNER_ONLY_TOOL_NAMES = new Set<string>(["whatsapp_login"]);
