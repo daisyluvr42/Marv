@@ -10,4 +10,4 @@ export {
   WA_WEB_AUTH_DIR,
   waitForWaConnection,
   webAuthExists,
-} from "../../channel-web.js";
+} from "./channel-web.js";

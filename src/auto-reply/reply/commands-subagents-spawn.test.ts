@@ -26,7 +26,7 @@ vi.mock("../../config/config.js", async (importOriginal) => {
 });
 
 // Prevent transitive import chain from reaching discord/monitor which needs https-proxy-agent.
-vi.mock("../../discord/monitor/gateway-plugin.js", () => ({
+vi.mock("../../channels/discord/monitor/gateway-plugin.js", () => ({
   createDiscordGatewayPlugin: () => ({}),
 }));
 

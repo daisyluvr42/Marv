@@ -8,11 +8,11 @@ import type {
   ChannelMessageActionName,
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.js";
+import { parseSlackTarget } from "../../channels/slack/targets.js";
+import { parseTelegramTarget } from "../../channels/telegram/targets.js";
+import { loadWebMedia } from "../../channels/web/media.js";
 import type { MarvConfig } from "../../config/config.js";
 import { extensionForMime } from "../../media/mime.js";
-import { parseSlackTarget } from "../../slack/targets.js";
-import { parseTelegramTarget } from "../../telegram/targets.js";
-import { loadWebMedia } from "../../web/media.js";
 
 export function readBooleanParam(
   params: Record<string, unknown>,

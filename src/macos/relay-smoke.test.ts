@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseRelaySmokeTest, runRelaySmokeTest } from "./relay-smoke.js";
 
-vi.mock("../web/qr-image.js", () => ({
+vi.mock("../channels/web/qr-image.js", () => ({
   renderQrPngBase64: vi.fn(async () => "base64"),
 }));
 
@@ -48,7 +48,7 @@ describe("parseRelaySmokeTest", () => {
 describe("runRelaySmokeTest", () => {
   it("runs qr smoke test", async () => {
     await runRelaySmokeTest("qr");
-    const mod = await import("../web/qr-image.js");
+    const mod = await import("../channels/web/qr-image.js");
     expect(mod.renderQrPngBase64).toHaveBeenCalledWith("smoke-test");
   });
 });

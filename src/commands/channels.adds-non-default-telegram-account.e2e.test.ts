@@ -32,8 +32,9 @@ vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../telegram/update-offset-store.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../telegram/update-offset-store.js")>();
+vi.mock("../channels/telegram/update-offset-store.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../channels/telegram/update-offset-store.js")>();
   return {
     ...actual,
     deleteTelegramUpdateOffset: offsetMocks.deleteTelegramUpdateOffset,

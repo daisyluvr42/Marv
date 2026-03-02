@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../../../config/config.js";
 
-vi.mock("../../../slack/send.js", () => ({
+vi.mock("./slack/send.js", () => ({
   sendMessageSlack: vi.fn().mockResolvedValue({ messageId: "1234.5678", channelId: "C123" }),
 }));
 
@@ -10,7 +10,7 @@ vi.mock("../../../plugins/hook-runner-global.js", () => ({
 }));
 
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
-import { sendMessageSlack } from "../../../slack/send.js";
+import { sendMessageSlack } from "../../slack/send.js";
 import { slackOutbound } from "./slack.js";
 
 const sendSlackText = async (ctx: {

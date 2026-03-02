@@ -5,7 +5,7 @@ import { handleWhatsAppAction } from "./whatsapp-actions.js";
 const sendReactionWhatsApp = vi.fn(async () => undefined);
 const sendPollWhatsApp = vi.fn(async () => ({ messageId: "poll-1", toJid: "jid-1" }));
 
-vi.mock("../../web/outbound.js", () => ({
+vi.mock("../../channels/web/outbound.js", () => ({
   sendReactionWhatsApp,
   sendPollWhatsApp,
 }));

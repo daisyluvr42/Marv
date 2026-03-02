@@ -24,27 +24,27 @@ vi.mock("../channels/web/index.js", () => {
   return { sendMessageWhatsApp: sendFns.whatsapp };
 });
 
-vi.mock("../telegram/send.js", () => {
+vi.mock("../channels/telegram/send.js", () => {
   moduleLoads.telegram();
   return { sendMessageTelegram: sendFns.telegram };
 });
 
-vi.mock("../discord/send.js", () => {
+vi.mock("../channels/discord/send.js", () => {
   moduleLoads.discord();
   return { sendMessageDiscord: sendFns.discord };
 });
 
-vi.mock("../slack/send.js", () => {
+vi.mock("../channels/slack/send.js", () => {
   moduleLoads.slack();
   return { sendMessageSlack: sendFns.slack };
 });
 
-vi.mock("../signal/send.js", () => {
+vi.mock("../channels/signal/send.js", () => {
   moduleLoads.signal();
   return { sendMessageSignal: sendFns.signal };
 });
 
-vi.mock("../imessage/send.js", () => {
+vi.mock("../channels/imessage/send.js", () => {
   moduleLoads.imessage();
   return { sendMessageIMessage: sendFns.imessage };
 });

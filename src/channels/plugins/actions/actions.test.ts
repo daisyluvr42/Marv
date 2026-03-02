@@ -15,7 +15,7 @@ vi.mock("../../../agents/tools/telegram-actions.js", () => ({
   handleTelegramAction,
 }));
 
-vi.mock("../../../signal/send-reactions.js", () => ({
+vi.mock("./signal/send-reactions.js", () => ({
   sendReactionSignal,
   removeReactionSignal,
 }));

@@ -10,7 +10,7 @@ import type {
   GroupToolPolicyConfig,
 } from "../../config/types.tools.js";
 import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
+import { resolveSlackAccount } from "../slack/accounts.js";
 
 type GroupMentionParams = {
   cfg: MarvConfig;

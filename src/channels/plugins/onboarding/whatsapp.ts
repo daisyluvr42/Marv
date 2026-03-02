@@ -1,5 +1,4 @@
 import path from "node:path";
-import { loginWeb } from "../../../channel-web.js";
 import { formatCliCommand } from "../../../cli/command-format.js";
 import type { MarvConfig } from "../../../config/config.js";
 import { mergeWhatsAppConfig } from "../../../config/merge-config.js";
@@ -8,12 +7,13 @@ import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session
 import type { RuntimeEnv } from "../../../runtime.js";
 import { formatDocsLink } from "../../../terminal/links.js";
 import { normalizeE164, pathExists } from "../../../utils.js";
+import type { WizardPrompter } from "../../../wizard/prompts.js";
 import {
   listWhatsAppAccountIds,
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAuthDir,
-} from "../../../web/accounts.js";
-import type { WizardPrompter } from "../../../wizard/prompts.js";
+} from "../../web/accounts.js";
+import { loginWeb } from "../../web/channel-web.js";
 import type { ChannelOnboardingAdapter } from "../onboarding-types.js";
 import { mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 

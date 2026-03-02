@@ -1,4 +1,4 @@
-import { sendMessageDiscord, sendPollDiscord } from "../../../discord/send.js";
+import { sendMessageDiscord, sendPollDiscord } from "../../discord/send.js";
 import { normalizeDiscordOutboundTarget } from "../normalize/discord.js";
 import type { ChannelOutboundAdapter } from "../types.js";
 

@@ -1,29 +1,29 @@
+import { resolveDiscordAccount } from "../../channels/discord/accounts.js";
+import { resolveDiscordUserAllowlist } from "../../channels/discord/resolve-users.js";
 import { getChannelDock } from "../../channels/dock.js";
+import { resolveIMessageAccount } from "../../channels/imessage/accounts.js";
 import { resolveChannelConfigWrites } from "../../channels/plugins/config-writes.js";
 import { listPairingChannels } from "../../channels/plugins/pairing.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import { normalizeChannelId } from "../../channels/registry.js";
+import { resolveSignalAccount } from "../../channels/signal/accounts.js";
+import { resolveSlackAccount } from "../../channels/slack/accounts.js";
+import { resolveSlackUserAllowlist } from "../../channels/slack/resolve-users.js";
+import { resolveTelegramAccount } from "../../channels/telegram/accounts.js";
+import { resolveWhatsAppAccount } from "../../channels/web/accounts.js";
 import type { MarvConfig } from "../../config/config.js";
 import {
   readConfigFileSnapshot,
   validateConfigObjectWithPlugins,
   writeConfigFile,
 } from "../../config/config.js";
-import { resolveDiscordAccount } from "../../discord/accounts.js";
-import { resolveDiscordUserAllowlist } from "../../discord/resolve-users.js";
 import { logVerbose } from "../../globals.js";
-import { resolveIMessageAccount } from "../../imessage/accounts.js";
 import {
   addChannelAllowFromStoreEntry,
   readChannelAllowFromStore,
   removeChannelAllowFromStoreEntry,
 } from "../../pairing/pairing-store.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
-import { resolveSignalAccount } from "../../signal/accounts.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
-import { resolveSlackUserAllowlist } from "../../slack/resolve-users.js";
-import { resolveTelegramAccount } from "../../telegram/accounts.js";
-import { resolveWhatsAppAccount } from "../../web/accounts.js";
 import type { CommandHandler } from "./commands-types.js";
 
 type AllowlistScope = "dm" | "group" | "all";

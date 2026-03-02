@@ -1,15 +1,15 @@
 import { detectBinary } from "../../../commands/onboard-helpers.js";
 import type { MarvConfig } from "../../../config/config.js";
 import type { DmPolicy } from "../../../config/types.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
+import { formatDocsLink } from "../../../terminal/links.js";
+import type { WizardPrompter } from "../../../wizard/prompts.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,
   resolveIMessageAccount,
-} from "../../../imessage/accounts.js";
-import { normalizeIMessageHandle } from "../../../imessage/targets.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
-import { formatDocsLink } from "../../../terminal/links.js";
-import type { WizardPrompter } from "../../../wizard/prompts.js";
+} from "../../imessage/accounts.js";
+import { normalizeIMessageHandle } from "../../imessage/targets.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
@@ -31,11 +31,7 @@ function setIMessageDmPolicy(cfg: MarvConfig, dmPolicy: DmPolicy) {
   };
 }
 
-function setIMessageAllowFrom(
-  cfg: MarvConfig,
-  accountId: string,
-  allowFrom: string[],
-): MarvConfig {
+function setIMessageAllowFrom(cfg: MarvConfig, accountId: string, allowFrom: string[]): MarvConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,

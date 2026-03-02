@@ -4,14 +4,14 @@ import { installSignalCli } from "../../../commands/signal-install.js";
 import type { MarvConfig } from "../../../config/config.js";
 import type { DmPolicy } from "../../../config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
+import { formatDocsLink } from "../../../terminal/links.js";
+import { normalizeE164 } from "../../../utils.js";
+import type { WizardPrompter } from "../../../wizard/prompts.js";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,
   resolveSignalAccount,
-} from "../../../signal/accounts.js";
-import { formatDocsLink } from "../../../terminal/links.js";
-import { normalizeE164 } from "../../../utils.js";
-import type { WizardPrompter } from "../../../wizard/prompts.js";
+} from "../../signal/accounts.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
@@ -54,11 +54,7 @@ function setSignalDmPolicy(cfg: MarvConfig, dmPolicy: DmPolicy) {
   };
 }
 
-function setSignalAllowFrom(
-  cfg: MarvConfig,
-  accountId: string,
-  allowFrom: string[],
-): MarvConfig {
+function setSignalAllowFrom(cfg: MarvConfig, accountId: string, allowFrom: string[]): MarvConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,

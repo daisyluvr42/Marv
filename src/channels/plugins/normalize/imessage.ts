@@ -1,4 +1,4 @@
-import { normalizeIMessageHandle } from "../../../imessage/targets.js";
+import { normalizeIMessageHandle } from "../../imessage/targets.js";
 
 // Service prefixes that indicate explicit delivery method; must be preserved during normalization
 const SERVICE_PREFIXES = ["imessage:", "sms:", "auto:"] as const;

@@ -1,6 +1,6 @@
 import type { OutboundIdentity } from "../../../infra/outbound/identity.js";
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
-import { sendMessageSlack, type SlackSendIdentity } from "../../../slack/send.js";
+import { sendMessageSlack, type SlackSendIdentity } from "../../slack/send.js";
 import type { ChannelOutboundAdapter } from "../types.js";
 
 function resolveSlackSendIdentity(identity?: OutboundIdentity): SlackSendIdentity | undefined {

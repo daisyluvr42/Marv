@@ -6,8 +6,8 @@ import {
   resolveConfiguredModelRef,
   resolveModelRefFromString,
 } from "../../agents/model-selection.js";
+import { buildBrowseProvidersButton } from "../../channels/telegram/model-buttons.js";
 import type { MarvConfig } from "../../config/config.js";
-import { buildBrowseProvidersButton } from "../../telegram/model-buttons.js";
 import { shortenHomePath } from "../../utils.js";
 import type { ReplyPayload } from "../types.js";
 import { resolveModelsCommandReply } from "./commands-models.js";

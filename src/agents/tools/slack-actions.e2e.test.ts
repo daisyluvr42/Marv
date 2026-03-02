@@ -16,7 +16,7 @@ const removeSlackReaction = vi.fn(async (..._args: unknown[]) => ({}));
 const sendSlackMessage = vi.fn(async (..._args: unknown[]) => ({}));
 const unpinSlackMessage = vi.fn(async (..._args: unknown[]) => ({}));
 
-vi.mock("../../slack/actions.js", () => ({
+vi.mock("../../channels/slack/actions.js", () => ({
   deleteSlackMessage,
   editSlackMessage,
   getSlackMemberInfo,

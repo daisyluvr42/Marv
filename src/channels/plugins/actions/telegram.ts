@@ -7,11 +7,8 @@ import {
 import { handleTelegramAction } from "../../../agents/tools/telegram-actions.js";
 import type { TelegramActionConfig } from "../../../config/types.telegram.js";
 import { extractToolSend } from "../../../plugin-sdk/tool-send.js";
-import {
-  createTelegramActionGate,
-  listEnabledTelegramAccounts,
-} from "../../../telegram/accounts.js";
-import { isTelegramInlineButtonsEnabled } from "../../../telegram/inline-buttons.js";
+import { createTelegramActionGate, listEnabledTelegramAccounts } from "../../telegram/accounts.js";
+import { isTelegramInlineButtonsEnabled } from "../../telegram/inline-buttons.js";
 import type { ChannelMessageActionAdapter, ChannelMessageActionName } from "../types.js";
 
 const providerId = "telegram";

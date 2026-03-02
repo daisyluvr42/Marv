@@ -1,9 +1,9 @@
 import type { MarvConfig } from "../../config/types.js";
-import { resolveDiscordAccount } from "../../discord/accounts.js";
-import { resolveSlackAccount } from "../../slack/accounts.js";
-import { resolveTelegramAccount } from "../../telegram/accounts.js";
-import { resolveWhatsAppAccount } from "../../web/accounts.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
+import { resolveDiscordAccount } from "../discord/accounts.js";
+import { resolveSlackAccount } from "../slack/accounts.js";
+import { resolveTelegramAccount } from "../telegram/accounts.js";
+import { resolveWhatsAppAccount } from "../web/accounts.js";
 import { normalizeSlackMessagingTarget } from "./normalize/slack.js";
 import type { ChannelDirectoryEntry } from "./types.js";
 
