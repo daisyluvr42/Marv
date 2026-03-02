@@ -83,7 +83,7 @@ const MAX_LOG_CHARS = 8000;
 const PREFLIGHT_MAX_COMMITS = 10;
 const START_DIRS = ["cwd", "argv1", "process"];
 const DEFAULT_PACKAGE_NAME = "marv";
-const LEGACY_PACKAGE_NAME = "openclaw";
+const LEGACY_PACKAGE_NAME = "marv";
 const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME, LEGACY_PACKAGE_NAME]);
 
 function normalizeDir(value?: string | null) {
@@ -750,7 +750,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
 
     const doctorEntryCandidates = [
       path.join(gitRoot, "marv.mjs"),
-      path.join(gitRoot, "openclaw.mjs"),
+      path.join(gitRoot, "marv.mjs"),
     ];
     const doctorEntry =
       (
@@ -791,7 +791,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     const doctorStep = await runStep(
       step("marv doctor", doctorArgv, gitRoot, {
         MARV_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
+        MARV_UPDATE_IN_PROGRESS: "1",
       }),
     );
     steps.push(doctorStep);

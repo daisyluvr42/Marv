@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import electron from 'vite-plugin-electron';
-import renderer from 'vite-plugin-electron-renderer';
-import path from 'path';
+import path from "path";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import electron from "vite-plugin-electron";
+import renderer from "vite-plugin-electron-renderer";
 
 // https://vitejs.dev/config/
 const devPort = 5175;
@@ -13,14 +13,21 @@ export default defineConfig({
     electron([
       {
         // 主进程入口文件
-        entry: 'src/main/main.ts',
+        entry: "src/main/main.ts",
         vite: {
           build: {
             sourcemap: true,
-            outDir: 'dist-electron',
+            outDir: "dist-electron",
             minify: false,
             rollupOptions: {
-              external: ['sql.js', 'discord.js', 'zlib-sync', '@discordjs/opus', 'bufferutil', 'utf-8-validate'],
+              external: [
+                "sql.js",
+                "discord.js",
+                "zlib-sync",
+                "@discordjs/opus",
+                "bufferutil",
+                "utf-8-validate",
+              ],
             },
           },
         },
@@ -28,11 +35,11 @@ export default defineConfig({
       },
       {
         // 预加载脚本入口文件
-        entry: 'src/main/preload.ts',
+        entry: "src/main/preload.ts",
         vite: {
           build: {
             sourcemap: true,
-            outDir: 'dist-electron',
+            outDir: "dist-electron",
             minify: false,
           },
         },
@@ -41,14 +48,14 @@ export default defineConfig({
     ]),
     renderer(),
   ],
-  base: process.env.NODE_ENV === 'development' ? '/' : './',
+  base: process.env.NODE_ENV === "development" ? "/" : "./",
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src/renderer'),
+      "@": path.resolve(__dirname, "./src/renderer"),
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: "dist",
     emptyOutDir: true,
     sourcemap: true,
     minify: false,
@@ -65,7 +72,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['electron'],
+    exclude: ["electron"],
   },
   clearScreen: false,
-}); 
+});

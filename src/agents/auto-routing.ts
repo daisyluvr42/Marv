@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import type {
   AutoRoutingComplexity,
   AutoRoutingConfig,
@@ -214,7 +214,7 @@ function findMatchingRule(
  * Resolve the auto-routing config for an agent, with per-agent override > global defaults.
  */
 function resolveAutoRoutingConfig(
-  config: OpenClawConfig | undefined,
+  config: MarvConfig | undefined,
   agentId?: string,
 ): AutoRoutingConfig | undefined {
   if (!config) {
@@ -241,7 +241,7 @@ function resolveAutoRoutingConfig(
 export async function resolveAutoRouting(params: {
   prompt: string;
   hasImages?: boolean;
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   agentId?: string;
   defaultProvider: string;
   defaultModel: string;

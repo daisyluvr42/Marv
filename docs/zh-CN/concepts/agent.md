@@ -20,7 +20,7 @@ Marv 运行一个源自 **pi-mono** 的嵌入式智能体运行时。
 
 Marv 使用单一智能体工作区目录（`agents.defaults.workspace`）作为智能体**唯一**的工作目录（`cwd`），用于工具和上下文。
 
-建议：使用 `marv setup` 在缺失时创建 `~/.openclaw/marv.json` 并初始化工作区文件。
+建议：使用 `marv setup` 在缺失时创建 `~/.marv/marv.json` 并初始化工作区文件。
 
 完整工作区布局 + 备份指南：[智能体工作区](/concepts/agent-workspace)
 
@@ -60,7 +60,7 @@ Marv 使用单一智能体工作区目录（`agents.defaults.workspace`）作为
 Marv 从三个位置加载 Skills（名称冲突时工作区优先）：
 
 - 内置（随安装包提供）
-- 托管/本地：`~/.openclaw/skills`
+- 托管/本地：`~/.marv/skills`
 - 工作区：`<workspace>/skills`
 
 Skills 可通过配置/环境变量控制（参见 [Gateway 网关配置](/gateway/configuration) 中的 `skills`）。
@@ -76,7 +76,7 @@ Marv 复用 pi-mono 代码库的部分内容（模型/工具），但**会话管
 
 会话记录以 JSONL 格式存储在：
 
-- `~/.openclaw/agents/<agentId>/sessions/<SessionId>.jsonl`
+- `~/.marv/agents/<agentId>/sessions/<SessionId>.jsonl`
 
 会话 ID 是稳定的，由 Marv 选择。
 **不**读取旧版 Pi/Tau 会话文件夹。

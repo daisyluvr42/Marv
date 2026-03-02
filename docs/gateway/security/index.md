@@ -84,13 +84,13 @@ If you run `--deep`, Marv also attempts a best-effort live Gateway probe.
 
 Use this when auditing access or deciding what to back up:
 
-- **WhatsApp**: `~/.openclaw/credentials/whatsapp/<accountId>/creds.json`
+- **WhatsApp**: `~/.marv/credentials/whatsapp/<accountId>/creds.json`
 - **Telegram bot token**: config/env or `channels.telegram.tokenFile`
 - **Discord bot token**: config/env (token file not yet supported)
 - **Slack tokens**: config/env (`channels.slack.*`)
-- **Pairing allowlists**: `~/.openclaw/credentials/<channel>-allowFrom.json`
-- **Model auth profiles**: `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-- **Legacy OAuth import**: `~/.openclaw/credentials/oauth.json`
+- **Pairing allowlists**: `~/.marv/credentials/<channel>-allowFrom.json`
+- **Model auth profiles**: `~/.marv/agents/<agentId>/agent/auth-profiles.json`
+- **Legacy OAuth import**: `~/.marv/credentials/oauth.json`
 
 ## Security Audit Checklist
 
@@ -110,7 +110,7 @@ High-signal `checkId` values you will most likely see in real deployments (not e
 | `checkId`                                    | Severity      | Why it matters                                           | Primary fix key/path                             | Auto-fix |
 | -------------------------------------------- | ------------- | -------------------------------------------------------- | ------------------------------------------------ | -------- |
 | `fs.state_dir.perms_world_writable`          | critical      | Other users/processes can modify full Marv state         | filesystem perms on `~/.marv`                    | yes      |
-| `fs.config.perms_writable`                   | critical      | Others can change auth/tool policy/config                | filesystem perms on `~/.openclaw/marv.json`      | yes      |
+| `fs.config.perms_writable`                   | critical      | Others can change auth/tool policy/config                | filesystem perms on `~/.marv/marv.json`      | yes      |
 | `fs.config.perms_world_readable`             | critical      | Config can expose tokens/settings                        | filesystem perms on config file                  | yes      |
 | `gateway.bind_no_auth`                       | critical      | Remote bind without shared secret                        | `gateway.bind`, `gateway.auth.*`                 | no       |
 | `gateway.loopback_no_auth`                   | critical      | Reverse-proxied loopback may become unauthenticated      | `gateway.auth.*`, proxy setup                    | no       |
@@ -152,14 +152,14 @@ gateway:
     - "127.0.0.1" # if your proxy runs on localhost
   auth:
     mode: password
-    password: ${OPENCLAW_GATEWAY_PASSWORD}
+    password: ${MARV_GATEWAY_PASSWORD}
 ```
 
 When `trustedProxies` is configured, the Gateway will use `X-Forwarded-For` headers to determine the real client IP for local client detection. Make sure your proxy overwrites (not appends to) incoming `X-Forwarded-For` headers to prevent spoofing.
 
 ## Local session logs live on disk
 
-Marv stores session transcripts on disk under `~/.openclaw/agents/<agentId>/sessions/*.jsonl`.
+Marv stores session transcripts on disk under `~/.marv/agents/<agentId>/sessions/*.jsonl`.
 This is required for session continuity and (optionally) session memory indexing, but it also means
 **any process/user with filesystem access can read those logs**. Treat disk access as the trust
 boundary and lock down permissions on `~/.marv` (see the audit section below). If you need
@@ -245,7 +245,7 @@ Plugins run **in-process** with the Gateway. Treat them as trusted code:
 - Review plugin config before enabling.
 - Restart the Gateway after plugin changes.
 - If you install plugins from npm (`marv plugins install <npm-spec>`), treat it like running untrusted code:
-  - The install path is `~/.openclaw/extensions/<pluginId>/` (or `$OPENCLAW_STATE_DIR/extensions/<pluginId>/`).
+  - The install path is `~/.marv/extensions/<pluginId>/` (or `$MARV_STATE_DIR/extensions/<pluginId>/`).
   - Marv uses `npm pack` and then runs `npm install --omit=dev` in that directory (npm lifecycle scripts can execute code during install).
   - Prefer pinned, exact versions (`@scope/pkg@1.2.3`), and inspect the unpacked code on disk before enabling.
 
@@ -295,7 +295,7 @@ If you run multiple accounts on the same channel, use `per-account-channel-peer`
 Marv has two separate “who can trigger me?” layers:
 
 - **DM allowlist** (`allowFrom` / `channels.discord.allowFrom` / `channels.slack.allowFrom`; legacy: `channels.discord.dm.allowFrom`, `channels.slack.dm.allowFrom`): who is allowed to talk to the bot in direct messages.
-  - When `dmPolicy="pairing"`, approvals are written to `~/.openclaw/credentials/<channel>-allowFrom.json` (merged with config allowlists).
+  - When `dmPolicy="pairing"`, approvals are written to `~/.marv/credentials/<channel>-allowFrom.json` (merged with config allowlists).
 - **Group allowlist** (channel-specific): which groups/channels/guilds the bot will accept messages from at all.
   - Common patterns:
     - `channels.whatsapp.groups`, `channels.telegram.groups`, `channels.imessage.groups`: per-group defaults like `requireMention`; when set, it also acts as a group allowlist (include `"*"` to keep allow-all behavior).
@@ -389,7 +389,7 @@ Guidance:
 
 Keep config + state private on the gateway host:
 
-- `~/.openclaw/marv.json`: `600` (user read/write only)
+- `~/.marv/marv.json`: `600` (user read/write only)
 - `~/.marv`: `700` (user only)
 
 `marv doctor` can warn and offer to tighten these permissions.
@@ -399,12 +399,12 @@ Keep config + state private on the gateway host:
 The Gateway multiplexes **WebSocket + HTTP** on a single port:
 
 - Default: `18789`
-- Config/flags/env: `gateway.port`, `--port`, `OPENCLAW_GATEWAY_PORT`
+- Config/flags/env: `gateway.port`, `--port`, `MARV_GATEWAY_PORT`
 
 This HTTP surface includes the Control UI and the canvas host:
 
 - Control UI (SPA assets) (default base path `/`)
-- Canvas host: `/__openclaw__/canvas/` and `/__openclaw__/a2ui/` (arbitrary HTML/JS; treat as untrusted content)
+- Canvas host: `/__marv__/canvas/` and `/__marv__/a2ui/` (arbitrary HTML/JS; treat as untrusted content)
 
 If you load canvas content in a normal browser, treat it like any other untrusted web page:
 
@@ -424,7 +424,7 @@ Rules of thumb:
 
 ### 0.4.1) mDNS/Bonjour discovery (information disclosure)
 
-The Gateway broadcasts its presence via mDNS (`_openclaw-gw._tcp` on port 5353) for local device discovery. In full mode, this includes TXT records that may expose operational details:
+The Gateway broadcasts its presence via mDNS (`_marv-gw._tcp` on port 5353) for local device discovery. In full mode, this includes TXT records that may expose operational details:
 
 - `cliPath`: full filesystem path to the CLI binary (reveals username and install location)
 - `sshPort`: advertises SSH availability on the host
@@ -464,7 +464,7 @@ The Gateway broadcasts its presence via mDNS (`_openclaw-gw._tcp` on port 5353) 
    }
    ```
 
-4. **Environment variable** (alternative): set `OPENCLAW_DISABLE_BONJOUR=1` to disable mDNS without config changes.
+4. **Environment variable** (alternative): set `MARV_DISABLE_BONJOUR=1` to disable mDNS without config changes.
 
 In minimal mode, the Gateway still broadcasts enough for device discovery (`role`, `gatewayPort`, `transport`) but omits `cliPath` and `sshPort`. Apps that need CLI path information can fetch it via the authenticated WebSocket connection instead.
 
@@ -502,12 +502,12 @@ Local device pairing:
 Auth modes:
 
 - `gateway.auth.mode: "token"`: shared bearer token (recommended for most setups).
-- `gateway.auth.mode: "password"`: password auth (prefer setting via env: `OPENCLAW_GATEWAY_PASSWORD`).
+- `gateway.auth.mode: "password"`: password auth (prefer setting via env: `MARV_GATEWAY_PASSWORD`).
 - `gateway.auth.mode: "trusted-proxy"`: trust an identity-aware reverse proxy to authenticate users and pass identity via headers (see [Trusted Proxy Auth](/gateway/trusted-proxy-auth)).
 
 Rotation checklist (token/password):
 
-1. Generate/set a new secret (`gateway.auth.token` or `OPENCLAW_GATEWAY_PASSWORD`).
+1. Generate/set a new secret (`gateway.auth.token` or `MARV_GATEWAY_PASSWORD`).
 2. Restart the Gateway (or restart the macOS app if it supervises the Gateway).
 3. Update any remote clients (`gateway.remote.token` / `.password` on machines that call into the Gateway).
 4. Verify you can no longer connect with the old credentials.
@@ -552,7 +552,7 @@ Avoid:
 
 ### 0.7) Secrets on disk (what’s sensitive)
 
-Assume anything under `~/.openclaw/` (or `$OPENCLAW_STATE_DIR/`) may contain secrets or private data:
+Assume anything under `~/.marv/` (or `$MARV_STATE_DIR/`) may contain secrets or private data:
 
 - `marv.json`: config may include tokens (gateway, remote gateway), provider settings, and allowlists.
 - `credentials/**`: channel credentials (example: WhatsApp creds), pairing allowlists, legacy OAuth imports.
@@ -606,7 +606,7 @@ Details: [Logging](/gateway/logging)
     "list": [
       {
         "id": "main",
-        "groupChat": { "mentionPatterns": ["@openclaw", "@mybot"] }
+        "groupChat": { "mentionPatterns": ["@marv", "@mybot"] }
       }
     ]
   }
@@ -674,7 +674,7 @@ single container/workspace.
 
 Also consider agent workspace access inside the sandbox:
 
-- `agents.defaults.sandbox.workspaceAccess: "none"` (default) keeps the agent workspace off-limits; tools run against a sandbox workspace under `~/.openclaw/sandboxes`
+- `agents.defaults.sandbox.workspaceAccess: "none"` (default) keeps the agent workspace off-limits; tools run against a sandbox workspace under `~/.marv/sandboxes`
 - `agents.defaults.sandbox.workspaceAccess: "ro"` mounts the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
 - `agents.defaults.sandbox.workspaceAccess: "rw"` mounts the agent workspace read/write at `/workspace`
 
@@ -718,7 +718,7 @@ Common use cases:
     list: [
       {
         id: "personal",
-        workspace: "~/.openclaw/workspace-personal",
+        workspace: "~/.marv/workspace-personal",
         sandbox: { mode: "off" },
       },
     ],
@@ -734,7 +734,7 @@ Common use cases:
     list: [
       {
         id: "family",
-        workspace: "~/.openclaw/workspace-family",
+        workspace: "~/.marv/workspace-family",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -758,7 +758,7 @@ Common use cases:
     list: [
       {
         id: "public",
-        workspace: "~/.openclaw/workspace-public",
+        workspace: "~/.marv/workspace-public",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -826,14 +826,14 @@ If your AI does something bad:
 
 ### Rotate (assume compromise if secrets leaked)
 
-1. Rotate Gateway auth (`gateway.auth.token` / `OPENCLAW_GATEWAY_PASSWORD`) and restart.
+1. Rotate Gateway auth (`gateway.auth.token` / `MARV_GATEWAY_PASSWORD`) and restart.
 2. Rotate remote client secrets (`gateway.remote.token` / `.password`) on any machine that can call the Gateway.
 3. Rotate provider/API credentials (WhatsApp creds, Slack/Discord tokens, model/API keys in `auth-profiles.json`).
 
 ### Audit
 
-1. Check Gateway logs: `/tmp/openclaw/openclaw-YYYY-MM-DD.log` (or `logging.file`).
-2. Review the relevant transcript(s): `~/.openclaw/agents/<agentId>/sessions/*.jsonl`.
+1. Check Gateway logs: `/tmp/marv/marv-YYYY-MM-DD.log` (or `logging.file`).
+2. Review the relevant transcript(s): `~/.marv/agents/<agentId>/sessions/*.jsonl`.
 3. Review recent config changes (anything that could have widened access: `gateway.bind`, `gateway.auth`, dm/group policies, `tools.elevated`, plugin changes).
 4. Re-run `marv security audit --deep` and confirm critical findings are resolved.
 

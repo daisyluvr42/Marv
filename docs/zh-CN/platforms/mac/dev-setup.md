@@ -42,7 +42,7 @@ pnpm install
 如果你没有 Apple Developer ID 证书，脚本将自动使用 **ad-hoc 签名**（`-`）。
 
 有关开发运行模式、签名标志和 Team ID 故障排除，请参阅 macOS 应用 README：
-https://github.com/openclaw/openclaw/blob/main/apps/macos/README.md
+apps/macos/README.md
 
 > **注意**：Ad-hoc 签名的应用可能会触发安全提示。如果应用立即崩溃并显示"Abort trap 6"，请参阅[故障排除](#troubleshooting)部分。
 
@@ -59,7 +59,7 @@ macOS 应用期望全局安装 `marv` CLI 来管理后台任务。
 或者，手动安装：
 
 ```bash
-npm install -g openclaw@<version>
+npm install -g marv@<version>
 ```
 
 ## 故障排除
@@ -92,7 +92,7 @@ xcrun swift --version
    ```bash
    tccutil reset All bot.molt.mac.debug
    ```
-2. 如果这不起作用，在 [`scripts/package-mac-app.sh`](https://github.com/openclaw/openclaw/blob/main/scripts/package-mac-app.sh) 中临时更改 `BUNDLE_ID` 以强制 macOS 从"全新状态"开始。
+2. 如果这不起作用，在 [`scripts/package-mac-app.sh`](scripts/package-mac-app.sh) 中临时更改 `BUNDLE_ID` 以强制 macOS 从"全新状态"开始。
 
 ### Gateway 网关无限期"Starting..."
 

@@ -22,7 +22,7 @@ Matrix ships as a plugin and is not bundled with the core install.
 Install via CLI (npm registry):
 
 ```bash
-marv plugins install @openclaw/matrix
+marv plugins install @marv/matrix
 ```
 
 Local checkout (when running from a git repo):
@@ -39,7 +39,7 @@ Details: [Plugins](/tools/plugin)
 ## Setup
 
 1. Install the Matrix plugin:
-   - From npm: `marv plugins install @openclaw/matrix`
+   - From npm: `marv plugins install @marv/matrix`
    - From a local checkout: `marv plugins install ./extensions/matrix`
 2. Create a Matrix account on a homeserver:
    - Browse hosting options at [https://matrix.org/ecosystem/hosting/](https://matrix.org/ecosystem/hosting/)
@@ -63,7 +63,7 @@ Details: [Plugins](/tools/plugin)
 
    - Replace `matrix.example.org` with your homeserver URL.
    - Or set `channels.matrix.userId` + `channels.matrix.password`: Marv calls the same
-     login endpoint, stores the access token in `~/.openclaw/credentials/matrix/credentials.json`,
+     login endpoint, stores the access token in `~/.marv/credentials/matrix/credentials.json`,
      and reuses it on next start.
 
 4. Configure credentials:
@@ -126,7 +126,7 @@ Enable with `channels.matrix.encryption: true`:
   `node node_modules/@matrix-org/matrix-sdk-crypto-nodejs/download-lib.js`.
 
 Crypto state is stored per account + access token in
-`~/.openclaw/matrix/accounts/<account>/<homeserver>__<user>/<token-hash>/crypto/`
+`~/.marv/matrix/accounts/<account>/<homeserver>__<user>/<token-hash>/crypto/`
 (SQLite database). Sync state lives alongside it in `bot-storage.json`.
 If the access token (device) changes, a new store is created and the bot must be
 re-verified for encrypted rooms.

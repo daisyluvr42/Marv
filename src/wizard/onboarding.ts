@@ -5,7 +5,7 @@ import type {
   OnboardOptions,
   ResetScope,
 } from "../commands/onboard-types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import {
   DEFAULT_GATEWAY_PORT,
   readConfigFileSnapshot,
@@ -47,7 +47,7 @@ async function requireRiskAcknowledgement(params: {
       "marv security audit --deep",
       "marv security audit --fix",
       "",
-      "Must read: https://docs.marv.ai/gateway/security",
+      "Must read: /gateway/security",
     ].join("\n"),
     "Security",
   );
@@ -72,7 +72,7 @@ export async function runOnboardingWizard(
   await requireRiskAcknowledgement({ opts, prompter });
 
   const snapshot = await readConfigFileSnapshot();
-  let baseConfig: OpenClawConfig = snapshot.valid ? snapshot.config : {};
+  let baseConfig: MarvConfig = snapshot.valid ? snapshot.config : {};
 
   if (snapshot.exists && !snapshot.valid) {
     await prompter.note(onboardHelpers.summarizeExistingConfig(baseConfig), "Invalid config");
@@ -81,7 +81,7 @@ export async function runOnboardingWizard(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://docs.marv.ai/gateway/configuration",
+          "Docs: /gateway/configuration",
         ].join("\n"),
         "Config issues",
       );
@@ -277,11 +277,11 @@ export async function runOnboardingWizard(
     token:
       baseConfig.gateway?.auth?.token ??
       process.env.MARV_GATEWAY_TOKEN ??
-      process.env.OPENCLAW_GATEWAY_TOKEN,
+      process.env.MARV_GATEWAY_TOKEN,
     password:
       baseConfig.gateway?.auth?.password ??
       process.env.MARV_GATEWAY_PASSWORD ??
-      process.env.OPENCLAW_GATEWAY_PASSWORD,
+      process.env.MARV_GATEWAY_PASSWORD,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
   const remoteProbe = remoteUrl
@@ -340,7 +340,7 @@ export async function runOnboardingWizard(
   const workspaceDir = resolveUserPath(workspaceInput.trim() || onboardHelpers.DEFAULT_WORKSPACE);
 
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
-  let nextConfig: OpenClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+  let nextConfig: MarvConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
 
   const { ensureAuthProfileStore } = await import("../agents/auth-profiles.js");
   const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");

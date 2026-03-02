@@ -96,7 +96,7 @@ marv acp --session agent:qa:bug-123
   "agent_servers": {
     "Marv ACP": {
       "type": "custom",
-      "command": "openclaw",
+      "command": "marv",
       "args": ["acp"],
       "env": {}
     }
@@ -111,7 +111,7 @@ marv acp --session agent:qa:bug-123
   "agent_servers": {
     "Marv ACP": {
       "type": "custom",
-      "command": "openclaw",
+      "command": "marv",
       "args": [
         "acp",
         "--url",

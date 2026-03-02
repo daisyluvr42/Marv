@@ -1,9 +1,9 @@
-import { Database } from 'sql.js';
-import { v4 as uuidv4 } from 'uuid';
-import { CronExpressionParser } from 'cron-parser';
+import { CronExpressionParser } from "cron-parser";
+import { Database } from "sql.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Types for scheduled tasks (main process side)
-export type TaskLastStatus = 'success' | 'error' | 'running' | null;
+export type TaskLastStatus = "success" | "error" | "running" | null;
 
 export interface TaskState {
   nextRunAtMs: number | null;
@@ -16,15 +16,15 @@ export interface TaskState {
 }
 
 export interface Schedule {
-  type: 'at' | 'interval' | 'cron';
+  type: "at" | "interval" | "cron";
   datetime?: string;
   intervalMs?: number;
-  unit?: 'minutes' | 'hours' | 'days';
+  unit?: "minutes" | "hours" | "days";
   value?: number;
   expression?: string;
 }
 
-export type NotifyPlatform = 'dingtalk' | 'feishu' | 'telegram' | 'discord';
+export type NotifyPlatform = "dingtalk" | "feishu" | "telegram" | "discord";
 
 export interface ScheduledTask {
   id: string;
@@ -35,7 +35,7 @@ export interface ScheduledTask {
   prompt: string;
   workingDirectory: string;
   systemPrompt: string;
-  executionMode: 'auto' | 'local' | 'sandbox';
+  executionMode: "auto" | "local" | "sandbox";
   expiresAt: string | null;
   notifyPlatforms: NotifyPlatform[];
   state: TaskState;
@@ -47,12 +47,12 @@ export interface ScheduledTaskRun {
   id: string;
   taskId: string;
   sessionId: string | null;
-  status: 'running' | 'success' | 'error';
+  status: "running" | "success" | "error";
   startedAt: string;
   finishedAt: string | null;
   durationMs: number | null;
   error: string | null;
-  trigger: 'scheduled' | 'manual';
+  trigger: "scheduled" | "manual";
 }
 
 export interface ScheduledTaskInput {
@@ -62,7 +62,7 @@ export interface ScheduledTaskInput {
   prompt: string;
   workingDirectory: string;
   systemPrompt: string;
-  executionMode: 'auto' | 'local' | 'sandbox';
+  executionMode: "auto" | "local" | "sandbox";
   expiresAt: string | null;
   notifyPlatforms: NotifyPlatform[];
   enabled: boolean;
@@ -117,7 +117,9 @@ export class ScheduledTaskStore {
   // Helper method to get a single row from query result
   private getOne<T>(sql: string, params: (string | number | null)[] = []): T | undefined {
     const result = this.db.exec(sql, params);
-    if (!result[0]?.values[0]) {return undefined;}
+    if (!result[0]?.values[0]) {
+      return undefined;
+    }
     const columns = result[0].columns;
     const values = result[0].values[0];
     const row: Record<string, unknown> = {};
@@ -130,7 +132,9 @@ export class ScheduledTaskStore {
   // Helper method to get all rows from query result
   private getAll<T>(sql: string, params: (string | number | null)[] = []): T[] {
     const result = this.db.exec(sql, params);
-    if (!result[0]?.values) {return [];}
+    if (!result[0]?.values) {
+      return [];
+    }
     const columns = result[0].columns;
     return result[0].values.map((values) => {
       const row: Record<string, unknown> = {};
@@ -146,13 +150,16 @@ export class ScheduledTaskStore {
   private resetStuckRunningTasks(): void {
     try {
       // Reset stuck runs
-      this.db.run(`
+      this.db.run(
+        `
         UPDATE scheduled_task_runs
         SET status = 'error',
             finished_at = ?,
             error = 'Application was closed during execution'
         WHERE status = 'running'
-      `, [new Date().toISOString()]);
+      `,
+        [new Date().toISOString()],
+      );
 
       // Reset stuck task states
       this.db.run(`
@@ -165,24 +172,19 @@ export class ScheduledTaskStore {
 
       this.saveDb();
     } catch (error) {
-      console.warn('Failed to reset stuck running tasks:', error);
+      console.warn("Failed to reset stuck running tasks:", error);
     }
   }
 
   // --- Task CRUD ---
 
   listTasks(): ScheduledTask[] {
-    const rows = this.getAll<TaskRow>(
-      'SELECT * FROM scheduled_tasks ORDER BY created_at DESC'
-    );
+    const rows = this.getAll<TaskRow>("SELECT * FROM scheduled_tasks ORDER BY created_at DESC");
     return rows.map((row) => this.rowToTask(row));
   }
 
   getTask(id: string): ScheduledTask | null {
-    const row = this.getOne<TaskRow>(
-      'SELECT * FROM scheduled_tasks WHERE id = ?',
-      [id]
-    );
+    const row = this.getOne<TaskRow>("SELECT * FROM scheduled_tasks WHERE id = ?", [id]);
     return row ? this.rowToTask(row) : null;
   }
 
@@ -191,23 +193,31 @@ export class ScheduledTaskStore {
     const now = new Date().toISOString();
     const nextRunAtMs = input.enabled ? this.calculateNextRunTime(input.schedule, null) : null;
 
-    this.db.run(`
+    this.db.run(
+      `
       INSERT INTO scheduled_tasks
         (id, name, description, enabled, schedule_json, prompt,
          working_directory, system_prompt, execution_mode, expires_at,
          notify_platforms_json, next_run_at_ms, consecutive_errors, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-    `, [
-      id, input.name, input.description,
-      input.enabled ? 1 : 0,
-      JSON.stringify(input.schedule),
-      input.prompt,
-      input.workingDirectory, input.systemPrompt, input.executionMode,
-      input.expiresAt ?? null,
-      JSON.stringify(input.notifyPlatforms ?? []),
-      nextRunAtMs,
-      now, now,
-    ]);
+    `,
+      [
+        id,
+        input.name,
+        input.description,
+        input.enabled ? 1 : 0,
+        JSON.stringify(input.schedule),
+        input.prompt,
+        input.workingDirectory,
+        input.systemPrompt,
+        input.executionMode,
+        input.expiresAt ?? null,
+        JSON.stringify(input.notifyPlatforms ?? []),
+        nextRunAtMs,
+        now,
+        now,
+      ],
+    );
 
     this.saveDb();
     return this.getTask(id)!;
@@ -215,7 +225,9 @@ export class ScheduledTaskStore {
 
   updateTask(id: string, input: Partial<ScheduledTaskInput>): ScheduledTask | null {
     const existing = this.getTask(id);
-    if (!existing) {return null;}
+    if (!existing) {
+      return null;
+    }
 
     const now = new Date().toISOString();
     const name = input.name ?? existing.name;
@@ -227,7 +239,8 @@ export class ScheduledTaskStore {
     const systemPrompt = input.systemPrompt ?? existing.systemPrompt;
     const executionMode = input.executionMode ?? existing.executionMode;
     const expiresAt = input.expiresAt !== undefined ? input.expiresAt : existing.expiresAt;
-    const notifyPlatforms = input.notifyPlatforms !== undefined ? input.notifyPlatforms : existing.notifyPlatforms;
+    const notifyPlatforms =
+      input.notifyPlatforms !== undefined ? input.notifyPlatforms : existing.notifyPlatforms;
 
     // Recalculate next run if schedule or enabled changed
     let nextRunAtMs = existing.state.nextRunAtMs;
@@ -237,23 +250,31 @@ export class ScheduledTaskStore {
         : null;
     }
 
-    this.db.run(`
+    this.db.run(
+      `
       UPDATE scheduled_tasks
       SET name = ?, description = ?, enabled = ?, schedule_json = ?,
           prompt = ?, working_directory = ?, system_prompt = ?,
           execution_mode = ?, expires_at = ?, notify_platforms_json = ?,
           next_run_at_ms = ?, updated_at = ?
       WHERE id = ?
-    `, [
-      name, description,
-      enabled ? 1 : 0,
-      JSON.stringify(schedule),
-      prompt, workingDirectory,
-      systemPrompt, executionMode,
-      expiresAt,
-      JSON.stringify(notifyPlatforms),
-      nextRunAtMs, now, id,
-    ]);
+    `,
+      [
+        name,
+        description,
+        enabled ? 1 : 0,
+        JSON.stringify(schedule),
+        prompt,
+        workingDirectory,
+        systemPrompt,
+        executionMode,
+        expiresAt,
+        JSON.stringify(notifyPlatforms),
+        nextRunAtMs,
+        now,
+        id,
+      ],
+    );
 
     this.saveDb();
     return this.getTask(id)!;
@@ -261,15 +282,17 @@ export class ScheduledTaskStore {
 
   deleteTask(id: string): boolean {
     // Delete runs first (CASCADE may not work with sql.js)
-    this.db.run('DELETE FROM scheduled_task_runs WHERE task_id = ?', [id]);
-    this.db.run('DELETE FROM scheduled_tasks WHERE id = ?', [id]);
+    this.db.run("DELETE FROM scheduled_task_runs WHERE task_id = ?", [id]);
+    this.db.run("DELETE FROM scheduled_tasks WHERE id = ?", [id]);
     this.saveDb();
     return true;
   }
 
   toggleTask(id: string, enabled: boolean): { task: ScheduledTask | null; warning: string | null } {
     const task = this.updateTask(id, { enabled });
-    if (!task || !enabled) {return { task, warning: null };}
+    if (!task || !enabled) {
+      return { task, warning: null };
+    }
 
     const warning = this.validateTaskActivation(task);
     return { task, warning };
@@ -284,16 +307,16 @@ export class ScheduledTaskStore {
     const todayStr = new Date().toISOString().slice(0, 10);
 
     // Check: "at" type task with past datetime → will never fire
-    if (task.schedule.type === 'at' && task.schedule.datetime) {
+    if (task.schedule.type === "at" && task.schedule.datetime) {
       const targetMs = new Date(task.schedule.datetime).getTime();
       if (targetMs <= now) {
-        return 'TASK_AT_PAST';
+        return "TASK_AT_PAST";
       }
     }
 
     // Check: expiresAt is today or in the past → task expired
     if (task.expiresAt && task.expiresAt <= todayStr) {
-      return 'TASK_EXPIRED';
+      return "TASK_EXPIRED";
     }
 
     return null;
@@ -302,11 +325,14 @@ export class ScheduledTaskStore {
   // --- Task State Updates (called by Scheduler) ---
 
   markTaskRunning(id: string, runningAtMs: number): void {
-    this.db.run(`
+    this.db.run(
+      `
       UPDATE scheduled_tasks
       SET running_at_ms = ?, last_status = 'running', updated_at = ?
       WHERE id = ?
-    `, [runningAtMs, new Date().toISOString(), id]);
+    `,
+      [runningAtMs, new Date().toISOString(), id],
+    );
     this.saveDb();
   }
 
@@ -315,14 +341,15 @@ export class ScheduledTaskStore {
     success: boolean,
     durationMs: number,
     error: string | null,
-    schedule: Schedule
+    schedule: Schedule,
   ): void {
     const now = Date.now();
     const task = this.getTask(id);
     const consecutiveErrors = success ? 0 : (task?.state.consecutiveErrors ?? 0) + 1;
     const nextRunAtMs = task?.enabled ? this.calculateNextRunTime(schedule, now) : null;
 
-    this.db.run(`
+    this.db.run(
+      `
       UPDATE scheduled_tasks
       SET running_at_ms = NULL,
           last_run_at_ms = ?,
@@ -333,62 +360,67 @@ export class ScheduledTaskStore {
           next_run_at_ms = ?,
           updated_at = ?
       WHERE id = ?
-    `, [
-      now,
-      success ? 'success' : 'error',
-      error,
-      durationMs,
-      consecutiveErrors,
-      nextRunAtMs,
-      new Date().toISOString(),
-      id,
-    ]);
+    `,
+      [
+        now,
+        success ? "success" : "error",
+        error,
+        durationMs,
+        consecutiveErrors,
+        nextRunAtMs,
+        new Date().toISOString(),
+        id,
+      ],
+    );
 
     this.saveDb();
   }
 
   // --- Run History ---
 
-  createRun(taskId: string, trigger: 'scheduled' | 'manual'): ScheduledTaskRun {
+  createRun(taskId: string, trigger: "scheduled" | "manual"): ScheduledTaskRun {
     const id = uuidv4();
     const now = new Date().toISOString();
-    this.db.run(`
+    this.db.run(
+      `
       INSERT INTO scheduled_task_runs (id, task_id, status, started_at, trigger_type)
       VALUES (?, ?, 'running', ?, ?)
-    `, [id, taskId, now, trigger]);
+    `,
+      [id, taskId, now, trigger],
+    );
     this.saveDb();
     return this.getRun(id)!;
   }
 
   completeRun(
     runId: string,
-    status: 'success' | 'error',
+    status: "success" | "error",
     sessionId: string | null,
     durationMs: number,
-    error: string | null
+    error: string | null,
   ): ScheduledTaskRun | null {
     const now = new Date().toISOString();
-    this.db.run(`
+    this.db.run(
+      `
       UPDATE scheduled_task_runs
       SET status = ?, session_id = ?, finished_at = ?, duration_ms = ?, error = ?
       WHERE id = ?
-    `, [status, sessionId, now, durationMs, error, runId]);
+    `,
+      [status, sessionId, now, durationMs, error, runId],
+    );
     this.saveDb();
     return this.getRun(runId);
   }
 
   getRun(id: string): ScheduledTaskRun | null {
-    const row = this.getOne<RunRow>(
-      'SELECT * FROM scheduled_task_runs WHERE id = ?',
-      [id]
-    );
+    const row = this.getOne<RunRow>("SELECT * FROM scheduled_task_runs WHERE id = ?", [id]);
     return row ? this.rowToRun(row) : null;
   }
 
   listRuns(taskId: string, limit: number = 50, offset: number = 0): ScheduledTaskRun[] {
     const rows = this.getAll<RunRow>(
-      'SELECT * FROM scheduled_task_runs WHERE task_id = ? ORDER BY started_at DESC LIMIT ? OFFSET ?',
-      [taskId, limit, offset]
+      "SELECT * FROM scheduled_task_runs WHERE task_id = ? ORDER BY started_at DESC LIMIT ? OFFSET ?",
+      [taskId, limit, offset],
     );
     return rows.map((row) => this.rowToRun(row));
   }
@@ -400,37 +432,39 @@ export class ScheduledTaskStore {
        LEFT JOIN scheduled_tasks t ON r.task_id = t.id
        ORDER BY r.started_at DESC
        LIMIT ? OFFSET ?`,
-      [limit, offset]
+      [limit, offset],
     );
     return rows.map((row) => ({
       ...this.rowToRun(row),
-      taskName: row.task_name ?? '',
+      taskName: row.task_name ?? "",
     }));
   }
 
   countRuns(taskId: string): number {
-    const row = this.getOne<{ 'COUNT(*)': number }>(
-      'SELECT COUNT(*) FROM scheduled_task_runs WHERE task_id = ?',
-      [taskId]
+    const row = this.getOne<{ "COUNT(*)": number }>(
+      "SELECT COUNT(*) FROM scheduled_task_runs WHERE task_id = ?",
+      [taskId],
     );
-    return row?.['COUNT(*)'] ?? 0;
+    return row?.["COUNT(*)"] ?? 0;
   }
 
   pruneRuns(taskId: string, keepCount: number = 100): void {
     // Get IDs of the runs to keep
     const keepRows = this.getAll<{ id: string }>(
-      'SELECT id FROM scheduled_task_runs WHERE task_id = ? ORDER BY started_at DESC LIMIT ?',
-      [taskId, keepCount]
+      "SELECT id FROM scheduled_task_runs WHERE task_id = ? ORDER BY started_at DESC LIMIT ?",
+      [taskId, keepCount],
     );
     const keepIds = keepRows.map((r) => r.id);
 
-    if (keepIds.length === 0) {return;}
+    if (keepIds.length === 0) {
+      return;
+    }
 
     // Delete all runs not in the keep list
-    const placeholders = keepIds.map(() => '?').join(',');
+    const placeholders = keepIds.map(() => "?").join(",");
     this.db.run(
       `DELETE FROM scheduled_task_runs WHERE task_id = ? AND id NOT IN (${placeholders})`,
-      [taskId, ...keepIds]
+      [taskId, ...keepIds],
     );
     this.saveDb();
   }
@@ -439,7 +473,8 @@ export class ScheduledTaskStore {
 
   getDueTasks(nowMs: number): ScheduledTask[] {
     const todayStr = new Date(nowMs).toISOString().slice(0, 10);
-    const rows = this.getAll<TaskRow>(`
+    const rows = this.getAll<TaskRow>(
+      `
       SELECT * FROM scheduled_tasks
       WHERE enabled = 1
         AND next_run_at_ms IS NOT NULL
@@ -447,7 +482,9 @@ export class ScheduledTaskStore {
         AND running_at_ms IS NULL
         AND (expires_at IS NULL OR expires_at > ?)
       ORDER BY next_run_at_ms ASC
-    `, [nowMs, todayStr]);
+    `,
+      [nowMs, todayStr],
+    );
     return rows.map((row) => this.rowToTask(row));
   }
 
@@ -460,7 +497,7 @@ export class ScheduledTaskStore {
          AND next_run_at_ms IS NOT NULL
          AND running_at_ms IS NULL
          AND (expires_at IS NULL OR expires_at > ?)`,
-      [todayStr]
+      [todayStr],
     );
     return row?.min_time ?? null;
   }
@@ -471,20 +508,24 @@ export class ScheduledTaskStore {
     const now = Date.now();
 
     switch (schedule.type) {
-      case 'at': {
-        if (!schedule.datetime) {return null;}
+      case "at": {
+        if (!schedule.datetime) {
+          return null;
+        }
         const targetMs = new Date(schedule.datetime).getTime();
         return targetMs > now ? targetMs : null;
       }
-      case 'interval': {
+      case "interval": {
         const intervalMs = schedule.intervalMs ?? 60000;
         if (lastRunAtMs) {
           return Math.max(lastRunAtMs + intervalMs, now);
         }
         return now + intervalMs;
       }
-      case 'cron': {
-        if (!schedule.expression) {return null;}
+      case "cron": {
+        if (!schedule.expression) {
+          return null;
+        }
         return this.getNextCronTime(schedule.expression, now);
       }
       default:
@@ -519,7 +560,7 @@ export class ScheduledTaskStore {
       prompt: row.prompt,
       workingDirectory: row.working_directory,
       systemPrompt: row.system_prompt,
-      executionMode: row.execution_mode as 'auto' | 'local' | 'sandbox',
+      executionMode: row.execution_mode as "auto" | "local" | "sandbox",
       expiresAt: row.expires_at,
       notifyPlatforms,
       state: {
@@ -541,12 +582,12 @@ export class ScheduledTaskStore {
       id: row.id,
       taskId: row.task_id,
       sessionId: row.session_id,
-      status: row.status as 'running' | 'success' | 'error',
+      status: row.status as "running" | "success" | "error",
       startedAt: row.started_at,
       finishedAt: row.finished_at,
       durationMs: row.duration_ms,
       error: row.error,
-      trigger: row.trigger_type as 'scheduled' | 'manual',
+      trigger: row.trigger_type as "scheduled" | "manual",
     };
   }
 }

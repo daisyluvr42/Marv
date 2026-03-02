@@ -1,8 +1,10 @@
 export const getLastPathSegment = (rawPath: string): string => {
   const trimmed = rawPath.trim();
-  if (!trimmed) {return '';}
+  if (!trimmed) {
+    return "";
+  }
 
-  const withoutTrailingSeparators = trimmed.replace(/[\\/]+$/, '');
+  const withoutTrailingSeparators = trimmed.replace(/[\\/]+$/, "");
   const normalized = withoutTrailingSeparators || trimmed;
   const parts = normalized.split(/[\\/]+/).filter(Boolean);
 
@@ -15,9 +17,11 @@ export const getLastPathSegment = (rawPath: string): string => {
 
 export const getCompactFolderName = (rawPath: string, maxLength?: number): string => {
   const folderName = getLastPathSegment(rawPath);
-  if (!folderName) {return '';}
+  if (!folderName) {
+    return "";
+  }
 
-  if (typeof maxLength === 'number' && maxLength > 0 && folderName.length > maxLength) {
+  if (typeof maxLength === "number" && maxLength > 0 && folderName.length > maxLength) {
     return folderName.slice(-maxLength);
   }
 

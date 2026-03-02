@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FolderPlusIcon, ClockIcon, ChevronRightIcon, FolderIcon } from '@heroicons/react/24/outline';
-import { i18nService } from '../../services/i18n';
-import { coworkService } from '../../services/cowork';
-import { getCompactFolderName } from '../../utils/path';
+import {
+  FolderPlusIcon,
+  ClockIcon,
+  ChevronRightIcon,
+  FolderIcon,
+} from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { coworkService } from "../../services/cowork";
+import { i18nService } from "../../services/i18n";
+import { getCompactFolderName } from "../../utils/path";
 
 // Custom tooltip for folder paths
 interface PathTooltipProps {
@@ -12,15 +17,17 @@ interface PathTooltipProps {
 }
 
 const PathTooltip: React.FC<PathTooltipProps> = ({ path, anchorRect, visible }) => {
-  if (!visible || !anchorRect) {return null;}
+  if (!visible || !anchorRect) {
+    return null;
+  }
 
   // Position tooltip above the item, centered
   const style: React.CSSProperties = {
-    position: 'fixed',
+    position: "fixed",
     top: anchorRect.top - 8,
     left: anchorRect.left + anchorRect.width / 2,
-    transform: 'translate(-50%, -100%)',
-    maxWidth: '400px',
+    transform: "translate(-50%, -100%)",
+    maxWidth: "400px",
     zIndex: 100,
   };
 
@@ -55,7 +62,7 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
     visible: boolean;
     path: string;
     rect: DOMRect | null;
-  }>({ visible: false, path: '', rect: null });
+  }>({ visible: false, path: "", rect: null });
   const popoverRef = useRef<HTMLDivElement>(null);
   const submenuRef = useRef<HTMLDivElement>(null);
   const recentFoldersRef = useRef<HTMLDivElement>(null);
@@ -79,7 +86,7 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
           const folders = await coworkService.getRecentCwds(10);
           setRecentFolders(folders);
         } catch (error) {
-          console.error('Failed to load recent folders:', error);
+          console.error("Failed to load recent folders:", error);
           setRecentFolders([]);
         } finally {
           setIsLoading(false);
@@ -89,7 +96,7 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
     } else {
       setShowRecentSubmenu(false);
       // Clear tooltip when popover closes
-      setTooltipState({ visible: false, path: '', rect: null });
+      setTooltipState({ visible: false, path: "", rect: null });
       if (tooltipTimerRef.current) {
         clearTimeout(tooltipTimerRef.current);
         tooltipTimerRef.current = null;
@@ -99,7 +106,9 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
 
   // Handle click outside
   useEffect(() => {
-    if (!isOpen) {return;}
+    if (!isOpen) {
+      return;
+    }
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -112,22 +121,24 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose, anchorRef]);
 
   // Handle escape key
   useEffect(() => {
-    if (!isOpen) {return;}
+    if (!isOpen) {
+      return;
+    }
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
   // Calculate submenu position relative to the Recent Folders button
@@ -149,7 +160,7 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
         onClose();
       }
     } catch (error) {
-      console.error('Failed to select directory:', error);
+      console.error("Failed to select directory:", error);
     }
   };
 
@@ -158,36 +169,43 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
     onClose();
   };
 
-  const handleFolderMouseEnter = useCallback((path: string, event: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    // Clear any existing timer
-    if (tooltipTimerRef.current) {
-      clearTimeout(tooltipTimerRef.current);
-    }
-    // Show tooltip after a short delay
-    tooltipTimerRef.current = setTimeout(() => {
-      setTooltipState({
-        visible: true,
-        path: getCompactFolderName(path, 120) || i18nService.t('noFolderSelected'),
-        rect,
-      });
-    }, 300);
-  }, []);
+  const handleFolderMouseEnter = useCallback(
+    (path: string, event: React.MouseEvent<HTMLButtonElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      // Clear any existing timer
+      if (tooltipTimerRef.current) {
+        clearTimeout(tooltipTimerRef.current);
+      }
+      // Show tooltip after a short delay
+      tooltipTimerRef.current = setTimeout(() => {
+        setTooltipState({
+          visible: true,
+          path: getCompactFolderName(path, 120) || i18nService.t("noFolderSelected"),
+          rect,
+        });
+      }, 300);
+    },
+    [],
+  );
 
   const handleFolderMouseLeave = useCallback(() => {
     if (tooltipTimerRef.current) {
       clearTimeout(tooltipTimerRef.current);
       tooltipTimerRef.current = null;
     }
-    setTooltipState({ visible: false, path: '', rect: null });
+    setTooltipState({ visible: false, path: "", rect: null });
   }, []);
 
   const truncatePath = (path: string, maxLength = 40): string => {
-    if (!path) {return i18nService.t('noFolderSelected');}
-    return getCompactFolderName(path, maxLength) || i18nService.t('noFolderSelected');
+    if (!path) {
+      return i18nService.t("noFolderSelected");
+    }
+    return getCompactFolderName(path, maxLength) || i18nService.t("noFolderSelected");
   };
 
-  if (!isOpen) {return null;}
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -202,7 +220,7 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
           className="w-full flex items-center gap-3 px-3 py-2.5 text-sm dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors rounded-t-lg"
         >
           <FolderPlusIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-          <span>{i18nService.t('addFolder')}</span>
+          <span>{i18nService.t("addFolder")}</span>
         </button>
 
         {/* Recent Folders option */}
@@ -212,12 +230,10 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
           onMouseEnter={() => setShowRecentSubmenu(true)}
           onMouseLeave={() => setShowRecentSubmenu(false)}
         >
-          <button
-            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors rounded-b-lg"
-          >
+          <button className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors rounded-b-lg">
             <div className="flex items-center gap-3">
               <ClockIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-              <span>{i18nService.t('recentFolders')}</span>
+              <span>{i18nService.t("recentFolders")}</span>
             </div>
             <ChevronRightIcon className="h-3 w-3 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
           </button>
@@ -235,11 +251,11 @@ const FolderSelectorPopover: React.FC<FolderSelectorPopoverProps> = ({
         >
           {isLoading ? (
             <div className="px-3 py-2.5 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-              {i18nService.t('loading')}
+              {i18nService.t("loading")}
             </div>
           ) : recentFolders.length === 0 ? (
             <div className="px-3 py-2.5 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-              {i18nService.t('noRecentFolders')}
+              {i18nService.t("noRecentFolders")}
             </div>
           ) : (
             recentFolders.map((folder, index) => (

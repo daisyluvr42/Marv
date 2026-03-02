@@ -1,5 +1,5 @@
 import { resolveGatewayPort } from "../../config/config.js";
-import type { OpenClawConfig, ConfigFileSnapshot } from "../../config/types.js";
+import type { MarvConfig, ConfigFileSnapshot } from "../../config/types.js";
 import type { GatewayProbeResult } from "../../gateway/probe.js";
 import { pickPrimaryTailnetIPv4 } from "../../infra/tailnet.js";
 import { colorize, theme } from "../../terminal/theme.js";
@@ -88,7 +88,7 @@ function normalizeWsUrl(value: string): string | null {
   return trimmed;
 }
 
-export function resolveTargets(cfg: OpenClawConfig, explicitUrl?: string): GatewayStatusTarget[] {
+export function resolveTargets(cfg: MarvConfig, explicitUrl?: string): GatewayStatusTarget[] {
   const targets: GatewayStatusTarget[] = [];
   const add = (t: GatewayStatusTarget) => {
     if (!targets.some((x) => x.url === t.url)) {
@@ -145,7 +145,7 @@ export function sanitizeSshTarget(value: unknown): string | null {
 }
 
 export function resolveAuthForTarget(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   target: GatewayStatusTarget,
   overrides: { token?: string; password?: string },
 ): { token?: string; password?: string } {
@@ -167,10 +167,10 @@ export function resolveAuthForTarget(
   }
 
   const envToken =
-    process.env.MARV_GATEWAY_TOKEN?.trim() || process.env.OPENCLAW_GATEWAY_TOKEN?.trim() || "";
+    process.env.MARV_GATEWAY_TOKEN?.trim() || process.env.MARV_GATEWAY_TOKEN?.trim() || "";
   const envPassword =
     process.env.MARV_GATEWAY_PASSWORD?.trim() ||
-    process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+    process.env.MARV_GATEWAY_PASSWORD?.trim() ||
     "";
   const cfgToken =
     typeof cfg.gateway?.auth?.token === "string" ? cfg.gateway.auth.token.trim() : "";
@@ -248,7 +248,7 @@ export function extractConfigSummary(snapshotUnknown: unknown): GatewayConfigSum
   };
 }
 
-export function buildNetworkHints(cfg: OpenClawConfig) {
+export function buildNetworkHints(cfg: MarvConfig) {
   const tailnetIPv4 = pickPrimaryTailnetIPv4();
   const port = resolveGatewayPort(cfg);
   return {

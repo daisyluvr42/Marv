@@ -43,12 +43,12 @@ async function initRepoWithBaseline(content = "hello\n"): Promise<void> {
 }
 
 beforeEach(async () => {
-  workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-rollback-workspace-"));
-  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-rollback-state-"));
+  workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-rollback-workspace-"));
+  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-rollback-state-"));
   prevStateDir = process.env.MARV_STATE_DIR;
-  prevLegacyStateDir = process.env.OPENCLAW_STATE_DIR;
+  prevLegacyStateDir = process.env.MARV_STATE_DIR;
   process.env.MARV_STATE_DIR = stateDir;
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  process.env.MARV_STATE_DIR = stateDir;
   __testing.resetWorkspaceSnapshotStateForTest();
 });
 
@@ -59,9 +59,9 @@ afterEach(async () => {
     process.env.MARV_STATE_DIR = prevStateDir;
   }
   if (prevLegacyStateDir === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.MARV_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = prevLegacyStateDir;
+    process.env.MARV_STATE_DIR = prevLegacyStateDir;
   }
   __testing.resetWorkspaceSnapshotStateForTest();
   await fs.rm(workspaceDir, { recursive: true, force: true });

@@ -39,7 +39,7 @@ export function registerSecurityCli(program: Command) {
           ["marv security audit --deep", "Include best-effort live Gateway probe checks."],
           ["marv security audit --fix", "Apply safe remediations and file-permission fixes."],
           ["marv security audit --json", "Output machine-readable JSON."],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/security", "docs.marv.ai/cli/security")}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/security", "docs: /cli/security")}\n`,
     );
 
   security

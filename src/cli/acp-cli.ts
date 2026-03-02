@@ -21,7 +21,7 @@ export function registerAcpCli(program: Command) {
     .option("--verbose, -v", "Verbose logging to stderr", false)
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/acp", "docs.marv.ai/cli/acp")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/acp", "docs: /cli/acp")}\n`,
     )
     .action(async (opts) => {
       try {

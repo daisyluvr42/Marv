@@ -4,9 +4,9 @@ import { appendCdpPath, createTargetViaCdp, normalizeCdpWsUrl } from "./cdp.js";
 import {
   isChromeCdpReady,
   isChromeReachable,
-  launchOpenClawChrome,
-  resolveOpenClawUserDataDir,
-  stopOpenClawChrome,
+  launchMarvChrome,
+  resolveMarvUserDataDir,
+  stopMarvChrome,
 } from "./chrome.js";
 import type { ResolvedBrowserProfile } from "./config.js";
 import { resolveProfile } from "./config.js";
@@ -305,7 +305,7 @@ function createProfileContext(
             : `Browser attachOnly is enabled and profile "${profile.name}" is not running.`,
         );
       }
-      const launched = await launchOpenClawChrome(current.resolved, profile);
+      const launched = await launchMarvChrome(current.resolved, profile);
       attachRunning(launched);
       return;
     }
@@ -338,10 +338,10 @@ function createProfileContext(
       );
     }
 
-    await stopOpenClawChrome(profileState.running);
+    await stopMarvChrome(profileState.running);
     setProfileRunning(null);
 
-    const relaunched = await launchOpenClawChrome(current.resolved, profile);
+    const relaunched = await launchMarvChrome(current.resolved, profile);
     attachRunning(relaunched);
 
     if (!(await isReachable(600))) {
@@ -480,7 +480,7 @@ function createProfileContext(
     if (!profileState.running) {
       return { stopped: false };
     }
-    await stopOpenClawChrome(profileState.running);
+    await stopMarvChrome(profileState.running);
     setProfileRunning(null);
     return { stopped: true };
   };
@@ -495,7 +495,7 @@ function createProfileContext(
         `reset-profile is only supported for local profiles (profile "${profile.name}" is remote).`,
       );
     }
-    const userDataDir = resolveOpenClawUserDataDir(profile.name);
+    const userDataDir = resolveMarvUserDataDir(profile.name);
     const profileState = getProfileState();
 
     const httpReachable = await isHttpReachable(300);

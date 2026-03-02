@@ -23,8 +23,8 @@ Uses the same Gateway bearer authentication as other HTTP endpoints.
 
 Notes:
 
-- When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`).
-- When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `OPENCLAW_GATEWAY_PASSWORD`) as bearer value.
+- When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `MARV_GATEWAY_TOKEN`).
+- When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `MARV_GATEWAY_PASSWORD`) as bearer value.
 
 ## Supported MCP methods
 

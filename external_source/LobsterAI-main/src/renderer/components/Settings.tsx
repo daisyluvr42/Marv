@@ -1,29 +1,45 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { configService } from '../services/config';
-import { apiService } from '../services/api';
-import { themeService } from '../services/theme';
-import { i18nService, LanguageType } from '../services/i18n';
-import { decryptSecret, encryptWithPassword, decryptWithPassword, EncryptedPayload, PasswordEncryptedPayload } from '../services/encryption';
-import { coworkService } from '../services/cowork';
-import { imService } from '../services/im';
-import { APP_ID, EXPORT_FORMAT_TYPE, EXPORT_PASSWORD } from '../constants/app';
-import ErrorMessage from './ErrorMessage';
-import { XMarkIcon, Cog6ToothIcon, PlusCircleIcon, TrashIcon, PencilIcon, SignalIcon, CheckCircleIcon, XCircleIcon, CubeIcon, ChatBubbleLeftIcon, ShieldCheckIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import BrainIcon from './icons/BrainIcon';
-import { useDispatch, useSelector } from 'react-redux';
-import { setAvailableModels } from '../store/slices/modelSlice';
-import { RootState } from '../store';
-import ThemedSelect from './ui/ThemedSelect';
+import {
+  XMarkIcon,
+  Cog6ToothIcon,
+  PlusCircleIcon,
+  TrashIcon,
+  PencilIcon,
+  SignalIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  CubeIcon,
+  ChatBubbleLeftIcon,
+  ShieldCheckIcon,
+  EnvelopeIcon,
+} from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { defaultConfig, type AppConfig, getVisibleProviders } from "../config";
+import { APP_ID, EXPORT_FORMAT_TYPE, EXPORT_PASSWORD } from "../constants/app";
+import { apiService } from "../services/api";
+import { configService } from "../services/config";
+import { coworkService } from "../services/cowork";
+import {
+  decryptSecret,
+  encryptWithPassword,
+  decryptWithPassword,
+  EncryptedPayload,
+  PasswordEncryptedPayload,
+} from "../services/encryption";
+import { i18nService, LanguageType } from "../services/i18n";
+import { imService } from "../services/im";
+import { themeService } from "../services/theme";
+import { RootState } from "../store";
+import { setAvailableModels } from "../store/slices/modelSlice";
 import type {
   CoworkExecutionMode,
   CoworkUserMemoryEntry,
   CoworkMemoryStats,
   CoworkSandboxProgress,
   CoworkSandboxStatus,
-} from '../types/cowork';
-import IMSettings from './im/IMSettings';
-import EmailSkillConfig from './skills/EmailSkillConfig';
-import { defaultConfig, type AppConfig, getVisibleProviders } from '../config';
+} from "../types/cowork";
+import ErrorMessage from "./ErrorMessage";
+import BrainIcon from "./icons/BrainIcon";
 import {
   OpenAIIcon,
   DeepSeekIcon,
@@ -37,9 +53,19 @@ import {
   OpenRouterIcon,
   OllamaIcon,
   CustomProviderIcon,
-} from './icons/providers';
+} from "./icons/providers";
+import IMSettings from "./im/IMSettings";
+import EmailSkillConfig from "./skills/EmailSkillConfig";
+import ThemedSelect from "./ui/ThemedSelect";
 
-type TabType = 'general' | 'model' | 'coworkSandbox' | 'coworkMemory' | 'shortcuts' | 'im' | 'email';
+type TabType =
+  | "general"
+  | "model"
+  | "coworkSandbox"
+  | "coworkMemory"
+  | "shortcuts"
+  | "im"
+  | "email";
 
 export type SettingsOpenOptions = {
   initialTab?: TabType;
@@ -51,30 +77,30 @@ interface SettingsProps extends SettingsOpenOptions {
 }
 
 const providerKeys = [
-  'openai',
-  'gemini',
-  'anthropic',
-  'deepseek',
-  'moonshot',
-  'zhipu',
-  'minimax',
-  'qwen',
-  'xiaomi',
-  'openrouter',
-  'ollama',
-  'custom',
+  "openai",
+  "gemini",
+  "anthropic",
+  "deepseek",
+  "moonshot",
+  "zhipu",
+  "minimax",
+  "qwen",
+  "xiaomi",
+  "openrouter",
+  "ollama",
+  "custom",
 ] as const;
 
 type ProviderType = (typeof providerKeys)[number];
-type ProvidersConfig = NonNullable<AppConfig['providers']>;
+type ProvidersConfig = NonNullable<AppConfig["providers"]>;
 type ProviderConfig = ProvidersConfig[string];
-type Model = NonNullable<ProviderConfig['models']>[number];
+type Model = NonNullable<ProviderConfig["models"]>[number];
 
 interface ProviderExportEntry {
   enabled: boolean;
   apiKey: PasswordEncryptedPayload;
   baseUrl: string;
-  apiFormat?: 'anthropic' | 'openai';
+  apiFormat?: "anthropic" | "openai";
   models?: Model[];
 }
 
@@ -83,9 +109,9 @@ interface ProvidersExportPayload {
   version: 2;
   exportedAt: string;
   encryption: {
-    algorithm: 'AES-GCM';
-    keySource: 'password';
-    keyDerivation: 'PBKDF2';
+    algorithm: "AES-GCM";
+    keySource: "password";
+    keyDerivation: "PBKDF2";
   };
   providers: Record<string, ProviderExportEntry>;
 }
@@ -96,7 +122,7 @@ interface ProvidersImportEntry {
   apiKeyEncrypted?: string;
   apiKeyIv?: string;
   baseUrl?: string;
-  apiFormat?: 'anthropic' | 'openai' | 'native';
+  apiFormat?: "anthropic" | "openai" | "native";
   models?: Model[];
 }
 
@@ -112,87 +138,90 @@ interface ProvidersImportPayload {
 }
 
 const providerMeta: Record<ProviderType, { label: string; icon: React.ReactNode }> = {
-  openai: { label: 'OpenAI', icon: <OpenAIIcon /> },
-  deepseek: { label: 'DeepSeek', icon: <DeepSeekIcon /> },
-  gemini: { label: 'Gemini', icon: <GeminiIcon /> },
-  anthropic: { label: 'Anthropic', icon: <AnthropicIcon /> },
-  moonshot: { label: 'Moonshot', icon: <MoonshotIcon /> },
-  zhipu: { label: 'Zhipu', icon: <ZhipuIcon /> },
-  minimax: { label: 'MiniMax', icon: <MiniMaxIcon /> },
-  qwen: { label: 'Qwen', icon: <QwenIcon /> },
-  xiaomi: { label: 'Xiaomi', icon: <XiaomiIcon /> },
-  openrouter: { label: 'OpenRouter', icon: <OpenRouterIcon /> },
-  ollama: { label: 'Ollama', icon: <OllamaIcon /> },
-  custom: { label: 'Custom', icon: <CustomProviderIcon /> },
+  openai: { label: "OpenAI", icon: <OpenAIIcon /> },
+  deepseek: { label: "DeepSeek", icon: <DeepSeekIcon /> },
+  gemini: { label: "Gemini", icon: <GeminiIcon /> },
+  anthropic: { label: "Anthropic", icon: <AnthropicIcon /> },
+  moonshot: { label: "Moonshot", icon: <MoonshotIcon /> },
+  zhipu: { label: "Zhipu", icon: <ZhipuIcon /> },
+  minimax: { label: "MiniMax", icon: <MiniMaxIcon /> },
+  qwen: { label: "Qwen", icon: <QwenIcon /> },
+  xiaomi: { label: "Xiaomi", icon: <XiaomiIcon /> },
+  openrouter: { label: "OpenRouter", icon: <OpenRouterIcon /> },
+  ollama: { label: "Ollama", icon: <OllamaIcon /> },
+  custom: { label: "Custom", icon: <CustomProviderIcon /> },
 };
 
-const providerSwitchableDefaultBaseUrls: Partial<Record<ProviderType, { anthropic: string; openai: string }>> = {
+const providerSwitchableDefaultBaseUrls: Partial<
+  Record<ProviderType, { anthropic: string; openai: string }>
+> = {
   deepseek: {
-    anthropic: 'https://api.deepseek.com/anthropic',
-    openai: 'https://api.deepseek.com',
+    anthropic: "https://api.deepseek.com/anthropic",
+    openai: "https://api.deepseek.com",
   },
   moonshot: {
-    anthropic: 'https://api.moonshot.cn/anthropic',
-    openai: 'https://api.moonshot.cn/v1',
+    anthropic: "https://api.moonshot.cn/anthropic",
+    openai: "https://api.moonshot.cn/v1",
   },
   zhipu: {
-    anthropic: 'https://open.bigmodel.cn/api/anthropic',
-    openai: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    anthropic: "https://open.bigmodel.cn/api/anthropic",
+    openai: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
   },
   minimax: {
-    anthropic: 'https://api.minimaxi.com/anthropic',
-    openai: 'https://api.minimaxi.com/v1',
+    anthropic: "https://api.minimaxi.com/anthropic",
+    openai: "https://api.minimaxi.com/v1",
   },
   qwen: {
-    anthropic: 'https://dashscope.aliyuncs.com/apps/anthropic',
-    openai: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    anthropic: "https://dashscope.aliyuncs.com/apps/anthropic",
+    openai: "https://dashscope.aliyuncs.com/compatible-mode/v1",
   },
   xiaomi: {
-    anthropic: 'https://api.xiaomimimo.com/anthropic',
-    openai: 'https://api.xiaomimimo.com/v1/chat/completions',
+    anthropic: "https://api.xiaomimimo.com/anthropic",
+    openai: "https://api.xiaomimimo.com/v1/chat/completions",
   },
   openrouter: {
-    anthropic: 'https://openrouter.ai/api',
-    openai: 'https://openrouter.ai/api/v1',
+    anthropic: "https://openrouter.ai/api",
+    openai: "https://openrouter.ai/api/v1",
   },
   ollama: {
-    anthropic: 'http://localhost:11434',
-    openai: 'http://localhost:11434/v1',
+    anthropic: "http://localhost:11434",
+    openai: "http://localhost:11434/v1",
   },
   custom: {
-    anthropic: '',
-    openai: '',
+    anthropic: "",
+    openai: "",
   },
 };
 
-const providerRequiresApiKey = (provider: ProviderType) => provider !== 'ollama';
-const normalizeBaseUrl = (baseUrl: string): string => baseUrl.trim().replace(/\/+$/, '').toLowerCase();
-const normalizeApiFormat = (value: unknown): 'anthropic' | 'openai' => (
-  value === 'openai' ? 'openai' : 'anthropic'
-);
-const getFixedApiFormatForProvider = (provider: string): 'anthropic' | 'openai' | null => {
-  if (provider === 'openai' || provider === 'gemini') {
-    return 'openai';
+const providerRequiresApiKey = (provider: ProviderType) => provider !== "ollama";
+const normalizeBaseUrl = (baseUrl: string): string =>
+  baseUrl.trim().replace(/\/+$/, "").toLowerCase();
+const normalizeApiFormat = (value: unknown): "anthropic" | "openai" =>
+  value === "openai" ? "openai" : "anthropic";
+const getFixedApiFormatForProvider = (provider: string): "anthropic" | "openai" | null => {
+  if (provider === "openai" || provider === "gemini") {
+    return "openai";
   }
-  if (provider === 'anthropic') {
-    return 'anthropic';
+  if (provider === "anthropic") {
+    return "anthropic";
   }
   return null;
 };
-const getEffectiveApiFormat = (provider: string, value: unknown): 'anthropic' | 'openai' => (
-  getFixedApiFormatForProvider(provider) ?? normalizeApiFormat(value)
-);
-const shouldShowApiFormatSelector = (provider: string): boolean => (
-  getFixedApiFormatForProvider(provider) === null
-);
+const getEffectiveApiFormat = (provider: string, value: unknown): "anthropic" | "openai" =>
+  getFixedApiFormatForProvider(provider) ?? normalizeApiFormat(value);
+const shouldShowApiFormatSelector = (provider: string): boolean =>
+  getFixedApiFormatForProvider(provider) === null;
 const getProviderDefaultBaseUrl = (
   provider: ProviderType,
-  apiFormat: 'anthropic' | 'openai'
+  apiFormat: "anthropic" | "openai",
 ): string | null => {
   const defaults = providerSwitchableDefaultBaseUrls[provider];
   return defaults ? defaults[apiFormat] : null;
 };
-const shouldAutoSwitchProviderBaseUrl = (provider: ProviderType, currentBaseUrl: string): boolean => {
+const shouldAutoSwitchProviderBaseUrl = (
+  provider: ProviderType,
+  currentBaseUrl: string,
+): boolean => {
   const defaults = providerSwitchableDefaultBaseUrls[provider];
   if (!defaults) {
     return false;
@@ -200,66 +229,65 @@ const shouldAutoSwitchProviderBaseUrl = (provider: ProviderType, currentBaseUrl:
 
   const normalizedCurrent = normalizeBaseUrl(currentBaseUrl);
   return (
-    normalizedCurrent === normalizeBaseUrl(defaults.anthropic)
-    || normalizedCurrent === normalizeBaseUrl(defaults.openai)
+    normalizedCurrent === normalizeBaseUrl(defaults.anthropic) ||
+    normalizedCurrent === normalizeBaseUrl(defaults.openai)
   );
 };
 const buildOpenAICompatibleChatCompletionsUrl = (baseUrl: string, provider: string): string => {
-  const normalized = baseUrl.trim().replace(/\/+$/, '');
+  const normalized = baseUrl.trim().replace(/\/+$/, "");
   if (!normalized) {
-    return '/v1/chat/completions';
+    return "/v1/chat/completions";
   }
-  if (normalized.endsWith('/chat/completions')) {
+  if (normalized.endsWith("/chat/completions")) {
     return normalized;
   }
 
-  const isGeminiLike = provider === 'gemini' || normalized.includes('generativelanguage.googleapis.com');
+  const isGeminiLike =
+    provider === "gemini" || normalized.includes("generativelanguage.googleapis.com");
   if (isGeminiLike) {
-    if (normalized.endsWith('/v1beta/openai') || normalized.endsWith('/v1/openai')) {
+    if (normalized.endsWith("/v1beta/openai") || normalized.endsWith("/v1/openai")) {
       return `${normalized}/chat/completions`;
     }
-    if (normalized.endsWith('/v1beta') || normalized.endsWith('/v1')) {
-      const betaBase = normalized.endsWith('/v1')
-        ? `${normalized.slice(0, -3)}v1beta`
-        : normalized;
+    if (normalized.endsWith("/v1beta") || normalized.endsWith("/v1")) {
+      const betaBase = normalized.endsWith("/v1") ? `${normalized.slice(0, -3)}v1beta` : normalized;
       return `${betaBase}/openai/chat/completions`;
     }
     return `${normalized}/v1beta/openai/chat/completions`;
   }
 
-  if (normalized.endsWith('/v1')) {
+  if (normalized.endsWith("/v1")) {
     return `${normalized}/chat/completions`;
   }
   return `${normalized}/v1/chat/completions`;
 };
 const buildOpenAIResponsesUrl = (baseUrl: string): string => {
-  const normalized = baseUrl.trim().replace(/\/+$/, '');
+  const normalized = baseUrl.trim().replace(/\/+$/, "");
   if (!normalized) {
-    return '/v1/responses';
+    return "/v1/responses";
   }
-  if (normalized.endsWith('/responses')) {
+  if (normalized.endsWith("/responses")) {
     return normalized;
   }
-  if (normalized.endsWith('/v1')) {
+  if (normalized.endsWith("/v1")) {
     return `${normalized}/responses`;
   }
   return `${normalized}/v1/responses`;
 };
-const shouldUseOpenAIResponsesForProvider = (provider: string): boolean => (
-  provider === 'openai'
-);
+const shouldUseOpenAIResponsesForProvider = (provider: string): boolean => provider === "openai";
 const shouldUseMaxCompletionTokensForOpenAI = (provider: string, modelId?: string): boolean => {
-  if (provider !== 'openai') {
+  if (provider !== "openai") {
     return false;
   }
-  const normalizedModel = (modelId ?? '').toLowerCase();
-  const resolvedModel = normalizedModel.includes('/')
-    ? normalizedModel.slice(normalizedModel.lastIndexOf('/') + 1)
+  const normalizedModel = (modelId ?? "").toLowerCase();
+  const resolvedModel = normalizedModel.includes("/")
+    ? normalizedModel.slice(normalizedModel.lastIndexOf("/") + 1)
     : normalizedModel;
-  return resolvedModel.startsWith('gpt-5')
-    || resolvedModel.startsWith('o1')
-    || resolvedModel.startsWith('o3')
-    || resolvedModel.startsWith('o4');
+  return (
+    resolvedModel.startsWith("gpt-5") ||
+    resolvedModel.startsWith("o1") ||
+    resolvedModel.startsWith("o3") ||
+    resolvedModel.startsWith("o4")
+  );
 };
 const CONNECTIVITY_TEST_TOKEN_BUDGET = 64;
 
@@ -271,27 +299,27 @@ const getDefaultProviders = (): ProvidersConfig => {
       providerKey,
       {
         ...providerConfig,
-        models: providerConfig.models?.map(model => ({
+        models: providerConfig.models?.map((model) => ({
           ...model,
           supportsImage: model.supportsImage ?? false,
         })),
       },
-    ])
+    ]),
   ) as ProvidersConfig;
 };
 
 const getDefaultActiveProvider = (): ProviderType => {
   const providers = (defaultConfig.providers ?? {}) as ProvidersConfig;
-  const firstEnabledProvider = providerKeys.find(providerKey => providers[providerKey]?.enabled);
+  const firstEnabledProvider = providerKeys.find((providerKey) => providers[providerKey]?.enabled);
   return firstEnabledProvider ?? providerKeys[0];
 };
 
 const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   const dispatch = useDispatch();
   // 状态
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab ?? 'general');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
-  const [language, setLanguage] = useState<LanguageType>('zh');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab ?? "general");
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const [language, setLanguage] = useState<LanguageType>("zh");
   const [autoLaunch, setAutoLaunchState] = useState(false);
   const [isUpdatingAutoLaunch, setIsUpdatingAutoLaunch] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -301,7 +329,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   const [isTesting, setIsTesting] = useState(false);
   const [isImportingProviders, setIsImportingProviders] = useState(false);
   const [isExportingProviders, setIsExportingProviders] = useState(false);
-  const initialThemeRef = useRef<'light' | 'dark' | 'system'>(themeService.getTheme());
+  const initialThemeRef = useRef<"light" | "dark" | "system">(themeService.getTheme());
   const initialLanguageRef = useRef<LanguageType>(i18nService.getLanguage());
   const didSaveRef = useRef(false);
 
@@ -310,54 +338,58 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
   // Add state for providers configuration
   const [providers, setProviders] = useState<ProvidersConfig>(() => getDefaultProviders());
-  
+
   // 创建引用来确保内容区域的滚动
   const contentRef = useRef<HTMLDivElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  
+
   // 快捷键设置
   const [shortcuts, setShortcuts] = useState({
-    newChat: 'Ctrl+N',
-    search: 'Ctrl+F',
-    settings: 'Ctrl+,',
+    newChat: "Ctrl+N",
+    search: "Ctrl+F",
+    settings: "Ctrl+,",
   });
 
   // State for model editing
   const [isAddingModel, setIsAddingModel] = useState(false);
   const [isEditingModel, setIsEditingModel] = useState(false);
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
-  const [newModelName, setNewModelName] = useState('');
-  const [newModelId, setNewModelId] = useState('');
+  const [newModelName, setNewModelName] = useState("");
+  const [newModelId, setNewModelId] = useState("");
   const [newModelSupportsImage, setNewModelSupportsImage] = useState(false);
   const [modelFormError, setModelFormError] = useState<string | null>(null);
 
   const coworkConfig = useSelector((state: RootState) => state.cowork.config);
   const imConfig = useSelector((state: RootState) => state.im.config);
 
-  const [coworkExecutionMode, setCoworkExecutionMode] = useState<CoworkExecutionMode>(coworkConfig.executionMode || 'local');
-  const [coworkMemoryEnabled, setCoworkMemoryEnabled] = useState<boolean>(coworkConfig.memoryEnabled ?? true);
-  const [coworkMemoryLlmJudgeEnabled, setCoworkMemoryLlmJudgeEnabled] = useState<boolean>(coworkConfig.memoryLlmJudgeEnabled ?? false);
+  const [coworkExecutionMode, setCoworkExecutionMode] = useState<CoworkExecutionMode>(
+    coworkConfig.executionMode || "local",
+  );
+  const [coworkMemoryEnabled, setCoworkMemoryEnabled] = useState<boolean>(
+    coworkConfig.memoryEnabled ?? true,
+  );
+  const [coworkMemoryLlmJudgeEnabled, setCoworkMemoryLlmJudgeEnabled] = useState<boolean>(
+    coworkConfig.memoryLlmJudgeEnabled ?? false,
+  );
   const [coworkMemoryEntries, setCoworkMemoryEntries] = useState<CoworkUserMemoryEntry[]>([]);
   const [coworkMemoryStats, setCoworkMemoryStats] = useState<CoworkMemoryStats | null>(null);
   const [coworkMemoryListLoading, setCoworkMemoryListLoading] = useState<boolean>(false);
-  const [coworkMemoryQuery, setCoworkMemoryQuery] = useState<string>('');
+  const [coworkMemoryQuery, setCoworkMemoryQuery] = useState<string>("");
   const [coworkMemoryEditingId, setCoworkMemoryEditingId] = useState<string | null>(null);
-  const [coworkMemoryDraftText, setCoworkMemoryDraftText] = useState<string>('');
+  const [coworkMemoryDraftText, setCoworkMemoryDraftText] = useState<string>("");
   const [showMemoryModal, setShowMemoryModal] = useState<boolean>(false);
   const [coworkSandboxStatus, setCoworkSandboxStatus] = useState<CoworkSandboxStatus | null>(null);
   const [coworkSandboxLoading, setCoworkSandboxLoading] = useState(true);
-  const [coworkSandboxProgress, setCoworkSandboxProgress] = useState<CoworkSandboxProgress | null>(null);
+  const [coworkSandboxProgress, setCoworkSandboxProgress] = useState<CoworkSandboxProgress | null>(
+    null,
+  );
   const [coworkSandboxInstalling, setCoworkSandboxInstalling] = useState(false);
 
   useEffect(() => {
-    setCoworkExecutionMode(coworkConfig.executionMode || 'local');
+    setCoworkExecutionMode(coworkConfig.executionMode || "local");
     setCoworkMemoryEnabled(coworkConfig.memoryEnabled ?? true);
     setCoworkMemoryLlmJudgeEnabled(coworkConfig.memoryLlmJudgeEnabled ?? false);
-  }, [
-    coworkConfig.executionMode,
-    coworkConfig.memoryEnabled,
-    coworkConfig.memoryLlmJudgeEnabled,
-  ]);
+  }, [coworkConfig.executionMode, coworkConfig.memoryEnabled, coworkConfig.memoryLlmJudgeEnabled]);
 
   const loadCoworkSandboxStatus = useCallback(async () => {
     setCoworkSandboxLoading(true);
@@ -368,7 +400,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         setCoworkSandboxProgress(status.progress);
       }
     } catch (loadError) {
-      console.error('Failed to load cowork sandbox status:', loadError);
+      console.error("Failed to load cowork sandbox status:", loadError);
       setCoworkSandboxStatus(null);
     } finally {
       setCoworkSandboxLoading(false);
@@ -392,7 +424,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   useEffect(() => {
     try {
       const config = configService.getConfig();
-      
+
       // Set general settings
       initialThemeRef.current = config.theme;
       initialLanguageRef.current = config.language;
@@ -400,141 +432,150 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       setLanguage(config.language);
 
       // Load auto-launch setting
-      window.electron.autoLaunch.get().then(({ enabled }) => {
-        setAutoLaunchState(enabled);
-      }).catch(err => {
-        console.error('Failed to load auto-launch setting:', err);
-      });
-      
+      window.electron.autoLaunch
+        .get()
+        .then(({ enabled }) => {
+          setAutoLaunchState(enabled);
+        })
+        .catch((err) => {
+          console.error("Failed to load auto-launch setting:", err);
+        });
+
       // Set up providers based on saved config
       if (config.api) {
         // For backward compatibility with older config
         // Initialize active provider based on baseUrl
         const normalizedApiBaseUrl = config.api.baseUrl.toLowerCase();
-        if (normalizedApiBaseUrl.includes('openai')) {
-          setActiveProvider('openai');
-          setProviders(prev => ({
+        if (normalizedApiBaseUrl.includes("openai")) {
+          setActiveProvider("openai");
+          setProviders((prev) => ({
             ...prev,
             openai: {
               ...prev.openai,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('deepseek')) {
-          setActiveProvider('deepseek');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("deepseek")) {
+          setActiveProvider("deepseek");
+          setProviders((prev) => ({
             ...prev,
             deepseek: {
               ...prev.deepseek,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('moonshot.ai') || normalizedApiBaseUrl.includes('moonshot.cn')) {
-          setActiveProvider('moonshot');
-          setProviders(prev => ({
+        } else if (
+          normalizedApiBaseUrl.includes("moonshot.ai") ||
+          normalizedApiBaseUrl.includes("moonshot.cn")
+        ) {
+          setActiveProvider("moonshot");
+          setProviders((prev) => ({
             ...prev,
             moonshot: {
               ...prev.moonshot,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('bigmodel.cn')) {
-          setActiveProvider('zhipu');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("bigmodel.cn")) {
+          setActiveProvider("zhipu");
+          setProviders((prev) => ({
             ...prev,
             zhipu: {
               ...prev.zhipu,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('minimax')) {
-          setActiveProvider('minimax');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("minimax")) {
+          setActiveProvider("minimax");
+          setProviders((prev) => ({
             ...prev,
             minimax: {
               ...prev.minimax,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('dashscope')) {
-          setActiveProvider('qwen');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("dashscope")) {
+          setActiveProvider("qwen");
+          setProviders((prev) => ({
             ...prev,
             qwen: {
               ...prev.qwen,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('openrouter.ai')) {
-          setActiveProvider('openrouter');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("openrouter.ai")) {
+          setActiveProvider("openrouter");
+          setProviders((prev) => ({
             ...prev,
             openrouter: {
               ...prev.openrouter,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('googleapis')) {
-          setActiveProvider('gemini');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("googleapis")) {
+          setActiveProvider("gemini");
+          setProviders((prev) => ({
             ...prev,
             gemini: {
               ...prev.gemini,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('anthropic')) {
-          setActiveProvider('anthropic');
-          setProviders(prev => ({
+        } else if (normalizedApiBaseUrl.includes("anthropic")) {
+          setActiveProvider("anthropic");
+          setProviders((prev) => ({
             ...prev,
             anthropic: {
               ...prev.anthropic,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
-        } else if (normalizedApiBaseUrl.includes('ollama') || normalizedApiBaseUrl.includes('11434')) {
-          setActiveProvider('ollama');
-          setProviders(prev => ({
+        } else if (
+          normalizedApiBaseUrl.includes("ollama") ||
+          normalizedApiBaseUrl.includes("11434")
+        ) {
+          setActiveProvider("ollama");
+          setProviders((prev) => ({
             ...prev,
             ollama: {
               ...prev.ollama,
               enabled: true,
               apiKey: config.api.key,
-              baseUrl: config.api.baseUrl
-            }
+              baseUrl: config.api.baseUrl,
+            },
           }));
         }
       }
-      
+
       // Load provider-specific configurations if available
       // 合并已保存的配置和默认配置，确保新添加的 provider 能被显示
       if (config.providers) {
-        setProviders(prev => {
+        setProviders((prev) => {
           const merged = {
-            ...prev,  // 保留默认的 providers（包括新添加的 anthropic）
-            ...config.providers,  // 覆盖已保存的配置
+            ...prev, // 保留默认的 providers（包括新添加的 anthropic）
+            ...config.providers, // 覆盖已保存的配置
           };
           return Object.fromEntries(
             Object.entries(merged).map(([providerKey, providerConfig]) => {
-              const models = providerConfig.models?.map(model => ({
+              const models = providerConfig.models?.map((model) => ({
                 ...model,
                 supportsImage: model.supportsImage ?? false,
               }));
@@ -542,24 +583,27 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 providerKey,
                 {
                   ...providerConfig,
-                  apiFormat: getEffectiveApiFormat(providerKey, (providerConfig as ProviderConfig).apiFormat),
+                  apiFormat: getEffectiveApiFormat(
+                    providerKey,
+                    (providerConfig as ProviderConfig).apiFormat,
+                  ),
                   models,
                 },
               ];
-            })
+            }),
           ) as ProvidersConfig;
         });
       }
-      
+
       // 加载快捷键设置
       if (config.shortcuts) {
-        setShortcuts(prev => ({
+        setShortcuts((prev) => ({
           ...prev,
           ...config.shortcuts,
         }));
       }
     } catch (error) {
-      setError('Failed to load settings');
+      setError("Failed to load settings");
     }
   }, []);
 
@@ -615,7 +659,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     const visibleKeys = Object.keys(visibleProviders) as ProviderType[];
     if (visibleKeys.length > 0 && !visibleKeys.includes(activeProvider)) {
       // If current activeProvider is not visible, switch to first visible provider
-      const firstEnabledVisible = visibleKeys.find(key => visibleProviders[key]?.enabled);
+      const firstEnabledVisible = visibleKeys.find((key) => visibleProviders[key]?.enabled);
       setActiveProvider(firstEnabledVisible ?? visibleKeys[0]);
     }
   }, [visibleProviders, activeProvider]);
@@ -625,8 +669,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     setIsAddingModel(false);
     setIsEditingModel(false);
     setEditingModelId(null);
-    setNewModelName('');
-    setNewModelId('');
+    setNewModelName("");
+    setNewModelId("");
     setNewModelSupportsImage(false);
     setModelFormError(null);
     setActiveProvider(provider);
@@ -636,8 +680,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
   // Handle provider configuration change
   const handleProviderConfigChange = (provider: ProviderType, field: string, value: string) => {
-    setProviders(prev => {
-      if (field === 'apiFormat') {
+    setProviders((prev) => {
+      if (field === "apiFormat") {
         const nextApiFormat = getEffectiveApiFormat(provider, value);
         const nextProviderConfig: ProviderConfig = {
           ...prev[provider],
@@ -668,37 +712,65 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     });
   };
 
-  const hasCoworkConfigChanges = coworkExecutionMode !== coworkConfig.executionMode
-    || coworkMemoryEnabled !== coworkConfig.memoryEnabled
-    || coworkMemoryLlmJudgeEnabled !== coworkConfig.memoryLlmJudgeEnabled;
+  const hasCoworkConfigChanges =
+    coworkExecutionMode !== coworkConfig.executionMode ||
+    coworkMemoryEnabled !== coworkConfig.memoryEnabled ||
+    coworkMemoryLlmJudgeEnabled !== coworkConfig.memoryLlmJudgeEnabled;
 
-  const coworkSandboxDisabled = !coworkSandboxStatus?.supported
-    || !coworkSandboxStatus?.runtimeReady
-    || !coworkSandboxStatus?.imageReady;
+  const coworkSandboxDisabled =
+    !coworkSandboxStatus?.supported ||
+    !coworkSandboxStatus?.runtimeReady ||
+    !coworkSandboxStatus?.imageReady;
 
   const coworkSandboxStatusHint = useMemo(() => {
-    if (coworkSandboxLoading) {return i18nService.t('coworkSandboxChecking');}
-    if (!coworkSandboxStatus?.supported) {return i18nService.t('coworkSandboxUnsupported');}
-    if (coworkSandboxStatus?.downloading) {return i18nService.t('coworkSandboxDownloading');}
-    if (!coworkSandboxStatus?.runtimeReady) {return i18nService.t('coworkSandboxRuntimeMissing');}
-    if (!coworkSandboxStatus?.imageReady) {return i18nService.t('coworkSandboxImageMissing');}
-    return '';
+    if (coworkSandboxLoading) {
+      return i18nService.t("coworkSandboxChecking");
+    }
+    if (!coworkSandboxStatus?.supported) {
+      return i18nService.t("coworkSandboxUnsupported");
+    }
+    if (coworkSandboxStatus?.downloading) {
+      return i18nService.t("coworkSandboxDownloading");
+    }
+    if (!coworkSandboxStatus?.runtimeReady) {
+      return i18nService.t("coworkSandboxRuntimeMissing");
+    }
+    if (!coworkSandboxStatus?.imageReady) {
+      return i18nService.t("coworkSandboxImageMissing");
+    }
+    return "";
   }, [coworkSandboxLoading, coworkSandboxStatus]);
 
   const coworkSandboxPercent = useMemo(() => {
-    if (!coworkSandboxProgress) {return null;}
-    if (coworkSandboxProgress.percent !== undefined && Number.isFinite(coworkSandboxProgress.percent)) {
+    if (!coworkSandboxProgress) {
+      return null;
+    }
+    if (
+      coworkSandboxProgress.percent !== undefined &&
+      Number.isFinite(coworkSandboxProgress.percent)
+    ) {
       return Math.min(100, Math.max(0, Math.round(coworkSandboxProgress.percent * 100)));
     }
     if (coworkSandboxProgress.total && coworkSandboxProgress.total > 0) {
-      return Math.min(100, Math.max(0, Math.round((coworkSandboxProgress.received / coworkSandboxProgress.total) * 100)));
+      return Math.min(
+        100,
+        Math.max(
+          0,
+          Math.round((coworkSandboxProgress.received / coworkSandboxProgress.total) * 100),
+        ),
+      );
     }
     return null;
   }, [coworkSandboxProgress]);
 
-  const coworkSandboxStageLabel = coworkSandboxProgress?.stage === 'image'
-    ? (i18nService.getLanguage() === 'zh' ? '镜像' : 'Image')
-    : (i18nService.getLanguage() === 'zh' ? '运行时' : 'Runtime');
+  const coworkSandboxStageLabel =
+    coworkSandboxProgress?.stage === "image"
+      ? i18nService.getLanguage() === "zh"
+        ? "镜像"
+        : "Image"
+      : i18nService.getLanguage() === "zh"
+        ? "运行时"
+        : "Runtime";
 
   const handleInstallCoworkSandbox = async () => {
     setCoworkSandboxInstalling(true);
@@ -727,30 +799,32 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       setCoworkMemoryEntries(entries);
       setCoworkMemoryStats(stats);
     } catch (loadError) {
-      console.error('Failed to load cowork memory data:', loadError);
+      console.error("Failed to load cowork memory data:", loadError);
       setCoworkMemoryEntries([]);
       setCoworkMemoryStats(null);
     } finally {
       setCoworkMemoryListLoading(false);
     }
-  }, [
-    coworkMemoryQuery,
-  ]);
+  }, [coworkMemoryQuery]);
 
   useEffect(() => {
-    if (activeTab !== 'coworkMemory') {return;}
+    if (activeTab !== "coworkMemory") {
+      return;
+    }
     void loadCoworkMemoryData();
   }, [activeTab, loadCoworkMemoryData]);
 
   const resetCoworkMemoryEditor = () => {
     setCoworkMemoryEditingId(null);
-    setCoworkMemoryDraftText('');
+    setCoworkMemoryDraftText("");
     setShowMemoryModal(false);
   };
 
   const handleSaveCoworkMemoryEntry = async () => {
     const text = coworkMemoryDraftText.trim();
-    if (!text) {return;}
+    if (!text) {
+      return;
+    }
 
     setCoworkMemoryListLoading(true);
     try {
@@ -758,7 +832,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         await coworkService.updateMemoryEntry({
           id: coworkMemoryEditingId,
           text,
-          status: 'created',
+          status: "created",
           isExplicit: true,
         });
       } else {
@@ -770,7 +844,11 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       resetCoworkMemoryEditor();
       await loadCoworkMemoryData();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : i18nService.t('coworkMemoryCrudSaveFailed'));
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : i18nService.t("coworkMemoryCrudSaveFailed"),
+      );
     } finally {
       setCoworkMemoryListLoading(false);
     }
@@ -791,24 +869,34 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       }
       await loadCoworkMemoryData();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : i18nService.t('coworkMemoryCrudDeleteFailed'));
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : i18nService.t("coworkMemoryCrudDeleteFailed"),
+      );
     } finally {
       setCoworkMemoryListLoading(false);
     }
   };
 
-  const getMemoryStatusLabel = (status: CoworkUserMemoryEntry['status']): string => {
-    if (status === 'created') {return i18nService.t('coworkMemoryStatusActive');}
-    if (status === 'stale') {return i18nService.t('coworkMemoryStatusInactive');}
-    return i18nService.t('coworkMemoryStatusDeleted');
+  const getMemoryStatusLabel = (status: CoworkUserMemoryEntry["status"]): string => {
+    if (status === "created") {
+      return i18nService.t("coworkMemoryStatusActive");
+    }
+    if (status === "stale") {
+      return i18nService.t("coworkMemoryStatusInactive");
+    }
+    return i18nService.t("coworkMemoryStatusDeleted");
   };
 
   const formatMemoryUpdatedAt = (timestamp: number): string => {
-    if (!Number.isFinite(timestamp) || timestamp <= 0) {return '-';}
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
+      return "-";
+    }
     try {
       return new Date(timestamp).toLocaleString();
     } catch {
-      return '-';
+      return "-";
     }
   };
 
@@ -824,16 +912,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     const missingApiKey = providerRequiresApiKey(provider) && !providerConfig.apiKey.trim();
 
     if (isEnabling && missingApiKey) {
-      setError(i18nService.t('apiKeyRequired'));
+      setError(i18nService.t("apiKeyRequired"));
       return;
     }
 
-    setProviders(prev => ({
+    setProviders((prev) => ({
       ...prev,
       [provider]: {
         ...prev[provider],
-        enabled: !prev[provider].enabled
-      }
+        enabled: !prev[provider].enabled,
+      },
     }));
   };
 
@@ -850,12 +938,12 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             ...providerConfig,
             apiFormat: getEffectiveApiFormat(providerKey, providerConfig.apiFormat),
           },
-        ])
+        ]),
       ) as ProvidersConfig;
 
       // Find the first enabled provider to use as the primary API
       const firstEnabledProvider = Object.entries(normalizedProviders).find(
-        ([_, config]) => config.enabled
+        ([_, config]) => config.enabled,
       );
 
       const primaryProvider = firstEnabledProvider
@@ -886,10 +974,11 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       });
 
       // 更新 Redux store 中的可用模型列表
-      const allModels: { id: string; name: string; provider?: string; supportsImage?: boolean }[] = [];
+      const allModels: { id: string; name: string; provider?: string; supportsImage?: boolean }[] =
+        [];
       Object.entries(normalizedProviders).forEach(([providerName, config]) => {
         if (config.enabled && config.models) {
-          config.models.forEach(model => {
+          config.models.forEach((model) => {
             allModels.push({
               id: model.id,
               name: model.name,
@@ -915,7 +1004,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       didSaveRef.current = true;
       onClose();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to save settings');
+      setError(error instanceof Error ? error.message : "Failed to save settings");
     } finally {
       setIsSaving(false);
     }
@@ -923,12 +1012,12 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
   // 标签页切换处理
   const handleTabChange = (tab: TabType) => {
-    if (tab !== 'model') {
+    if (tab !== "model") {
       setIsAddingModel(false);
       setIsEditingModel(false);
       setEditingModelId(null);
-      setNewModelName('');
-      setNewModelId('');
+      setNewModelName("");
+      setNewModelId("");
       setNewModelSupportsImage(false);
       setModelFormError(null);
     }
@@ -937,9 +1026,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
   // 快捷键更新处理
   const handleShortcutChange = (key: keyof typeof shortcuts, value: string) => {
-    setShortcuts(prev => ({
+    setShortcuts((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
@@ -953,8 +1042,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     setIsAddingModel(true);
     setIsEditingModel(false);
     setEditingModelId(null);
-    setNewModelName('');
-    setNewModelId('');
+    setNewModelName("");
+    setNewModelId("");
     setNewModelSupportsImage(false);
     setModelFormError(null);
   };
@@ -970,18 +1059,18 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   };
 
   const handleDeleteModel = (modelId: string) => {
-    if (!providers[activeProvider].models) {return;}
-    
-    const updatedModels = providers[activeProvider].models.filter(
-      model => model.id !== modelId
-    );
-    
-    setProviders(prev => ({
+    if (!providers[activeProvider].models) {
+      return;
+    }
+
+    const updatedModels = providers[activeProvider].models.filter((model) => model.id !== modelId);
+
+    setProviders((prev) => ({
       ...prev,
       [activeProvider]: {
         ...prev[activeProvider],
-        models: updatedModels
-      }
+        models: updatedModels,
+      },
     }));
   };
 
@@ -989,16 +1078,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     const modelName = newModelName.trim();
     const modelId = newModelId.trim();
     if (!modelName || !modelId) {
-      setModelFormError(i18nService.t('modelNameAndIdRequired'));
+      setModelFormError(i18nService.t("modelNameAndIdRequired"));
       return;
     }
 
     const currentModels = providers[activeProvider].models ?? [];
     const duplicateModel = currentModels.find(
-      model => model.id === modelId && (!isEditingModel || model.id !== editingModelId)
+      (model) => model.id === modelId && (!isEditingModel || model.id !== editingModelId),
     );
     if (duplicateModel) {
-      setModelFormError(i18nService.t('modelIdExists'));
+      setModelFormError(i18nService.t("modelIdExists"));
       return;
     }
 
@@ -1007,23 +1096,24 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       name: modelName,
       supportsImage: newModelSupportsImage,
     };
-    const updatedModels = isEditingModel && editingModelId
-      ? currentModels.map(model => (model.id === editingModelId ? nextModel : model))
-      : [...currentModels, nextModel];
+    const updatedModels =
+      isEditingModel && editingModelId
+        ? currentModels.map((model) => (model.id === editingModelId ? nextModel : model))
+        : [...currentModels, nextModel];
 
-    setProviders(prev => ({
+    setProviders((prev) => ({
       ...prev,
       [activeProvider]: {
         ...prev[activeProvider],
-        models: updatedModels
-      }
+        models: updatedModels,
+      },
     }));
 
     setIsAddingModel(false);
     setIsEditingModel(false);
     setEditingModelId(null);
-    setNewModelName('');
-    setNewModelId('');
+    setNewModelName("");
+    setNewModelId("");
     setNewModelSupportsImage(false);
     setModelFormError(null);
   };
@@ -1032,19 +1122,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     setIsAddingModel(false);
     setIsEditingModel(false);
     setEditingModelId(null);
-    setNewModelName('');
-    setNewModelId('');
+    setNewModelName("");
+    setNewModelId("");
     setNewModelSupportsImage(false);
     setModelFormError(null);
   };
 
   const handleModelDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       e.preventDefault();
       handleCancelModelEdit();
       return;
     }
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSaveNewModel();
     }
@@ -1058,7 +1148,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     const providerConfig = providers[activeProvider];
 
     if (providerRequiresApiKey(activeProvider) && !providerConfig.apiKey) {
-      setTestResult({ success: false, message: i18nService.t('apiKeyRequired') });
+      setTestResult({ success: false, message: i18nService.t("apiKeyRequired") });
       setIsTesting(false);
       return;
     }
@@ -1066,37 +1156,38 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     // 获取第一个可用模型
     const firstModel = providerConfig.models?.[0];
     if (!firstModel) {
-      setTestResult({ success: false, message: i18nService.t('noModelsConfigured') });
+      setTestResult({ success: false, message: i18nService.t("noModelsConfigured") });
       setIsTesting(false);
       return;
     }
 
     try {
       let response: Awaited<ReturnType<typeof window.electron.api.fetch>>;
-      const normalizedBaseUrl = providerConfig.baseUrl.replace(/\/+$/, '');
+      const normalizedBaseUrl = providerConfig.baseUrl.replace(/\/+$/, "");
 
       // 统一为两种协议格式：
       // - anthropic: /v1/messages
       // - openai provider: /v1/responses
       // - other openai-compatible providers: /v1/chat/completions
-      const useAnthropicFormat = getEffectiveApiFormat(activeProvider, providerConfig.apiFormat) === 'anthropic';
+      const useAnthropicFormat =
+        getEffectiveApiFormat(activeProvider, providerConfig.apiFormat) === "anthropic";
 
       if (useAnthropicFormat) {
-        const anthropicUrl = normalizedBaseUrl.endsWith('/v1')
+        const anthropicUrl = normalizedBaseUrl.endsWith("/v1")
           ? `${normalizedBaseUrl}/messages`
           : `${normalizedBaseUrl}/v1/messages`;
         response = await window.electron.api.fetch({
           url: anthropicUrl,
-          method: 'POST',
+          method: "POST",
           headers: {
-            'x-api-key': providerConfig.apiKey,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json',
+            "x-api-key": providerConfig.apiKey,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             model: firstModel.id,
             max_tokens: CONNECTIVITY_TEST_TOKEN_BUDGET,
-            messages: [{ role: 'user', content: 'Hi' }],
+            messages: [{ role: "user", content: "Hi" }],
           }),
         });
       } else {
@@ -1105,7 +1196,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           ? buildOpenAIResponsesUrl(normalizedBaseUrl)
           : buildOpenAICompatibleChatCompletionsUrl(normalizedBaseUrl, activeProvider);
         const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         };
         if (providerConfig.apiKey) {
           headers.Authorization = `Bearer ${providerConfig.apiKey}`;
@@ -1113,14 +1204,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         const openAIRequestBody: Record<string, unknown> = useResponsesApi
           ? {
               model: firstModel.id,
-              input: [{ role: 'user', content: [{ type: 'input_text', text: 'Hi' }] }],
+              input: [{ role: "user", content: [{ type: "input_text", text: "Hi" }] }],
               max_output_tokens: CONNECTIVITY_TEST_TOKEN_BUDGET,
             }
           : {
               model: firstModel.id,
-              messages: [{ role: 'user', content: 'Hi' }],
+              messages: [{ role: "user", content: "Hi" }],
             };
-        if (!useResponsesApi && shouldUseMaxCompletionTokensForOpenAI(activeProvider, firstModel.id)) {
+        if (
+          !useResponsesApi &&
+          shouldUseMaxCompletionTokensForOpenAI(activeProvider, firstModel.id)
+        ) {
           openAIRequestBody.max_completion_tokens = CONNECTIVITY_TEST_TOKEN_BUDGET;
         } else {
           if (!useResponsesApi) {
@@ -1129,20 +1223,26 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         }
         response = await window.electron.api.fetch({
           url: openaiUrl,
-          method: 'POST',
+          method: "POST",
           headers,
           body: JSON.stringify(openAIRequestBody),
         });
       }
 
       if (response.ok) {
-        setTestResult({ success: true, message: i18nService.t('connectionSuccess') });
+        setTestResult({ success: true, message: i18nService.t("connectionSuccess") });
       } else {
         const data = response.data || {};
         // 提取错误信息
-        const errorMessage = data.error?.message || data.message || `${i18nService.t('connectionFailed')}: ${response.status}`;
-        if (typeof errorMessage === 'string' && errorMessage.toLowerCase().includes('model output limit was reached')) {
-          setTestResult({ success: true, message: i18nService.t('connectionSuccess') });
+        const errorMessage =
+          data.error?.message ||
+          data.message ||
+          `${i18nService.t("connectionFailed")}: ${response.status}`;
+        if (
+          typeof errorMessage === "string" &&
+          errorMessage.toLowerCase().includes("model output limit was reached")
+        ) {
+          setTestResult({ success: true, message: i18nService.t("connectionSuccess") });
           return;
         }
         setTestResult({
@@ -1153,7 +1253,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     } catch (err) {
       setTestResult({
         success: false,
-        message: err instanceof Error ? err.message : i18nService.t('connectionFailed'),
+        message: err instanceof Error ? err.message : i18nService.t("connectionFailed"),
       });
     } finally {
       setIsTesting(false);
@@ -1174,7 +1274,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             models: providerConfig.models,
           },
         ] as const;
-      })
+      }),
     );
 
     return {
@@ -1182,16 +1282,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       version: 2,
       exportedAt: new Date().toISOString(),
       encryption: {
-        algorithm: 'AES-GCM',
-        keySource: 'password',
-        keyDerivation: 'PBKDF2',
+        algorithm: "AES-GCM",
+        keySource: "password",
+        keyDerivation: "PBKDF2",
       },
       providers: Object.fromEntries(entries),
     };
   };
 
   const normalizeModels = (models?: Model[]) =>
-    models?.map(model => ({
+    models?.map((model) => ({
       ...model,
       supportsImage: model.supportsImage ?? false,
     }));
@@ -1205,10 +1305,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
     try {
       const payload = await buildProvidersExport(DEFAULT_EXPORT_PASSWORD);
       const json = JSON.stringify(payload, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
+      const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const date = new Date().toISOString().slice(0, 10);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `${APP_ID}-providers-${date}.json`;
       document.body.appendChild(link);
@@ -1216,8 +1316,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (err) {
-      console.error('Failed to export providers:', err);
-      setError(i18nService.t('exportProvidersFailed'));
+      console.error("Failed to export providers:", err);
+      setError(i18nService.t("exportProvidersFailed"));
     } finally {
       setIsExportingProviders(false);
     }
@@ -1229,7 +1329,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
   const handleImportProviders = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = '';
+    event.target.value = "";
     if (!file) {
       return;
     }
@@ -1242,17 +1342,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       try {
         payload = JSON.parse(raw) as ProvidersImportPayload;
       } catch (parseError) {
-        setError(i18nService.t('invalidProvidersFile'));
+        setError(i18nService.t("invalidProvidersFile"));
         return;
       }
 
       if (!payload || payload.type !== EXPORT_FORMAT_TYPE || !payload.providers) {
-        setError(i18nService.t('invalidProvidersFile'));
+        setError(i18nService.t("invalidProvidersFile"));
         return;
       }
 
       // Check if it's version 2 (password-based encryption)
-      if (payload.version === 2 && payload.encryption?.keySource === 'password') {
+      if (payload.version === 2 && payload.encryption?.keySource === "password") {
         await processImportPayloadWithPassword(payload);
         return;
       }
@@ -1263,10 +1363,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         return;
       }
 
-      setError(i18nService.t('invalidProvidersFile'));
+      setError(i18nService.t("invalidProvidersFile"));
     } catch (err) {
-      console.error('Failed to import providers:', err);
-      setError(i18nService.t('importProvidersFailed'));
+      console.error("Failed to import providers:", err);
+      setError(i18nService.t("importProvidersFailed"));
     }
   };
 
@@ -1282,18 +1382,24 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         }
 
         let apiKey: string | undefined;
-        if (typeof providerData.apiKey === 'string') {
+        if (typeof providerData.apiKey === "string") {
           apiKey = providerData.apiKey;
-        } else if (providerData.apiKey && typeof providerData.apiKey === 'object') {
+        } else if (providerData.apiKey && typeof providerData.apiKey === "object") {
           try {
             apiKey = await decryptSecret(providerData.apiKey as EncryptedPayload);
           } catch (error) {
             hadDecryptFailure = true;
             console.warn(`Failed to decrypt provider key for ${providerKey}`, error);
           }
-        } else if (typeof providerData.apiKeyEncrypted === 'string' && typeof providerData.apiKeyIv === 'string') {
+        } else if (
+          typeof providerData.apiKeyEncrypted === "string" &&
+          typeof providerData.apiKeyIv === "string"
+        ) {
           try {
-            apiKey = await decryptSecret({ encrypted: providerData.apiKeyEncrypted, iv: providerData.apiKeyIv });
+            apiKey = await decryptSecret({
+              encrypted: providerData.apiKeyEncrypted,
+              iv: providerData.apiKeyIv,
+            });
           } catch (error) {
             hadDecryptFailure = true;
             console.warn(`Failed to decrypt provider key for ${providerKey}`, error);
@@ -1303,20 +1409,29 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         const models = normalizeModels(providerData.models);
 
         providerUpdates[providerKey] = {
-          enabled: typeof providerData.enabled === 'boolean' ? providerData.enabled : providers[providerKey].enabled,
+          enabled:
+            typeof providerData.enabled === "boolean"
+              ? providerData.enabled
+              : providers[providerKey].enabled,
           apiKey: apiKey ?? providers[providerKey].apiKey,
-          baseUrl: typeof providerData.baseUrl === 'string' ? providerData.baseUrl : providers[providerKey].baseUrl,
-          apiFormat: getEffectiveApiFormat(providerKey, providerData.apiFormat ?? providers[providerKey].apiFormat),
+          baseUrl:
+            typeof providerData.baseUrl === "string"
+              ? providerData.baseUrl
+              : providers[providerKey].baseUrl,
+          apiFormat: getEffectiveApiFormat(
+            providerKey,
+            providerData.apiFormat ?? providers[providerKey].apiFormat,
+          ),
           models: models ?? providers[providerKey].models,
         };
       }
 
       if (Object.keys(providerUpdates).length === 0) {
-        setError(i18nService.t('invalidProvidersFile'));
+        setError(i18nService.t("invalidProvidersFile"));
         return;
       }
 
-      setProviders(prev => {
+      setProviders((prev) => {
         const next = { ...prev };
         Object.entries(providerUpdates).forEach(([providerKey, update]) => {
           next[providerKey] = {
@@ -1328,15 +1443,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       });
       setTestResult(null);
       if (hadDecryptFailure) {
-        setNoticeMessage(i18nService.t('decryptProvidersPartial'));
+        setNoticeMessage(i18nService.t("decryptProvidersPartial"));
       }
     } catch (err) {
-      console.error('Failed to import providers:', err);
-      const isDecryptError = err instanceof Error
-        && (err.message === 'Invalid encrypted payload' || err.name === 'OperationError');
+      console.error("Failed to import providers:", err);
+      const isDecryptError =
+        err instanceof Error &&
+        (err.message === "Invalid encrypted payload" || err.name === "OperationError");
       const message = isDecryptError
-        ? i18nService.t('decryptProvidersFailed')
-        : i18nService.t('importProvidersFailed');
+        ? i18nService.t("decryptProvidersFailed")
+        : i18nService.t("importProvidersFailed");
       setError(message);
     } finally {
       setIsImportingProviders(false);
@@ -1361,9 +1477,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         }
 
         let apiKey: string | undefined;
-        if (typeof providerData.apiKey === 'string') {
+        if (typeof providerData.apiKey === "string") {
           apiKey = providerData.apiKey;
-        } else if (providerData.apiKey && typeof providerData.apiKey === 'object') {
+        } else if (providerData.apiKey && typeof providerData.apiKey === "object") {
           const apiKeyObj = providerData.apiKey as PasswordEncryptedPayload;
           if (apiKeyObj.salt) {
             // Version 2 password-based encryption
@@ -1379,31 +1495,40 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         const models = normalizeModels(providerData.models);
 
         providerUpdates[providerKey] = {
-          enabled: typeof providerData.enabled === 'boolean' ? providerData.enabled : providers[providerKey].enabled,
+          enabled:
+            typeof providerData.enabled === "boolean"
+              ? providerData.enabled
+              : providers[providerKey].enabled,
           apiKey: apiKey ?? providers[providerKey].apiKey,
-          baseUrl: typeof providerData.baseUrl === 'string' ? providerData.baseUrl : providers[providerKey].baseUrl,
-          apiFormat: getEffectiveApiFormat(providerKey, providerData.apiFormat ?? providers[providerKey].apiFormat),
+          baseUrl:
+            typeof providerData.baseUrl === "string"
+              ? providerData.baseUrl
+              : providers[providerKey].baseUrl,
+          apiFormat: getEffectiveApiFormat(
+            providerKey,
+            providerData.apiFormat ?? providers[providerKey].apiFormat,
+          ),
           models: models ?? providers[providerKey].models,
         };
       }
 
       if (Object.keys(providerUpdates).length === 0) {
-        setError(i18nService.t('invalidProvidersFile'));
+        setError(i18nService.t("invalidProvidersFile"));
         return;
       }
 
       // Check if any key was successfully decrypted
       const anyKeyDecrypted = Object.entries(providerUpdates).some(
-        ([key, update]) => update?.apiKey && update.apiKey !== providers[key]?.apiKey
+        ([key, update]) => update?.apiKey && update.apiKey !== providers[key]?.apiKey,
       );
 
       if (!anyKeyDecrypted && hadDecryptFailure) {
         // All decryptions failed - likely wrong password
-        setError(i18nService.t('decryptProvidersFailed'));
+        setError(i18nService.t("decryptProvidersFailed"));
         return;
       }
 
-      setProviders(prev => {
+      setProviders((prev) => {
         const next = { ...prev };
         Object.entries(providerUpdates).forEach(([providerKey, update]) => {
           next[providerKey] = {
@@ -1415,15 +1540,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
       });
       setTestResult(null);
       if (hadDecryptFailure) {
-        setNoticeMessage(i18nService.t('decryptProvidersPartial'));
+        setNoticeMessage(i18nService.t("decryptProvidersPartial"));
       }
     } catch (err) {
-      console.error('Failed to import providers:', err);
-      const isDecryptError = err instanceof Error
-        && (err.message === 'Invalid encrypted payload' || err.name === 'OperationError');
+      console.error("Failed to import providers:", err);
+      const isDecryptError =
+        err instanceof Error &&
+        (err.message === "Invalid encrypted payload" || err.name === "OperationError");
       const message = isDecryptError
-        ? i18nService.t('decryptProvidersFailed')
-        : i18nService.t('importProvidersFailed');
+        ? i18nService.t("decryptProvidersFailed")
+        : i18nService.t("importProvidersFailed");
       setError(message);
     } finally {
       setIsImportingProviders(false);
@@ -1431,29 +1557,74 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   };
 
   // 渲染标签页
-  const sidebarTabs: { key: TabType; label: string; icon: React.ReactNode }[] = useMemo(() => [
-    { key: 'general',        label: i18nService.t('general'),        icon: <Cog6ToothIcon className="h-5 w-5" /> },
-    { key: 'model',          label: i18nService.t('model'),          icon: <CubeIcon className="h-5 w-5" /> },
-    { key: 'im',             label: i18nService.t('imBot'),          icon: <ChatBubbleLeftIcon className="h-5 w-5" /> },
-    { key: 'email',          label: i18nService.t('emailTab'),       icon: <EnvelopeIcon className="h-5 w-5" /> },
-    { key: 'coworkMemory',   label: i18nService.t('coworkMemoryTitle'), icon: <BrainIcon className="h-5 w-5" /> },
-    { key: 'coworkSandbox',  label: i18nService.t('coworkSandbox'),  icon: <ShieldCheckIcon className="h-5 w-5" /> },
-    { key: 'shortcuts',      label: i18nService.t('shortcuts'),      icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5"><rect x="2" y="4" width="20" height="14" rx="2" /><line x1="6" y1="8" x2="8" y2="8" /><line x1="10" y1="8" x2="12" y2="8" /><line x1="14" y1="8" x2="16" y2="8" /><line x1="6" y1="12" x2="8" y2="12" /><line x1="10" y1="12" x2="14" y2="12" /><line x1="16" y1="12" x2="18" y2="12" /><line x1="8" y1="15.5" x2="16" y2="15.5" /></svg> },
-  ], [language]);
+  const sidebarTabs: { key: TabType; label: string; icon: React.ReactNode }[] = useMemo(
+    () => [
+      {
+        key: "general",
+        label: i18nService.t("general"),
+        icon: <Cog6ToothIcon className="h-5 w-5" />,
+      },
+      { key: "model", label: i18nService.t("model"), icon: <CubeIcon className="h-5 w-5" /> },
+      {
+        key: "im",
+        label: i18nService.t("imBot"),
+        icon: <ChatBubbleLeftIcon className="h-5 w-5" />,
+      },
+      {
+        key: "email",
+        label: i18nService.t("emailTab"),
+        icon: <EnvelopeIcon className="h-5 w-5" />,
+      },
+      {
+        key: "coworkMemory",
+        label: i18nService.t("coworkMemoryTitle"),
+        icon: <BrainIcon className="h-5 w-5" />,
+      },
+      {
+        key: "coworkSandbox",
+        label: i18nService.t("coworkSandbox"),
+        icon: <ShieldCheckIcon className="h-5 w-5" />,
+      },
+      {
+        key: "shortcuts",
+        label: i18nService.t("shortcuts"),
+        icon: (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="h-5 w-5"
+          >
+            <rect x="2" y="4" width="20" height="14" rx="2" />
+            <line x1="6" y1="8" x2="8" y2="8" />
+            <line x1="10" y1="8" x2="12" y2="8" />
+            <line x1="14" y1="8" x2="16" y2="8" />
+            <line x1="6" y1="12" x2="8" y2="12" />
+            <line x1="10" y1="12" x2="14" y2="12" />
+            <line x1="16" y1="12" x2="18" y2="12" />
+            <line x1="8" y1="15.5" x2="16" y2="15.5" />
+          </svg>
+        ),
+      },
+    ],
+    [language],
+  );
 
   const activeTabLabel = useMemo(() => {
-    return sidebarTabs.find(t => t.key === activeTab)?.label ?? '';
+    return sidebarTabs.find((t) => t.key === activeTab)?.label ?? "";
   }, [activeTab, sidebarTabs]);
 
   const renderTabContent = () => {
-    switch(activeTab) {
-      case 'general':
+    switch (activeTab) {
+      case "general":
         return (
           <div className="space-y-8">
             {/* Language Section */}
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-                {i18nService.t('language')}
+                {i18nService.t("language")}
               </h4>
               <div className="w-[140px] shrink-0">
                 <ThemedSelect
@@ -1465,8 +1636,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     i18nService.setLanguage(nextLanguage, { persist: false });
                   }}
                   options={[
-                    { value: 'zh', label: i18nService.t('chinese') },
-                    { value: 'en', label: i18nService.t('english') }
+                    { value: "zh", label: i18nService.t("chinese") },
+                    { value: "en", label: i18nService.t("english") },
                   ]}
                 />
               </div>
@@ -1475,18 +1646,20 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             {/* Auto-launch Section */}
             <div>
               <h4 className="text-sm font-medium dark:text-claude-darkText text-claude-text mb-3">
-                {i18nService.t('autoLaunch')}
+                {i18nService.t("autoLaunch")}
               </h4>
               <label className="flex items-center justify-between cursor-pointer">
                 <span className="text-sm dark:text-claude-darkSecondaryText text-claude-secondaryText">
-                  {i18nService.t('autoLaunchDescription')}
+                  {i18nService.t("autoLaunchDescription")}
                 </span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={autoLaunch}
                   onClick={async () => {
-                    if (isUpdatingAutoLaunch) {return;}
+                    if (isUpdatingAutoLaunch) {
+                      return;
+                    }
                     const next = !autoLaunch;
                     setIsUpdatingAutoLaunch(true);
                     try {
@@ -1494,27 +1667,23 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                       if (result.success) {
                         setAutoLaunchState(next);
                       } else {
-                        setError(result.error || 'Failed to update auto-launch setting');
+                        setError(result.error || "Failed to update auto-launch setting");
                       }
                     } catch (err) {
-                      console.error('Failed to set auto-launch:', err);
-                      setError('Failed to update auto-launch setting');
+                      console.error("Failed to set auto-launch:", err);
+                      setError("Failed to update auto-launch setting");
                     } finally {
                       setIsUpdatingAutoLaunch(false);
                     }
                   }}
                   disabled={isUpdatingAutoLaunch}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                    isUpdatingAutoLaunch ? 'opacity-50 cursor-not-allowed' : ''
-                  } ${
-                    autoLaunch
-                      ? 'bg-claude-accent'
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
+                    isUpdatingAutoLaunch ? "opacity-50 cursor-not-allowed" : ""
+                  } ${autoLaunch ? "bg-claude-accent" : "bg-gray-300 dark:bg-gray-600"}`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      autoLaunch ? 'translate-x-6' : 'translate-x-1'
+                      autoLaunch ? "translate-x-6" : "translate-x-1"
                     }`}
                   />
                 </button>
@@ -1524,14 +1693,14 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             {/* Appearance Section */}
             <div>
               <h4 className="text-sm font-medium dark:text-claude-darkText text-claude-text mb-3">
-                {i18nService.t('appearance')}
+                {i18nService.t("appearance")}
               </h4>
               <div className="grid grid-cols-3 gap-4">
-                {([
-                  { value: 'light' as const, label: i18nService.t('light') },
-                  { value: 'dark' as const, label: i18nService.t('dark') },
-                  { value: 'system' as const, label: i18nService.t('system') },
-                ]).map((option) => {
+                {[
+                  { value: "light" as const, label: i18nService.t("light") },
+                  { value: "dark" as const, label: i18nService.t("dark") },
+                  { value: "system" as const, label: i18nService.t("system") },
+                ].map((option) => {
                   const isSelected = theme === option.value;
                   return (
                     <button
@@ -1543,12 +1712,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                       }}
                       className={`flex flex-col items-center rounded-xl border-2 p-3 transition-colors cursor-pointer ${
                         isSelected
-                          ? 'border-claude-accent bg-claude-accent/5 dark:bg-claude-accent/10'
-                          : 'dark:border-claude-darkBorder border-claude-border hover:border-claude-accent/50 dark:hover:border-claude-accent/50'
+                          ? "border-claude-accent bg-claude-accent/5 dark:bg-claude-accent/10"
+                          : "dark:border-claude-darkBorder border-claude-border hover:border-claude-accent/50 dark:hover:border-claude-accent/50"
                       }`}
                     >
-                      <svg viewBox="0 0 120 80" className="w-full h-auto rounded-md mb-2 overflow-hidden" xmlns="http://www.w3.org/2000/svg">
-                        {option.value === 'light' && (
+                      <svg
+                        viewBox="0 0 120 80"
+                        className="w-full h-auto rounded-md mb-2 overflow-hidden"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        {option.value === "light" && (
                           <>
                             <rect width="120" height="80" fill="#F8F9FB" />
                             <rect x="0" y="0" width="30" height="80" fill="#EBEDF0" />
@@ -1566,7 +1739,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                             <rect x="42" y="60" width="58" height="3" rx="1.5" fill="#E2E4E7" />
                           </>
                         )}
-                        {option.value === 'dark' && (
+                        {option.value === "dark" && (
                           <>
                             <rect width="120" height="80" fill="#0F1117" />
                             <rect x="0" y="0" width="30" height="80" fill="#151820" />
@@ -1584,7 +1757,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                             <rect x="42" y="60" width="58" height="3" rx="1.5" fill="#252930" />
                           </>
                         )}
-                        {option.value === 'system' && (
+                        {option.value === "system" && (
                           <>
                             <defs>
                               <clipPath id="left-half">
@@ -1631,11 +1804,13 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                           </>
                         )}
                       </svg>
-                      <span className={`text-xs font-medium ${
-                        isSelected
-                          ? 'text-claude-accent'
-                          : 'dark:text-claude-darkText text-claude-text'
-                      }`}>
+                      <span
+                        className={`text-xs font-medium ${
+                          isSelected
+                            ? "text-claude-accent"
+                            : "dark:text-claude-darkText text-claude-text"
+                        }`}
+                      >
                         {option.label}
                       </span>
                     </button>
@@ -1646,42 +1821,44 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           </div>
         );
 
-      case 'email':
+      case "email":
         return <EmailSkillConfig />;
 
-      case 'coworkSandbox':
+      case "coworkSandbox":
         return (
           <div className="space-y-6">
             <div className="space-y-3">
               <label className="block text-sm font-medium dark:text-claude-darkText text-claude-text">
-                {i18nService.t('coworkExecutionMode')}
+                {i18nService.t("coworkExecutionMode")}
               </label>
               <div className="space-y-2">
-                {([
-                  {
-                    value: 'auto',
-                    label: i18nService.t('coworkExecutionModeAuto'),
-                    hint: i18nService.t('coworkExecutionModeAutoHint'),
-                  },
-                  {
-                    value: 'local',
-                    label: i18nService.t('coworkExecutionModeLocal'),
-                    hint: i18nService.t('coworkExecutionModeLocalHint'),
-                  },
-                  {
-                    value: 'sandbox',
-                    label: i18nService.t('coworkExecutionModeSandbox'),
-                    hint: i18nService.t('coworkExecutionModeSandboxHint'),
-                  },
-                ] as Array<{ value: CoworkExecutionMode; label: string; hint: string }>).map((option) => {
-                  const isDisabled = option.value === 'sandbox' && coworkSandboxDisabled;
+                {(
+                  [
+                    {
+                      value: "auto",
+                      label: i18nService.t("coworkExecutionModeAuto"),
+                      hint: i18nService.t("coworkExecutionModeAutoHint"),
+                    },
+                    {
+                      value: "local",
+                      label: i18nService.t("coworkExecutionModeLocal"),
+                      hint: i18nService.t("coworkExecutionModeLocalHint"),
+                    },
+                    {
+                      value: "sandbox",
+                      label: i18nService.t("coworkExecutionModeSandbox"),
+                      hint: i18nService.t("coworkExecutionModeSandboxHint"),
+                    },
+                  ] as Array<{ value: CoworkExecutionMode; label: string; hint: string }>
+                ).map((option) => {
+                  const isDisabled = option.value === "sandbox" && coworkSandboxDisabled;
                   return (
                     <label
                       key={option.value}
                       className={`flex items-start gap-3 rounded-xl border px-3 py-2 text-sm transition-colors ${
                         isDisabled
-                          ? 'cursor-not-allowed opacity-60 dark:border-claude-darkBorder border-claude-border'
-                          : 'cursor-pointer dark:border-claude-darkBorder border-claude-border hover:border-claude-accent'
+                          ? "cursor-not-allowed opacity-60 dark:border-claude-darkBorder border-claude-border"
+                          : "cursor-pointer dark:border-claude-darkBorder border-claude-border hover:border-claude-accent"
                       }`}
                     >
                       <input
@@ -1715,12 +1892,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               {coworkSandboxProgress && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    <span>
-                      {coworkSandboxStageLabel}
-                    </span>
-                    {coworkSandboxPercent !== null && (
-                      <span>{coworkSandboxPercent}%</span>
-                    )}
+                    <span>{coworkSandboxStageLabel}</span>
+                    {coworkSandboxPercent !== null && <span>{coworkSandboxPercent}%</span>}
                   </div>
                   <div className="h-2 rounded-full dark:bg-claude-darkBorder bg-claude-border overflow-hidden">
                     <div
@@ -1738,25 +1911,27 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                   disabled={coworkSandboxInstalling || coworkSandboxLoading}
                   className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-claude-accent hover:bg-claude-accentHover text-white text-sm font-medium transition-colors disabled:opacity-50 active:scale-[0.98]"
                 >
-                  {coworkSandboxInstalling ? i18nService.t('coworkSandboxInstalling') : i18nService.t('coworkSandboxInstall')}
+                  {coworkSandboxInstalling
+                    ? i18nService.t("coworkSandboxInstalling")
+                    : i18nService.t("coworkSandboxInstall")}
                 </button>
               )}
 
               {coworkSandboxDisabled && !coworkSandboxStatus?.supported && (
                 <div className="text-xs text-blue-500 dark:text-blue-400">
-                  {i18nService.t('coworkSandboxSelectionBlocked')}
+                  {i18nService.t("coworkSandboxSelectionBlocked")}
                 </div>
               )}
             </div>
           </div>
         );
 
-      case 'coworkMemory':
+      case "coworkMemory":
         return (
           <div className="space-y-6">
             <div className="space-y-3 rounded-xl border px-4 py-4 dark:border-claude-darkBorder border-claude-border">
               <div className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-                {i18nService.t('coworkMemoryTitle')}
+                {i18nService.t("coworkMemoryTitle")}
               </div>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -1767,17 +1942,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 />
                 <span>
                   <span className="block text-sm dark:text-claude-darkText text-claude-text">
-                    {i18nService.t('coworkMemoryEnabled')}
+                    {i18nService.t("coworkMemoryEnabled")}
                   </span>
                   <span className="block text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('coworkMemoryEnabledHint')}
+                    {i18nService.t("coworkMemoryEnabledHint")}
                   </span>
                   <span className="mt-1 block text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('coworkMemorySimpleHint')}
+                    {i18nService.t("coworkMemorySimpleHint")}
                   </span>
                 </span>
               </label>
-              <label className={`flex items-start gap-3 ${coworkMemoryEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+              <label
+                className={`flex items-start gap-3 ${coworkMemoryEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+              >
                 <input
                   type="checkbox"
                   checked={coworkMemoryLlmJudgeEnabled}
@@ -1787,10 +1964,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 />
                 <span>
                   <span className="block text-sm dark:text-claude-darkText text-claude-text">
-                    {i18nService.t('coworkMemoryLlmJudgeEnabled')}
+                    {i18nService.t("coworkMemoryLlmJudgeEnabled")}
                   </span>
                   <span className="block text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('coworkMemoryLlmJudgeEnabledHint')}
+                    {i18nService.t("coworkMemoryLlmJudgeEnabledHint")}
                   </span>
                 </span>
               </label>
@@ -1800,10 +1977,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-                    {i18nService.t('coworkMemoryCrudTitle')}
+                    {i18nService.t("coworkMemoryCrudTitle")}
                   </div>
                   <div className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('coworkMemoryManageHint')}
+                    {i18nService.t("coworkMemoryManageHint")}
                   </div>
                 </div>
                 <button
@@ -1812,13 +1989,13 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                   className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-claude-accent hover:bg-claude-accentHover text-white text-sm transition-colors active:scale-[0.98]"
                 >
                   <PlusCircleIcon className="h-4 w-4 mr-1.5" />
-                  {i18nService.t('coworkMemoryCrudCreate')}
+                  {i18nService.t("coworkMemoryCrudCreate")}
                 </button>
               </div>
 
               {coworkMemoryStats && (
                 <div className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                  {`${i18nService.t('coworkMemoryTotalLabel')}: ${coworkMemoryStats.created + coworkMemoryStats.stale} · ${i18nService.t('coworkMemoryActiveLabel')}: ${coworkMemoryStats.created} · ${i18nService.t('coworkMemoryInactiveLabel')}: ${coworkMemoryStats.stale}`}
+                  {`${i18nService.t("coworkMemoryTotalLabel")}: ${coworkMemoryStats.created + coworkMemoryStats.stale} · ${i18nService.t("coworkMemoryActiveLabel")}: ${coworkMemoryStats.created} · ${i18nService.t("coworkMemoryInactiveLabel")}: ${coworkMemoryStats.stale}`}
                 </div>
               )}
 
@@ -1826,23 +2003,26 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 type="text"
                 value={coworkMemoryQuery}
                 onChange={(event) => setCoworkMemoryQuery(event.target.value)}
-                placeholder={i18nService.t('coworkMemorySearchPlaceholder')}
+                placeholder={i18nService.t("coworkMemorySearchPlaceholder")}
                 className="w-full rounded-lg border px-3 py-2 text-sm dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface"
               />
 
               <div className="max-h-[500px] overflow-auto rounded-lg border dark:border-claude-darkBorder border-claude-border">
                 {coworkMemoryListLoading ? (
                   <div className="px-3 py-3 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('loading')}
+                    {i18nService.t("loading")}
                   </div>
                 ) : coworkMemoryEntries.length === 0 ? (
                   <div className="px-3 py-3 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('coworkMemoryEmpty')}
+                    {i18nService.t("coworkMemoryEmpty")}
                   </div>
                 ) : (
                   <div className="divide-y dark:divide-claude-darkBorder divide-claude-border">
                     {coworkMemoryEntries.map((entry) => (
-                      <div key={entry.id} className="px-3 py-3 text-xs hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors">
+                      <div
+                        key={entry.id}
+                        className="px-3 py-3 text-xs hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 space-y-1 min-w-0">
                             <div className="font-medium dark:text-claude-darkText text-claude-text break-words">
@@ -1853,7 +2033,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                                 {getMemoryStatusLabel(entry.status)}
                               </span>
                               <span>
-                                {`${i18nService.t('coworkMemoryUpdatedAt')}: ${formatMemoryUpdatedAt(entry.updatedAt)}`}
+                                {`${i18nService.t("coworkMemoryUpdatedAt")}: ${formatMemoryUpdatedAt(entry.updatedAt)}`}
                               </span>
                             </div>
                           </div>
@@ -1863,15 +2043,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                               onClick={() => handleEditCoworkMemoryEntry(entry)}
                               className="rounded border px-2 py-1 dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
                             >
-                              {i18nService.t('edit')}
+                              {i18nService.t("edit")}
                             </button>
                             <button
                               type="button"
-                              onClick={() => { void handleDeleteCoworkMemoryEntry(entry); }}
+                              onClick={() => {
+                                void handleDeleteCoworkMemoryEntry(entry);
+                              }}
                               className="rounded border px-2 py-1 text-red-500 dark:border-claude-darkBorder border-claude-border hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-60 transition-colors"
                               disabled={coworkMemoryListLoading}
                             >
-                              {i18nService.t('delete')}
+                              {i18nService.t("delete")}
                             </button>
                           </div>
                         </div>
@@ -1881,18 +2063,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 )}
               </div>
             </div>
-
           </div>
         );
 
-      case 'model':
+      case "model":
         return (
           <div className="flex h-full">
             {/* Provider List - Left Side */}
             <div className="w-2/5 border-r dark:border-claude-darkBorder border-claude-border pr-3 space-y-1.5 overflow-y-auto">
               <div className="flex items-center justify-between mb-2 px-1">
                 <h3 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-                  {i18nService.t('modelProviders')}
+                  {i18nService.t("modelProviders")}
                 </h3>
                 <div className="flex items-center space-x-1">
                   <button
@@ -1901,7 +2082,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     disabled={isImportingProviders || isExportingProviders}
                     className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
                   >
-                    {i18nService.t('import')}
+                    {i18nService.t("import")}
                   </button>
                   <button
                     type="button"
@@ -1909,7 +2090,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     disabled={isImportingProviders || isExportingProviders}
                     className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
                   >
-                    {i18nService.t('export')}
+                    {i18nService.t("export")}
                   </button>
                 </div>
               </div>
@@ -1931,8 +2112,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     onClick={() => handleProviderChange(providerKey)}
                     className={`flex items-center p-2 rounded-xl cursor-pointer transition-colors ${
                       activeProvider === provider
-                        ? 'bg-claude-accent/10 dark:bg-claude-accent/20 border border-claude-accent/30 shadow-subtle'
-                        : 'dark:bg-claude-darkSurface/50 bg-claude-surface hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover border border-transparent'
+                        ? "bg-claude-accent/10 dark:bg-claude-accent/20 border border-claude-accent/30 shadow-subtle"
+                        : "dark:bg-claude-darkSurface/50 bg-claude-surface hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover border border-transparent"
                     }`}
                   >
                     <div className="flex flex-1 items-center">
@@ -1941,21 +2122,26 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                           {providerInfo?.icon}
                         </span>
                       </div>
-                      <span className={`text-sm font-medium truncate ${
-                        activeProvider === provider
-                          ? 'text-claude-accent'
-                          : 'dark:text-claude-darkText text-claude-text'
-                      }`}>
-                        {providerInfo?.label ?? provider.charAt(0).toUpperCase() + provider.slice(1)}
+                      <span
+                        className={`text-sm font-medium truncate ${
+                          activeProvider === provider
+                            ? "text-claude-accent"
+                            : "dark:text-claude-darkText text-claude-text"
+                        }`}
+                      >
+                        {providerInfo?.label ??
+                          provider.charAt(0).toUpperCase() + provider.slice(1)}
                       </span>
                     </div>
                     <div className="flex items-center ml-2">
                       <div
-                        title={!canToggleProvider ? i18nService.t('configureApiKey') : undefined}
+                        title={!canToggleProvider ? i18nService.t("configureApiKey") : undefined}
                         className={`w-7 h-4 rounded-full flex items-center transition-colors ${
-                          config.enabled ? 'bg-claude-accent' : 'dark:bg-claude-darkBorder bg-claude-border'
+                          config.enabled
+                            ? "bg-claude-accent"
+                            : "dark:bg-claude-darkBorder bg-claude-border"
                         } ${
-                          canToggleProvider ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                          canToggleProvider ? "cursor-pointer" : "cursor-not-allowed opacity-50"
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1967,7 +2153,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                       >
                         <div
                           className={`w-3 h-3 rounded-full bg-white shadow-md transform transition-transform ${
-                            config.enabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                            config.enabled ? "translate-x-3.5" : "translate-x-0.5"
                           }`}
                         />
                       </div>
@@ -1981,68 +2167,89 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
             <div className="w-3/5 pl-4 space-y-4 overflow-y-auto">
               <div className="flex items-center justify-between pb-2 border-b dark:border-claude-darkBorder border-claude-border">
                 <h3 className="text-base font-medium dark:text-claude-darkText text-claude-text">
-                  {(providerMeta[activeProvider]?.label ?? activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1))} {i18nService.t('providerSettings')}
+                  {providerMeta[activeProvider]?.label ??
+                    activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)}{" "}
+                  {i18nService.t("providerSettings")}
                 </h3>
                 <div
                   className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
                     providers[activeProvider].enabled
-                      ? 'bg-green-500/20 text-green-600 dark:text-green-400'
-                      : 'bg-red-500/20 text-red-600 dark:text-red-400'
+                      ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                      : "bg-red-500/20 text-red-600 dark:text-red-400"
                   }`}
                 >
-                  {providers[activeProvider].enabled ? i18nService.t('providerStatusOn') : i18nService.t('providerStatusOff')}
+                  {providers[activeProvider].enabled
+                    ? i18nService.t("providerStatusOn")
+                    : i18nService.t("providerStatusOff")}
                 </div>
               </div>
 
               {providerRequiresApiKey(activeProvider) && (
                 <div>
-                  <label htmlFor={`${activeProvider}-apiKey`} className="block text-xs font-medium dark:text-claude-darkText text-claude-text mb-1">
-                    {i18nService.t('apiKey')}
+                  <label
+                    htmlFor={`${activeProvider}-apiKey`}
+                    className="block text-xs font-medium dark:text-claude-darkText text-claude-text mb-1"
+                  >
+                    {i18nService.t("apiKey")}
                   </label>
                   <input
                     type="password"
                     id={`${activeProvider}-apiKey`}
                     value={providers[activeProvider].apiKey}
-                    onChange={(e) => handleProviderConfigChange(activeProvider, 'apiKey', e.target.value)}
+                    onChange={(e) =>
+                      handleProviderConfigChange(activeProvider, "apiKey", e.target.value)
+                    }
                     className="block w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-xs"
-                    placeholder={i18nService.t('apiKeyPlaceholder')}
+                    placeholder={i18nService.t("apiKeyPlaceholder")}
                   />
                 </div>
               )}
 
               <div>
-                <label htmlFor={`${activeProvider}-baseUrl`} className="block text-xs font-medium dark:text-claude-darkText text-claude-text mb-1">
-                  {i18nService.t('baseUrl')}
+                <label
+                  htmlFor={`${activeProvider}-baseUrl`}
+                  className="block text-xs font-medium dark:text-claude-darkText text-claude-text mb-1"
+                >
+                  {i18nService.t("baseUrl")}
                 </label>
                 <input
                   type="text"
                   id={`${activeProvider}-baseUrl`}
                   value={providers[activeProvider].baseUrl}
-                  onChange={(e) => handleProviderConfigChange(activeProvider, 'baseUrl', e.target.value)}
+                  onChange={(e) =>
+                    handleProviderConfigChange(activeProvider, "baseUrl", e.target.value)
+                  }
                   className="block w-full rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-xs"
-                  placeholder={i18nService.t('baseUrlPlaceholder')}
+                  placeholder={i18nService.t("baseUrlPlaceholder")}
                 />
-                {activeProvider === 'custom' && (
-                <div className="mt-1.5 space-y-0.5 text-[11px] text-claude-secondaryText dark:text-claude-darkSecondaryText">
-                  <p>
-                    <span className="text-sm text-claude-accent/50 mr-1">•</span>
-                    {i18nService.t('baseUrlHint1')}
-                    <code className="ml-1 text-claude-accent/80 dark:text-claude-accent/70 break-all">{i18nService.t('baseUrlHintExample1')}</code>
-                  </p>
-                  <p>
-                    <span className="text-sm text-claude-accent/50 mr-1">•</span>
-                    {i18nService.t('baseUrlHint2')}
-                    <code className="ml-1 text-claude-accent/80 dark:text-claude-accent/70 break-all">{i18nService.t('baseUrlHintExample2')}</code>
-                  </p>
-                </div>
+                {activeProvider === "custom" && (
+                  <div className="mt-1.5 space-y-0.5 text-[11px] text-claude-secondaryText dark:text-claude-darkSecondaryText">
+                    <p>
+                      <span className="text-sm text-claude-accent/50 mr-1">•</span>
+                      {i18nService.t("baseUrlHint1")}
+                      <code className="ml-1 text-claude-accent/80 dark:text-claude-accent/70 break-all">
+                        {i18nService.t("baseUrlHintExample1")}
+                      </code>
+                    </p>
+                    <p>
+                      <span className="text-sm text-claude-accent/50 mr-1">•</span>
+                      {i18nService.t("baseUrlHint2")}
+                      <code className="ml-1 text-claude-accent/80 dark:text-claude-accent/70 break-all">
+                        {i18nService.t("baseUrlHintExample2")}
+                      </code>
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* API 格式选择器 */}
               {shouldShowApiFormatSelector(activeProvider) && (
                 <div>
-                  <label htmlFor={`${activeProvider}-apiFormat`} className="block text-xs font-medium dark:text-claude-darkText text-claude-text mb-1">
-                    {i18nService.t('apiFormat')}
+                  <label
+                    htmlFor={`${activeProvider}-apiFormat`}
+                    className="block text-xs font-medium dark:text-claude-darkText text-claude-text mb-1"
+                  >
+                    {i18nService.t("apiFormat")}
                   </label>
                   <div className="flex items-center space-x-4">
                     <label className="flex items-center">
@@ -2050,12 +2257,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                         type="radio"
                         name={`${activeProvider}-apiFormat`}
                         value="anthropic"
-                        checked={getEffectiveApiFormat(activeProvider, providers[activeProvider].apiFormat) !== 'openai'}
-                        onChange={() => handleProviderConfigChange(activeProvider, 'apiFormat', 'anthropic')}
+                        checked={
+                          getEffectiveApiFormat(
+                            activeProvider,
+                            providers[activeProvider].apiFormat,
+                          ) !== "openai"
+                        }
+                        onChange={() =>
+                          handleProviderConfigChange(activeProvider, "apiFormat", "anthropic")
+                        }
                         className="h-3.5 w-3.5 text-claude-accent focus:ring-claude-accent dark:bg-claude-darkSurface bg-claude-surface"
                       />
                       <span className="ml-2 text-xs dark:text-claude-darkText text-claude-text">
-                        {i18nService.t('apiFormatNative')}
+                        {i18nService.t("apiFormatNative")}
                       </span>
                     </label>
                     <label className="flex items-center">
@@ -2063,17 +2277,24 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                         type="radio"
                         name={`${activeProvider}-apiFormat`}
                         value="openai"
-                        checked={getEffectiveApiFormat(activeProvider, providers[activeProvider].apiFormat) === 'openai'}
-                        onChange={() => handleProviderConfigChange(activeProvider, 'apiFormat', 'openai')}
+                        checked={
+                          getEffectiveApiFormat(
+                            activeProvider,
+                            providers[activeProvider].apiFormat,
+                          ) === "openai"
+                        }
+                        onChange={() =>
+                          handleProviderConfigChange(activeProvider, "apiFormat", "openai")
+                        }
                         className="h-3.5 w-3.5 text-claude-accent focus:ring-claude-accent dark:bg-claude-darkSurface bg-claude-surface"
                       />
                       <span className="ml-2 text-xs dark:text-claude-darkText text-claude-text">
-                        {i18nService.t('apiFormatOpenAI')}
+                        {i18nService.t("apiFormatOpenAI")}
                       </span>
                     </label>
                   </div>
                   <p className="mt-1 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('apiFormatHint')}
+                    {i18nService.t("apiFormatHint")}
                   </p>
                 </div>
               )}
@@ -2083,14 +2304,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 <button
                   type="button"
                   onClick={handleTestConnection}
-                  disabled={isTesting || (providerRequiresApiKey(activeProvider) && !providers[activeProvider].apiKey)}
+                  disabled={
+                    isTesting ||
+                    (providerRequiresApiKey(activeProvider) && !providers[activeProvider].apiKey)
+                  }
                   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-xl border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
                 >
                   <SignalIcon className="h-3.5 w-3.5 mr-1.5" />
-                  {isTesting ? i18nService.t('testing') : i18nService.t('testConnection')}
+                  {isTesting ? i18nService.t("testing") : i18nService.t("testConnection")}
                 </button>
                 {testResult && (
-                  <div className={`flex items-center text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div
+                    className={`flex items-center text-xs ${testResult.success ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                  >
                     {testResult.success ? (
                       <CheckCircleIcon className="h-4 w-4 mr-1" />
                     ) : (
@@ -2104,7 +2330,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <h3 className="text-xs font-medium dark:text-claude-darkText text-claude-text">
-                    {i18nService.t('availableModels')}
+                    {i18nService.t("availableModels")}
                   </h3>
                   <button
                     type="button"
@@ -2112,13 +2338,13 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     className="inline-flex items-center text-xs text-claude-accent hover:text-claude-accentHover"
                   >
                     <PlusCircleIcon className="h-3.5 w-3.5 mr-1" />
-                    {i18nService.t('addModel')}
+                    {i18nService.t("addModel")}
                   </button>
                 </div>
 
                 {/* Models List */}
                 <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                  {providers[activeProvider].models?.map(model => (
+                  {providers[activeProvider].models?.map((model) => (
                     <div
                       key={model.id}
                       className="dark:bg-claude-darkSurface/50 bg-claude-surface/50 p-2 rounded-xl dark:border-claude-darkBorder border-claude-border border transition-colors hover:border-claude-accent group"
@@ -2126,18 +2352,24 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                          <span className="dark:text-claude-darkText text-claude-text font-medium text-[11px]">{model.name}</span>
+                          <span className="dark:text-claude-darkText text-claude-text font-medium text-[11px]">
+                            {model.name}
+                          </span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <span className="text-[10px] px-1.5 py-0.5 bg-claude-surfaceHover dark:bg-claude-darkSurfaceHover rounded-md dark:text-claude-darkTextSecondary text-claude-textSecondary">{model.id}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-claude-surfaceHover dark:bg-claude-darkSurfaceHover rounded-md dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                            {model.id}
+                          </span>
                           {model.supportsImage && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-claude-accent/10 text-claude-accent">
-                              {i18nService.t('imageInput')}
+                              {i18nService.t("imageInput")}
                             </span>
                           )}
                           <button
                             type="button"
-                            onClick={() => handleEditModel(model.id, model.name, model.supportsImage)}
+                            onClick={() =>
+                              handleEditModel(model.id, model.name, model.supportsImage)
+                            }
                             className="p-0.5 dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-accent opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <PencilIcon className="h-3 w-3" />
@@ -2154,16 +2386,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     </div>
                   ))}
 
-                  {(!providers[activeProvider].models || providers[activeProvider].models.length === 0) && (
+                  {(!providers[activeProvider].models ||
+                    providers[activeProvider].models.length === 0) && (
                     <div className="dark:bg-claude-darkSurface/20 bg-claude-surface/20 p-2.5 rounded-xl border dark:border-claude-darkBorder/50 border-claude-border/50 text-center">
-                      <p className="text-[11px] dark:text-claude-darkTextSecondary text-claude-textSecondary">{i18nService.t('noModelsAvailable')}</p>
+                      <p className="text-[11px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                        {i18nService.t("noModelsAvailable")}
+                      </p>
                       <button
                         type="button"
                         onClick={handleAddModel}
                         className="mt-1.5 inline-flex items-center text-[11px] font-medium text-claude-accent hover:text-claude-accentHover"
                       >
                         <PlusCircleIcon className="h-3 w-3 mr-1" />
-                        {i18nService.t('addFirstModel')}
+                        {i18nService.t("addFirstModel")}
                       </button>
                     </div>
                   )}
@@ -2173,40 +2408,46 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           </div>
         );
 
-      case 'shortcuts':
+      case "shortcuts":
         return (
           <div className="space-y-5">
             <div>
               <label className="block text-sm font-medium dark:text-claude-darkText text-claude-text mb-3">
-                {i18nService.t('keyboardShortcuts')}
+                {i18nService.t("keyboardShortcuts")}
               </label>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm dark:text-claude-darkText text-claude-text">{i18nService.t('newChat')}</span>
+                  <span className="text-sm dark:text-claude-darkText text-claude-text">
+                    {i18nService.t("newChat")}
+                  </span>
                   <input
                     type="text"
                     value={shortcuts.newChat}
-                    onChange={(e) => handleShortcutChange('newChat', e.target.value)}
+                    onChange={(e) => handleShortcutChange("newChat", e.target.value)}
                     data-shortcut-input="true"
                     className="w-32 rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-1.5 text-sm"
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm dark:text-claude-darkText text-claude-text">{i18nService.t('search')}</span>
+                  <span className="text-sm dark:text-claude-darkText text-claude-text">
+                    {i18nService.t("search")}
+                  </span>
                   <input
                     type="text"
                     value={shortcuts.search}
-                    onChange={(e) => handleShortcutChange('search', e.target.value)}
+                    onChange={(e) => handleShortcutChange("search", e.target.value)}
                     data-shortcut-input="true"
                     className="w-32 rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-1.5 text-sm"
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm dark:text-claude-darkText text-claude-text">{i18nService.t('openSettings')}</span>
+                  <span className="text-sm dark:text-claude-darkText text-claude-text">
+                    {i18nService.t("openSettings")}
+                  </span>
                   <input
                     type="text"
                     value={shortcuts.settings}
-                    onChange={(e) => handleShortcutChange('settings', e.target.value)}
+                    onChange={(e) => handleShortcutChange("settings", e.target.value)}
                     data-shortcut-input="true"
                     className="w-32 rounded-xl bg-claude-surfaceInset dark:bg-claude-darkSurfaceInset dark:border-claude-darkBorder border-claude-border border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-1.5 text-sm"
                   />
@@ -2216,7 +2457,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
           </div>
         );
 
-      case 'im':
+      case "im":
         return <IMSettings />;
 
       default:
@@ -2236,7 +2477,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         {/* Left sidebar */}
         <div className="w-[220px] shrink-0 flex flex-col dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted border-r dark:border-claude-darkBorder border-claude-border rounded-l-2xl overflow-y-auto">
           <div className="px-5 pt-5 pb-3">
-            <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">{i18nService.t('settings')}</h2>
+            <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">
+              {i18nService.t("settings")}
+            </h2>
           </div>
           <nav className="flex flex-col gap-0.5 px-3 pb-4">
             {sidebarTabs.map((tab) => (
@@ -2245,8 +2488,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 onClick={() => handleTabChange(tab.key)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
                   activeTab === tab.key
-                    ? 'bg-claude-accent/10 text-claude-accent'
-                    : 'dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:text-claude-darkText hover:text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover'
+                    ? "bg-claude-accent/10 text-claude-accent"
+                    : "dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:text-claude-darkText hover:text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover"
                 }`}
               >
                 {tab.icon}
@@ -2260,7 +2503,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
         <div className="relative flex-1 flex flex-col min-w-0 overflow-hidden dark:bg-claude-darkBg bg-claude-bg rounded-r-2xl">
           {/* Content header */}
           <div className="flex justify-between items-center px-6 pt-5 pb-3 shrink-0">
-            <h3 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">{activeTabLabel}</h3>
+            <h3 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">
+              {activeTabLabel}
+            </h3>
             <button
               onClick={onClose}
               className="dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:text-claude-darkText hover:text-claude-text p-1.5 dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover rounded-lg transition-colors"
@@ -2271,28 +2516,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
 
           {noticeMessage && (
             <div className="px-6">
-              <ErrorMessage
-                message={noticeMessage}
-                onClose={() => setNoticeMessage(null)}
-              />
+              <ErrorMessage message={noticeMessage} onClose={() => setNoticeMessage(null)} />
             </div>
           )}
 
           {error && (
             <div className="px-6">
-              <ErrorMessage
-                message={error}
-                onClose={() => setError(null)}
-              />
+              <ErrorMessage message={error} onClose={() => setError(null)} />
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
             {/* Tab content */}
-            <div
-              ref={contentRef}
-              className="px-6 py-4 flex-1 overflow-y-auto"
-            >
+            <div ref={contentRef} className="px-6 py-4 flex-1 overflow-y-auto">
               {renderTabContent()}
             </div>
 
@@ -2303,14 +2539,14 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 onClick={onClose}
                 className="px-4 py-2 dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover rounded-xl transition-colors text-sm font-medium border dark:border-claude-darkBorder border-claude-border active:scale-[0.98]"
               >
-                {i18nService.t('cancel')}
+                {i18nService.t("cancel")}
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
                 className="px-4 py-2 bg-claude-accent hover:bg-claude-accentHover text-white rounded-xl transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               >
-                {isSaving ? i18nService.t('saving') : i18nService.t('save')}
+                {isSaving ? i18nService.t("saving") : i18nService.t("save")}
               </button>
             </div>
           </form>
@@ -2323,14 +2559,16 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               <div
                 role="dialog"
                 aria-modal="true"
-                aria-label={isEditingModel ? i18nService.t('editModel') : i18nService.t('addNewModel')}
+                aria-label={
+                  isEditingModel ? i18nService.t("editModel") : i18nService.t("addNewModel")
+                }
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={handleModelDialogKeyDown}
                 className="w-full max-w-md rounded-2xl dark:bg-claude-darkSurface bg-claude-bg dark:border-claude-darkBorder border-claude-border border shadow-modal p-4"
               >
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold dark:text-claude-darkText text-claude-text">
-                    {isEditingModel ? i18nService.t('editModel') : i18nService.t('addNewModel')}
+                    {isEditingModel ? i18nService.t("editModel") : i18nService.t("addNewModel")}
                   </h4>
                   <button
                     type="button"
@@ -2342,15 +2580,13 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                 </div>
 
                 {modelFormError && (
-                  <p className="mb-3 text-xs text-red-600 dark:text-red-400">
-                    {modelFormError}
-                  </p>
+                  <p className="mb-3 text-xs text-red-600 dark:text-red-400">{modelFormError}</p>
                 )}
 
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-1">
-                      {i18nService.t('modelName')}
+                      {i18nService.t("modelName")}
                     </label>
                     <input
                       autoFocus
@@ -2368,7 +2604,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-1">
-                      {i18nService.t('modelId')}
+                      {i18nService.t("modelId")}
                     </label>
                     <input
                       type="text"
@@ -2395,7 +2631,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                       htmlFor={`${activeProvider}-supportsImage`}
                       className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary"
                     >
-                      {i18nService.t('supportsImageInput')}
+                      {i18nService.t("supportsImageInput")}
                     </label>
                   </div>
                 </div>
@@ -2406,14 +2642,14 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     onClick={handleCancelModelEdit}
                     className="px-3 py-1.5 text-xs dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover rounded-xl border dark:border-claude-darkBorder border-claude-border"
                   >
-                    {i18nService.t('cancel')}
+                    {i18nService.t("cancel")}
                   </button>
                   <button
                     type="button"
                     onClick={handleSaveNewModel}
                     className="px-3 py-1.5 text-xs text-white bg-claude-accent hover:bg-claude-accentHover rounded-xl active:scale-[0.98]"
                   >
-                    {i18nService.t('save')}
+                    {i18nService.t("save")}
                   </button>
                 </div>
               </div>
@@ -2432,20 +2668,22 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
               >
                 <div className="px-5 pt-5 pb-4 border-b dark:border-claude-darkBorder border-claude-border">
                   <h3 className="text-base font-semibold dark:text-claude-darkText text-claude-text">
-                    {coworkMemoryEditingId ? i18nService.t('coworkMemoryCrudUpdate') : i18nService.t('coworkMemoryCrudCreate')}
+                    {coworkMemoryEditingId
+                      ? i18nService.t("coworkMemoryCrudUpdate")
+                      : i18nService.t("coworkMemoryCrudCreate")}
                   </h3>
                 </div>
 
                 <div className="px-5 py-4 space-y-4">
                   {coworkMemoryEditingId && (
                     <div className="rounded-lg border px-2 py-1 text-xs dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                      {i18nService.t('coworkMemoryEditingTag')}
+                      {i18nService.t("coworkMemoryEditingTag")}
                     </div>
                   )}
                   <textarea
                     value={coworkMemoryDraftText}
                     onChange={(event) => setCoworkMemoryDraftText(event.target.value)}
-                    placeholder={i18nService.t('coworkMemoryCrudTextPlaceholder')}
+                    placeholder={i18nService.t("coworkMemoryCrudTextPlaceholder")}
                     autoFocus
                     className="min-h-[200px] w-full rounded-lg border px-3 py-2 text-sm dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface dark:text-claude-darkText text-claude-text focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30"
                   />
@@ -2457,15 +2695,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
                     onClick={resetCoworkMemoryEditor}
                     className="px-3 py-1.5 text-sm dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover rounded-xl border dark:border-claude-darkBorder border-claude-border transition-colors"
                   >
-                    {i18nService.t('cancel')}
+                    {i18nService.t("cancel")}
                   </button>
                   <button
                     type="button"
-                    onClick={() => { void handleSaveCoworkMemoryEntry(); }}
+                    onClick={() => {
+                      void handleSaveCoworkMemoryEntry();
+                    }}
                     disabled={!coworkMemoryDraftText.trim() || coworkMemoryListLoading}
                     className="px-3 py-1.5 text-sm text-white bg-claude-accent hover:bg-claude-accentHover rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
                   >
-                    {coworkMemoryEditingId ? i18nService.t('save') : i18nService.t('coworkMemoryCrudCreate')}
+                    {coworkMemoryEditingId
+                      ? i18nService.t("save")
+                      : i18nService.t("coworkMemoryCrudCreate")}
                   </button>
                 </div>
               </div>
@@ -2477,4 +2719,4 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice }) => {
   );
 };
 
-export default Settings; 
+export default Settings;

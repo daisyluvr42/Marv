@@ -1,8 +1,14 @@
-import { BrowserWindow } from 'electron';
-import { ScheduledTaskStore, ScheduledTask, ScheduledTaskRun, Schedule, NotifyPlatform } from '../scheduledTaskStore';
-import type { CoworkStore } from '../coworkStore';
-import type { CoworkRunner } from './coworkRunner';
-import type { IMGatewayManager } from '../im/imGatewayManager';
+import { BrowserWindow } from "electron";
+import type { CoworkStore } from "../coworkStore";
+import type { IMGatewayManager } from "../im/imGatewayManager";
+import {
+  ScheduledTaskStore,
+  ScheduledTask,
+  ScheduledTaskRun,
+  Schedule,
+  NotifyPlatform,
+} from "../scheduledTaskStore";
+import type { CoworkRunner } from "./coworkRunner";
 
 interface SchedulerDeps {
   scheduledTaskStore: ScheduledTaskStore;
@@ -38,9 +44,11 @@ export class Scheduler {
   // --- Lifecycle ---
 
   start(): void {
-    if (this.running) {return;}
+    if (this.running) {
+      return;
+    }
     this.running = true;
-    console.log('[Scheduler] Started');
+    console.log("[Scheduler] Started");
     this.scheduleNext();
   }
 
@@ -54,11 +62,13 @@ export class Scheduler {
       controller.abort();
     }
     this.activeTasks.clear();
-    console.log('[Scheduler] Stopped');
+    console.log("[Scheduler] Stopped");
   }
 
   reschedule(): void {
-    if (!this.running) {return;}
+    if (!this.running) {
+      return;
+    }
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
@@ -69,7 +79,9 @@ export class Scheduler {
   // --- Core Scheduling ---
 
   private scheduleNext(): void {
-    if (!this.running) {return;}
+    if (!this.running) {
+      return;
+    }
 
     const nextDueMs = this.store.getNextDueTimeMs();
     const now = Date.now();
@@ -78,10 +90,7 @@ export class Scheduler {
     if (nextDueMs === null) {
       delayMs = Scheduler.MAX_TIMER_INTERVAL_MS;
     } else {
-      delayMs = Math.min(
-        Math.max(nextDueMs - now, 0),
-        Scheduler.MAX_TIMER_INTERVAL_MS
-      );
+      delayMs = Math.min(Math.max(nextDueMs - now, 0), Scheduler.MAX_TIMER_INTERVAL_MS);
     }
 
     this.timer = setTimeout(() => {
@@ -91,12 +100,14 @@ export class Scheduler {
   }
 
   private async tick(): Promise<void> {
-    if (!this.running) {return;}
+    if (!this.running) {
+      return;
+    }
 
     const now = Date.now();
     const dueTasks = this.store.getDueTasks(now);
 
-    const executions = dueTasks.map((task) => this.executeTask(task, 'scheduled'));
+    const executions = dueTasks.map((task) => this.executeTask(task, "scheduled"));
     await Promise.allSettled(executions);
 
     this.scheduleNext();
@@ -104,17 +115,14 @@ export class Scheduler {
 
   // --- Task Execution ---
 
-  async executeTask(
-    task: ScheduledTask,
-    trigger: 'scheduled' | 'manual'
-  ): Promise<void> {
+  async executeTask(task: ScheduledTask, trigger: "scheduled" | "manual"): Promise<void> {
     if (this.activeTasks.has(task.id)) {
       console.log(`[Scheduler] Task ${task.id} already running, skipping`);
       return;
     }
 
     // Check if task has expired (skip for manual triggers)
-    if (trigger === 'scheduled' && task.expiresAt) {
+    if (trigger === "scheduled" && task.expiresAt) {
       const todayStr = new Date().toISOString().slice(0, 10);
       if (task.expiresAt <= todayStr) {
         console.log(`[Scheduler] Task ${task.id} expired (${task.expiresAt}), skipping`);
@@ -152,34 +160,25 @@ export class Scheduler {
 
       if (taskStillExists) {
         // Update run record
-        this.store.completeRun(
-          run.id,
-          success ? 'success' : 'error',
-          sessionId,
-          durationMs,
-          error
-        );
+        this.store.completeRun(run.id, success ? "success" : "error", sessionId, durationMs, error);
 
         // Update task state
-        this.store.markTaskCompleted(
-          task.id,
-          success,
-          durationMs,
-          error,
-          task.schedule
-        );
+        this.store.markTaskCompleted(task.id, success, durationMs, error, task.schedule);
 
         // Auto-disable on too many consecutive errors
         const updatedTask = this.store.getTask(task.id);
-        if (updatedTask && updatedTask.state.consecutiveErrors >= Scheduler.MAX_CONSECUTIVE_ERRORS) {
+        if (
+          updatedTask &&
+          updatedTask.state.consecutiveErrors >= Scheduler.MAX_CONSECUTIVE_ERRORS
+        ) {
           this.store.toggleTask(task.id, false);
           console.warn(
-            `[Scheduler] Task ${task.id} auto-disabled after ${Scheduler.MAX_CONSECUTIVE_ERRORS} consecutive errors`
+            `[Scheduler] Task ${task.id} auto-disabled after ${Scheduler.MAX_CONSECUTIVE_ERRORS} consecutive errors`,
           );
         }
 
         // Disable one-shot 'at' tasks after execution
-        if (task.schedule.type === 'at') {
+        if (task.schedule.type === "at") {
           this.store.toggleTask(task.id, false);
         }
 
@@ -198,7 +197,9 @@ export class Scheduler {
           this.emitRunUpdate(updatedRun);
         }
       } else {
-        console.log(`[Scheduler] Task ${task.id} was deleted during execution, skipping post-run updates`);
+        console.log(
+          `[Scheduler] Task ${task.id} was deleted during execution, skipping post-run updates`,
+        );
       }
 
       this.reschedule();
@@ -214,13 +215,13 @@ export class Scheduler {
       try {
         skillsPrompt = await this.getSkillsPrompt();
       } catch (error) {
-        console.warn('[Scheduler] Failed to build skills prompt for scheduled task:', error);
+        console.warn("[Scheduler] Failed to build skills prompt for scheduled task:", error);
       }
     }
     const systemPrompt = [skillsPrompt, baseSystemPrompt]
       .filter((prompt): prompt is string => Boolean(prompt?.trim()))
-      .join('\n\n');
-    const executionMode = task.executionMode || config.executionMode || 'auto';
+      .join("\n\n");
+    const executionMode = task.executionMode || config.executionMode || "auto";
 
     // Create a cowork session
     const session = this.coworkStore.createSession(
@@ -228,15 +229,15 @@ export class Scheduler {
       cwd,
       systemPrompt,
       executionMode,
-      []
+      [],
     );
 
     // Update session to running
-    this.coworkStore.updateSession(session.id, { status: 'running' });
+    this.coworkStore.updateSession(session.id, { status: "running" });
 
     // Add initial user message
     this.coworkStore.addMessage(session.id, {
-      type: 'user',
+      type: "user",
       content: task.prompt,
     });
 
@@ -245,7 +246,7 @@ export class Scheduler {
     const runner = this.getCoworkRunner();
     await runner.startSession(session.id, task.prompt, {
       skipInitialUserMessage: true,
-      confirmationMode: 'text',
+      confirmationMode: "text",
     });
 
     return session.id;
@@ -257,15 +258,16 @@ export class Scheduler {
     task: ScheduledTask,
     success: boolean,
     durationMs: number,
-    error: string | null
+    error: string | null,
   ): Promise<void> {
     const imManager = this.getIMGatewayManager?.();
-    if (!imManager) {return;}
+    if (!imManager) {
+      return;
+    }
 
-    const status = success ? '✅ 成功' : '❌ 失败';
-    const durationStr = durationMs < 1000
-      ? `${durationMs}ms`
-      : `${(durationMs / 1000).toFixed(1)}s`;
+    const status = success ? "✅ 成功" : "❌ 失败";
+    const durationStr =
+      durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(1)}s`;
 
     let message = `📋 定时任务通知\n\n任务: ${task.name}\n状态: ${status}\n耗时: ${durationStr}`;
     if (error) {
@@ -287,8 +289,10 @@ export class Scheduler {
 
   async runManually(taskId: string): Promise<void> {
     const task = this.store.getTask(taskId);
-    if (!task) {throw new Error(`Task not found: ${taskId}`);}
-    await this.executeTask(task, 'manual');
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+    await this.executeTask(task, "manual");
   }
 
   stopTask(taskId: string): boolean {
@@ -313,11 +317,13 @@ export class Scheduler {
 
   private emitTaskStatusUpdate(taskId: string): void {
     const task = this.store.getTask(taskId);
-    if (!task) {return;}
+    if (!task) {
+      return;
+    }
 
     BrowserWindow.getAllWindows().forEach((win) => {
       if (!win.isDestroyed()) {
-        win.webContents.send('scheduledTask:statusUpdate', {
+        win.webContents.send("scheduledTask:statusUpdate", {
           taskId: task.id,
           state: task.state,
         });
@@ -328,7 +334,7 @@ export class Scheduler {
   private emitRunUpdate(run: ScheduledTaskRun): void {
     BrowserWindow.getAllWindows().forEach((win) => {
       if (!win.isDestroyed()) {
-        win.webContents.send('scheduledTask:runUpdate', { run });
+        win.webContents.send("scheduledTask:runUpdate", { run });
       }
     });
   }

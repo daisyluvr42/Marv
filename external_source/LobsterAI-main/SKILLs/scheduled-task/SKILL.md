@@ -8,6 +8,7 @@ description: 创建定时任务，支持一次性、每日、每周、每月、C
 ## 使用场景
 
 当用户想要：
+
 - 设置定时执行的任务（每天、每周、每月、自定义 Cron）
 - 创建一次性定时执行的任务
 - 安排定时自动化检查、报告生成、代码备份等
@@ -18,6 +19,7 @@ description: 创建定时任务，支持一次性、每日、每周、每月、C
 ### Step 1: 收集信息
 
 先与用户确认以下信息（如果用户未提供）：
+
 1. **任务名称**（必填）— 简短描述
 2. **执行内容**（必填）— 任务运行时 Claude 收到的 prompt 指令
 3. **执行频率**（必填）— 一次性、每天、每周、每月或自定义 Cron
@@ -29,11 +31,13 @@ description: 创建定时任务，支持一次性、每日、每周、每月、C
 #### Schedule 类型
 
 **一次性执行（at）：**
+
 ```json
 { "type": "at", "datetime": "2026-03-15T09:00:00" }
 ```
 
 **Cron 表达式（cron）— 5 字段格式：分 时 日 月 周**
+
 ```json
 { "type": "cron", "expression": "0 9 * * *" }
 ```
@@ -69,26 +73,28 @@ bash "$SKILLS_ROOT/scheduled-task/scripts/create-task.sh" @/tmp/scheduled-task.j
 
 #### 字段说明
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `name` | ✅ | 简短的任务名称 |
-| `prompt` | ✅ | 任务运行时 Claude 收到的指令（应清晰完整） |
-| `schedule` | ✅ | 调度配置（见上方类型说明） |
-| `workingDirectory` | ❌ | 执行目录（默认空） |
-| `description` | ❌ | 详细描述（默认空） |
-| `systemPrompt` | ❌ | 自定义系统提示词（默认空） |
-| `executionMode` | ❌ | `"auto"` / `"local"` / `"sandbox"`（默认 `"local"`） |
-| `expiresAt` | ❌ | 过期日期 `"YYYY-MM-DD"`（默认 null，不过期） |
-| `notifyPlatforms` | ❌ | 通知平台数组：`["dingtalk","feishu","telegram","discord"]`（默认 `[]`） |
-| `enabled` | ❌ | 是否立即启用（默认 `true`） |
+| 字段               | 必填 | 说明                                                                    |
+| ------------------ | ---- | ----------------------------------------------------------------------- |
+| `name`             | ✅   | 简短的任务名称                                                          |
+| `prompt`           | ✅   | 任务运行时 Claude 收到的指令（应清晰完整）                              |
+| `schedule`         | ✅   | 调度配置（见上方类型说明）                                              |
+| `workingDirectory` | ❌   | 执行目录（默认空）                                                      |
+| `description`      | ❌   | 详细描述（默认空）                                                      |
+| `systemPrompt`     | ❌   | 自定义系统提示词（默认空）                                              |
+| `executionMode`    | ❌   | `"auto"` / `"local"` / `"sandbox"`（默认 `"local"`）                    |
+| `expiresAt`        | ❌   | 过期日期 `"YYYY-MM-DD"`（默认 null，不过期）                            |
+| `notifyPlatforms`  | ❌   | 通知平台数组：`["dingtalk","feishu","telegram","discord"]`（默认 `[]`） |
+| `enabled`          | ❌   | 是否立即启用（默认 `true`）                                             |
 
 ### Step 3: 确认结果
 
 脚本返回 JSON 响应：
+
 - 成功：`{ "success": true, "task": { "id": "...", "name": "...", ... } }`
 - 失败：`{ "success": false, "error": "错误信息" }`
 
 向用户确认以下信息：
+
 - ✅ 任务名称和 ID
 - ⏰ 执行频率（人类可读格式，如"每天早上 9:00"）
 - 📋 执行内容摘要

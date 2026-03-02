@@ -10,12 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 keywords = ["ai-agent", "edge-computing", "raspberry-pi", "iot", "clawland"]
-dependencies = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.34",
-    "httpx>=0.28",
-    "pydantic>=2.10",
-]
+dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.34", "httpx>=0.28", "pydantic>=2.10"]
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "mypy"]

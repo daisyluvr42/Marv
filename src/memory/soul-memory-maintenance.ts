@@ -1,5 +1,5 @@
 import { listAgentIds } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
   applySoulMemoryConfidenceDecay,
@@ -29,7 +29,7 @@ export type SoulMemoryMaintenanceReport = {
   failedAgents: number;
 };
 
-function resolveMemorySoulConfig(cfg: OpenClawConfig): SoulMemoryConfig | undefined {
+function resolveMemorySoulConfig(cfg: MarvConfig): SoulMemoryConfig | undefined {
   const memoryConfig = cfg.memory;
   if (!memoryConfig) {
     return undefined;
@@ -49,7 +49,7 @@ function resolveMemorySoulConfig(cfg: OpenClawConfig): SoulMemoryConfig | undefi
   };
 }
 
-function resolveMaintenanceAgentIds(params: { cfg: OpenClawConfig; agentId?: string }): string[] {
+function resolveMaintenanceAgentIds(params: { cfg: MarvConfig; agentId?: string }): string[] {
   const single = params.agentId?.trim();
   if (single) {
     return [normalizeAgentId(single)];
@@ -58,7 +58,7 @@ function resolveMaintenanceAgentIds(params: { cfg: OpenClawConfig; agentId?: str
 }
 
 export function runSoulMemoryMaintenance(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   nowMs?: number;
   agentId?: string;
 }): SoulMemoryMaintenanceReport {

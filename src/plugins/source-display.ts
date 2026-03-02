@@ -34,7 +34,7 @@ export function resolvePluginSourceRoots(params: { workspaceDir?: string }): Plu
   let workspace: string | undefined;
   if (params.workspaceDir) {
     const marvWorkspace = path.join(params.workspaceDir, ".marv", "extensions");
-    const legacyWorkspace = path.join(params.workspaceDir, ".openclaw", "extensions");
+    const legacyWorkspace = path.join(params.workspaceDir, ".marv", "extensions");
     workspace = fs.existsSync(marvWorkspace) ? marvWorkspace : legacyWorkspace;
   }
   return { stock, global, workspace };

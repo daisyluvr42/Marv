@@ -9,19 +9,19 @@ title: "Ansible"
 
 # Ansible Installation
 
-The recommended way to deploy Marv to production servers is via **[openclaw-ansible](https://github.com/openclaw/openclaw-ansible)** — an automated installer with security-first architecture.
+The recommended way to deploy Marv to production servers is via **[marv-ansible](-ansible)** — an automated installer with security-first architecture.
 
 ## Quick Start
 
 One-command install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw-ansible/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/marv/marv-ansible/main/install.sh | bash
 ```
 
-> **📦 Full guide: [github.com/openclaw/openclaw-ansible](https://github.com/openclaw/openclaw-ansible)**
+> **📦 Full guide: [github.com/daisyluvr42/Marv-ansible](-ansible)**
 >
-> The openclaw-ansible repo is the source of truth for Ansible deployment. This page is a quick overview.
+> The marv-ansible repo is the source of truth for Ansible deployment. This page is a quick overview.
 
 ## What You Get
 
@@ -118,8 +118,8 @@ If you prefer manual control over the automation:
 sudo apt update && sudo apt install -y ansible git
 
 # 2. Clone repository
-git clone https://github.com/openclaw/openclaw-ansible.git
-cd openclaw-ansible
+git clone -ansible.git
+cd marv-ansible
 
 # 3. Install Ansible collections
 ansible-galaxy collection install -r requirements.yml
@@ -127,7 +127,7 @@ ansible-galaxy collection install -r requirements.yml
 # 4. Run playbook
 ./run-playbook.sh
 
-# Or run directly (then manually execute /tmp/openclaw-setup.sh after)
+# Or run directly (then manually execute /tmp/marv-setup.sh after)
 # ansible-playbook playbook.yml --ask-become-pass
 ```
 
@@ -138,7 +138,7 @@ The Ansible installer sets up Marv for manual updates. See [Updating](/install/u
 To re-run the Ansible playbook (e.g., for configuration changes):
 
 ```bash
-cd openclaw-ansible
+cd marv-ansible
 ./run-playbook.sh
 ```
 
@@ -176,10 +176,10 @@ pnpm start
 sudo systemctl status docker
 
 # Check sandbox image
-sudo docker images | grep openclaw-sandbox
+sudo docker images | grep marv-sandbox
 
 # Build sandbox image if missing
-cd /opt/openclaw/marv
+cd /opt/marv/marv
 sudo -u marv ./scripts/sandbox-setup.sh
 ```
 
@@ -196,13 +196,13 @@ marv channels login
 
 For detailed security architecture and troubleshooting:
 
-- [Security Architecture](https://github.com/openclaw/openclaw-ansible/blob/main/docs/security.md)
-- [Technical Details](https://github.com/openclaw/openclaw-ansible/blob/main/docs/architecture.md)
-- [Troubleshooting Guide](https://github.com/openclaw/openclaw-ansible/blob/main/docs/troubleshooting.md)
+- [Security Architecture](-ansible/blob/main/docs/security.md)
+- [Technical Details](-ansible/blob/main/docs/architecture.md)
+- [Troubleshooting Guide](-ansible/blob/main/docs/troubleshooting.md)
 
 ## Related
 
-- [openclaw-ansible](https://github.com/openclaw/openclaw-ansible) — full deployment guide
+- [marv-ansible](-ansible) — full deployment guide
 - [Docker](/install/docker) — containerized gateway setup
 - [Sandboxing](/gateway/sandboxing) — agent sandbox configuration
 - [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) — per-agent isolation

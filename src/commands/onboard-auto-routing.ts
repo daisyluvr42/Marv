@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import type { AutoRoutingConfig, AutoRoutingRule } from "../config/types.agent-defaults.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
@@ -26,7 +26,7 @@ function buildRules(fastModel: string, powerfulModel: string): AutoRoutingRule[]
   ];
 }
 
-function applyAutoRouting(cfg: OpenClawConfig, routing: AutoRoutingConfig): OpenClawConfig {
+function applyAutoRouting(cfg: MarvConfig, routing: AutoRoutingConfig): MarvConfig {
   return {
     ...cfg,
     agents: {
@@ -44,9 +44,9 @@ function applyAutoRouting(cfg: OpenClawConfig, routing: AutoRoutingConfig): Open
  * Returns the updated config (unchanged if user declines).
  */
 export async function promptAutoRouting(params: {
-  config: OpenClawConfig;
+  config: MarvConfig;
   prompter: WizardPrompter;
-}): Promise<OpenClawConfig> {
+}): Promise<MarvConfig> {
   const { prompter } = params;
   let config = params.config;
 

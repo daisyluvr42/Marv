@@ -22,7 +22,7 @@ Hetzner pricing changes; pick the smallest Debian/Ubuntu VPS and scale up if you
 - Rent a small Linux server (Hetzner VPS)
 - Install Docker (isolated app runtime)
 - Start the Marv Gateway in Docker
-- Persist `~/.marv` + `~/.openclaw/workspace` on the host (survives restarts/rebuilds)
+- Persist `~/.marv` + `~/.marv/workspace` on the host (survives restarts/rebuilds)
 - Access the Control UI from your laptop via an SSH tunnel
 
 The Gateway can be accessed via:
@@ -99,7 +99,7 @@ docker compose version
 ## 3) Clone the Marv repository
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 ```
 
@@ -113,7 +113,7 @@ Docker containers are ephemeral.
 All long-lived state must live on the host.
 
 ```bash
-mkdir -p /root/.openclaw/workspace
+mkdir -p /root/.marv/workspace
 
 # Set ownership to the container user (uid 1000):
 chown -R 1000:1000 /root/.marv
@@ -126,13 +126,13 @@ chown -R 1000:1000 /root/.marv
 Create `.env` in the repository root.
 
 ```bash
-OPENCLAW_IMAGE=marv:latest
-OPENCLAW_GATEWAY_TOKEN=change-me-now
-OPENCLAW_GATEWAY_BIND=lan
-OPENCLAW_GATEWAY_PORT=18789
+MARV_IMAGE=marv:latest
+MARV_GATEWAY_TOKEN=change-me-now
+MARV_GATEWAY_BIND=lan
+MARV_GATEWAY_PORT=18789
 
-OPENCLAW_CONFIG_DIR=/root/.marv
-OPENCLAW_WORKSPACE_DIR=/root/.openclaw/workspace
+MARV_CONFIG_DIR=/root/.marv
+MARV_WORKSPACE_DIR=/root/.marv/workspace
 
 GOG_KEYRING_PASSWORD=change-me-now
 XDG_CONFIG_HOME=/home/node/.marv
@@ -154,8 +154,8 @@ Create or update `docker-compose.yml`.
 
 ```yaml
 services:
-  openclaw-gateway:
-    image: ${OPENCLAW_IMAGE}
+  marv-gateway:
+    image: ${MARV_IMAGE}
     build: .
     restart: unless-stopped
     env_file:
@@ -164,28 +164,28 @@ services:
       - HOME=/home/node
       - NODE_ENV=production
       - TERM=xterm-256color
-      - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
-      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - MARV_GATEWAY_BIND=${MARV_GATEWAY_BIND}
+      - MARV_GATEWAY_PORT=${MARV_GATEWAY_PORT}
+      - MARV_GATEWAY_TOKEN=${MARV_GATEWAY_TOKEN}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
       - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.marv
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${MARV_CONFIG_DIR}:/home/node/.marv
+      - ${MARV_WORKSPACE_DIR}:/home/node/.marv/workspace
     ports:
       # Recommended: keep the Gateway loopback-only on the VPS; access via SSH tunnel.
       # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${MARV_GATEWAY_PORT}:18789"
     command:
       [
         "node",
         "dist/index.js",
         "gateway",
         "--bind",
-        "${OPENCLAW_GATEWAY_BIND}",
+        "${MARV_GATEWAY_BIND}",
         "--port",
-        "${OPENCLAW_GATEWAY_PORT}",
+        "${MARV_GATEWAY_PORT}",
         "--allow-unconfigured",
       ]
 ```
@@ -261,15 +261,15 @@ CMD ["node","dist/index.js"]
 
 ```bash
 docker compose build
-docker compose up -d openclaw-gateway
+docker compose up -d marv-gateway
 ```
 
 Verify binaries:
 
 ```bash
-docker compose exec openclaw-gateway which gog
-docker compose exec openclaw-gateway which goplaces
-docker compose exec openclaw-gateway which wacli
+docker compose exec marv-gateway which gog
+docker compose exec marv-gateway which goplaces
+docker compose exec marv-gateway which wacli
 ```
 
 Expected output:
@@ -285,7 +285,7 @@ Expected output:
 ## 9) Verify Gateway
 
 ```bash
-docker compose logs -f openclaw-gateway
+docker compose logs -f marv-gateway
 ```
 
 Success:
@@ -315,12 +315,12 @@ All long-lived state must survive restarts, rebuilds, and reboots.
 
 | Component           | Location                          | Persistence mechanism  | Notes                           |
 | ------------------- | --------------------------------- | ---------------------- | ------------------------------- |
-| Gateway config      | `/home/node/.openclaw/`           | Host volume mount      | Includes `marv.json`, tokens    |
-| Model auth profiles | `/home/node/.openclaw/`           | Host volume mount      | OAuth tokens, API keys          |
-| Skill configs       | `/home/node/.openclaw/skills/`    | Host volume mount      | Skill-level state               |
-| Agent workspace     | `/home/node/.openclaw/workspace/` | Host volume mount      | Code and agent artifacts        |
-| WhatsApp session    | `/home/node/.openclaw/`           | Host volume mount      | Preserves QR login              |
-| Gmail keyring       | `/home/node/.openclaw/`           | Host volume + password | Requires `GOG_KEYRING_PASSWORD` |
+| Gateway config      | `/home/node/.marv/`           | Host volume mount      | Includes `marv.json`, tokens    |
+| Model auth profiles | `/home/node/.marv/`           | Host volume mount      | OAuth tokens, API keys          |
+| Skill configs       | `/home/node/.marv/skills/`    | Host volume mount      | Skill-level state               |
+| Agent workspace     | `/home/node/.marv/workspace/` | Host volume mount      | Code and agent artifacts        |
+| WhatsApp session    | `/home/node/.marv/`           | Host volume mount      | Preserves QR login              |
+| Gmail keyring       | `/home/node/.marv/`           | Host volume + password | Requires `GOG_KEYRING_PASSWORD` |
 | External binaries   | `/usr/local/bin/`                 | Docker image           | Must be baked at build time     |
 | Node runtime        | Container filesystem              | Docker image           | Rebuilt every image build       |
 | OS packages         | Container filesystem              | Docker image           | Do not install at runtime       |
@@ -340,8 +340,8 @@ For teams preferring infrastructure-as-code workflows, a community-maintained Te
 
 **Repositories:**
 
-- Infrastructure: [openclaw-terraform-hetzner](https://github.com/andreesg/openclaw-terraform-hetzner)
-- Docker config: [openclaw-docker-config](https://github.com/andreesg/openclaw-docker-config)
+- Infrastructure: [marv-terraform-hetzner](https://github.com/andreesg/marv-terraform-hetzner)
+- Docker config: [marv-docker-config](https://github.com/andreesg/marv-docker-config)
 
 This approach complements the Docker setup above with reproducible deployments, version-controlled infrastructure, and automated disaster recovery.
 

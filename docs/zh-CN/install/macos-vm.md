@@ -144,7 +144,7 @@ ssh youruser@192.168.64.X
 在 VM 内：
 
 ```bash
-npm install -g openclaw@latest
+npm install -g marv@latest
 marv onboard --install-daemon
 ```
 
@@ -157,7 +157,7 @@ marv onboard --install-daemon
 编辑配置文件：
 
 ```bash
-nano ~/.openclaw/marv.json
+nano ~/.marv/marv.json
 ```
 
 添加你的渠道：
@@ -240,14 +240,14 @@ ssh youruser@192.168.64.X "marv status"
 
 ```bash
 lume stop marv
-lume clone marv openclaw-golden
+lume clone marv marv-golden
 ```
 
 随时重置：
 
 ```bash
 lume stop marv && lume delete marv
-lume clone openclaw-golden marv
+lume clone marv-golden marv
 lume run marv --no-display
 ```
 

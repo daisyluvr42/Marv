@@ -1,8 +1,14 @@
-import type { QuickActionsConfig, QuickAction, Prompt, LocalizedQuickAction, QuickActionsI18n } from '../types/quickAction';
-import { i18nService } from './i18n';
+import type {
+  QuickActionsConfig,
+  QuickAction,
+  Prompt,
+  LocalizedQuickAction,
+  QuickActionsI18n,
+} from "../types/quickAction";
+import { i18nService } from "./i18n";
 
-const CONFIG_PATH = './quick-actions.json';
-const I18N_PATH = './quick-actions-i18n.json';
+const CONFIG_PATH = "./quick-actions.json";
+const I18N_PATH = "./quick-actions-i18n.json";
 
 class QuickActionService {
   private config: QuickActionsConfig | null = null;
@@ -26,7 +32,7 @@ class QuickActionService {
       this.config = data as QuickActionsConfig;
       return this.config;
     } catch (error) {
-      console.error('Failed to load quick actions config:', error);
+      console.error("Failed to load quick actions config:", error);
       // 返回空配置作为降级
       return { version: 1, actions: [] };
     }
@@ -49,7 +55,7 @@ class QuickActionService {
       this.i18nData = data as QuickActionsI18n;
       return this.i18nData;
     } catch (error) {
-      console.error('Failed to load quick actions i18n:', error);
+      console.error("Failed to load quick actions i18n:", error);
       // 返回空数据作为降级
       return { zh: {}, en: {} };
     }
@@ -63,22 +69,22 @@ class QuickActionService {
     const i18nData = await this.loadI18n();
     const language = i18nService.getLanguage();
 
-    return config.actions.map(action => {
+    return config.actions.map((action) => {
       const actionI18n = i18nData[language]?.[action.id];
 
       return {
         ...action,
         label: actionI18n?.label || action.id,
-        prompts: action.prompts.map(prompt => {
+        prompts: action.prompts.map((prompt) => {
           const promptI18n = actionI18n?.prompts?.[prompt.id];
 
           return {
             id: prompt.id,
             label: promptI18n?.label || prompt.id,
             description: promptI18n?.description,
-            prompt: promptI18n?.prompt || ''
+            prompt: promptI18n?.prompt || "",
           };
-        })
+        }),
       };
     });
   }
@@ -96,7 +102,7 @@ class QuickActionService {
    */
   async getLocalizedActionById(id: string): Promise<LocalizedQuickAction | undefined> {
     const actions = await this.getLocalizedActions();
-    return actions.find(action => action.id === id);
+    return actions.find((action) => action.id === id);
   }
 
   /**
@@ -104,7 +110,7 @@ class QuickActionService {
    */
   async getActionById(id: string): Promise<QuickAction | undefined> {
     const actions = await this.getActions();
-    return actions.find(action => action.id === id);
+    return actions.find((action) => action.id === id);
   }
 
   /**
@@ -112,16 +118,20 @@ class QuickActionService {
    */
   async getPrompt(actionId: string, promptId: string): Promise<Prompt | undefined> {
     const action = await this.getActionById(actionId);
-    if (!action) {return undefined;}
-    return action.prompts.find(prompt => prompt.id === promptId);
+    if (!action) {
+      return undefined;
+    }
+    return action.prompts.find((prompt) => prompt.id === promptId);
   }
 
   /**
    * 根据 skillMapping 获取对应的快捷操作（已本地化）
    */
-  async getLocalizedActionBySkillMapping(skillMapping: string): Promise<LocalizedQuickAction | undefined> {
+  async getLocalizedActionBySkillMapping(
+    skillMapping: string,
+  ): Promise<LocalizedQuickAction | undefined> {
     const actions = await this.getLocalizedActions();
-    return actions.find(action => action.skillMapping === skillMapping);
+    return actions.find((action) => action.skillMapping === skillMapping);
   }
 
   /**
@@ -129,7 +139,7 @@ class QuickActionService {
    */
   async getActionBySkillMapping(skillMapping: string): Promise<QuickAction | undefined> {
     const actions = await this.getActions();
-    return actions.find(action => action.skillMapping === skillMapping);
+    return actions.find((action) => action.skillMapping === skillMapping);
   }
 
   /**
@@ -146,7 +156,7 @@ class QuickActionService {
    * 通知所有订阅者
    */
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener());
+    this.listeners.forEach((listener) => listener());
   }
 
   /**

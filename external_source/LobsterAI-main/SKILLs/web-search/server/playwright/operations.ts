@@ -2,16 +2,16 @@
  * Browser Operations - Common browser operations using Playwright Page API
  */
 
-import { Page } from 'playwright-core';
+import { Page } from "playwright-core";
 
 export interface NavigateOptions {
   url: string;
-  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
+  waitUntil?: "load" | "domcontentloaded" | "networkidle";
   timeout?: number;
 }
 
 export interface ScreenshotOptions {
-  format?: 'png' | 'jpeg';
+  format?: "png" | "jpeg";
   fullPage?: boolean;
   quality?: number;
 }
@@ -28,8 +28,8 @@ export async function navigate(page: Page, options: NavigateOptions): Promise<vo
   console.log(`[Operations] Navigating to: ${options.url}`);
 
   await page.goto(options.url, {
-    waitUntil: options.waitUntil || 'domcontentloaded',
-    timeout: options.timeout || 30000
+    waitUntil: options.waitUntil || "domcontentloaded",
+    timeout: options.timeout || 30000,
   });
 
   console.log(`[Operations] Navigation complete: ${page.url()}`);
@@ -39,12 +39,12 @@ export async function navigate(page: Page, options: NavigateOptions): Promise<vo
  * Take screenshot
  */
 export async function screenshot(page: Page, options: ScreenshotOptions = {}): Promise<Buffer> {
-  console.log(`[Operations] Taking screenshot (format: ${options.format || 'png'})`);
+  console.log(`[Operations] Taking screenshot (format: ${options.format || "png"})`);
 
   const buffer = await page.screenshot({
-    type: options.format || 'png',
+    type: options.format || "png",
     fullPage: options.fullPage || false,
-    quality: options.quality
+    quality: options.quality,
   });
 
   console.log(`[Operations] Screenshot captured (${buffer.length} bytes)`);
@@ -67,7 +67,7 @@ export async function getContent(page: Page): Promise<string> {
 export async function getTextContent(page: Page): Promise<string> {
   console.log(`[Operations] Getting text content`);
 
-  const text = await page.textContent('body') || '';
+  const text = (await page.textContent("body")) || "";
 
   console.log(`[Operations] Text content retrieved (${text.length} chars)`);
   return text;
@@ -79,10 +79,13 @@ export async function getTextContent(page: Page): Promise<string> {
 export async function evaluate(page: Page, options: EvaluateOptions): Promise<any> {
   console.log(`[Operations] Evaluating expression`);
 
-  const result = await page.evaluate((args: any) => {
-    // eslint-disable-next-line no-eval
-    return eval(args.expression);
-  }, { expression: options.expression, args: options.args || [] });
+  const result = await page.evaluate(
+    (args: any) => {
+      // eslint-disable-next-line no-eval
+      return eval(args.expression);
+    },
+    { expression: options.expression, args: options.args || [] },
+  );
 
   console.log(`[Operations] Evaluation complete`);
   return result;
@@ -94,7 +97,7 @@ export async function evaluate(page: Page, options: EvaluateOptions): Promise<an
 export async function waitForSelector(
   page: Page,
   selector: string,
-  timeout: number = 10000
+  timeout: number = 10000,
 ): Promise<void> {
   console.log(`[Operations] Waiting for selector: ${selector}`);
 
@@ -166,10 +169,7 @@ export async function reload(page: Page): Promise<void> {
 /**
  * Wait for navigation
  */
-export async function waitForNavigation(
-  page: Page,
-  timeout: number = 30000
-): Promise<void> {
+export async function waitForNavigation(page: Page, timeout: number = 30000): Promise<void> {
   console.log(`[Operations] Waiting for navigation`);
   await page.waitForNavigation({ timeout });
 }

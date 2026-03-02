@@ -4,21 +4,21 @@
  * Supports text messages and media (photo, video, audio, voice, document, sticker)
  */
 
-import { EventEmitter } from 'events';
-import { Bot, InputFile, type BotError, type Context } from 'grammy';
-import { run, type RunnerHandle } from '@grammyjs/runner';
-import * as fs from 'fs';
-import * as path from 'path';
+import { EventEmitter } from "events";
+import * as fs from "fs";
+import * as path from "path";
+import { run, type RunnerHandle } from "@grammyjs/runner";
+import { Bot, InputFile, type BotError, type Context } from "grammy";
+import { parseMediaMarkers } from "./dingtalkMediaParser";
+import { fetchWithSystemProxy } from "./http";
+import { extractMediaFromMessage, cleanupOldMediaFiles } from "./telegramMedia";
 import {
   TelegramConfig,
   TelegramGatewayStatus,
   IMMessage,
   IMMediaAttachment,
   DEFAULT_TELEGRAM_STATUS,
-} from './types';
-import { extractMediaFromMessage, cleanupOldMediaFiles } from './telegramMedia';
-import { parseMediaMarkers } from './dingtalkMediaParser';
-import { fetchWithSystemProxy } from './http';
+} from "./types";
 
 /**
  * Custom fetch wrapper that uses Node.js native AbortController
@@ -44,7 +44,7 @@ async function grammyFetch(url: string, options: RequestInit = {}): Promise<Resp
       nativeController.abort();
     } else {
       // Link grammy's signal to native controller
-      grammySignal.addEventListener('abort', () => {
+      grammySignal.addEventListener("abort", () => {
         nativeController.abort();
       });
     }
@@ -59,7 +59,7 @@ async function grammyFetch(url: string, options: RequestInit = {}): Promise<Resp
 // 媒体组缓冲接口
 interface MediaGroupBuffer {
   messages: IMMessage[];
-  ctx: Context;  // 保存第一条消息的 ctx 用于回复
+  ctx: Context; // 保存第一条消息的 ctx 用于回复
   timeout: NodeJS.Timeout;
 }
 
@@ -68,17 +68,18 @@ export class TelegramGateway extends EventEmitter {
   private runner: RunnerHandle | null = null;
   private config: TelegramConfig | null = null;
   private status: TelegramGatewayStatus = { ...DEFAULT_TELEGRAM_STATUS };
-  private onMessageCallback?: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>;
+  private onMessageCallback?: (
+    message: IMMessage,
+    replyFn: (text: string) => Promise<void>,
+  ) => Promise<void>;
   private lastChatId: number | null = null;
 
   // 媒体组缓冲 Map (mediaGroupId -> buffer)
   private mediaGroupBuffers: Map<string, MediaGroupBuffer> = new Map();
-  private readonly MEDIA_GROUP_TIMEOUT = 500;  // 500ms 缓冲窗口
+  private readonly MEDIA_GROUP_TIMEOUT = 500; // 500ms 缓冲窗口
 
   // 定期清理任务
   private cleanupInterval: NodeJS.Timeout | null = null;
-
-  
 
   /**
    * Get current gateway status
@@ -99,9 +100,9 @@ export class TelegramGateway extends EventEmitter {
    */
   reconnectIfNeeded(): void {
     if (!this.bot && this.config) {
-      console.log('[Telegram Gateway] External reconnection trigger');
+      console.log("[Telegram Gateway] External reconnection trigger");
       this.start(this.config).catch((error) => {
-        console.error('[Telegram Gateway] Reconnection failed:', error.message);
+        console.error("[Telegram Gateway] Reconnection failed:", error.message);
       });
     }
   }
@@ -110,7 +111,7 @@ export class TelegramGateway extends EventEmitter {
    * Set message callback
    */
   setMessageCallback(
-    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>
+    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>,
   ): void {
     this.onMessageCallback = callback;
   }
@@ -120,23 +121,23 @@ export class TelegramGateway extends EventEmitter {
    */
   async start(config: TelegramConfig): Promise<void> {
     if (this.bot) {
-      console.log('[Telegram Gateway] Already running, stopping first...');
+      console.log("[Telegram Gateway] Already running, stopping first...");
       await this.stop();
     }
 
     if (!config.enabled) {
-      console.log('[Telegram Gateway] Telegram is disabled in config');
+      console.log("[Telegram Gateway] Telegram is disabled in config");
       return;
     }
 
     if (!config.botToken) {
-      throw new Error('Telegram bot token is required');
+      throw new Error("Telegram bot token is required");
     }
 
     this.config = config;
     const log = config.debug ? console.log : () => {};
 
-    log('[Telegram Gateway] Starting...');
+    log("[Telegram Gateway] Starting...");
 
     try {
       // Create bot instance with custom fetch wrapper
@@ -155,11 +156,11 @@ export class TelegramGateway extends EventEmitter {
       this.bot.catch((err: BotError) => {
         console.error(`[Telegram Gateway] Bot error: ${err.message}`);
         this.status.lastError = err.message;
-        this.emit('error', err);
+        this.emit("error", err);
       });
 
       // Register message handler for ALL message types (text + media)
-      this.bot.on('message', async (ctx: Context) => {
+      this.bot.on("message", async (ctx: Context) => {
         await this.handleMessage(ctx);
       });
 
@@ -174,7 +175,7 @@ export class TelegramGateway extends EventEmitter {
             timeout: 30,
           },
           silent: true,
-          retryInterval: 'exponential',
+          retryInterval: "exponential",
         },
       });
 
@@ -191,13 +192,15 @@ export class TelegramGateway extends EventEmitter {
       cleanupOldMediaFiles(7);
 
       // 设置定期清理任务（每 24 小时）
-      this.cleanupInterval = setInterval(() => {
-        cleanupOldMediaFiles(7);
-      }, 24 * 60 * 60 * 1000);
+      this.cleanupInterval = setInterval(
+        () => {
+          cleanupOldMediaFiles(7);
+        },
+        24 * 60 * 60 * 1000,
+      );
 
       console.log(`[Telegram Gateway] Connected successfully as @${botInfo.username}`);
-      this.emit('connected');
-
+      this.emit("connected");
     } catch (error: any) {
       console.error(`[Telegram Gateway] Failed to start: ${error.message}`);
       this.status = {
@@ -210,7 +213,7 @@ export class TelegramGateway extends EventEmitter {
       };
       this.bot = null;
       this.runner = null;
-      this.emit('error', error);
+      this.emit("error", error);
       throw error;
     }
   }
@@ -220,12 +223,12 @@ export class TelegramGateway extends EventEmitter {
    */
   async stop(): Promise<void> {
     if (!this.bot && !this.runner) {
-      console.log('[Telegram Gateway] Not running');
+      console.log("[Telegram Gateway] Not running");
       return;
     }
 
     const log = this.config?.debug ? console.log : () => {};
-    log('[Telegram Gateway] Stopping...');
+    log("[Telegram Gateway] Stopping...");
 
     try {
       // 清理定期任务
@@ -263,8 +266,8 @@ export class TelegramGateway extends EventEmitter {
         lastOutboundAt: null,
       };
 
-      log('[Telegram Gateway] Stopped');
-      this.emit('disconnected');
+      log("[Telegram Gateway] Stopped");
+      this.emit("disconnected");
     } catch (error: any) {
       console.error(`[Telegram Gateway] Error stopping: ${error.message}`);
       this.status.lastError = error.message;
@@ -277,23 +280,28 @@ export class TelegramGateway extends EventEmitter {
   private async handleMessage(ctx: Context): Promise<void> {
     try {
       const message = ctx.message;
-      if (!message) {return;}
+      if (!message) {
+        return;
+      }
 
       // Ignore messages from the bot itself
-      if (message.from?.is_bot) {return;}
+      if (message.from?.is_bot) {
+        return;
+      }
 
       const chatId = message.chat.id;
       const chatType = message.chat.type;
-      const isGroup = chatType === 'group' || chatType === 'supergroup';
+      const isGroup = chatType === "group" || chatType === "supergroup";
 
       // Build sender info
       const senderName = message.from
-        ? [message.from.first_name, message.from.last_name].filter(Boolean).join(' ').trim() || message.from.username
-        : 'Unknown';
-      const senderId = message.from?.id?.toString() || 'unknown';
+        ? [message.from.first_name, message.from.last_name].filter(Boolean).join(" ").trim() ||
+          message.from.username
+        : "Unknown";
+      const senderId = message.from?.id?.toString() || "unknown";
 
       // Extract text content (could be text or caption)
-      const textContent = message.text || message.caption || '';
+      const textContent = message.text || message.caption || "";
 
       // Extract media attachments
       const attachments = await extractMediaFromMessage(ctx);
@@ -311,25 +319,32 @@ export class TelegramGateway extends EventEmitter {
       }
 
       // 打印完整的输入消息日志
-      console.log(`[Telegram] 收到消息:`, JSON.stringify({
-        sender: senderName,
-        senderId,
-        chatId,
-        chatType: isGroup ? 'group' : 'direct',
-        content,
-        attachments: attachments.length > 0 ? attachments : undefined,
-        mediaGroupId: message.media_group_id,
-      }, null, 2));
+      console.log(
+        `[Telegram] 收到消息:`,
+        JSON.stringify(
+          {
+            sender: senderName,
+            senderId,
+            chatId,
+            chatType: isGroup ? "group" : "direct",
+            content,
+            attachments: attachments.length > 0 ? attachments : undefined,
+            mediaGroupId: message.media_group_id,
+          },
+          null,
+          2,
+        ),
+      );
 
       // Create IMMessage
       const imMessage: IMMessage = {
-        platform: 'telegram',
+        platform: "telegram",
         messageId: message.message_id.toString(),
         conversationId: chatId.toString(),
         senderId: senderId,
         senderName: senderName,
         content: content,
-        chatType: isGroup ? 'group' : 'direct',
+        chatType: isGroup ? "group" : "direct",
         timestamp: message.date * 1000,
         attachments: attachments.length > 0 ? attachments : undefined,
         mediaGroupId: message.media_group_id,
@@ -343,11 +358,10 @@ export class TelegramGateway extends EventEmitter {
 
       // Process single message
       await this.processMessage(imMessage, ctx);
-
     } catch (error: any) {
       console.error(`[Telegram Gateway] Error handling message: ${error.message}`);
       this.status.lastError = error.message;
-      this.emit('error', error);
+      this.emit("error", error);
     }
   }
 
@@ -385,7 +399,9 @@ export class TelegramGateway extends EventEmitter {
   private async flushMediaGroup(groupId: string): Promise<void> {
     const log = this.config?.debug ? console.log : () => {};
     const buffer = this.mediaGroupBuffers.get(groupId);
-    if (!buffer || buffer.messages.length === 0) {return;}
+    if (!buffer || buffer.messages.length === 0) {
+      return;
+    }
 
     this.mediaGroupBuffers.delete(groupId);
 
@@ -395,7 +411,7 @@ export class TelegramGateway extends EventEmitter {
     // Merge all messages into one
     const firstMessage = buffer.messages[0];
     const allAttachments: IMMediaAttachment[] = [];
-    let content = '';
+    let content = "";
 
     for (const msg of buffer.messages) {
       if (msg.attachments) {
@@ -404,8 +420,11 @@ export class TelegramGateway extends EventEmitter {
       // Use first non-empty content (caption)
       if (msg.content && !content) {
         // Skip auto-generated descriptions
-        if (!msg.content.startsWith('[图片') && !msg.content.startsWith('[视频') &&
-            !msg.content.startsWith('[媒体组')) {
+        if (
+          !msg.content.startsWith("[图片") &&
+          !msg.content.startsWith("[视频") &&
+          !msg.content.startsWith("[媒体组")
+        ) {
           content = msg.content;
         }
       }
@@ -423,11 +442,14 @@ export class TelegramGateway extends EventEmitter {
       attachments: allAttachments,
     };
 
-    log(`[Telegram Gateway] 媒体组合并完成:`, JSON.stringify({
-      groupId,
-      messageCount: buffer.messages.length,
-      attachmentsCount: allAttachments.length,
-    }));
+    log(
+      `[Telegram Gateway] 媒体组合并完成:`,
+      JSON.stringify({
+        groupId,
+        messageCount: buffer.messages.length,
+        attachmentsCount: allAttachments.length,
+      }),
+    );
 
     await this.processMessage(mergedMessage, buffer.ctx);
   }
@@ -445,39 +467,52 @@ export class TelegramGateway extends EventEmitter {
     // Create reply function with media support
     const replyFn = async (text: string) => {
       // 打印完整的输出消息日志
-      console.log(`[Telegram] 发送回复:`, JSON.stringify({
-        conversationId: imMessage.conversationId,
-        replyLength: text.length,
-        reply: text,
-      }, null, 2));
+      console.log(
+        `[Telegram] 发送回复:`,
+        JSON.stringify(
+          {
+            conversationId: imMessage.conversationId,
+            replyLength: text.length,
+            reply: text,
+          },
+          null,
+          2,
+        ),
+      );
 
       try {
         // Parse media markers from text
         const markers = parseMediaMarkers(text);
         const validFiles: Array<{ path: string; name?: string; type: string }> = [];
 
-        log(`[Telegram Gateway] 解析媒体标记:`, JSON.stringify({
-          textLength: text.length,
-          markersCount: markers.length,
-          markers: markers.map(m => ({ type: m.type, path: m.path, name: m.name })),
-        }));
+        log(
+          `[Telegram Gateway] 解析媒体标记:`,
+          JSON.stringify({
+            textLength: text.length,
+            markersCount: markers.length,
+            markers: markers.map((m) => ({ type: m.type, path: m.path, name: m.name })),
+          }),
+        );
 
         // Check which files exist
         for (const marker of markers) {
           // Expand ~ to home directory
           let filePath = marker.path;
-          if (filePath.startsWith('~/')) {
-            filePath = path.join(process.env.HOME || '', filePath.slice(2));
+          if (filePath.startsWith("~/")) {
+            filePath = path.join(process.env.HOME || "", filePath.slice(2));
           }
           if (fs.existsSync(filePath)) {
             const stats = fs.statSync(filePath);
-            log(`[Telegram Gateway] 发现有效媒体文件:`, JSON.stringify({
-              path: filePath,
-              name: marker.name,
-              type: marker.type,
-              fileSize: stats.size,
-              fileSizeKB: (stats.size / 1024).toFixed(1),
-            }));
+            log(
+              `[Telegram Gateway] 发现有效媒体文件:`,
+              JSON.stringify({
+                path: filePath,
+                name: marker.name,
+                type: marker.type,
+                fileSize: stats.size,
+                fileSizeKB: (stats.size / 1024).toFixed(1),
+              }),
+            );
             validFiles.push({ path: filePath, name: marker.name, type: marker.type });
           } else {
             console.warn(`[Telegram Gateway] Media file not found: ${filePath}`);
@@ -504,89 +539,119 @@ export class TelegramGateway extends EventEmitter {
             // Get chat info for logging
             const chatId = ctx.chat?.id;
             const replyToMessageId = ctx.message?.message_id;
-            const botToken = this.config?.botToken || '';
+            const botToken = this.config?.botToken || "";
             // 完整 URL（不脱敏，用于调试）
 
             // Choose appropriate send method based on file type
-            if (file.type === 'image' || ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
-              log(`[Telegram Gateway] 调用 sendPhoto API:`, JSON.stringify({
-                url: `https://api.telegram.org/bot${botToken}/sendPhoto`,
-                method: 'POST',
-                params: {
-                  chat_id: chatId,
-                  reply_to_message_id: replyToMessageId,
-                  caption: file.name,
-                  photo: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
-                },
-              }));
+            if (
+              file.type === "image" ||
+              [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"].includes(ext)
+            ) {
+              log(
+                `[Telegram Gateway] 调用 sendPhoto API:`,
+                JSON.stringify({
+                  url: `https://api.telegram.org/bot${botToken}/sendPhoto`,
+                  method: "POST",
+                  params: {
+                    chat_id: chatId,
+                    reply_to_message_id: replyToMessageId,
+                    caption: file.name,
+                    photo: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
+                  },
+                }),
+              );
               const result = await ctx.replyWithPhoto(inputFile, {
                 caption: file.name,
               });
-              log(`[Telegram Gateway] sendPhoto 成功:`, JSON.stringify({
-                messageId: result.message_id,
-                chatId: result.chat.id,
-                duration: Date.now() - startTime,
-              }));
-            } else if (file.type === 'video' || ['.mp4', '.mov', '.avi', '.webm'].includes(ext)) {
-              log(`[Telegram Gateway] 调用 sendVideo API:`, JSON.stringify({
-                url: `https://api.telegram.org/bot${botToken}/sendVideo`,
-                method: 'POST',
-                params: {
-                  chat_id: chatId,
-                  reply_to_message_id: replyToMessageId,
-                  caption: file.name,
-                  video: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
-                },
-              }));
+              log(
+                `[Telegram Gateway] sendPhoto 成功:`,
+                JSON.stringify({
+                  messageId: result.message_id,
+                  chatId: result.chat.id,
+                  duration: Date.now() - startTime,
+                }),
+              );
+            } else if (file.type === "video" || [".mp4", ".mov", ".avi", ".webm"].includes(ext)) {
+              log(
+                `[Telegram Gateway] 调用 sendVideo API:`,
+                JSON.stringify({
+                  url: `https://api.telegram.org/bot${botToken}/sendVideo`,
+                  method: "POST",
+                  params: {
+                    chat_id: chatId,
+                    reply_to_message_id: replyToMessageId,
+                    caption: file.name,
+                    video: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
+                  },
+                }),
+              );
               const result = await ctx.replyWithVideo(inputFile, {
                 caption: file.name,
               });
-              log(`[Telegram Gateway] sendVideo 成功:`, JSON.stringify({
-                messageId: result.message_id,
-                chatId: result.chat.id,
-                duration: Date.now() - startTime,
-              }));
-            } else if (file.type === 'audio' || ['.mp3', '.ogg', '.wav', '.m4a', '.aac'].includes(ext)) {
-              log(`[Telegram Gateway] 调用 sendAudio API:`, JSON.stringify({
-                url: `https://api.telegram.org/bot${botToken}/sendAudio`,
-                method: 'POST',
-                params: {
-                  chat_id: chatId,
-                  reply_to_message_id: replyToMessageId,
-                  caption: file.name,
-                  title: file.name,
-                  audio: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
-                },
-              }));
+              log(
+                `[Telegram Gateway] sendVideo 成功:`,
+                JSON.stringify({
+                  messageId: result.message_id,
+                  chatId: result.chat.id,
+                  duration: Date.now() - startTime,
+                }),
+              );
+            } else if (
+              file.type === "audio" ||
+              [".mp3", ".ogg", ".wav", ".m4a", ".aac"].includes(ext)
+            ) {
+              log(
+                `[Telegram Gateway] 调用 sendAudio API:`,
+                JSON.stringify({
+                  url: `https://api.telegram.org/bot${botToken}/sendAudio`,
+                  method: "POST",
+                  params: {
+                    chat_id: chatId,
+                    reply_to_message_id: replyToMessageId,
+                    caption: file.name,
+                    title: file.name,
+                    audio: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
+                  },
+                }),
+              );
               const result = await ctx.replyWithAudio(inputFile, {
                 caption: file.name,
                 title: file.name,
               });
-              log(`[Telegram Gateway] sendAudio 成功:`, JSON.stringify({
-                messageId: result.message_id,
-                chatId: result.chat.id,
-                duration: Date.now() - startTime,
-              }));
+              log(
+                `[Telegram Gateway] sendAudio 成功:`,
+                JSON.stringify({
+                  messageId: result.message_id,
+                  chatId: result.chat.id,
+                  duration: Date.now() - startTime,
+                }),
+              );
             } else {
               // Send as document for other file types
-              log(`[Telegram Gateway] 调用 sendDocument API:`, JSON.stringify({
-                url: `https://api.telegram.org/bot${botToken}/sendDocument`,
-                method: 'POST',
-                params: {
-                  chat_id: chatId,
-                  reply_to_message_id: replyToMessageId,
-                  caption: file.name,
-                  document: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
-                },
-              }));
+              log(
+                `[Telegram Gateway] 调用 sendDocument API:`,
+                JSON.stringify({
+                  url: `https://api.telegram.org/bot${botToken}/sendDocument`,
+                  method: "POST",
+                  params: {
+                    chat_id: chatId,
+                    reply_to_message_id: replyToMessageId,
+                    caption: file.name,
+                    document: `[Buffer: ${fileBuffer.length} bytes, fileName: ${fileName}]`,
+                  },
+                }),
+              );
               const result = await ctx.replyWithDocument(inputFile, {
                 caption: file.name,
               });
-              log(`[Telegram Gateway] sendDocument 成功:`, JSON.stringify({
-                messageId: result.message_id,
-                chatId: result.chat.id,
-                duration: Date.now() - startTime,
-              }));
+              log(
+                `[Telegram Gateway] sendDocument 成功:`,
+                JSON.stringify({
+                  messageId: result.message_id,
+                  chatId: result.chat.id,
+                  duration: Date.now() - startTime,
+                }),
+              );
             }
             return true;
           };
@@ -596,16 +661,22 @@ export class TelegramGateway extends EventEmitter {
           const ext = path.extname(file.path).toLowerCase();
           const chatId = ctx.chat?.id;
           const replyToMessageId = ctx.message?.message_id;
-          const botToken = this.config?.botToken || '';
+          const botToken = this.config?.botToken || "";
 
           // Determine API method
-          let apiMethod = 'sendDocument';
-          if (file.type === 'image' || ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
-            apiMethod = 'sendPhoto';
-          } else if (file.type === 'video' || ['.mp4', '.mov', '.avi', '.webm'].includes(ext)) {
-            apiMethod = 'sendVideo';
-          } else if (file.type === 'audio' || ['.mp3', '.ogg', '.wav', '.m4a', '.aac'].includes(ext)) {
-            apiMethod = 'sendAudio';
+          let apiMethod = "sendDocument";
+          if (
+            file.type === "image" ||
+            [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"].includes(ext)
+          ) {
+            apiMethod = "sendPhoto";
+          } else if (file.type === "video" || [".mp4", ".mov", ".avi", ".webm"].includes(ext)) {
+            apiMethod = "sendVideo";
+          } else if (
+            file.type === "audio" ||
+            [".mp3", ".ogg", ".wav", ".m4a", ".aac"].includes(ext)
+          ) {
+            apiMethod = "sendAudio";
           }
 
           // 完整 URL（不脱敏，用于调试）
@@ -615,23 +686,30 @@ export class TelegramGateway extends EventEmitter {
             try {
               const fileStats = fs.statSync(file.path);
               // 在每次尝试前打印详细的请求信息（显示完整 URL）
-              console.log(`[Telegram Gateway] 发送媒体请求 (尝试 ${attempt}/${MAX_RETRIES}):`, JSON.stringify({
-                url: fullUrl,
-                method: 'POST',
-                params: {
-                  chat_id: chatId,
-                  reply_to_message_id: replyToMessageId,
-                  caption: file.name,
-                },
-                file: {
-                  path: file.path,
-                  name: file.name,
-                  type: file.type,
-                  fileSize: fileStats.size,
-                  fileSizeKB: (fileStats.size / 1024).toFixed(1),
-                  fileSizeMB: (fileStats.size / 1024 / 1024).toFixed(2),
-                },
-              }, null, 2));
+              console.log(
+                `[Telegram Gateway] 发送媒体请求 (尝试 ${attempt}/${MAX_RETRIES}):`,
+                JSON.stringify(
+                  {
+                    url: fullUrl,
+                    method: "POST",
+                    params: {
+                      chat_id: chatId,
+                      reply_to_message_id: replyToMessageId,
+                      caption: file.name,
+                    },
+                    file: {
+                      path: file.path,
+                      name: file.name,
+                      type: file.type,
+                      fileSize: fileStats.size,
+                      fileSizeKB: (fileStats.size / 1024).toFixed(1),
+                      fileSizeMB: (fileStats.size / 1024 / 1024).toFixed(2),
+                    },
+                  },
+                  null,
+                  2,
+                ),
+              );
 
               await sendMedia();
               lastError = null;
@@ -639,27 +717,37 @@ export class TelegramGateway extends EventEmitter {
             } catch (mediaError: any) {
               lastError = mediaError;
               // 打印详细的失败信息（显示完整 URL）
-              console.error(`[Telegram Gateway] 发送媒体失败 (尝试 ${attempt}/${MAX_RETRIES}):`, JSON.stringify({
-                url: fullUrl,
-                file: file.path,
-                error: mediaError.message,
-                errorName: mediaError.name,
-                errorStack: mediaError.stack?.split('\n').slice(0, 3).join('\n'),
-              }, null, 2));
+              console.error(
+                `[Telegram Gateway] 发送媒体失败 (尝试 ${attempt}/${MAX_RETRIES}):`,
+                JSON.stringify(
+                  {
+                    url: fullUrl,
+                    file: file.path,
+                    error: mediaError.message,
+                    errorName: mediaError.name,
+                    errorStack: mediaError.stack?.split("\n").slice(0, 3).join("\n"),
+                  },
+                  null,
+                  2,
+                ),
+              );
 
               if (attempt < MAX_RETRIES) {
                 console.log(`[Telegram Gateway] 等待 ${RETRY_DELAY}ms 后重试...`);
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
               }
             }
           }
 
           if (lastError) {
-            console.error(`[Telegram Gateway] 媒体发送最终失败 (${MAX_RETRIES}次尝试后):`, JSON.stringify({
-              url: fullUrl,
-              file: file.path,
-              error: lastError.message,
-            }));
+            console.error(
+              `[Telegram Gateway] 媒体发送最终失败 (${MAX_RETRIES}次尝试后):`,
+              JSON.stringify({
+                url: fullUrl,
+                file: file.path,
+                error: lastError.message,
+              }),
+            );
           }
         }
 
@@ -669,39 +757,48 @@ export class TelegramGateway extends EventEmitter {
           const MAX_LENGTH = 4000;
           const chatId = ctx.chat?.id;
           const replyToMessageId = ctx.message?.message_id;
-          const botToken = this.config?.botToken || '';
+          const botToken = this.config?.botToken || "";
           // 完整 URL（不脱敏，用于调试）
           const fullUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
           if (textContent.length <= MAX_LENGTH) {
             const startTime = Date.now();
-            log(`[Telegram Gateway] 调用 sendMessage API:`, JSON.stringify({
-              url: fullUrl,
-              method: 'POST',
-              params: {
-                chat_id: chatId,
-                reply_to_message_id: replyToMessageId,
-                text: textContent.slice(0, 100) + (textContent.length > 100 ? '...' : ''),
-                textLength: textContent.length,
-                parse_mode: 'Markdown',
-              },
-            }));
+            log(
+              `[Telegram Gateway] 调用 sendMessage API:`,
+              JSON.stringify({
+                url: fullUrl,
+                method: "POST",
+                params: {
+                  chat_id: chatId,
+                  reply_to_message_id: replyToMessageId,
+                  text: textContent.slice(0, 100) + (textContent.length > 100 ? "..." : ""),
+                  textLength: textContent.length,
+                  parse_mode: "Markdown",
+                },
+              }),
+            );
             try {
-              const result = await ctx.reply(textContent, { parse_mode: 'Markdown' });
-              log(`[Telegram Gateway] sendMessage 成功:`, JSON.stringify({
-                messageId: result.message_id,
-                chatId: result.chat.id,
-                duration: Date.now() - startTime,
-              }));
+              const result = await ctx.reply(textContent, { parse_mode: "Markdown" });
+              log(
+                `[Telegram Gateway] sendMessage 成功:`,
+                JSON.stringify({
+                  messageId: result.message_id,
+                  chatId: result.chat.id,
+                  duration: Date.now() - startTime,
+                }),
+              );
             } catch (mdError) {
               // Fallback to plain text if markdown fails
               log(`[Telegram Gateway] Markdown 解析失败，使用纯文本重试`);
               const result = await ctx.reply(textContent);
-              log(`[Telegram Gateway] sendMessage (纯文本) 成功:`, JSON.stringify({
-                messageId: result.message_id,
-                chatId: result.chat.id,
-                duration: Date.now() - startTime,
-              }));
+              log(
+                `[Telegram Gateway] sendMessage (纯文本) 成功:`,
+                JSON.stringify({
+                  messageId: result.message_id,
+                  chatId: result.chat.id,
+                  duration: Date.now() - startTime,
+                }),
+              );
             }
           } else {
             // Split by newlines or by length
@@ -710,31 +807,40 @@ export class TelegramGateway extends EventEmitter {
             for (let i = 0; i < chunks.length; i++) {
               const chunk = chunks[i];
               const startTime = Date.now();
-              log(`[Telegram Gateway] 调用 sendMessage API (分段 ${i + 1}/${chunks.length}):`, JSON.stringify({
-                url: fullUrl,
-                method: 'POST',
-                params: {
-                  chat_id: chatId,
-                  reply_to_message_id: i === 0 ? replyToMessageId : undefined,
-                  text: chunk.slice(0, 100) + (chunk.length > 100 ? '...' : ''),
-                  chunkLength: chunk.length,
-                  parse_mode: 'Markdown',
-                },
-              }));
+              log(
+                `[Telegram Gateway] 调用 sendMessage API (分段 ${i + 1}/${chunks.length}):`,
+                JSON.stringify({
+                  url: fullUrl,
+                  method: "POST",
+                  params: {
+                    chat_id: chatId,
+                    reply_to_message_id: i === 0 ? replyToMessageId : undefined,
+                    text: chunk.slice(0, 100) + (chunk.length > 100 ? "..." : ""),
+                    chunkLength: chunk.length,
+                    parse_mode: "Markdown",
+                  },
+                }),
+              );
               try {
-                const result = await ctx.reply(chunk, { parse_mode: 'Markdown' });
-                log(`[Telegram Gateway] sendMessage 成功 (分段 ${i + 1}/${chunks.length}):`, JSON.stringify({
-                  messageId: result.message_id,
-                  chatId: result.chat.id,
-                  duration: Date.now() - startTime,
-                }));
+                const result = await ctx.reply(chunk, { parse_mode: "Markdown" });
+                log(
+                  `[Telegram Gateway] sendMessage 成功 (分段 ${i + 1}/${chunks.length}):`,
+                  JSON.stringify({
+                    messageId: result.message_id,
+                    chatId: result.chat.id,
+                    duration: Date.now() - startTime,
+                  }),
+                );
               } catch (mdError) {
                 const result = await ctx.reply(chunk);
-                log(`[Telegram Gateway] sendMessage (纯文本) 成功 (分段 ${i + 1}/${chunks.length}):`, JSON.stringify({
-                  messageId: result.message_id,
-                  chatId: result.chat.id,
-                  duration: Date.now() - startTime,
-                }));
+                log(
+                  `[Telegram Gateway] sendMessage (纯文本) 成功 (分段 ${i + 1}/${chunks.length}):`,
+                  JSON.stringify({
+                    messageId: result.message_id,
+                    chatId: result.chat.id,
+                    duration: Date.now() - startTime,
+                  }),
+                );
               }
             }
             log(`[Telegram Gateway] 已发送全部 ${chunks.length} 条消息`);
@@ -747,7 +853,7 @@ export class TelegramGateway extends EventEmitter {
     };
 
     // Emit message event
-    this.emit('message', imMessage);
+    this.emit("message", imMessage);
 
     // Call message callback if set
     if (this.onMessageCallback) {
@@ -767,17 +873,17 @@ export class TelegramGateway extends EventEmitter {
     if (attachments.length === 1) {
       const att = attachments[0];
       switch (att.type) {
-        case 'image':
+        case "image":
           return `[图片: ${att.localPath}]`;
-        case 'video':
+        case "video":
           return `[视频: ${att.fileName || att.localPath}]`;
-        case 'audio':
+        case "audio":
           return `[音频: ${att.fileName || att.localPath}]`;
-        case 'voice':
+        case "voice":
           return `[语音消息: ${att.localPath}]`;
-        case 'document':
+        case "document":
           return `[文件: ${att.fileName || att.localPath}]`;
-        case 'sticker':
+        case "sticker":
           return `[贴纸: ${att.localPath}]`;
         default:
           return `[媒体: ${att.localPath}]`;
@@ -800,10 +906,10 @@ export class TelegramGateway extends EventEmitter {
       }
 
       // Try to split at newline
-      let splitIndex = remaining.lastIndexOf('\n', maxLength);
+      let splitIndex = remaining.lastIndexOf("\n", maxLength);
       if (splitIndex === -1 || splitIndex < maxLength / 2) {
         // Try to split at space
-        splitIndex = remaining.lastIndexOf(' ', maxLength);
+        splitIndex = remaining.lastIndexOf(" ", maxLength);
       }
       if (splitIndex === -1 || splitIndex < maxLength / 2) {
         // Force split at maxLength
@@ -822,7 +928,7 @@ export class TelegramGateway extends EventEmitter {
    */
   async sendNotification(text: string): Promise<void> {
     if (!this.bot || !this.lastChatId) {
-      throw new Error('No conversation available for notification');
+      throw new Error("No conversation available for notification");
     }
     await this.bot.api.sendMessage(this.lastChatId, text);
     this.status.lastOutboundAt = Date.now();

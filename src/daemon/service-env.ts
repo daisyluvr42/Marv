@@ -206,13 +206,13 @@ export function buildServiceEnvironment(params: {
   launchdLabel?: string;
 }): Record<string, string | undefined> {
   const { env, port, token, launchdLabel } = params;
-  const profile = env.MARV_PROFILE ?? env.OPENCLAW_PROFILE;
+  const profile = env.MARV_PROFILE ?? env.MARV_PROFILE;
   const resolvedLaunchdLabel =
     launchdLabel ||
     (process.platform === "darwin" ? resolveGatewayLaunchAgentLabel(profile) : undefined);
   const systemdUnit = `${resolveGatewaySystemdServiceName(profile)}.service`;
-  const stateDir = env.MARV_STATE_DIR ?? env.OPENCLAW_STATE_DIR;
-  const configPath = env.MARV_CONFIG_PATH ?? env.OPENCLAW_CONFIG_PATH;
+  const stateDir = env.MARV_STATE_DIR ?? env.MARV_STATE_DIR;
+  const configPath = env.MARV_CONFIG_PATH ?? env.MARV_CONFIG_PATH;
   // Keep a usable temp directory for supervised services even when the host env omits TMPDIR.
   const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
   return {
@@ -220,25 +220,25 @@ export function buildServiceEnvironment(params: {
     TMPDIR: tmpDir,
     PATH: buildMinimalServicePath({ env }),
     MARV_PROFILE: profile,
-    OPENCLAW_PROFILE: profile,
+    MARV_PROFILE: profile,
     MARV_STATE_DIR: stateDir,
-    OPENCLAW_STATE_DIR: stateDir,
+    MARV_STATE_DIR: stateDir,
     MARV_CONFIG_PATH: configPath,
-    OPENCLAW_CONFIG_PATH: configPath,
+    MARV_CONFIG_PATH: configPath,
     MARV_GATEWAY_PORT: String(port),
-    OPENCLAW_GATEWAY_PORT: String(port),
+    MARV_GATEWAY_PORT: String(port),
     MARV_GATEWAY_TOKEN: token,
-    OPENCLAW_GATEWAY_TOKEN: token,
+    MARV_GATEWAY_TOKEN: token,
     MARV_LAUNCHD_LABEL: resolvedLaunchdLabel,
-    OPENCLAW_LAUNCHD_LABEL: resolvedLaunchdLabel,
+    MARV_LAUNCHD_LABEL: resolvedLaunchdLabel,
     MARV_SYSTEMD_UNIT: systemdUnit,
-    OPENCLAW_SYSTEMD_UNIT: systemdUnit,
+    MARV_SYSTEMD_UNIT: systemdUnit,
     MARV_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
-    OPENCLAW_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
+    MARV_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
     MARV_SERVICE_KIND: GATEWAY_SERVICE_KIND,
-    OPENCLAW_SERVICE_KIND: GATEWAY_SERVICE_KIND,
+    MARV_SERVICE_KIND: GATEWAY_SERVICE_KIND,
     MARV_SERVICE_VERSION: VERSION,
-    OPENCLAW_SERVICE_VERSION: VERSION,
+    MARV_SERVICE_VERSION: VERSION,
   };
 }
 
@@ -246,32 +246,32 @@ export function buildNodeServiceEnvironment(params: {
   env: Record<string, string | undefined>;
 }): Record<string, string | undefined> {
   const { env } = params;
-  const stateDir = env.MARV_STATE_DIR ?? env.OPENCLAW_STATE_DIR;
-  const configPath = env.MARV_CONFIG_PATH ?? env.OPENCLAW_CONFIG_PATH;
+  const stateDir = env.MARV_STATE_DIR ?? env.MARV_STATE_DIR;
+  const configPath = env.MARV_CONFIG_PATH ?? env.MARV_CONFIG_PATH;
   const tmpDir = env.TMPDIR?.trim() || os.tmpdir();
   return {
     HOME: env.HOME,
     TMPDIR: tmpDir,
     PATH: buildMinimalServicePath({ env }),
     MARV_STATE_DIR: stateDir,
-    OPENCLAW_STATE_DIR: stateDir,
+    MARV_STATE_DIR: stateDir,
     MARV_CONFIG_PATH: configPath,
-    OPENCLAW_CONFIG_PATH: configPath,
+    MARV_CONFIG_PATH: configPath,
     MARV_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
-    OPENCLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
+    MARV_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),
     MARV_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
-    OPENCLAW_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
+    MARV_SYSTEMD_UNIT: resolveNodeSystemdServiceName(),
     MARV_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
-    OPENCLAW_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
+    MARV_WINDOWS_TASK_NAME: resolveNodeWindowsTaskName(),
     MARV_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
-    OPENCLAW_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
+    MARV_TASK_SCRIPT_NAME: NODE_WINDOWS_TASK_SCRIPT_NAME,
     MARV_LOG_PREFIX: "node",
-    OPENCLAW_LOG_PREFIX: "node",
+    MARV_LOG_PREFIX: "node",
     MARV_SERVICE_MARKER: NODE_SERVICE_MARKER,
-    OPENCLAW_SERVICE_MARKER: NODE_SERVICE_MARKER,
+    MARV_SERVICE_MARKER: NODE_SERVICE_MARKER,
     MARV_SERVICE_KIND: NODE_SERVICE_KIND,
-    OPENCLAW_SERVICE_KIND: NODE_SERVICE_KIND,
+    MARV_SERVICE_KIND: NODE_SERVICE_KIND,
     MARV_SERVICE_VERSION: VERSION,
-    OPENCLAW_SERVICE_VERSION: VERSION,
+    MARV_SERVICE_VERSION: VERSION,
   };
 }

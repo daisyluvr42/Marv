@@ -26,8 +26,8 @@ Uses the Gateway auth configuration. Send a bearer token:
 
 Notes:
 
-- When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`).
-- When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `OPENCLAW_GATEWAY_PASSWORD`).
+- When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `MARV_GATEWAY_TOKEN`).
+- When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `MARV_GATEWAY_PASSWORD`).
 - If `gateway.auth.rateLimit` is configured and too many auth failures occur, the endpoint returns `429` with `Retry-After`.
 
 ## Choosing an agent
@@ -39,11 +39,11 @@ No custom headers required: encode the agent id in the OpenResponses `model` fie
 
 Or target a specific Marv agent by header:
 
-- `x-openclaw-agent-id: <agentId>` (default: `main`)
+- `x-marv-agent-id: <agentId>` (default: `main`)
 
 Advanced:
 
-- `x-openclaw-session-key: <sessionKey>` to fully control session routing.
+- `x-marv-session-key: <sessionKey>` to fully control session routing.
 
 ## Enabling the endpoint
 
@@ -311,9 +311,9 @@ Non-streaming:
 curl -sS http://127.0.0.1:18789/v1/responses \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-agent-id: main' \
+  -H 'x-marv-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "marv",
     "input": "hi"
   }'
 ```
@@ -324,9 +324,9 @@ Streaming:
 curl -N http://127.0.0.1:18789/v1/responses \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-agent-id: main' \
+  -H 'x-marv-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "marv",
     "stream": true,
     "input": "hi"
   }'

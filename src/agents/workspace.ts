@@ -12,7 +12,7 @@ export function resolveDefaultAgentWorkspaceDir(
   homedir: () => string = os.homedir,
 ): string {
   const home = resolveRequiredHomeDir(env, homedir);
-  const profile = env.MARV_PROFILE?.trim() || env.OPENCLAW_PROFILE?.trim();
+  const profile = env.MARV_PROFILE?.trim() || env.MARV_PROFILE?.trim();
   if (profile && profile.toLowerCase() !== "default") {
     return path.join(home, ".marv", `workspace-${profile}`);
   }
@@ -30,7 +30,7 @@ export const DEFAULT_BOOTSTRAP_FILENAME = "BOOTSTRAP.md";
 export const DEFAULT_MEMORY_FILENAME = "MEMORY.md";
 export const DEFAULT_MEMORY_ALT_FILENAME = "memory.md";
 const WORKSPACE_STATE_DIRNAME = ".marv";
-const LEGACY_WORKSPACE_STATE_DIRNAME = ".openclaw";
+const LEGACY_WORKSPACE_STATE_DIRNAME = ".marv";
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
 const WORKSPACE_STATE_VERSION = 1;
 

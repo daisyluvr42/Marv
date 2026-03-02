@@ -26,8 +26,8 @@ export function resolveAgentIdFromHeader(req: IncomingMessage): string | undefin
   const raw =
     getHeader(req, "x-marv-agent-id")?.trim() ||
     getHeader(req, "x-marv-agent")?.trim() ||
-    getHeader(req, "x-openclaw-agent-id")?.trim() ||
-    getHeader(req, "x-openclaw-agent")?.trim() ||
+    getHeader(req, "x-marv-agent-id")?.trim() ||
+    getHeader(req, "x-marv-agent")?.trim() ||
     "";
   if (!raw) {
     return undefined;
@@ -43,7 +43,7 @@ export function resolveAgentIdFromModel(model: string | undefined): string | und
 
   const m =
     raw.match(/^marv[:/](?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i) ??
-    raw.match(/^openclaw[:/](?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i) ??
+    raw.match(/^marv[:/](?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i) ??
     raw.match(/^agent:(?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i);
   const agentId = m?.groups?.agentId;
   if (!agentId) {
@@ -73,7 +73,7 @@ export function resolveSessionKey(params: {
 }): string {
   const explicit =
     getHeader(params.req, "x-marv-session-key")?.trim() ||
-    getHeader(params.req, "x-openclaw-session-key")?.trim();
+    getHeader(params.req, "x-marv-session-key")?.trim();
   if (explicit) {
     return explicit;
   }

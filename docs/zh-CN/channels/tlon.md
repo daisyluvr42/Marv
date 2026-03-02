@@ -25,7 +25,7 @@ Tlon 作为插件提供，不包含在核心安装中。
 通过 CLI 安装（npm 仓库）：
 
 ```bash
-marv plugins install @openclaw/tlon
+marv plugins install @marv/tlon
 ```
 
 本地检出（从 git 仓库运行时）：

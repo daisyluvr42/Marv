@@ -264,7 +264,7 @@ describe("uploadStickerDiscord", () => {
     await uploadStickerDiscord(
       {
         guildId: "g1",
-        name: "openclaw_wave",
+        name: "marv_wave",
         description: "Marv waving",
         tags: "👋",
         mediaUrl: "file:///tmp/wave.png",
@@ -275,7 +275,7 @@ describe("uploadStickerDiscord", () => {
       Routes.guildStickers("g1"),
       expect.objectContaining({
         body: {
-          name: "openclaw_wave",
+          name: "marv_wave",
           description: "Marv waving",
           tags: "👋",
           files: [

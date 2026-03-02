@@ -28,7 +28,7 @@ marv plugins list
 2. Install an official plugin (example: Voice Call):
 
 ```bash
-marv plugins install @openclaw/voice-call
+marv plugins install @marv/voice-call
 ```
 
 Npm specs are **registry-only** (package name + optional version/tag). Git/URL/file
@@ -41,15 +41,15 @@ Looking for third-party listings? See [Community plugins](/plugins/community).
 
 ## Available plugins (official)
 
-- Microsoft Teams is plugin-only as of 2026.1.15; install `@openclaw/msteams` if you use Teams.
+- Microsoft Teams is plugin-only as of 2026.1.15; install `@marv/msteams` if you use Teams.
 - Memory (Core) — bundled memory search plugin (enabled by default via `plugins.slots.memory`)
 - Memory (LanceDB) — bundled long-term memory plugin (auto-recall/capture; set `plugins.slots.memory = "memory-lancedb"`)
-- [Voice Call](/plugins/voice-call) — `@openclaw/voice-call`
-- [Zalo Personal](/plugins/zalouser) — `@openclaw/zalouser`
-- [Matrix](/channels/matrix) — `@openclaw/matrix`
-- [Nostr](/channels/nostr) — `@openclaw/nostr`
-- [Zalo](/channels/zalo) — `@openclaw/zalo`
-- [Microsoft Teams](/channels/msteams) — `@openclaw/msteams`
+- [Voice Call](/plugins/voice-call) — `@marv/voice-call`
+- [Zalo Personal](/plugins/zalouser) — `@marv/zalouser`
+- [Matrix](/channels/matrix) — `@marv/matrix`
+- [Nostr](/channels/nostr) — `@marv/nostr`
+- [Zalo](/channels/zalo) — `@marv/zalo`
+- [Microsoft Teams](/channels/msteams) — `@marv/msteams`
 - Google Antigravity OAuth (provider auth) — bundled as `google-antigravity-auth` (disabled by default)
 - Gemini CLI OAuth (provider auth) — bundled as `google-gemini-cli-auth` (disabled by default)
 - Qwen OAuth (provider auth) — bundled as `qwen-portal-auth` (disabled by default)
@@ -100,17 +100,17 @@ Marv scans, in order:
 
 2. Workspace extensions
 
-- `<workspace>/.openclaw/extensions/*.ts`
-- `<workspace>/.openclaw/extensions/*/index.ts`
+- `<workspace>/.marv/extensions/*.ts`
+- `<workspace>/.marv/extensions/*/index.ts`
 
 3. Global extensions
 
-- `~/.openclaw/extensions/*.ts`
-- `~/.openclaw/extensions/*/index.ts`
+- `~/.marv/extensions/*.ts`
+- `~/.marv/extensions/*/index.ts`
 
 4. Bundled extensions (shipped with Marv, **disabled by default**)
 
-- `<openclaw>/extensions/*`
+- `<marv>/extensions/*`
 
 Bundled plugins must be enabled explicitly via `plugins.entries.<id>.enabled`
 or `marv plugins enable <id>`. Installed plugins are enabled by default,
@@ -130,7 +130,7 @@ A plugin directory may include a `package.json` with `marv.extensions`:
 ```json
 {
   "name": "my-pack",
-  "openclaw": {
+  "marv": {
     "extensions": ["./src/safety.ts", "./src/tools.ts"]
   }
 }
@@ -155,8 +155,8 @@ Example:
 
 ```json
 {
-  "name": "@openclaw/nextcloud-talk",
-  "openclaw": {
+  "name": "@marv/nextcloud-talk",
+  "marv": {
     "extensions": ["./index.ts"],
     "channel": {
       "id": "nextcloud-talk",
@@ -169,7 +169,7 @@ Example:
       "aliases": ["nc-talk", "nc"]
     },
     "install": {
-      "npmSpec": "@openclaw/nextcloud-talk",
+      "npmSpec": "@marv/nextcloud-talk",
       "localPath": "extensions/nextcloud-talk",
       "defaultChoice": "npm"
     }
@@ -180,13 +180,13 @@ Example:
 Marv can also merge **external channel catalogs** (for example, an MPM
 registry export). Drop a JSON file at one of:
 
-- `~/.openclaw/mpm/plugins.json`
-- `~/.openclaw/mpm/catalog.json`
-- `~/.openclaw/plugins/catalog.json`
+- `~/.marv/mpm/plugins.json`
+- `~/.marv/mpm/catalog.json`
+- `~/.marv/plugins/catalog.json`
 
-Or point `OPENCLAW_PLUGIN_CATALOG_PATHS` (or `OPENCLAW_MPM_CATALOG_PATHS`) at
+Or point `MARV_PLUGIN_CATALOG_PATHS` (or `MARV_MPM_CATALOG_PATHS`) at
 one or more JSON files (comma/semicolon/`PATH`-delimited). Each file should
-contain `{ "entries": [ { "name": "@scope/pkg", "openclaw": { "channel": {...}, "install": {...} } } ] }`.
+contain `{ "entries": [ { "name": "@scope/pkg", "marv": { "channel": {...}, "install": {...} } } ] }`.
 
 ## Plugin IDs
 
@@ -289,12 +289,12 @@ Example:
 ```bash
 marv plugins list
 marv plugins info <id>
-marv plugins install <path>                 # copy a local file/dir into ~/.openclaw/extensions/<id>
+marv plugins install <path>                 # copy a local file/dir into ~/.marv/extensions/<id>
 marv plugins install ./extensions/voice-call # relative path ok
 marv plugins install ./plugin.tgz           # install from a local tarball
 marv plugins install ./plugin.zip           # install from a local zip
 marv plugins install -l ./extensions/voice-call # link (no copy) for dev
-marv plugins install @openclaw/voice-call # install from npm
+marv plugins install @marv/voice-call # install from npm
 marv plugins update <id>
 marv plugins update --all
 marv plugins enable <id>
@@ -321,7 +321,7 @@ event-driven automation without a separate hook pack install.
 ### Example
 
 ```
-import { registerPluginHooksFromDir } from "openclaw/plugin-sdk";
+import { registerPluginHooksFromDir } from "marv/plugin-sdk";
 
 export default function register(api) {
   registerPluginHooksFromDir(api, "./hooks");
@@ -633,13 +633,13 @@ it’s present in your workspace/managed skills locations.
 Recommended packaging:
 
 - Main package: `marv` (this repo)
-- Plugins: separate npm packages under `@openclaw/*` (example: `@openclaw/voice-call`)
+- Plugins: separate npm packages under `@marv/*` (example: `@marv/voice-call`)
 
 Publishing contract:
 
 - Plugin `package.json` must include `marv.extensions` with one or more entry files.
 - Entry files can be `.js` or `.ts` (jiti loads TS at runtime).
-- `marv plugins install <npm-spec>` uses `npm pack`, extracts into `~/.openclaw/extensions/<id>/`, and enables it in config.
+- `marv plugins install <npm-spec>` uses `npm pack`, extracts into `~/.marv/extensions/<id>/`, and enables it in config.
 - Config key stability: scoped packages are normalized to the **unscoped** id for `plugins.entries.*`.
 
 ## Example plugin: Voice Call

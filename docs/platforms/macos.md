@@ -35,7 +35,7 @@ capabilities to the agent as a node.
 ## Launchd control
 
 The app manages a per‑user LaunchAgent labeled `bot.molt.gateway`
-(or `bot.molt.<profile>` when using `--profile`/`OPENCLAW_PROFILE`; legacy `com.marv.*` still unloads).
+(or `bot.molt.<profile>` when using `--profile`/`MARV_PROFILE`; legacy `com.marv.*` still unloads).
 
 ```bash
 launchctl kickstart -k gui/$UID/bot.molt.gateway
@@ -78,7 +78,7 @@ Gateway -> Node Service (WS)
 Security + ask + allowlist are stored locally on the Mac in:
 
 ```
-~/.openclaw/exec-approvals.json
+~/.marv/exec-approvals.json
 ```
 
 Example:
@@ -153,8 +153,8 @@ logic that the macOS app uses, without launching the app.
 
 ```bash
 cd apps/macos
-swift run openclaw-mac connect --json
-swift run openclaw-mac discover --timeout 3000 --json
+swift run marv-mac connect --json
+swift run marv-mac discover --timeout 3000 --json
 ```
 
 Connect options:

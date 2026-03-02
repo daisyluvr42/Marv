@@ -38,7 +38,7 @@ title: "Retry Policy"
 
 ## Configuration
 
-Set retry policy per provider in `~/.openclaw/marv.json`:
+Set retry policy per provider in `~/.marv/marv.json`:
 
 ```json5
 {

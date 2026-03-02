@@ -1,4 +1,4 @@
-export type AnthropicApiFormat = 'anthropic' | 'openai';
+export type AnthropicApiFormat = "anthropic" | "openai";
 
 export type OpenAIStreamChunk = {
   id?: string;
@@ -28,7 +28,7 @@ export type OpenAIStreamChunk = {
 };
 
 function toObject(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
   return {};
@@ -39,46 +39,46 @@ function toArray(value: unknown): unknown[] {
 }
 
 function toString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+  return typeof value === "string" ? value : "";
 }
 
 function toOptionalObject(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
   return null;
 }
 
 function stringifyUnknown(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
   try {
-    return JSON.stringify(value ?? '');
+    return JSON.stringify(value ?? "");
   } catch {
-    return '';
+    return "";
   }
 }
 
 export function normalizeProviderApiFormat(format: unknown): AnthropicApiFormat {
-  if (format === 'openai') {
-    return 'openai';
+  if (format === "openai") {
+    return "openai";
   }
-  return 'anthropic';
+  return "anthropic";
 }
 
 export function mapStopReason(finishReason?: string | null): string | null {
   if (!finishReason) {
     return null;
   }
-  if (finishReason === 'tool_calls') {
-    return 'tool_use';
+  if (finishReason === "tool_calls") {
+    return "tool_use";
   }
-  if (finishReason === 'stop') {
-    return 'end_turn';
+  if (finishReason === "stop") {
+    return "end_turn";
   }
-  if (finishReason === 'length') {
-    return 'max_tokens';
+  if (finishReason === "length") {
+    return "max_tokens";
   }
   return finishReason;
 }
@@ -91,7 +91,7 @@ function cleanSchema(schema: unknown): unknown {
   const obj = toObject(schema);
   const output: Record<string, unknown> = { ...obj };
 
-  if (output.format === 'uri') {
+  if (output.format === "uri") {
     delete output.format;
   }
 
@@ -114,7 +114,7 @@ function cleanSchema(schema: unknown): unknown {
 function convertMessageToOpenAI(role: string, content: unknown): Array<Record<string, unknown>> {
   const result: Array<Record<string, unknown>> = [];
 
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     result.push({ role, content });
     return result;
   }
@@ -133,21 +133,21 @@ function convertMessageToOpenAI(role: string, content: unknown): Array<Record<st
     const blockObj = toObject(block);
     const blockType = toString(blockObj.type);
 
-    if (blockType === 'text') {
+    if (blockType === "text") {
       const text = toString(blockObj.text);
       if (text) {
-        contentParts.push({ type: 'text', text });
+        contentParts.push({ type: "text", text });
       }
       continue;
     }
 
-    if (blockType === 'image') {
+    if (blockType === "image") {
       const source = toObject(blockObj.source);
-      const mediaType = toString(source.media_type) || 'image/png';
+      const mediaType = toString(source.media_type) || "image/png";
       const data = toString(source.data);
       if (data) {
         contentParts.push({
-          type: 'image_url',
+          type: "image_url",
           image_url: {
             url: `data:${mediaType};base64,${data}`,
           },
@@ -156,13 +156,13 @@ function convertMessageToOpenAI(role: string, content: unknown): Array<Record<st
       continue;
     }
 
-    if (blockType === 'tool_use') {
+    if (blockType === "tool_use") {
       const id = toString(blockObj.id);
       const name = toString(blockObj.name);
       const input = blockObj.input ?? {};
       const toolCall: Record<string, unknown> = {
         id,
-        type: 'function',
+        type: "function",
         function: {
           name,
           arguments: stringifyUnknown(input),
@@ -189,18 +189,18 @@ function convertMessageToOpenAI(role: string, content: unknown): Array<Record<st
       continue;
     }
 
-    if (blockType === 'tool_result') {
+    if (blockType === "tool_result") {
       const toolCallId = toString(blockObj.tool_use_id);
       const toolContent = stringifyUnknown(blockObj.content);
       result.push({
-        role: 'tool',
+        role: "tool",
         tool_call_id: toolCallId,
         content: toolContent,
       });
       continue;
     }
 
-    if (blockType === 'thinking') {
+    if (blockType === "thinking") {
       const thinking = toString(blockObj.thinking) || toString(blockObj.text);
       if (thinking) {
         thinkingParts.push(thinking);
@@ -209,11 +209,11 @@ function convertMessageToOpenAI(role: string, content: unknown): Array<Record<st
     }
   }
 
-  const mergedThinking = thinkingParts.join('');
-  if (contentParts.length > 0 || toolCalls.length > 0 || (role === 'assistant' && mergedThinking)) {
+  const mergedThinking = thinkingParts.join("");
+  if (contentParts.length > 0 || toolCalls.length > 0 || (role === "assistant" && mergedThinking)) {
     const nextMessage: Record<string, unknown> = { role };
 
-    if (contentParts.length === 1 && contentParts[0].type === 'text') {
+    if (contentParts.length === 1 && contentParts[0].type === "text") {
       nextMessage.content = contentParts[0].text;
     } else if (contentParts.length > 0) {
       nextMessage.content = contentParts;
@@ -225,7 +225,7 @@ function convertMessageToOpenAI(role: string, content: unknown): Array<Record<st
       nextMessage.tool_calls = toolCalls;
     }
 
-    if (role === 'assistant' && mergedThinking) {
+    if (role === "assistant" && mergedThinking) {
       nextMessage.reasoning_content = mergedThinking;
     }
 
@@ -246,14 +246,14 @@ export function anthropicToOpenAI(body: unknown): Record<string, unknown> {
   const messages: Array<Record<string, unknown>> = [];
 
   const system = source.system;
-  if (typeof system === 'string' && system) {
-    messages.push({ role: 'system', content: system });
+  if (typeof system === "string" && system) {
+    messages.push({ role: "system", content: system });
   } else if (Array.isArray(system)) {
     for (const item of system) {
       const itemObj = toObject(item);
       const text = toString(itemObj.text);
       if (text) {
-        messages.push({ role: 'system', content: text });
+        messages.push({ role: "system", content: text });
       }
     }
   }
@@ -261,7 +261,7 @@ export function anthropicToOpenAI(body: unknown): Record<string, unknown> {
   const sourceMessages = toArray(source.messages);
   for (const item of sourceMessages) {
     const itemObj = toObject(item);
-    const role = toString(itemObj.role) || 'user';
+    const role = toString(itemObj.role) || "user";
     const converted = convertMessageToOpenAI(role, itemObj.content);
     messages.push(...converted);
   }
@@ -285,11 +285,11 @@ export function anthropicToOpenAI(body: unknown): Record<string, unknown> {
   }
 
   const tools = toArray(source.tools)
-    .filter((tool) => toString(toObject(tool).type) !== 'BatchTool')
+    .filter((tool) => toString(toObject(tool).type) !== "BatchTool")
     .map((tool) => {
       const toolObj = toObject(tool);
       return {
-        type: 'function',
+        type: "function",
         function: {
           name: toString(toolObj.name),
           description: toolObj.description,
@@ -319,17 +319,17 @@ export function openAIToAnthropic(body: unknown): Record<string, unknown> {
 
   const reasoningContent = toString(message.reasoning_content) || toString(message.reasoning);
   if (reasoningContent) {
-    content.push({ type: 'thinking', thinking: reasoningContent });
+    content.push({ type: "thinking", thinking: reasoningContent });
   }
 
   const textContent = message.content;
-  if (typeof textContent === 'string' && textContent) {
-    content.push({ type: 'text', text: textContent });
+  if (typeof textContent === "string" && textContent) {
+    content.push({ type: "text", text: textContent });
   } else if (Array.isArray(textContent)) {
     for (const part of textContent) {
       const partObj = toObject(part);
-      if (partObj.type === 'text' && typeof partObj.text === 'string' && partObj.text) {
-        content.push({ type: 'text', text: partObj.text });
+      if (partObj.type === "text" && typeof partObj.text === "string" && partObj.text) {
+        content.push({ type: "text", text: partObj.text });
       }
     }
   }
@@ -338,7 +338,7 @@ export function openAIToAnthropic(body: unknown): Record<string, unknown> {
   for (const toolCall of toolCalls) {
     const toolCallObj = toObject(toolCall);
     const functionObj = toObject(toolCallObj.function);
-    const argsString = toString(functionObj.arguments) || '{}';
+    const argsString = toString(functionObj.arguments) || "{}";
     let parsedArgs: unknown = {};
     try {
       parsedArgs = JSON.parse(argsString);
@@ -347,7 +347,7 @@ export function openAIToAnthropic(body: unknown): Record<string, unknown> {
     }
 
     const toolUseBlock: Record<string, unknown> = {
-      type: 'tool_use',
+      type: "tool_use",
       id: toString(toolCallObj.id),
       name: toString(functionObj.name),
       input: parsedArgs,
@@ -381,12 +381,12 @@ export function openAIToAnthropic(body: unknown): Record<string, unknown> {
 
   return {
     id: toString(source.id),
-    type: 'message',
-    role: 'assistant',
+    type: "message",
+    role: "assistant",
     content,
     model: toString(source.model),
     stop_reason: mapStopReason(
-      typeof firstChoice.finish_reason === 'string' ? firstChoice.finish_reason : null
+      typeof firstChoice.finish_reason === "string" ? firstChoice.finish_reason : null,
     ),
     stop_sequence: null,
     usage: {
@@ -397,28 +397,26 @@ export function openAIToAnthropic(body: unknown): Record<string, unknown> {
 }
 
 export function buildOpenAIChatCompletionsURL(baseURL: string): string {
-  const normalized = baseURL.trim().replace(/\/+$/, '');
+  const normalized = baseURL.trim().replace(/\/+$/, "");
   if (!normalized) {
-    return '/v1/chat/completions';
+    return "/v1/chat/completions";
   }
-  if (normalized.endsWith('/chat/completions')) {
+  if (normalized.endsWith("/chat/completions")) {
     return normalized;
   }
 
-  if (normalized.includes('generativelanguage.googleapis.com')) {
-    if (normalized.endsWith('/v1beta/openai') || normalized.endsWith('/v1/openai')) {
+  if (normalized.includes("generativelanguage.googleapis.com")) {
+    if (normalized.endsWith("/v1beta/openai") || normalized.endsWith("/v1/openai")) {
       return `${normalized}/chat/completions`;
     }
-    if (normalized.endsWith('/v1beta') || normalized.endsWith('/v1')) {
-      const betaBase = normalized.endsWith('/v1')
-        ? `${normalized.slice(0, -3)}v1beta`
-        : normalized;
+    if (normalized.endsWith("/v1beta") || normalized.endsWith("/v1")) {
+      const betaBase = normalized.endsWith("/v1") ? `${normalized.slice(0, -3)}v1beta` : normalized;
       return `${betaBase}/openai/chat/completions`;
     }
     return `${normalized}/v1beta/openai/chat/completions`;
   }
 
-  if (normalized.endsWith('/v1')) {
+  if (normalized.endsWith("/v1")) {
     return `${normalized}/chat/completions`;
   }
   return `${normalized}/v1/chat/completions`;

@@ -32,7 +32,7 @@ macOS 应用通过 Gateway 网关展示 Marv Skills；它不会在本地解析 S
 
 ## 环境变量/API 密钥
 
-- 应用将密钥存储在 `~/.openclaw/marv.json` 的 `skills.entries.<skillKey>` 下。
+- 应用将密钥存储在 `~/.marv/marv.json` 的 `skills.entries.<skillKey>` 下。
 - `skills.update` 更新 `enabled`、`apiKey` 和 `env`。
 
 ## 远程模式

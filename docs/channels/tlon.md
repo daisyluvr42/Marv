@@ -21,7 +21,7 @@ Tlon ships as a plugin and is not bundled with the core install.
 Install via CLI (npm registry):
 
 ```bash
-marv plugins install @openclaw/tlon
+marv plugins install @marv/tlon
 ```
 
 Local checkout (when running from a git repo):

@@ -19,7 +19,7 @@ x-i18n:
 
 ## 太长不看
 
-- **个性化设置存放在仓库之外：** `~/.openclaw/workspace`（工作区）+ `~/.openclaw/marv.json`（配置）。
+- **个性化设置存放在仓库之外：** `~/.marv/workspace`（工作区）+ `~/.marv/marv.json`（配置）。
 - **稳定工作流：** 安装 macOS 应用；让它运行内置的 Gateway 网关。
 - **前沿工作流：** 通过 `pnpm gateway:watch` 自己运行 Gateway 网关，然后让 macOS 应用以本地模式连接。
 
@@ -33,8 +33,8 @@ x-i18n:
 
 如果你想要"100% 为我定制"*并且*易于更新，将你的自定义内容保存在：
 
-- **配置：** `~/.openclaw/marv.json`（JSON/JSON5 格式）
-- **工作区：** `~/.openclaw/workspace`（Skills、提示、记忆；将其设为私有 git 仓库）
+- **配置：** `~/.marv/marv.json`（JSON/JSON5 格式）
+- **工作区：** `~/.marv/workspace`（Skills、提示、记忆；将其设为私有 git 仓库）
 
 引导一次：
 
@@ -112,26 +112,26 @@ marv health
 
 - **端口错误：** Gateway 网关 WS 默认为 `ws://127.0.0.1:18789`；保持应用 + CLI 在同一端口上。
 - **状态存储位置：**
-  - 凭证：`~/.openclaw/credentials/`
-  - 会话：`~/.openclaw/agents/<agentId>/sessions/`
-  - 日志：`/tmp/openclaw/`
+  - 凭证：`~/.marv/credentials/`
+  - 会话：`~/.marv/agents/<agentId>/sessions/`
+  - 日志：`/tmp/marv/`
 
 ## 凭证存储映射
 
 在调试认证或决定备份什么时使用此映射：
 
-- **WhatsApp**：`~/.openclaw/credentials/whatsapp/<accountId>/creds.json`
+- **WhatsApp**：`~/.marv/credentials/whatsapp/<accountId>/creds.json`
 - **Telegram bot token**：配置/环境变量或 `channels.telegram.tokenFile`
 - **Discord bot token**：配置/环境变量（尚不支持令牌文件）
 - **Slack tokens**：配置/环境变量（`channels.slack.*`）
-- **配对允许列表**：`~/.openclaw/credentials/<channel>-allowFrom.json`
-- **模型认证配置文件**：`~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-- **旧版 OAuth 导入**：`~/.openclaw/credentials/oauth.json`
+- **配对允许列表**：`~/.marv/credentials/<channel>-allowFrom.json`
+- **模型认证配置文件**：`~/.marv/agents/<agentId>/agent/auth-profiles.json`
+- **旧版 OAuth 导入**：`~/.marv/credentials/oauth.json`
   更多详情：[安全](/gateway/security#credential-storage-map)。
 
 ## 更新（不破坏你的设置）
 
-- 将 `~/.openclaw/workspace` 和 `~/.openclaw/` 保持为"你的东西"；不要将个人提示/配置放入 `marv` 仓库。
+- 将 `~/.marv/workspace` 和 `~/.marv/` 保持为"你的东西"；不要将个人提示/配置放入 `marv` 仓库。
 - 更新源码：`git pull` + `pnpm install`（当锁文件更改时）+ 继续使用 `pnpm gateway:watch`。
 
 ## Linux（systemd 用户服务）

@@ -254,9 +254,9 @@ export async function ensureWorkspaceSnapshotBeforeMutation(params: {
       cwd: repoRoot,
       args: [
         "-c",
-        "user.name=OpenClaw Auto Save",
+        "user.name=Marv Auto Save",
         "-c",
-        "user.email=autosave@openclaw.local",
+        "user.email=autosave@marv.local",
         "commit",
         "--no-verify",
         "-m",

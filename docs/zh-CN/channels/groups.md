@@ -235,7 +235,7 @@ requireMention? 是 -> 被提及? 否 -> 仅存储为上下文
       {
         id: "main",
         groupChat: {
-          mentionPatterns: ["@openclaw", "openclaw", "\\+15555550123"],
+          mentionPatterns: ["@marv", "marv", "\\+15555550123"],
           historyLimit: 50,
         },
       },

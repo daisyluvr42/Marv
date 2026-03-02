@@ -11,14 +11,14 @@ import {
   resolveAgentDir,
 } from "../agents/agent-scope.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 
 /**
  * Generate a short 1-2 word filename slug from session content using LLM
  */
 export async function generateSlugViaLLM(params: {
   sessionContent: string;
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
 }): Promise<string | null> {
   let tempSessionFile: string | null = null;
 

@@ -105,9 +105,9 @@ If the Control UI loads, your Gateway is ready for use.
 
 If you run Marv as a service account or want custom config/state locations:
 
-- `OPENCLAW_HOME` sets the home directory used for internal path resolution.
-- `OPENCLAW_STATE_DIR` overrides the state directory.
-- `OPENCLAW_CONFIG_PATH` overrides the config file path.
+- `MARV_HOME` sets the home directory used for internal path resolution.
+- `MARV_STATE_DIR` overrides the state directory.
+- `MARV_CONFIG_PATH` overrides the config file path.
 
 Full environment variable reference: [Environment vars](/help/environment).
 

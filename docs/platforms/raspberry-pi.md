@@ -118,7 +118,7 @@ curl -fsSL https://marv.ai/install.sh | bash
 ### Option B: Hackable Install (For tinkering)
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 npm install
 npm run build

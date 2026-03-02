@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import MarvKit
 
 @MainActor
 final class NodeCapabilityRouter {

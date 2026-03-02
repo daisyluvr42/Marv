@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../config/config.js";
 import type { DmPolicy } from "../../../config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import {
@@ -16,7 +16,7 @@ import { addWildcardAllowFrom, promptAccountId, promptResolvedAllowFrom } from "
 
 const channel = "slack" as const;
 
-function setSlackDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy) {
+function setSlackDmPolicy(cfg: MarvConfig, dmPolicy: DmPolicy) {
   const existingAllowFrom = cfg.channels?.slack?.allowFrom ?? cfg.channels?.slack?.dm?.allowFrom;
   const allowFrom = dmPolicy === "open" ? addWildcardAllowFrom(existingAllowFrom) : undefined;
   return {
@@ -144,10 +144,10 @@ async function promptSlackTokens(prompter: WizardPrompter): Promise<{
 }
 
 function patchSlackConfigForAccount(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   accountId: string,
   patch: Record<string, unknown>,
-): OpenClawConfig {
+): MarvConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,
@@ -182,23 +182,23 @@ function patchSlackConfigForAccount(
 }
 
 function setSlackGroupPolicy(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   accountId: string,
   groupPolicy: "open" | "allowlist" | "disabled",
-): OpenClawConfig {
+): MarvConfig {
   return patchSlackConfigForAccount(cfg, accountId, { groupPolicy });
 }
 
 function setSlackChannelAllowlist(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   accountId: string,
   channelKeys: string[],
-): OpenClawConfig {
+): MarvConfig {
   const channels = Object.fromEntries(channelKeys.map((key) => [key, { allow: true }]));
   return patchSlackConfigForAccount(cfg, accountId, { channels });
 }
 
-function setSlackAllowFrom(cfg: OpenClawConfig, allowFrom: string[]): OpenClawConfig {
+function setSlackAllowFrom(cfg: MarvConfig, allowFrom: string[]): MarvConfig {
   return {
     ...cfg,
     channels: {
@@ -223,10 +223,10 @@ function parseSlackAllowFromInput(raw: string): string[] {
 }
 
 async function promptSlackAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<MarvConfig> {
   const accountId =
     params.accountId && normalizeAccountId(params.accountId)
       ? (normalizeAccountId(params.accountId) ?? DEFAULT_ACCOUNT_ID)

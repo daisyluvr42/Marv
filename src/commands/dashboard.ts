@@ -26,7 +26,7 @@ export async function dashboardCommand(
   const token =
     cfg.gateway?.auth?.token ??
     process.env.MARV_GATEWAY_TOKEN ??
-    process.env.OPENCLAW_GATEWAY_TOKEN ??
+    process.env.MARV_GATEWAY_TOKEN ??
     "";
 
   // LAN URLs fail secure-context checks in browsers.

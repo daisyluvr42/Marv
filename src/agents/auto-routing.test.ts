@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import {
   buildClassifierPrompt,
   classifyComplexityByRules,
@@ -126,7 +126,7 @@ describe("parseClassifierResponse", () => {
 });
 
 describe("resolveAutoRouting", () => {
-  const baseConfig: OpenClawConfig = {
+  const baseConfig: MarvConfig = {
     agents: {
       defaults: {
         autoRouting: {
@@ -143,7 +143,7 @@ describe("resolveAutoRouting", () => {
   };
 
   it("returns routed=false when disabled", async () => {
-    const config: OpenClawConfig = {
+    const config: MarvConfig = {
       agents: { defaults: { autoRouting: { enabled: false } } },
     };
     const result = await resolveAutoRouting({
@@ -204,7 +204,7 @@ ${"x".repeat(1500)}`;
   });
 
   it("returns routed=false when no rule matches the tier", async () => {
-    const config: OpenClawConfig = {
+    const config: MarvConfig = {
       agents: {
         defaults: {
           autoRouting: {
@@ -227,7 +227,7 @@ ${"x".repeat(1500)}`;
   });
 
   it("uses per-agent config when available", async () => {
-    const config: OpenClawConfig = {
+    const config: MarvConfig = {
       agents: {
         defaults: {
           autoRouting: {
@@ -259,7 +259,7 @@ ${"x".repeat(1500)}`;
   });
 
   it("uses LLM classifier when configured and classifyFn provided", async () => {
-    const config: OpenClawConfig = {
+    const config: MarvConfig = {
       agents: {
         defaults: {
           autoRouting: {
@@ -287,7 +287,7 @@ ${"x".repeat(1500)}`;
   });
 
   it("falls back to rules when LLM classifier throws", async () => {
-    const config: OpenClawConfig = {
+    const config: MarvConfig = {
       agents: {
         defaults: {
           autoRouting: {
@@ -312,7 +312,7 @@ ${"x".repeat(1500)}`;
   });
 
   it("falls back to rules when classifyFn is not provided for llm classifier", async () => {
-    const config: OpenClawConfig = {
+    const config: MarvConfig = {
       agents: {
         defaults: {
           autoRouting: {

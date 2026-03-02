@@ -7,40 +7,26 @@
   },
   "beforePack": "./scripts/electron-builder-hooks.cjs",
   "afterPack": "./scripts/electron-builder-hooks.cjs",
-  "files": [
-    "dist/**/*",
-    "dist-electron/**/*",
-    "sandbox/agent-runner/AGENT_SYSTEM_PROMPT.md"
-  ],
+  "files": ["dist/**/*", "dist-electron/**/*", "sandbox/agent-runner/AGENT_SYSTEM_PROMPT.md"],
   "extraResources": [
     {
       "from": "SKILLs",
       "to": "SKILLs",
-      "filter": [
-        "**/*",
-        "!**/.env",
-        "!**/.env.*"
-      ]
+      "filter": ["**/*", "!**/.env", "!**/.env.*"]
     },
     {
       "from": "resources/tray",
       "to": "tray",
-      "filter": [
-        "**/*"
-      ]
+      "filter": ["**/*"]
     },
     {
       "from": "resources/mingit",
       "to": "mingit",
-      "filter": [
-        "**/*"
-      ]
+      "filter": ["**/*"]
     }
   ],
   "mac": {
-    "target": [
-      "dmg"
-    ],
+    "target": ["dmg"],
     "icon": "build/icons/mac/icon.icns",
     "category": "public.app-category.productivity",
     "hardenedRuntime": true,
@@ -59,15 +45,11 @@
   },
   "afterSign": "scripts/notarize.js",
   "win": {
-    "target": [
-      "nsis"
-    ],
+    "target": ["nsis"],
     "icon": "build/icons/win/icon.ico"
   },
   "linux": {
-    "target": [
-      "AppImage"
-    ],
+    "target": ["AppImage"],
     "icon": "build/icons/png",
     "category": "Utility"
   },

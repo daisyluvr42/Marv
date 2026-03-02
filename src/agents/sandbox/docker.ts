@@ -259,12 +259,12 @@ export function buildSandboxCreateArgs(params: {
   args.push("--label", "marv.sandbox=1");
   args.push("--label", `marv.sessionKey=${params.scopeKey}`);
   args.push("--label", `marv.createdAtMs=${createdAtMs}`);
-  args.push("--label", "openclaw.sandbox=1");
-  args.push("--label", `openclaw.sessionKey=${params.scopeKey}`);
-  args.push("--label", `openclaw.createdAtMs=${createdAtMs}`);
+  args.push("--label", "marv.sandbox=1");
+  args.push("--label", `marv.sessionKey=${params.scopeKey}`);
+  args.push("--label", `marv.createdAtMs=${createdAtMs}`);
   if (params.configHash) {
     args.push("--label", `marv.configHash=${params.configHash}`);
-    args.push("--label", `openclaw.configHash=${params.configHash}`);
+    args.push("--label", `marv.configHash=${params.configHash}`);
   }
   for (const [key, value] of Object.entries(params.labels ?? {})) {
     if (key && value) {
@@ -387,7 +387,7 @@ async function createSandboxContainer(params: {
 async function readContainerConfigHash(containerName: string): Promise<string | null> {
   return (
     (await readDockerContainerLabel(containerName, "marv.configHash")) ??
-    (await readDockerContainerLabel(containerName, "openclaw.configHash"))
+    (await readDockerContainerLabel(containerName, "marv.configHash"))
   );
 }
 

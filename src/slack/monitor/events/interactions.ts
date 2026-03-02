@@ -6,9 +6,9 @@ import type { SlackMonitorContext } from "../context.js";
 
 // Prefix for Marv-generated action IDs to scope our handler
 const MARV_ACTION_PREFIX = "marv:";
-const LEGACY_OPENCLAW_ACTION_PREFIX = "openclaw:";
+const LEGACY_MARV_ACTION_PREFIX = "marv:";
 const ACTION_PREFIX_MATCHER = new RegExp(
-  `^(?:${MARV_ACTION_PREFIX}|${LEGACY_OPENCLAW_ACTION_PREFIX})`,
+  `^(?:${MARV_ACTION_PREFIX}|${LEGACY_MARV_ACTION_PREFIX})`,
 );
 
 type InteractionMessageBlock = {

@@ -1,11 +1,11 @@
 // Cowork session status
-export type CoworkSessionStatus = 'idle' | 'running' | 'completed' | 'error';
+export type CoworkSessionStatus = "idle" | "running" | "completed" | "error";
 
 // Cowork message types
-export type CoworkMessageType = 'user' | 'assistant' | 'tool_use' | 'tool_result' | 'system';
+export type CoworkMessageType = "user" | "assistant" | "tool_use" | "tool_result" | "system";
 
 // Cowork execution mode
-export type CoworkExecutionMode = 'auto' | 'local' | 'sandbox';
+export type CoworkExecutionMode = "auto" | "local" | "sandbox";
 
 // Cowork message metadata
 export interface CoworkMessageMetadata {
@@ -18,7 +18,7 @@ export interface CoworkMessageMetadata {
   isStreaming?: boolean;
   isFinal?: boolean;
   isThinking?: boolean;
-  skillIds?: string[];  // Skills used for this message
+  skillIds?: string[]; // Skills used for this message
   [key: string]: unknown;
 }
 
@@ -55,26 +55,28 @@ export interface CoworkConfig {
   memoryEnabled: boolean;
   memoryImplicitUpdateEnabled: boolean;
   memoryLlmJudgeEnabled: boolean;
-  memoryGuardLevel: 'strict' | 'standard' | 'relaxed';
+  memoryGuardLevel: "strict" | "standard" | "relaxed";
   memoryUserMemoriesMaxItems: number;
 }
 
-export type CoworkConfigUpdate = Partial<Pick<
-  CoworkConfig,
-  | 'workingDirectory'
-  | 'executionMode'
-  | 'memoryEnabled'
-  | 'memoryImplicitUpdateEnabled'
-  | 'memoryLlmJudgeEnabled'
-  | 'memoryGuardLevel'
-  | 'memoryUserMemoriesMaxItems'
->>;
+export type CoworkConfigUpdate = Partial<
+  Pick<
+    CoworkConfig,
+    | "workingDirectory"
+    | "executionMode"
+    | "memoryEnabled"
+    | "memoryImplicitUpdateEnabled"
+    | "memoryLlmJudgeEnabled"
+    | "memoryGuardLevel"
+    | "memoryUserMemoriesMaxItems"
+  >
+>;
 
 export interface CoworkApiConfig {
   apiKey: string;
   baseURL: string;
   model: string;
-  apiType?: 'anthropic' | 'openai';
+  apiType?: "anthropic" | "openai";
 }
 
 export type CoworkSandboxStatus = {
@@ -87,14 +89,14 @@ export type CoworkSandboxStatus = {
 };
 
 export type CoworkSandboxProgress = {
-  stage: 'runtime' | 'image';
+  stage: "runtime" | "image";
   received: number;
   total?: number;
   percent?: number;
   url?: string;
 };
 
-export type CoworkUserMemoryStatus = 'created' | 'stale' | 'deleted';
+export type CoworkUserMemoryStatus = "created" | "stale" | "deleted";
 
 export interface CoworkUserMemoryEntry {
   id: string;
@@ -127,13 +129,13 @@ export interface CoworkPermissionRequest {
 
 export type CoworkPermissionResult =
   | {
-      behavior: 'allow';
+      behavior: "allow";
       updatedInput?: Record<string, unknown>;
       updatedPermissions?: Record<string, unknown>[];
       toolUseID?: string;
     }
   | {
-      behavior: 'deny';
+      behavior: "deny";
       message: string;
       interrupt?: boolean;
       toolUseID?: string;
@@ -193,12 +195,12 @@ export interface CoworkConfigResult {
 
 // Stream event types for IPC communication
 export type CoworkStreamEventType =
-  | 'message'
-  | 'tool_use'
-  | 'tool_result'
-  | 'permission_request'
-  | 'complete'
-  | 'error';
+  | "message"
+  | "tool_use"
+  | "tool_result"
+  | "permission_request"
+  | "complete"
+  | "error";
 
 export interface CoworkStreamEvent {
   type: CoworkStreamEventType;

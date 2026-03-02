@@ -290,12 +290,12 @@ Discord 到处使用数字 ID；Marv 配置优先使用 ID。
         policy: "pairing", // pairing | allowlist | open | disabled
         allowFrom: ["123456789012345678", "steipete"],
         groupEnabled: false,
-        groupChannels: ["openclaw-dm"],
+        groupChannels: ["marv-dm"],
       },
       guilds: {
         "*": { requireMention: true },
         "123456789012345678": {
-          slug: "friends-of-openclaw",
+          slug: "friends-of-marv",
           requireMention: false,
           reactionNotifications: "own",
           users: ["987654321098765432", "steipete"],

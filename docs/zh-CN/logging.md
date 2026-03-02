@@ -27,11 +27,11 @@ Marv 在两个地方记录日志：
 
 默认情况下，Gateway 网关在以下位置写入滚动日志文件：
 
-`/tmp/openclaw/openclaw-YYYY-MM-DD.log`
+`/tmp/marv/marv-YYYY-MM-DD.log`
 
 日期使用 Gateway 网关主机的本地时区。
 
-你可以在 `~/.openclaw/marv.json` 中覆盖此设置：
+你可以在 `~/.marv/marv.json` 中覆盖此设置：
 
 ```json
 {
@@ -103,13 +103,13 @@ marv channels logs --channel whatsapp
 
 ## 配置日志
 
-所有日志配置都在 `~/.openclaw/marv.json` 的 `logging` 下。
+所有日志配置都在 `~/.marv/marv.json` 的 `logging` 下。
 
 ```json
 {
   "logging": {
     "level": "info",
-    "file": "/tmp/openclaw/openclaw-YYYY-MM-DD.log",
+    "file": "/tmp/marv/marv-YYYY-MM-DD.log",
     "consoleLevel": "info",
     "consoleStyle": "pretty",
     "redactSensitive": "tools",
@@ -211,7 +211,7 @@ marv channels logs --channel whatsapp
 环境变量覆盖（一次性）：
 
 ```
-OPENCLAW_DIAGNOSTICS=telegram.http,telegram.payload
+MARV_DIAGNOSTICS=telegram.http,telegram.payload
 ```
 
 注意：
@@ -240,7 +240,7 @@ OPENCLAW_DIAGNOSTICS=telegram.http,telegram.payload
       "enabled": true,
       "endpoint": "http://otel-collector:4318",
       "protocol": "http/protobuf",
-      "serviceName": "openclaw-gateway",
+      "serviceName": "marv-gateway",
       "traces": true,
       "metrics": true,
       "logs": true,

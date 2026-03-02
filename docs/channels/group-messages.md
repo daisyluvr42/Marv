@@ -23,7 +23,7 @@ Note: `agents.list[].groupChat.mentionPatterns` is now used by Telegram/Discord/
 
 ## Config example (WhatsApp)
 
-Add a `groupChat` block to `~/.openclaw/marv.json` so display-name pings work even when WhatsApp strips the visual `@` in the text body:
+Add a `groupChat` block to `~/.marv/marv.json` so display-name pings work even when WhatsApp strips the visual `@` in the text body:
 
 ```json5
 {
@@ -40,7 +40,7 @@ Add a `groupChat` block to `~/.openclaw/marv.json` so display-name pings work ev
         id: "main",
         groupChat: {
           historyLimit: 50,
-          mentionPatterns: ["@?openclaw", "\\+?15555550123"],
+          mentionPatterns: ["@?marv", "\\+?15555550123"],
         },
       },
     ],
@@ -80,5 +80,5 @@ Only the owner number (from `channels.whatsapp.allowFrom`, or the bot’s own E.
 
 - Heartbeats are intentionally skipped for groups to avoid noisy broadcasts.
 - Echo suppression uses the combined batch string; if you send identical text twice without mentions, only the first will get a response.
-- Session store entries will appear as `agent:<agentId>:whatsapp:group:<jid>` in the session store (`~/.openclaw/agents/<agentId>/sessions/sessions.json` by default); a missing entry just means the group hasn’t triggered a run yet.
+- Session store entries will appear as `agent:<agentId>:whatsapp:group:<jid>` in the session store (`~/.marv/agents/<agentId>/sessions/sessions.json` by default); a missing entry just means the group hasn’t triggered a run yet.
 - Typing indicators in groups follow `agents.defaults.typingMode` (default: `message` when unmentioned).

@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { PuzzlePieceIcon } from '@heroicons/react/24/outline';
-import SkillsPopover from './SkillsPopover';
-import { Skill } from '../../types/skill';
+import { PuzzlePieceIcon } from "@heroicons/react/24/outline";
+import React, { useRef, useState } from "react";
+import { Skill } from "../../types/skill";
+import SkillsPopover from "./SkillsPopover";
 
 interface SkillsButtonProps {
   onSelectSkill: (skill: Skill) => void;
@@ -12,13 +12,13 @@ interface SkillsButtonProps {
 const SkillsButton: React.FC<SkillsButtonProps> = ({
   onSelectSkill,
   onManageSkills,
-  className = '',
+  className = "",
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleButtonClick = () => {
-    setIsPopoverOpen(prev => !prev);
+    setIsPopoverOpen((prev) => !prev);
   };
 
   const handleClosePopover = () => {

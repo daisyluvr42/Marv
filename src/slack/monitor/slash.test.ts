@@ -246,7 +246,7 @@ function createArgMenusHarness() {
     channelsConfig: undefined,
     slashCommand: {
       enabled: true,
-      name: "openclaw",
+      name: "marv",
       ephemeral: true,
       sessionPrefix: "slack:slash",
     },
@@ -598,7 +598,7 @@ function createPolicyHarness(overrides?: {
     channelsConfig: overrides?.channelsConfig,
     slashCommand: {
       enabled: true,
-      name: "openclaw",
+      name: "marv",
       ephemeral: true,
       sessionPrefix: "slack:slash",
     },

@@ -1,6 +1,6 @@
 import fsSync from "node:fs";
 import type { Llama, LlamaEmbeddingContext, LlamaModel } from "node-llama-cpp";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveUserPath } from "../utils.js";
 import { createGeminiEmbeddingProvider, type GeminiEmbeddingClient } from "./embeddings-gemini.js";
@@ -47,7 +47,7 @@ export type EmbeddingProviderResult = {
 };
 
 export type EmbeddingProviderOptions = {
-  config: OpenClawConfig;
+  config: MarvConfig;
   agentDir?: string;
   provider: EmbeddingProviderRequest;
   remote?: {

@@ -76,7 +76,7 @@ vi.mock("../../terminal/health-style.js", () => ({
 }));
 
 vi.mock("../../terminal/links.js", () => ({
-  formatDocsLink: () => "docs.marv.ai/cli/gateway",
+  formatDocsLink: () => "docs: /cli/gateway",
 }));
 
 vi.mock("../../terminal/theme.js", () => ({

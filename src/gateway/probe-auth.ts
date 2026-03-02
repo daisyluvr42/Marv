@@ -1,7 +1,7 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 
 export function resolveGatewayProbeAuth(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
 }): { token?: string; password?: string } {
@@ -16,12 +16,12 @@ export function resolveGatewayProbeAuth(params: {
         ? remote.token.trim()
         : undefined
       : env.MARV_GATEWAY_TOKEN?.trim() ||
-        env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+        env.MARV_GATEWAY_TOKEN?.trim() ||
         (typeof authToken === "string" && authToken.trim() ? authToken.trim() : undefined);
 
   const password =
     env.MARV_GATEWAY_PASSWORD?.trim() ||
-    env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+    env.MARV_GATEWAY_PASSWORD?.trim() ||
     (params.mode === "remote"
       ? typeof remote?.password === "string" && remote.password.trim()
         ? remote.password.trim()

@@ -143,7 +143,7 @@ systemctl --user status
 Follow the Linux Getting Started flow inside WSL:
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 pnpm install
 pnpm ui:build # auto-installs UI deps on first run

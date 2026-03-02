@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { MarvConfig } from "../config/types.js";
 import { ensureBrowserControlAuth } from "./control-auth.js";
 
 describe("ensureBrowserControlAuth", () => {
   describe("trusted-proxy mode", () => {
     it("should not auto-generate token when auth mode is trusted-proxy", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: MarvConfig = {
         gateway: {
           auth: {
             mode: "trusted-proxy",
@@ -19,7 +19,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { MARV_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();
@@ -30,7 +30,7 @@ describe("ensureBrowserControlAuth", () => {
 
   describe("password mode", () => {
     it("should not auto-generate token when auth mode is password (even if password not set)", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: MarvConfig = {
         gateway: {
           auth: {
             mode: "password",
@@ -40,7 +40,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { MARV_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();
@@ -51,7 +51,7 @@ describe("ensureBrowserControlAuth", () => {
 
   describe("none mode", () => {
     it("should not auto-generate token when auth mode is none", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: MarvConfig = {
         gateway: {
           auth: {
             mode: "none",
@@ -61,7 +61,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { MARV_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();
@@ -72,7 +72,7 @@ describe("ensureBrowserControlAuth", () => {
 
   describe("token mode", () => {
     it("should return existing token if configured", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: MarvConfig = {
         gateway: {
           auth: {
             mode: "token",
@@ -83,7 +83,7 @@ describe("ensureBrowserControlAuth", () => {
 
       const result = await ensureBrowserControlAuth({
         cfg,
-        env: { OPENCLAW_BROWSER_AUTO_AUTH: "1" },
+        env: { MARV_BROWSER_AUTO_AUTH: "1" },
       });
 
       expect(result.generatedToken).toBeUndefined();
@@ -91,7 +91,7 @@ describe("ensureBrowserControlAuth", () => {
     });
 
     it("should skip auto-generation in test environment", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: MarvConfig = {
         gateway: {
           auth: {
             mode: "token",

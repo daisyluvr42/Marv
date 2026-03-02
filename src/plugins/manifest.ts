@@ -102,7 +102,7 @@ export function loadPluginManifest(rootDir: string): PluginManifestLoadResult {
   };
 }
 
-// package.json "marv" metadata (legacy key "openclaw" is also accepted)
+// package.json "marv" metadata (legacy key "marv" is also accepted)
 export type PluginPackageChannel = {
   id?: string;
   label?: string;
@@ -135,7 +135,7 @@ export type MarvPackageManifest = {
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
 };
-export type OpenClawPackageManifest = MarvPackageManifest;
+export type MarvPackageManifest = MarvPackageManifest;
 
 export type ManifestKey = typeof MANIFEST_KEY;
 

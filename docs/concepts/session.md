@@ -30,7 +30,7 @@ Use `session.dmScope` to control how **direct messages** are grouped:
 **The fix:** Set `dmScope` to isolate sessions per user:
 
 ```json5
-// ~/.openclaw/marv.json
+// ~/.marv/marv.json
 {
   session: {
     // Secure DM mode: isolate DM context per channel + sender.
@@ -63,8 +63,8 @@ All session state is **owned by the gateway** (the “master” Marv). UI client
 ## Where state lives
 
 - On the **gateway host**:
-  - Store file: `~/.openclaw/agents/<agentId>/sessions/sessions.json` (per agent).
-- Transcripts: `~/.openclaw/agents/<agentId>/sessions/<SessionId>.jsonl` (Telegram topic sessions use `.../<SessionId>-topic-<threadId>.jsonl`).
+  - Store file: `~/.marv/agents/<agentId>/sessions/sessions.json` (per agent).
+- Transcripts: `~/.marv/agents/<agentId>/sessions/<SessionId>.jsonl` (Telegram topic sessions use `.../<SessionId>-topic-<threadId>.jsonl`).
 - The store is a map `sessionKey -> { sessionId, updatedAt, ... }`. Deleting entries is safe; they are recreated on demand.
 - Group entries may include `displayName`, `channel`, `subject`, `room`, and `space` to label sessions in UIs.
 - Session entries include `origin` metadata (label + routing hints) so UIs can explain where a session came from.
@@ -142,7 +142,7 @@ Runtime override (owner only):
 ## Configuration (optional rename example)
 
 ```json5
-// ~/.openclaw/marv.json
+// ~/.marv/marv.json
 {
   session: {
     scope: "per-sender", // keep group keys separate
@@ -166,7 +166,7 @@ Runtime override (owner only):
       discord: { mode: "idle", idleMinutes: 10080 },
     },
     resetTriggers: ["/new", "/reset"],
-    store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+    store: "~/.marv/agents/{agentId}/sessions/sessions.json",
     mainKey: "main",
   },
 }

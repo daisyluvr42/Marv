@@ -3,8 +3,8 @@ export type BrowserProfileConfig = {
   cdpPort?: number;
   /** CDP URL for this profile (use for remote Chrome). */
   cdpUrl?: string;
-  /** Profile driver (default: marv; legacy "openclaw" is accepted). */
-  driver?: "marv" | "openclaw" | "extension";
+  /** Profile driver (default: marv; legacy "marv" is accepted). */
+  driver?: "marv"   | "extension";
   /** Profile color (hex). Auto-assigned at creation. */
   color: string;
 };

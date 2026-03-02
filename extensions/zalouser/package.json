@@ -1,15 +1,15 @@
 {
-  "name": "@openclaw/zalouser",
+  "name": "@marv/zalouser",
   "version": "2026.2.18",
-  "description": "OpenClaw Zalo Personal Account plugin via zca-cli",
+  "description": "Marv Zalo Personal Account plugin via zca-cli",
   "type": "module",
   "dependencies": {
     "@sinclair/typebox": "0.34.48"
   },
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "marv": "workspace:*"
   },
-  "openclaw": {
+  "marv": {
     "extensions": [
       "./index.ts"
     ],
@@ -27,7 +27,7 @@
       "quickstartAllowFrom": true
     },
     "install": {
-      "npmSpec": "@openclaw/zalouser",
+      "npmSpec": "@marv/zalouser",
       "localPath": "extensions/zalouser",
       "defaultChoice": "npm"
     }

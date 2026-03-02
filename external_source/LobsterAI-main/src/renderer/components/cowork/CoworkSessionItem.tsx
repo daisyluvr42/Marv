@@ -1,7 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { CoworkSessionSummary, CoworkSessionStatus } from '../../types/cowork';
-import { EllipsisHorizontalIcon, ExclamationTriangleIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { i18nService } from '../../services/i18n';
+import {
+  EllipsisHorizontalIcon,
+  ExclamationTriangleIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { i18nService } from "../../services/i18n";
+import type { CoworkSessionSummary, CoworkSessionStatus } from "../../types/cowork";
 
 interface CoworkSessionItemProps {
   session: CoworkSessionSummary;
@@ -14,10 +19,10 @@ interface CoworkSessionItemProps {
 }
 
 const statusLabels: Record<CoworkSessionStatus, string> = {
-  idle: 'coworkStatusIdle',
-  running: 'coworkStatusRunning',
-  completed: 'coworkStatusCompleted',
-  error: 'coworkStatusError',
+  idle: "coworkStatusIdle",
+  running: "coworkStatusRunning",
+  completed: "coworkStatusCompleted",
+  error: "coworkStatusError",
 };
 
 const PushPinIcon: React.FC<React.SVGProps<SVGSVGElement> & { slashed?: boolean }> = ({
@@ -51,28 +56,28 @@ const formatRelativeTime = (timestamp: number): { compact: string; full: string 
 
   if (minutes < 1) {
     return {
-      compact: 'now',
-      full: i18nService.t('justNow'),
+      compact: "now",
+      full: i18nService.t("justNow"),
     };
   } else if (minutes < 60) {
     return {
       compact: `${minutes}m`,
-      full: `${minutes} ${i18nService.t('minutesAgo')}`,
+      full: `${minutes} ${i18nService.t("minutesAgo")}`,
     };
   } else if (hours < 24) {
     return {
       compact: `${hours}h`,
-      full: `${hours} ${i18nService.t('hoursAgo')}`,
+      full: `${hours} ${i18nService.t("hoursAgo")}`,
     };
   } else if (days === 1) {
     return {
-      compact: '1d',
-      full: i18nService.t('yesterday'),
+      compact: "1d",
+      full: i18nService.t("yesterday"),
     };
   } else {
     return {
       compact: `${days}d`,
-      full: `${days} ${i18nService.t('daysAgo')}`,
+      full: `${days} ${i18nService.t("daysAgo")}`,
     };
   }
 };
@@ -104,12 +109,14 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
 
   const calculateMenuPosition = (height: number) => {
     const rect = actionButtonRef.current?.getBoundingClientRect();
-    if (!rect) {return null;}
+    if (!rect) {
+      return null;
+    }
     const menuWidth = 180;
     const padding = 8;
     const x = Math.min(
       Math.max(padding, rect.right - menuWidth),
-      window.innerWidth - menuWidth - padding
+      window.innerWidth - menuWidth - padding,
     );
     const y = Math.min(rect.bottom + 8, window.innerHeight - height - padding);
     return { x, y };
@@ -117,7 +124,9 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
 
   const openMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isRenaming) {return;}
+    if (isRenaming) {
+      return;
+    }
     if (menuPosition) {
       closeMenu();
       return;
@@ -192,7 +201,9 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
   };
 
   useEffect(() => {
-    if (!menuPosition) {return;}
+    if (!menuPosition) {
+      return;
+    }
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (!menuRef.current?.contains(target) && !actionButtonRef.current?.contains(target)) {
@@ -200,25 +211,27 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
       }
     };
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         closeMenu();
       }
     };
     const handleScroll = () => closeMenu();
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleScroll);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleScroll);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleScroll);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleScroll);
     };
   }, [menuPosition]);
 
   useEffect(() => {
-    if (!menuPosition) {return;}
+    if (!menuPosition) {
+      return;
+    }
     const menuHeight = showConfirmDelete ? 112 : 120;
     const position = calculateMenuPosition(menuHeight);
     if (position && (position.x !== menuPosition.x || position.y !== menuPosition.y)) {
@@ -227,26 +240,30 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
   }, [menuPosition, showConfirmDelete]);
 
   useEffect(() => {
-    if (!isRenaming) {return;}
+    if (!isRenaming) {
+      return;
+    }
     requestAnimationFrame(() => {
       renameInputRef.current?.focus();
       renameInputRef.current?.select();
     });
   }, [isRenaming]);
 
-  const pinButtonLabel = session.pinned ? i18nService.t('coworkUnpinSession') : i18nService.t('coworkPinSession');
-  const actionLabel = i18nService.t('coworkSessionActions');
-  const renameLabel = i18nService.t('renameConversation');
-  const deleteLabel = i18nService.t('deleteSession');
+  const pinButtonLabel = session.pinned
+    ? i18nService.t("coworkUnpinSession")
+    : i18nService.t("coworkPinSession");
+  const actionLabel = i18nService.t("coworkSessionActions");
+  const renameLabel = i18nService.t("renameConversation");
+  const deleteLabel = i18nService.t("deleteSession");
   const relativeTime = formatRelativeTime(session.updatedAt);
-  const showRunningIndicator = session.status === 'running';
+  const showRunningIndicator = session.status === "running";
   const showUnreadIndicator = !showRunningIndicator && hasUnread;
   const showStatusIndicator = showRunningIndicator || showUnreadIndicator;
   const menuItems = useMemo(() => {
     return [
-      { key: 'rename', label: renameLabel, onClick: handleRenameClick, tone: 'neutral' as const },
-      { key: 'pin', label: pinButtonLabel, onClick: handleTogglePin, tone: 'neutral' as const },
-      { key: 'delete', label: deleteLabel, onClick: handleDeleteClick, tone: 'danger' as const },
+      { key: "rename", label: renameLabel, onClick: handleRenameClick, tone: "neutral" as const },
+      { key: "pin", label: pinButtonLabel, onClick: handleTogglePin, tone: "neutral" as const },
+      { key: "delete", label: deleteLabel, onClick: handleDeleteClick, tone: "danger" as const },
     ];
   }, [
     deleteLabel,
@@ -260,27 +277,31 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
   return (
     <div
       onClick={() => {
-        if (isRenaming) {return;}
+        if (isRenaming) {
+          return;
+        }
         closeMenu();
         onSelect();
       }}
       className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-150 ${
         isActive
-          ? 'bg-black/[0.06] dark:bg-white/[0.08]'
-          : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
+          ? "bg-black/[0.06] dark:bg-white/[0.08]"
+          : "hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
       }`}
     >
       {/* Content area */}
       <div className="flex items-start">
         <div className="flex-1 min-w-0">
-          <div className={`flex items-center mb-1 ${showStatusIndicator ? 'gap-2' : 'gap-0'}`}>
+          <div className={`flex items-center mb-1 ${showStatusIndicator ? "gap-2" : "gap-0"}`}>
             {/* Status indicator */}
             {showStatusIndicator && (
               <span
                 className={`block w-2 h-2 rounded-full bg-claude-accent flex-shrink-0 ${
-                  showRunningIndicator ? 'shadow-[0_0_6px_rgba(59,130,246,0.5)] animate-pulse' : ''
+                  showRunningIndicator ? "shadow-[0_0_6px_rgba(59,130,246,0.5)] animate-pulse" : ""
                 }`}
-                title={showRunningIndicator ? i18nService.t(statusLabels[session.status]) : undefined}
+                title={
+                  showRunningIndicator ? i18nService.t(statusLabels[session.status]) : undefined
+                }
               />
             )}
             {isRenaming ? (
@@ -290,10 +311,10 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
                 onChange={(event) => setRenameValue(event.target.value)}
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
+                  if (event.key === "Enter") {
                     handleRenameSave(event);
                   }
-                  if (event.key === 'Escape') {
+                  if (event.key === "Escape") {
                     handleRenameCancel(event);
                   }
                 }}
@@ -321,10 +342,10 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
       <div
         className={`absolute right-1.5 top-1.5 transition-opacity ${
           isRenaming
-            ? 'opacity-0 pointer-events-none'
+            ? "opacity-0 pointer-events-none"
             : session.pinned
-              ? 'opacity-100'
-              : 'opacity-0 group-hover:opacity-100'
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-100"
         }`}
       >
         <button
@@ -357,19 +378,19 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
               type="button"
               onClick={item.onClick}
               className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
-                item.tone === 'danger'
-                  ? 'text-red-500 hover:bg-red-500/10'
-                  : 'dark:text-claude-darkText text-claude-text hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+                item.tone === "danger"
+                  ? "text-red-500 hover:bg-red-500/10"
+                  : "dark:text-claude-darkText text-claude-text hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover"
               }`}
             >
-              {item.key === 'rename' && <PencilSquareIcon className="h-4 w-4" />}
-              {item.key === 'pin' && (
+              {item.key === "rename" && <PencilSquareIcon className="h-4 w-4" />}
+              {item.key === "pin" && (
                 <PushPinIcon
                   slashed={session.pinned}
-                  className={`h-4 w-4 ${session.pinned ? 'opacity-60' : ''}`}
+                  className={`h-4 w-4 ${session.pinned ? "opacity-60" : ""}`}
                 />
               )}
-              {item.key === 'delete' && <TrashIcon className="h-4 w-4" />}
+              {item.key === "delete" && <TrashIcon className="h-4 w-4" />}
               {item.label}
             </button>
           ))}
@@ -392,14 +413,14 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
                 <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-500" />
               </div>
               <h2 className="text-base font-semibold dark:text-claude-darkText text-claude-text">
-                {i18nService.t('deleteTaskConfirmTitle')}
+                {i18nService.t("deleteTaskConfirmTitle")}
               </h2>
             </div>
 
             {/* Content */}
             <div className="px-5 pb-4">
               <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                {i18nService.t('deleteTaskConfirmMessage')}
+                {i18nService.t("deleteTaskConfirmMessage")}
               </p>
             </div>
 
@@ -409,13 +430,13 @@ const CoworkSessionItem: React.FC<CoworkSessionItemProps> = ({
                 onClick={handleCancelDelete}
                 className="px-4 py-2 text-sm font-medium rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors"
               >
-                {i18nService.t('cancel')}
+                {i18nService.t("cancel")}
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="px-4 py-2 text-sm font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
               >
-                {i18nService.t('deleteSession')}
+                {i18nService.t("deleteSession")}
               </button>
             </div>
           </div>

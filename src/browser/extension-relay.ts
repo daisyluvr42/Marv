@@ -79,7 +79,7 @@ type ConnectedTarget = {
 };
 
 const RELAY_AUTH_HEADER = "x-marv-relay-token";
-const LEGACY_RELAY_AUTH_HEADER = "x-openclaw-relay-token";
+const LEGACY_RELAY_AUTH_HEADER = "x-marv-relay-token";
 
 function headerValue(value: string | string[] | undefined): string | undefined {
   if (!value) {
@@ -154,7 +154,7 @@ const relayAuthByPort = new Map<number, string>();
 function resolveGatewayAuthToken(): string | null {
   const envToken =
     process.env.MARV_GATEWAY_TOKEN?.trim() ||
-    process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+    process.env.MARV_GATEWAY_TOKEN?.trim() ||
     process.env.CLAWDBOT_GATEWAY_TOKEN?.trim();
   if (envToken) {
     return envToken;
@@ -195,7 +195,7 @@ function isAddrInUseError(err: unknown): boolean {
   );
 }
 
-async function looksLikeOpenClawRelay(baseUrl: string): Promise<boolean> {
+async function looksLikeMarvRelay(baseUrl: string): Promise<boolean> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 500);
   try {
@@ -780,7 +780,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
       server.once("error", reject);
     });
   } catch (err) {
-    if (isAddrInUseError(err) && (await looksLikeOpenClawRelay(info.baseUrl))) {
+    if (isAddrInUseError(err) && (await looksLikeMarvRelay(info.baseUrl))) {
       const existingRelay: ChromeExtensionRelayServer = {
         host: info.host,
         port: info.port,

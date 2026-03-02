@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import "./test-helpers/fast-coding-tools.js";
-import type { OpenClawConfig } from "../config/config.js";
-import { ensureOpenClawModelsJson } from "./models-config.js";
+import type { MarvConfig } from "../config/config.js";
+import { ensureMarvModelsJson } from "./models-config.js";
 
 vi.mock("@mariozechner/pi-ai", async () => {
   const actual = await vi.importActual<typeof import("@mariozechner/pi-ai")>("@mariozechner/pi-ai");
@@ -103,7 +103,7 @@ let runCounter = 0;
 beforeAll(async () => {
   vi.useRealTimers();
   ({ runEmbeddedPiAgent } = await import("./pi-embedded-runner.js"));
-  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-embedded-agent-"));
+  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "marv-embedded-agent-"));
   agentDir = path.join(tempRoot, "agent");
   workspaceDir = path.join(tempRoot, "workspace");
   await fs.mkdir(agentDir, { recursive: true });
@@ -138,9 +138,9 @@ const makeOpenAiConfig = (modelIds: string[]) =>
         },
       },
     },
-  }) satisfies OpenClawConfig;
+  }) satisfies MarvConfig;
 
-const ensureModels = (cfg: OpenClawConfig) => ensureOpenClawModelsJson(cfg, agentDir) as unknown;
+const ensureModels = (cfg: MarvConfig) => ensureMarvModelsJson(cfg, agentDir) as unknown;
 
 const nextSessionFile = () => {
   sessionCounter += 1;
@@ -250,7 +250,7 @@ describe("runEmbeddedPiAgent", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies MarvConfig;
 
     await expect(
       runEmbeddedPiAgent({
@@ -282,7 +282,7 @@ describe("runEmbeddedPiAgent", () => {
           workspace: fallbackWorkspace,
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies MarvConfig;
     await ensureModels(cfg);
 
     const result = await runEmbeddedPiAgent({
@@ -319,7 +319,7 @@ describe("runEmbeddedPiAgent", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies MarvConfig;
     await ensureModels(cfg);
 
     await expect(
@@ -407,7 +407,7 @@ describe("runEmbeddedPiAgent", () => {
 
     const entries = await readSessionEntries(sessionFile);
     const promptErrorEntry = entries.find(
-      (entry) => entry.type === "custom" && entry.customType === "openclaw:prompt-error",
+      (entry) => entry.type === "custom" && entry.customType === "marv:prompt-error",
     ) as { data?: { error?: string } } | undefined;
 
     expect(promptErrorEntry).toBeTruthy();

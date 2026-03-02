@@ -165,8 +165,8 @@ function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readT
   return [
     "## Documentation",
     `Marv docs: ${docsPath}`,
-    "Mirror: https://docs.marv.ai",
-    "Source: https://github.com/openclaw/marv",
+    "Mirror: ",
+    "Source: ",
     "Community: https://discord.com/invite/clawd",
     "Find new skills: https://clawhub.com",
     "For Marv behavior, commands, config, or architecture: consult local docs first.",

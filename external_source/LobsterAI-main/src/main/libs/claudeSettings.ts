@@ -1,14 +1,14 @@
-import { join } from 'path';
-import { app } from 'electron';
-import type { SqliteStore } from '../sqliteStore';
-import type { CoworkApiConfig } from './coworkConfigStore';
+import { join } from "path";
+import { app } from "electron";
+import type { SqliteStore } from "../sqliteStore";
+import type { CoworkApiConfig } from "./coworkConfigStore";
+import { normalizeProviderApiFormat, type AnthropicApiFormat } from "./coworkFormatTransform";
 import {
   configureCoworkOpenAICompatProxy,
   type OpenAICompatProxyTarget,
   getCoworkOpenAICompatProxyBaseURL,
   getCoworkOpenAICompatProxyStatus,
-} from './coworkOpenAICompatProxy';
-import { normalizeProviderApiFormat, type AnthropicApiFormat } from './coworkFormatTransform';
+} from "./coworkOpenAICompatProxy";
 
 type ProviderModel = {
   id: string;
@@ -18,7 +18,7 @@ type ProviderConfig = {
   enabled: boolean;
   apiKey: string;
   baseUrl: string;
-  apiFormat?: 'anthropic' | 'openai' | 'native';
+  apiFormat?: "anthropic" | "openai" | "native";
   models?: ProviderModel[];
 };
 
@@ -52,7 +52,7 @@ export function getClaudeCodePath(): string {
   if (app.isPackaged) {
     return join(
       process.resourcesPath,
-      'app.asar.unpacked/node_modules/@anthropic-ai/claude-agent-sdk/cli.js'
+      "app.asar.unpacked/node_modules/@anthropic-ai/claude-agent-sdk/cli.js",
     );
   }
 
@@ -61,11 +61,9 @@ export function getClaudeCodePath(): string {
   // We need to look in the project root
   const appPath = app.getAppPath();
   // If appPath ends with dist-electron, go up one level
-  const rootDir = appPath.endsWith('dist-electron') 
-    ? join(appPath, '..') 
-    : appPath;
+  const rootDir = appPath.endsWith("dist-electron") ? join(appPath, "..") : appPath;
 
-  return join(rootDir, 'node_modules/@anthropic-ai/claude-agent-sdk/cli.js');
+  return join(rootDir, "node_modules/@anthropic-ai/claude-agent-sdk/cli.js");
 }
 
 type MatchedProvider = {
@@ -75,21 +73,27 @@ type MatchedProvider = {
   apiFormat: AnthropicApiFormat;
 };
 
-function getEffectiveProviderApiFormat(providerName: string, apiFormat: unknown): AnthropicApiFormat {
-  if (providerName === 'openai' || providerName === 'gemini') {
-    return 'openai';
+function getEffectiveProviderApiFormat(
+  providerName: string,
+  apiFormat: unknown,
+): AnthropicApiFormat {
+  if (providerName === "openai" || providerName === "gemini") {
+    return "openai";
   }
-  if (providerName === 'anthropic') {
-    return 'anthropic';
+  if (providerName === "anthropic") {
+    return "anthropic";
   }
   return normalizeProviderApiFormat(apiFormat);
 }
 
 function providerRequiresApiKey(providerName: string): boolean {
-  return providerName !== 'ollama';
+  return providerName !== "ollama";
 }
 
-function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvider | null; error?: string } {
+function resolveMatchedProvider(appConfig: AppConfig): {
+  matched: MatchedProvider | null;
+  error?: string;
+} {
   const providers = appConfig.providers ?? {};
 
   const resolveFallbackModel = (): string | undefined => {
@@ -104,7 +108,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
 
   const modelId = appConfig.model?.defaultModel || resolveFallbackModel();
   if (!modelId) {
-    return { matched: null, error: 'No available model configured in enabled providers.' };
+    return { matched: null, error: "No available model configured in enabled providers." };
   }
 
   const providerEntry = Object.entries(providers).find(([, provider]) => {
@@ -126,8 +130,15 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
     return { matched: null, error: `Provider ${providerName} is missing base URL.` };
   }
 
-  if (apiFormat === 'anthropic' && providerRequiresApiKey(providerName) && !providerConfig.apiKey?.trim()) {
-    return { matched: null, error: `Provider ${providerName} requires API key for Anthropic-compatible mode.` };
+  if (
+    apiFormat === "anthropic" &&
+    providerRequiresApiKey(providerName) &&
+    !providerConfig.apiKey?.trim()
+  ) {
+    return {
+      matched: null,
+      error: `Provider ${providerName} requires API key for Anthropic-compatible mode.`,
+    };
   }
 
   return {
@@ -140,20 +151,22 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   };
 }
 
-export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local'): ApiConfigResolution {
+export function resolveCurrentApiConfig(
+  target: OpenAICompatProxyTarget = "local",
+): ApiConfigResolution {
   const sqliteStore = getStore();
   if (!sqliteStore) {
     return {
       config: null,
-      error: 'Store is not initialized.',
+      error: "Store is not initialized.",
     };
   }
 
-  const appConfig = sqliteStore.get<AppConfig>('app_config');
+  const appConfig = sqliteStore.get<AppConfig>("app_config");
   if (!appConfig) {
     return {
       config: null,
-      error: 'Application config not found.',
+      error: "Application config not found.",
     };
   }
 
@@ -166,20 +179,19 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
   }
 
   const resolvedBaseURL = matched.providerConfig.baseUrl.trim();
-  const resolvedApiKey = matched.providerConfig.apiKey?.trim() || '';
-  const effectiveApiKey = matched.providerName === 'ollama'
-    && matched.apiFormat === 'anthropic'
-    && !resolvedApiKey
-    ? 'sk-ollama-local'
-    : resolvedApiKey;
+  const resolvedApiKey = matched.providerConfig.apiKey?.trim() || "";
+  const effectiveApiKey =
+    matched.providerName === "ollama" && matched.apiFormat === "anthropic" && !resolvedApiKey
+      ? "sk-ollama-local"
+      : resolvedApiKey;
 
-  if (matched.apiFormat === 'anthropic') {
+  if (matched.apiFormat === "anthropic") {
     return {
       config: {
         apiKey: effectiveApiKey,
         baseURL: resolvedBaseURL,
         model: matched.modelId,
-        apiType: 'anthropic',
+        apiType: "anthropic",
       },
     };
   }
@@ -188,7 +200,7 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
   if (!proxyStatus.running) {
     return {
       config: null,
-      error: 'OpenAI compatibility proxy is not running.',
+      error: "OpenAI compatibility proxy is not running.",
     };
   }
 
@@ -203,21 +215,23 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
   if (!proxyBaseURL) {
     return {
       config: null,
-      error: 'OpenAI compatibility proxy base URL is unavailable.',
+      error: "OpenAI compatibility proxy base URL is unavailable.",
     };
   }
 
   return {
     config: {
-      apiKey: resolvedApiKey || 'lobsterai-openai-compat',
+      apiKey: resolvedApiKey || "lobsterai-openai-compat",
       baseURL: proxyBaseURL,
       model: matched.modelId,
-      apiType: 'openai',
+      apiType: "openai",
     },
   };
 }
 
-export function getCurrentApiConfig(target: OpenAICompatProxyTarget = 'local'): CoworkApiConfig | null {
+export function getCurrentApiConfig(
+  target: OpenAICompatProxyTarget = "local",
+): CoworkApiConfig | null {
   return resolveCurrentApiConfig(target).config;
 }
 

@@ -78,6 +78,7 @@ Every SKILL.md consists of:
 ### Progressive Disclosure
 
 Three-level loading system:
+
 1. **Metadata** - Always in context (~100 words)
 2. **SKILL.md body** - When skill triggers (<500 lines)
 3. **Bundled resources** - As needed
@@ -117,6 +118,7 @@ Follow these steps in order, skipping only if there is a clear reason why they a
 Skip this step only when the skill's usage patterns are already clearly understood.
 
 Gather concrete examples of how the skill will be used. Ask questions like:
+
 - "What functionality should this skill support?"
 - "Can you give examples of how it would be used?"
 

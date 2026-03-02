@@ -13,11 +13,11 @@ export const GATEWAY_CLIENT_IDS = {
   PROBE: "marv-probe",
 } as const;
 const LEGACY_GATEWAY_CLIENT_ID_ALIASES = {
-  "openclaw-control-ui": GATEWAY_CLIENT_IDS.CONTROL_UI,
-  "openclaw-macos": GATEWAY_CLIENT_IDS.MACOS_APP,
-  "openclaw-ios": GATEWAY_CLIENT_IDS.IOS_APP,
-  "openclaw-android": GATEWAY_CLIENT_IDS.ANDROID_APP,
-  "openclaw-probe": GATEWAY_CLIENT_IDS.PROBE,
+  "marv-control-ui": GATEWAY_CLIENT_IDS.CONTROL_UI,
+  "marv-macos": GATEWAY_CLIENT_IDS.MACOS_APP,
+  "marv-ios": GATEWAY_CLIENT_IDS.IOS_APP,
+  "marv-android": GATEWAY_CLIENT_IDS.ANDROID_APP,
+  "marv-probe": GATEWAY_CLIENT_IDS.PROBE,
 } as const;
 
 export type GatewayClientId = (typeof GATEWAY_CLIENT_IDS)[keyof typeof GATEWAY_CLIENT_IDS];

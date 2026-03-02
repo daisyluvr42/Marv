@@ -5,7 +5,7 @@ import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { requireNodeSqlite } from "../memory/sqlite.js";
 import { resolveStateDir } from "./paths.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { MarvConfig } from "./types.marv.js";
 
 export type SemanticPatchRiskLevel = "L1" | "L2" | "L3";
 export type SemanticPatchProposalStatus = "open" | "committed" | "rejected";
@@ -43,8 +43,8 @@ export type SemanticConfigRevision = {
   explanation: string;
   riskLevel: SemanticPatchRiskLevel;
   status: SemanticConfigRevisionStatus;
-  beforeConfig: OpenClawConfig | null;
-  afterConfig: OpenClawConfig | null;
+  beforeConfig: MarvConfig | null;
+  afterConfig: MarvConfig | null;
 };
 
 export function resolveSemanticPatchDbPath(): string {
@@ -301,8 +301,8 @@ export function createSemanticConfigRevision(params: {
   explanation: string;
   riskLevel: SemanticPatchRiskLevel;
   status?: SemanticConfigRevisionStatus;
-  beforeConfig?: OpenClawConfig | null;
-  afterConfig?: OpenClawConfig | null;
+  beforeConfig?: MarvConfig | null;
+  afterConfig?: MarvConfig | null;
   nowMs?: number;
 }): SemanticConfigRevision {
   const revision = `rev_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -532,14 +532,14 @@ function parsePatchJson(raw: string): Record<string, unknown> {
   }
 }
 
-function parseConfigJson(raw: string | null): OpenClawConfig | null {
+function parseConfigJson(raw: string | null): MarvConfig | null {
   if (!raw) {
     return null;
   }
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return parsed as OpenClawConfig;
+      return parsed as MarvConfig;
     }
   } catch {
     // ignore

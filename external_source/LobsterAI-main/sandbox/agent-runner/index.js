@@ -1,69 +1,70 @@
 #!/usr/bin/env node
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const { spawnSync } = require('child_process');
-const { randomUUID } = require('crypto');
-const { setTimeout: sleep } = require('timers/promises');
-const { z } = require('zod');
+const fs = require("fs");
+const path = require("path");
+const readline = require("readline");
+const { spawnSync } = require("child_process");
+const { randomUUID } = require("crypto");
+const { setTimeout: sleep } = require("timers/promises");
+const { z } = require("zod");
 
-const IPC_ROOT = '/workspace/ipc';
-const LOG_PATH = '/tmp/agentd.log';
-const REQUESTS_DIR = path.join(IPC_ROOT, 'requests');
-const RESPONSES_DIR = path.join(IPC_ROOT, 'responses');
-const STREAMS_DIR = path.join(IPC_ROOT, 'streams');
-const HEARTBEAT_PATH = path.join(IPC_ROOT, 'heartbeat');
+const IPC_ROOT = "/workspace/ipc";
+const LOG_PATH = "/tmp/agentd.log";
+const REQUESTS_DIR = path.join(IPC_ROOT, "requests");
+const RESPONSES_DIR = path.join(IPC_ROOT, "responses");
+const STREAMS_DIR = path.join(IPC_ROOT, "streams");
+const HEARTBEAT_PATH = path.join(IPC_ROOT, "heartbeat");
 
 const POLL_INTERVAL_MS = 300;
 const HEARTBEAT_INTERVAL_MS = 5000;
-const CONSOLE_PATHS = ['/dev/console', '/dev/ttyAMA0', '/dev/ttyS0'];
+const CONSOLE_PATHS = ["/dev/console", "/dev/ttyAMA0", "/dev/ttyS0"];
 
 // Virtio-serial device paths (checked in order)
-const SERIAL_DEVICE_PATHS = ['/dev/virtio-ports/ipc.0', '/dev/vport0p1'];
+const SERIAL_DEVICE_PATHS = ["/dev/virtio-ports/ipc.0", "/dev/vport0p1"];
 
 // ---------------------------------------------------------------------------
 // File sync constants (guest -> host file transfer over virtio-serial)
 // ---------------------------------------------------------------------------
-const WORKSPACE_PROJECT = '/workspace/project';
-const FILE_SYNC_CHUNK_SIZE = 512 * 1024;        // 512 KB per chunk
-const FILE_SYNC_MAX_SIZE = 100 * 1024 * 1024;   // 100 MB max file size
-const FILE_SYNC_INTERVAL_MS = 1000;              // scan interval
-const FILE_SYNC_IGNORE = new Set(['.git', 'node_modules', '__pycache__', '.DS_Store', 'Thumbs.db']);
-const TOOL_PATH_SEARCH_IGNORE = new Set(['.git', 'node_modules', '.cowork-temp', '__pycache__']);
-const TMP_WORKSPACE_PREFIX = '/tmp/workspace/';
-const TMP_WORKSPACE_SKILLS_PREFIX = '/tmp/workspace/skills/';
-const SKILLS_MARKER = '/skills/';
+const WORKSPACE_PROJECT = "/workspace/project";
+const FILE_SYNC_CHUNK_SIZE = 512 * 1024; // 512 KB per chunk
+const FILE_SYNC_MAX_SIZE = 100 * 1024 * 1024; // 100 MB max file size
+const FILE_SYNC_INTERVAL_MS = 1000; // scan interval
+const FILE_SYNC_IGNORE = new Set([".git", "node_modules", "__pycache__", ".DS_Store", "Thumbs.db"]);
+const TOOL_PATH_SEARCH_IGNORE = new Set([".git", "node_modules", ".cowork-temp", "__pycache__"]);
+const TMP_WORKSPACE_PREFIX = "/tmp/workspace/";
+const TMP_WORKSPACE_SKILLS_PREFIX = "/tmp/workspace/skills/";
+const SKILLS_MARKER = "/skills/";
 const PERMISSION_RESPONSE_TIMEOUT_MS = 60_000;
-const DELETE_TOOL_NAMES = new Set(['delete', 'remove', 'unlink', 'rmdir']);
-const BLOCKED_BUILTIN_WEB_TOOLS = new Set(['websearch', 'webfetch']);
-const TOOL_INPUT_PATH_KEY_RE = /(^|_)(path|paths|file|files|dir|dirs|directory|directories|cwd|target|targets|source|sources|output|outputs|dest|destination)$/i;
+const DELETE_TOOL_NAMES = new Set(["delete", "remove", "unlink", "rmdir"]);
+const BLOCKED_BUILTIN_WEB_TOOLS = new Set(["websearch", "webfetch"]);
+const TOOL_INPUT_PATH_KEY_RE =
+  /(^|_)(path|paths|file|files|dir|dirs|directory|directories|cwd|target|targets|source|sources|output|outputs|dest|destination)$/i;
 const DELETE_COMMAND_RE = /\b(rm|rmdir|unlink|del|erase|remove-item)\b/i;
 const FIND_DELETE_COMMAND_RE = /\bfind\b[\s\S]*\s-delete\b/i;
 const GIT_CLEAN_COMMAND_RE = /\bgit\s+clean\b/i;
-const SAFETY_APPROVAL_ALLOW_OPTION = '允许本次操作';
-const SAFETY_APPROVAL_DENY_OPTION = '拒绝本次操作';
+const SAFETY_APPROVAL_ALLOW_OPTION = "允许本次操作";
+const SAFETY_APPROVAL_DENY_OPTION = "拒绝本次操作";
 const MAX_POLICY_PATHS_IN_PROMPT = 3;
 const PATH_SENSITIVE_TOOL_NAMES = new Set([
-  'read',
-  'write',
-  'edit',
-  'multiedit',
-  'ls',
-  'glob',
-  'grep',
-  'delete',
-  'remove',
-  'move',
-  'copy',
-  'rename',
+  "read",
+  "write",
+  "edit",
+  "multiedit",
+  "ls",
+  "glob",
+  "grep",
+  "delete",
+  "remove",
+  "move",
+  "copy",
+  "rename",
 ]);
 
 // ---------------------------------------------------------------------------
 // IPC mode: 'file' (9p shared fs) or 'serial' (virtio-serial on Windows)
 // ---------------------------------------------------------------------------
-let ipcMode = 'file';
+let ipcMode = "file";
 let serialFd = null;
 
 function appendConsole(message) {
@@ -82,7 +83,7 @@ function ensureDir(dirPath) {
   try {
     fs.mkdirSync(dirPath, { recursive: true });
   } catch (error) {
-    console.error('Failed to ensure directory:', dirPath, error);
+    console.error("Failed to ensure directory:", dirPath, error);
   }
 }
 
@@ -94,9 +95,9 @@ function appendLog(message) {
     // Best-effort logging.
   }
   appendConsole(message);
-  if (ipcMode === 'file' && isMounted(IPC_ROOT)) {
+  if (ipcMode === "file" && isMounted(IPC_ROOT)) {
     try {
-      fs.appendFileSync(path.join(IPC_ROOT, 'agentd.log'), line);
+      fs.appendFileSync(path.join(IPC_ROOT, "agentd.log"), line);
     } catch (error) {
       // Best-effort logging.
     }
@@ -105,7 +106,7 @@ function appendLog(message) {
 
 function safeReadJson(filePath) {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
+    const raw = fs.readFileSync(filePath, "utf8");
     return JSON.parse(raw);
   } catch (error) {
     return null;
@@ -114,29 +115,29 @@ function safeReadJson(filePath) {
 
 function getClaudeSdkVersion() {
   try {
-    return require('@anthropic-ai/claude-agent-sdk/package.json')?.version || 'unknown';
+    return require("@anthropic-ai/claude-agent-sdk/package.json")?.version || "unknown";
   } catch {
-    return 'unknown';
+    return "unknown";
   }
 }
 
 function buildFallbackMcpServerFactory() {
   try {
-    const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
-    if (typeof McpServer !== 'function') {
+    const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
+    if (typeof McpServer !== "function") {
       return null;
     }
     return (options) => {
       const server = new McpServer(
         {
           name: options.name,
-          version: options.version || '1.0.0',
+          version: options.version || "1.0.0",
         },
         {
           capabilities: {
             tools: options.tools ? {} : undefined,
           },
-        }
+        },
       );
       if (Array.isArray(options.tools)) {
         for (const toolDef of options.tools) {
@@ -144,7 +145,7 @@ function buildFallbackMcpServerFactory() {
         }
       }
       return {
-        type: 'sdk',
+        type: "sdk",
         name: options.name,
         instance: server,
       };
@@ -163,14 +164,14 @@ function fileExists(targetPath) {
 }
 
 function shouldTryUploadFallback(filePath) {
-  if (typeof filePath !== 'string') return false;
-  const normalized = filePath.replace(/\\/g, '/');
-  if (!normalized.startsWith('/tmp/')) return false;
+  if (typeof filePath !== "string") {return false;}
+  const normalized = filePath.replace(/\\/g, "/");
+  if (!normalized.startsWith("/tmp/")) {return false;}
   return !fileExists(filePath);
 }
 
 function isDirectory(targetPath) {
-  if (!targetPath || !path.isAbsolute(targetPath)) return false;
+  if (!targetPath || !path.isAbsolute(targetPath)) {return false;}
   try {
     return fs.statSync(targetPath).isDirectory();
   } catch {
@@ -181,18 +182,18 @@ function isDirectory(targetPath) {
 function buildPathSearchRoots(cwd, requestEnv) {
   const roots = new Set();
   const pushRoot = (targetPath) => {
-    if (!isDirectory(targetPath)) return;
+    if (!isDirectory(targetPath)) {return;}
     roots.add(path.resolve(targetPath));
   };
 
   pushRoot(cwd);
   pushRoot(WORKSPACE_PROJECT);
-  pushRoot('/workspace');
-  if (requestEnv && typeof requestEnv === 'object') {
-    if (typeof requestEnv.SKILLS_ROOT === 'string') {
+  pushRoot("/workspace");
+  if (requestEnv && typeof requestEnv === "object") {
+    if (typeof requestEnv.SKILLS_ROOT === "string") {
       pushRoot(requestEnv.SKILLS_ROOT);
     }
-    if (typeof requestEnv.LOBSTERAI_SKILLS_ROOT === 'string') {
+    if (typeof requestEnv.LOBSTERAI_SKILLS_ROOT === "string") {
       pushRoot(requestEnv.LOBSTERAI_SKILLS_ROOT);
     }
   }
@@ -201,14 +202,14 @@ function buildPathSearchRoots(cwd, requestEnv) {
 }
 
 function normalizePathString(rawPath) {
-  if (typeof rawPath !== 'string') return null;
+  if (typeof rawPath !== "string") {return null;}
   const trimmed = rawPath.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {return null;}
 
-  let normalized = trimmed.replace(/\\/g, '/');
+  let normalized = trimmed.replace(/\\/g, "/");
   if (/^file:\/\//i.test(normalized)) {
     try {
-      normalized = decodeURIComponent(normalized.replace(/^file:\/\//i, ''));
+      normalized = decodeURIComponent(normalized.replace(/^file:\/\//i, ""));
       if (/^\/[A-Za-z]:/.test(normalized)) {
         normalized = normalized.slice(1);
       }
@@ -220,33 +221,33 @@ function normalizePathString(rawPath) {
 }
 
 function mapHostWorkspacePathToGuest(filePath, cwd, hostWorkspaceRoot) {
-  if (!filePath || !cwd || !hostWorkspaceRoot) return null;
+  if (!filePath || !cwd || !hostWorkspaceRoot) {return null;}
   const normalizedPath = normalizePathString(filePath);
   const normalizedHostRoot = normalizePathString(hostWorkspaceRoot);
-  if (!normalizedPath || !normalizedHostRoot) return null;
+  if (!normalizedPath || !normalizedHostRoot) {return null;}
 
-  const hostRoot = normalizedHostRoot.replace(/\/+$/, '');
-  if (!hostRoot) return null;
+  const hostRoot = normalizedHostRoot.replace(/\/+$/, "");
+  if (!hostRoot) {return null;}
 
   if (normalizedPath !== hostRoot && !normalizedPath.startsWith(`${hostRoot}/`)) {
     return null;
   }
 
-  const relative = normalizedPath.slice(hostRoot.length).replace(/^\/+/, '');
-  const guestRoot = cwd.replace(/\\/g, '/').replace(/\/+$/, '');
-  if (!guestRoot) return null;
-  if (!relative) return guestRoot;
+  const relative = normalizedPath.slice(hostRoot.length).replace(/^\/+/, "");
+  const guestRoot = cwd.replace(/\\/g, "/").replace(/\/+$/, "");
+  if (!guestRoot) {return null;}
+  if (!relative) {return guestRoot;}
   return path.posix.join(guestRoot, relative);
 }
 
 function findFilesByBaseName(rootDir, baseName, maxMatches = 2) {
-  if (!rootDir || !baseName) return [];
+  if (!rootDir || !baseName) {return [];}
   const matches = [];
   const queue = [rootDir];
 
   while (queue.length > 0 && matches.length < maxMatches) {
     const current = queue.shift();
-    if (!current) continue;
+    if (!current) {continue;}
 
     let entries = [];
     try {
@@ -256,10 +257,10 @@ function findFilesByBaseName(rootDir, baseName, maxMatches = 2) {
     }
 
     for (const entry of entries) {
-      if (matches.length >= maxMatches) break;
+      if (matches.length >= maxMatches) {break;}
       const fullPath = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        if (TOOL_PATH_SEARCH_IGNORE.has(entry.name)) continue;
+        if (TOOL_PATH_SEARCH_IGNORE.has(entry.name)) {continue;}
         queue.push(fullPath);
         continue;
       }
@@ -273,35 +274,46 @@ function findFilesByBaseName(rootDir, baseName, maxMatches = 2) {
 }
 
 function resolveFallbackPath(filePath, searchRoots, requestEnv) {
-  if (!shouldTryUploadFallback(filePath)) return null;
-  const normalized = filePath.replace(/\\/g, '/');
+  if (!shouldTryUploadFallback(filePath)) {return null;}
+  const normalized = filePath.replace(/\\/g, "/");
   const normalizedLower = normalized.toLowerCase();
 
   if (normalized.startsWith(TMP_WORKSPACE_PREFIX)) {
-    const workspaceCandidate = path.posix.join('/workspace', normalized.slice(TMP_WORKSPACE_PREFIX.length));
+    const workspaceCandidate = path.posix.join(
+      "/workspace",
+      normalized.slice(TMP_WORKSPACE_PREFIX.length),
+    );
     if (fileExists(workspaceCandidate)) {
       return workspaceCandidate;
     }
   }
 
-  if (normalizedLower.startsWith(TMP_WORKSPACE_SKILLS_PREFIX) && requestEnv && typeof requestEnv === 'object') {
-    const skillsRoot = typeof requestEnv.SKILLS_ROOT === 'string'
-      ? requestEnv.SKILLS_ROOT
-      : typeof requestEnv.LOBSTERAI_SKILLS_ROOT === 'string'
-        ? requestEnv.LOBSTERAI_SKILLS_ROOT
-        : null;
+  if (
+    normalizedLower.startsWith(TMP_WORKSPACE_SKILLS_PREFIX) &&
+    requestEnv &&
+    typeof requestEnv === "object"
+  ) {
+    const skillsRoot =
+      typeof requestEnv.SKILLS_ROOT === "string"
+        ? requestEnv.SKILLS_ROOT
+        : typeof requestEnv.LOBSTERAI_SKILLS_ROOT === "string"
+          ? requestEnv.LOBSTERAI_SKILLS_ROOT
+          : null;
     if (skillsRoot && path.isAbsolute(skillsRoot)) {
-      const skillsCandidate = path.join(skillsRoot, normalized.slice(TMP_WORKSPACE_SKILLS_PREFIX.length));
+      const skillsCandidate = path.join(
+        skillsRoot,
+        normalized.slice(TMP_WORKSPACE_SKILLS_PREFIX.length),
+      );
       if (fileExists(skillsCandidate)) {
         return skillsCandidate;
       }
     }
   }
 
-  if (!Array.isArray(searchRoots) || searchRoots.length === 0) return null;
+  if (!Array.isArray(searchRoots) || searchRoots.length === 0) {return null;}
 
   const baseName = path.basename(filePath);
-  if (!baseName) return null;
+  if (!baseName) {return null;}
 
   for (const root of searchRoots) {
     const directPath = path.join(root, baseName);
@@ -313,7 +325,7 @@ function resolveFallbackPath(filePath, searchRoots, requestEnv) {
   const matches = [];
   for (const root of searchRoots) {
     const remaining = 2 - matches.length;
-    if (remaining <= 0) break;
+    if (remaining <= 0) {break;}
     const rootMatches = findFilesByBaseName(root, baseName, remaining);
     for (const match of rootMatches) {
       if (!matches.includes(match)) {
@@ -330,44 +342,46 @@ function resolveFallbackPath(filePath, searchRoots, requestEnv) {
 }
 
 function resolveSkillsRootFromEnv(requestEnv) {
-  if (!requestEnv || typeof requestEnv !== 'object') return null;
-  const skillsRoot = typeof requestEnv.SKILLS_ROOT === 'string'
-    ? requestEnv.SKILLS_ROOT
-    : typeof requestEnv.LOBSTERAI_SKILLS_ROOT === 'string'
-      ? requestEnv.LOBSTERAI_SKILLS_ROOT
-      : null;
-  if (!skillsRoot || !path.isAbsolute(skillsRoot)) return null;
+  if (!requestEnv || typeof requestEnv !== "object") {return null;}
+  const skillsRoot =
+    typeof requestEnv.SKILLS_ROOT === "string"
+      ? requestEnv.SKILLS_ROOT
+      : typeof requestEnv.LOBSTERAI_SKILLS_ROOT === "string"
+        ? requestEnv.LOBSTERAI_SKILLS_ROOT
+        : null;
+  if (!skillsRoot || !path.isAbsolute(skillsRoot)) {return null;}
   return skillsRoot;
 }
 
 function resolveHostSkillPath(filePath, requestEnv) {
-  if (typeof filePath !== 'string' || !filePath.trim()) return null;
+  if (typeof filePath !== "string" || !filePath.trim()) {return null;}
   const skillsRoot = resolveSkillsRootFromEnv(requestEnv);
-  if (!skillsRoot) return null;
+  if (!skillsRoot) {return null;}
 
-  const normalized = filePath.replace(/\\/g, '/');
+  const normalized = filePath.replace(/\\/g, "/");
   const markerIndex = normalized.toLowerCase().lastIndexOf(SKILLS_MARKER);
-  const relative = markerIndex < 0
-    ? ''
-    : normalized.slice(markerIndex + SKILLS_MARKER.length).replace(/^\/+/, '');
-  if (!relative) return null;
+  const relative =
+    markerIndex < 0 ? "" : normalized.slice(markerIndex + SKILLS_MARKER.length).replace(/^\/+/, "");
+  if (!relative) {return null;}
 
-  const candidate = path.join(skillsRoot, ...relative.split('/'));
-  if (!fileExists(candidate)) return null;
+  const candidate = path.join(skillsRoot, ...relative.split("/"));
+  if (!fileExists(candidate)) {return null;}
   return candidate;
 }
 
 function normalizeToolInputPaths(toolName, toolInput, cwd, requestEnv, hostWorkspaceRoot) {
-  if (!toolInput || typeof toolInput !== 'object') return toolInput;
+  if (!toolInput || typeof toolInput !== "object") {return toolInput;}
 
   const input = { ...toolInput };
   const searchRoots = buildPathSearchRoots(cwd, requestEnv);
   const rewriteField = (field) => {
     const value = input[field];
-    if (typeof value !== 'string' || !value.trim()) return;
+    if (typeof value !== "string" || !value.trim()) {return;}
     const mappedWorkspacePath = mapHostWorkspacePathToGuest(value, cwd, hostWorkspaceRoot);
     if (mappedWorkspacePath && mappedWorkspacePath !== value) {
-      appendLog(`Rewrote ${toolName}.${field} host workspace path: ${value} -> ${mappedWorkspacePath}`);
+      appendLog(
+        `Rewrote ${toolName}.${field} host workspace path: ${value} -> ${mappedWorkspacePath}`,
+      );
       input[field] = mappedWorkspacePath;
       return;
     }
@@ -378,13 +392,18 @@ function normalizeToolInputPaths(toolName, toolInput, cwd, requestEnv, hostWorks
       return;
     }
     const fallback = resolveFallbackPath(value, searchRoots, requestEnv);
-    if (!fallback) return;
+    if (!fallback) {return;}
     appendLog(`Rewrote ${toolName}.${field}: ${value} -> ${fallback}`);
     input[field] = fallback;
   };
 
-  if (toolName === 'Read' || toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
-    rewriteField('file_path');
+  if (
+    toolName === "Read" ||
+    toolName === "Write" ||
+    toolName === "Edit" ||
+    toolName === "MultiEdit"
+  ) {
+    rewriteField("file_path");
   }
 
   return input;
@@ -393,12 +412,15 @@ function normalizeToolInputPaths(toolName, toolInput, cwd, requestEnv, hostWorks
 function isPathWithin(basePath, targetPath) {
   const normalizedBase = path.resolve(basePath);
   const normalizedTarget = path.resolve(targetPath);
-  return normalizedTarget === normalizedBase || normalizedTarget.startsWith(`${normalizedBase}${path.sep}`);
+  return (
+    normalizedTarget === normalizedBase ||
+    normalizedTarget.startsWith(`${normalizedBase}${path.sep}`)
+  );
 }
 
 function extractToolCommand(toolInput) {
   const commandLike = toolInput.command ?? toolInput.cmd ?? toolInput.script;
-  return typeof commandLike === 'string' ? commandLike : '';
+  return typeof commandLike === "string" ? commandLike : "";
 }
 
 function tokenizeCommand(command) {
@@ -407,66 +429,65 @@ function tokenizeCommand(command) {
 }
 
 function extractPathLikeTokensFromCommand(command) {
-  if (!command.trim()) return [];
+  if (!command.trim()) {return [];}
   const tokens = tokenizeCommand(command);
   const pathTokens = [];
   for (const token of tokens) {
     let value = token.trim();
-    if (!value) continue;
-    value = value.replace(/^['"`]+|['"`]+$/g, '').replace(/[;,]+$/g, '');
-    if (!value || value.startsWith('-')) continue;
-    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(value)) continue;
-    if (/^[a-zA-Z]+:\/\//.test(value)) continue;
-    if (value.startsWith('$') || value.startsWith('%')) continue;
+    if (!value) {continue;}
+    value = value.replace(/^['"`]+|['"`]+$/g, "").replace(/[;,]+$/g, "");
+    if (!value || value.startsWith("-")) {continue;}
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(value)) {continue;}
+    if (/^[a-zA-Z]+:\/\//.test(value)) {continue;}
+    if (value.startsWith("$") || value.startsWith("%")) {continue;}
 
-    const hasPathHint = (
-      value === '.'
-      || value === '..'
-      || value.startsWith('/')
-      || value.startsWith('./')
-      || value.startsWith('../')
-      || value.startsWith('~/')
-      || value.includes('/')
-      || value.includes('\\')
-      || /^[A-Za-z]:[\\/]/.test(value)
-    );
-    if (!hasPathHint) continue;
+    const hasPathHint =
+      value === "." ||
+      value === ".." ||
+      value.startsWith("/") ||
+      value.startsWith("./") ||
+      value.startsWith("../") ||
+      value.startsWith("~/") ||
+      value.includes("/") ||
+      value.includes("\\") ||
+      /^[A-Za-z]:[\\/]/.test(value);
+    if (!hasPathHint) {continue;}
     pathTokens.push(value);
   }
   return pathTokens;
 }
 
 function isLikelyPathString(value) {
-  if (!value || value.length > 1024) return false;
-  if (value.includes('\n')) return false;
+  if (!value || value.length > 1024) {return false;}
+  if (value.includes("\n")) {return false;}
   const trimmed = value.trim();
-  if (!trimmed) return false;
+  if (!trimmed) {return false;}
   if (/^[a-zA-Z]+:\/\//.test(trimmed) && !/^file:\/\//i.test(trimmed)) {
     return false;
   }
   return (
-    /^file:\/\//i.test(trimmed)
-    || trimmed === '.'
-    || trimmed === '..'
-    || trimmed.startsWith('/')
-    || trimmed.startsWith('./')
-    || trimmed.startsWith('../')
-    || trimmed.startsWith('~/')
-    || trimmed.includes('/')
-    || trimmed.includes('\\')
-    || /^[A-Za-z]:[\\/]/.test(trimmed)
+    /^file:\/\//i.test(trimmed) ||
+    trimmed === "." ||
+    trimmed === ".." ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("./") ||
+    trimmed.startsWith("../") ||
+    trimmed.startsWith("~/") ||
+    trimmed.includes("/") ||
+    trimmed.includes("\\") ||
+    /^[A-Za-z]:[\\/]/.test(trimmed)
   );
 }
 
 function collectPathCandidatesFromInput(toolName, value, keyHint, outSet) {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const trimmed = value.trim();
-    if (!trimmed) return;
+    if (!trimmed) {return;}
     if (keyHint && TOOL_INPUT_PATH_KEY_RE.test(keyHint)) {
       outSet.add(trimmed);
       return;
     }
-    const normalizedToolName = String(toolName || '').toLowerCase();
+    const normalizedToolName = String(toolName || "").toLowerCase();
     if (PATH_SENSITIVE_TOOL_NAMES.has(normalizedToolName) && isLikelyPathString(trimmed)) {
       outSet.add(trimmed);
     }
@@ -480,7 +501,7 @@ function collectPathCandidatesFromInput(toolName, value, keyHint, outSet) {
     return;
   }
 
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return;
   }
 
@@ -490,18 +511,18 @@ function collectPathCandidatesFromInput(toolName, value, keyHint, outSet) {
 }
 
 function resolvePathCandidate(candidate, cwd) {
-  if (!candidate) return null;
+  if (!candidate) {return null;}
   const trimmed = String(candidate).trim();
-  if (!trimmed) return null;
+  if (!trimmed) {return null;}
 
   let normalized = trimmed
-    .replace(/^['"`]+|['"`]+$/g, '')
-    .replace(/[;,]+$/g, '')
+    .replace(/^['"`]+|['"`]+$/g, "")
+    .replace(/[;,]+$/g, "")
     .trim();
-  if (!normalized || normalized.startsWith('-')) return null;
+  if (!normalized || normalized.startsWith("-")) {return null;}
   if (/^file:\/\//i.test(normalized)) {
     try {
-      normalized = decodeURIComponent(normalized.replace(/^file:\/\//i, ''));
+      normalized = decodeURIComponent(normalized.replace(/^file:\/\//i, ""));
       if (/^\/[A-Za-z]:/.test(normalized)) {
         normalized = normalized.slice(1);
       }
@@ -511,10 +532,10 @@ function resolvePathCandidate(candidate, cwd) {
   } else if (/^[a-zA-Z]+:\/\//.test(normalized)) {
     return null;
   }
-  if (normalized.startsWith('$') || normalized.startsWith('%')) return null;
+  if (normalized.startsWith("$") || normalized.startsWith("%")) {return null;}
 
-  if (normalized.startsWith('~/')) {
-    const home = process.env.HOME || '/root';
+  if (normalized.startsWith("~/")) {
+    const home = process.env.HOME || "/root";
     normalized = path.join(home, normalized.slice(2));
   }
 
@@ -534,19 +555,19 @@ function getOutsideWorkspacePaths(toolName, toolInput, cwd, workspaceRoot, reque
   collectPathCandidatesFromInput(toolName, toolInput, null, candidates);
   const skillsRoot = resolveSkillsRootFromEnv(requestEnv);
 
-  if (toolName === 'Bash') {
+  if (toolName === "Bash") {
     const command = extractToolCommand(toolInput);
     for (const token of extractPathLikeTokensFromCommand(command)) {
       candidates.add(token);
     }
   }
 
-  if (candidates.size === 0) return [];
+  if (candidates.size === 0) {return [];}
 
   const outside = new Set();
   for (const candidate of candidates) {
     const resolved = resolvePathCandidate(candidate, cwd);
-    if (!resolved) continue;
+    if (!resolved) {continue;}
     const inWorkspace = isPathWithin(workspaceRoot, resolved);
     const inSkillsRoot = Boolean(skillsRoot && isPathWithin(skillsRoot, resolved));
     if (!inWorkspace && !inSkillsRoot) {
@@ -557,12 +578,12 @@ function getOutsideWorkspacePaths(toolName, toolInput, cwd, workspaceRoot, reque
 }
 
 function isDeleteOperation(toolName, toolInput) {
-  const normalizedName = String(toolName || '').toLowerCase();
+  const normalizedName = String(toolName || "").toLowerCase();
   if (DELETE_TOOL_NAMES.has(normalizedName)) {
     return true;
   }
 
-  if (normalizedName !== 'bash') {
+  if (normalizedName !== "bash") {
     return false;
   }
 
@@ -570,16 +591,20 @@ function isDeleteOperation(toolName, toolInput) {
   if (!command.trim()) {
     return false;
   }
-  return DELETE_COMMAND_RE.test(command)
-    || FIND_DELETE_COMMAND_RE.test(command)
-    || GIT_CLEAN_COMMAND_RE.test(command);
+  return (
+    DELETE_COMMAND_RE.test(command) ||
+    FIND_DELETE_COMMAND_RE.test(command) ||
+    GIT_CLEAN_COMMAND_RE.test(command)
+  );
 }
 
 function isBlockedBuiltinWebTool(toolName) {
-  const normalized = String(toolName || '').trim().toLowerCase();
-  if (!normalized) return false;
+  const normalized = String(toolName || "")
+    .trim()
+    .toLowerCase();
+  if (!normalized) {return false;}
 
-  const compact = normalized.replace(/[^a-z0-9]/g, '');
+  const compact = normalized.replace(/[^a-z0-9]/g, "");
   if (BLOCKED_BUILTIN_WEB_TOOLS.has(compact)) {
     return true;
   }
@@ -596,8 +621,8 @@ function isBlockedBuiltinWebTool(toolName) {
 }
 
 function truncateCommandPreview(command, maxLength = 120) {
-  const compact = command.replace(/\s+/g, ' ').trim();
-  if (compact.length <= maxLength) return compact;
+  const compact = command.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxLength) {return compact;}
   return `${compact.slice(0, maxLength)}...`;
 }
 
@@ -605,16 +630,16 @@ function buildSafetyQuestionInput(question, requestedToolName, requestedToolInpu
   return {
     questions: [
       {
-        header: '安全确认',
+        header: "安全确认",
         question,
         options: [
           {
             label: SAFETY_APPROVAL_ALLOW_OPTION,
-            description: '仅允许当前这一次操作继续执行。',
+            description: "仅允许当前这一次操作继续执行。",
           },
           {
             label: SAFETY_APPROVAL_DENY_OPTION,
-            description: '拒绝当前操作，保持文件安全边界。',
+            description: "拒绝当前操作，保持文件安全边界。",
           },
         ],
       },
@@ -628,22 +653,22 @@ function buildSafetyQuestionInput(question, requestedToolName, requestedToolInpu
 }
 
 function isSafetyApproval(result, question) {
-  if (!result || result.behavior === 'deny') {
+  if (!result || result.behavior === "deny") {
     return false;
   }
-  if (!result.updatedInput || typeof result.updatedInput !== 'object') {
+  if (!result.updatedInput || typeof result.updatedInput !== "object") {
     return false;
   }
   const answers = result.updatedInput.answers;
-  if (!answers || typeof answers !== 'object') {
+  if (!answers || typeof answers !== "object") {
     return false;
   }
   const rawAnswer = answers[question];
-  if (typeof rawAnswer !== 'string') {
+  if (typeof rawAnswer !== "string") {
     return false;
   }
   return rawAnswer
-    .split('|||')
+    .split("|||")
     .map((value) => value.trim())
     .filter(Boolean)
     .includes(SAFETY_APPROVAL_ALLOW_OPTION);
@@ -659,9 +684,9 @@ async function requestSafetyApproval({
   const permissionRequestId = randomUUID();
   const questionInput = buildSafetyQuestionInput(question, requestedToolName, requestedToolInput);
   emit({
-    type: 'permission_request',
+    type: "permission_request",
     requestId: permissionRequestId,
-    toolName: 'AskUserQuestion',
+    toolName: "AskUserQuestion",
     toolInput: questionInput,
   });
 
@@ -682,10 +707,9 @@ async function enforceToolSafetyPolicy({
   requestEnv,
 }) {
   if (isDeleteOperation(toolName, toolInput)) {
-    const commandPreview = toolName === 'Bash'
-      ? truncateCommandPreview(extractToolCommand(toolInput))
-      : '';
-    const deleteDetail = commandPreview ? ` 命令: ${commandPreview}` : '';
+    const commandPreview =
+      toolName === "Bash" ? truncateCommandPreview(extractToolCommand(toolInput)) : "";
+    const deleteDetail = commandPreview ? ` 命令: ${commandPreview}` : "";
     const deleteQuestion = `工具 "${toolName}" 将执行删除操作。根据安全策略，删除必须人工确认。是否允许本次操作？${deleteDetail}`;
     const approved = await requestSafetyApproval({
       emit,
@@ -695,19 +719,24 @@ async function enforceToolSafetyPolicy({
       requestedToolInput: toolInput,
     });
     if (!approved) {
-      return { behavior: 'deny', message: 'Delete operation denied by user.' };
+      return { behavior: "deny", message: "Delete operation denied by user." };
     }
   }
 
-  const outsidePaths = getOutsideWorkspacePaths(toolName, toolInput, cwd, workspaceRoot, requestEnv);
+  const outsidePaths = getOutsideWorkspacePaths(
+    toolName,
+    toolInput,
+    cwd,
+    workspaceRoot,
+    requestEnv,
+  );
   if (outsidePaths.length === 0) {
     return null;
   }
 
-  const preview = outsidePaths.slice(0, MAX_POLICY_PATHS_IN_PROMPT).join('、');
-  const suffix = outsidePaths.length > MAX_POLICY_PATHS_IN_PROMPT
-    ? ` 等 ${outsidePaths.length} 个路径`
-    : '';
+  const preview = outsidePaths.slice(0, MAX_POLICY_PATHS_IN_PROMPT).join("、");
+  const suffix =
+    outsidePaths.length > MAX_POLICY_PATHS_IN_PROMPT ? ` 等 ${outsidePaths.length} 个路径` : "";
   const question = `工具 "${toolName}" 正在访问所选文件夹外的路径（${preview}${suffix}）。是否允许本次越界操作？`;
   const approved = await requestSafetyApproval({
     emit,
@@ -717,7 +746,7 @@ async function enforceToolSafetyPolicy({
     requestedToolInput: toolInput,
   });
   if (!approved) {
-    return { behavior: 'deny', message: 'Operation outside selected folder denied by user.' };
+    return { behavior: "deny", message: "Operation outside selected folder denied by user." };
   }
 
   return null;
@@ -725,29 +754,31 @@ async function enforceToolSafetyPolicy({
 
 function isMounted(targetPath) {
   try {
-    const mounts = fs.readFileSync('/proc/mounts', 'utf8');
-    return mounts.split('\n').some((line) => {
-      const parts = line.split(' ');
+    const mounts = fs.readFileSync("/proc/mounts", "utf8");
+    return mounts.split("\n").some((line) => {
+      const parts = line.split(" ");
       return parts.length >= 2 && parts[1] === targetPath;
     });
   } catch (error) {
-    console.error('Failed to read /proc/mounts:', error);
+    console.error("Failed to read /proc/mounts:", error);
     return false;
   }
 }
 
 function isPathWritable(targetPath) {
-  if (!targetPath || !path.isAbsolute(targetPath)) return false;
+  if (!targetPath || !path.isAbsolute(targetPath)) {return false;}
   const probePath = path.join(
     targetPath,
-    `.lobsterai-mount-probe-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    `.lobsterai-mount-probe-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   );
   try {
-    fs.writeFileSync(probePath, 'ok');
+    fs.writeFileSync(probePath, "ok");
     fs.unlinkSync(probePath);
     return true;
   } catch (error) {
-    appendLog(`Workspace write probe failed at ${targetPath}: ${error instanceof Error ? error.message : String(error)}`);
+    appendLog(
+      `Workspace write probe failed at ${targetPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
     try {
       if (fs.existsSync(probePath)) {
         fs.unlinkSync(probePath);
@@ -767,7 +798,7 @@ function ensureMount(tag, guestPath) {
     error: null,
   };
   if (!tag || !guestPath) {
-    mountState.error = 'Invalid mount config';
+    mountState.error = "Invalid mount config";
     return mountState;
   }
   ensureDir(guestPath);
@@ -777,16 +808,17 @@ function ensureMount(tag, guestPath) {
     return mountState;
   }
 
-  tryModprobe(['9p', '9pnet', '9pnet_virtio']);
+  tryModprobe(["9p", "9pnet", "9pnet_virtio"]);
 
   appendLog(`Mounting ${tag} -> ${guestPath}`);
   const mountResult = spawnSync(
-    'mount',
-    ['-t', '9p', '-o', 'trans=virtio,version=9p2000.L,msize=65536', tag, guestPath],
-    { stdio: 'pipe' }
+    "mount",
+    ["-t", "9p", "-o", "trans=virtio,version=9p2000.L,msize=65536", tag, guestPath],
+    { stdio: "pipe" },
   );
   if (mountResult.status !== 0) {
-    const message = mountResult.stderr?.toString() || mountResult.stdout?.toString() || 'Unknown mount error';
+    const message =
+      mountResult.stderr?.toString() || mountResult.stdout?.toString() || "Unknown mount error";
     console.error(`Failed to mount ${tag} -> ${guestPath}:`, message.trim());
     appendLog(`Failed to mount ${tag} -> ${guestPath}: ${message.trim()}`);
     mountState.error = message.trim();
@@ -805,10 +837,10 @@ function ensureMount(tag, guestPath) {
 }
 
 function tryModprobe(modules) {
-  if (!Array.isArray(modules)) return;
+  if (!Array.isArray(modules)) {return;}
   for (const name of modules) {
-    if (!name) continue;
-    const result = spawnSync('modprobe', [name], { stdio: 'ignore' });
+    if (!name) {continue;}
+    const result = spawnSync("modprobe", [name], { stdio: "ignore" });
     if (result.status === 0) {
       appendLog(`Loaded kernel module: ${name}`);
     }
@@ -817,12 +849,12 @@ function tryModprobe(modules) {
 
 function ensureMounts(mounts) {
   const results = [];
-  if (!mounts || typeof mounts !== 'object') return results;
+  if (!mounts || typeof mounts !== "object") {return results;}
   for (const mount of Object.values(mounts)) {
-    if (!mount || typeof mount !== 'object') continue;
+    if (!mount || typeof mount !== "object") {continue;}
     const tag = mount.tag;
     const guestPath = mount.guestPath;
-    if (typeof tag === 'string' && typeof guestPath === 'string') {
+    if (typeof tag === "string" && typeof guestPath === "string") {
       results.push(ensureMount(tag, guestPath));
     }
   }
@@ -830,39 +862,42 @@ function ensureMounts(mounts) {
 }
 
 function validateWorkspaceMount(requestMounts, mountResults, requestCwd, workspaceRoot) {
-  if (ipcMode !== 'file') return;
-  if (!requestMounts || typeof requestMounts !== 'object') return;
+  if (ipcMode !== "file") {return;}
+  if (!requestMounts || typeof requestMounts !== "object") {return;}
 
   const mounts = Object.values(requestMounts)
-    .filter((mount) => mount && typeof mount === 'object')
+    .filter((mount) => mount && typeof mount === "object")
     .map((mount) => ({
-      tag: typeof mount.tag === 'string' ? mount.tag : '',
-      guestPath: typeof mount.guestPath === 'string' ? mount.guestPath : '',
+      tag: typeof mount.tag === "string" ? mount.tag : "",
+      guestPath: typeof mount.guestPath === "string" ? mount.guestPath : "",
     }))
     .filter((mount) => mount.tag && mount.guestPath);
 
-  if (mounts.length === 0) return;
+  if (mounts.length === 0) {return;}
 
-  const workspaceMount = mounts.find((mount) =>
-    mount.tag === 'work' || mount.guestPath === workspaceRoot || mount.guestPath === requestCwd
+  const workspaceMount = mounts.find(
+    (mount) =>
+      mount.tag === "work" || mount.guestPath === workspaceRoot || mount.guestPath === requestCwd,
   );
-  if (!workspaceMount) return;
+  if (!workspaceMount) {return;}
 
   const matchedResult = Array.isArray(mountResults)
-    ? mountResults.find((item) => item.tag === workspaceMount.tag && item.guestPath === workspaceMount.guestPath)
+    ? mountResults.find(
+        (item) => item.tag === workspaceMount.tag && item.guestPath === workspaceMount.guestPath,
+      )
     : null;
   const mounted = matchedResult ? matchedResult.mounted : isMounted(workspaceMount.guestPath);
   if (!mounted) {
     throw new Error(
-      `Sandbox workspace mount unavailable (${workspaceMount.tag} -> ${workspaceMount.guestPath}). `
-      + 'Files would be written inside the VM and not persist to the selected folder.'
+      `Sandbox workspace mount unavailable (${workspaceMount.tag} -> ${workspaceMount.guestPath}). ` +
+        "Files would be written inside the VM and not persist to the selected folder.",
     );
   }
 
   if (!isPathWritable(requestCwd)) {
     throw new Error(
-      `Sandbox workspace path is not writable: ${requestCwd}. `
-      + 'Files would not persist to the selected folder.'
+      `Sandbox workspace path is not writable: ${requestCwd}. ` +
+        "Files would not persist to the selected folder.",
     );
   }
 }
@@ -875,11 +910,11 @@ function updateHeartbeat() {
     timestamp: Date.now(),
     pid: process.pid,
     uptime: process.uptime(),
-    ipcMounted: ipcMode === 'file' ? isMounted(IPC_ROOT) : true,
+    ipcMounted: ipcMode === "file" ? isMounted(IPC_ROOT) : true,
   };
 
-  if (ipcMode === 'serial') {
-    serialWrite({ type: 'heartbeat', ...data });
+  if (ipcMode === "serial") {
+    serialWrite({ type: "heartbeat", ...data });
     appendLog(`Heartbeat (serial): ${JSON.stringify(data)}`);
   } else {
     try {
@@ -895,12 +930,12 @@ function updateHeartbeat() {
 // Stream writers – file mode vs serial mode
 // ---------------------------------------------------------------------------
 function createStreamWriter(requestId) {
-  if (ipcMode === 'serial') {
+  if (ipcMode === "serial") {
     return {
       stream: null,
       streamPath: null,
       emit: (payload) => {
-        serialWrite({ type: 'stream', requestId, line: JSON.stringify(payload) });
+        serialWrite({ type: "stream", requestId, line: JSON.stringify(payload) });
       },
       close: () => {},
     };
@@ -909,11 +944,11 @@ function createStreamWriter(requestId) {
   ensureDir(STREAMS_DIR);
   const streamPath = path.join(STREAMS_DIR, `${requestId}.log`);
   try {
-    fs.closeSync(fs.openSync(streamPath, 'a'));
+    fs.closeSync(fs.openSync(streamPath, "a"));
   } catch (error) {
-    console.error('Failed to touch stream file:', streamPath, error);
+    console.error("Failed to touch stream file:", streamPath, error);
   }
-  const stream = fs.createWriteStream(streamPath, { flags: 'a' });
+  const stream = fs.createWriteStream(streamPath, { flags: "a" });
   return {
     stream,
     streamPath,
@@ -921,7 +956,7 @@ function createStreamWriter(requestId) {
       try {
         stream.write(`${JSON.stringify(payload)}\n`);
       } catch (error) {
-        console.error('Failed to write stream payload:', error);
+        console.error("Failed to write stream payload:", error);
       }
     },
     close: () => stream.end(),
@@ -930,9 +965,9 @@ function createStreamWriter(requestId) {
 
 function buildEnv(requestEnv) {
   const env = { ...process.env };
-  if (requestEnv && typeof requestEnv === 'object') {
+  if (requestEnv && typeof requestEnv === "object") {
     for (const [key, value] of Object.entries(requestEnv)) {
-      if (value === undefined || value === null) continue;
+      if (value === undefined || value === null) {continue;}
       env[key] = String(value);
     }
   }
@@ -942,17 +977,17 @@ function buildEnv(requestEnv) {
   if (!env.ANTHROPIC_AUTH_TOKEN && env.ANTHROPIC_API_KEY) {
     env.ANTHROPIC_AUTH_TOKEN = env.ANTHROPIC_API_KEY;
   }
-  env.HOME = env.HOME || '/root';
-  env.XDG_CONFIG_HOME = env.XDG_CONFIG_HOME || '/root/.config';
-  env.TMPDIR = '/tmp';
-  env.TMP = '/tmp';
-  env.TEMP = '/tmp';
+  env.HOME = env.HOME || "/root";
+  env.XDG_CONFIG_HOME = env.XDG_CONFIG_HOME || "/root/.config";
+  env.TMPDIR = "/tmp";
+  env.TMP = "/tmp";
+  env.TEMP = "/tmp";
   // Claude CLI requires bash
-  env.SHELL = env.SHELL || '/bin/bash';
-  env.PATH = env.PATH || '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin';
+  env.SHELL = env.SHELL || "/bin/bash";
+  env.PATH = env.PATH || "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
   // Ensure USER is set
-  env.USER = env.USER || 'root';
-  env.LOGNAME = env.LOGNAME || 'root';
+  env.USER = env.USER || "root";
+  env.LOGNAME = env.LOGNAME || "root";
   return env;
 }
 
@@ -965,7 +1000,7 @@ const pendingSerialPermissions = new Map();
 const pendingSerialHostToolResponses = new Map();
 
 function waitForPermissionResponse(requestId, signal) {
-  if (ipcMode === 'serial') {
+  if (ipcMode === "serial") {
     return waitForSerialPermissionResponse(requestId, signal);
   }
   return waitForFilePermissionResponse(requestId, signal);
@@ -977,10 +1012,10 @@ async function waitForFilePermissionResponse(requestId, signal) {
   const startAt = Date.now();
   while (true) {
     if (signal?.aborted) {
-      return { behavior: 'deny', message: 'Session aborted' };
+      return { behavior: "deny", message: "Session aborted" };
     }
     if (Date.now() - startAt >= PERMISSION_RESPONSE_TIMEOUT_MS) {
-      return { behavior: 'deny', message: 'Permission request timed out after 60s' };
+      return { behavior: "deny", message: "Permission request timed out after 60s" };
     }
     if (fs.existsSync(responsePath)) {
       const payload = safeReadJson(responsePath);
@@ -988,7 +1023,7 @@ async function waitForFilePermissionResponse(requestId, signal) {
         try {
           fs.unlinkSync(responsePath);
         } catch (error) {
-          console.error('Failed to delete permission response:', error);
+          console.error("Failed to delete permission response:", error);
         }
         return payload;
       }
@@ -1009,40 +1044,40 @@ function waitForSerialPermissionResponse(requestId, signal) {
         timeoutId = null;
       }
       if (signal && onAbort) {
-        signal.removeEventListener('abort', onAbort);
+        signal.removeEventListener("abort", onAbort);
       }
       pendingSerialPermissions.delete(requestId);
     };
 
     const finalize = (result) => {
-      if (settled) return;
+      if (settled) {return;}
       settled = true;
       cleanup();
       resolve(result);
     };
 
     onAbort = () => {
-      finalize({ behavior: 'deny', message: 'Session aborted' });
+      finalize({ behavior: "deny", message: "Session aborted" });
     };
 
     if (signal?.aborted) {
-      finalize({ behavior: 'deny', message: 'Session aborted' });
+      finalize({ behavior: "deny", message: "Session aborted" });
       return;
     }
     pendingSerialPermissions.set(requestId, { resolve: finalize });
 
     timeoutId = setTimeout(() => {
-      finalize({ behavior: 'deny', message: 'Permission request timed out after 60s' });
+      finalize({ behavior: "deny", message: "Permission request timed out after 60s" });
     }, PERMISSION_RESPONSE_TIMEOUT_MS);
 
     if (signal) {
-      signal.addEventListener('abort', onAbort, { once: true });
+      signal.addEventListener("abort", onAbort, { once: true });
     }
   });
 }
 
 function waitForHostToolResponse(requestId, signal) {
-  if (ipcMode === 'serial') {
+  if (ipcMode === "serial") {
     return waitForSerialHostToolResponse(requestId, signal);
   }
   return waitForFileHostToolResponse(requestId, signal);
@@ -1054,10 +1089,10 @@ async function waitForFileHostToolResponse(requestId, signal) {
   const startAt = Date.now();
   while (true) {
     if (signal?.aborted) {
-      return { success: false, error: 'Session aborted' };
+      return { success: false, error: "Session aborted" };
     }
     if (Date.now() - startAt >= PERMISSION_RESPONSE_TIMEOUT_MS) {
-      return { success: false, error: 'Host tool request timed out after 60s' };
+      return { success: false, error: "Host tool request timed out after 60s" };
     }
     if (fs.existsSync(responsePath)) {
       const payload = safeReadJson(responsePath);
@@ -1065,7 +1100,7 @@ async function waitForFileHostToolResponse(requestId, signal) {
         try {
           fs.unlinkSync(responsePath);
         } catch (error) {
-          console.error('Failed to delete host tool response:', error);
+          console.error("Failed to delete host tool response:", error);
         }
         return payload;
       }
@@ -1086,35 +1121,35 @@ function waitForSerialHostToolResponse(requestId, signal) {
         timeoutId = null;
       }
       if (signal && onAbort) {
-        signal.removeEventListener('abort', onAbort);
+        signal.removeEventListener("abort", onAbort);
       }
       pendingSerialHostToolResponses.delete(requestId);
     };
 
     const finalize = (result) => {
-      if (settled) return;
+      if (settled) {return;}
       settled = true;
       cleanup();
       resolve(result);
     };
 
     onAbort = () => {
-      finalize({ success: false, error: 'Session aborted' });
+      finalize({ success: false, error: "Session aborted" });
     };
 
     if (signal?.aborted) {
-      finalize({ success: false, error: 'Session aborted' });
+      finalize({ success: false, error: "Session aborted" });
       return;
     }
 
     pendingSerialHostToolResponses.set(requestId, { resolve: finalize });
 
     timeoutId = setTimeout(() => {
-      finalize({ success: false, error: 'Host tool request timed out after 60s' });
+      finalize({ success: false, error: "Host tool request timed out after 60s" });
     }, PERMISSION_RESPONSE_TIMEOUT_MS);
 
     if (signal) {
-      signal.addEventListener('abort', onAbort, { once: true });
+      signal.addEventListener("abort", onAbort, { once: true });
     }
   });
 }
@@ -1125,15 +1160,15 @@ function waitForSerialHostToolResponse(requestId, signal) {
 async function handleRequest(requestId, request, requestPath) {
   const writer = createStreamWriter(requestId);
   const emit = writer.emit;
-  const requestCwd = request.cwd || '/workspace';
-  const confirmationMode = request.confirmationMode === 'text' ? 'text' : 'modal';
-  const hostWorkspaceRoot = typeof request.hostWorkspaceRoot === 'string'
-    ? request.hostWorkspaceRoot.trim()
-    : '';
+  const requestCwd = request.cwd || "/workspace";
+  const confirmationMode = request.confirmationMode === "text" ? "text" : "modal";
+  const hostWorkspaceRoot =
+    typeof request.hostWorkspaceRoot === "string" ? request.hostWorkspaceRoot.trim() : "";
   const workspaceRoot = (() => {
-    const rawRoot = typeof request.workspaceRoot === 'string' && request.workspaceRoot.trim()
-      ? request.workspaceRoot
-      : requestCwd;
+    const rawRoot =
+      typeof request.workspaceRoot === "string" && request.workspaceRoot.trim()
+        ? request.workspaceRoot
+        : requestCwd;
     const resolvedRoot = path.resolve(rawRoot);
     try {
       return fs.realpathSync(resolvedRoot);
@@ -1145,7 +1180,7 @@ async function handleRequest(requestId, request, requestPath) {
   const callHostTool = async (toolName, toolInput, signal) => {
     const hostRequestId = randomUUID();
     emit({
-      type: 'host_tool_request',
+      type: "host_tool_request",
       requestId: hostRequestId,
       toolName,
       toolInput,
@@ -1158,54 +1193,53 @@ async function handleRequest(requestId, request, requestPath) {
     const mountResults = ensureMounts(request.mounts);
     validateWorkspaceMount(request.mounts, mountResults, requestCwd, workspaceRoot);
 
-    const sdk = await import('@anthropic-ai/claude-agent-sdk');
+    const sdk = await import("@anthropic-ai/claude-agent-sdk");
     const sdkVersion = getClaudeSdkVersion();
     const query = sdk.query;
-    if (typeof query !== 'function') {
-      throw new Error('Claude Agent SDK query function not available');
+    if (typeof query !== "function") {
+      throw new Error("Claude Agent SDK query function not available");
     }
     appendLog(`Loaded Claude SDK version: ${sdkVersion}`);
 
     const options = {
       cwd: requestCwd,
       env: buildEnv(request.env),
-      pathToClaudeCodeExecutable: require.resolve('@anthropic-ai/claude-agent-sdk/cli.js'),
+      pathToClaudeCodeExecutable: require.resolve("@anthropic-ai/claude-agent-sdk/cli.js"),
       includePartialMessages: true,
-      permissionMode: 'default',
+      permissionMode: "default",
       stderr: (data) => {
-        const line = typeof data === 'string' ? data.trim() : '';
+        const line = typeof data === "string" ? data.trim() : "";
         if (line) {
           appendLog(`claude stderr: ${line}`);
         }
       },
       canUseTool: async (toolName, toolInput, { signal }) => {
         if (signal?.aborted) {
-          return { behavior: 'deny', message: 'Session aborted' };
+          return { behavior: "deny", message: "Session aborted" };
         }
 
-        const resolvedName = String(toolName ?? 'unknown');
+        const resolvedName = String(toolName ?? "unknown");
         const resolvedInput =
-          toolInput && typeof toolInput === 'object'
-            ? toolInput
-            : { value: toolInput };
+          toolInput && typeof toolInput === "object" ? toolInput : { value: toolInput };
         const normalizedInput = normalizeToolInputPaths(
           resolvedName,
           resolvedInput,
           requestCwd,
           request.env,
-          hostWorkspaceRoot
+          hostWorkspaceRoot,
         );
 
         if (isBlockedBuiltinWebTool(resolvedName)) {
           appendLog(`Blocked tool by policy: ${resolvedName}`);
           return {
-            behavior: 'deny',
-            message: 'Tool blocked by app policy: WebSearch/WebFetch are disabled in this environment.',
+            behavior: "deny",
+            message:
+              "Tool blocked by app policy: WebSearch/WebFetch are disabled in this environment.",
           };
         }
 
         if (request.autoApprove) {
-          return { behavior: 'allow', updatedInput: normalizedInput };
+          return { behavior: "allow", updatedInput: normalizedInput };
         }
 
         const policyResult = await enforceToolSafetyPolicy({
@@ -1221,13 +1255,13 @@ async function handleRequest(requestId, request, requestPath) {
           return policyResult;
         }
 
-        if (resolvedName !== 'AskUserQuestion') {
-          return { behavior: 'allow', updatedInput: normalizedInput };
+        if (resolvedName !== "AskUserQuestion") {
+          return { behavior: "allow", updatedInput: normalizedInput };
         }
 
         const permissionRequestId = randomUUID();
         emit({
-          type: 'permission_request',
+          type: "permission_request",
           requestId: permissionRequestId,
           toolName: resolvedName,
           toolInput: normalizedInput,
@@ -1235,55 +1269,58 @@ async function handleRequest(requestId, request, requestPath) {
 
         const result = await waitForPermissionResponse(permissionRequestId, signal);
         if (signal?.aborted) {
-          return { behavior: 'deny', message: 'Session aborted' };
+          return { behavior: "deny", message: "Session aborted" };
         }
 
-        if (result.behavior === 'deny') {
-          return result.message ? result : { behavior: 'deny', message: 'Permission denied' };
+        if (result.behavior === "deny") {
+          return result.message ? result : { behavior: "deny", message: "Permission denied" };
         }
 
         const updatedInput = result.updatedInput ?? normalizedInput;
-        const hasAnswers = updatedInput && typeof updatedInput === 'object' && 'answers' in updatedInput;
+        const hasAnswers =
+          updatedInput && typeof updatedInput === "object" && "answers" in updatedInput;
         if (!hasAnswers) {
-          return { behavior: 'deny', message: 'No answers provided' };
+          return { behavior: "deny", message: "No answers provided" };
         }
 
-        return { behavior: 'allow', updatedInput };
+        return { behavior: "allow", updatedInput };
       },
     };
 
-    const tool = typeof sdk.tool === 'function'
-      ? sdk.tool
-      : (name, description, inputSchema, handler) => ({ name, description, inputSchema, handler });
-    let createSdkMcpServer = typeof sdk.createSdkMcpServer === 'function'
-      ? sdk.createSdkMcpServer
-      : null;
+    const tool =
+      typeof sdk.tool === "function"
+        ? sdk.tool
+        : (name, description, inputSchema, handler) => ({
+            name,
+            description,
+            inputSchema,
+            handler,
+          });
+    let createSdkMcpServer =
+      typeof sdk.createSdkMcpServer === "function" ? sdk.createSdkMcpServer : null;
     if (!createSdkMcpServer) {
       createSdkMcpServer = buildFallbackMcpServerFactory();
       if (createSdkMcpServer) {
         appendLog(
-          `Claude SDK is missing createSdkMcpServer export (version=${sdkVersion}). `
-          + 'Using fallback MCP server factory from @modelcontextprotocol/sdk.'
+          `Claude SDK is missing createSdkMcpServer export (version=${sdkVersion}). ` +
+            "Using fallback MCP server factory from @modelcontextprotocol/sdk.",
         );
       }
     }
 
-    if (typeof sdk.tool !== 'function') {
+    if (typeof sdk.tool !== "function") {
       appendLog(
-        `Claude SDK is missing tool export (version=${sdkVersion}). `
-        + 'Using fallback tool definition wrapper.'
+        `Claude SDK is missing tool export (version=${sdkVersion}). ` +
+          "Using fallback tool definition wrapper.",
       );
     }
 
-    if (
-      typeof createSdkMcpServer === 'function'
-      && typeof tool === 'function'
-    ) {
+    if (typeof createSdkMcpServer === "function" && typeof tool === "function") {
       const memoryServerName = `host-memory-${requestId.slice(0, 8)}`;
       const memoryTools = [
         tool(
-          'conversation_search',
-          'Search prior conversations by query and return Claude-style <chat> blocks.',
+          "conversation_search",
+          "Search prior conversations by query and return Claude-style <chat> blocks.",
           {
             query: z.string().min(1),
             max_results: z.number().int().min(1).max(10).optional(),
@@ -1291,73 +1328,76 @@ async function handleRequest(requestId, request, requestPath) {
             after: z.string().optional(),
           },
           async (args, { signal }) => {
-            const response = await callHostTool('conversation_search', args, signal);
-            const text = typeof response?.text === 'string'
-              ? response.text
-              : typeof response?.error === 'string'
-                ? response.error
-                : '';
+            const response = await callHostTool("conversation_search", args, signal);
+            const text =
+              typeof response?.text === "string"
+                ? response.text
+                : typeof response?.error === "string"
+                  ? response.error
+                  : "";
             return {
-              content: [{ type: 'text', text }],
+              content: [{ type: "text", text }],
               isError: response?.success === false,
             };
-          }
+          },
         ),
         tool(
-          'recent_chats',
-          'List recent chats and return Claude-style <chat> blocks.',
+          "recent_chats",
+          "List recent chats and return Claude-style <chat> blocks.",
           {
             n: z.number().int().min(1).max(20).optional(),
-            sort_order: z.enum(['asc', 'desc']).optional(),
+            sort_order: z.enum(["asc", "desc"]).optional(),
             before: z.string().optional(),
             after: z.string().optional(),
           },
           async (args, { signal }) => {
-            const response = await callHostTool('recent_chats', args, signal);
-            const text = typeof response?.text === 'string'
-              ? response.text
-              : typeof response?.error === 'string'
-                ? response.error
-                : '';
+            const response = await callHostTool("recent_chats", args, signal);
+            const text =
+              typeof response?.text === "string"
+                ? response.text
+                : typeof response?.error === "string"
+                  ? response.error
+                  : "";
             return {
-              content: [{ type: 'text', text }],
+              content: [{ type: "text", text }],
               isError: response?.success === false,
             };
-          }
+          },
         ),
       ];
       if (request.memoryEnabled !== false) {
         memoryTools.push(
           tool(
-            'memory_user_edits',
-            'Manage user memories. action=list|add|update|delete.',
+            "memory_user_edits",
+            "Manage user memories. action=list|add|update|delete.",
             {
-              action: z.enum(['list', 'add', 'update', 'delete']),
+              action: z.enum(["list", "add", "update", "delete"]),
               id: z.string().optional(),
               text: z.string().optional(),
               confidence: z.number().min(0).max(1).optional(),
-              status: z.enum(['created', 'stale', 'deleted']).optional(),
+              status: z.enum(["created", "stale", "deleted"]).optional(),
               is_explicit: z.boolean().optional(),
               limit: z.number().int().min(1).max(200).optional(),
               query: z.string().optional(),
             },
             async (args, { signal }) => {
-              const response = await callHostTool('memory_user_edits', args, signal);
-              const text = typeof response?.text === 'string'
-                ? response.text
-                : typeof response?.error === 'string'
-                  ? response.error
-                  : '';
+              const response = await callHostTool("memory_user_edits", args, signal);
+              const text =
+                typeof response?.text === "string"
+                  ? response.text
+                  : typeof response?.error === "string"
+                    ? response.error
+                    : "";
               return {
-                content: [{ type: 'text', text }],
+                content: [{ type: "text", text }],
                 isError: response?.success === false,
               };
-            }
-          )
+            },
+          ),
         );
       }
       options.mcpServers = {
-        ...(options.mcpServers || {}),
+        ...options.mcpServers,
         [memoryServerName]: createSdkMcpServer({
           name: memoryServerName,
           tools: memoryTools,
@@ -1365,8 +1405,10 @@ async function handleRequest(requestId, request, requestPath) {
       };
     } else {
       appendLog(
-        `Host memory/history tools are disabled because MCP helper is unavailable `
-        + `(sdkVersion=${sdkVersion}, exports=${Object.keys(sdk || {}).sort().join(',')}).`
+        `Host memory/history tools are disabled because MCP helper is unavailable ` +
+          `(sdkVersion=${sdkVersion}, exports=${Object.keys(sdk || {})
+            .toSorted()
+            .join(",")}).`,
       );
     }
 
@@ -1377,20 +1419,22 @@ async function handleRequest(requestId, request, requestPath) {
       options.systemPrompt = request.systemPrompt;
     }
 
-    const result = await query({ prompt: request.prompt || '', options });
+    const result = await query({ prompt: request.prompt || "", options });
     for await (const event of result) {
-      emit({ type: 'sdk_event', event });
+      emit({ type: "sdk_event", event });
     }
 
     // After SDK query completes, force sync all files to host (serial mode only)
     forceFullSync();
   } catch (error) {
-    appendLog(`Request ${requestId} failed: ${error instanceof Error ? error.message : String(error)}`);
+    appendLog(
+      `Request ${requestId} failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     emit({
-      type: 'sdk_event',
+      type: "sdk_event",
       event: {
-        type: 'result',
-        subtype: 'error',
+        type: "result",
+        subtype: "error",
         error: error instanceof Error ? error.message : String(error),
       },
     });
@@ -1400,7 +1444,7 @@ async function handleRequest(requestId, request, requestPath) {
       try {
         fs.unlinkSync(requestPath);
       } catch (error) {
-        console.error('Failed to delete request file:', error);
+        console.error("Failed to delete request file:", error);
       }
     }
   }
@@ -1410,14 +1454,14 @@ async function handleRequest(requestId, request, requestPath) {
 // File-based IPC (9p) — original polling loop
 // ---------------------------------------------------------------------------
 async function pollRequests() {
-  ensureDir('/workspace');
-  ensureMount('ipc', IPC_ROOT);
+  ensureDir("/workspace");
+  ensureMount("ipc", IPC_ROOT);
   ensureDir(REQUESTS_DIR);
   ensureDir(STREAMS_DIR);
   ensureDir(RESPONSES_DIR);
 
   // Write initial heartbeat and start heartbeat interval
-  appendLog('Agent runner started, polling for requests...');
+  appendLog("Agent runner started, polling for requests...");
   updateHeartbeat();
   setInterval(updateHeartbeat, HEARTBEAT_INTERVAL_MS);
 
@@ -1426,9 +1470,9 @@ async function pollRequests() {
   while (true) {
     let files = [];
     try {
-      files = fs.readdirSync(REQUESTS_DIR).filter((file) => file.endsWith('.json'));
+      files = fs.readdirSync(REQUESTS_DIR).filter((file) => file.endsWith(".json"));
     } catch (error) {
-      console.error('Failed to read requests directory:', error);
+      console.error("Failed to read requests directory:", error);
       await sleep(POLL_INTERVAL_MS);
       continue;
     }
@@ -1436,10 +1480,10 @@ async function pollRequests() {
     files.sort();
 
     for (const file of files) {
-      if (inflight.has(file)) continue;
+      if (inflight.has(file)) {continue;}
       inflight.add(file);
       const requestPath = path.join(REQUESTS_DIR, file);
-      const requestId = path.basename(file, '.json');
+      const requestId = path.basename(file, ".json");
       const request = safeReadJson(requestPath);
       if (request) {
         await handleRequest(requestId, request, requestPath);
@@ -1455,9 +1499,9 @@ async function pollRequests() {
 // Serial IPC (virtio-serial) — used on Windows host
 // ---------------------------------------------------------------------------
 function serialWrite(data) {
-  if (serialFd === null) return;
+  if (serialFd === null) {return;}
   try {
-    const line = JSON.stringify(data) + '\n';
+    const line = JSON.stringify(data) + "\n";
     fs.writeSync(serialFd, line);
   } catch (error) {
     appendLog(`Serial write error: ${error.message}`);
@@ -1470,7 +1514,9 @@ function findSerialDevice() {
       if (fs.existsSync(devPath)) {
         return devPath;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
   return null;
 }
@@ -1489,12 +1535,14 @@ function shouldIgnorePath(filePath) {
 }
 
 function syncFile(absPath) {
-  if (shouldIgnorePath(absPath)) {return;}
+  if (shouldIgnorePath(absPath)) {
+    return;
+  }
 
   const relativePath = path.relative(WORKSPACE_PROJECT, absPath);
 
   // Security: reject paths that escape the workspace
-  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
     appendLog(`File sync: rejected path outside workspace: ${relativePath}`);
     return;
   }
@@ -1506,7 +1554,9 @@ function syncFile(absPath) {
       appendLog(`File sync: skipping symlink outside workspace: ${absPath} -> ${realPath}`);
       return;
     }
-  } catch { /* proceed with original path if realpath fails */ }
+  } catch {
+    /* proceed with original path if realpath fails */
+  }
 
   let stat;
   try {
@@ -1515,7 +1565,9 @@ function syncFile(absPath) {
     return; // file may have been deleted between detection and read
   }
 
-  if (stat.isDirectory()) {return;} // directories are created implicitly
+  if (stat.isDirectory()) {
+    return;
+  } // directories are created implicitly
 
   if (stat.size > FILE_SYNC_MAX_SIZE) {
     appendLog(`File sync: skipping oversized file (${stat.size} bytes): ${relativePath}`);
@@ -1523,16 +1575,16 @@ function syncFile(absPath) {
   }
 
   // Use forward slashes for cross-platform path consistency
-  const syncPath = relativePath.split(path.sep).join('/');
+  const syncPath = relativePath.split(path.sep).join("/");
 
   if (stat.size <= FILE_SYNC_CHUNK_SIZE) {
     // Single-message transfer
     try {
       const data = fs.readFileSync(absPath);
       serialWrite({
-        type: 'file_sync',
+        type: "file_sync",
         path: syncPath,
-        data: data.toString('base64'),
+        data: data.toString("base64"),
         size: stat.size,
       });
     } catch (error) {
@@ -1544,28 +1596,30 @@ function syncFile(absPath) {
     const totalChunks = Math.ceil(stat.size / FILE_SYNC_CHUNK_SIZE);
     let fd;
     try {
-      fd = fs.openSync(absPath, 'r');
+      fd = fs.openSync(absPath, "r");
       for (let i = 0; i < totalChunks; i++) {
         const chunkSize = Math.min(FILE_SYNC_CHUNK_SIZE, stat.size - i * FILE_SYNC_CHUNK_SIZE);
         const buf = Buffer.alloc(chunkSize);
         fs.readSync(fd, buf, 0, chunkSize, i * FILE_SYNC_CHUNK_SIZE);
         serialWrite({
-          type: 'file_sync_chunk',
+          type: "file_sync_chunk",
           transferId,
           path: syncPath,
           chunkIndex: i,
           totalChunks,
-          data: buf.toString('base64'),
+          data: buf.toString("base64"),
         });
       }
     } catch (error) {
       appendLog(`File sync: chunked transfer failed for ${relativePath}: ${error.message}`);
       return;
     } finally {
-      if (fd !== undefined) {fs.closeSync(fd);}
+      if (fd !== undefined) {
+        fs.closeSync(fd);
+      }
     }
     serialWrite({
-      type: 'file_sync_complete',
+      type: "file_sync_complete",
       transferId,
       path: syncPath,
       totalChunks,
@@ -1584,7 +1638,9 @@ function scanAndSyncDir(dir) {
   }
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    if (shouldIgnorePath(fullPath)) {continue;}
+    if (shouldIgnorePath(fullPath)) {
+      continue;
+    }
     if (entry.isDirectory()) {
       scanAndSyncDir(fullPath);
     } else if (entry.isFile()) {
@@ -1596,15 +1652,19 @@ function scanAndSyncDir(dir) {
           fileSyncKnown.set(relativePath, { mtimeMs: stat.mtimeMs, size: stat.size });
           syncFile(fullPath);
         }
-      } catch { /* file may have disappeared */ }
+      } catch {
+        /* file may have disappeared */
+      }
     }
   }
 }
 
 function startFileSyncWatcher() {
-  if (ipcMode !== 'serial') {return;}
+  if (ipcMode !== "serial") {
+    return;
+  }
   ensureDir(WORKSPACE_PROJECT);
-  appendLog('File sync: starting periodic watcher');
+  appendLog("File sync: starting periodic watcher");
   setInterval(() => {
     if (fs.existsSync(WORKSPACE_PROJECT)) {
       scanAndSyncDir(WORKSPACE_PROJECT);
@@ -1617,9 +1677,13 @@ function startFileSyncWatcher() {
  * Called after each request completes to ensure nothing is missed.
  */
 function forceFullSync() {
-  if (ipcMode !== 'serial') {return;}
-  if (!fs.existsSync(WORKSPACE_PROJECT)) {return;}
-  appendLog('File sync: running forced full scan');
+  if (ipcMode !== "serial") {
+    return;
+  }
+  if (!fs.existsSync(WORKSPACE_PROJECT)) {
+    return;
+  }
+  appendLog("File sync: running forced full scan");
   // Clear known files to force re-sync of everything
   fileSyncKnown.clear();
   scanAndSyncDir(WORKSPACE_PROJECT);
@@ -1634,10 +1698,14 @@ function handlePushFile(basePath, relativePath, base64Data) {
   const fullPath = path.join(basePath, relativePath);
   try {
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-    fs.writeFileSync(fullPath, Buffer.from(base64Data, 'base64'));
+    fs.writeFileSync(fullPath, Buffer.from(base64Data, "base64"));
     // Mark file as executable if it looks like a script
     if (/\.(sh|bash)$/.test(relativePath)) {
-      try { fs.chmodSync(fullPath, 0o755); } catch { /* best effort */ }
+      try {
+        fs.chmodSync(fullPath, 0o755);
+      } catch {
+        /* best effort */
+      }
     }
     appendLog(`Push file received: ${relativePath} -> ${fullPath}`);
   } catch (error) {
@@ -1646,14 +1714,16 @@ function handlePushFile(basePath, relativePath, base64Data) {
 }
 
 function handlePushFileChunk(msg) {
-  const transferId = String(msg.transferId ?? '');
-  const relativePath = String(msg.path ?? '');
+  const transferId = String(msg.transferId ?? "");
+  const relativePath = String(msg.path ?? "");
   const chunkIndex = Number(msg.chunkIndex ?? 0);
   const totalChunks = Number(msg.totalChunks ?? 0);
-  const data = String(msg.data ?? '');
-  const basePath = String(msg.basePath ?? '');
+  const data = String(msg.data ?? "");
+  const basePath = String(msg.basePath ?? "");
 
-  if (!transferId || !relativePath || !data || !basePath) {return;}
+  if (!transferId || !relativePath || !data || !basePath) {
+    return;
+  }
 
   if (!pendingPushTransfers.has(transferId)) {
     pendingPushTransfers.set(transferId, {
@@ -1665,7 +1735,7 @@ function handlePushFileChunk(msg) {
   }
 
   const transfer = pendingPushTransfers.get(transferId);
-  transfer.chunks.set(chunkIndex, Buffer.from(data, 'base64'));
+  transfer.chunks.set(chunkIndex, Buffer.from(data, "base64"));
 
   if (transfer.chunks.size === transfer.totalChunks) {
     assemblePushFile(transferId);
@@ -1673,8 +1743,10 @@ function handlePushFileChunk(msg) {
 }
 
 function handlePushFileComplete(msg) {
-  const transferId = String(msg.transferId ?? '');
-  if (!transferId) {return;}
+  const transferId = String(msg.transferId ?? "");
+  if (!transferId) {
+    return;
+  }
 
   const transfer = pendingPushTransfers.get(transferId);
   if (transfer && transfer.chunks.size === transfer.totalChunks) {
@@ -1692,7 +1764,9 @@ function handlePushFileComplete(msg) {
 
 function assemblePushFile(transferId) {
   const transfer = pendingPushTransfers.get(transferId);
-  if (!transfer) {return;}
+  if (!transfer) {
+    return;
+  }
 
   const fullPath = path.join(transfer.basePath, transfer.path);
   try {
@@ -1711,7 +1785,11 @@ function assemblePushFile(transferId) {
 
     fs.writeFileSync(fullPath, Buffer.concat(buffers));
     if (/\.(sh|bash)$/.test(transfer.path)) {
-      try { fs.chmodSync(fullPath, 0o755); } catch { /* best effort */ }
+      try {
+        fs.chmodSync(fullPath, 0o755);
+      } catch {
+        /* best effort */
+      }
     }
     appendLog(`Push file (chunked) received: ${transfer.path} -> ${fullPath}`);
   } catch (error) {
@@ -1723,8 +1801,8 @@ function assemblePushFile(transferId) {
 
 async function serialIpcMode(serialPath) {
   appendLog(`Using virtio-serial IPC: ${serialPath}`);
-  ipcMode = 'serial';
-  serialFd = fs.openSync(serialPath, 'r+');
+  ipcMode = "serial";
+  serialFd = fs.openSync(serialPath, "r+");
 
   // Start heartbeat
   updateHeartbeat();
@@ -1737,8 +1815,10 @@ async function serialIpcMode(serialPath) {
   const readStream = fs.createReadStream(null, { fd: serialFd, autoClose: false });
   const rl = readline.createInterface({ input: readStream });
 
-  rl.on('line', (line) => {
-    if (!line.trim()) {return;}
+  rl.on("line", (line) => {
+    if (!line.trim()) {
+      return;
+    }
     let msg;
     try {
       msg = JSON.parse(line.trim());
@@ -1746,22 +1826,22 @@ async function serialIpcMode(serialPath) {
       return;
     }
 
-    if (msg.type === 'request' && msg.requestId && msg.data) {
+    if (msg.type === "request" && msg.requestId && msg.data) {
       appendLog(`Serial request received: ${msg.requestId}`);
       handleRequest(msg.requestId, msg.data, null).catch((err) => {
         appendLog(`Serial request ${msg.requestId} failed: ${err.message}`);
       });
     }
 
-    if (msg.type === 'permission_response' && msg.requestId) {
+    if (msg.type === "permission_response" && msg.requestId) {
       const pending = pendingSerialPermissions.get(msg.requestId);
       if (pending) {
         pendingSerialPermissions.delete(msg.requestId);
-        pending.resolve(msg.result || { behavior: 'deny', message: 'Empty response' });
+        pending.resolve(msg.result || { behavior: "deny", message: "Empty response" });
       }
     }
 
-    if (msg.type === 'host_tool_response' && msg.requestId) {
+    if (msg.type === "host_tool_response" && msg.requestId) {
       const pending = pendingSerialHostToolResponses.get(msg.requestId);
       if (pending) {
         pendingSerialHostToolResponses.delete(msg.requestId);
@@ -1770,21 +1850,21 @@ async function serialIpcMode(serialPath) {
     }
 
     // Host → guest file push (used to transfer skill files on Windows)
-    if (msg.type === 'push_file' && msg.basePath && msg.path && msg.data) {
+    if (msg.type === "push_file" && msg.basePath && msg.path && msg.data) {
       handlePushFile(msg.basePath, msg.path, msg.data);
     }
 
-    if (msg.type === 'push_file_chunk') {
+    if (msg.type === "push_file_chunk") {
       handlePushFileChunk(msg);
     }
 
-    if (msg.type === 'push_file_complete') {
+    if (msg.type === "push_file_complete") {
       handlePushFileComplete(msg);
     }
   });
 
-  rl.on('close', () => {
-    appendLog('Serial readline closed');
+  rl.on("close", () => {
+    appendLog("Serial readline closed");
   });
 
   // Keep the process running
@@ -1795,20 +1875,20 @@ async function serialIpcMode(serialPath) {
 // Main entry point
 // ---------------------------------------------------------------------------
 async function main() {
-  ensureDir('/workspace');
+  ensureDir("/workspace");
 
   // Try 9p mount first
-  ensureMount('ipc', IPC_ROOT);
+  ensureMount("ipc", IPC_ROOT);
 
   if (isMounted(IPC_ROOT)) {
-    appendLog('IPC mounted via 9p, using file-based IPC');
+    appendLog("IPC mounted via 9p, using file-based IPC");
     await pollRequests();
     return;
   }
 
   // 9p not available — check for virtio-serial device
-  appendLog('9p mount failed, checking for virtio-serial device...');
-  tryModprobe(['virtio_console']);
+  appendLog("9p mount failed, checking for virtio-serial device...");
+  tryModprobe(["virtio_console"]);
 
   // Wait briefly for the device to appear after module load
   for (let i = 0; i < 10; i++) {
@@ -1822,11 +1902,11 @@ async function main() {
 
   // Neither IPC mechanism available — fall back to file polling anyway
   // (the heartbeat will report ipcMounted=false)
-  appendLog('No virtio-serial device found, falling back to file-based IPC');
+  appendLog("No virtio-serial device found, falling back to file-based IPC");
   await pollRequests();
 }
 
 main().catch((error) => {
-  console.error('Agent runner crashed:', error);
+  console.error("Agent runner crashed:", error);
   process.exit(1);
 });

@@ -63,7 +63,7 @@ marv browser --browser-profile work tabs
 
 ```bash
 marv browser tabs
-marv browser open https://docs.marv.ai
+marv browser open 
 marv browser focus <targetId>
 marv browser close <targetId>
 ```

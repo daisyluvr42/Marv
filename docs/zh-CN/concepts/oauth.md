@@ -46,14 +46,14 @@ OAuth 提供商通常在登录/刷新流程中发放**新的刷新令牌**。某
 
 密钥按**智能体**存储：
 
-- 认证配置文件（OAuth + API 密钥）：`~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-- 运行时缓存（自动管理；请勿编辑）：`~/.openclaw/agents/<agentId>/agent/auth.json`
+- 认证配置文件（OAuth + API 密钥）：`~/.marv/agents/<agentId>/agent/auth-profiles.json`
+- 运行时缓存（自动管理；请勿编辑）：`~/.marv/agents/<agentId>/agent/auth.json`
 
 仅用于导入的旧版文件（仍然支持，但不是主存储）：
 
-- `~/.openclaw/credentials/oauth.json`（首次使用时导入到 `auth-profiles.json`）
+- `~/.marv/credentials/oauth.json`（首次使用时导入到 `auth-profiles.json`）
 
-以上所有路径也遵循 `$OPENCLAW_STATE_DIR`（状态目录覆盖）。完整参考：[/gateway/configuration](/gateway/configuration#auth-storage-oauth--api-keys)
+以上所有路径也遵循 `$MARV_STATE_DIR`（状态目录覆盖）。完整参考：[/gateway/configuration](/gateway/configuration#auth-storage-oauth--api-keys)
 
 ## Anthropic setup-token（订阅认证）
 

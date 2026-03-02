@@ -1,17 +1,20 @@
-import { app, session } from 'electron';
+import { app, session } from "electron";
 
 // Fallback for cases where Electron session is not ready yet.
-const nodeFetch = require('node-fetch');
+const nodeFetch = require("node-fetch");
 
 function linkAbortSignal(source: AbortSignal, controller: AbortController): void {
   if (source.aborted) {
     controller.abort();
     return;
   }
-  source.addEventListener('abort', () => controller.abort(), { once: true });
+  source.addEventListener("abort", () => controller.abort(), { once: true });
 }
 
-export async function fetchWithSystemProxy(url: string, options: RequestInit = {}): Promise<Response> {
+export async function fetchWithSystemProxy(
+  url: string,
+  options: RequestInit = {},
+): Promise<Response> {
   if (app.isReady()) {
     try {
       return await session.defaultSession.fetch(url, options);
@@ -27,7 +30,7 @@ export async function fetchWithSystemProxy(url: string, options: RequestInit = {
 export async function fetchJsonWithTimeout<T>(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 10_000
+  timeoutMs = 10_000,
 ): Promise<T> {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
@@ -54,13 +57,18 @@ export async function fetchJsonWithTimeout<T>(
 
     if (!response.ok) {
       const payload = data as { description?: string; message?: string } | null;
-      const detail = payload?.description || payload?.message || rawText || response.statusText || 'request failed';
+      const detail =
+        payload?.description ||
+        payload?.message ||
+        rawText ||
+        response.statusText ||
+        "request failed";
       throw new Error(`HTTP ${response.status}: ${detail}`);
     }
 
     return data as T;
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new Error(`Request timed out after ${timeoutMs}ms`, { cause: error });
     }
     throw error;

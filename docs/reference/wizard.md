@@ -17,7 +17,7 @@ For a high-level overview, see [Onboarding Wizard](/start/wizard).
 
 <Steps>
   <Step title="Existing config detection">
-    - If `~/.openclaw/marv.json` exists, choose **Keep / Modify / Reset**.
+    - If `~/.marv/marv.json` exists, choose **Keep / Modify / Reset**.
     - Re-running the wizard does **not** wipe anything unless you explicitly choose **Reset**
       (or pass `--reset`).
     - If the config is invalid or contains legacy keys, the wizard stops and asks
@@ -34,7 +34,7 @@ For a high-level overview, see [Onboarding Wizard](/start/wizard).
     - **OpenAI Code (Codex) subscription (Codex CLI)**: if `~/.codex/auth.json` exists, the wizard can reuse it.
     - **OpenAI Code (Codex) subscription (OAuth)**: browser flow; paste the `code#state`.
       - Sets `agents.defaults.model` to `openai-codex/gpt-5.2` when model is unset or `openai/*`.
-    - **OpenAI API key**: uses `OPENAI_API_KEY` if present or prompts for a key, then saves it to `~/.openclaw/.env` so launchd can read it.
+    - **OpenAI API key**: uses `OPENAI_API_KEY` if present or prompts for a key, then saves it to `~/.marv/.env` so launchd can read it.
     - **xAI (Grok) API key**: prompts for `XAI_API_KEY` and configures xAI as a model provider.
     - **OpenCode Zen (multi-model proxy)**: prompts for `OPENCODE_API_KEY` (or `OPENCODE_ZEN_API_KEY`, get it at https://opencode.ai/auth).
     - **API key**: stores the key for you.
@@ -52,16 +52,16 @@ For a high-level overview, see [Onboarding Wizard](/start/wizard).
     - **Skip**: no auth configured yet.
     - Pick a default model from detected options (or enter provider/model manually).
     - Wizard runs a model check and warns if the configured model is unknown or missing auth.
-    - OAuth credentials live in `~/.openclaw/credentials/oauth.json`; auth profiles live in `~/.openclaw/agents/<agentId>/agent/auth-profiles.json` (API keys + OAuth).
+    - OAuth credentials live in `~/.marv/credentials/oauth.json`; auth profiles live in `~/.marv/agents/<agentId>/agent/auth-profiles.json` (API keys + OAuth).
     - More detail: [/concepts/oauth](/concepts/oauth)
     <Note>
     Headless/server tip: complete OAuth on a machine with a browser, then copy
-    `~/.openclaw/credentials/oauth.json` (or `$OPENCLAW_STATE_DIR/credentials/oauth.json`) to the
+    `~/.marv/credentials/oauth.json` (or `$MARV_STATE_DIR/credentials/oauth.json`) to the
     gateway host.
     </Note>
   </Step>
   <Step title="Workspace">
-    - Default `~/.openclaw/workspace` (configurable).
+    - Default `~/.marv/workspace` (configurable).
     - Seeds the workspace files needed for the agent bootstrap ritual.
     - Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
   </Step>
@@ -210,7 +210,7 @@ Add `--json` for a machine‑readable summary.
 
 ```bash
 marv agents add work \
-  --workspace ~/.openclaw/workspace-work \
+  --workspace ~/.marv/workspace-work \
   --model openai/gpt-5.2 \
   --bind whatsapp:biz \
   --non-interactive \
@@ -227,7 +227,7 @@ Clients (macOS app, Control UI) can render steps without re‑implementing onboa
 The wizard can install `signal-cli` from GitHub releases:
 
 - Downloads the appropriate release asset.
-- Stores it under `~/.openclaw/tools/signal-cli/<version>/`.
+- Stores it under `~/.marv/tools/signal-cli/<version>/`.
 - Writes `channels.signal.cliPath` to your config.
 
 Notes:
@@ -238,7 +238,7 @@ Notes:
 
 ## What the wizard writes
 
-Typical fields in `~/.openclaw/marv.json`:
+Typical fields in `~/.marv/marv.json`:
 
 - `agents.defaults.workspace`
 - `agents.defaults.model` / `models.providers` (if Minimax chosen)
@@ -254,8 +254,8 @@ Typical fields in `~/.openclaw/marv.json`:
 
 `marv agents add` writes `agents.list[]` and optional `bindings`.
 
-WhatsApp credentials go under `~/.openclaw/credentials/whatsapp/<accountId>/`.
-Sessions are stored under `~/.openclaw/agents/<agentId>/sessions/`.
+WhatsApp credentials go under `~/.marv/credentials/whatsapp/<accountId>/`.
+Sessions are stored under `~/.marv/agents/<agentId>/sessions/`.
 
 Some channels are delivered as plugins. When you pick one during onboarding, the wizard
 will prompt to install it (npm or a local path) before it can be configured.

@@ -36,7 +36,7 @@ Gateway 网关从与 Gateway 网关 WebSocket 相同的端口提供一个小型*
 ```json5
 {
   gateway: {
-    controlUi: { enabled: true, basePath: "/openclaw" }, // basePath 可选
+    controlUi: { enabled: true, basePath: "/marv" }, // basePath 可选
   },
 }
 ```
@@ -95,7 +95,7 @@ marv gateway
   gateway: {
     bind: "loopback",
     tailscale: { mode: "funnel" },
-    auth: { mode: "password" }, // 或 OPENCLAW_GATEWAY_PASSWORD
+    auth: { mode: "password" }, // 或 MARV_GATEWAY_PASSWORD
   },
 }
 ```

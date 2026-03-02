@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
   CoworkSession,
   CoworkSessionSummary,
@@ -6,7 +6,7 @@ import type {
   CoworkConfig,
   CoworkPermissionRequest,
   CoworkSessionStatus,
-} from '../../types/cowork';
+} from "../../types/cowork";
 
 interface CoworkState {
   sessions: CoworkSessionSummary[];
@@ -24,36 +24,42 @@ const initialState: CoworkState = {
   sessions: [],
   currentSessionId: null,
   currentSession: null,
-  draftPrompt: '',
+  draftPrompt: "",
   unreadSessionIds: [],
   isCoworkActive: false,
   isStreaming: false,
   pendingPermissions: [],
   config: {
-    workingDirectory: '',
-    systemPrompt: '',
-    executionMode: 'local',
+    workingDirectory: "",
+    systemPrompt: "",
+    executionMode: "local",
     memoryEnabled: true,
     memoryImplicitUpdateEnabled: true,
     memoryLlmJudgeEnabled: false,
-    memoryGuardLevel: 'strict',
+    memoryGuardLevel: "strict",
     memoryUserMemoriesMaxItems: 12,
   },
 };
 
 const markSessionRead = (state: CoworkState, sessionId: string | null) => {
-  if (!sessionId) {return;}
+  if (!sessionId) {
+    return;
+  }
   state.unreadSessionIds = state.unreadSessionIds.filter((id) => id !== sessionId);
 };
 
 const markSessionUnread = (state: CoworkState, sessionId: string) => {
-  if (state.currentSessionId === sessionId) {return;}
-  if (state.unreadSessionIds.includes(sessionId)) {return;}
+  if (state.currentSessionId === sessionId) {
+    return;
+  }
+  if (state.unreadSessionIds.includes(sessionId)) {
+    return;
+  }
   state.unreadSessionIds.push(sessionId);
 };
 
 const coworkSlice = createSlice({
-  name: 'cowork',
+  name: "cowork",
   initialState,
   reducers: {
     setCoworkActive(state, action: PayloadAction<boolean>) {
@@ -77,7 +83,7 @@ const coworkSlice = createSlice({
       state.currentSession = action.payload;
       if (action.payload) {
         state.currentSessionId = action.payload.id;
-        if (!action.payload.id.startsWith('temp-')) {
+        if (!action.payload.id.startsWith("temp-")) {
           const { id, title, status, pinned, createdAt, updatedAt } = action.payload;
           const summary: CoworkSessionSummary = {
             id,
@@ -120,11 +126,14 @@ const coworkSlice = createSlice({
       markSessionRead(state, action.payload.id);
     },
 
-    updateSessionStatus(state, action: PayloadAction<{ sessionId: string; status: CoworkSessionStatus }>) {
+    updateSessionStatus(
+      state,
+      action: PayloadAction<{ sessionId: string; status: CoworkSessionStatus }>,
+    ) {
       const { sessionId, status } = action.payload;
 
       // Update in sessions list
-      const sessionIndex = state.sessions.findIndex(s => s.id === sessionId);
+      const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
       if (sessionIndex !== -1) {
         state.sessions[sessionIndex].status = status;
         state.sessions[sessionIndex].updatedAt = Date.now();
@@ -135,13 +144,13 @@ const coworkSlice = createSlice({
         state.currentSession.status = status;
         state.currentSession.updatedAt = Date.now();
         // Streaming state is tied to the currently opened session only
-        state.isStreaming = status === 'running';
+        state.isStreaming = status === "running";
       }
     },
 
     deleteSession(state, action: PayloadAction<string>) {
       const sessionId = action.payload;
-      state.sessions = state.sessions.filter(s => s.id !== sessionId);
+      state.sessions = state.sessions.filter((s) => s.id !== sessionId);
       state.unreadSessionIds = state.unreadSessionIds.filter((id) => id !== sessionId);
 
       if (state.currentSessionId === sessionId) {
@@ -162,7 +171,7 @@ const coworkSlice = createSlice({
       }
 
       // Update session in list
-      const sessionIndex = state.sessions.findIndex(s => s.id === sessionId);
+      const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
       if (sessionIndex !== -1) {
         state.sessions[sessionIndex].updatedAt = message.timestamp;
       }
@@ -170,11 +179,14 @@ const coworkSlice = createSlice({
       markSessionUnread(state, sessionId);
     },
 
-    updateMessageContent(state, action: PayloadAction<{ sessionId: string; messageId: string; content: string }>) {
+    updateMessageContent(
+      state,
+      action: PayloadAction<{ sessionId: string; messageId: string; content: string }>,
+    ) {
       const { sessionId, messageId, content } = action.payload;
 
       if (state.currentSession?.id === sessionId) {
-        const messageIndex = state.currentSession.messages.findIndex(m => m.id === messageId);
+        const messageIndex = state.currentSession.messages.findIndex((m) => m.id === messageId);
         if (messageIndex !== -1) {
           state.currentSession.messages[messageIndex].content = content;
         }
@@ -189,7 +201,7 @@ const coworkSlice = createSlice({
 
     updateSessionPinned(state, action: PayloadAction<{ sessionId: string; pinned: boolean }>) {
       const { sessionId, pinned } = action.payload;
-      const sessionIndex = state.sessions.findIndex(s => s.id === sessionId);
+      const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
       if (sessionIndex !== -1) {
         state.sessions[sessionIndex].pinned = pinned;
       }
@@ -200,7 +212,7 @@ const coworkSlice = createSlice({
 
     updateSessionTitle(state, action: PayloadAction<{ sessionId: string; title: string }>) {
       const { sessionId, title } = action.payload;
-      const sessionIndex = state.sessions.findIndex(s => s.id === sessionId);
+      const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
       if (sessionIndex !== -1) {
         state.sessions[sessionIndex].title = title;
         state.sessions[sessionIndex].updatedAt = Date.now();
@@ -213,9 +225,11 @@ const coworkSlice = createSlice({
 
     enqueuePendingPermission(state, action: PayloadAction<CoworkPermissionRequest>) {
       const alreadyQueued = state.pendingPermissions.some(
-        (permission) => permission.requestId === action.payload.requestId
+        (permission) => permission.requestId === action.payload.requestId,
       );
-      if (alreadyQueued) {return;}
+      if (alreadyQueued) {
+        return;
+      }
       state.pendingPermissions.push(action.payload);
     },
 
@@ -226,7 +240,7 @@ const coworkSlice = createSlice({
         return;
       }
       state.pendingPermissions = state.pendingPermissions.filter(
-        (permission) => permission.requestId !== requestId
+        (permission) => permission.requestId !== requestId,
       );
     },
 

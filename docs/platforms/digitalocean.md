@@ -97,10 +97,10 @@ The wizard will walk you through:
 marv status
 
 # Check service
-systemctl --user status openclaw-gateway.service
+systemctl --user status marv-gateway.service
 
 # View logs
-journalctl --user -u openclaw-gateway.service -f
+journalctl --user -u marv-gateway.service -f
 ```
 
 ## 6) Access the Dashboard
@@ -198,13 +198,13 @@ htop
 
 All state lives in:
 
-- `~/.openclaw/` — config, credentials, session data
-- `~/.openclaw/workspace/` — workspace (SOUL.md, memory, etc.)
+- `~/.marv/` — config, credentials, session data
+- `~/.marv/workspace/` — workspace (SOUL.md, memory, etc.)
 
 These survive reboots. Back them up periodically:
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.marv ~/.openclaw/workspace
+tar -czvf marv-backup.tar.gz ~/.marv ~/.marv/workspace
 ```
 
 ---

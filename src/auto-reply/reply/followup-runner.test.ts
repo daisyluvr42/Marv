@@ -83,7 +83,7 @@ function mockCompactionRun(params: {
 describe("createFollowupRunner compaction", () => {
   it("adds verbose auto-compaction notice and tracks count", async () => {
     const storePath = path.join(
-      await fs.mkdtemp(path.join(tmpdir(), "openclaw-compaction-")),
+      await fs.mkdtemp(path.join(tmpdir(), "marv-compaction-")),
       "sessions.json",
     );
     const sessionEntry: SessionEntry = {
@@ -148,7 +148,7 @@ describe("createFollowupRunner compaction", () => {
 
   it("updates totalTokens after auto-compaction using lastCallUsage", async () => {
     const storePath = path.join(
-      await fs.mkdtemp(path.join(tmpdir(), "openclaw-followup-compaction-")),
+      await fs.mkdtemp(path.join(tmpdir(), "marv-followup-compaction-")),
       "sessions.json",
     );
     const sessionKey = "main";
@@ -307,7 +307,7 @@ describe("createFollowupRunner messaging tool dedupe", () => {
 
   it("persists usage even when replies are suppressed", async () => {
     const storePath = path.join(
-      await fs.mkdtemp(path.join(tmpdir(), "openclaw-followup-usage-")),
+      await fs.mkdtemp(path.join(tmpdir(), "marv-followup-usage-")),
       "sessions.json",
     );
     const sessionKey = "main";

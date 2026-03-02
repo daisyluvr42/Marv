@@ -19,8 +19,8 @@ x-i18n:
 
 ## 隔离检查清单（必需）
 
-- `OPENCLAW_CONFIG_PATH` — 每个实例的配置文件
-- `OPENCLAW_STATE_DIR` — 每个实例的会话、凭证、缓存
+- `MARV_CONFIG_PATH` — 每个实例的配置文件
+- `MARV_STATE_DIR` — 每个实例的会话、凭证、缓存
 - `agents.defaults.workspace` — 每个实例的工作区根目录
 - `gateway.port`（或 `--port`）— 每个实例唯一
 - 派生端口（浏览器/画布）不得重叠
@@ -29,7 +29,7 @@ x-i18n:
 
 ## 推荐：配置文件（`--profile`）
 
-配置文件自动限定 `OPENCLAW_STATE_DIR` + `OPENCLAW_CONFIG_PATH` 范围并为服务名称添加后缀。
+配置文件自动限定 `MARV_STATE_DIR` + `MARV_CONFIG_PATH` 范围并为服务名称添加后缀。
 
 ```bash
 # main
@@ -83,7 +83,7 @@ marv --profile rescue gateway install
 
 ## 端口映射（派生）
 
-基础端口 = `gateway.port`（或 `OPENCLAW_GATEWAY_PORT` / `--port`）。
+基础端口 = `gateway.port`（或 `MARV_GATEWAY_PORT` / `--port`）。
 
 - 浏览器控制服务端口 = 基础 + 2（仅 loopback）
 - `canvasHost.port = 基础 + 4`
@@ -101,12 +101,12 @@ marv --profile rescue gateway install
 ## 手动环境变量示例
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/main.json \
-OPENCLAW_STATE_DIR=~/.openclaw-main \
+MARV_CONFIG_PATH=~/.marv/main.json \
+MARV_STATE_DIR=~/.marv-main \
 marv gateway --port 18789
 
-OPENCLAW_CONFIG_PATH=~/.openclaw/rescue.json \
-OPENCLAW_STATE_DIR=~/.openclaw-rescue \
+MARV_CONFIG_PATH=~/.marv/rescue.json \
+MARV_STATE_DIR=~/.marv-rescue \
 marv gateway --port 19001
 ```
 

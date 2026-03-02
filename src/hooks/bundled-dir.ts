@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 export function resolveBundledHooksDir(): string | undefined {
   const override =
-    process.env.MARV_BUNDLED_HOOKS_DIR?.trim() ?? process.env.OPENCLAW_BUNDLED_HOOKS_DIR?.trim();
+    process.env.MARV_BUNDLED_HOOKS_DIR?.trim() ?? process.env.MARV_BUNDLED_HOOKS_DIR?.trim();
   if (override) {
     return override;
   }

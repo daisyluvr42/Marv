@@ -19,7 +19,7 @@ x-i18n:
 ## 使用 Render Blueprint 部署
 
 <a
-  href="https://render.com/deploy?repo=https://github.com/openclaw/openclaw"
+  href="https://render.com/deploy?repo="
   target="_blank"
   rel="noreferrer"
 >
@@ -41,7 +41,7 @@ Render Blueprint 是定义基础设施的 YAML 文件。本仓库中的 `render.
 ```yaml
 services:
   - type: web
-    name: openclaw
+    name: marv
     runtime: docker
     plan: starter
     healthCheckPath: /health
@@ -50,14 +50,14 @@ services:
         value: "8080"
       - key: SETUP_PASSWORD
         sync: false # prompts during deploy
-      - key: OPENCLAW_STATE_DIR
-        value: /data/.openclaw
-      - key: OPENCLAW_WORKSPACE_DIR
+      - key: MARV_STATE_DIR
+        value: /data/.marv
+      - key: MARV_WORKSPACE_DIR
         value: /data/workspace
-      - key: OPENCLAW_GATEWAY_TOKEN
+      - key: MARV_GATEWAY_TOKEN
         generateValue: true # auto-generates a secure token
     disk:
-      name: openclaw-data
+      name: marv-data
       mountPath: /data
       sizeGB: 1
 ```
@@ -94,7 +94,7 @@ Blueprint 默认使用 `starter`。如需使用免费套餐，请在你 fork 的
 
 ### 访问控制面板
 
-Web 管理面板位于 `https://<your-service>.onrender.com/openclaw`。
+Web 管理面板位于 `https://<your-service>.onrender.com/marv`。
 
 ## Render 仪表盘功能
 

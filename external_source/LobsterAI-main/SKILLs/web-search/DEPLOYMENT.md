@@ -30,13 +30,13 @@ function getSkillsRoot(): string {
   const appPath = app.getAppPath();
 
   // In development
-  if (appPath.includes('node_modules') || !app.isPackaged) {
-    const projectRoot = join(appPath, '../..');
-    return join(projectRoot, 'SKILLs');
+  if (appPath.includes("node_modules") || !app.isPackaged) {
+    const projectRoot = join(appPath, "../..");
+    return join(projectRoot, "SKILLs");
   }
 
   // In production, SKILLs are copied to userData
-  return join(app.getPath('userData'), 'SKILLs');
+  return join(app.getPath("userData"), "SKILLs");
 }
 ```
 

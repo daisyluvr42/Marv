@@ -1,13 +1,13 @@
-import { app, session } from 'electron';
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'fs';
-import { delimiter, dirname, join } from 'path';
-import type { SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
-import { loadClaudeSdk } from './claudeSdk';
-import { buildEnvForConfig, getClaudeCodePath, getCurrentApiConfig } from './claudeSettings';
-import type { OpenAICompatProxyTarget } from './coworkOpenAICompatProxy';
-import { getInternalApiBaseURL } from './coworkOpenAICompatProxy';
-import { coworkLog } from './coworkLogger';
+import { execSync } from "child_process";
+import { existsSync, mkdirSync, writeFileSync, chmodSync } from "fs";
+import { delimiter, dirname, join } from "path";
+import type { SDKResultMessage } from "@anthropic-ai/claude-agent-sdk";
+import { app, session } from "electron";
+import { loadClaudeSdk } from "./claudeSdk";
+import { buildEnvForConfig, getClaudeCodePath, getCurrentApiConfig } from "./claudeSettings";
+import { coworkLog } from "./coworkLogger";
+import type { OpenAICompatProxyTarget } from "./coworkOpenAICompatProxy";
+import { getInternalApiBaseURL } from "./coworkOpenAICompatProxy";
 
 function appendEnvPath(current: string | undefined, additions: string[]): string | undefined {
   const items = new Set<string>();
@@ -40,24 +40,26 @@ let cachedUserShellPath: string | null | undefined;
  * so node/npm and other tools won't be in PATH unless we resolve it.
  */
 function resolveUserShellPath(): string | null {
-  if (cachedUserShellPath !== undefined) {return cachedUserShellPath;}
+  if (cachedUserShellPath !== undefined) {
+    return cachedUserShellPath;
+  }
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     cachedUserShellPath = null;
     return null;
   }
 
   try {
-    const shell = process.env.SHELL || '/bin/bash';
+    const shell = process.env.SHELL || "/bin/bash";
     const result = execSync(`${shell} -ilc 'echo __PATH__=$PATH'`, {
-      encoding: 'utf-8',
+      encoding: "utf-8",
       timeout: 5000,
       env: { ...process.env },
     });
     const match = result.match(/__PATH__=(.+)/);
     cachedUserShellPath = match ? match[1].trim() : null;
   } catch (error) {
-    console.warn('[coworkUtil] Failed to resolve user shell PATH:', error);
+    console.warn("[coworkUtil] Failed to resolve user shell PATH:", error);
     cachedUserShellPath = null;
   }
 
@@ -70,19 +72,25 @@ function resolveUserShellPath(): string | null {
 let cachedGitBashPath: string | null | undefined;
 
 function normalizeWindowsPath(input: string | undefined): string | null {
-  if (!input) {return null;}
-  const trimmed = input.trim().replace(/\r/g, '');
-  if (!trimmed) {return null;}
+  if (!input) {
+    return null;
+  }
+  const trimmed = input.trim().replace(/\r/g, "");
+  if (!trimmed) {
+    return null;
+  }
 
-  const unquoted = trimmed.replace(/^["']+|["']+$/g, '');
-  if (!unquoted) {return null;}
+  const unquoted = trimmed.replace(/^["']+|["']+$/g, "");
+  if (!unquoted) {
+    return null;
+  }
 
-  return unquoted.replace(/\//g, '\\');
+  return unquoted.replace(/\//g, "\\");
 }
 
 function listWindowsCommandPaths(command: string): string[] {
   try {
-    const output = execSync(command, { encoding: 'utf-8', timeout: 5000 });
+    const output = execSync(command, { encoding: "utf-8", timeout: 5000 });
     const parsed = output
       .split(/\r?\n/)
       .map((line) => normalizeWindowsPath(line))
@@ -95,16 +103,19 @@ function listWindowsCommandPaths(command: string): string[] {
 
 function listGitInstallPathsFromRegistry(): string[] {
   const registryKeys = [
-    'HKCU\\Software\\GitForWindows',
-    'HKLM\\Software\\GitForWindows',
-    'HKLM\\Software\\WOW6432Node\\GitForWindows',
+    "HKCU\\Software\\GitForWindows",
+    "HKLM\\Software\\GitForWindows",
+    "HKLM\\Software\\WOW6432Node\\GitForWindows",
   ];
 
   const installRoots: string[] = [];
 
   for (const key of registryKeys) {
     try {
-      const output = execSync(`reg query "${key}" /v InstallPath`, { encoding: 'utf-8', timeout: 5000 });
+      const output = execSync(`reg query "${key}" /v InstallPath`, {
+        encoding: "utf-8",
+        timeout: 5000,
+      });
       for (const line of output.split(/\r?\n/)) {
         const match = line.match(/InstallPath\s+REG_\w+\s+(.+)$/i);
         const root = normalizeWindowsPath(match?.[1]);
@@ -121,14 +132,14 @@ function listGitInstallPathsFromRegistry(): string[] {
 }
 
 function getWindowsGitToolDirs(bashPath: string): string[] {
-  const normalized = bashPath.replace(/\//g, '\\');
+  const normalized = bashPath.replace(/\//g, "\\");
   const lower = normalized.toLowerCase();
   let gitRoot: string | null = null;
 
-  if (lower.endsWith('\\usr\\bin\\bash.exe')) {
-    gitRoot = normalized.slice(0, -'\\usr\\bin\\bash.exe'.length);
-  } else if (lower.endsWith('\\bin\\bash.exe')) {
-    gitRoot = normalized.slice(0, -'\\bin\\bash.exe'.length);
+  if (lower.endsWith("\\usr\\bin\\bash.exe")) {
+    gitRoot = normalized.slice(0, -"\\usr\\bin\\bash.exe".length);
+  } else if (lower.endsWith("\\bin\\bash.exe")) {
+    gitRoot = normalized.slice(0, -"\\bin\\bash.exe".length);
   }
 
   if (!gitRoot) {
@@ -137,50 +148,50 @@ function getWindowsGitToolDirs(bashPath: string): string[] {
   }
 
   const candidates = [
-    join(gitRoot, 'cmd'),
-    join(gitRoot, 'mingw64', 'bin'),
-    join(gitRoot, 'usr', 'bin'),
-    join(gitRoot, 'bin'),
+    join(gitRoot, "cmd"),
+    join(gitRoot, "mingw64", "bin"),
+    join(gitRoot, "usr", "bin"),
+    join(gitRoot, "bin"),
   ];
 
   return candidates.filter((dir) => existsSync(dir));
 }
 
 function ensureWindowsElectronNodeShim(electronPath: string): string | null {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return null;
   }
 
   try {
-    const shimDir = join(app.getPath('userData'), 'cowork', 'bin');
+    const shimDir = join(app.getPath("userData"), "cowork", "bin");
     mkdirSync(shimDir, { recursive: true });
 
-    const nodeSh = join(shimDir, 'node');
-    const nodeCmd = join(shimDir, 'node.cmd');
+    const nodeSh = join(shimDir, "node");
+    const nodeCmd = join(shimDir, "node.cmd");
 
     const nodeShContent = [
-      '#!/usr/bin/env bash',
+      "#!/usr/bin/env bash",
       'if [ -z "${LOBSTERAI_ELECTRON_PATH:-}" ]; then',
       '  echo "LOBSTERAI_ELECTRON_PATH is not set" >&2',
-      '  exit 127',
-      'fi',
+      "  exit 127",
+      "fi",
       'exec env ELECTRON_RUN_AS_NODE=1 "${LOBSTERAI_ELECTRON_PATH}" "$@"',
-      '',
-    ].join('\n');
+      "",
+    ].join("\n");
 
     const nodeCmdContent = [
-      '@echo off',
+      "@echo off",
       'if "%LOBSTERAI_ELECTRON_PATH%"=="" (',
-      '  echo LOBSTERAI_ELECTRON_PATH is not set 1>&2',
-      '  exit /b 127',
-      ')',
-      'set ELECTRON_RUN_AS_NODE=1',
+      "  echo LOBSTERAI_ELECTRON_PATH is not set 1>&2",
+      "  exit /b 127",
+      ")",
+      "set ELECTRON_RUN_AS_NODE=1",
       '"%LOBSTERAI_ELECTRON_PATH%" %*',
-      '',
-    ].join('\r\n');
+      "",
+    ].join("\r\n");
 
-    writeFileSync(nodeSh, nodeShContent, 'utf8');
-    writeFileSync(nodeCmd, nodeCmdContent, 'utf8');
+    writeFileSync(nodeSh, nodeShContent, "utf8");
+    writeFileSync(nodeCmd, nodeCmdContent, "utf8");
     try {
       chmodSync(nodeSh, 0o755);
     } catch {
@@ -189,7 +200,11 @@ function ensureWindowsElectronNodeShim(electronPath: string): string | null {
 
     return shimDir;
   } catch (error) {
-    coworkLog('WARN', 'resolveNodeShim', `Failed to prepare Electron Node shim: ${error instanceof Error ? error.message : String(error)}`);
+    coworkLog(
+      "WARN",
+      "resolveNodeShim",
+      `Failed to prepare Electron Node shim: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return null;
   }
 }
@@ -200,9 +215,11 @@ function ensureWindowsElectronNodeShim(electronPath: string): string | null {
  * Checks: env var > common install paths > PATH lookup > bundled PortableGit fallback.
  */
 function resolveWindowsGitBashPath(): string | null {
-  if (cachedGitBashPath !== undefined) {return cachedGitBashPath;}
+  if (cachedGitBashPath !== undefined) {
+    return cachedGitBashPath;
+  }
 
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     cachedGitBashPath = null;
     return null;
   }
@@ -210,33 +227,33 @@ function resolveWindowsGitBashPath(): string | null {
   // 1. Explicit env var (user override)
   const envPath = normalizeWindowsPath(process.env.CLAUDE_CODE_GIT_BASH_PATH);
   if (envPath && existsSync(envPath)) {
-    coworkLog('INFO', 'resolveGitBash', `Using CLAUDE_CODE_GIT_BASH_PATH: ${envPath}`);
+    coworkLog("INFO", "resolveGitBash", `Using CLAUDE_CODE_GIT_BASH_PATH: ${envPath}`);
     cachedGitBashPath = envPath;
     return envPath;
   }
 
   // 2. Common Git for Windows installation paths (prefer user/system install first)
-  const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
-  const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
-  const localAppData = process.env.LOCALAPPDATA || '';
-  const userProfile = process.env.USERPROFILE || '';
+  const programFiles = process.env.ProgramFiles || "C:\\Program Files";
+  const programFilesX86 = process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
+  const localAppData = process.env.LOCALAPPDATA || "";
+  const userProfile = process.env.USERPROFILE || "";
 
   const candidates = [
-    join(programFiles, 'Git', 'bin', 'bash.exe'),
-    join(programFiles, 'Git', 'usr', 'bin', 'bash.exe'),
-    join(programFilesX86, 'Git', 'bin', 'bash.exe'),
-    join(programFilesX86, 'Git', 'usr', 'bin', 'bash.exe'),
-    join(localAppData, 'Programs', 'Git', 'bin', 'bash.exe'),
-    join(localAppData, 'Programs', 'Git', 'usr', 'bin', 'bash.exe'),
-    join(userProfile, 'scoop', 'apps', 'git', 'current', 'bin', 'bash.exe'),
-    join(userProfile, 'scoop', 'apps', 'git', 'current', 'usr', 'bin', 'bash.exe'),
-    'C:\\Git\\bin\\bash.exe',
-    'C:\\Git\\usr\\bin\\bash.exe',
+    join(programFiles, "Git", "bin", "bash.exe"),
+    join(programFiles, "Git", "usr", "bin", "bash.exe"),
+    join(programFilesX86, "Git", "bin", "bash.exe"),
+    join(programFilesX86, "Git", "usr", "bin", "bash.exe"),
+    join(localAppData, "Programs", "Git", "bin", "bash.exe"),
+    join(localAppData, "Programs", "Git", "usr", "bin", "bash.exe"),
+    join(userProfile, "scoop", "apps", "git", "current", "bin", "bash.exe"),
+    join(userProfile, "scoop", "apps", "git", "current", "usr", "bin", "bash.exe"),
+    "C:\\Git\\bin\\bash.exe",
+    "C:\\Git\\usr\\bin\\bash.exe",
   ];
 
   for (const candidate of candidates) {
     if (candidate && existsSync(candidate)) {
-      coworkLog('INFO', 'resolveGitBash', `Found git-bash at: ${candidate}`);
+      coworkLog("INFO", "resolveGitBash", `Found git-bash at: ${candidate}`);
       cachedGitBashPath = candidate;
       return candidate;
     }
@@ -246,12 +263,12 @@ function resolveWindowsGitBashPath(): string | null {
   const registryInstallRoots = listGitInstallPathsFromRegistry();
   for (const installRoot of registryInstallRoots) {
     const registryCandidates = [
-      join(installRoot, 'bin', 'bash.exe'),
-      join(installRoot, 'usr', 'bin', 'bash.exe'),
+      join(installRoot, "bin", "bash.exe"),
+      join(installRoot, "usr", "bin", "bash.exe"),
     ];
     for (const candidate of registryCandidates) {
       if (existsSync(candidate)) {
-        coworkLog('INFO', 'resolveGitBash', `Found git-bash via registry: ${candidate}`);
+        coworkLog("INFO", "resolveGitBash", `Found git-bash via registry: ${candidate}`);
         cachedGitBashPath = candidate;
         return candidate;
       }
@@ -259,26 +276,26 @@ function resolveWindowsGitBashPath(): string | null {
   }
 
   // 4. Try `where bash`
-  const bashPaths = listWindowsCommandPaths('where bash');
+  const bashPaths = listWindowsCommandPaths("where bash");
   for (const bashPath of bashPaths) {
-    if (bashPath.toLowerCase().endsWith('\\bash.exe')) {
-      coworkLog('INFO', 'resolveGitBash', `Found bash via PATH: ${bashPath}`);
+    if (bashPath.toLowerCase().endsWith("\\bash.exe")) {
+      coworkLog("INFO", "resolveGitBash", `Found bash via PATH: ${bashPath}`);
       cachedGitBashPath = bashPath;
       return bashPath;
     }
   }
 
   // 5. Try `where git` and derive bash from git location
-  const gitPaths = listWindowsCommandPaths('where git');
+  const gitPaths = listWindowsCommandPaths("where git");
   for (const gitPath of gitPaths) {
     const gitRoot = dirname(dirname(gitPath));
     const bashCandidates = [
-      join(gitRoot, 'bin', 'bash.exe'),
-      join(gitRoot, 'usr', 'bin', 'bash.exe'),
+      join(gitRoot, "bin", "bash.exe"),
+      join(gitRoot, "usr", "bin", "bash.exe"),
     ];
     for (const candidate of bashCandidates) {
       if (existsSync(candidate)) {
-        coworkLog('INFO', 'resolveGitBash', `Found bash via PATH git: ${candidate}`);
+        coworkLog("INFO", "resolveGitBash", `Found bash via PATH git: ${candidate}`);
         cachedGitBashPath = candidate;
         return candidate;
       }
@@ -289,52 +306,54 @@ function resolveWindowsGitBashPath(): string | null {
   // - Packaged app: resources/mingit
   // - Development mode: project resources/mingit (for local Windows dev without system Git install)
   const bundledRoots = app.isPackaged
-    ? [join(process.resourcesPath, 'mingit')]
+    ? [join(process.resourcesPath, "mingit")]
     : [
-      join(__dirname, '..', '..', 'resources', 'mingit'),
-      join(process.cwd(), 'resources', 'mingit'),
-    ];
+        join(__dirname, "..", "..", "resources", "mingit"),
+        join(process.cwd(), "resources", "mingit"),
+      ];
   for (const root of bundledRoots) {
     // Prefer bin/bash.exe on Windows; invoking usr/bin/bash.exe directly may miss Git toolchain PATH.
-    const bundledPaths = [
-      join(root, 'bin', 'bash.exe'),
-      join(root, 'usr', 'bin', 'bash.exe'),
-    ];
+    const bundledPaths = [join(root, "bin", "bash.exe"), join(root, "usr", "bin", "bash.exe")];
     for (const p of bundledPaths) {
       if (existsSync(p)) {
-        coworkLog('INFO', 'resolveGitBash', `Using bundled PortableGit: ${p}`);
+        coworkLog("INFO", "resolveGitBash", `Using bundled PortableGit: ${p}`);
         cachedGitBashPath = p;
         return p;
       }
     }
   }
 
-  coworkLog('WARN', 'resolveGitBash', 'git-bash not found on this system');
+  coworkLog("WARN", "resolveGitBash", "git-bash not found on this system");
   cachedGitBashPath = null;
   return null;
 }
 
 function applyPackagedEnvOverrides(env: Record<string, string | undefined>): void {
   // On Windows, resolve git-bash and ensure Git toolchain directories are available in PATH.
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     env.LOBSTERAI_ELECTRON_PATH = process.execPath;
 
     const configuredBashPath = normalizeWindowsPath(env.CLAUDE_CODE_GIT_BASH_PATH);
-    const bashPath = configuredBashPath && existsSync(configuredBashPath)
-      ? configuredBashPath
-      : resolveWindowsGitBashPath();
+    const bashPath =
+      configuredBashPath && existsSync(configuredBashPath)
+        ? configuredBashPath
+        : resolveWindowsGitBashPath();
 
     if (bashPath) {
       env.CLAUDE_CODE_GIT_BASH_PATH = bashPath;
       const gitToolDirs = getWindowsGitToolDirs(bashPath);
       env.PATH = appendEnvPath(env.PATH, gitToolDirs);
-      coworkLog('INFO', 'resolveGitBash', `Injected Windows Git toolchain PATH entries: ${gitToolDirs.join(', ')}`);
+      coworkLog(
+        "INFO",
+        "resolveGitBash",
+        `Injected Windows Git toolchain PATH entries: ${gitToolDirs.join(", ")}`,
+      );
     }
 
     const shimDir = ensureWindowsElectronNodeShim(process.execPath);
     if (shimDir) {
       env.PATH = appendEnvPath(env.PATH, [shimDir]);
-      coworkLog('INFO', 'resolveNodeShim', `Injected Electron Node shim PATH entry: ${shimDir}`);
+      coworkLog("INFO", "resolveNodeShim", `Injected Electron Node shim PATH entry: ${shimDir}`);
     }
   }
 
@@ -343,7 +362,7 @@ function applyPackagedEnvOverrides(env: Record<string, string | undefined>): voi
   }
 
   if (!env.HOME) {
-    env.HOME = app.getPath('home');
+    env.HOME = app.getPath("home");
   }
 
   // Resolve user's shell PATH so that node, npm, and other tools are findable
@@ -352,10 +371,10 @@ function applyPackagedEnvOverrides(env: Record<string, string | undefined>): voi
     env.PATH = userPath;
   } else {
     // Fallback: append common node installation paths
-    const home = env.HOME || app.getPath('home');
+    const home = env.HOME || app.getPath("home");
     const commonPaths = [
-      '/usr/local/bin',
-      '/opt/homebrew/bin',
+      "/usr/local/bin",
+      "/opt/homebrew/bin",
       `${home}/.nvm/current/bin`,
       `${home}/.volta/bin`,
       `${home}/.fnm/current/bin`,
@@ -365,8 +384,8 @@ function applyPackagedEnvOverrides(env: Record<string, string | undefined>): voi
 
   const resourcesPath = process.resourcesPath;
   const nodePaths = [
-    join(resourcesPath, 'app.asar', 'node_modules'),
-    join(resourcesPath, 'app.asar.unpacked', 'node_modules'),
+    join(resourcesPath, "app.asar", "node_modules"),
+    join(resourcesPath, "app.asar.unpacked", "node_modules"),
   ].filter((nodePath) => existsSync(nodePath));
 
   if (nodePaths.length > 0) {
@@ -381,7 +400,7 @@ function applyPackagedEnvOverrides(env: Record<string, string | undefined>): voi
 async function resolveSystemProxy(targetUrl: string): Promise<string | null> {
   try {
     const proxyResult = await session.defaultSession.resolveProxy(targetUrl);
-    if (!proxyResult || proxyResult === 'DIRECT') {
+    if (!proxyResult || proxyResult === "DIRECT") {
       return null;
     }
 
@@ -389,13 +408,13 @@ async function resolveSystemProxy(targetUrl: string): Promise<string | null> {
     const match = proxyResult.match(/^(PROXY|SOCKS5?)\s+(.+)$/i);
     if (match) {
       const [, type, hostPort] = match;
-      const prefix = type.toUpperCase().startsWith('SOCKS') ? 'socks5' : 'http';
+      const prefix = type.toUpperCase().startsWith("SOCKS") ? "socks5" : "http";
       return `${prefix}://${hostPort}`;
     }
 
     return null;
   } catch (error) {
-    console.error('Failed to resolve system proxy:', error);
+    console.error("Failed to resolve system proxy:", error);
     return null;
   }
 }
@@ -406,7 +425,7 @@ async function resolveSystemProxy(targetUrl: string): Promise<string | null> {
 export function getSkillsRoot(): string {
   if (app.isPackaged) {
     // In production, SKILLs are copied to userData
-    return join(app.getPath('userData'), 'SKILLs');
+    return join(app.getPath("userData"), "SKILLs");
   }
 
   // In development, __dirname can vary with bundling output (e.g. dist-electron/ or dist-electron/libs/).
@@ -416,10 +435,10 @@ export function getSkillsRoot(): string {
     .filter((value): value is string => Boolean(value));
   const candidates = [
     ...envRoots,
-    join(app.getAppPath(), 'SKILLs'),
-    join(process.cwd(), 'SKILLs'),
-    join(__dirname, '..', 'SKILLs'),
-    join(__dirname, '..', '..', 'SKILLs'),
+    join(app.getAppPath(), "SKILLs"),
+    join(process.cwd(), "SKILLs"),
+    join(__dirname, "..", "SKILLs"),
+    join(__dirname, "..", "..", "SKILLs"),
   ];
 
   for (const candidate of candidates) {
@@ -429,18 +448,18 @@ export function getSkillsRoot(): string {
   }
 
   // Final fallback for first-run dev environments where SKILLs may not exist yet.
-  return join(app.getAppPath(), 'SKILLs');
+  return join(app.getAppPath(), "SKILLs");
 }
 
 /**
  * Get enhanced environment variables (including proxy configuration)
  * Async function to fetch system proxy and inject into environment variables
  */
-export async function getEnhancedEnv(target: OpenAICompatProxyTarget = 'local'): Promise<Record<string, string | undefined>> {
+export async function getEnhancedEnv(
+  target: OpenAICompatProxyTarget = "local",
+): Promise<Record<string, string | undefined>> {
   const config = getCurrentApiConfig(target);
-  const env = config
-    ? buildEnvForConfig(config)
-    : { ...process.env };
+  const env = config ? buildEnvForConfig(config) : { ...process.env };
 
   applyPackagedEnvOverrides(env);
 
@@ -462,13 +481,13 @@ export async function getEnhancedEnv(target: OpenAICompatProxyTarget = 'local'):
   }
 
   // Resolve proxy from system settings
-  const proxyUrl = await resolveSystemProxy('https://openrouter.ai');
+  const proxyUrl = await resolveSystemProxy("https://openrouter.ai");
   if (proxyUrl) {
     env.http_proxy = proxyUrl;
     env.https_proxy = proxyUrl;
     env.HTTP_PROXY = proxyUrl;
     env.HTTPS_PROXY = proxyUrl;
-    console.log('Injected system proxy for subprocess:', proxyUrl);
+    console.log("Injected system proxy for subprocess:", proxyUrl);
   }
 
   return env;
@@ -480,13 +499,13 @@ export async function getEnhancedEnv(target: OpenAICompatProxyTarget = 'local'):
  * @returns Path to the temp directory
  */
 export function ensureCoworkTempDir(cwd: string): string {
-  const tempDir = join(cwd, '.cowork-temp');
+  const tempDir = join(cwd, ".cowork-temp");
   if (!existsSync(tempDir)) {
     try {
       mkdirSync(tempDir, { recursive: true });
-      console.log('Created cowork temp directory:', tempDir);
+      console.log("Created cowork temp directory:", tempDir);
     } catch (error) {
-      console.error('Failed to create cowork temp directory:', error);
+      console.error("Failed to create cowork temp directory:", error);
       // Fall back to cwd if we can't create the temp dir
       return cwd;
     }
@@ -501,34 +520,36 @@ export function ensureCoworkTempDir(cwd: string): string {
  */
 export async function getEnhancedEnvWithTmpdir(
   cwd: string,
-  target: OpenAICompatProxyTarget = 'local'
+  target: OpenAICompatProxyTarget = "local",
 ): Promise<Record<string, string | undefined>> {
   const env = await getEnhancedEnv(target);
   const tempDir = ensureCoworkTempDir(cwd);
 
   // Set temp directory environment variables for all platforms
-  env.TMPDIR = tempDir;  // macOS, Linux
-  env.TMP = tempDir;     // Windows
-  env.TEMP = tempDir;    // Windows
+  env.TMPDIR = tempDir; // macOS, Linux
+  env.TMP = tempDir; // Windows
+  env.TEMP = tempDir; // Windows
 
   return env;
 }
 
 export async function generateSessionTitle(userIntent: string | null): Promise<string> {
-  if (!userIntent) {return 'New Session';}
+  if (!userIntent) {
+    return "New Session";
+  }
 
   const claudeCodePath = getClaudeCodePath();
   const currentEnv = await getEnhancedEnv();
 
   // Ensure child_process.fork() runs cli.js as Node, not as another Electron app
   if (app.isPackaged) {
-    currentEnv.ELECTRON_RUN_AS_NODE = '1';
+    currentEnv.ELECTRON_RUN_AS_NODE = "1";
   }
 
   try {
     const { unstable_v2_prompt } = await loadClaudeSdk();
     const promptOptions: Record<string, unknown> = {
-      model: getCurrentApiConfig()?.model || 'claude-sonnet',
+      model: getCurrentApiConfig()?.model || "claude-sonnet",
       env: currentEnv,
       pathToClaudeCodeExecutable: claudeCodePath,
     };
@@ -538,26 +559,28 @@ export async function generateSessionTitle(userIntent: string | null): Promise<s
 IMPORTANT: The title MUST be in the SAME language as the user input. If user writes in Chinese, output Chinese title. If user writes in English, output English title.
 User input: ${userIntent}
 Output only the title, nothing else.`,
-      promptOptions as any
+      promptOptions as any,
     );
 
-    if (result.subtype === 'success') {
+    if (result.subtype === "success") {
       return result.result;
     }
 
-    console.error('Claude SDK returned non-success result:', result);
-    return 'New Session';
+    console.error("Claude SDK returned non-success result:", result);
+    return "New Session";
   } catch (error) {
-    console.error('Failed to generate session title:', error);
-    console.error('Claude Code path:', claudeCodePath);
-    console.error('Is packaged:', app.isPackaged);
-    console.error('Resources path:', process.resourcesPath);
+    console.error("Failed to generate session title:", error);
+    console.error("Claude Code path:", claudeCodePath);
+    console.error("Is packaged:", app.isPackaged);
+    console.error("Resources path:", process.resourcesPath);
 
     if (userIntent) {
       const words = userIntent.trim().split(/\s+/).slice(0, 5);
-      return words.join(' ').toUpperCase() + (userIntent.trim().split(/\s+/).length > 5 ? '...' : '');
+      return (
+        words.join(" ").toUpperCase() + (userIntent.trim().split(/\s+/).length > 5 ? "..." : "")
+      );
     }
 
-    return 'New Session';
+    return "New Session";
   }
 }

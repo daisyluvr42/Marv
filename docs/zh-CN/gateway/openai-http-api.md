@@ -31,8 +31,8 @@ Marv 的 Gateway 网关可以提供一个小型的 OpenAI 兼容 Chat Completion
 
 注意事项：
 
-- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
-- 当 `gateway.auth.mode="password"` 时，使用 `gateway.auth.password`（或 `OPENCLAW_GATEWAY_PASSWORD`）。
+- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）。
+- 当 `gateway.auth.mode="password"` 时，使用 `gateway.auth.password`（或 `MARV_GATEWAY_PASSWORD`）。
 
 ## 选择智能体
 
@@ -43,11 +43,11 @@ Marv 的 Gateway 网关可以提供一个小型的 OpenAI 兼容 Chat Completion
 
 或通过头指定特定的 Marv 智能体：
 
-- `x-openclaw-agent-id: <agentId>`（默认：`main`）
+- `x-marv-agent-id: <agentId>`（默认：`main`）
 
 高级选项：
 
-- `x-openclaw-session-key: <sessionKey>` 完全控制会话路由。
+- `x-marv-session-key: <sessionKey>` 完全控制会话路由。
 
 ## 启用端点
 
@@ -103,9 +103,9 @@ Marv 的 Gateway 网关可以提供一个小型的 OpenAI 兼容 Chat Completion
 curl -sS http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-agent-id: main' \
+  -H 'x-marv-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "marv",
     "messages": [{"role":"user","content":"hi"}]
   }'
 ```
@@ -116,9 +116,9 @@ curl -sS http://127.0.0.1:18789/v1/chat/completions \
 curl -N http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-agent-id: main' \
+  -H 'x-marv-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "marv",
     "stream": true,
     "messages": [{"role":"user","content":"hi"}]
   }'

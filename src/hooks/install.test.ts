@@ -9,7 +9,7 @@ import {
 } from "../test-utils/exec-assertions.js";
 import { isAddressInUseError } from "./gmail-watcher.js";
 
-const fixtureRoot = path.join(os.tmpdir(), `openclaw-hook-install-${randomUUID()}`);
+const fixtureRoot = path.join(os.tmpdir(), `marv-hook-install-${randomUUID()}`);
 let tempDirIndex = 0;
 
 const fixturesDir = path.resolve(process.cwd(), "test", "fixtures", "hooks-install");
@@ -156,9 +156,9 @@ describe("installHooksFromPath", () => {
     fs.writeFileSync(
       path.join(pkgDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/test-hooks",
+        name: "@marv/test-hooks",
         version: "0.0.1",
-        openclaw: { hooks: ["./hooks/one-hook"] },
+        marv: { hooks: ["./hooks/one-hook"] },
         dependencies: { "left-pad": "1.3.0" },
       }),
       "utf-8",
@@ -169,7 +169,7 @@ describe("installHooksFromPath", () => {
         "---",
         "name: one-hook",
         "description: One hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"marv":{"events":["command:new"]}}',
         "---",
         "",
         "# One Hook",
@@ -217,7 +217,7 @@ describe("installHooksFromPath", () => {
         "---",
         "name: my-hook",
         "description: My hook",
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"marv":{"events":["command:new"]}}',
         "---",
         "",
         "# My Hook",
@@ -265,7 +265,7 @@ describe("installHooksFromNpmSpec", () => {
 
     const hooksDir = path.join(stateDir, "hooks");
     const result = await installHooksFromNpmSpec({
-      spec: "@openclaw/test-hooks@0.0.1",
+      spec: "@marv/test-hooks@0.0.1",
       hooksDir,
       logger: { info: () => {}, warn: () => {} },
     });
@@ -278,7 +278,7 @@ describe("installHooksFromNpmSpec", () => {
 
     expectSingleNpmPackIgnoreScriptsCall({
       calls: run.mock.calls,
-      expectedSpec: "@openclaw/test-hooks@0.0.1",
+      expectedSpec: "@marv/test-hooks@0.0.1",
     });
 
     expect(packTmpDir).not.toBe("");

@@ -27,8 +27,8 @@ Marv 可以为 Gateway 网关仪表盘和 WebSocket 端口自动配置 Tailscale
 
 设置 `gateway.auth.mode` 来控制握手：
 
-- `token`（设置 `OPENCLAW_GATEWAY_TOKEN` 时的默认值）
-- `password`（通过 `OPENCLAW_GATEWAY_PASSWORD` 或配置的共享密钥）
+- `token`（设置 `MARV_GATEWAY_TOKEN` 时的默认值）
+- `password`（通过 `MARV_GATEWAY_PASSWORD` 或配置的共享密钥）
 
 当 `tailscale.mode = "serve"` 且 `gateway.auth.allowTailscale` 为 `true` 时，
 有效的 Serve 代理请求可以通过 Tailscale 身份头（`tailscale-user-login`）进行认证，无需提供令牌/密码。Marv 通过本地 Tailscale 守护进程（`tailscale whois`）解析 `x-forwarded-for` 地址并将其与头匹配来验证身份，然后才接受它。
@@ -82,7 +82,7 @@ Marv 仅在请求从 loopback 到达并带有 Tailscale 的 `x-forwarded-for`、
 }
 ```
 
-优先使用 `OPENCLAW_GATEWAY_PASSWORD` 而不是将密码提交到磁盘。
+优先使用 `MARV_GATEWAY_PASSWORD` 而不是将密码提交到磁盘。
 
 ## CLI 示例
 

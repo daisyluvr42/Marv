@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createMarvTools } from "../agents/openclaw-tools.js";
+import { createMarvTools } from "../agents/marv-tools.js";
 import {
   resolveEffectiveToolPolicy,
   resolveGroupToolPolicy,
@@ -201,11 +201,11 @@ export async function handleToolsInvokeHttpRequest(
 
   // Resolve message channel/account hints (optional headers) for policy inheritance.
   const messageChannel = normalizeMessageChannel(
-    getHeader(req, "x-marv-message-channel") ?? getHeader(req, "x-openclaw-message-channel") ?? "",
+    getHeader(req, "x-marv-message-channel") ?? getHeader(req, "x-marv-message-channel") ?? "",
   );
   const accountId =
     getHeader(req, "x-marv-account-id")?.trim() ||
-    getHeader(req, "x-openclaw-account-id")?.trim() ||
+    getHeader(req, "x-marv-account-id")?.trim() ||
     undefined;
 
   const {

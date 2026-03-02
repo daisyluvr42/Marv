@@ -45,15 +45,15 @@ marv gateway uninstall
 3. Delete state + config:
 
 ```bash
-rm -rf "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
+rm -rf "${MARV_STATE_DIR:-$HOME/.marv}"
 ```
 
-If you set `OPENCLAW_CONFIG_PATH` to a custom location outside the state dir, delete that file too.
+If you set `MARV_CONFIG_PATH` to a custom location outside the state dir, delete that file too.
 
 4. Delete your workspace (optional, removes agent files):
 
 ```bash
-rm -rf ~/.openclaw/workspace
+rm -rf ~/.marv/workspace
 ```
 
 5. Remove the CLI install (pick the one you used):
@@ -72,7 +72,7 @@ rm -rf /Applications/Marv.app
 
 Notes:
 
-- If you used profiles (`--profile` / `OPENCLAW_PROFILE`), repeat step 3 for each state dir (defaults are `~/.openclaw-<profile>`).
+- If you used profiles (`--profile` / `MARV_PROFILE`), repeat step 3 for each state dir (defaults are `~/.marv-<profile>`).
 - In remote mode, the state dir lives on the **gateway host**, so run steps 1-4 there too.
 
 ## Manual service removal (CLI not installed)
@@ -92,11 +92,11 @@ If you used a profile, replace the label and plist name with `bot.molt.<profile>
 
 ### Linux (systemd user unit)
 
-Default unit name is `openclaw-gateway.service` (or `openclaw-gateway-<profile>.service`):
+Default unit name is `marv-gateway.service` (or `marv-gateway-<profile>.service`):
 
 ```bash
-systemctl --user disable --now openclaw-gateway.service
-rm -f ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user disable --now marv-gateway.service
+rm -f ~/.config/systemd/user/marv-gateway.service
 systemctl --user daemon-reload
 ```
 
@@ -107,16 +107,16 @@ The task script lives under your state dir.
 
 ```powershell
 schtasks /Delete /F /TN "Marv Gateway"
-Remove-Item -Force "$env:USERPROFILE\.openclaw\gateway.cmd"
+Remove-Item -Force "$env:USERPROFILE\.marv\gateway.cmd"
 ```
 
-If you used a profile, delete the matching task name and `~\.openclaw-<profile>\gateway.cmd`.
+If you used a profile, delete the matching task name and `~\.marv-<profile>\gateway.cmd`.
 
 ## Normal install vs source checkout
 
 ### Normal install (install.sh / npm / pnpm / bun)
 
-If you used `https://marv.ai/install.sh` or `install.ps1`, the CLI was installed with `npm install -g openclaw@latest`.
+If you used `https://marv.ai/install.sh` or `install.ps1`, the CLI was installed with `npm install -g marv@latest`.
 Remove it with `npm rm -g marv` (or `pnpm remove -g` / `bun remove -g` if you installed that way).
 
 ### Source checkout (git clone)

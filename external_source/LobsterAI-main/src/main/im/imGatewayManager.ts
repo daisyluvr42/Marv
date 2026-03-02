@@ -3,16 +3,19 @@
  * Unified manager for DingTalk, Feishu and Telegram gateways
  */
 
-import { EventEmitter } from 'events';
-import { DingTalkGateway } from './dingtalkGateway';
-import { FeishuGateway } from './feishuGateway';
-import { TelegramGateway } from './telegramGateway';
-import { DiscordGateway } from './discordGateway';
-import { IMChatHandler } from './imChatHandler';
-import { IMCoworkHandler } from './imCoworkHandler';
-import { IMStore } from './imStore';
-import { getOapiAccessToken } from './dingtalkMedia';
-import { fetchJsonWithTimeout } from './http';
+import { EventEmitter } from "events";
+import type { Database } from "sql.js";
+import type { CoworkStore } from "../coworkStore";
+import type { CoworkRunner } from "../libs/coworkRunner";
+import { DingTalkGateway } from "./dingtalkGateway";
+import { getOapiAccessToken } from "./dingtalkMedia";
+import { DiscordGateway } from "./discordGateway";
+import { FeishuGateway } from "./feishuGateway";
+import { fetchJsonWithTimeout } from "./http";
+import { IMChatHandler } from "./imChatHandler";
+import { IMCoworkHandler } from "./imCoworkHandler";
+import { IMStore } from "./imStore";
+import { TelegramGateway } from "./telegramGateway";
 import {
   IMGatewayConfig,
   IMGatewayStatus,
@@ -21,10 +24,7 @@ import {
   IMConnectivityCheck,
   IMConnectivityTestResult,
   IMConnectivityVerdict,
-} from './types';
-import type { Database } from 'sql.js';
-import type { CoworkRunner } from '../libs/coworkRunner';
-import type { CoworkStore } from '../coworkStore';
+} from "./types";
 
 const CONNECTIVITY_TIMEOUT_MS = 10_000;
 const INBOUND_ACTIVITY_WARN_AFTER_MS = 2 * 60 * 1000;
@@ -86,66 +86,66 @@ export class IMGatewayManager extends EventEmitter {
    */
   private setupGatewayEventForwarding(): void {
     // DingTalk events
-    this.dingtalkGateway.on('connected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.dingtalkGateway.on("connected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.dingtalkGateway.on('disconnected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.dingtalkGateway.on("disconnected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.dingtalkGateway.on('error', (error) => {
-      this.emit('error', { platform: 'dingtalk', error });
-      this.emit('statusChange', this.getStatus());
+    this.dingtalkGateway.on("error", (error) => {
+      this.emit("error", { platform: "dingtalk", error });
+      this.emit("statusChange", this.getStatus());
     });
-    this.dingtalkGateway.on('message', (message: IMMessage) => {
-      this.emit('message', message);
+    this.dingtalkGateway.on("message", (message: IMMessage) => {
+      this.emit("message", message);
     });
 
     // Feishu events
-    this.feishuGateway.on('connected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.feishuGateway.on("connected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.feishuGateway.on('disconnected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.feishuGateway.on("disconnected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.feishuGateway.on('error', (error) => {
-      this.emit('error', { platform: 'feishu', error });
-      this.emit('statusChange', this.getStatus());
+    this.feishuGateway.on("error", (error) => {
+      this.emit("error", { platform: "feishu", error });
+      this.emit("statusChange", this.getStatus());
     });
-    this.feishuGateway.on('message', (message: IMMessage) => {
-      this.emit('message', message);
+    this.feishuGateway.on("message", (message: IMMessage) => {
+      this.emit("message", message);
     });
 
     // Telegram events
-    this.telegramGateway.on('connected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.telegramGateway.on("connected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.telegramGateway.on('disconnected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.telegramGateway.on("disconnected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.telegramGateway.on('error', (error) => {
-      this.emit('error', { platform: 'telegram', error });
-      this.emit('statusChange', this.getStatus());
+    this.telegramGateway.on("error", (error) => {
+      this.emit("error", { platform: "telegram", error });
+      this.emit("statusChange", this.getStatus());
     });
-    this.telegramGateway.on('message', (message: IMMessage) => {
-      this.emit('message', message);
+    this.telegramGateway.on("message", (message: IMMessage) => {
+      this.emit("message", message);
     });
 
     // Discord events
-    this.discordGateway.on('status', () => {
-      this.emit('statusChange', this.getStatus());
+    this.discordGateway.on("status", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.discordGateway.on('connected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.discordGateway.on("connected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.discordGateway.on('disconnected', () => {
-      this.emit('statusChange', this.getStatus());
+    this.discordGateway.on("disconnected", () => {
+      this.emit("statusChange", this.getStatus());
     });
-    this.discordGateway.on('error', (error) => {
-      this.emit('error', { platform: 'discord', error });
-      this.emit('statusChange', this.getStatus());
+    this.discordGateway.on("error", (error) => {
+      this.emit("error", { platform: "discord", error });
+      this.emit("statusChange", this.getStatus());
     });
-    this.discordGateway.on('message', (message: IMMessage) => {
-      this.emit('message', message);
+    this.discordGateway.on("message", (message: IMMessage) => {
+      this.emit("message", message);
     });
   }
 
@@ -154,25 +154,25 @@ export class IMGatewayManager extends EventEmitter {
    * Called when network is restored via IPC event
    */
   reconnectAllDisconnected(): void {
-    console.log('[IMGatewayManager] Reconnecting all disconnected gateways...');
+    console.log("[IMGatewayManager] Reconnecting all disconnected gateways...");
 
     if (this.dingtalkGateway && !this.dingtalkGateway.isConnected()) {
-      console.log('[IMGatewayManager] Reconnecting DingTalk...');
+      console.log("[IMGatewayManager] Reconnecting DingTalk...");
       this.dingtalkGateway.reconnectIfNeeded();
     }
 
     if (this.feishuGateway && !this.feishuGateway.isConnected()) {
-      console.log('[IMGatewayManager] Reconnecting Feishu...');
+      console.log("[IMGatewayManager] Reconnecting Feishu...");
       this.feishuGateway.reconnectIfNeeded();
     }
 
     if (this.telegramGateway && !this.telegramGateway.isConnected()) {
-      console.log('[IMGatewayManager] Reconnecting Telegram...');
+      console.log("[IMGatewayManager] Reconnecting Telegram...");
       this.telegramGateway.reconnectIfNeeded();
     }
 
     if (this.discordGateway && !this.discordGateway.isConnected()) {
-      console.log('[IMGatewayManager] Reconnecting Discord...');
+      console.log("[IMGatewayManager] Reconnecting Discord...");
       this.discordGateway.reconnectIfNeeded();
     }
   }
@@ -197,14 +197,14 @@ export class IMGatewayManager extends EventEmitter {
   private setupMessageHandlers(): void {
     const messageHandler = async (
       message: IMMessage,
-      replyFn: (text: string) => Promise<void>
+      replyFn: (text: string) => Promise<void>,
     ): Promise<void> => {
       try {
         let response: string;
 
         // Always use Cowork mode if handler is available
         if (this.coworkHandler) {
-          console.log('[IMGatewayManager] Using Cowork mode for message processing');
+          console.log("[IMGatewayManager] Using Cowork mode for message processing");
           response = await this.coworkHandler.processMessage(message);
         } else {
           // Fallback to regular chat handler
@@ -213,7 +213,7 @@ export class IMGatewayManager extends EventEmitter {
           }
 
           if (!this.chatHandler) {
-            throw new Error('Chat handler not available');
+            throw new Error("Chat handler not available");
           }
 
           response = await this.chatHandler.processMessage(message);
@@ -242,7 +242,7 @@ export class IMGatewayManager extends EventEmitter {
    */
   private updateChatHandler(): void {
     if (!this.getLLMConfig) {
-      console.warn('[IMGatewayManager] LLM config provider not set');
+      console.warn("[IMGatewayManager] LLM config provider not set");
       return;
     }
 
@@ -271,7 +271,7 @@ export class IMGatewayManager extends EventEmitter {
         imStore: this.imStore,
         getSkillsPrompt: this.getSkillsPrompt || undefined,
       });
-      console.log('[IMGatewayManager] Cowork handler created');
+      console.log("[IMGatewayManager] Cowork handler created");
     }
   }
 
@@ -315,7 +315,7 @@ export class IMGatewayManager extends EventEmitter {
    */
   async testGateway(
     platform: IMPlatform,
-    configOverride?: Partial<IMGatewayConfig>
+    configOverride?: Partial<IMGatewayConfig>,
   ): Promise<IMConnectivityTestResult> {
     const config = this.buildMergedConfig(configOverride);
     const checks: IMConnectivityCheck[] = [];
@@ -328,16 +328,16 @@ export class IMGatewayManager extends EventEmitter {
     const missingCredentials = this.getMissingCredentials(platform, config);
     if (missingCredentials.length > 0) {
       addCheck({
-        code: 'missing_credentials',
-        level: 'fail',
-        message: `缺少必要配置项: ${missingCredentials.join(', ')}`,
-        suggestion: '请补全配置后重新测试连通性。',
+        code: "missing_credentials",
+        level: "fail",
+        message: `缺少必要配置项: ${missingCredentials.join(", ")}`,
+        suggestion: "请补全配置后重新测试连通性。",
       });
 
       return {
         platform,
         testedAt,
-        verdict: 'fail',
+        verdict: "fail",
         checks,
       };
     }
@@ -346,24 +346,24 @@ export class IMGatewayManager extends EventEmitter {
       const authMessage = await this.withTimeout(
         this.runAuthProbe(platform, config),
         CONNECTIVITY_TIMEOUT_MS,
-        '鉴权探测超时'
+        "鉴权探测超时",
       );
       addCheck({
-        code: 'auth_check',
-        level: 'pass',
+        code: "auth_check",
+        level: "pass",
         message: authMessage,
       });
     } catch (error: any) {
       addCheck({
-        code: 'auth_check',
-        level: 'fail',
+        code: "auth_check",
+        level: "fail",
         message: `鉴权失败: ${error.message}`,
-        suggestion: '请检查 ID/Secret/Token 是否正确，且机器人权限已开通。',
+        suggestion: "请检查 ID/Secret/Token 是否正确，且机器人权限已开通。",
       });
       return {
         platform,
         testedAt,
-        verdict: 'fail',
+        verdict: "fail",
         checks,
       };
     }
@@ -373,23 +373,21 @@ export class IMGatewayManager extends EventEmitter {
     const connected = this.isConnected(platform);
 
     if (enabled && !connected) {
-      const discordStarting = platform === 'discord' && status.discord.starting;
+      const discordStarting = platform === "discord" && status.discord.starting;
       addCheck({
-        code: 'gateway_running',
-        level: discordStarting ? 'info' : 'warn',
-        message: discordStarting
-          ? 'IM 渠道正在启动，请稍后重试。'
-          : 'IM 渠道已启用但当前未连接。',
+        code: "gateway_running",
+        level: discordStarting ? "info" : "warn",
+        message: discordStarting ? "IM 渠道正在启动，请稍后重试。" : "IM 渠道已启用但当前未连接。",
         suggestion: discordStarting
-          ? '等待启动完成后重新测试。'
-          : '请检查网络、机器人配置和平台侧事件开关。',
+          ? "等待启动完成后重新测试。"
+          : "请检查网络、机器人配置和平台侧事件开关。",
       });
     } else {
       addCheck({
-        code: 'gateway_running',
-        level: connected ? 'pass' : 'info',
-        message: connected ? 'IM 渠道已启用且运行正常。' : 'IM 渠道当前未启用。',
-        suggestion: connected ? undefined : '请点击对应 IM 渠道胶囊按钮启用该渠道。',
+        code: "gateway_running",
+        level: connected ? "pass" : "info",
+        message: connected ? "IM 渠道已启用且运行正常。" : "IM 渠道当前未启用。",
+        suggestion: connected ? undefined : "请点击对应 IM 渠道胶囊按钮启用该渠道。",
       });
     }
 
@@ -400,94 +398,94 @@ export class IMGatewayManager extends EventEmitter {
     if (connected && startedAt && testedAt - startedAt >= INBOUND_ACTIVITY_WARN_AFTER_MS) {
       if (!lastInboundAt) {
         addCheck({
-          code: 'inbound_activity',
-          level: 'warn',
-          message: '已连接超过 2 分钟，但尚未收到任何入站消息。',
-          suggestion: '请确认机器人已在目标会话中，或按平台规则 @机器人 触发消息。',
+          code: "inbound_activity",
+          level: "warn",
+          message: "已连接超过 2 分钟，但尚未收到任何入站消息。",
+          suggestion: "请确认机器人已在目标会话中，或按平台规则 @机器人 触发消息。",
         });
       } else {
         addCheck({
-          code: 'inbound_activity',
-          level: 'pass',
-          message: '已检测到入站消息。',
+          code: "inbound_activity",
+          level: "pass",
+          message: "已检测到入站消息。",
         });
       }
     } else if (connected) {
       addCheck({
-        code: 'inbound_activity',
-        level: 'info',
-        message: '网关刚启动，入站活动检查将在 2 分钟后更准确。',
+        code: "inbound_activity",
+        level: "info",
+        message: "网关刚启动，入站活动检查将在 2 分钟后更准确。",
       });
     }
 
     if (connected && lastInboundAt) {
       if (!lastOutboundAt) {
         addCheck({
-          code: 'outbound_activity',
-          level: 'warn',
-          message: '已收到消息，但尚未观察到成功回发。',
-          suggestion: '请检查消息发送权限、机器人可见范围和会话回包权限。',
+          code: "outbound_activity",
+          level: "warn",
+          message: "已收到消息，但尚未观察到成功回发。",
+          suggestion: "请检查消息发送权限、机器人可见范围和会话回包权限。",
         });
       } else {
         addCheck({
-          code: 'outbound_activity',
-          level: 'pass',
-          message: '已检测到成功回发消息。',
+          code: "outbound_activity",
+          level: "pass",
+          message: "已检测到成功回发消息。",
         });
       }
     } else if (connected) {
       addCheck({
-        code: 'outbound_activity',
-        level: 'info',
-        message: '尚未收到可用于评估回发能力的入站消息。',
+        code: "outbound_activity",
+        level: "info",
+        message: "尚未收到可用于评估回发能力的入站消息。",
       });
     }
 
     const lastError = this.getLastError(platform, status);
     if (lastError) {
       addCheck({
-        code: 'platform_last_error',
-        level: connected ? 'warn' : 'fail',
+        code: "platform_last_error",
+        level: connected ? "warn" : "fail",
         message: `最近错误: ${lastError}`,
         suggestion: connected
-          ? '当前已连接，但建议修复该错误避免后续中断。'
-          : '该错误可能阻断对话，请优先修复后重试。',
+          ? "当前已连接，但建议修复该错误避免后续中断。"
+          : "该错误可能阻断对话，请优先修复后重试。",
       });
     }
 
-    if (platform === 'feishu') {
+    if (platform === "feishu") {
       addCheck({
-        code: 'feishu_group_requires_mention',
-        level: 'info',
-        message: '飞书群聊中仅响应 @机器人的消息。',
-        suggestion: '请在群聊中使用 @机器人 + 内容触发对话。',
+        code: "feishu_group_requires_mention",
+        level: "info",
+        message: "飞书群聊中仅响应 @机器人的消息。",
+        suggestion: "请在群聊中使用 @机器人 + 内容触发对话。",
       });
       addCheck({
-        code: 'feishu_event_subscription_required',
-        level: 'info',
-        message: '飞书需要开启消息事件订阅（im.message.receive_v1）才能收消息。',
-        suggestion: '请在飞书开发者后台确认事件订阅、权限和发布状态。',
+        code: "feishu_event_subscription_required",
+        level: "info",
+        message: "飞书需要开启消息事件订阅（im.message.receive_v1）才能收消息。",
+        suggestion: "请在飞书开发者后台确认事件订阅、权限和发布状态。",
       });
-    } else if (platform === 'discord') {
+    } else if (platform === "discord") {
       addCheck({
-        code: 'discord_group_requires_mention',
-        level: 'info',
-        message: 'Discord 群聊中仅响应 @机器人的消息。',
-        suggestion: '请在频道中使用 @机器人 + 内容触发对话。',
+        code: "discord_group_requires_mention",
+        level: "info",
+        message: "Discord 群聊中仅响应 @机器人的消息。",
+        suggestion: "请在频道中使用 @机器人 + 内容触发对话。",
       });
-    } else if (platform === 'telegram') {
+    } else if (platform === "telegram") {
       addCheck({
-        code: 'telegram_privacy_mode_hint',
-        level: 'info',
-        message: 'Telegram 可能受 Bot Privacy Mode 影响。',
-        suggestion: '若群聊中不响应，请在 @BotFather 检查 Privacy Mode 配置。',
+        code: "telegram_privacy_mode_hint",
+        level: "info",
+        message: "Telegram 可能受 Bot Privacy Mode 影响。",
+        suggestion: "若群聊中不响应，请在 @BotFather 检查 Privacy Mode 配置。",
       });
-    } else if (platform === 'dingtalk') {
+    } else if (platform === "dingtalk") {
       addCheck({
-        code: 'dingtalk_bot_membership_hint',
-        level: 'info',
-        message: '钉钉机器人需被加入目标会话并具备发言权限。',
-        suggestion: '请确认机器人在目标会话中，且企业权限配置允许收发消息。',
+        code: "dingtalk_bot_membership_hint",
+        level: "info",
+        message: "钉钉机器人需被加入目标会话并具备发言权限。",
+        suggestion: "请确认机器人在目标会话中，且企业权限配置允许收发消息。",
       });
     }
 
@@ -510,13 +508,13 @@ export class IMGatewayManager extends EventEmitter {
     // Ensure chat handler is ready
     this.updateChatHandler();
 
-    if (platform === 'dingtalk') {
+    if (platform === "dingtalk") {
       await this.dingtalkGateway.start(config.dingtalk);
-    } else if (platform === 'feishu') {
+    } else if (platform === "feishu") {
       await this.feishuGateway.start(config.feishu);
-    } else if (platform === 'telegram') {
+    } else if (platform === "telegram") {
       await this.telegramGateway.start(config.telegram);
-    } else if (platform === 'discord') {
+    } else if (platform === "discord") {
       await this.discordGateway.start(config.discord);
     }
   }
@@ -525,13 +523,13 @@ export class IMGatewayManager extends EventEmitter {
    * Stop a specific gateway
    */
   async stopGateway(platform: IMPlatform): Promise<void> {
-    if (platform === 'dingtalk') {
+    if (platform === "dingtalk") {
       await this.dingtalkGateway.stop();
-    } else if (platform === 'feishu') {
+    } else if (platform === "feishu") {
       await this.feishuGateway.stop();
-    } else if (platform === 'telegram') {
+    } else if (platform === "telegram") {
       await this.telegramGateway.stop();
-    } else if (platform === 'discord') {
+    } else if (platform === "discord") {
       await this.discordGateway.stop();
     }
   }
@@ -544,7 +542,7 @@ export class IMGatewayManager extends EventEmitter {
 
     if (config.dingtalk.enabled && config.dingtalk.clientId && config.dingtalk.clientSecret) {
       try {
-        await this.startGateway('dingtalk');
+        await this.startGateway("dingtalk");
       } catch (error: any) {
         console.error(`[IMGatewayManager] Failed to start DingTalk: ${error.message}`);
       }
@@ -552,7 +550,7 @@ export class IMGatewayManager extends EventEmitter {
 
     if (config.feishu.enabled && config.feishu.appId && config.feishu.appSecret) {
       try {
-        await this.startGateway('feishu');
+        await this.startGateway("feishu");
       } catch (error: any) {
         console.error(`[IMGatewayManager] Failed to start Feishu: ${error.message}`);
       }
@@ -560,7 +558,7 @@ export class IMGatewayManager extends EventEmitter {
 
     if (config.telegram.enabled && config.telegram.botToken) {
       try {
-        await this.startGateway('telegram');
+        await this.startGateway("telegram");
       } catch (error: any) {
         console.error(`[IMGatewayManager] Failed to start Telegram: ${error.message}`);
       }
@@ -568,7 +566,7 @@ export class IMGatewayManager extends EventEmitter {
 
     if (config.discord.enabled && config.discord.botToken) {
       try {
-        await this.startGateway('discord');
+        await this.startGateway("discord");
       } catch (error: any) {
         console.error(`[IMGatewayManager] Failed to start Discord: ${error.message}`);
       }
@@ -591,20 +589,25 @@ export class IMGatewayManager extends EventEmitter {
    * Check if any gateway is connected
    */
   isAnyConnected(): boolean {
-    return this.dingtalkGateway.isConnected() || this.feishuGateway.isConnected() || this.telegramGateway.isConnected() || this.discordGateway.isConnected();
+    return (
+      this.dingtalkGateway.isConnected() ||
+      this.feishuGateway.isConnected() ||
+      this.telegramGateway.isConnected() ||
+      this.discordGateway.isConnected()
+    );
   }
 
   /**
    * Check if a specific gateway is connected
    */
   isConnected(platform: IMPlatform): boolean {
-    if (platform === 'dingtalk') {
+    if (platform === "dingtalk") {
       return this.dingtalkGateway.isConnected();
     }
-    if (platform === 'telegram') {
+    if (platform === "telegram") {
       return this.telegramGateway.isConnected();
     }
-    if (platform === 'discord') {
+    if (platform === "discord") {
       return this.discordGateway.isConnected();
     }
     return this.feishuGateway.isConnected();
@@ -622,18 +625,21 @@ export class IMGatewayManager extends EventEmitter {
     }
 
     try {
-      if (platform === 'dingtalk') {
+      if (platform === "dingtalk") {
         await this.dingtalkGateway.sendNotification(text);
-      } else if (platform === 'feishu') {
+      } else if (platform === "feishu") {
         await this.feishuGateway.sendNotification(text);
-      } else if (platform === 'telegram') {
+      } else if (platform === "telegram") {
         await this.telegramGateway.sendNotification(text);
-      } else if (platform === 'discord') {
+      } else if (platform === "discord") {
         await this.discordGateway.sendNotification(text);
       }
       return true;
     } catch (error: any) {
-      console.error(`[IMGatewayManager] Failed to send notification via ${platform}:`, error.message);
+      console.error(
+        `[IMGatewayManager] Failed to send notification via ${platform}:`,
+        error.message,
+      );
       return false;
     }
   }
@@ -655,32 +661,40 @@ export class IMGatewayManager extends EventEmitter {
   }
 
   private getMissingCredentials(platform: IMPlatform, config: IMGatewayConfig): string[] {
-    if (platform === 'dingtalk') {
+    if (platform === "dingtalk") {
       const fields: string[] = [];
-      if (!config.dingtalk.clientId) {fields.push('clientId');}
-      if (!config.dingtalk.clientSecret) {fields.push('clientSecret');}
+      if (!config.dingtalk.clientId) {
+        fields.push("clientId");
+      }
+      if (!config.dingtalk.clientSecret) {
+        fields.push("clientSecret");
+      }
       return fields;
     }
-    if (platform === 'feishu') {
+    if (platform === "feishu") {
       const fields: string[] = [];
-      if (!config.feishu.appId) {fields.push('appId');}
-      if (!config.feishu.appSecret) {fields.push('appSecret');}
+      if (!config.feishu.appId) {
+        fields.push("appId");
+      }
+      if (!config.feishu.appSecret) {
+        fields.push("appSecret");
+      }
       return fields;
     }
-    if (platform === 'telegram') {
-      return config.telegram.botToken ? [] : ['botToken'];
+    if (platform === "telegram") {
+      return config.telegram.botToken ? [] : ["botToken"];
     }
-    return config.discord.botToken ? [] : ['botToken'];
+    return config.discord.botToken ? [] : ["botToken"];
   }
 
   private async runAuthProbe(platform: IMPlatform, config: IMGatewayConfig): Promise<string> {
-    if (platform === 'dingtalk') {
+    if (platform === "dingtalk") {
       await getOapiAccessToken(config.dingtalk.clientId, config.dingtalk.clientSecret);
-      return '钉钉鉴权通过。';
+      return "钉钉鉴权通过。";
     }
 
-    if (platform === 'feishu') {
-      const Lark = await import('@larksuiteoapi/node-sdk');
+    if (platform === "feishu") {
+      const Lark = await import("@larksuiteoapi/node-sdk");
       const domain = this.resolveFeishuDomain(config.feishu.domain, Lark);
       const client = new Lark.Client({
         appId: config.feishu.appId,
@@ -689,43 +703,53 @@ export class IMGatewayManager extends EventEmitter {
         domain,
       });
       const response: any = await client.request({
-        method: 'GET',
-        url: '/open-apis/bot/v3/info',
+        method: "GET",
+        url: "/open-apis/bot/v3/info",
       });
       if (response.code !== 0) {
         throw new Error(response.msg || `code ${response.code}`);
       }
-      const botName = response.data?.app_name ?? response.data?.bot?.app_name ?? 'unknown';
+      const botName = response.data?.app_name ?? response.data?.bot?.app_name ?? "unknown";
       return `飞书鉴权通过（Bot: ${botName}）。`;
     }
 
-    if (platform === 'telegram') {
+    if (platform === "telegram") {
       const response = await fetchJsonWithTimeout<TelegramGetMeResponse>(
         `https://api.telegram.org/bot${config.telegram.botToken}/getMe`,
         {},
-        CONNECTIVITY_TIMEOUT_MS
+        CONNECTIVITY_TIMEOUT_MS,
       );
       if (!response.ok) {
-        const description = response.description || 'unknown error';
+        const description = response.description || "unknown error";
         throw new Error(description);
       }
-      const username = response.result?.username ? `@${response.result.username}` : 'unknown';
+      const username = response.result?.username ? `@${response.result.username}` : "unknown";
       return `Telegram 鉴权通过（Bot: ${username}）。`;
     }
 
-    const response = await fetchJsonWithTimeout<DiscordUserResponse>('https://discord.com/api/v10/users/@me', {
-      headers: {
-        Authorization: `Bot ${config.discord.botToken}`,
+    const response = await fetchJsonWithTimeout<DiscordUserResponse>(
+      "https://discord.com/api/v10/users/@me",
+      {
+        headers: {
+          Authorization: `Bot ${config.discord.botToken}`,
+        },
       },
-    }, CONNECTIVITY_TIMEOUT_MS);
-    const username = response.username ? `${response.username}#${response.discriminator || '0000'}` : 'unknown';
+      CONNECTIVITY_TIMEOUT_MS,
+    );
+    const username = response.username
+      ? `${response.username}#${response.discriminator || "0000"}`
+      : "unknown";
     return `Discord 鉴权通过（Bot: ${username}）。`;
   }
 
   private resolveFeishuDomain(domain: string, Lark: any): any {
-    if (domain === 'lark') {return Lark.Domain.Lark;}
-    if (domain === 'feishu') {return Lark.Domain.Feishu;}
-    return domain.replace(/\/+$/, '');
+    if (domain === "lark") {
+      return Lark.Domain.Lark;
+    }
+    if (domain === "feishu") {
+      return Lark.Domain.Feishu;
+    }
+    return domain.replace(/\/+$/, "");
   }
 
   private withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutError: string): Promise<T> {
@@ -741,42 +765,64 @@ export class IMGatewayManager extends EventEmitter {
   }
 
   private getStartedAtMs(platform: IMPlatform, status: IMGatewayStatus): number | null {
-    if (platform === 'feishu') {
+    if (platform === "feishu") {
       return status.feishu.startedAt ? Date.parse(status.feishu.startedAt) : null;
     }
-    if (platform === 'dingtalk') {return status.dingtalk.startedAt;}
-    if (platform === 'telegram') {return status.telegram.startedAt;}
+    if (platform === "dingtalk") {
+      return status.dingtalk.startedAt;
+    }
+    if (platform === "telegram") {
+      return status.telegram.startedAt;
+    }
     return status.discord.startedAt;
   }
 
   private getLastInboundAt(platform: IMPlatform, status: IMGatewayStatus): number | null {
-    if (platform === 'dingtalk') {return status.dingtalk.lastInboundAt;}
-    if (platform === 'feishu') {return status.feishu.lastInboundAt;}
-    if (platform === 'telegram') {return status.telegram.lastInboundAt;}
+    if (platform === "dingtalk") {
+      return status.dingtalk.lastInboundAt;
+    }
+    if (platform === "feishu") {
+      return status.feishu.lastInboundAt;
+    }
+    if (platform === "telegram") {
+      return status.telegram.lastInboundAt;
+    }
     return status.discord.lastInboundAt;
   }
 
   private getLastOutboundAt(platform: IMPlatform, status: IMGatewayStatus): number | null {
-    if (platform === 'dingtalk') {return status.dingtalk.lastOutboundAt;}
-    if (platform === 'feishu') {return status.feishu.lastOutboundAt;}
-    if (platform === 'telegram') {return status.telegram.lastOutboundAt;}
+    if (platform === "dingtalk") {
+      return status.dingtalk.lastOutboundAt;
+    }
+    if (platform === "feishu") {
+      return status.feishu.lastOutboundAt;
+    }
+    if (platform === "telegram") {
+      return status.telegram.lastOutboundAt;
+    }
     return status.discord.lastOutboundAt;
   }
 
   private getLastError(platform: IMPlatform, status: IMGatewayStatus): string | null {
-    if (platform === 'dingtalk') {return status.dingtalk.lastError;}
-    if (platform === 'feishu') {return status.feishu.error;}
-    if (platform === 'telegram') {return status.telegram.lastError;}
+    if (platform === "dingtalk") {
+      return status.dingtalk.lastError;
+    }
+    if (platform === "feishu") {
+      return status.feishu.error;
+    }
+    if (platform === "telegram") {
+      return status.telegram.lastError;
+    }
     return status.discord.lastError;
   }
 
   private calculateVerdict(checks: IMConnectivityCheck[]): IMConnectivityVerdict {
-    if (checks.some((check) => check.level === 'fail')) {
-      return 'fail';
+    if (checks.some((check) => check.level === "fail")) {
+      return "fail";
     }
-    if (checks.some((check) => check.level === 'warn')) {
-      return 'warn';
+    if (checks.some((check) => check.level === "warn")) {
+      return "warn";
     }
-    return 'pass';
+    return "pass";
   }
 }

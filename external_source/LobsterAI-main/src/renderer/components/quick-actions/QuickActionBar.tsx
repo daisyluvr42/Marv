@@ -1,12 +1,12 @@
-import React from 'react';
-import type { LocalizedQuickAction } from '../../types/quickAction';
 import {
   PresentationChartBarIcon,
   GlobeAltIcon,
   DevicePhoneMobileIcon,
   ChartBarIcon,
   AcademicCapIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
+import React from "react";
+import type { LocalizedQuickAction } from "../../types/quickAction";
 
 interface QuickActionBarProps {
   actions: LocalizedQuickAction[];

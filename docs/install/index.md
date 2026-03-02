@@ -75,7 +75,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
     <Tabs>
       <Tab title="npm">
         ```bash
-        npm install -g openclaw@latest
+        npm install -g marv@latest
         marv onboard --install-daemon
         ```
 
@@ -83,7 +83,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
           If you have libvips installed globally (common on macOS via Homebrew) and `sharp` fails, force prebuilt binaries:
 
           ```bash
-          SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw@latest
+          SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g marv@latest
           ```
 
           If you see `sharp: Please add node-gyp to your dependencies`, either install build tooling (macOS: Xcode CLT + `npm install -g node-gyp`) or use the env var above.
@@ -91,7 +91,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
       </Tab>
       <Tab title="pnpm">
         ```bash
-        pnpm add -g openclaw@latest
+        pnpm add -g marv@latest
         pnpm approve-builds -g        # approve marv, node-llama-cpp, sharp, etc.
         marv onboard --install-daemon
         ```
@@ -109,10 +109,10 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
 
     <Steps>
       <Step title="Clone and build">
-        Clone the [Marv repo](https://github.com/openclaw/marv) and build:
+        Clone the [Marv repo]() and build:
 
         ```bash
-        git clone https://github.com/openclaw/marv.git
+        git clone https://github.com/daisyluvr42/Marv.git
         cd marv
         pnpm install
         pnpm ui:build
@@ -172,9 +172,9 @@ marv dashboard      # open the browser UI
 
 If you need custom runtime paths, use:
 
-- `OPENCLAW_HOME` for home-directory based internal paths
-- `OPENCLAW_STATE_DIR` for mutable state location
-- `OPENCLAW_CONFIG_PATH` for config file location
+- `MARV_HOME` for home-directory based internal paths
+- `MARV_STATE_DIR` for mutable state location
+- `MARV_CONFIG_PATH` for config file location
 
 See [Environment vars](/help/environment) for precedence and full details.
 

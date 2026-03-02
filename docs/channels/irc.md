@@ -8,7 +8,7 @@ IRC ships as an extension plugin, but it is configured in the main config under 
 
 ## Quick start
 
-1. Enable IRC config in `~/.openclaw/marv.json`.
+1. Enable IRC config in `~/.marv/marv.json`.
 2. Set at least:
 
 ```json
@@ -19,8 +19,8 @@ IRC ships as an extension plugin, but it is configured in the main config under 
       "host": "irc.libera.chat",
       "port": 6697,
       "tls": true,
-      "nick": "openclaw-bot",
-      "channels": ["#openclaw"]
+      "nick": "marv-bot",
+      "channels": ["#marv"]
     }
   }
 }

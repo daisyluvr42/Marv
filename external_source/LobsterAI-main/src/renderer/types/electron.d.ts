@@ -19,11 +19,11 @@ interface CoworkSession {
   id: string;
   title: string;
   claudeSessionId: string | null;
-  status: 'idle' | 'running' | 'completed' | 'error';
+  status: "idle" | "running" | "completed" | "error";
   pinned: boolean;
   cwd: string;
   systemPrompt: string;
-  executionMode: 'auto' | 'local' | 'sandbox';
+  executionMode: "auto" | "local" | "sandbox";
   activeSkillIds: string[];
   messages: CoworkMessage[];
   createdAt: number;
@@ -32,7 +32,7 @@ interface CoworkSession {
 
 interface CoworkMessage {
   id: string;
-  type: 'user' | 'assistant' | 'tool_use' | 'tool_result' | 'system';
+  type: "user" | "assistant" | "tool_use" | "tool_result" | "system";
   content: string;
   timestamp: number;
   metadata?: Record<string, unknown>;
@@ -41,7 +41,7 @@ interface CoworkMessage {
 interface CoworkSessionSummary {
   id: string;
   title: string;
-  status: 'idle' | 'running' | 'completed' | 'error';
+  status: "idle" | "running" | "completed" | "error";
   pinned: boolean;
   createdAt: number;
   updatedAt: number;
@@ -50,31 +50,33 @@ interface CoworkSessionSummary {
 interface CoworkConfig {
   workingDirectory: string;
   systemPrompt: string;
-  executionMode: 'auto' | 'local' | 'sandbox';
+  executionMode: "auto" | "local" | "sandbox";
   memoryEnabled: boolean;
   memoryImplicitUpdateEnabled: boolean;
   memoryLlmJudgeEnabled: boolean;
-  memoryGuardLevel: 'strict' | 'standard' | 'relaxed';
+  memoryGuardLevel: "strict" | "standard" | "relaxed";
   memoryUserMemoriesMaxItems: number;
 }
 
-type CoworkConfigUpdate = Partial<Pick<
-  CoworkConfig,
-  | 'workingDirectory'
-  | 'executionMode'
-  | 'memoryEnabled'
-  | 'memoryImplicitUpdateEnabled'
-  | 'memoryLlmJudgeEnabled'
-  | 'memoryGuardLevel'
-  | 'memoryUserMemoriesMaxItems'
->>;
+type CoworkConfigUpdate = Partial<
+  Pick<
+    CoworkConfig,
+    | "workingDirectory"
+    | "executionMode"
+    | "memoryEnabled"
+    | "memoryImplicitUpdateEnabled"
+    | "memoryLlmJudgeEnabled"
+    | "memoryGuardLevel"
+    | "memoryUserMemoriesMaxItems"
+  >
+>;
 
 interface CoworkUserMemoryEntry {
   id: string;
   text: string;
   confidence: number;
   isExplicit: boolean;
-  status: 'created' | 'stale' | 'deleted';
+  status: "created" | "stale" | "deleted";
   createdAt: number;
   updatedAt: number;
   lastUsedAt: number | null;
@@ -101,7 +103,7 @@ interface CoworkApiConfig {
   apiKey: string;
   baseURL: string;
   model: string;
-  apiType?: 'anthropic' | 'openai';
+  apiType?: "anthropic" | "openai";
 }
 
 interface CoworkSandboxStatus {
@@ -114,7 +116,7 @@ interface CoworkSandboxStatus {
 }
 
 interface CoworkSandboxProgress {
-  stage: 'runtime' | 'image';
+  stage: "runtime" | "image";
   received: number;
   total?: number;
   percent?: number;
@@ -139,9 +141,9 @@ interface Skill {
   skillPath: string;
 }
 
-type EmailConnectivityCheckCode = 'imap_connection' | 'smtp_connection';
-type EmailConnectivityCheckLevel = 'pass' | 'fail';
-type EmailConnectivityVerdict = 'pass' | 'fail';
+type EmailConnectivityCheckCode = "imap_connection" | "smtp_connection";
+type EmailConnectivityCheckLevel = "pass" | "fail";
+type EmailConnectivityVerdict = "pass" | "fail";
 
 interface EmailConnectivityCheck {
   code: EmailConnectivityCheckCode;
@@ -158,13 +160,13 @@ interface EmailConnectivityTestResult {
 
 type CoworkPermissionResult =
   | {
-      behavior: 'allow';
+      behavior: "allow";
       updatedInput?: Record<string, unknown>;
       updatedPermissions?: Record<string, unknown>[];
       toolUseID?: string;
     }
   | {
-      behavior: 'deny';
+      behavior: "deny";
       message: string;
       interrupt?: boolean;
       toolUseID?: string;
@@ -179,16 +181,24 @@ interface IElectronAPI {
   };
   skills: {
     list: () => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
-    setEnabled: (options: { id: string; enabled: boolean }) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
+    setEnabled: (options: {
+      id: string;
+      enabled: boolean;
+    }) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
     delete: (id: string) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
     download: (source: string) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
     getRoot: () => Promise<{ success: boolean; path?: string; error?: string }>;
     autoRoutingPrompt: () => Promise<{ success: boolean; prompt?: string | null; error?: string }>;
-    getConfig: (skillId: string) => Promise<{ success: boolean; config?: Record<string, string>; error?: string }>;
-    setConfig: (skillId: string, config: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
+    getConfig: (
+      skillId: string,
+    ) => Promise<{ success: boolean; config?: Record<string, string>; error?: string }>;
+    setConfig: (
+      skillId: string,
+      config: Record<string, string>,
+    ) => Promise<{ success: boolean; error?: string }>;
     testEmailConnectivity: (
       skillId: string,
-      config: Record<string, string>
+      config: Record<string, string>,
     ) => Promise<{ success: boolean; result?: EmailConnectivityTestResult; error?: string }>;
     onChanged: (callback: () => void) => () => void;
   };
@@ -213,7 +223,11 @@ interface IElectronAPI {
     onStreamAbort: (requestId: string, callback: () => void) => () => void;
   };
   getApiConfig: () => Promise<CoworkApiConfig | null>;
-  checkApiConfig: () => Promise<{ hasConfig: boolean; config: CoworkApiConfig | null; error?: string }>;
+  checkApiConfig: () => Promise<{
+    hasConfig: boolean;
+    config: CoworkApiConfig | null;
+    error?: string;
+  }>;
   saveApiConfig: (config: CoworkApiConfig) => Promise<{ success: boolean; error?: string }>;
   generateSessionTitle: (userInput: string | null) => Promise<string>;
   getRecentCwds: (limit?: number) => Promise<string[]>;
@@ -230,31 +244,63 @@ interface IElectronAPI {
     onStateChanged: (callback: (state: WindowState) => void) => () => void;
   };
   cowork: {
-    startSession: (options: { prompt: string; cwd?: string; systemPrompt?: string; title?: string; activeSkillIds?: string[] }) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
-    continueSession: (options: { sessionId: string; prompt: string; systemPrompt?: string; activeSkillIds?: string[] }) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
+    startSession: (options: {
+      prompt: string;
+      cwd?: string;
+      systemPrompt?: string;
+      title?: string;
+      activeSkillIds?: string[];
+    }) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
+    continueSession: (options: {
+      sessionId: string;
+      prompt: string;
+      systemPrompt?: string;
+      activeSkillIds?: string[];
+    }) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
     stopSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
     deleteSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
-    setSessionPinned: (options: { sessionId: string; pinned: boolean }) => Promise<{ success: boolean; error?: string }>;
-    renameSession: (options: { sessionId: string; title: string }) => Promise<{ success: boolean; error?: string }>;
-    getSession: (sessionId: string) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
-    listSessions: () => Promise<{ success: boolean; sessions?: CoworkSessionSummary[]; error?: string }>;
+    setSessionPinned: (options: {
+      sessionId: string;
+      pinned: boolean;
+    }) => Promise<{ success: boolean; error?: string }>;
+    renameSession: (options: {
+      sessionId: string;
+      title: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+    getSession: (
+      sessionId: string,
+    ) => Promise<{ success: boolean; session?: CoworkSession; error?: string }>;
+    listSessions: () => Promise<{
+      success: boolean;
+      sessions?: CoworkSessionSummary[];
+      error?: string;
+    }>;
     exportResultImage: (options: {
       rect: { x: number; y: number; width: number; height: number };
       defaultFileName?: string;
     }) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>;
     captureImageChunk: (options: {
       rect: { x: number; y: number; width: number; height: number };
-    }) => Promise<{ success: boolean; width?: number; height?: number; pngBase64?: string; error?: string }>;
+    }) => Promise<{
+      success: boolean;
+      width?: number;
+      height?: number;
+      pngBase64?: string;
+      error?: string;
+    }>;
     saveResultImage: (options: {
       pngBase64: string;
       defaultFileName?: string;
     }) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>;
-    respondToPermission: (options: { requestId: string; result: CoworkPermissionResult }) => Promise<{ success: boolean; error?: string }>;
+    respondToPermission: (options: {
+      requestId: string;
+      result: CoworkPermissionResult;
+    }) => Promise<{ success: boolean; error?: string }>;
     getConfig: () => Promise<{ success: boolean; config?: CoworkConfig; error?: string }>;
     setConfig: (config: CoworkConfigUpdate) => Promise<{ success: boolean; error?: string }>;
     listMemoryEntries: (input: {
       query?: string;
-      status?: 'created' | 'stale' | 'deleted' | 'all';
+      status?: "created" | "stale" | "deleted" | "all";
       includeDeleted?: boolean;
       limit?: number;
       offset?: number;
@@ -268,24 +314,44 @@ interface IElectronAPI {
       id: string;
       text?: string;
       confidence?: number;
-      status?: 'created' | 'stale' | 'deleted';
+      status?: "created" | "stale" | "deleted";
       isExplicit?: boolean;
     }) => Promise<{ success: boolean; entry?: CoworkUserMemoryEntry; error?: string }>;
     deleteMemoryEntry: (input: { id: string }) => Promise<{ success: boolean; error?: string }>;
     getMemoryStats: () => Promise<{ success: boolean; stats?: CoworkMemoryStats; error?: string }>;
     getSandboxStatus: () => Promise<CoworkSandboxStatus>;
-    installSandbox: () => Promise<{ success: boolean; status: CoworkSandboxStatus; error?: string }>;
+    installSandbox: () => Promise<{
+      success: boolean;
+      status: CoworkSandboxStatus;
+      error?: string;
+    }>;
     onSandboxDownloadProgress: (callback: (data: CoworkSandboxProgress) => void) => () => void;
-    onStreamMessage: (callback: (data: { sessionId: string; message: CoworkMessage }) => void) => () => void;
-    onStreamMessageUpdate: (callback: (data: { sessionId: string; messageId: string; content: string }) => void) => () => void;
-    onStreamPermission: (callback: (data: { sessionId: string; request: CoworkPermissionRequest }) => void) => () => void;
-    onStreamComplete: (callback: (data: { sessionId: string; claudeSessionId: string | null }) => void) => () => void;
+    onStreamMessage: (
+      callback: (data: { sessionId: string; message: CoworkMessage }) => void,
+    ) => () => void;
+    onStreamMessageUpdate: (
+      callback: (data: { sessionId: string; messageId: string; content: string }) => void,
+    ) => () => void;
+    onStreamPermission: (
+      callback: (data: { sessionId: string; request: CoworkPermissionRequest }) => void,
+    ) => () => void;
+    onStreamComplete: (
+      callback: (data: { sessionId: string; claudeSessionId: string | null }) => void,
+    ) => () => void;
     onStreamError: (callback: (data: { sessionId: string; error: string }) => void) => () => void;
   };
   dialog: {
     selectDirectory: () => Promise<{ success: boolean; path: string | null }>;
-    selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ success: boolean; path: string | null }>;
-    saveInlineFile: (options: { dataBase64: string; fileName?: string; mimeType?: string; cwd?: string }) => Promise<{ success: boolean; path: string | null; error?: string }>;
+    selectFile: (options?: {
+      title?: string;
+      filters?: { name: string; extensions: string[] }[];
+    }) => Promise<{ success: boolean; path: string | null }>;
+    saveInlineFile: (options: {
+      dataBase64: string;
+      fileName?: string;
+      mimeType?: string;
+      cwd?: string;
+    }) => Promise<{ success: boolean; path: string | null; error?: string }>;
   };
   shell: {
     openPath: (filePath: string) => Promise<{ success: boolean; error?: string }>;
@@ -303,11 +369,15 @@ interface IElectronAPI {
   im: {
     getConfig: () => Promise<{ success: boolean; config?: IMGatewayConfig; error?: string }>;
     setConfig: (config: Partial<IMGatewayConfig>) => Promise<{ success: boolean; error?: string }>;
-    startGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord') => Promise<{ success: boolean; error?: string }>;
-    stopGateway: (platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord') => Promise<{ success: boolean; error?: string }>;
+    startGateway: (
+      platform: "dingtalk" | "feishu" | "telegram" | "discord",
+    ) => Promise<{ success: boolean; error?: string }>;
+    stopGateway: (
+      platform: "dingtalk" | "feishu" | "telegram" | "discord",
+    ) => Promise<{ success: boolean; error?: string }>;
     testGateway: (
-      platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord',
-      configOverride?: Partial<IMGatewayConfig>
+      platform: "dingtalk" | "feishu" | "telegram" | "discord",
+      configOverride?: Partial<IMGatewayConfig>,
     ) => Promise<{ success: boolean; result?: IMConnectivityTestResult; error?: string }>;
     getStatus: () => Promise<{ success: boolean; status?: IMGatewayStatus; error?: string }>;
     onStatusChange: (callback: (status: IMGatewayStatus) => void) => () => void;
@@ -329,11 +399,21 @@ interface IElectronAPI {
     onRunUpdate: (callback: (data: any) => void) => () => void;
   };
   permissions: {
-    checkCalendar: () => Promise<{ success: boolean; status?: string; error?: string; autoRequested?: boolean }>;
-    requestCalendar: () => Promise<{ success: boolean; granted?: boolean; status?: string; error?: string }>;
+    checkCalendar: () => Promise<{
+      success: boolean;
+      status?: string;
+      error?: string;
+      autoRequested?: boolean;
+    }>;
+    requestCalendar: () => Promise<{
+      success: boolean;
+      granted?: boolean;
+      status?: string;
+      error?: string;
+    }>;
   };
   networkStatus: {
-    send: (status: 'online' | 'offline') => void;
+    send: (status: "online" | "offline") => void;
   };
 }
 
@@ -353,7 +433,7 @@ interface DingTalkConfig {
   robotCode?: string;
   corpId?: string;
   agentId?: string;
-  messageType: 'markdown' | 'card';
+  messageType: "markdown" | "card";
   cardTemplateId?: string;
   debug?: boolean;
 }
@@ -362,10 +442,10 @@ interface FeishuConfig {
   enabled: boolean;
   appId: string;
   appSecret: string;
-  domain: 'feishu' | 'lark' | string;
+  domain: "feishu" | "lark" | string;
   encryptKey?: string;
   verificationToken?: string;
-  renderMode: 'text' | 'card';
+  renderMode: "text" | "card";
   debug?: boolean;
 }
 
@@ -393,22 +473,22 @@ interface IMGatewayStatus {
   discord: DiscordGatewayStatus;
 }
 
-type IMConnectivityVerdict = 'pass' | 'warn' | 'fail';
+type IMConnectivityVerdict = "pass" | "warn" | "fail";
 
-type IMConnectivityCheckLevel = 'pass' | 'info' | 'warn' | 'fail';
+type IMConnectivityCheckLevel = "pass" | "info" | "warn" | "fail";
 
 type IMConnectivityCheckCode =
-  | 'missing_credentials'
-  | 'auth_check'
-  | 'gateway_running'
-  | 'inbound_activity'
-  | 'outbound_activity'
-  | 'platform_last_error'
-  | 'feishu_group_requires_mention'
-  | 'feishu_event_subscription_required'
-  | 'discord_group_requires_mention'
-  | 'telegram_privacy_mode_hint'
-  | 'dingtalk_bot_membership_hint';
+  | "missing_credentials"
+  | "auth_check"
+  | "gateway_running"
+  | "inbound_activity"
+  | "outbound_activity"
+  | "platform_last_error"
+  | "feishu_group_requires_mention"
+  | "feishu_event_subscription_required"
+  | "discord_group_requires_mention"
+  | "telegram_privacy_mode_hint"
+  | "dingtalk_bot_membership_hint";
 
 interface IMConnectivityCheck {
   code: IMConnectivityCheckCode;
@@ -418,7 +498,7 @@ interface IMConnectivityCheck {
 }
 
 interface IMConnectivityTestResult {
-  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord';
+  platform: "dingtalk" | "feishu" | "telegram" | "discord";
   testedAt: number;
   verdict: IMConnectivityVerdict;
   checks: IMConnectivityCheck[];
@@ -461,13 +541,13 @@ interface DiscordGatewayStatus {
 }
 
 interface IMMessage {
-  platform: 'dingtalk' | 'feishu' | 'telegram' | 'discord';
+  platform: "dingtalk" | "feishu" | "telegram" | "discord";
   messageId: string;
   conversationId: string;
   senderId: string;
   senderName?: string;
   content: string;
-  chatType: 'direct' | 'group';
+  chatType: "direct" | "group";
   timestamp: number;
 }
 
@@ -476,5 +556,3 @@ declare global {
     electron: IElectronAPI;
   }
 }
-
- 

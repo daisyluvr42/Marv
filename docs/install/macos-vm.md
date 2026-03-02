@@ -137,7 +137,7 @@ Replace `youruser` with the account you created, and the IP with your VM's IP.
 Inside the VM:
 
 ```bash
-npm install -g openclaw@latest
+npm install -g marv@latest
 marv onboard --install-daemon
 ```
 
@@ -150,7 +150,7 @@ Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, 
 Edit the config file:
 
 ```bash
-nano ~/.openclaw/marv.json
+nano ~/.marv/marv.json
 ```
 
 Add your channels:
@@ -233,14 +233,14 @@ Before customizing further, snapshot your clean state:
 
 ```bash
 lume stop marv
-lume clone marv openclaw-golden
+lume clone marv marv-golden
 ```
 
 Reset anytime:
 
 ```bash
 lume stop marv && lume delete marv
-lume clone openclaw-golden marv
+lume clone marv-golden marv
 lume run marv --no-display
 ```
 

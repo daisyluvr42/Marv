@@ -14,7 +14,7 @@ export type ExtraGatewayService = {
   label: string;
   detail: string;
   scope: "user" | "system";
-  marker?: "marv" | "openclaw" | "clawdbot" | "moltbot";
+  marker?: "marv"   | "clawdbot" | "moltbot";
   legacy?: boolean;
 };
 
@@ -22,12 +22,12 @@ export type FindExtraGatewayServicesOptions = {
   deep?: boolean;
 };
 
-const EXTRA_MARKERS = ["marv", "openclaw", "clawdbot", "moltbot"] as const;
+const EXTRA_MARKERS = ["marv", "marv", "clawdbot", "moltbot"] as const;
 
 export function renderGatewayServiceCleanupHints(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
 ): string[] {
-  const profile = env.MARV_PROFILE || env.OPENCLAW_PROFILE;
+  const profile = env.MARV_PROFILE || env.MARV_PROFILE;
   switch (process.platform) {
     case "darwin": {
       const label = resolveGatewayLaunchAgentLabel(profile);
@@ -71,8 +71,8 @@ function detectMarker(content: string): Marker | null {
 
 function hasGatewayServiceMarker(content: string): boolean {
   const lower = content.toLowerCase();
-  const markerKeys = ["marv_service_marker", "openclaw_service_marker"];
-  const kindKeys = ["marv_service_kind", "openclaw_service_kind"];
+  const markerKeys = ["marv_service_marker", "marv_service_marker"];
+  const kindKeys = ["marv_service_kind", "marv_service_kind"];
   const markerValues = [GATEWAY_SERVICE_MARKER.toLowerCase()];
   const hasMarkerKey = markerKeys.some((key) => lower.includes(key));
   const hasKindKey = kindKeys.some((key) => lower.includes(key));
@@ -85,7 +85,7 @@ function hasGatewayServiceMarker(content: string): boolean {
   );
 }
 
-function isOpenClawGatewayLaunchdService(label: string, contents: string): boolean {
+function isMarvGatewayLaunchdService(label: string, contents: string): boolean {
   if (hasGatewayServiceMarker(contents)) {
     return true;
   }
@@ -93,20 +93,20 @@ function isOpenClawGatewayLaunchdService(label: string, contents: string): boole
   if (!lowerContents.includes("gateway")) {
     return false;
   }
-  return label.startsWith("ai.marv.") || label.startsWith("ai.openclaw.");
+  return label.startsWith("ai.marv.") || label.startsWith("ai.marv.");
 }
 
-function isOpenClawGatewaySystemdService(name: string, contents: string): boolean {
+function isMarvGatewaySystemdService(name: string, contents: string): boolean {
   if (hasGatewayServiceMarker(contents)) {
     return true;
   }
-  if (!name.startsWith("marv-gateway") && !name.startsWith("openclaw-gateway")) {
+  if (!name.startsWith("marv-gateway") && !name.startsWith("marv-gateway")) {
     return false;
   }
   return contents.toLowerCase().includes("gateway");
 }
 
-function isOpenClawGatewayTaskName(name: string): boolean {
+function isMarvGatewayTaskName(name: string): boolean {
   const normalized = name.trim().toLowerCase();
   if (!normalized) {
     return false;
@@ -192,7 +192,7 @@ async function scanLaunchdDir(params: {
     if (isIgnoredLaunchdLabel(label)) {
       continue;
     }
-    if (marker === "marv" && isOpenClawGatewayLaunchdService(label, contents)) {
+    if (marker === "marv" && isMarvGatewayLaunchdService(label, contents)) {
       continue;
     }
     results.push({
@@ -232,7 +232,7 @@ async function scanSystemdDir(params: {
     if (!marker) {
       continue;
     }
-    if (marker === "marv" && isOpenClawGatewaySystemdService(name, contents)) {
+    if (marker === "marv" && isMarvGatewaySystemdService(name, contents)) {
       continue;
     }
     results.push({
@@ -385,7 +385,7 @@ export async function findExtraGatewayServices(
       if (!name) {
         continue;
       }
-      if (isOpenClawGatewayTaskName(name)) {
+      if (isMarvGatewayTaskName(name)) {
         continue;
       }
       const lowerName = name.toLowerCase();

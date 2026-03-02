@@ -26,13 +26,13 @@ export function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void> {
     opts.gatewayToken ??
     (isRemoteMode ? remote?.token?.trim() : undefined) ??
     process.env.MARV_GATEWAY_TOKEN ??
-    process.env.OPENCLAW_GATEWAY_TOKEN ??
+    process.env.MARV_GATEWAY_TOKEN ??
     auth.token;
   const password =
     opts.gatewayPassword ??
     (isRemoteMode ? remote?.password?.trim() : undefined) ??
     process.env.MARV_GATEWAY_PASSWORD ??
-    process.env.OPENCLAW_GATEWAY_PASSWORD ??
+    process.env.MARV_GATEWAY_PASSWORD ??
     auth.password;
 
   let agent: AcpGatewayAgent | null = null;

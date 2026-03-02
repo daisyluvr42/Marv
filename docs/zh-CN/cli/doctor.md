@@ -33,16 +33,16 @@ marv doctor --deep
 注意事项：
 
 - 交互式提示（如钥匙串/OAuth 修复）仅在 stdin 是 TTY 且**未**设置 `--non-interactive` 时运行。无头运行（cron、Telegram、无终端）将跳过提示。
-- `--fix`（`--repair` 的别名）会将备份写入 `~/.openclaw/marv.json.bak`，并删除未知的配置键，同时列出每个删除项。
+- `--fix`（`--repair` 的别名）会将备份写入 `~/.marv/marv.json.bak`，并删除未知的配置键，同时列出每个删除项。
 
 ## macOS：`launchctl` 环境变量覆盖
 
-如果你之前运行过 `launchctl setenv OPENCLAW_GATEWAY_TOKEN ...`（或 `...PASSWORD`），该值会覆盖你的配置文件，并可能导致持续的"未授权"错误。
+如果你之前运行过 `launchctl setenv MARV_GATEWAY_TOKEN ...`（或 `...PASSWORD`），该值会覆盖你的配置文件，并可能导致持续的"未授权"错误。
 
 ```bash
-launchctl getenv OPENCLAW_GATEWAY_TOKEN
-launchctl getenv OPENCLAW_GATEWAY_PASSWORD
+launchctl getenv MARV_GATEWAY_TOKEN
+launchctl getenv MARV_GATEWAY_PASSWORD
 
-launchctl unsetenv OPENCLAW_GATEWAY_TOKEN
-launchctl unsetenv OPENCLAW_GATEWAY_PASSWORD
+launchctl unsetenv MARV_GATEWAY_TOKEN
+launchctl unsetenv MARV_GATEWAY_PASSWORD
 ```

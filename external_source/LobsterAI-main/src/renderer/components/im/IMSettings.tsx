@@ -3,45 +3,66 @@
  * Configuration UI for DingTalk, Feishu and Telegram IM bots
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { SignalIcon, XMarkIcon, CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { RootState } from '../../store';
-import { imService } from '../../services/im';
-import { setDingTalkConfig, setFeishuConfig, setTelegramConfig, setDiscordConfig, clearError } from '../../store/slices/imSlice';
-import { i18nService } from '../../services/i18n';
-import type { IMPlatform, IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig } from '../../types/im';
-import { getVisibleIMPlatforms } from '../../utils/regionFilter';
+import {
+  SignalIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { i18nService } from "../../services/i18n";
+import { imService } from "../../services/im";
+import { RootState } from "../../store";
+import {
+  setDingTalkConfig,
+  setFeishuConfig,
+  setTelegramConfig,
+  setDiscordConfig,
+  clearError,
+} from "../../store/slices/imSlice";
+import type {
+  IMPlatform,
+  IMConnectivityCheck,
+  IMConnectivityTestResult,
+  IMGatewayConfig,
+} from "../../types/im";
+import { getVisibleIMPlatforms } from "../../utils/regionFilter";
 
 // Platform metadata
 const platformMeta: Record<IMPlatform, { label: string; logo: string }> = {
-  dingtalk: { label: '钉钉', logo: 'dingding.png' },
-  feishu: { label: '飞书', logo: 'feishu.png' },
-  telegram: { label: 'Telegram', logo: 'telegram.svg' },
-  discord: { label: 'Discord', logo: 'discord.svg' },
+  dingtalk: { label: "钉钉", logo: "dingding.png" },
+  feishu: { label: "飞书", logo: "feishu.png" },
+  telegram: { label: "Telegram", logo: "telegram.svg" },
+  discord: { label: "Discord", logo: "discord.svg" },
 };
 
-const verdictColorClass: Record<IMConnectivityTestResult['verdict'], string> = {
-  pass: 'bg-green-500/15 text-green-600 dark:text-green-400',
-  warn: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-300',
-  fail: 'bg-red-500/15 text-red-600 dark:text-red-400',
+const verdictColorClass: Record<IMConnectivityTestResult["verdict"], string> = {
+  pass: "bg-green-500/15 text-green-600 dark:text-green-400",
+  warn: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300",
+  fail: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
-const checkLevelColorClass: Record<IMConnectivityCheck['level'], string> = {
-  pass: 'text-green-600 dark:text-green-400',
-  info: 'text-sky-600 dark:text-sky-400',
-  warn: 'text-yellow-700 dark:text-yellow-300',
-  fail: 'text-red-600 dark:text-red-400',
+const checkLevelColorClass: Record<IMConnectivityCheck["level"], string> = {
+  pass: "text-green-600 dark:text-green-400",
+  info: "text-sky-600 dark:text-sky-400",
+  warn: "text-yellow-700 dark:text-yellow-300",
+  fail: "text-red-600 dark:text-red-400",
 };
 
 const IMSettings: React.FC = () => {
   const dispatch = useDispatch();
   const { config, status, isLoading } = useSelector((state: RootState) => state.im);
-  const [activePlatform, setActivePlatform] = useState<IMPlatform>('dingtalk');
+  const [activePlatform, setActivePlatform] = useState<IMPlatform>("dingtalk");
   const [testingPlatform, setTestingPlatform] = useState<IMPlatform | null>(null);
-  const [connectivityResults, setConnectivityResults] = useState<Partial<Record<IMPlatform, IMConnectivityTestResult>>>({});
-  const [connectivityModalPlatform, setConnectivityModalPlatform] = useState<IMPlatform | null>(null);
-  const [language, setLanguage] = useState<'zh' | 'en'>(i18nService.getLanguage());
+  const [connectivityResults, setConnectivityResults] = useState<
+    Partial<Record<IMPlatform, IMConnectivityTestResult>>
+  >({});
+  const [connectivityModalPlatform, setConnectivityModalPlatform] = useState<IMPlatform | null>(
+    null,
+  );
+  const [language, setLanguage] = useState<"zh" | "en">(i18nService.getLanguage());
 
   // Subscribe to language changes
   useEffect(() => {
@@ -60,22 +81,22 @@ const IMSettings: React.FC = () => {
   }, []);
 
   // Handle DingTalk config change
-  const handleDingTalkChange = (field: 'clientId' | 'clientSecret', value: string) => {
+  const handleDingTalkChange = (field: "clientId" | "clientSecret", value: string) => {
     dispatch(setDingTalkConfig({ [field]: value }));
   };
 
   // Handle Feishu config change
-  const handleFeishuChange = (field: 'appId' | 'appSecret', value: string) => {
+  const handleFeishuChange = (field: "appId" | "appSecret", value: string) => {
     dispatch(setFeishuConfig({ [field]: value }));
   };
 
   // Handle Telegram config change
-  const handleTelegramChange = (field: 'botToken', value: string) => {
+  const handleTelegramChange = (field: "botToken", value: string) => {
     dispatch(setTelegramConfig({ [field]: value }));
   };
 
   // Handle Discord config change
-  const handleDiscordChange = (field: 'botToken', value: string) => {
+  const handleDiscordChange = (field: "botToken", value: string) => {
     dispatch(setDiscordConfig({ [field]: value }));
   };
 
@@ -84,7 +105,7 @@ const IMSettings: React.FC = () => {
     await imService.updateConfig(config);
   };
 
-  const getCheckTitle = (code: IMConnectivityCheck['code']): string => {
+  const getCheckTitle = (code: IMConnectivityCheck["code"]): string => {
     return i18nService.t(`imConnectivityCheckTitle_${code}`);
   };
 
@@ -92,11 +113,11 @@ const IMSettings: React.FC = () => {
     if (check.suggestion) {
       return check.suggestion;
     }
-    if (check.code === 'gateway_running' && check.level === 'pass') {
+    if (check.code === "gateway_running" && check.level === "pass") {
       return undefined;
     }
     const suggestion = i18nService.t(`imConnectivityCheckSuggestion_${check.code}`);
-    if (suggestion.startsWith('imConnectivityCheckSuggestion_')) {
+    if (suggestion.startsWith("imConnectivityCheckSuggestion_")) {
       return undefined;
     }
     return suggestion;
@@ -112,7 +133,7 @@ const IMSettings: React.FC = () => {
 
   const runConnectivityTest = async (
     platform: IMPlatform,
-    configOverride?: Partial<IMGatewayConfig>
+    configOverride?: Partial<IMGatewayConfig>,
   ) => {
     setTestingPlatform(platform);
     const result = await imService.testGateway(platform, configOverride);
@@ -178,13 +199,13 @@ const IMSettings: React.FC = () => {
 
   // Check if platform can be started
   const canStart = (platform: IMPlatform): boolean => {
-    if (platform === 'dingtalk') {
+    if (platform === "dingtalk") {
       return !!(config.dingtalk.clientId && config.dingtalk.clientSecret);
     }
-    if (platform === 'telegram') {
+    if (platform === "telegram") {
       return !!config.telegram.botToken;
     }
-    if (platform === 'discord') {
+    if (platform === "discord") {
       return !!config.discord.botToken;
     }
     return !!(config.feishu.appId && config.feishu.appSecret);
@@ -197,15 +218,23 @@ const IMSettings: React.FC = () => {
 
   // Get platform connection status (runtime state)
   const getPlatformConnected = (platform: IMPlatform): boolean => {
-    if (platform === 'dingtalk') {return dingtalkConnected;}
-    if (platform === 'telegram') {return telegramConnected;}
-    if (platform === 'discord') {return discordConnected;}
+    if (platform === "dingtalk") {
+      return dingtalkConnected;
+    }
+    if (platform === "telegram") {
+      return telegramConnected;
+    }
+    if (platform === "discord") {
+      return discordConnected;
+    }
     return feishuConnected;
   };
 
   // Get platform transient starting status
   const getPlatformStarting = (platform: IMPlatform): boolean => {
-    if (platform === 'discord') {return status.discord.starting;}
+    if (platform === "discord") {
+      return status.discord.starting;
+    }
     return false;
   };
 
@@ -236,10 +265,10 @@ const IMSettings: React.FC = () => {
     >
       <SignalIcon className="h-3.5 w-3.5 mr-1.5" />
       {testingPlatform === platform
-        ? i18nService.t('imConnectivityTesting')
+        ? i18nService.t("imConnectivityTesting")
         : connectivityResults[platform]
-          ? i18nService.t('imConnectivityRetest')
-          : i18nService.t('imConnectivityTest')}
+          ? i18nService.t("imConnectivityRetest")
+          : i18nService.t("imConnectivityTest")}
     </button>
   );
 
@@ -248,12 +277,12 @@ const IMSettings: React.FC = () => {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setConnectivityModalPlatform(null);
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [connectivityModalPlatform]);
 
   return (
@@ -271,23 +300,21 @@ const IMSettings: React.FC = () => {
               onClick={() => setActivePlatform(platform)}
               className={`flex items-center p-2 rounded-xl cursor-pointer transition-colors ${
                 activePlatform === platform
-                  ? 'bg-claude-accent/10 dark:bg-claude-accent/20 border border-claude-accent/30'
-                  : 'bg-claude-surfaceHover/80 dark:bg-claude-darkSurface/55 dark:bg-gradient-to-br dark:from-claude-darkSurface/70 dark:to-claude-darkSurfaceHover/70 hover:bg-claude-surface dark:hover:from-claude-darkSurface/80 dark:hover:to-claude-darkSurfaceHover/80 dark:border-claude-darkBorder/70 border-claude-border/80 border'
+                  ? "bg-claude-accent/10 dark:bg-claude-accent/20 border border-claude-accent/30"
+                  : "bg-claude-surfaceHover/80 dark:bg-claude-darkSurface/55 dark:bg-gradient-to-br dark:from-claude-darkSurface/70 dark:to-claude-darkSurfaceHover/70 hover:bg-claude-surface dark:hover:from-claude-darkSurface/80 dark:hover:to-claude-darkSurfaceHover/80 dark:border-claude-darkBorder/70 border-claude-border/80 border"
               }`}
             >
               <div className="flex flex-1 items-center">
                 <div className="mr-2 flex h-7 w-7 items-center justify-center">
-                  <img
-                    src={meta.logo}
-                    alt={meta.label}
-                    className="w-6 h-6 object-contain"
-                  />
+                  <img src={meta.logo} alt={meta.label} className="w-6 h-6 object-contain" />
                 </div>
-                <span className={`text-sm font-medium truncate ${
-                  activePlatform === platform
-                    ? 'text-claude-accent'
-                    : 'dark:text-claude-darkText text-claude-text'
-                }`}>
+                <span
+                  className={`text-sm font-medium truncate ${
+                    activePlatform === platform
+                      ? "text-claude-accent"
+                      : "dark:text-claude-darkText text-claude-text"
+                  }`}
+                >
                   {i18nService.t(platform)}
                 </span>
               </div>
@@ -295,9 +322,11 @@ const IMSettings: React.FC = () => {
                 <div
                   className={`w-7 h-4 rounded-full flex items-center transition-colors ${
                     isEnabled
-                      ? (isConnected ? 'bg-green-500' : 'bg-yellow-500')
-                      : 'dark:bg-claude-darkBorder bg-claude-border'
-                  } ${!canToggle ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      ? isConnected
+                        ? "bg-green-500"
+                        : "bg-yellow-500"
+                      : "dark:bg-claude-darkBorder bg-claude-border"
+                  } ${!canToggle ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     handlePlatformToggle(platform);
@@ -305,7 +334,7 @@ const IMSettings: React.FC = () => {
                 >
                   <div
                     className={`w-3 h-3 rounded-full bg-white shadow-md transform transition-transform ${
-                      isEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                      isEnabled ? "translate-x-3.5" : "translate-x-0.5"
                     }`}
                   />
                 </div>
@@ -328,24 +357,26 @@ const IMSettings: React.FC = () => {
               />
             </div>
             <h3 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-              {`${i18nService.t(activePlatform)}${i18nService.t('settings')}`}
+              {`${i18nService.t(activePlatform)}${i18nService.t("settings")}`}
             </h3>
           </div>
-          <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-            getPlatformConnected(activePlatform) || getPlatformStarting(activePlatform)
-              ? 'bg-green-500/15 text-green-600 dark:text-green-400'
-              : 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
-          }`}>
+          <div
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              getPlatformConnected(activePlatform) || getPlatformStarting(activePlatform)
+                ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                : "bg-gray-500/15 text-gray-500 dark:text-gray-400"
+            }`}
+          >
             {getPlatformConnected(activePlatform)
-              ? i18nService.t('connected')
+              ? i18nService.t("connected")
               : getPlatformStarting(activePlatform)
-                ? (i18nService.t('starting') || '启动中')
-                : i18nService.t('disconnected')}
+                ? i18nService.t("starting") || "启动中"
+                : i18nService.t("disconnected")}
           </div>
         </div>
 
         {/* DingTalk Settings */}
-        {activePlatform === 'dingtalk' && (
+        {activePlatform === "dingtalk" && (
           <div className="space-y-3">
             {/* Client ID */}
             <div className="space-y-1.5">
@@ -355,7 +386,7 @@ const IMSettings: React.FC = () => {
               <input
                 type="text"
                 value={config.dingtalk.clientId}
-                onChange={(e) => handleDingTalkChange('clientId', e.target.value)}
+                onChange={(e) => handleDingTalkChange("clientId", e.target.value)}
                 onBlur={handleSaveConfig}
                 className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
                 placeholder="dingxxxxxx"
@@ -370,16 +401,14 @@ const IMSettings: React.FC = () => {
               <input
                 type="password"
                 value={config.dingtalk.clientSecret}
-                onChange={(e) => handleDingTalkChange('clientSecret', e.target.value)}
+                onChange={(e) => handleDingTalkChange("clientSecret", e.target.value)}
                 onBlur={handleSaveConfig}
                 className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
                 placeholder="••••••••••••"
               />
             </div>
 
-            <div className="pt-1">
-              {renderConnectivityTestButton('dingtalk')}
-            </div>
+            <div className="pt-1">{renderConnectivityTestButton("dingtalk")}</div>
 
             {/* Error display */}
             {status.dingtalk.lastError && (
@@ -391,7 +420,7 @@ const IMSettings: React.FC = () => {
         )}
 
         {/* Feishu Settings */}
-        {activePlatform === 'feishu' && (
+        {activePlatform === "feishu" && (
           <div className="space-y-3">
             {/* App ID */}
             <div className="space-y-1.5">
@@ -401,7 +430,7 @@ const IMSettings: React.FC = () => {
               <input
                 type="text"
                 value={config.feishu.appId}
-                onChange={(e) => handleFeishuChange('appId', e.target.value)}
+                onChange={(e) => handleFeishuChange("appId", e.target.value)}
                 onBlur={handleSaveConfig}
                 className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
                 placeholder="cli_xxxxx"
@@ -416,16 +445,14 @@ const IMSettings: React.FC = () => {
               <input
                 type="password"
                 value={config.feishu.appSecret}
-                onChange={(e) => handleFeishuChange('appSecret', e.target.value)}
+                onChange={(e) => handleFeishuChange("appSecret", e.target.value)}
                 onBlur={handleSaveConfig}
                 className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
                 placeholder="••••••••••••"
               />
             </div>
 
-            <div className="pt-1">
-              {renderConnectivityTestButton('feishu')}
-            </div>
+            <div className="pt-1">{renderConnectivityTestButton("feishu")}</div>
 
             {/* Error display */}
             {status.feishu.error && (
@@ -437,7 +464,7 @@ const IMSettings: React.FC = () => {
         )}
 
         {/* Telegram Settings */}
-        {activePlatform === 'telegram' && (
+        {activePlatform === "telegram" && (
           <div className="space-y-3">
             {/* Bot Token */}
             <div className="space-y-1.5">
@@ -447,19 +474,17 @@ const IMSettings: React.FC = () => {
               <input
                 type="password"
                 value={config.telegram.botToken}
-                onChange={(e) => handleTelegramChange('botToken', e.target.value)}
+                onChange={(e) => handleTelegramChange("botToken", e.target.value)}
                 onBlur={handleSaveConfig}
                 className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
                 placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
               />
               <p className="text-xs text-claude-textSecondary dark:text-claude-darkTextSecondary">
-                {i18nService.t('telegramTokenHint') || '从 @BotFather 获取 Bot Token'}
+                {i18nService.t("telegramTokenHint") || "从 @BotFather 获取 Bot Token"}
               </p>
             </div>
 
-            <div className="pt-1">
-              {renderConnectivityTestButton('telegram')}
-            </div>
+            <div className="pt-1">{renderConnectivityTestButton("telegram")}</div>
 
             {/* Bot username display */}
             {status.telegram.botUsername && (
@@ -478,7 +503,7 @@ const IMSettings: React.FC = () => {
         )}
 
         {/* Discord Settings */}
-        {activePlatform === 'discord' && (
+        {activePlatform === "discord" && (
           <div className="space-y-3">
             {/* Bot Token */}
             <div className="space-y-1.5">
@@ -488,7 +513,7 @@ const IMSettings: React.FC = () => {
               <input
                 type="password"
                 value={config.discord.botToken}
-                onChange={(e) => handleDiscordChange('botToken', e.target.value)}
+                onChange={(e) => handleDiscordChange("botToken", e.target.value)}
                 onBlur={handleSaveConfig}
                 className="block w-full rounded-lg dark:bg-claude-darkSurface/80 bg-claude-surface/80 dark:border-claude-darkBorder/60 border-claude-border/60 border focus:border-claude-accent focus:ring-1 focus:ring-claude-accent/30 dark:text-claude-darkText text-claude-text px-3 py-2 text-sm transition-colors"
                 placeholder="MTIzNDU2Nzg5MDEyMzQ1Njc4OQ..."
@@ -498,9 +523,7 @@ const IMSettings: React.FC = () => {
               </p>
             </div>
 
-            <div className="pt-1">
-              {renderConnectivityTestButton('discord')}
-            </div>
+            <div className="pt-1">{renderConnectivityTestButton("discord")}</div>
 
             {/* Bot username display */}
             {status.discord.botUsername && (
@@ -529,11 +552,11 @@ const IMSettings: React.FC = () => {
             >
               <div className="px-4 py-3 border-b dark:border-claude-darkBorder border-claude-border flex items-center justify-between">
                 <div className="text-sm font-semibold dark:text-claude-darkText text-claude-text">
-                  {`${i18nService.t(connectivityModalPlatform)} ${i18nService.t('imConnectivitySectionTitle')}`}
+                  {`${i18nService.t(connectivityModalPlatform)} ${i18nService.t("imConnectivitySectionTitle")}`}
                 </div>
                 <button
                   type="button"
-                  aria-label={i18nService.t('close')}
+                  aria-label={i18nService.t("close")}
                   onClick={() => setConnectivityModalPlatform(null)}
                   className="p-1 rounded-md dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:text-claude-darkTextSecondary text-claude-textSecondary"
                 >
@@ -544,50 +567,58 @@ const IMSettings: React.FC = () => {
               <div className="p-4 max-h-[65vh] overflow-y-auto">
                 {testingPlatform === connectivityModalPlatform ? (
                   <div className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('imConnectivityTesting')}
+                    {i18nService.t("imConnectivityTesting")}
                   </div>
                 ) : connectivityResults[connectivityModalPlatform] ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${verdictColorClass[connectivityResults[connectivityModalPlatform]!.verdict]}`}>
-                        {connectivityResults[connectivityModalPlatform]!.verdict === 'pass' ? (
+                      <div
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${verdictColorClass[connectivityResults[connectivityModalPlatform]!.verdict]}`}
+                      >
+                        {connectivityResults[connectivityModalPlatform]!.verdict === "pass" ? (
                           <CheckCircleIcon className="h-3.5 w-3.5" />
-                        ) : connectivityResults[connectivityModalPlatform]!.verdict === 'warn' ? (
+                        ) : connectivityResults[connectivityModalPlatform]!.verdict === "warn" ? (
                           <ExclamationTriangleIcon className="h-3.5 w-3.5" />
                         ) : (
                           <XCircleIcon className="h-3.5 w-3.5" />
                         )}
-                        {i18nService.t(`imConnectivityVerdict_${connectivityResults[connectivityModalPlatform]!.verdict}`)}
+                        {i18nService.t(
+                          `imConnectivityVerdict_${connectivityResults[connectivityModalPlatform]!.verdict}`,
+                        )}
                       </div>
                       <div className="text-[11px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                        {`${i18nService.t('imConnectivityLastChecked')}: ${formatTestTime(connectivityResults[connectivityModalPlatform]!.testedAt)}`}
+                        {`${i18nService.t("imConnectivityLastChecked")}: ${formatTestTime(connectivityResults[connectivityModalPlatform]!.testedAt)}`}
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      {connectivityResults[connectivityModalPlatform]!.checks.map((check, index) => (
-                        <div
-                          key={`${check.code}-${index}`}
-                          className="rounded-lg border dark:border-claude-darkBorder/60 border-claude-border/60 px-2.5 py-2 dark:bg-claude-darkSurface/25 bg-white/70"
-                        >
-                          <div className={`text-xs font-medium ${checkLevelColorClass[check.level]}`}>
-                            {getCheckTitle(check.code)}
-                          </div>
-                          <div className="mt-1 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                            {check.message}
-                          </div>
-                          {getCheckSuggestion(check) && (
-                            <div className="mt-1 text-[11px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                              {`${i18nService.t('imConnectivitySuggestion')}: ${getCheckSuggestion(check)}`}
+                      {connectivityResults[connectivityModalPlatform]!.checks.map(
+                        (check, index) => (
+                          <div
+                            key={`${check.code}-${index}`}
+                            className="rounded-lg border dark:border-claude-darkBorder/60 border-claude-border/60 px-2.5 py-2 dark:bg-claude-darkSurface/25 bg-white/70"
+                          >
+                            <div
+                              className={`text-xs font-medium ${checkLevelColorClass[check.level]}`}
+                            >
+                              {getCheckTitle(check.code)}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            <div className="mt-1 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                              {check.message}
+                            </div>
+                            {getCheckSuggestion(check) && (
+                              <div className="mt-1 text-[11px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                                {`${i18nService.t("imConnectivitySuggestion")}: ${getCheckSuggestion(check)}`}
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {i18nService.t('imConnectivityNoResult')}
+                    {i18nService.t("imConnectivityNoResult")}
                   </div>
                 )}
               </div>

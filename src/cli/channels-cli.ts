@@ -85,7 +85,7 @@ export function registerChannelsCli(program: Command) {
           ["marv channels login --channel whatsapp", "Link a WhatsApp Web account."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/channels",
-          "docs.marv.ai/cli/channels",
+          "docs: /cli/channels",
         )}\n`,
     );
 

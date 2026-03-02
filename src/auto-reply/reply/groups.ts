@@ -1,6 +1,6 @@
 import { getChannelDock } from "../../channels/dock.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../config/config.js";
 import type { GroupKeyResolution, SessionEntry } from "../../config/sessions.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import { normalizeGroupActivation } from "../group-activation.js";
@@ -29,7 +29,7 @@ function extractGroupId(raw: string | undefined | null): string | undefined {
 }
 
 export function resolveGroupRequireMention(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   ctx: TemplateContext;
   groupResolution?: GroupKeyResolution;
 }): boolean {
@@ -105,7 +105,7 @@ export function buildGroupChatContext(params: { sessionCtx: TemplateContext }): 
 }
 
 export function buildGroupIntro(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   sessionCtx: TemplateContext;
   sessionEntry?: SessionEntry;
   defaultActivation: "always" | "mention";

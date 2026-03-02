@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import React, { useState, useRef, useEffect } from "react";
 
 interface ThemedSelectProps {
   id: string;
@@ -15,14 +15,14 @@ const ThemedSelect: React.FC<ThemedSelectProps> = ({
   value,
   onChange,
   options,
-  className = '',
+  className = "",
   label,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Find the selected option label
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = options.find((option) => option.value === value);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -32,9 +32,9 @@ const ThemedSelect: React.FC<ThemedSelectProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -48,7 +48,10 @@ const ThemedSelect: React.FC<ThemedSelectProps> = ({
     <div className="relative" ref={dropdownRef}>
       <div className="flex items-center space-x-3">
         {label && (
-          <label htmlFor={id} className="text-sm font-medium dark:text-claude-darkText text-claude-text whitespace-nowrap">
+          <label
+            htmlFor={id}
+            className="text-sm font-medium dark:text-claude-darkText text-claude-text whitespace-nowrap"
+          >
             {label}
           </label>
         )}
@@ -76,15 +79,19 @@ const ThemedSelect: React.FC<ThemedSelectProps> = ({
                   <li
                     key={option.value}
                     className={`cursor-pointer select-none relative py-1.5 pl-3 pr-9 dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover ${
-                      option.value === value ? 'dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover' : ''
+                      option.value === value
+                        ? "dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover"
+                        : ""
                     }`}
                     role="option"
                     aria-selected={option.value === value}
                     onClick={() => handleOptionClick(option.value)}
                   >
-                    <span className={`block truncate dark:text-claude-darkText text-claude-text ${
-                      option.value === value ? 'font-medium' : 'font-normal'
-                    }`}>
+                    <span
+                      className={`block truncate dark:text-claude-darkText text-claude-text ${
+                        option.value === value ? "font-medium" : "font-normal"
+                      }`}
+                    >
                       {option.label}
                     </span>
                   </li>
@@ -98,4 +105,4 @@ const ThemedSelect: React.FC<ThemedSelectProps> = ({
   );
 };
 
-export default ThemedSelect; 
+export default ThemedSelect;

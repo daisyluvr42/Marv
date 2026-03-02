@@ -3,7 +3,7 @@ import { resolveAgentDir, resolveDefaultAgentId } from "../agents/agent-scope.js
 import { resolveMemorySearchConfig } from "../agents/memory-search.js";
 import { resolveApiKeyForProvider } from "../agents/model-auth.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { note } from "../terminal/note.js";
 import { resolveUserPath } from "../utils.js";
 
@@ -11,7 +11,7 @@ import { resolveUserPath } from "../utils.js";
  * Check whether memory search has a usable embedding provider.
  * Runs as part of `marv doctor` — config-only, no network calls.
  */
-export async function noteMemorySearchHealth(cfg: OpenClawConfig): Promise<void> {
+export async function noteMemorySearchHealth(cfg: MarvConfig): Promise<void> {
   const agentId = resolveDefaultAgentId(cfg);
   const agentDir = resolveAgentDir(cfg, agentId);
   const resolved = resolveMemorySearchConfig(cfg, agentId);
@@ -112,7 +112,7 @@ function hasLocalEmbeddings(local: { modelPath?: string }): boolean {
 
 async function hasApiKeyForProvider(
   provider: "openai" | "gemini" | "voyage",
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   agentDir: string,
 ): Promise<boolean> {
   // Map embedding provider names to model-auth provider names

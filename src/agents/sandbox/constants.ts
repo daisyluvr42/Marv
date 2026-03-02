@@ -5,7 +5,7 @@ import { STATE_DIR } from "../../config/config.js";
 export const DEFAULT_SANDBOX_WORKSPACE_ROOT = path.join(STATE_DIR, "sandboxes");
 
 export const DEFAULT_SANDBOX_IMAGE = "marv-sandbox:bookworm-slim";
-export const LEGACY_DEFAULT_SANDBOX_IMAGE = "openclaw-sandbox:bookworm-slim";
+export const LEGACY_DEFAULT_SANDBOX_IMAGE = "marv-sandbox:bookworm-slim";
 export const DEFAULT_SANDBOX_CONTAINER_PREFIX = "marv-sbx-";
 export const DEFAULT_SANDBOX_WORKDIR = "/workspace";
 export const DEFAULT_SANDBOX_IDLE_HOURS = 24;
@@ -38,7 +38,7 @@ export const DEFAULT_TOOL_DENY = [
 ] as const;
 
 export const DEFAULT_SANDBOX_BROWSER_IMAGE = "marv-sandbox-browser:bookworm-slim";
-export const LEGACY_DEFAULT_SANDBOX_BROWSER_IMAGE = "openclaw-sandbox-browser:bookworm-slim";
+export const LEGACY_DEFAULT_SANDBOX_BROWSER_IMAGE = "marv-sandbox-browser:bookworm-slim";
 export const DEFAULT_SANDBOX_COMMON_IMAGE = "marv-sandbox-common:bookworm-slim";
 
 export const DEFAULT_SANDBOX_BROWSER_PREFIX = "marv-sbx-browser-";

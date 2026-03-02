@@ -1,18 +1,18 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
-import { setViewMode, selectTask } from '../../store/slices/scheduledTaskSlice';
-import { scheduledTaskService } from '../../services/scheduledTask';
-import { i18nService } from '../../services/i18n';
-import TaskList from './TaskList';
-import TaskForm from './TaskForm';
-import TaskDetail from './TaskDetail';
-import AllRunsHistory from './AllRunsHistory';
-import DeleteConfirmModal from './DeleteConfirmModal';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import SidebarToggleIcon from '../icons/SidebarToggleIcon';
-import ComposeIcon from '../icons/ComposeIcon';
-import WindowTitleBar from '../window/WindowTitleBar';
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import React, { useCallback, useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { i18nService } from "../../services/i18n";
+import { scheduledTaskService } from "../../services/scheduledTask";
+import { RootState } from "../../store";
+import { setViewMode, selectTask } from "../../store/slices/scheduledTaskSlice";
+import ComposeIcon from "../icons/ComposeIcon";
+import SidebarToggleIcon from "../icons/SidebarToggleIcon";
+import WindowTitleBar from "../window/WindowTitleBar";
+import AllRunsHistory from "./AllRunsHistory";
+import DeleteConfirmModal from "./DeleteConfirmModal";
+import TaskDetail from "./TaskDetail";
+import TaskForm from "./TaskForm";
+import TaskList from "./TaskList";
 
 interface ScheduledTasksViewProps {
   isSidebarCollapsed?: boolean;
@@ -21,7 +21,7 @@ interface ScheduledTasksViewProps {
   updateBadge?: React.ReactNode;
 }
 
-type TabType = 'tasks' | 'history';
+type TabType = "tasks" | "history";
 
 const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
   isSidebarCollapsed,
@@ -30,12 +30,12 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
   updateBadge,
 }) => {
   const dispatch = useDispatch();
-  const isMac = window.electron.platform === 'darwin';
+  const isMac = window.electron.platform === "darwin";
   const viewMode = useSelector((state: RootState) => state.scheduledTask.viewMode);
   const selectedTaskId = useSelector((state: RootState) => state.scheduledTask.selectedTaskId);
   const tasks = useSelector((state: RootState) => state.scheduledTask.tasks);
-  const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) ?? null : null;
-  const [activeTab, setActiveTab] = useState<TabType>('tasks');
+  const selectedTask = selectedTaskId ? (tasks.find((t) => t.id === selectedTaskId) ?? null) : null;
+  const [activeTab, setActiveTab] = useState<TabType>("tasks");
   const [deleteTaskInfo, setDeleteTaskInfo] = useState<{ id: string; name: string } | null>(null);
 
   const handleRequestDelete = useCallback((taskId: string, taskName: string) => {
@@ -43,14 +43,16 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
   }, []);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!deleteTaskInfo) {return;}
+    if (!deleteTaskInfo) {
+      return;
+    }
     const taskId = deleteTaskInfo.id;
     setDeleteTaskInfo(null);
     await scheduledTaskService.deleteTask(taskId);
     // If we were viewing this task's detail, go back to list
     if (selectedTaskId === taskId) {
       dispatch(selectTask(null));
-      dispatch(setViewMode('list'));
+      dispatch(setViewMode("list"));
     }
   }, [deleteTaskInfo, selectedTaskId, dispatch]);
 
@@ -64,19 +66,19 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
 
   const handleBackToList = () => {
     dispatch(selectTask(null));
-    dispatch(setViewMode('list'));
+    dispatch(setViewMode("list"));
   };
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'tasks') {
+    if (tab === "tasks") {
       dispatch(selectTask(null));
-      dispatch(setViewMode('list'));
+      dispatch(setViewMode("list"));
     }
   };
 
   // Show tabs only in list view (not in create/edit/detail sub-views)
-  const showTabs = viewMode === 'list' && !selectedTaskId;
+  const showTabs = viewMode === "list" && !selectedTaskId;
 
   return (
     <div className="flex flex-col h-full">
@@ -84,7 +86,7 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
       <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
         <div className="flex items-center space-x-3 h-8">
           {isSidebarCollapsed && (
-            <div className={`non-draggable flex items-center gap-1 ${isMac ? 'pl-[68px]' : ''}`}>
+            <div className={`non-draggable flex items-center gap-1 ${isMac ? "pl-[68px]" : ""}`}>
               <button
                 type="button"
                 onClick={onToggleSidebar}
@@ -102,17 +104,17 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
               {updateBadge}
             </div>
           )}
-          {viewMode !== 'list' && (
+          {viewMode !== "list" && (
             <button
               onClick={handleBackToList}
               className="non-draggable p-2 rounded-lg dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:text-claude-darkTextSecondary text-claude-textSecondary transition-colors"
-              aria-label={i18nService.t('back')}
+              aria-label={i18nService.t("back")}
             >
               <ArrowLeftIcon className="h-5 w-5" />
             </button>
           )}
           <h1 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">
-            {i18nService.t('scheduledTasksTitle')}
+            {i18nService.t("scheduledTasksTitle")}
           </h1>
         </div>
         <WindowTitleBar inline />
@@ -124,40 +126,40 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
           <div className="flex">
             <button
               type="button"
-              onClick={() => handleTabChange('tasks')}
+              onClick={() => handleTabChange("tasks")}
               className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                activeTab === 'tasks'
-                  ? 'dark:text-claude-darkText text-claude-text'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:dark:text-claude-darkText hover:text-claude-text'
+                activeTab === "tasks"
+                  ? "dark:text-claude-darkText text-claude-text"
+                  : "dark:text-claude-darkTextSecondary text-claude-textSecondary hover:dark:text-claude-darkText hover:text-claude-text"
               }`}
             >
-              {i18nService.t('scheduledTasksTabTasks')}
-              {activeTab === 'tasks' && (
+              {i18nService.t("scheduledTasksTabTasks")}
+              {activeTab === "tasks" && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-claude-accent rounded-t" />
               )}
             </button>
             <button
               type="button"
-              onClick={() => handleTabChange('history')}
+              onClick={() => handleTabChange("history")}
               className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                activeTab === 'history'
-                  ? 'dark:text-claude-darkText text-claude-text'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:dark:text-claude-darkText hover:text-claude-text'
+                activeTab === "history"
+                  ? "dark:text-claude-darkText text-claude-text"
+                  : "dark:text-claude-darkTextSecondary text-claude-textSecondary hover:dark:text-claude-darkText hover:text-claude-text"
               }`}
             >
-              {i18nService.t('scheduledTasksTabHistory')}
-              {activeTab === 'history' && (
+              {i18nService.t("scheduledTasksTabHistory")}
+              {activeTab === "history" && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-claude-accent rounded-t" />
               )}
             </button>
           </div>
-          {activeTab === 'tasks' && (
+          {activeTab === "tasks" && (
             <button
               type="button"
-              onClick={() => dispatch(setViewMode('create'))}
+              onClick={() => dispatch(setViewMode("create"))}
               className="px-3 py-1 text-sm font-medium bg-claude-accent text-white rounded-lg hover:bg-claude-accentHover transition-colors"
             >
-              {i18nService.t('scheduledTasksNewTask')}
+              {i18nService.t("scheduledTasksNewTask")}
             </button>
           )}
         </div>
@@ -165,27 +167,23 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {showTabs && activeTab === 'history' ? (
+        {showTabs && activeTab === "history" ? (
           <AllRunsHistory />
         ) : (
           <>
-            {viewMode === 'list' && <TaskList onRequestDelete={handleRequestDelete} />}
-            {viewMode === 'create' && (
-              <TaskForm
-                mode="create"
-                onCancel={handleBackToList}
-                onSaved={handleBackToList}
-              />
+            {viewMode === "list" && <TaskList onRequestDelete={handleRequestDelete} />}
+            {viewMode === "create" && (
+              <TaskForm mode="create" onCancel={handleBackToList} onSaved={handleBackToList} />
             )}
-            {viewMode === 'edit' && selectedTask && (
+            {viewMode === "edit" && selectedTask && (
               <TaskForm
                 mode="edit"
                 task={selectedTask}
-                onCancel={() => dispatch(setViewMode('detail'))}
-                onSaved={() => dispatch(setViewMode('detail'))}
+                onCancel={() => dispatch(setViewMode("detail"))}
+                onSaved={() => dispatch(setViewMode("detail"))}
               />
             )}
-            {viewMode === 'detail' && selectedTask && (
+            {viewMode === "detail" && selectedTask && (
               <TaskDetail task={selectedTask} onRequestDelete={handleRequestDelete} />
             )}
           </>

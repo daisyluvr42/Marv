@@ -1,5 +1,5 @@
 const warningFilterKey = Symbol.for("marv.warning-filter");
-const legacyWarningFilterKey = Symbol.for("openclaw.warning-filter");
+const legacyWarningFilterKey = Symbol.for("marv.warning-filter");
 
 export type ProcessWarning = {
   code?: string;

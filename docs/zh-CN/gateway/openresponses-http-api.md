@@ -32,8 +32,8 @@ Marv 的 Gateway 网关可以提供兼容 OpenResponses 的 `POST /v1/responses`
 
 说明：
 
-- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
-- 当 `gateway.auth.mode="password"` 时，使用 `gateway.auth.password`（或 `OPENCLAW_GATEWAY_PASSWORD`）。
+- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）。
+- 当 `gateway.auth.mode="password"` 时，使用 `gateway.auth.password`（或 `MARV_GATEWAY_PASSWORD`）。
 
 ## 选择智能体
 
@@ -44,11 +44,11 @@ Marv 的 Gateway 网关可以提供兼容 OpenResponses 的 `POST /v1/responses`
 
 或通过头指定特定的 Marv 智能体：
 
-- `x-openclaw-agent-id: <agentId>`（默认：`main`）
+- `x-marv-agent-id: <agentId>`（默认：`main`）
 
 高级：
 
-- `x-openclaw-session-key: <sessionKey>` 完全控制会话路由。
+- `x-marv-session-key: <sessionKey>` 完全控制会话路由。
 
 ## 启用端点
 
@@ -295,9 +295,9 @@ URL 获取默认值：
 curl -sS http://127.0.0.1:18789/v1/responses \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-agent-id: main' \
+  -H 'x-marv-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "marv",
     "input": "hi"
   }'
 ```
@@ -308,9 +308,9 @@ curl -sS http://127.0.0.1:18789/v1/responses \
 curl -N http://127.0.0.1:18789/v1/responses \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-agent-id: main' \
+  -H 'x-marv-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "marv",
     "stream": true,
     "input": "hi"
   }'

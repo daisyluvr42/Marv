@@ -20,12 +20,12 @@ NanoClaw bridges the gap between the ultra-lightweight PicClaw and the full-feat
 
 ## Hardware Requirements
 
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| RAM | 100MB | 512MB+ |
-| Storage | 200MB | 1GB+ |
-| Hardware | Raspberry Pi Zero 2W | Raspberry Pi 4/5 |
-| Cost | ~$15 | ~$50 |
+| Component | Minimum              | Recommended      |
+| --------- | -------------------- | ---------------- |
+| RAM       | 100MB                | 512MB+           |
+| Storage   | 200MB                | 1GB+             |
+| Hardware  | Raspberry Pi Zero 2W | Raspberry Pi 4/5 |
+| Cost      | ~$15                 | ~$50             |
 
 ## Use Cases
 

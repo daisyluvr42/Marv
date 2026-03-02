@@ -6,8 +6,8 @@ import { formatDocsLink } from "../terminal/links.js";
 import { isRich, theme } from "../terminal/theme.js";
 
 const SEARCH_TOOLS = [
-  "https://docs.marv.ai/mcp.SearchMarv",
-  "https://docs.marv.ai/mcp.SearchOpenClaw",
+  "/mcp.SearchMarv",
+  "/mcp.SearchMarv",
 ] as const;
 const SEARCH_TIMEOUT_MS = 30_000;
 const DEFAULT_SNIPPET_MAX = 220;
@@ -163,12 +163,12 @@ async function renderMarkdown(markdown: string, runtime: RuntimeEnv) {
 export async function docsSearchCommand(queryParts: string[], runtime: RuntimeEnv) {
   const query = queryParts.join(" ").trim();
   if (!query) {
-    const docs = formatDocsLink("/", "docs.marv.ai");
+    const docs = formatDocsLink("/", "");
     if (isRich()) {
       runtime.log(`${theme.muted("Docs:")} ${docs}`);
       runtime.log(`${theme.muted("Search:")} ${formatCliCommand('marv docs "your query"')}`);
     } else {
-      runtime.log("Docs: https://docs.marv.ai/");
+      runtime.log("Docs: /");
       runtime.log(`Search: ${formatCliCommand('marv docs "your query"')}`);
     }
     return;

@@ -21,12 +21,12 @@ Marv 需要 Node 22 或更新版本。
 <Tabs>
   <Tab title="npm">
     ```bash
-    npm install -g openclaw@latest
+    npm install -g marv@latest
     ```
   </Tab>
   <Tab title="pnpm">
     ```bash
-    pnpm add -g openclaw@latest
+    pnpm add -g marv@latest
     ```
   </Tab>
 </Tabs>
@@ -61,7 +61,7 @@ Marv 需要 Node 22 或更新版本。
 ## 从源码安装（开发）
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 pnpm install
 pnpm ui:build # 首次运行时会自动安装 UI 依赖
@@ -74,8 +74,8 @@ marv onboard --install-daemon
 ## 多实例快速开始（可选）
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json \
-OPENCLAW_STATE_DIR=~/.openclaw-a \
+MARV_CONFIG_PATH=~/.marv/a.json \
+MARV_STATE_DIR=~/.marv-a \
 marv gateway --port 19001
 ```
 

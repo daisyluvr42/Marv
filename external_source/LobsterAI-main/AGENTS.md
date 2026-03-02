@@ -26,6 +26,7 @@ npm run dist:linux      # Linux (.AppImage)
 ## Architecture Overview
 
 LobsterAI is an Electron + React desktop application with two primary modes:
+
 1. **Cowork Mode** - AI-assisted coding sessions using Claude Agent SDK with tool execution
 2. **Artifacts System** - Rich preview of code outputs (HTML, SVG, React, Mermaid)
 
@@ -34,6 +35,7 @@ Uses strict process isolation with IPC communication.
 ### Process Model
 
 **Main Process** (`src/main/main.ts`):
+
 - Window lifecycle management
 - SQLite storage via `sql.js` (`src/main/sqliteStore.ts`)
 - Cowork session runner (`src/main/libs/coworkRunner.ts`) - executes Claude Agent SDK
@@ -41,10 +43,12 @@ Uses strict process isolation with IPC communication.
 - Security: context isolation enabled, node integration disabled, sandbox enabled
 
 **Preload Script** (`src/main/preload.ts`):
+
 - Exposes `window.electron` API via `contextBridge`
 - Includes `cowork` namespace for session management and streaming events
 
 **Renderer Process** (React in `src/renderer/`):
+
 - All UI and business logic
 - Communicates with main process exclusively through IPC
 
@@ -97,11 +101,13 @@ SKILLs/                  # Custom skill definitions for cowork sessions
 The Cowork feature provides AI-assisted coding sessions:
 
 **Execution Modes** (`CoworkExecutionMode`):
+
 - `auto` - Automatically choose based on context
 - `local` - Run tools directly on the local machine
 - `sandbox` - Run tools in isolated VM environment
 
 **Stream Events** (IPC from main to renderer):
+
 - `message` - New message added to session
 - `messageUpdate` - Streaming content update for existing message
 - `permissionRequest` - Tool needs user approval
@@ -109,6 +115,7 @@ The Cowork feature provides AI-assisted coding sessions:
 - `error` - Session encountered an error
 
 **Key IPC Channels**:
+
 - `cowork:startSession`, `cowork:continueSession`, `cowork:stopSession`
 - `cowork:getSession`, `cowork:listSessions`, `cowork:deleteSession`
 - `cowork:respondToPermission`, `cowork:getConfig`, `cowork:setConfig`
@@ -127,6 +134,7 @@ The Cowork feature provides AI-assisted coding sessions:
 The Artifacts feature provides rich preview of code outputs similar to Claude's artifacts:
 
 **Supported Types**:
+
 - `html` - Full HTML pages rendered in sandboxed iframe
 - `svg` - SVG graphics with DOMPurify sanitization and zoom controls
 - `mermaid` - Flowcharts, sequence diagrams, class diagrams via Mermaid.js
@@ -134,15 +142,18 @@ The Artifacts feature provides rich preview of code outputs similar to Claude's 
 - `code` - Syntax highlighted code with line numbers
 
 **Detection Methods**:
+
 1. Explicit markers: ` ```artifact:html title="My Page" `
 2. Heuristic detection: Analyzes code block language and content patterns
 
 **UI Components**:
+
 - Right-side panel (300-800px resizable width)
 - Header with type icon, title, copy/download/close buttons
 - Artifact badges in messages to switch between artifacts
 
 **Security**:
+
 - HTML: `sandbox="allow-scripts"` with no `allow-same-origin`
 - SVG: DOMPurify removes all script content
 - React: Completely isolated iframe with no network access

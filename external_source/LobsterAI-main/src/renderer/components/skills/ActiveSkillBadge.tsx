@@ -1,9 +1,9 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { PuzzlePieceIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { RootState } from '../../store';
-import { toggleActiveSkill, clearActiveSkills } from '../../store/slices/skillSlice';
-import { i18nService } from '../../services/i18n';
+import { PuzzlePieceIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { i18nService } from "../../services/i18n";
+import { RootState } from "../../store";
+import { toggleActiveSkill, clearActiveSkills } from "../../store/slices/skillSlice";
 
 const ActiveSkillBadge: React.FC = () => {
   const dispatch = useDispatch();
@@ -11,7 +11,7 @@ const ActiveSkillBadge: React.FC = () => {
   const skills = useSelector((state: RootState) => state.skill.skills);
 
   const activeSkills = activeSkillIds
-    .map(id => skills.find(s => s.id === id))
+    .map((id) => skills.find((s) => s.id === id))
     .filter((s): s is NonNullable<typeof s> => s !== undefined);
 
   if (activeSkills.length === 0) return null;
@@ -28,7 +28,7 @@ const ActiveSkillBadge: React.FC = () => {
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      {activeSkills.map(skill => (
+      {activeSkills.map((skill) => (
         <div
           key={skill.id}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-claude-accent/10 border border-claude-accent/20"
@@ -41,7 +41,7 @@ const ActiveSkillBadge: React.FC = () => {
             type="button"
             onClick={(e) => handleRemoveSkill(e, skill.id)}
             className="p-0.5 rounded hover:bg-claude-accent/20 transition-colors"
-            title={i18nService.t('clearSkill')}
+            title={i18nService.t("clearSkill")}
           >
             <XMarkIcon className="h-2.5 w-2.5 text-claude-accent" />
           </button>
@@ -52,9 +52,9 @@ const ActiveSkillBadge: React.FC = () => {
           type="button"
           onClick={handleClearAll}
           className="text-xs text-claude-accent/70 hover:text-claude-accent transition-colors"
-          title={i18nService.t('clearAllSkills')}
+          title={i18nService.t("clearAllSkills")}
         >
-          {i18nService.t('clearAll')}
+          {i18nService.t("clearAll")}
         </button>
       )}
     </div>

@@ -101,8 +101,8 @@ Manual Docker Compose path:
 
 ```bash
 docker build -t marv:local -f Dockerfile .
-docker compose run --rm openclaw-cli onboard
-docker compose up -d openclaw-gateway
+docker compose run --rm marv-cli onboard
+docker compose up -d marv-gateway
 ```
 
 #### Option E: 24/7 VPS deployment
@@ -640,8 +640,8 @@ pnpm marv onboard --install-daemon
 
 ```bash
 docker build -t marv:local -f Dockerfile .
-docker compose run --rm openclaw-cli onboard
-docker compose up -d openclaw-gateway
+docker compose run --rm marv-cli onboard
+docker compose up -d marv-gateway
 ```
 
 #### 方案 E：24/7 VPS 常驻部署

@@ -3,7 +3,7 @@
  * Redux slice for IM gateway state management
  */
 
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
   IMGatewayConfig,
   IMGatewayStatus,
@@ -12,11 +12,8 @@ import type {
   TelegramConfig,
   DiscordConfig,
   IMSettings,
-} from '../../types/im';
-import {
-  DEFAULT_IM_CONFIG,
-  DEFAULT_IM_STATUS,
-} from '../../types/im';
+} from "../../types/im";
+import { DEFAULT_IM_CONFIG, DEFAULT_IM_STATUS } from "../../types/im";
 
 export interface IMState {
   config: IMGatewayConfig;
@@ -33,7 +30,7 @@ const initialState: IMState = {
 };
 
 const imSlice = createSlice({
-  name: 'im',
+  name: "im",
   initialState,
   reducers: {
     setConfig: (state, action: PayloadAction<IMGatewayConfig>) => {

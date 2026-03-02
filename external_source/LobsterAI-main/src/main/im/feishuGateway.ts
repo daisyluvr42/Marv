@@ -4,16 +4,10 @@
  * Adapted from im-gateway for Electron main process
  */
 
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
-import * as path from 'path';
-import {
-  FeishuConfig,
-  FeishuGatewayStatus,
-  FeishuMessageContext,
-  IMMessage,
-  DEFAULT_FEISHU_STATUS,
-} from './types';
+import { EventEmitter } from "events";
+import * as fs from "fs";
+import * as path from "path";
+import { parseMediaMarkers } from "./dingtalkMediaParser";
 import {
   uploadImageToFeishu,
   uploadFileToFeishu,
@@ -21,9 +15,15 @@ import {
   isFeishuImagePath,
   isFeishuAudioPath,
   resolveFeishuMediaPath,
-} from './feishuMedia';
-import { parseMediaMarkers } from './dingtalkMediaParser';
-import { stringifyAsciiJson } from './jsonEncoding';
+} from "./feishuMedia";
+import { stringifyAsciiJson } from "./jsonEncoding";
+import {
+  FeishuConfig,
+  FeishuGatewayStatus,
+  FeishuMessageContext,
+  IMMessage,
+  DEFAULT_FEISHU_STATUS,
+} from "./types";
 
 // Message deduplication cache
 const processedMessages = new Map<string, number>();
@@ -36,7 +36,7 @@ interface FeishuMessageEvent {
     root_id?: string;
     parent_id?: string;
     chat_id: string;
-    chat_type: 'p2p' | 'group';
+    chat_type: "p2p" | "group";
     message_type: string;
     content: string;
     mentions?: Array<{
@@ -60,11 +60,12 @@ export class FeishuGateway extends EventEmitter {
   private config: FeishuConfig | null = null;
   private status: FeishuGatewayStatus = { ...DEFAULT_FEISHU_STATUS };
   private botOpenId: string | null = null;
-  private onMessageCallback?: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>;
+  private onMessageCallback?: (
+    message: IMMessage,
+    replyFn: (text: string) => Promise<void>,
+  ) => Promise<void>;
   private lastChatId: string | null = null;
   private log: (...args: any[]) => void = () => {};
-
-  
 
   /**
    * Get current gateway status
@@ -85,9 +86,9 @@ export class FeishuGateway extends EventEmitter {
    */
   reconnectIfNeeded(): void {
     if (!this.wsClient && this.config) {
-      this.log('[Feishu Gateway] External reconnection trigger');
+      this.log("[Feishu Gateway] External reconnection trigger");
       this.start(this.config).catch((error) => {
-        console.error('[Feishu Gateway] Reconnection failed:', error.message);
+        console.error("[Feishu Gateway] Reconnection failed:", error.message);
       });
     }
   }
@@ -96,7 +97,7 @@ export class FeishuGateway extends EventEmitter {
    * Set message callback
    */
   setMessageCallback(
-    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>
+    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>,
   ): void {
     this.onMessageCallback = callback;
   }
@@ -106,26 +107,26 @@ export class FeishuGateway extends EventEmitter {
    */
   async start(config: FeishuConfig): Promise<void> {
     if (this.wsClient) {
-      throw new Error('Feishu gateway already running');
+      throw new Error("Feishu gateway already running");
     }
 
     if (!config.enabled) {
-      console.log('[Feishu Gateway] Feishu is disabled in config');
+      console.log("[Feishu Gateway] Feishu is disabled in config");
       return;
     }
 
     if (!config.appId || !config.appSecret) {
-      throw new Error('Feishu appId and appSecret are required');
+      throw new Error("Feishu appId and appSecret are required");
     }
 
     this.config = config;
     this.log = config.debug ? console.log.bind(console) : () => {};
 
-    this.log('[Feishu Gateway] Starting WebSocket gateway...');
+    this.log("[Feishu Gateway] Starting WebSocket gateway...");
 
     try {
       // Dynamically import @larksuiteoapi/node-sdk
-      const Lark = await import('@larksuiteoapi/node-sdk');
+      const Lark = await import("@larksuiteoapi/node-sdk");
 
       // Resolve domain
       const domain = this.resolveDomain(config.domain, Lark);
@@ -163,7 +164,7 @@ export class FeishuGateway extends EventEmitter {
 
       // Register event handlers
       eventDispatcher.register({
-        'im.message.receive_v1': async (data: any) => {
+        "im.message.receive_v1": async (data: any) => {
           try {
             const event = data as FeishuMessageEvent;
 
@@ -179,13 +180,13 @@ export class FeishuGateway extends EventEmitter {
             console.error(`[Feishu Gateway] Error handling message: ${err.message}`);
           }
         },
-        'im.message.message_read_v1': async () => {
+        "im.message.message_read_v1": async () => {
           // Ignore read receipts
         },
-        'im.chat.member.bot.added_v1': async (data: any) => {
+        "im.chat.member.bot.added_v1": async (data: any) => {
           this.log(`[Feishu Gateway] Bot added to chat ${data.chat_id}`);
         },
-        'im.chat.member.bot.deleted_v1': async (data: any) => {
+        "im.chat.member.bot.deleted_v1": async (data: any) => {
           this.log(`[Feishu Gateway] Bot removed from chat ${data.chat_id}`);
         },
       });
@@ -202,8 +203,8 @@ export class FeishuGateway extends EventEmitter {
         lastOutboundAt: null,
       };
 
-      this.log('[Feishu Gateway] WebSocket gateway started successfully');
-      this.emit('connected');
+      this.log("[Feishu Gateway] WebSocket gateway started successfully");
+      this.emit("connected");
     } catch (error: any) {
       this.wsClient = null;
       this.restClient = null;
@@ -215,7 +216,7 @@ export class FeishuGateway extends EventEmitter {
         lastInboundAt: null,
         lastOutboundAt: null,
       };
-      this.emit('error', error);
+      this.emit("error", error);
       throw error;
     }
   }
@@ -225,11 +226,11 @@ export class FeishuGateway extends EventEmitter {
    */
   async stop(): Promise<void> {
     if (!this.wsClient) {
-      this.log('[Feishu Gateway] Not running');
+      this.log("[Feishu Gateway] Not running");
       return;
     }
 
-    this.log('[Feishu Gateway] Stopping WebSocket gateway...');
+    this.log("[Feishu Gateway] Stopping WebSocket gateway...");
 
     this.wsClient = null;
     this.restClient = null;
@@ -243,17 +244,21 @@ export class FeishuGateway extends EventEmitter {
       lastOutboundAt: null,
     };
 
-    this.log('[Feishu Gateway] WebSocket gateway stopped');
-    this.emit('disconnected');
+    this.log("[Feishu Gateway] WebSocket gateway stopped");
+    this.emit("disconnected");
   }
 
   /**
    * Resolve domain to Lark SDK domain
    */
   private resolveDomain(domain: string, Lark: any): any {
-    if (domain === 'lark') {return Lark.Domain.Lark;}
-    if (domain === 'feishu') {return Lark.Domain.Feishu;}
-    return domain.replace(/\/+$/, '');
+    if (domain === "lark") {
+      return Lark.Domain.Lark;
+    }
+    if (domain === "feishu") {
+      return Lark.Domain.Feishu;
+    }
+    return domain.replace(/\/+$/, "");
   }
 
   /**
@@ -267,8 +272,8 @@ export class FeishuGateway extends EventEmitter {
   }> {
     try {
       const response: any = await this.restClient.request({
-        method: 'GET',
-        url: '/open-apis/bot/v3/info',
+        method: "GET",
+        url: "/open-apis/bot/v3/info",
       });
 
       if (response.code !== 0) {
@@ -315,10 +320,10 @@ export class FeishuGateway extends EventEmitter {
   private parseMessageContent(content: string, messageType: string): string {
     try {
       const parsed = JSON.parse(content);
-      if (messageType === 'text') {
-        return parsed.text || '';
+      if (messageType === "text") {
+        return parsed.text || "";
       }
-      if (messageType === 'post') {
+      if (messageType === "post") {
         return this.parsePostContent(content);
       }
       return content;
@@ -333,28 +338,28 @@ export class FeishuGateway extends EventEmitter {
   private parsePostContent(content: string): string {
     try {
       const parsed = JSON.parse(content);
-      const title = parsed.title || '';
+      const title = parsed.title || "";
       const contentBlocks = parsed.content || [];
-      let textContent = title ? `${title}\n\n` : '';
+      let textContent = title ? `${title}\n\n` : "";
 
       for (const paragraph of contentBlocks) {
         if (Array.isArray(paragraph)) {
           for (const element of paragraph) {
-            if (element.tag === 'text') {
-              textContent += element.text || '';
-            } else if (element.tag === 'a') {
-              textContent += element.text || element.href || '';
-            } else if (element.tag === 'at') {
-              textContent += `@${element.user_name || element.user_id || ''}`;
+            if (element.tag === "text") {
+              textContent += element.text || "";
+            } else if (element.tag === "a") {
+              textContent += element.text || element.href || "";
+            } else if (element.tag === "at") {
+              textContent += `@${element.user_name || element.user_id || ""}`;
             }
           }
-          textContent += '\n';
+          textContent += "\n";
         }
       }
 
-      return textContent.trim() || '[富文本消息]';
+      return textContent.trim() || "[富文本消息]";
     } catch {
-      return '[富文本消息]';
+      return "[富文本消息]";
     }
   }
 
@@ -363,20 +368,29 @@ export class FeishuGateway extends EventEmitter {
    */
   private checkBotMentioned(event: FeishuMessageEvent): boolean {
     const mentions = event.message.mentions ?? [];
-    if (mentions.length === 0) {return false;}
-    if (!this.botOpenId) {return mentions.length > 0;}
+    if (mentions.length === 0) {
+      return false;
+    }
+    if (!this.botOpenId) {
+      return mentions.length > 0;
+    }
     return mentions.some((m) => m.id.open_id === this.botOpenId);
   }
 
   /**
    * Strip bot mention from text
    */
-  private stripBotMention(text: string, mentions?: FeishuMessageEvent['message']['mentions']): string {
-    if (!mentions || mentions.length === 0) {return text;}
+  private stripBotMention(
+    text: string,
+    mentions?: FeishuMessageEvent["message"]["mentions"],
+  ): string {
+    if (!mentions || mentions.length === 0) {
+      return text;
+    }
     let result = text;
     for (const mention of mentions) {
-      result = result.replace(new RegExp(`@${mention.name}\\s*`, 'g'), '').trim();
-      result = result.replace(new RegExp(mention.key, 'g'), '').trim();
+      result = result.replace(new RegExp(`@${mention.name}\\s*`, "g"), "").trim();
+      result = result.replace(new RegExp(mention.key, "g"), "").trim();
     }
     return result;
   }
@@ -392,8 +406,8 @@ export class FeishuGateway extends EventEmitter {
     return {
       chatId: event.message.chat_id,
       messageId: event.message.message_id,
-      senderId: event.sender.sender_id.user_id || event.sender.sender_id.open_id || '',
-      senderOpenId: event.sender.sender_id.open_id || '',
+      senderId: event.sender.sender_id.user_id || event.sender.sender_id.open_id || "",
+      senderOpenId: event.sender.sender_id.open_id || "",
       chatType: event.message.chat_type,
       mentionedBot,
       rootId: event.message.root_id,
@@ -406,23 +420,31 @@ export class FeishuGateway extends EventEmitter {
   /**
    * Resolve receive_id_type
    */
-  private resolveReceiveIdType(target: string): 'open_id' | 'user_id' | 'chat_id' {
-    if (target.startsWith('ou_')) {return 'open_id';}
-    if (target.startsWith('oc_')) {return 'chat_id';}
-    return 'chat_id';
+  private resolveReceiveIdType(target: string): "open_id" | "user_id" | "chat_id" {
+    if (target.startsWith("ou_")) {
+      return "open_id";
+    }
+    if (target.startsWith("oc_")) {
+      return "chat_id";
+    }
+    return "chat_id";
   }
 
   /**
    * Send text message
    */
-  private async sendTextMessage(to: string, text: string, replyToMessageId?: string): Promise<void> {
+  private async sendTextMessage(
+    to: string,
+    text: string,
+    replyToMessageId?: string,
+  ): Promise<void> {
     const receiveIdType = this.resolveReceiveIdType(to);
     const content = stringifyAsciiJson({ text });
 
     if (replyToMessageId) {
       const response = await this.restClient.im.message.reply({
         path: { message_id: replyToMessageId },
-        data: { content, msg_type: 'text' },
+        data: { content, msg_type: "text" },
       });
 
       if (response.code !== 0) {
@@ -433,7 +455,7 @@ export class FeishuGateway extends EventEmitter {
 
     const response = await this.restClient.im.message.create({
       params: { receive_id_type: receiveIdType },
-      data: { receive_id: to, content, msg_type: 'text' },
+      data: { receive_id: to, content, msg_type: "text" },
     });
 
     if (response.code !== 0) {
@@ -447,14 +469,18 @@ export class FeishuGateway extends EventEmitter {
   private buildMarkdownCard(text: string): Record<string, unknown> {
     return {
       config: { wide_screen_mode: true },
-      elements: [{ tag: 'markdown', content: text }],
+      elements: [{ tag: "markdown", content: text }],
     };
   }
 
   /**
    * Send card message
    */
-  private async sendCardMessage(to: string, text: string, replyToMessageId?: string): Promise<void> {
+  private async sendCardMessage(
+    to: string,
+    text: string,
+    replyToMessageId?: string,
+  ): Promise<void> {
     const receiveIdType = this.resolveReceiveIdType(to);
     const card = this.buildMarkdownCard(text);
     const content = stringifyAsciiJson(card);
@@ -462,7 +488,7 @@ export class FeishuGateway extends EventEmitter {
     if (replyToMessageId) {
       const response = await this.restClient.im.message.reply({
         path: { message_id: replyToMessageId },
-        data: { content, msg_type: 'interactive' },
+        data: { content, msg_type: "interactive" },
       });
 
       if (response.code !== 0) {
@@ -473,7 +499,7 @@ export class FeishuGateway extends EventEmitter {
 
     const response = await this.restClient.im.message.create({
       params: { receive_id_type: receiveIdType },
-      data: { receive_id: to, content, msg_type: 'interactive' },
+      data: { receive_id: to, content, msg_type: "interactive" },
     });
 
     if (response.code !== 0) {
@@ -485,16 +511,19 @@ export class FeishuGateway extends EventEmitter {
    * Send message (auto-select format based on config)
    */
   private async sendMessage(to: string, text: string, replyToMessageId?: string): Promise<void> {
-    const renderMode = this.config?.renderMode || 'text';
+    const renderMode = this.config?.renderMode || "text";
 
-    this.log(`[Feishu Gateway] 发送文本消息:`, JSON.stringify({
-      to,
-      renderMode,
-      replyToMessageId,
-      textLength: text.length,
-    }));
+    this.log(
+      `[Feishu Gateway] 发送文本消息:`,
+      JSON.stringify({
+        to,
+        renderMode,
+        replyToMessageId,
+        textLength: text.length,
+      }),
+    );
 
-    if (renderMode === 'card') {
+    if (renderMode === "card") {
       await this.sendCardMessage(to, text, replyToMessageId);
     } else {
       await this.sendTextMessage(to, text, replyToMessageId);
@@ -504,21 +533,28 @@ export class FeishuGateway extends EventEmitter {
   /**
    * Send image message
    */
-  private async sendImageMessage(to: string, imageKey: string, replyToMessageId?: string): Promise<void> {
+  private async sendImageMessage(
+    to: string,
+    imageKey: string,
+    replyToMessageId?: string,
+  ): Promise<void> {
     const receiveIdType = this.resolveReceiveIdType(to);
     const content = stringifyAsciiJson({ image_key: imageKey });
 
-    this.log(`[Feishu Gateway] 发送图片消息:`, JSON.stringify({
-      to,
-      imageKey,
-      receiveIdType,
-      replyToMessageId,
-    }));
+    this.log(
+      `[Feishu Gateway] 发送图片消息:`,
+      JSON.stringify({
+        to,
+        imageKey,
+        receiveIdType,
+        replyToMessageId,
+      }),
+    );
 
     if (replyToMessageId) {
       const response = await this.restClient.im.message.reply({
         path: { message_id: replyToMessageId },
-        data: { content, msg_type: 'image' },
+        data: { content, msg_type: "image" },
       });
       if (response.code !== 0) {
         throw new Error(`Feishu image reply failed: ${response.msg || `code ${response.code}`}`);
@@ -528,7 +564,7 @@ export class FeishuGateway extends EventEmitter {
 
     const response = await this.restClient.im.message.create({
       params: { receive_id_type: receiveIdType },
-      data: { receive_id: to, content, msg_type: 'image' },
+      data: { receive_id: to, content, msg_type: "image" },
     });
     if (response.code !== 0) {
       throw new Error(`Feishu image send failed: ${response.msg || `code ${response.code}`}`);
@@ -538,21 +574,28 @@ export class FeishuGateway extends EventEmitter {
   /**
    * Send file message
    */
-  private async sendFileMessage(to: string, fileKey: string, replyToMessageId?: string): Promise<void> {
+  private async sendFileMessage(
+    to: string,
+    fileKey: string,
+    replyToMessageId?: string,
+  ): Promise<void> {
     const receiveIdType = this.resolveReceiveIdType(to);
     const content = stringifyAsciiJson({ file_key: fileKey });
 
-    this.log(`[Feishu Gateway] 发送文件消息:`, JSON.stringify({
-      to,
-      fileKey,
-      receiveIdType,
-      replyToMessageId,
-    }));
+    this.log(
+      `[Feishu Gateway] 发送文件消息:`,
+      JSON.stringify({
+        to,
+        fileKey,
+        receiveIdType,
+        replyToMessageId,
+      }),
+    );
 
     if (replyToMessageId) {
       const response = await this.restClient.im.message.reply({
         path: { message_id: replyToMessageId },
-        data: { content, msg_type: 'file' },
+        data: { content, msg_type: "file" },
       });
       if (response.code !== 0) {
         throw new Error(`Feishu file reply failed: ${response.msg || `code ${response.code}`}`);
@@ -562,7 +605,7 @@ export class FeishuGateway extends EventEmitter {
 
     const response = await this.restClient.im.message.create({
       params: { receive_id_type: receiveIdType },
-      data: { receive_id: to, content, msg_type: 'file' },
+      data: { receive_id: to, content, msg_type: "file" },
     });
     if (response.code !== 0) {
       throw new Error(`Feishu file send failed: ${response.msg || `code ${response.code}`}`);
@@ -572,25 +615,33 @@ export class FeishuGateway extends EventEmitter {
   /**
    * Send audio message
    */
-  private async sendAudioMessage(to: string, fileKey: string, duration?: number, replyToMessageId?: string): Promise<void> {
+  private async sendAudioMessage(
+    to: string,
+    fileKey: string,
+    duration?: number,
+    replyToMessageId?: string,
+  ): Promise<void> {
     const receiveIdType = this.resolveReceiveIdType(to);
     const content = stringifyAsciiJson({
       file_key: fileKey,
-      ...(duration !== undefined && { duration: Math.floor(duration).toString() })
+      ...(duration !== undefined && { duration: Math.floor(duration).toString() }),
     });
 
-    this.log(`[Feishu Gateway] 发送音频消息:`, JSON.stringify({
-      to,
-      fileKey,
-      duration,
-      receiveIdType,
-      replyToMessageId,
-    }));
+    this.log(
+      `[Feishu Gateway] 发送音频消息:`,
+      JSON.stringify({
+        to,
+        fileKey,
+        duration,
+        receiveIdType,
+        replyToMessageId,
+      }),
+    );
 
     if (replyToMessageId) {
       const response = await this.restClient.im.message.reply({
         path: { message_id: replyToMessageId },
-        data: { content, msg_type: 'audio' },
+        data: { content, msg_type: "audio" },
       });
       if (response.code !== 0) {
         throw new Error(`Feishu audio reply failed: ${response.msg || `code ${response.code}`}`);
@@ -600,7 +651,7 @@ export class FeishuGateway extends EventEmitter {
 
     const response = await this.restClient.im.message.create({
       params: { receive_id_type: receiveIdType },
-      data: { receive_id: to, content, msg_type: 'audio' },
+      data: { receive_id: to, content, msg_type: "audio" },
     });
     if (response.code !== 0) {
       throw new Error(`Feishu audio send failed: ${response.msg || `code ${response.code}`}`);
@@ -614,9 +665,9 @@ export class FeishuGateway extends EventEmitter {
   private async uploadAndSendMedia(
     to: string,
     filePath: string,
-    mediaType: 'image' | 'video' | 'audio' | 'file',
+    mediaType: "image" | "video" | "audio" | "file",
     replyToMessageId?: string,
-    customFileName?: string
+    customFileName?: string,
   ): Promise<void> {
     // Resolve path
     const absPath = resolveFeishuMediaPath(filePath);
@@ -632,17 +683,20 @@ export class FeishuGateway extends EventEmitter {
     const fileName = customFileName ? `${customFileName}${ext}` : originalFileName;
     const fileStats = fs.statSync(absPath);
 
-    this.log(`[Feishu Gateway] 上传媒体:`, JSON.stringify({
-      absPath,
-      mediaType,
-      originalFileName,
-      customFileName,
-      fileName,
-      fileSize: fileStats.size,
-      fileSizeKB: (fileStats.size / 1024).toFixed(1),
-    }));
+    this.log(
+      `[Feishu Gateway] 上传媒体:`,
+      JSON.stringify({
+        absPath,
+        mediaType,
+        originalFileName,
+        customFileName,
+        fileName,
+        fileSize: fileStats.size,
+        fileSizeKB: (fileStats.size / 1024).toFixed(1),
+      }),
+    );
 
-    if (mediaType === 'image' || isFeishuImagePath(absPath)) {
+    if (mediaType === "image" || isFeishuImagePath(absPath)) {
       // Upload image
       this.log(`[Feishu Gateway] 开始上传图片: ${fileName}`);
       const result = await uploadImageToFeishu(this.restClient, absPath);
@@ -652,10 +706,10 @@ export class FeishuGateway extends EventEmitter {
         return;
       }
       await this.sendImageMessage(to, result.imageKey, replyToMessageId);
-    } else if (mediaType === 'audio' || isFeishuAudioPath(absPath)) {
+    } else if (mediaType === "audio" || isFeishuAudioPath(absPath)) {
       // Upload audio
       this.log(`[Feishu Gateway] 开始上传音频: ${fileName}`);
-      const result = await uploadFileToFeishu(this.restClient, absPath, fileName, 'opus');
+      const result = await uploadFileToFeishu(this.restClient, absPath, fileName, "opus");
       this.log(`[Feishu Gateway] 音频上传结果:`, JSON.stringify(result));
       if (!result.success || !result.fileKey) {
         console.warn(`[Feishu Gateway] Audio upload failed: ${result.error}`);
@@ -684,13 +738,16 @@ export class FeishuGateway extends EventEmitter {
     // Parse media markers from text
     const markers = parseMediaMarkers(text);
 
-    this.log(`[Feishu Gateway] 解析媒体标记:`, JSON.stringify({
-      to,
-      replyToMessageId,
-      textLength: text.length,
-      markersCount: markers.length,
-      markers: markers.map(m => ({ type: m.type, path: m.path, name: m.name })),
-    }));
+    this.log(
+      `[Feishu Gateway] 解析媒体标记:`,
+      JSON.stringify({
+        to,
+        replyToMessageId,
+        textLength: text.length,
+        markersCount: markers.length,
+        markers: markers.map((m) => ({ type: m.type, path: m.path, name: m.name })),
+      }),
+    );
 
     if (markers.length === 0) {
       // No media, send as text/card
@@ -718,46 +775,60 @@ export class FeishuGateway extends EventEmitter {
    */
   private async handleInboundMessage(ctx: FeishuMessageContext): Promise<void> {
     // In group chat, only respond when bot is mentioned
-    if (ctx.chatType === 'group' && !ctx.mentionedBot) {
-      this.log('[Feishu Gateway] Ignoring group message without bot mention');
+    if (ctx.chatType === "group" && !ctx.mentionedBot) {
+      this.log("[Feishu Gateway] Ignoring group message without bot mention");
       return;
     }
 
     // Create IMMessage
     const message: IMMessage = {
-      platform: 'feishu',
+      platform: "feishu",
       messageId: ctx.messageId,
       conversationId: ctx.chatId,
       senderId: ctx.senderId,
       content: ctx.content,
-      chatType: ctx.chatType === 'p2p' ? 'direct' : 'group',
+      chatType: ctx.chatType === "p2p" ? "direct" : "group",
       timestamp: Date.now(),
     };
     this.status.lastInboundAt = Date.now();
 
     // 打印完整的输入消息日志
-    this.log(`[Feishu] 收到消息:`, JSON.stringify({
-      sender: ctx.senderOpenId,
-      senderId: ctx.senderId,
-      chatId: ctx.chatId,
-      chatType: ctx.chatType === 'p2p' ? 'direct' : 'group',
-      messageId: ctx.messageId,
-      contentType: ctx.contentType,
-      content: ctx.content,
-      mentionedBot: ctx.mentionedBot,
-      rootId: ctx.rootId,
-      parentId: ctx.parentId,
-    }, null, 2));
+    this.log(
+      `[Feishu] 收到消息:`,
+      JSON.stringify(
+        {
+          sender: ctx.senderOpenId,
+          senderId: ctx.senderId,
+          chatId: ctx.chatId,
+          chatType: ctx.chatType === "p2p" ? "direct" : "group",
+          messageId: ctx.messageId,
+          contentType: ctx.contentType,
+          content: ctx.content,
+          mentionedBot: ctx.mentionedBot,
+          rootId: ctx.rootId,
+          parentId: ctx.parentId,
+        },
+        null,
+        2,
+      ),
+    );
 
     // Create reply function with media support
     const replyFn = async (text: string) => {
       // 打印完整的输出消息日志
-      this.log(`[Feishu] 发送回复:`, JSON.stringify({
-        conversationId: ctx.chatId,
-        replyToMessageId: ctx.messageId,
-        replyLength: text.length,
-        reply: text,
-      }, null, 2));
+      this.log(
+        `[Feishu] 发送回复:`,
+        JSON.stringify(
+          {
+            conversationId: ctx.chatId,
+            replyToMessageId: ctx.messageId,
+            replyLength: text.length,
+            reply: text,
+          },
+          null,
+          2,
+        ),
+      );
 
       await this.sendWithMedia(ctx.chatId, text, ctx.messageId);
       this.status.lastOutboundAt = Date.now();
@@ -767,7 +838,7 @@ export class FeishuGateway extends EventEmitter {
     this.lastChatId = ctx.chatId;
 
     // Emit message event
-    this.emit('message', message);
+    this.emit("message", message);
 
     // Call message callback if set
     if (this.onMessageCallback) {
@@ -785,7 +856,7 @@ export class FeishuGateway extends EventEmitter {
    */
   async sendNotification(text: string): Promise<void> {
     if (!this.lastChatId || !this.restClient) {
-      throw new Error('No conversation available for notification');
+      throw new Error("No conversation available for notification");
     }
     await this.sendMessage(this.lastChatId, text);
     this.status.lastOutboundAt = Date.now();

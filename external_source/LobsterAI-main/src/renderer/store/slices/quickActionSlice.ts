@@ -1,5 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { LocalizedQuickAction } from '../../types/quickAction';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { LocalizedQuickAction } from "../../types/quickAction";
 
 interface QuickActionState {
   /** 快捷操作列表（已本地化） */
@@ -20,7 +20,7 @@ const initialState: QuickActionState = {
 };
 
 const quickActionSlice = createSlice({
-  name: 'quickAction',
+  name: "quickAction",
   initialState,
   reducers: {
     /** 设置快捷操作列表 */
@@ -49,12 +49,7 @@ const quickActionSlice = createSlice({
   },
 });
 
-export const {
-  setActions,
-  selectAction,
-  selectPrompt,
-  setLoading,
-  clearSelection,
-} = quickActionSlice.actions;
+export const { setActions, selectAction, selectPrompt, setLoading, clearSelection } =
+  quickActionSlice.actions;
 
 export default quickActionSlice.reducer;

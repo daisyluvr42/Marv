@@ -30,7 +30,7 @@ x-i18n:
 
 ## 配置示例（WhatsApp）
 
-在 `~/.openclaw/marv.json` 中添加 `groupChat` 块，以便在 WhatsApp 剥离文本正文中的可视 `@` 时，显示名称提及仍能正常工作：
+在 `~/.marv/marv.json` 中添加 `groupChat` 块，以便在 WhatsApp 剥离文本正文中的可视 `@` 时，显示名称提及仍能正常工作：
 
 ```json5
 {
@@ -47,7 +47,7 @@ x-i18n:
         id: "main",
         groupChat: {
           historyLimit: 50,
-          mentionPatterns: ["@?openclaw", "\\+?15555550123"],
+          mentionPatterns: ["@?marv", "\\+?15555550123"],
         },
       },
     ],
@@ -87,5 +87,5 @@ x-i18n:
 
 - 群组有意跳过心跳以避免嘈杂的广播。
 - 回声抑制使用组合的批次字符串；如果你发送两次相同的文本但没有提及，只有第一次会得到响应。
-- 会话存储条目将在会话存储中显示为 `agent:<agentId>:whatsapp:group:<jid>`（默认为 `~/.openclaw/agents/<agentId>/sessions/sessions.json`）；缺失条目只是意味着该群组尚未触发运行。
+- 会话存储条目将在会话存储中显示为 `agent:<agentId>:whatsapp:group:<jid>`（默认为 `~/.marv/agents/<agentId>/sessions/sessions.json`）；缺失条目只是意味着该群组尚未触发运行。
 - 群组中的输入指示器遵循 `agents.defaults.typingMode`（默认：未被提及时为 `message`）。

@@ -99,7 +99,7 @@ Pomerium config snippet:
 ```yaml
 routes:
   - from: https://marv.example.com
-    to: http://openclaw-gateway:18789
+    to: http://marv-gateway:18789
     policy:
       - allow:
           or:

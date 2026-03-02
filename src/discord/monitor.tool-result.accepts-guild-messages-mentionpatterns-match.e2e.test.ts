@@ -116,10 +116,10 @@ function createDefaultThreadConfig(): LoadedConfig {
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-5",
-        workspace: "/tmp/openclaw",
+        workspace: "/tmp/marv",
       },
     },
-    session: { store: "/tmp/openclaw-sessions.json" },
+    session: { store: "/tmp/marv-sessions.json" },
     messages: { responsePrefix: "PFX" },
     channels: {
       discord: {
@@ -206,10 +206,10 @@ describe("discord tool result dispatch", () => {
         agents: {
           defaults: {
             model: "anthropic/claude-opus-4-5",
-            workspace: "/tmp/openclaw",
+            workspace: "/tmp/marv",
           },
         },
-        session: { store: "/tmp/openclaw-sessions.json" },
+        session: { store: "/tmp/marv-sessions.json" },
         channels: {
           discord: {
             dm: { enabled: true, policy: "open" },
@@ -219,7 +219,7 @@ describe("discord tool result dispatch", () => {
         },
         messages: {
           responsePrefix: "PFX",
-          groupChat: { mentionPatterns: ["\\bopenclaw\\b"] },
+          groupChat: { mentionPatterns: ["\\bmarv\\b"] },
         },
       } as ReturnType<typeof import("../config/config.js").loadConfig>;
 
@@ -236,7 +236,7 @@ describe("discord tool result dispatch", () => {
         {
           message: {
             id: "m2",
-            content: "openclaw: hello",
+            content: "marv: hello",
             channelId: "c1",
             timestamp: new Date().toISOString(),
             type: MessageType.Default,
@@ -271,10 +271,10 @@ describe("discord tool result dispatch", () => {
           defaults: {
             model: "anthropic/claude-opus-4-5",
             humanDelay: { mode: "off" },
-            workspace: "/tmp/openclaw",
+            workspace: "/tmp/marv",
           },
         },
-        session: { store: "/tmp/openclaw-sessions.json" },
+        session: { store: "/tmp/marv-sessions.json" },
         channels: {
           discord: { dm: { enabled: true, policy: "open" } },
         },
@@ -320,10 +320,10 @@ describe("discord tool result dispatch", () => {
       agents: {
         defaults: {
           model: "anthropic/claude-opus-4-5",
-          workspace: "/tmp/openclaw",
+          workspace: "/tmp/marv",
         },
       },
-      session: { store: "/tmp/openclaw-sessions.json" },
+      session: { store: "/tmp/marv-sessions.json" },
       channels: {
         discord: {
           dm: { enabled: true, policy: "open" },
@@ -450,8 +450,8 @@ describe("discord tool result dispatch", () => {
     }>();
 
     const cfg = {
-      agent: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" },
-      session: { store: "/tmp/openclaw-sessions.json" },
+      agent: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/marv" },
+      session: { store: "/tmp/marv-sessions.json" },
       channels: {
         discord: {
           dm: { enabled: true, policy: "open" },

@@ -7,14 +7,14 @@
 
 import type { WorkspaceBootstrapFile } from "../agents/workspace.js";
 import type { CliDeps } from "../cli/deps.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 
 export type InternalHookEventType = "command" | "session" | "agent" | "gateway" | "message";
 
 export type AgentBootstrapHookContext = {
   workspaceDir: string;
   bootstrapFiles: WorkspaceBootstrapFile[];
-  cfg?: OpenClawConfig;
+  cfg?: MarvConfig;
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
@@ -27,7 +27,7 @@ export type AgentBootstrapHookEvent = InternalHookEvent & {
 };
 
 export type GatewayStartupHookContext = {
-  cfg?: OpenClawConfig;
+  cfg?: MarvConfig;
   deps?: CliDeps;
   workspaceDir?: string;
 };

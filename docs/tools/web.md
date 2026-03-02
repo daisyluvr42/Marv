@@ -81,11 +81,11 @@ current limits and pricing.
 ### Where to set the key (recommended)
 
 **Recommended:** run `marv configure --section web`. It stores the key in
-`~/.openclaw/marv.json` under `tools.web.search.apiKey`.
+`~/.marv/marv.json` under `tools.web.search.apiKey`.
 
 **Environment alternative:** set `BRAVE_API_KEY` in the Gateway process
-environment. For a gateway install, put it in `~/.openclaw/.env` (or your
-service environment). See [Env vars](/help/faq#how-does-openclaw-load-environment-variables).
+environment. For a gateway install, put it in `~/.marv/.env` (or your
+service environment). See [Env vars](/help/faq#how-does-marv-load-environment-variables).
 
 ## Using Perplexity (direct or via OpenRouter)
 
@@ -123,7 +123,7 @@ crypto/prepaid).
 ```
 
 **Environment alternative:** set `OPENROUTER_API_KEY` or `PERPLEXITY_API_KEY` in the Gateway
-environment. For a gateway install, put it in `~/.openclaw/.env`.
+environment. For a gateway install, put it in `~/.marv/.env`.
 
 If no base URL is set, Marv chooses a default based on the API key source:
 

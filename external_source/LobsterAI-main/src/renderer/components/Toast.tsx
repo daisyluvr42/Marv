@@ -1,5 +1,5 @@
-import React from 'react';
-import { XMarkIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import React from "react";
 
 interface ToastProps {
   message: string;
@@ -14,9 +14,7 @@ const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
           <div className="shrink-0 rounded-full bg-claude-accent/10 p-2.5">
             <InformationCircleIcon className="h-5 w-5 text-claude-accent" />
           </div>
-          <div className="flex-1 text-base font-semibold leading-none">
-            {message}
-          </div>
+          <div className="flex-1 text-base font-semibold leading-none">{message}</div>
           {onClose && (
             <button
               onClick={onClose}

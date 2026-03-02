@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# ClawDock - Docker helpers for OpenClaw
-# Inspired by Simon Willison's "Running OpenClaw in Docker"
-# https://til.simonwillison.net/llms/openclaw-docker
+# ClawDock - Docker helpers for Marv
+# Inspired by Simon Willison's "Running Marv in Docker"
+# https://til.simonwillison.net/llms/marv-docker
 #
 # Installation:
-#   mkdir -p ~/.clawdock && curl -sL https://raw.githubusercontent.com/openclaw/openclaw/main/scripts/shell-helpers/clawdock-helpers.sh -o ~/.clawdock/clawdock-helpers.sh
+#   mkdir -p ~/.clawdock && curl -sL https://raw.githubusercontent.com/marv/marv/main/scripts/shell-helpers/clawdock-helpers.sh -o ~/.clawdock/clawdock-helpers.sh
 #   echo 'source ~/.clawdock/clawdock-helpers.sh' >> ~/.zshrc
 #
 # Usage:
@@ -38,14 +38,14 @@ _cmd() {
 # =============================================================================
 CLAWDOCK_CONFIG="${HOME}/.clawdock/config"
 
-# Common paths to check for OpenClaw
+# Common paths to check for Marv
 CLAWDOCK_COMMON_PATHS=(
-  "${HOME}/openclaw"
-  "${HOME}/workspace/openclaw"
-  "${HOME}/projects/openclaw"
-  "${HOME}/dev/openclaw"
-  "${HOME}/code/openclaw"
-  "${HOME}/src/openclaw"
+  "${HOME}/marv"
+  "${HOME}/workspace/marv"
+  "${HOME}/projects/marv"
+  "${HOME}/dev/marv"
+  "${HOME}/code/marv"
+  "${HOME}/src/marv"
 )
 
 _clawdock_filter_warnings() {
@@ -97,28 +97,28 @@ _clawdock_ensure_dir() {
 
   if [[ -n "$found_path" ]]; then
     echo ""
-    echo "🤖 Found OpenClaw at: $found_path"
+    echo "🤖 Found Marv at: $found_path"
     echo -n "   Use this location? [Y/n] "
     read -r response
     if [[ "$response" =~ ^[Nn] ]]; then
       echo ""
       echo "Set CLAWDOCK_DIR manually:"
-      echo "  export CLAWDOCK_DIR=/path/to/openclaw"
+      echo "  export CLAWDOCK_DIR=/path/to/marv"
       return 1
     fi
     CLAWDOCK_DIR="$found_path"
   else
     echo ""
-    echo "❌ OpenClaw not found in common locations."
+    echo "❌ Marv not found in common locations."
     echo ""
     echo "Clone it first:"
     echo ""
-    echo "  git clone https://github.com/openclaw/openclaw.git ~/openclaw"
-    echo "  cd ~/openclaw && ./docker-setup.sh"
+    echo "  git clone https://github.com/daisyluvr42/Marv.git ~/marv"
+    echo "  cd ~/marv && ./docker-setup.sh"
     echo ""
     echo "Or set CLAWDOCK_DIR if it's elsewhere:"
     echo ""
-    echo "  export CLAWDOCK_DIR=/path/to/openclaw"
+    echo "  export CLAWDOCK_DIR=/path/to/marv"
     echo ""
     return 1
   fi
@@ -145,7 +145,7 @@ _clawdock_read_env_token() {
     return 1
   fi
   local raw
-  raw=$(sed -n 's/^OPENCLAW_GATEWAY_TOKEN=//p' "${CLAWDOCK_DIR}/.env" | head -n 1)
+  raw=$(sed -n 's/^MARV_GATEWAY_TOKEN=//p' "${CLAWDOCK_DIR}/.env" | head -n 1)
   if [[ -z "$raw" ]]; then
     return 1
   fi
@@ -154,7 +154,7 @@ _clawdock_read_env_token() {
 
 # Basic Operations
 clawdock-start() {
-  _clawdock_compose up -d openclaw-gateway
+  _clawdock_compose up -d marv-gateway
 }
 
 clawdock-stop() {
@@ -162,11 +162,11 @@ clawdock-stop() {
 }
 
 clawdock-restart() {
-  _clawdock_compose restart openclaw-gateway
+  _clawdock_compose restart marv-gateway
 }
 
 clawdock-logs() {
-  _clawdock_compose logs -f openclaw-gateway
+  _clawdock_compose logs -f marv-gateway
 }
 
 clawdock-status() {
@@ -180,30 +180,30 @@ clawdock-cd() {
 }
 
 clawdock-config() {
-  cd ~/.openclaw
+  cd ~/.marv
 }
 
 clawdock-workspace() {
-  cd ~/.openclaw/workspace
+  cd ~/.marv/workspace
 }
 
 # Container Access
 clawdock-shell() {
-  _clawdock_compose exec openclaw-gateway \
-    bash -c 'echo "alias openclaw=\"./openclaw.mjs\"" > /tmp/.bashrc_openclaw && bash --rcfile /tmp/.bashrc_openclaw'
+  _clawdock_compose exec marv-gateway \
+    bash -c 'echo "alias marv=\"./marv.mjs\"" > /tmp/.bashrc_marv && bash --rcfile /tmp/.bashrc_marv'
 }
 
 clawdock-exec() {
-  _clawdock_compose exec openclaw-gateway "$@"
+  _clawdock_compose exec marv-gateway "$@"
 }
 
 clawdock-cli() {
-  _clawdock_compose run --rm openclaw-cli "$@"
+  _clawdock_compose run --rm marv-cli "$@"
 }
 
 # Maintenance
 clawdock-rebuild() {
-  _clawdock_compose build openclaw-gateway
+  _clawdock_compose build marv-gateway
 }
 
 clawdock-clean() {
@@ -220,7 +220,7 @@ clawdock-health() {
     echo "   Check: ${CLAWDOCK_DIR}/.env"
     return 1
   fi
-  _clawdock_compose exec -e "OPENCLAW_GATEWAY_TOKEN=$token" openclaw-gateway \
+  _clawdock_compose exec -e "MARV_GATEWAY_TOKEN=$token" marv-gateway \
     node dist/index.js health
 }
 
@@ -244,13 +244,13 @@ clawdock-fix-token() {
 
   echo "📝 Setting token: ${token:0:20}..."
 
-  _clawdock_compose exec -e "TOKEN=$token" openclaw-gateway \
-    bash -c './openclaw.mjs config set gateway.remote.token "$TOKEN" && ./openclaw.mjs config set gateway.auth.token "$TOKEN"' 2>&1 | _clawdock_filter_warnings
+  _clawdock_compose exec -e "TOKEN=$token" marv-gateway \
+    bash -c './marv.mjs config set gateway.remote.token "$TOKEN" && ./marv.mjs config set gateway.auth.token "$TOKEN"' 2>&1 | _clawdock_filter_warnings
 
   echo "🔍 Verifying token was saved..."
   local saved_token
-  saved_token=$(_clawdock_compose exec openclaw-gateway \
-    bash -c "./openclaw.mjs config get gateway.remote.token 2>/dev/null" 2>&1 | _clawdock_filter_warnings | tr -d '\r\n' | head -c 64)
+  saved_token=$(_clawdock_compose exec marv-gateway \
+    bash -c "./marv.mjs config get gateway.remote.token 2>/dev/null" 2>&1 | _clawdock_filter_warnings | tr -d '\r\n' | head -c 64)
 
   if [[ "$saved_token" == "$token" ]]; then
     echo "✅ Token saved correctly!"
@@ -261,7 +261,7 @@ clawdock-fix-token() {
   fi
 
   echo "🔄 Restarting gateway..."
-  _clawdock_compose restart openclaw-gateway 2>&1 | _clawdock_filter_warnings
+  _clawdock_compose restart marv-gateway 2>&1 | _clawdock_filter_warnings
 
   echo "⏳ Waiting for gateway to start..."
   sleep 5
@@ -276,7 +276,7 @@ clawdock-dashboard() {
 
   echo "🤖 Getting dashboard URL..."
   local output exit_status url
-  output=$(_clawdock_compose run --rm openclaw-cli dashboard --no-open 2>&1)
+  output=$(_clawdock_compose run --rm marv-cli dashboard --no-open 2>&1)
   exit_status=$?
   url=$(printf "%s\n" "$output" | _clawdock_filter_warnings | grep -o 'http[s]\?://[^[:space:]]*' | head -n 1)
   if [[ $exit_status -ne 0 ]]; then
@@ -305,7 +305,7 @@ clawdock-devices() {
 
   echo "🔍 Checking device pairings..."
   local output exit_status
-  output=$(_clawdock_compose exec openclaw-gateway node dist/index.js devices list 2>&1)
+  output=$(_clawdock_compose exec marv-gateway node dist/index.js devices list 2>&1)
   exit_status=$?
   printf "%s\n" "$output" | _clawdock_filter_warnings
   if [ $exit_status -ne 0 ]; then
@@ -314,7 +314,7 @@ clawdock-devices() {
     echo -e "   1. Verify token is set: $(_cmd clawdock-token)"
     echo "   2. Try manual config inside container:"
     echo -e "      $(_cmd clawdock-shell)"
-    echo -e "      $(_cmd 'openclaw config get gateway.remote.token')"
+    echo -e "      $(_cmd 'marv config get gateway.remote.token')"
     return 1
   fi
 
@@ -341,7 +341,7 @@ clawdock-approve() {
   fi
 
   echo "✅ Approving device: $1"
-  _clawdock_compose exec openclaw-gateway \
+  _clawdock_compose exec marv-gateway \
     node dist/index.js devices approve "$1" 2>&1 | _clawdock_filter_warnings
 
   echo ""
@@ -350,7 +350,7 @@ clawdock-approve() {
 
 # Show all available clawdock helper commands
 clawdock-help() {
-  echo -e "\n${_CLR_BOLD}${_CLR_CYAN}🤖 ClawDock - Docker Helpers for OpenClaw${_CLR_RESET}\n"
+  echo -e "\n${_CLR_BOLD}${_CLR_CYAN}🤖 ClawDock - Docker Helpers for Marv${_CLR_RESET}\n"
 
   echo -e "${_CLR_BOLD}${_CLR_MAGENTA}⚡ Basic Operations${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-start)       ${_CLR_DIM}Start the gateway${_CLR_RESET}"
@@ -361,7 +361,7 @@ clawdock-help() {
   echo ""
 
   echo -e "${_CLR_BOLD}${_CLR_MAGENTA}🐚 Container Access${_CLR_RESET}"
-  echo -e "  $(_cmd clawdock-shell)       ${_CLR_DIM}Shell into container (openclaw alias ready)${_CLR_RESET}"
+  echo -e "  $(_cmd clawdock-shell)       ${_CLR_DIM}Shell into container (marv alias ready)${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-cli)         ${_CLR_DIM}Run CLI commands (e.g., clawdock-cli status)${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-exec) ${_CLR_CYAN}<cmd>${_CLR_RESET}  ${_CLR_DIM}Execute command in gateway container${_CLR_RESET}"
   echo ""
@@ -384,8 +384,8 @@ clawdock-help() {
   echo -e "${_CLR_BOLD}${_CLR_MAGENTA}🛠️  Utilities${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-health)      ${_CLR_DIM}Run health check${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-token)       ${_CLR_DIM}Show gateway auth token${_CLR_RESET}"
-  echo -e "  $(_cmd clawdock-cd)          ${_CLR_DIM}Jump to openclaw project directory${_CLR_RESET}"
-  echo -e "  $(_cmd clawdock-config)      ${_CLR_DIM}Open config directory (~/.openclaw)${_CLR_RESET}"
+  echo -e "  $(_cmd clawdock-cd)          ${_CLR_DIM}Jump to marv project directory${_CLR_RESET}"
+  echo -e "  $(_cmd clawdock-config)      ${_CLR_DIM}Open config directory (~/.marv)${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-workspace)   ${_CLR_DIM}Open workspace directory${_CLR_RESET}"
   echo ""
 
@@ -400,14 +400,14 @@ clawdock-help() {
 
   echo -e "${_CLR_BOLD}${_CLR_GREEN}💬 WhatsApp Setup${_CLR_RESET}"
   echo -e "  $(_cmd clawdock-shell)"
-  echo -e "    ${_CLR_BLUE}>${_CLR_RESET} $(_cmd 'openclaw channels login --channel whatsapp')"
-  echo -e "    ${_CLR_BLUE}>${_CLR_RESET} $(_cmd 'openclaw status')"
+  echo -e "    ${_CLR_BLUE}>${_CLR_RESET} $(_cmd 'marv channels login --channel whatsapp')"
+  echo -e "    ${_CLR_BLUE}>${_CLR_RESET} $(_cmd 'marv status')"
   echo ""
 
   echo -e "${_CLR_BOLD}${_CLR_CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_CLR_RESET}"
   echo ""
 
   echo -e "${_CLR_CYAN}💡 All commands guide you through next steps!${_CLR_RESET}"
-  echo -e "${_CLR_BLUE}📚 Docs: ${_CLR_RESET}${_CLR_CYAN}https://docs.openclaw.ai${_CLR_RESET}"
+  echo -e "${_CLR_BLUE}📚 Docs: ${_CLR_RESET}${_CLR_CYAN}${_CLR_RESET}"
   echo ""
 }

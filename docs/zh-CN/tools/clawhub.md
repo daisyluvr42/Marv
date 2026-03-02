@@ -52,7 +52,7 @@ pnpm add -g clawhub
 
 ## 在 Marv 中的定位
 
-默认情况下，CLI 会将 Skills 安装到当前工作目录下的 `./skills`。如果已配置 Marv 工作区，`clawhub` 会回退到该工作区，除非你通过 `--workdir`（或 `CLAWHUB_WORKDIR`）进行覆盖。Marv 从 `<workspace>/skills` 加载工作区 Skills，并会在**下一个**会话中生效。如果你已经在使用 `~/.openclaw/skills` 或内置 Skills，工作区 Skills 优先级更高。
+默认情况下，CLI 会将 Skills 安装到当前工作目录下的 `./skills`。如果已配置 Marv 工作区，`clawhub` 会回退到该工作区，除非你通过 `--workdir`（或 `CLAWHUB_WORKDIR`）进行覆盖。Marv 从 `<workspace>/skills` 加载工作区 Skills，并会在**下一个**会话中生效。如果你已经在使用 `~/.marv/skills` 或内置 Skills，工作区 Skills 优先级更高。
 
 有关 Skills 加载、共享和权限控制的更多详情，请参阅
 [Skills](/tools/skills)。
@@ -185,7 +185,7 @@ clawhub sync --all
 
 ### 同步扫描和回退根目录
 
-`clawhub sync` 首先扫描当前工作目录。如果未找到 Skills，它会回退到已知的旧版位置（例如 `~/openclaw/skills` 和 `~/.openclaw/skills`）。这样设计是为了在不需要额外标志的情况下找到旧版 Skills 安装。
+`clawhub sync` 首先扫描当前工作目录。如果未找到 Skills，它会回退到已知的旧版位置（例如 `~/marv/skills` 和 `~/.marv/skills`）。这样设计是为了在不需要额外标志的情况下找到旧版 Skills 安装。
 
 ### 存储和锁文件
 

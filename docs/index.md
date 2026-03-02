@@ -9,13 +9,11 @@ title: "Marv"
 
 <p align="center">
     <img
-        src="/assets/openclaw-logo-text-dark.png"
         alt="Marv"
         width="500"
         class="dark:hidden"
     />
     <img
-        src="/assets/openclaw-logo-text.png"
         alt="Marv"
         width="500"
         class="hidden dark:block"
@@ -98,7 +96,7 @@ The Gateway is the single source of truth for sessions, routing, and channel con
 <Steps>
   <Step title="Install Marv">
     ```bash
-    npm install -g openclaw@latest
+    npm install -g marv@latest
     ```
   </Step>
   <Step title="Onboard and install the service">
@@ -124,12 +122,11 @@ Open the browser Control UI after the Gateway starts.
 - Remote access: [Web surfaces](/web) and [Tailscale](/gateway/tailscale)
 
 <p align="center">
-  <img src="whatsapp-openclaw.jpg" alt="Marv" width="420" />
 </p>
 
 ## Configuration (optional)
 
-Config lives at `~/.openclaw/marv.json`.
+Config lives at `~/.marv/marv.json`.
 
 - If you **do nothing**, Marv uses the bundled Pi binary in RPC mode with per-sender sessions.
 - If you want to lock it down, start with `channels.whatsapp.allowFrom` and (for groups) mention rules.
@@ -144,7 +141,7 @@ Example:
       groups: { "*": { requireMention: true } },
     },
   },
-  messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+  messages: { groupChat: { mentionPatterns: ["@marv"] } },
 }
 ```
 

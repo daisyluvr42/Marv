@@ -72,8 +72,8 @@ marv sandbox recreate --all --force        # Skip confirmation
 
 ```bash
 # Pull new image
-docker pull openclaw-sandbox:latest
-docker tag openclaw-sandbox:latest openclaw-sandbox:bookworm-slim
+docker pull marv-sandbox:latest
+docker tag marv-sandbox:latest marv-sandbox:bookworm-slim
 
 # Update config to use new image
 # Edit config: agents.defaults.sandbox.docker.image (or agents.list[].sandbox.docker.image)
@@ -121,7 +121,7 @@ Gateway’s container naming and avoids mismatches when scope/session keys chang
 
 ## Configuration
 
-Sandbox settings live in `~/.openclaw/marv.json` under `agents.defaults.sandbox` (per-agent overrides go in `agents.list[].sandbox`):
+Sandbox settings live in `~/.marv/marv.json` under `agents.defaults.sandbox` (per-agent overrides go in `agents.list[].sandbox`):
 
 ```jsonc
 {
@@ -131,8 +131,8 @@ Sandbox settings live in `~/.openclaw/marv.json` under `agents.defaults.sandbox`
         "mode": "all", // off, non-main, all
         "scope": "agent", // session, agent, shared
         "docker": {
-          "image": "openclaw-sandbox:bookworm-slim",
-          "containerPrefix": "openclaw-sbx-",
+          "image": "marv-sandbox:bookworm-slim",
+          "containerPrefix": "marv-sbx-",
           // ... more Docker options
         },
         "prune": {

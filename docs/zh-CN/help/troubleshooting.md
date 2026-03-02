@@ -55,7 +55,7 @@ curl -fsSL https://marv.ai/install.sh | bash -s -- --verbose
 curl -fsSL https://marv.ai/install.sh | bash -s -- --beta --verbose
 ```
 
-你也可以设置 `OPENCLAW_VERBOSE=1` 代替标志。
+你也可以设置 `MARV_VERBOSE=1` 代替标志。
 
 ### Gateway 网关“unauthorized”、无法连接或持续重连
 
@@ -67,10 +67,10 @@ curl -fsSL https://marv.ai/install.sh | bash -s -- --beta --verbose
 - [Gateway 网关故障排除](/gateway/troubleshooting)
 - [控制 UI](/web/control-ui#insecure-http)
 
-### `docs.marv.ai` 显示 SSL 错误（Comcast/Xfinity）
+### `` 显示 SSL 错误（Comcast/Xfinity）
 
-一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 阻止 `docs.marv.ai`。
-禁用 Advanced Security 或将 `docs.marv.ai` 添加到允许列表，然后重试。
+一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 阻止 ``。
+禁用 Advanced Security 或将 `` 添加到允许列表，然后重试。
 
 - Xfinity Advanced Security 帮助：https://www.xfinity.com/support/articles/using-xfinity-xfi-advanced-security
 - 快速检查：尝试移动热点或 VPN 以确认这是 ISP 级别的过滤

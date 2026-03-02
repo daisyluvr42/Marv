@@ -31,7 +31,7 @@ It does not install or modify anything on the remote host.
 
 <Steps>
   <Step title="Existing config detection">
-    - If `~/.openclaw/marv.json` exists, choose Keep, Modify, or Reset.
+    - If `~/.marv/marv.json` exists, choose Keep, Modify, or Reset.
     - Re-running the wizard does not wipe anything unless you explicitly choose Reset (or pass `--reset`).
     - If config is invalid or contains legacy keys, the wizard stops and asks you to run `marv doctor` before continuing.
     - Reset uses `trash` and offers scopes:
@@ -43,7 +43,7 @@ It does not install or modify anything on the remote host.
     - Full option matrix is in [Auth and model options](#auth-and-model-options).
   </Step>
   <Step title="Workspace">
-    - Default `~/.openclaw/workspace` (configurable).
+    - Default `~/.marv/workspace` (configurable).
     - Seeds workspace files needed for first-run bootstrap ritual.
     - Workspace layout: [Agent workspace](/concepts/agent-workspace).
   </Step>
@@ -140,7 +140,7 @@ What you set:
   </Accordion>
   <Accordion title="OpenAI API key">
     Uses `OPENAI_API_KEY` if present or prompts for a key, then saves it to
-    `~/.openclaw/.env` so launchd can read it.
+    `~/.marv/.env` so launchd can read it.
 
     Sets `agents.defaults.model` to `openai/gpt-5.1-codex` when model is unset, `openai/*`, or `openai-codex/*`.
 
@@ -199,18 +199,18 @@ Model behavior:
 
 Credential and profile paths:
 
-- OAuth credentials: `~/.openclaw/credentials/oauth.json`
-- Auth profiles (API keys + OAuth): `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
+- OAuth credentials: `~/.marv/credentials/oauth.json`
+- Auth profiles (API keys + OAuth): `~/.marv/agents/<agentId>/agent/auth-profiles.json`
 
 <Note>
 Headless and server tip: complete OAuth on a machine with a browser, then copy
-`~/.openclaw/credentials/oauth.json` (or `$OPENCLAW_STATE_DIR/credentials/oauth.json`)
+`~/.marv/credentials/oauth.json` (or `$MARV_STATE_DIR/credentials/oauth.json`)
 to the gateway host.
 </Note>
 
 ## Outputs and internals
 
-Typical fields in `~/.openclaw/marv.json`:
+Typical fields in `~/.marv/marv.json`:
 
 - `agents.defaults.workspace`
 - `agents.defaults.model` / `models.providers` (if Minimax chosen)
@@ -226,8 +226,8 @@ Typical fields in `~/.openclaw/marv.json`:
 
 `marv agents add` writes `agents.list[]` and optional `bindings`.
 
-WhatsApp credentials go under `~/.openclaw/credentials/whatsapp/<accountId>/`.
-Sessions are stored under `~/.openclaw/agents/<agentId>/sessions/`.
+WhatsApp credentials go under `~/.marv/credentials/whatsapp/<accountId>/`.
+Sessions are stored under `~/.marv/agents/<agentId>/sessions/`.
 
 <Note>
 Some channels are delivered as plugins. When selected during onboarding, the wizard
@@ -246,7 +246,7 @@ Clients (macOS app and Control UI) can render steps without re-implementing onbo
 Signal setup behavior:
 
 - Downloads the appropriate release asset
-- Stores it under `~/.openclaw/tools/signal-cli/<version>/`
+- Stores it under `~/.marv/tools/signal-cli/<version>/`
 - Writes `channels.signal.cliPath` in config
 - JVM builds require Java 21
 - Native builds are used when available

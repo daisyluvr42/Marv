@@ -11,7 +11,7 @@ title: "Browser Troubleshooting"
 Marv's browser control server fails to launch Chrome/Brave/Edge/Chromium with the error:
 
 ```
-{"error":"Error: Failed to start Chrome CDP on port 18800 for profile \"openclaw\"."}
+{"error":"Error: Failed to start Chrome CDP on port 18800 for profile \"marv\"."}
 ```
 
 ### Root Cause
@@ -37,7 +37,7 @@ sudo dpkg -i google-chrome-stable_current_amd64.deb
 sudo apt --fix-broken install -y  # if there are dependency errors
 ```
 
-Then update your Marv config (`~/.openclaw/marv.json`):
+Then update your Marv config (`~/.marv/marv.json`):
 
 ```json
 {
@@ -72,20 +72,20 @@ If you must use snap Chromium, configure Marv to attach to a manually-started br
 ```bash
 chromium-browser --headless --no-sandbox --disable-gpu \
   --remote-debugging-port=18800 \
-  --user-data-dir=$HOME/.openclaw/browser/openclaw/user-data \
+  --user-data-dir=$HOME/.marv/browser/marv/user-data \
   about:blank &
 ```
 
 3. Optionally create a systemd user service to auto-start Chrome:
 
 ```ini
-# ~/.config/systemd/user/openclaw-browser.service
+# ~/.config/systemd/user/marv-browser.service
 [Unit]
 Description=Marv Browser (Chrome CDP)
 After=network.target
 
 [Service]
-ExecStart=/snap/bin/chromium --headless --no-sandbox --disable-gpu --remote-debugging-port=18800 --user-data-dir=%h/.openclaw/browser/openclaw/user-data about:blank
+ExecStart=/snap/bin/chromium --headless --no-sandbox --disable-gpu --remote-debugging-port=18800 --user-data-dir=%h/.marv/browser/marv/user-data about:blank
 Restart=on-failure
 RestartSec=5
 
@@ -93,7 +93,7 @@ RestartSec=5
 WantedBy=default.target
 ```
 
-Enable with: `systemctl --user enable --now openclaw-browser.service`
+Enable with: `systemctl --user enable --now marv-browser.service`
 
 ### Verifying the Browser Works
 
@@ -129,7 +129,7 @@ browser extension to be attached to a live tab.
 Fix options:
 
 1. **Use the managed browser:** `marv browser start --browser-profile marv`
-   (or set `browser.defaultProfile: "openclaw"`).
+   (or set `browser.defaultProfile: "marv"`).
 2. **Use the extension relay:** install the extension, open a tab, and click the
    Marv extension icon to attach it.
 

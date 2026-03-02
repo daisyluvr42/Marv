@@ -19,7 +19,7 @@ running (or attaches to an existing local Gateway if one is already running).
 You need Node 22+ on the Mac, then install `marv` globally:
 
 ```bash
-npm install -g openclaw@<version>
+npm install -g marv@<version>
 ```
 
 The macOS app’s **Install CLI** button runs the same flow via npm/pnpm (bun not recommended for Gateway runtime).
@@ -49,7 +49,7 @@ Behavior:
 
 Logging:
 
-- launchd stdout/err: `/tmp/openclaw/openclaw-gateway.log`
+- launchd stdout/err: `/tmp/marv/marv-gateway.log`
 
 ## Version compatibility
 
@@ -61,8 +61,8 @@ incompatible, update the global CLI to match the app version.
 ```bash
 marv --version
 
-OPENCLAW_SKIP_CHANNELS=1 \
-OPENCLAW_SKIP_CANVAS_HOST=1 \
+MARV_SKIP_CHANNELS=1 \
+MARV_SKIP_CANVAS_HOST=1 \
 marv gateway --port 18999 --bind loopback
 ```
 

@@ -1,5 +1,6 @@
-import http from 'http';
-import { BrowserWindow, session } from 'electron';
+import http from "http";
+import { BrowserWindow, session } from "electron";
+import type { ScheduledTaskStore, ScheduledTaskInput } from "../scheduledTaskStore";
 import {
   anthropicToOpenAI,
   buildOpenAIChatCompletionsURL,
@@ -7,9 +8,8 @@ import {
   mapStopReason,
   openAIToAnthropic,
   type OpenAIStreamChunk,
-} from './coworkFormatTransform';
-import type { ScheduledTaskStore, ScheduledTaskInput } from '../scheduledTaskStore';
-import type { Scheduler } from './scheduler';
+} from "./coworkFormatTransform";
+import type { Scheduler } from "./scheduler";
 
 export type OpenAICompatUpstreamConfig = {
   baseURL: string;
@@ -18,7 +18,7 @@ export type OpenAICompatUpstreamConfig = {
   provider?: string;
 };
 
-export type OpenAICompatProxyTarget = 'local' | 'sandbox';
+export type OpenAICompatProxyTarget = "local" | "sandbox";
 
 export type OpenAICompatProxyStatus = {
   running: boolean;
@@ -39,14 +39,14 @@ type StreamState = {
   messageId: string | null;
   model: string | null;
   contentIndex: number;
-  currentBlockType: 'thinking' | 'text' | 'tool_use' | null;
+  currentBlockType: "thinking" | "text" | "tool_use" | null;
   activeToolIndex: number | null;
   hasMessageStart: boolean;
   hasMessageStop: boolean;
   toolCalls: Record<number, ToolCallState>;
 };
 
-type UpstreamAPIType = 'chat_completions' | 'responses';
+type UpstreamAPIType = "chat_completions" | "responses";
 
 type ResponsesFunctionCallState = {
   outputIndex: number;
@@ -68,10 +68,10 @@ type ResponsesStreamContext = {
   hasAnyDelta: boolean;
 };
 
-const PROXY_BIND_HOST = '0.0.0.0';
-const LOCAL_HOST = '127.0.0.1';
-const SANDBOX_HOST = '10.0.2.2';
-const GEMINI_FALLBACK_THOUGHT_SIGNATURE = 'skip_thought_signature_validator';
+const PROXY_BIND_HOST = "0.0.0.0";
+const LOCAL_HOST = "127.0.0.1";
+const SANDBOX_HOST = "10.0.2.2";
+const GEMINI_FALLBACK_THOUGHT_SIGNATURE = "skip_thought_signature_validator";
 
 let proxyServer: http.Server | null = null;
 let proxyPort: number | null = null;
@@ -92,14 +92,14 @@ export function setScheduledTaskDeps(deps: ScheduledTaskDeps): void {
 }
 
 function toOptionalObject(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
   return null;
 }
 
 function toString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+  return typeof value === "string" ? value : "";
 }
 
 function toArray(value: unknown): unknown[] {
@@ -107,45 +107,47 @@ function toArray(value: unknown): unknown[] {
 }
 
 function toNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
   return null;
 }
 
 function stringifyUnknown(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
   try {
-    return JSON.stringify(value ?? '');
+    return JSON.stringify(value ?? "");
   } catch {
-    return '';
+    return "";
   }
 }
 
 function normalizeFunctionArguments(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
   if (value === undefined) {
-    return '';
+    return "";
   }
   try {
     return JSON.stringify(value);
   } catch {
-    return '';
+    return "";
   }
 }
 
 function normalizeScheduledTaskWorkingDirectory(value: unknown): string {
-  const raw = typeof value === 'string' ? value.trim() : '';
-  if (!raw) {return '';}
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) {
+    return "";
+  }
 
-  const normalized = raw.replace(/\\/g, '/').replace(/\/+$/, '');
+  const normalized = raw.replace(/\\/g, "/").replace(/\/+$/, "");
   // Sandbox guest workspace roots are not valid host directories.
   if (/^(?:[A-Za-z]:)?\/workspace(?:\/project)?$/i.test(normalized)) {
-    return '';
+    return "";
   }
   return raw;
 }
@@ -181,7 +183,7 @@ function cacheToolCallExtraContent(toolCallId: string, extraContent: unknown): v
 
   if (toolCallExtraContentById.size > MAX_TOOL_CALL_EXTRA_CONTENT_CACHE) {
     const oldestKey = toolCallExtraContentById.keys().next().value;
-    if (typeof oldestKey === 'string') {
+    if (typeof oldestKey === "string") {
       toolCallExtraContentById.delete(oldestKey);
     }
   }
@@ -222,10 +224,10 @@ function cacheToolCallExtraContentFromOpenAIResponse(body: unknown): void {
 function hydrateOpenAIRequestToolCalls(
   body: Record<string, unknown>,
   provider?: string,
-  baseURL?: string
+  baseURL?: string,
 ): void {
   const isGemini =
-    provider === 'gemini' || Boolean(baseURL?.includes('generativelanguage.googleapis.com'));
+    provider === "gemini" || Boolean(baseURL?.includes("generativelanguage.googleapis.com"));
   const messages = toArray(body.messages);
   for (const message of messages) {
     const messageObj = toOptionalObject(message);
@@ -265,9 +267,9 @@ function hydrateOpenAIRequestToolCalls(
   }
 }
 
-function createAnthropicErrorBody(message: string, type = 'api_error'): Record<string, unknown> {
+function createAnthropicErrorBody(message: string, type = "api_error"): Record<string, unknown> {
   return {
-    type: 'error',
+    type: "error",
     error: {
       type,
       message,
@@ -277,19 +279,19 @@ function createAnthropicErrorBody(message: string, type = 'api_error'): Record<s
 
 function extractErrorMessage(raw: string): string {
   if (!raw) {
-    return 'Upstream API request failed';
+    return "Upstream API request failed";
   }
 
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const errorObj = parsed.error;
-    if (errorObj && typeof errorObj === 'object' && !Array.isArray(errorObj)) {
+    if (errorObj && typeof errorObj === "object" && !Array.isArray(errorObj)) {
       const message = (errorObj as Record<string, unknown>).message;
-      if (typeof message === 'string' && message) {
+      if (typeof message === "string" && message) {
         return message;
       }
     }
-    if (typeof parsed.message === 'string' && parsed.message) {
+    if (typeof parsed.message === "string" && parsed.message) {
       return parsed.message;
     }
   } catch {
@@ -300,36 +302,36 @@ function extractErrorMessage(raw: string): string {
 }
 
 function resolveUpstreamAPIType(provider?: string): UpstreamAPIType {
-  return provider?.toLowerCase() === 'openai' ? 'responses' : 'chat_completions';
+  return provider?.toLowerCase() === "openai" ? "responses" : "chat_completions";
 }
 
 function buildOpenAIResponsesURL(baseURL: string): string {
-  const normalized = baseURL.trim().replace(/\/+$/, '');
+  const normalized = baseURL.trim().replace(/\/+$/, "");
   if (!normalized) {
-    return '/v1/responses';
+    return "/v1/responses";
   }
-  if (normalized.endsWith('/responses')) {
+  if (normalized.endsWith("/responses")) {
     return normalized;
   }
-  if (normalized.endsWith('/v1')) {
+  if (normalized.endsWith("/v1")) {
     return `${normalized}/responses`;
   }
   return `${normalized}/v1/responses`;
 }
 
 function buildUpstreamTargetUrls(baseURL: string, apiType: UpstreamAPIType): string[] {
-  if (apiType === 'responses') {
+  if (apiType === "responses") {
     return [buildOpenAIResponsesURL(baseURL)];
   }
 
   const primary = buildOpenAIChatCompletionsURL(baseURL);
   const urls = new Set<string>([primary]);
 
-  if (primary.includes('generativelanguage.googleapis.com')) {
-    if (primary.includes('/v1beta/openai/')) {
-      urls.add(primary.replace('/v1beta/openai/', '/v1/openai/'));
-    } else if (primary.includes('/v1/openai/')) {
-      urls.add(primary.replace('/v1/openai/', '/v1beta/openai/'));
+  if (primary.includes("generativelanguage.googleapis.com")) {
+    if (primary.includes("/v1beta/openai/")) {
+      urls.add(primary.replace("/v1beta/openai/", "/v1/openai/"));
+    } else if (primary.includes("/v1/openai/")) {
+      urls.add(primary.replace("/v1/openai/", "/v1beta/openai/"));
     }
   }
 
@@ -337,7 +339,7 @@ function buildUpstreamTargetUrls(baseURL: string, apiType: UpstreamAPIType): str
 }
 
 function extractTextFromChatContent(content: unknown): string {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
 
@@ -352,14 +354,12 @@ function extractTextFromChatContent(content: unknown): string {
       chunks.push(partText);
     }
   }
-  return chunks.join('');
+  return chunks.join("");
 }
 
 function convertUserChatContentToResponsesInput(content: unknown): Array<Record<string, unknown>> {
-  if (typeof content === 'string') {
-    return content
-      ? [{ type: 'input_text', text: content }]
-      : [];
+  if (typeof content === "string") {
+    return content ? [{ type: "input_text", text: content }] : [];
   }
 
   const parts: Array<Record<string, unknown>> = [];
@@ -370,19 +370,19 @@ function convertUserChatContentToResponsesInput(content: unknown): Array<Record<
     }
 
     const itemType = toString(itemObj.type);
-    if (itemType === 'text') {
+    if (itemType === "text") {
       const text = toString(itemObj.text);
       if (text) {
-        parts.push({ type: 'input_text', text });
+        parts.push({ type: "input_text", text });
       }
       continue;
     }
 
-    if (itemType === 'image_url') {
+    if (itemType === "image_url") {
       const imageURLObj = toOptionalObject(itemObj.image_url);
       const imageURL = toString(imageURLObj?.url) || toString(itemObj.image_url);
       if (imageURL) {
-        parts.push({ type: 'input_image', image_url: imageURL });
+        parts.push({ type: "input_image", image_url: imageURL });
       }
     }
   }
@@ -400,7 +400,7 @@ function normalizeResponsesToolsFromChat(toolsInput: unknown): Array<Record<stri
     }
 
     const toolType = toString(toolObj.type);
-    if (toolType !== 'function') {
+    if (toolType !== "function") {
       normalizedTools.push(toolObj);
       continue;
     }
@@ -412,7 +412,7 @@ function normalizeResponsesToolsFromChat(toolsInput: unknown): Array<Record<stri
     }
 
     const normalized: Record<string, unknown> = {
-      type: 'function',
+      type: "function",
       name,
     };
 
@@ -427,7 +427,7 @@ function normalizeResponsesToolsFromChat(toolsInput: unknown): Array<Record<stri
     }
 
     const strict = toolObj.strict ?? functionObj?.strict;
-    if (typeof strict === 'boolean') {
+    if (typeof strict === "boolean") {
       normalized.strict = strict;
     }
 
@@ -438,7 +438,7 @@ function normalizeResponsesToolsFromChat(toolsInput: unknown): Array<Record<stri
 }
 
 function normalizeResponsesToolChoiceFromChat(toolChoice: unknown): unknown {
-  if (typeof toolChoice === 'string') {
+  if (typeof toolChoice === "string") {
     return toolChoice;
   }
 
@@ -448,18 +448,18 @@ function normalizeResponsesToolChoiceFromChat(toolChoice: unknown): unknown {
   }
 
   const normalizedType = toString(toolChoiceObj.type).toLowerCase();
-  if (normalizedType === 'any') {
-    return 'required';
+  if (normalizedType === "any") {
+    return "required";
   }
-  if (normalizedType === 'auto' || normalizedType === 'none' || normalizedType === 'required') {
+  if (normalizedType === "auto" || normalizedType === "none" || normalizedType === "required") {
     return normalizedType;
   }
-  if (normalizedType === 'function' || normalizedType === 'tool') {
+  if (normalizedType === "function" || normalizedType === "tool") {
     const functionObj = toOptionalObject(toolChoiceObj.function);
     const name = toString(toolChoiceObj.name) || toString(functionObj?.name);
     if (name) {
       return {
-        type: 'function',
+        type: "function",
         name,
       };
     }
@@ -469,7 +469,7 @@ function normalizeResponsesToolChoiceFromChat(toolChoice: unknown): unknown {
 }
 
 function convertChatCompletionsRequestToResponsesRequest(
-  chatRequest: Record<string, unknown>
+  chatRequest: Record<string, unknown>,
 ): Record<string, unknown> {
   const request: Record<string, unknown> = {};
   const input: Array<Record<string, unknown>> = [];
@@ -496,9 +496,10 @@ function convertChatCompletionsRequestToResponsesRequest(
     request.tool_choice = normalizeResponsesToolChoiceFromChat(chatRequest.tool_choice);
   }
 
-  const maxOutputTokens = toNumber(chatRequest.max_output_tokens)
-    ?? toNumber(chatRequest.max_completion_tokens)
-    ?? toNumber(chatRequest.max_tokens);
+  const maxOutputTokens =
+    toNumber(chatRequest.max_output_tokens) ??
+    toNumber(chatRequest.max_completion_tokens) ??
+    toNumber(chatRequest.max_tokens);
   if (maxOutputTokens !== null) {
     request.max_output_tokens = maxOutputTokens;
   }
@@ -510,7 +511,7 @@ function convertChatCompletionsRequestToResponsesRequest(
     }
 
     const role = toString(messageObj.role);
-    if (role === 'system') {
+    if (role === "system") {
       const text = extractTextFromChatContent(messageObj.content);
       if (text) {
         instructions.push(text);
@@ -518,12 +519,12 @@ function convertChatCompletionsRequestToResponsesRequest(
       continue;
     }
 
-    if (role === 'tool') {
+    if (role === "tool") {
       const toolCallId = toString(messageObj.tool_call_id);
       const output = stringifyUnknown(messageObj.content);
       if (toolCallId && output) {
         input.push({
-          type: 'function_call_output',
+          type: "function_call_output",
           call_id: toolCallId,
           output,
         });
@@ -531,12 +532,12 @@ function convertChatCompletionsRequestToResponsesRequest(
       continue;
     }
 
-    if (role === 'assistant') {
+    if (role === "assistant") {
       const text = extractTextFromChatContent(messageObj.content);
       if (text) {
         input.push({
-          role: 'assistant',
-          content: [{ type: 'output_text', text }],
+          role: "assistant",
+          content: [{ type: "output_text", text }],
         });
       }
 
@@ -548,13 +549,13 @@ function convertChatCompletionsRequestToResponsesRequest(
         }
         const callId = toString(toolCallObj.call_id) || toString(toolCallObj.id);
         const name = toString(functionObj.name);
-        const argumentsText = normalizeFunctionArguments(functionObj.arguments) || '{}';
+        const argumentsText = normalizeFunctionArguments(functionObj.arguments) || "{}";
         if (!callId || !name) {
           continue;
         }
 
         const functionCallItem: Record<string, unknown> = {
-          type: 'function_call',
+          type: "function_call",
           call_id: callId,
           name,
           arguments: argumentsText,
@@ -575,18 +576,18 @@ function convertChatCompletionsRequestToResponsesRequest(
     const userParts = convertUserChatContentToResponsesInput(messageObj.content);
     if (userParts.length > 0) {
       input.push({
-        role: role || 'user',
+        role: role || "user",
         content: userParts,
       });
     }
   }
 
   if (instructions.length > 0) {
-    request.instructions = instructions.join('\n\n');
+    request.instructions = instructions.join("\n\n");
   }
 
   for (const messageItem of input) {
-    if (toString(messageItem.type) !== 'function_call_output') {
+    if (toString(messageItem.type) !== "function_call_output") {
       continue;
     }
     const callId = toString(messageItem.call_id);
@@ -607,10 +608,10 @@ function convertChatCompletionsRequestToResponsesRequest(
     // OpenAI Responses requires each historical function_call to have a matching output.
     // When upstream tool execution fails before producing a tool_result, auto-close it here.
     input.push({
-      type: 'function_call_output',
+      type: "function_call_output",
       call_id: callId,
       output: JSON.stringify({
-        error: `Missing tool output for function call "${callId}" (${callInfo.name || 'unknown'}). Auto-closed by compatibility proxy.`,
+        error: `Missing tool output for function call "${callId}" (${callInfo.name || "unknown"}). Auto-closed by compatibility proxy.`,
       }),
     });
   }
@@ -626,9 +627,9 @@ function normalizeToolName(value: unknown): string {
 
 function filterOpenAIToolsForProvider(
   openAIRequest: Record<string, unknown>,
-  provider?: string
+  provider?: string,
 ): void {
-  if (provider !== 'openai') {
+  if (provider !== "openai") {
     return;
   }
 
@@ -639,22 +640,27 @@ function filterOpenAIToolsForProvider(
 
   const filteredTools = tools.filter((tool) => {
     const toolObj = toOptionalObject(tool);
-    if (!toolObj) {return true;}
+    if (!toolObj) {
+      return true;
+    }
     const functionObj = toOptionalObject(toolObj.function);
     const toolName = normalizeToolName(toolObj.name) || normalizeToolName(functionObj?.name);
-    if (!toolName) {return true;}
+    if (!toolName) {
+      return true;
+    }
     // OpenAI path should use skills by reading SKILL.md via normal tools, not Skill tool.
-    return toolName !== 'skill';
+    return toolName !== "skill";
   });
 
   if (filteredTools.length !== tools.length) {
     openAIRequest.tools = filteredTools;
     const toolChoiceObj = toOptionalObject(openAIRequest.tool_choice);
     if (toolChoiceObj) {
-      const forcedName = normalizeToolName(toolChoiceObj.name)
-        || normalizeToolName(toOptionalObject(toolChoiceObj.function)?.name);
-      if (forcedName === 'skill') {
-        openAIRequest.tool_choice = 'auto';
+      const forcedName =
+        normalizeToolName(toolChoiceObj.name) ||
+        normalizeToolName(toOptionalObject(toolChoiceObj.function)?.name);
+      if (forcedName === "skill") {
+        openAIRequest.tool_choice = "auto";
       }
     }
   }
@@ -666,7 +672,7 @@ function extractMaxTokensRange(errorMessage: string): { min: number; max: number
   }
 
   const normalized = errorMessage.toLowerCase();
-  if (!normalized.includes('max_tokens')) {
+  if (!normalized.includes("max_tokens")) {
     return null;
   }
 
@@ -691,10 +697,10 @@ function extractMaxTokensRange(errorMessage: string): { min: number; max: number
 
 function clampMaxTokensFromError(
   openAIRequest: Record<string, unknown>,
-  errorMessage: string
+  errorMessage: string,
 ): { changed: boolean; clampedTo?: number } {
   const currentMaxTokens = openAIRequest.max_tokens;
-  if (typeof currentMaxTokens !== 'number' || !Number.isFinite(currentMaxTokens)) {
+  if (typeof currentMaxTokens !== "number" || !Number.isFinite(currentMaxTokens)) {
     return { changed: false };
   }
 
@@ -716,31 +722,33 @@ function clampMaxTokensFromError(
 }
 
 function shouldUseMaxCompletionTokensForModel(model: unknown): boolean {
-  if (typeof model !== 'string') {
+  if (typeof model !== "string") {
     return false;
   }
   const normalizedModel = model.toLowerCase();
-  const resolvedModel = normalizedModel.includes('/')
-    ? normalizedModel.slice(normalizedModel.lastIndexOf('/') + 1)
+  const resolvedModel = normalizedModel.includes("/")
+    ? normalizedModel.slice(normalizedModel.lastIndexOf("/") + 1)
     : normalizedModel;
-  return resolvedModel.startsWith('gpt-5')
-    || resolvedModel.startsWith('o1')
-    || resolvedModel.startsWith('o3')
-    || resolvedModel.startsWith('o4');
+  return (
+    resolvedModel.startsWith("gpt-5") ||
+    resolvedModel.startsWith("o1") ||
+    resolvedModel.startsWith("o3") ||
+    resolvedModel.startsWith("o4")
+  );
 }
 
 function normalizeMaxTokensFieldForOpenAIProvider(
   openAIRequest: Record<string, unknown>,
-  provider?: string
+  provider?: string,
 ): void {
-  if (provider !== 'openai') {
+  if (provider !== "openai") {
     return;
   }
   if (!shouldUseMaxCompletionTokensForModel(openAIRequest.model)) {
     return;
   }
   const maxTokens = openAIRequest.max_tokens;
-  if (typeof maxTokens !== 'number' || !Number.isFinite(maxTokens)) {
+  if (typeof maxTokens !== "number" || !Number.isFinite(maxTokens)) {
     return;
   }
   openAIRequest.max_completion_tokens = maxTokens;
@@ -749,16 +757,19 @@ function normalizeMaxTokensFieldForOpenAIProvider(
 
 function isMaxTokensUnsupportedError(errorMessage: string): boolean {
   const normalized = errorMessage.toLowerCase();
-  return normalized.includes('max_tokens')
-    && normalized.includes('max_completion_tokens')
-    && normalized.includes('not supported');
+  return (
+    normalized.includes("max_tokens") &&
+    normalized.includes("max_completion_tokens") &&
+    normalized.includes("not supported")
+  );
 }
 
-function convertMaxTokensToMaxCompletionTokens(
-  openAIRequest: Record<string, unknown>
-): { changed: boolean; convertedTo?: number } {
+function convertMaxTokensToMaxCompletionTokens(openAIRequest: Record<string, unknown>): {
+  changed: boolean;
+  convertedTo?: number;
+} {
   const maxTokens = openAIRequest.max_tokens;
-  if (typeof maxTokens !== 'number' || !Number.isFinite(maxTokens)) {
+  if (typeof maxTokens !== "number" || !Number.isFinite(maxTokens)) {
     return { changed: false };
   }
   openAIRequest.max_completion_tokens = maxTokens;
@@ -769,12 +780,12 @@ function convertMaxTokensToMaxCompletionTokens(
 function writeJSON(
   res: http.ServerResponse,
   statusCode: number,
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
 ): void {
   const payload = JSON.stringify(body);
   res.writeHead(statusCode, {
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(payload),
+    "Content-Type": "application/json",
+    "Content-Length": Buffer.byteLength(payload),
   });
   res.end(payload);
 }
@@ -787,19 +798,21 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
 
     const decodeBody = (raw: Buffer): string => {
       if (raw.length === 0) {
-        return '';
+        return "";
       }
 
       const collectStringValues = (input: unknown, out: string[]): void => {
-        if (typeof input === 'string') {
+        if (typeof input === "string") {
           out.push(input);
           return;
         }
         if (Array.isArray(input)) {
-          for (const item of input) {collectStringValues(item, out);}
+          for (const item of input) {
+            collectStringValues(item, out);
+          }
           return;
         }
-        if (input && typeof input === 'object') {
+        if (input && typeof input === "object") {
           for (const value of Object.values(input as Record<string, unknown>)) {
             collectStringValues(value, out);
           }
@@ -816,8 +829,10 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
 
         const values: string[] = [];
         collectStringValues(parsed, values);
-        const joined = values.join('\n');
-        if (!joined) {return 0;}
+        const joined = values.join("\n");
+        if (!joined) {
+          return 0;
+        }
 
         const cjkCount = (joined.match(/[\u3400-\u9FFF]/g) || []).length;
         const replacementCount = (joined.match(/\uFFFD/g) || []).length;
@@ -829,29 +844,29 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
 
       // BOM-aware decoding first.
       if (raw.length >= 3 && raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) {
-        return new TextDecoder('utf-8', { fatal: false }).decode(raw.subarray(3));
+        return new TextDecoder("utf-8", { fatal: false }).decode(raw.subarray(3));
       }
       if (raw.length >= 2 && raw[0] === 0xff && raw[1] === 0xfe) {
-        return new TextDecoder('utf-16le', { fatal: false }).decode(raw.subarray(2));
+        return new TextDecoder("utf-16le", { fatal: false }).decode(raw.subarray(2));
       }
       if (raw.length >= 2 && raw[0] === 0xfe && raw[1] === 0xff) {
-        return new TextDecoder('utf-16be', { fatal: false }).decode(raw.subarray(2));
+        return new TextDecoder("utf-16be", { fatal: false }).decode(raw.subarray(2));
       }
 
       // Try strict UTF-8 first.
       let utf8Decoded: string | null = null;
       try {
-        utf8Decoded = new TextDecoder('utf-8', { fatal: true }).decode(raw);
+        utf8Decoded = new TextDecoder("utf-8", { fatal: true }).decode(raw);
       } catch {
         utf8Decoded = null;
       }
 
       // On Windows local shells (especially Git Bash/curl paths), requests
       // may be emitted in system codepage instead of UTF-8.
-      if (process.platform === 'win32') {
+      if (process.platform === "win32") {
         let gbDecoded: string | null = null;
         try {
-          gbDecoded = new TextDecoder('gb18030', { fatal: true }).decode(raw);
+          gbDecoded = new TextDecoder("gb18030", { fatal: true }).decode(raw);
         } catch {
           gbDecoded = null;
         }
@@ -860,14 +875,16 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
           const utf8Score = scoreDecodedJsonText(utf8Decoded);
           const gbScore = scoreDecodedJsonText(gbDecoded);
           if (gbScore > utf8Score) {
-            console.warn(`[CoworkProxy] Decoded request body using gb18030 (score ${gbScore} > utf8 ${utf8Score})`);
+            console.warn(
+              `[CoworkProxy] Decoded request body using gb18030 (score ${gbScore} > utf8 ${utf8Score})`,
+            );
             return gbDecoded;
           }
           return utf8Decoded;
         }
 
         if (gbDecoded && !utf8Decoded) {
-          console.warn('[CoworkProxy] Decoded request body using gb18030 fallback');
+          console.warn("[CoworkProxy] Decoded request body using gb18030 fallback");
           return gbDecoded;
         }
       }
@@ -876,34 +893,40 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
         return utf8Decoded;
       }
 
-      return new TextDecoder('utf-8', { fatal: false }).decode(raw);
+      return new TextDecoder("utf-8", { fatal: false }).decode(raw);
     };
 
     const fail = (error: Error) => {
-      if (settled) {return;}
+      if (settled) {
+        return;
+      }
       settled = true;
       reject(error);
     };
 
-    req.on('data', (chunk: Buffer) => {
-      if (settled) {return;}
+    req.on("data", (chunk: Buffer) => {
+      if (settled) {
+        return;
+      }
       totalBytes += chunk.length;
       if (totalBytes > 20 * 1024 * 1024) {
-        fail(new Error('Request body too large'));
+        fail(new Error("Request body too large"));
         req.destroy();
         return;
       }
       chunks.push(chunk);
     });
 
-    req.on('end', () => {
-      if (settled) {return;}
+    req.on("end", () => {
+      if (settled) {
+        return;
+      }
       settled = true;
       const body = decodeBody(Buffer.concat(chunks));
       resolve(body);
     });
 
-    req.on('error', (error) => {
+    req.on("error", (error) => {
       fail(error instanceof Error ? error : new Error(String(error)));
     });
   });
@@ -957,39 +980,41 @@ function extractResponsesReasoningText(itemObj: Record<string, unknown>): string
     }
   }
   if (summaryTexts.length > 0) {
-    return summaryTexts.join('');
+    return summaryTexts.join("");
   }
 
   const directText = toString(itemObj.text);
   if (directText) {
     return directText;
   }
-  return '';
+  return "";
 }
 
 function detectResponsesFinishReason(responseObj: Record<string, unknown>): string {
   const output = toArray(responseObj.output);
-  const hasFunctionCall = output.some((item) => toString(toOptionalObject(item)?.type) === 'function_call');
+  const hasFunctionCall = output.some(
+    (item) => toString(toOptionalObject(item)?.type) === "function_call",
+  );
   if (hasFunctionCall) {
-    return 'tool_calls';
+    return "tool_calls";
   }
 
   const status = toString(responseObj.status);
   const incompleteReason = toString(toOptionalObject(responseObj.incomplete_details)?.reason);
   if (
-    status === 'incomplete'
-    && (incompleteReason === 'max_output_tokens' || incompleteReason === 'max_tokens')
+    status === "incomplete" &&
+    (incompleteReason === "max_output_tokens" || incompleteReason === "max_tokens")
   ) {
-    return 'length';
+    return "length";
   }
-  return 'stop';
+  return "stop";
 }
 
 function convertResponsesToOpenAIResponse(body: unknown): Record<string, unknown> {
   const responseObj = resolveResponsesObject(body);
   const output = toArray(responseObj.output);
 
-  const textParts: Array<{ type: 'text'; text: string }> = [];
+  const textParts: Array<{ type: "text"; text: string }> = [];
   const reasoningParts: string[] = [];
   const toolCalls: Array<Record<string, unknown>> = [];
 
@@ -1000,24 +1025,28 @@ function convertResponsesToOpenAIResponse(body: unknown): Record<string, unknown
     }
 
     const itemType = toString(itemObj.type);
-    if (itemType === 'message') {
+    if (itemType === "message") {
       for (const contentItem of toArray(itemObj.content)) {
         const contentObj = toOptionalObject(contentItem);
         if (!contentObj) {
           continue;
         }
         const contentType = toString(contentObj.type);
-        if (contentType === 'output_text' || contentType === 'text' || contentType === 'input_text') {
+        if (
+          contentType === "output_text" ||
+          contentType === "text" ||
+          contentType === "input_text"
+        ) {
           const text = toString(contentObj.text);
           if (text) {
-            textParts.push({ type: 'text', text });
+            textParts.push({ type: "text", text });
           }
         }
       }
       continue;
     }
 
-    if (itemType === 'reasoning') {
+    if (itemType === "reasoning") {
       const reasoningText = extractResponsesReasoningText(itemObj);
       if (reasoningText) {
         reasoningParts.push(reasoningText);
@@ -1025,7 +1054,7 @@ function convertResponsesToOpenAIResponse(body: unknown): Record<string, unknown
       continue;
     }
 
-    if (itemType === 'function_call') {
+    if (itemType === "function_call") {
       const callId = toString(itemObj.call_id) || toString(itemObj.id);
       const name = toString(itemObj.name);
       if (!callId || !name) {
@@ -1033,10 +1062,10 @@ function convertResponsesToOpenAIResponse(body: unknown): Record<string, unknown
       }
       const toolCall: Record<string, unknown> = {
         id: callId,
-        type: 'function',
+        type: "function",
         function: {
           name,
-          arguments: normalizeFunctionArguments(itemObj.arguments) || '{}',
+          arguments: normalizeFunctionArguments(itemObj.arguments) || "{}",
         },
       };
       const extraContent = normalizeToolCallExtraContent(itemObj);
@@ -1048,9 +1077,9 @@ function convertResponsesToOpenAIResponse(body: unknown): Record<string, unknown
   }
 
   const message: Record<string, unknown> = {
-    role: 'assistant',
+    role: "assistant",
   };
-  if (textParts.length === 1 && textParts[0].type === 'text') {
+  if (textParts.length === 1 && textParts[0].type === "text") {
     message.content = textParts[0].text;
   } else if (textParts.length > 1) {
     message.content = textParts;
@@ -1061,7 +1090,7 @@ function convertResponsesToOpenAIResponse(body: unknown): Record<string, unknown
     message.tool_calls = toolCalls;
   }
   if (reasoningParts.length > 0) {
-    message.reasoning_content = reasoningParts.join('');
+    message.reasoning_content = reasoningParts.join("");
   }
 
   const usage = toOptionalObject(responseObj.usage);
@@ -1085,7 +1114,7 @@ function cacheToolCallExtraContentFromResponsesResponse(body: unknown): void {
   const responseObj = resolveResponsesObject(body);
   for (const item of toArray(responseObj.output)) {
     const itemObj = toOptionalObject(item);
-    if (!itemObj || toString(itemObj.type) !== 'function_call') {
+    if (!itemObj || toString(itemObj.type) !== "function_call") {
       continue;
     }
     const toolCallId = toString(itemObj.call_id) || toString(itemObj.id);
@@ -1103,8 +1132,8 @@ function closeCurrentBlockIfNeeded(res: http.ServerResponse, state: StreamState)
     return;
   }
 
-  emitSSE(res, 'content_block_stop', {
-    type: 'content_block_stop',
+  emitSSE(res, "content_block_stop", {
+    type: "content_block_stop",
     index: state.contentIndex,
   });
 
@@ -1116,21 +1145,21 @@ function closeCurrentBlockIfNeeded(res: http.ServerResponse, state: StreamState)
 function ensureMessageStart(
   res: http.ServerResponse,
   state: StreamState,
-  chunk: OpenAIStreamChunk
+  chunk: OpenAIStreamChunk,
 ): void {
   if (state.hasMessageStart) {
     return;
   }
 
   state.messageId = chunk.id ?? state.messageId ?? `chatcmpl-${Date.now()}`;
-  state.model = chunk.model ?? state.model ?? 'unknown';
+  state.model = chunk.model ?? state.model ?? "unknown";
 
-  emitSSE(res, 'message_start', {
-    type: 'message_start',
+  emitSSE(res, "message_start", {
+    type: "message_start",
     message: {
       id: state.messageId,
-      type: 'message',
-      role: 'assistant',
+      type: "message",
+      role: "assistant",
       model: state.model,
       usage: {
         input_tokens: 0,
@@ -1143,60 +1172,60 @@ function ensureMessageStart(
 }
 
 function ensureThinkingBlock(res: http.ServerResponse, state: StreamState): void {
-  if (state.currentBlockType === 'thinking') {
+  if (state.currentBlockType === "thinking") {
     return;
   }
 
   closeCurrentBlockIfNeeded(res, state);
 
-  emitSSE(res, 'content_block_start', {
-    type: 'content_block_start',
+  emitSSE(res, "content_block_start", {
+    type: "content_block_start",
     index: state.contentIndex,
     content_block: {
-      type: 'thinking',
-      thinking: '',
+      type: "thinking",
+      thinking: "",
     },
   });
 
-  state.currentBlockType = 'thinking';
+  state.currentBlockType = "thinking";
 }
 
 function ensureTextBlock(res: http.ServerResponse, state: StreamState): void {
-  if (state.currentBlockType === 'text') {
+  if (state.currentBlockType === "text") {
     return;
   }
 
   closeCurrentBlockIfNeeded(res, state);
 
-  emitSSE(res, 'content_block_start', {
-    type: 'content_block_start',
+  emitSSE(res, "content_block_start", {
+    type: "content_block_start",
     index: state.contentIndex,
     content_block: {
-      type: 'text',
-      text: '',
+      type: "text",
+      text: "",
     },
   });
 
-  state.currentBlockType = 'text';
+  state.currentBlockType = "text";
 }
 
 function ensureToolUseBlock(
   res: http.ServerResponse,
   state: StreamState,
   index: number,
-  toolCall: ToolCallState
+  toolCall: ToolCallState,
 ): void {
   const resolvedId = toolCall.id || `tool_call_${index}`;
-  const resolvedName = toolCall.name || 'tool';
+  const resolvedName = toolCall.name || "tool";
 
-  if (state.currentBlockType === 'tool_use' && state.activeToolIndex === index) {
+  if (state.currentBlockType === "tool_use" && state.activeToolIndex === index) {
     return;
   }
 
   closeCurrentBlockIfNeeded(res, state);
 
   const contentBlock: Record<string, unknown> = {
-    type: 'tool_use',
+    type: "tool_use",
     id: resolvedId,
     name: resolvedName,
   };
@@ -1205,13 +1234,13 @@ function ensureToolUseBlock(
     contentBlock.extra_content = toolCall.extraContent;
   }
 
-  emitSSE(res, 'content_block_start', {
-    type: 'content_block_start',
+  emitSSE(res, "content_block_start", {
+    type: "content_block_start",
     index: state.contentIndex,
     content_block: contentBlock,
   });
 
-  state.currentBlockType = 'tool_use';
+  state.currentBlockType = "tool_use";
   state.activeToolIndex = index;
 }
 
@@ -1219,12 +1248,12 @@ function emitMessageDelta(
   res: http.ServerResponse,
   state: StreamState,
   finishReason: string | null | undefined,
-  chunk: OpenAIStreamChunk
+  chunk: OpenAIStreamChunk,
 ): void {
   closeCurrentBlockIfNeeded(res, state);
 
-  emitSSE(res, 'message_delta', {
-    type: 'message_delta',
+  emitSSE(res, "message_delta", {
+    type: "message_delta",
     delta: {
       stop_reason: mapStopReason(finishReason),
       stop_sequence: null,
@@ -1239,7 +1268,7 @@ function emitMessageDelta(
 function processOpenAIChunk(
   res: http.ServerResponse,
   state: StreamState,
-  chunk: OpenAIStreamChunk
+  chunk: OpenAIStreamChunk,
 ): void {
   ensureMessageStart(res, state, chunk);
 
@@ -1253,11 +1282,11 @@ function processOpenAIChunk(
 
   if (deltaReasoning) {
     ensureThinkingBlock(res, state);
-    emitSSE(res, 'content_block_delta', {
-      type: 'content_block_delta',
+    emitSSE(res, "content_block_delta", {
+      type: "content_block_delta",
       index: state.contentIndex,
       delta: {
-        type: 'thinking_delta',
+        type: "thinking_delta",
         thinking: deltaReasoning,
       },
     });
@@ -1265,11 +1294,11 @@ function processOpenAIChunk(
 
   if (delta?.content) {
     ensureTextBlock(res, state);
-    emitSSE(res, 'content_block_delta', {
-      type: 'content_block_delta',
+    emitSSE(res, "content_block_delta", {
+      type: "content_block_delta",
       index: state.contentIndex,
       delta: {
-        type: 'text_delta',
+        type: "text_delta",
         text: delta.content,
       },
     });
@@ -1280,7 +1309,7 @@ function processOpenAIChunk(
       const toolIndex = item.index ?? 0;
       const existing = state.toolCalls[toolIndex] ?? {};
       const normalizedExtraContent = normalizeToolCallExtraContent(
-        item as unknown as Record<string, unknown>
+        item as unknown as Record<string, unknown>,
       );
       if (normalizedExtraContent !== undefined) {
         existing.extraContent = normalizedExtraContent;
@@ -1303,11 +1332,11 @@ function processOpenAIChunk(
 
       if (item.function?.arguments) {
         ensureToolUseBlock(res, state, toolIndex, existing);
-        emitSSE(res, 'content_block_delta', {
-          type: 'content_block_delta',
+        emitSSE(res, "content_block_delta", {
+          type: "content_block_delta",
           index: state.contentIndex,
           delta: {
-            type: 'input_json_delta',
+            type: "input_json_delta",
             partial_json: item.function.arguments,
           },
         });
@@ -1323,29 +1352,27 @@ function processOpenAIChunk(
 function parseSSEPacket(packet: string): { event: string; payload: string } {
   const lines = packet.split(/\r?\n/);
   const dataLines: string[] = [];
-  let event = '';
+  let event = "";
 
   for (const line of lines) {
-    if (line.startsWith('event:')) {
+    if (line.startsWith("event:")) {
       event = line.slice(6).trimStart();
       continue;
     }
-    if (line.startsWith('data:')) {
+    if (line.startsWith("data:")) {
       dataLines.push(line.slice(5).trimStart());
     }
   }
 
   return {
     event,
-    payload: dataLines.join('\n'),
+    payload: dataLines.join("\n"),
   };
 }
 
-function findSSEPacketBoundary(
-  buffer: string
-): { index: number; separatorLength: number } | null {
+function findSSEPacketBoundary(buffer: string): { index: number; separatorLength: number } | null {
   const match = /\r?\n\r?\n/.exec(buffer);
-  if (!match || typeof match.index !== 'number') {
+  if (!match || typeof match.index !== "number") {
     return null;
   }
 
@@ -1357,7 +1384,7 @@ function findSSEPacketBoundary(
 
 function extractResponsesFunctionCallMetadata(
   payloadObj: Record<string, unknown>,
-  itemObj: Record<string, unknown> | null
+  itemObj: Record<string, unknown> | null,
 ): {
   outputIndex: number | null;
   callId: string;
@@ -1382,13 +1409,11 @@ function extractResponsesFunctionCallMetadata(
 function registerResponsesFunctionCallState(
   context: ResponsesStreamContext,
   payloadObj: Record<string, unknown>,
-  itemObj: Record<string, unknown> | null
+  itemObj: Record<string, unknown> | null,
 ): ResponsesFunctionCallState {
   const metadata = extractResponsesFunctionCallMetadata(payloadObj, itemObj);
 
-  let callState = metadata.callId
-    ? context.functionCallByCallId.get(metadata.callId)
-    : undefined;
+  let callState = metadata.callId ? context.functionCallByCallId.get(metadata.callId) : undefined;
   if (!callState && metadata.itemId) {
     callState = context.functionCallByItemId.get(metadata.itemId);
   }
@@ -1397,17 +1422,16 @@ function registerResponsesFunctionCallState(
   }
 
   if (!callState) {
-    const outputIndex = metadata.outputIndex !== null
-      ? metadata.outputIndex
-      : context.nextToolIndex;
+    const outputIndex =
+      metadata.outputIndex !== null ? metadata.outputIndex : context.nextToolIndex;
     callState = {
       outputIndex,
-      callId: '',
-      itemId: '',
-      name: '',
+      callId: "",
+      itemId: "",
+      name: "",
       extraContent: undefined,
-      argumentsBuffer: '',
-      finalArguments: '',
+      argumentsBuffer: "",
+      finalArguments: "",
       emitted: false,
       metadataEmitted: false,
     };
@@ -1443,7 +1467,7 @@ function registerResponsesFunctionCallState(
 
 function syncToolCallStateWithResponsesFunctionCall(
   state: StreamState,
-  callState: ResponsesFunctionCallState
+  callState: ResponsesFunctionCallState,
 ): ToolCallState {
   const toolCall = state.toolCalls[callState.outputIndex] ?? {};
   if (callState.callId) {
@@ -1475,7 +1499,7 @@ function emitResponsesFunctionCallChunk(
     argumentsText?: string;
     responseId?: string;
     model?: string;
-  }
+  },
 ): void {
   const toolCall = syncToolCallStateWithResponsesFunctionCall(state, callState);
 
@@ -1484,7 +1508,7 @@ function emitResponsesFunctionCallChunk(
     functionObj.name = toolCall.name;
   }
 
-  const argumentsText = options.argumentsText ?? '';
+  const argumentsText = options.argumentsText ?? "";
   if (argumentsText) {
     functionObj.arguments = argumentsText;
   }
@@ -1503,7 +1527,7 @@ function emitResponsesFunctionCallChunk(
             {
               index: callState.outputIndex,
               id: toolCall.id,
-              type: 'function',
+              type: "function",
               function: functionObj,
             },
           ],
@@ -1519,7 +1543,7 @@ function emitResponsesFunctionCallMetadataOnce(
   context: ResponsesStreamContext,
   callState: ResponsesFunctionCallState,
   responseId?: string,
-  model?: string
+  model?: string,
 ): void {
   if (callState.metadataEmitted) {
     return;
@@ -1544,16 +1568,14 @@ function emitResponsesFunctionCallArgumentsOnce(
   callState: ResponsesFunctionCallState,
   argumentsText: string,
   responseId?: string,
-  model?: string
+  model?: string,
 ): void {
   if (callState.emitted) {
     return;
   }
 
-  const resolvedArguments = argumentsText
-    || callState.finalArguments
-    || callState.argumentsBuffer
-    || '{}';
+  const resolvedArguments =
+    argumentsText || callState.finalArguments || callState.argumentsBuffer || "{}";
   if (!resolvedArguments) {
     return;
   }
@@ -1574,14 +1596,14 @@ function emitResponsesCompletedFunctionCalls(
   res: http.ServerResponse,
   state: StreamState,
   context: ResponsesStreamContext,
-  responseObj: Record<string, unknown>
+  responseObj: Record<string, unknown>,
 ): void {
   const responseId = toString(responseObj.id);
   const model = toString(responseObj.model);
 
   for (const [index, item] of toArray(responseObj.output).entries()) {
     const itemObj = toOptionalObject(item);
-    if (!itemObj || toString(itemObj.type) !== 'function_call') {
+    if (!itemObj || toString(itemObj.type) !== "function_call") {
       continue;
     }
 
@@ -1600,19 +1622,13 @@ function emitResponsesCompletedFunctionCalls(
     }
 
     const callState = registerResponsesFunctionCallState(context, payloadObj, itemObj);
-    emitResponsesFunctionCallMetadataOnce(
-      res,
-      state,
-      context,
-      callState,
-      responseId,
-      model
-    );
+    emitResponsesFunctionCallMetadataOnce(res, state, context, callState, responseId, model);
 
-    const finalizedArguments = normalizeFunctionArguments(itemObj.arguments)
-      || callState.finalArguments
-      || callState.argumentsBuffer
-      || '{}';
+    const finalizedArguments =
+      normalizeFunctionArguments(itemObj.arguments) ||
+      callState.finalArguments ||
+      callState.argumentsBuffer ||
+      "{}";
     emitResponsesFunctionCallArgumentsOnce(
       res,
       state,
@@ -1620,7 +1636,7 @@ function emitResponsesCompletedFunctionCalls(
       callState,
       finalizedArguments,
       responseId,
-      model
+      model,
     );
   }
 }
@@ -1629,7 +1645,7 @@ function emitResponsesFallbackContent(
   res: http.ServerResponse,
   state: StreamState,
   responseObj: Record<string, unknown>,
-  context: ResponsesStreamContext
+  context: ResponsesStreamContext,
 ): void {
   const syntheticOpenAIResponse = convertResponsesToOpenAIResponse(responseObj);
   const firstChoice = toOptionalObject(toArray(syntheticOpenAIResponse.choices)[0]);
@@ -1648,7 +1664,7 @@ function emitResponsesFallbackContent(
   }
 
   const messageContent = message.content;
-  if (typeof messageContent === 'string' && messageContent) {
+  if (typeof messageContent === "string" && messageContent) {
     processOpenAIChunk(res, state, {
       id: toString(syntheticOpenAIResponse.id),
       model: toString(syntheticOpenAIResponse.model),
@@ -1688,16 +1704,16 @@ function emitResponsesFallbackContent(
       context,
       callState,
       toString(syntheticOpenAIResponse.id),
-      toString(syntheticOpenAIResponse.model)
+      toString(syntheticOpenAIResponse.model),
     );
     emitResponsesFunctionCallArgumentsOnce(
       res,
       state,
       context,
       callState,
-      toString(functionObj.arguments) || '{}',
+      toString(functionObj.arguments) || "{}",
       toString(syntheticOpenAIResponse.id),
-      toString(syntheticOpenAIResponse.model)
+      toString(syntheticOpenAIResponse.model),
     );
   }
 }
@@ -1707,7 +1723,7 @@ function processResponsesStreamEvent(
   state: StreamState,
   context: ResponsesStreamContext,
   event: string,
-  payloadObj: Record<string, unknown>
+  payloadObj: Record<string, unknown>,
 ): void {
   const eventType = event || toString(payloadObj.type);
 
@@ -1720,11 +1736,11 @@ function processResponsesStreamEvent(
     });
   }
 
-  if (eventType === 'response.created') {
+  if (eventType === "response.created") {
     return;
   }
 
-  if (eventType === 'response.output_text.delta' || eventType === 'response.output.delta') {
+  if (eventType === "response.output_text.delta" || eventType === "response.output.delta") {
     const textDelta = toString(payloadObj.delta);
     if (textDelta) {
       processOpenAIChunk(res, state, {
@@ -1738,8 +1754,8 @@ function processResponsesStreamEvent(
   }
 
   if (
-    eventType === 'response.reasoning_summary_text.delta'
-    || eventType === 'response.reasoning.delta'
+    eventType === "response.reasoning_summary_text.delta" ||
+    eventType === "response.reasoning.delta"
   ) {
     const thinkingDelta = toString(payloadObj.delta);
     if (thinkingDelta) {
@@ -1753,26 +1769,19 @@ function processResponsesStreamEvent(
     return;
   }
 
-  if (eventType === 'response.output_item.added' || eventType === 'response.output_item.done') {
+  if (eventType === "response.output_item.added" || eventType === "response.output_item.done") {
     const itemObj = toOptionalObject(payloadObj.item);
     if (!itemObj) {
       return;
     }
 
-    if (toString(itemObj.type) === 'function_call') {
+    if (toString(itemObj.type) === "function_call") {
       const callState = registerResponsesFunctionCallState(context, payloadObj, itemObj);
       const responseId = toString(payloadObj.response_id);
       const model = toString(payloadObj.model);
-      emitResponsesFunctionCallMetadataOnce(
-        res,
-        state,
-        context,
-        callState,
-        responseId,
-        model
-      );
+      emitResponsesFunctionCallMetadataOnce(res, state, context, callState, responseId, model);
 
-      if (eventType === 'response.output_item.done' && !callState.emitted) {
+      if (eventType === "response.output_item.done" && !callState.emitted) {
         const inlineArguments = normalizeFunctionArguments(itemObj.arguments);
         if (inlineArguments) {
           emitResponsesFunctionCallArgumentsOnce(
@@ -1782,7 +1791,7 @@ function processResponsesStreamEvent(
             callState,
             inlineArguments,
             responseId,
-            model
+            model,
           );
         }
       }
@@ -1790,7 +1799,7 @@ function processResponsesStreamEvent(
     return;
   }
 
-  if (eventType === 'response.function_call_arguments.delta') {
+  if (eventType === "response.function_call_arguments.delta") {
     const callState = registerResponsesFunctionCallState(context, payloadObj, null);
     const argumentsDelta = normalizeFunctionArguments(payloadObj.delta);
     if (!argumentsDelta) {
@@ -1800,11 +1809,10 @@ function processResponsesStreamEvent(
     return;
   }
 
-  if (eventType === 'response.function_call_arguments.done') {
+  if (eventType === "response.function_call_arguments.done") {
     const callState = registerResponsesFunctionCallState(context, payloadObj, null);
-    const argumentsDone = normalizeFunctionArguments(payloadObj.arguments)
-      || callState.argumentsBuffer
-      || '{}';
+    const argumentsDone =
+      normalizeFunctionArguments(payloadObj.arguments) || callState.argumentsBuffer || "{}";
     callState.finalArguments = argumentsDone;
     emitResponsesFunctionCallArgumentsOnce(
       res,
@@ -1813,12 +1821,12 @@ function processResponsesStreamEvent(
       callState,
       argumentsDone,
       toString(payloadObj.response_id),
-      toString(payloadObj.model)
+      toString(payloadObj.model),
     );
     return;
   }
 
-  if (eventType === 'response.completed') {
+  if (eventType === "response.completed") {
     const responseObj = resolveResponsesObject(payloadObj);
     if (!context.hasAnyDelta) {
       emitResponsesFallbackContent(res, state, responseObj, context);
@@ -1832,7 +1840,8 @@ function processResponsesStreamEvent(
       choices: [{ finish_reason: detectResponsesFinishReason(responseObj) }],
       usage: {
         prompt_tokens: toNumber(usage?.input_tokens) ?? toNumber(usage?.prompt_tokens) ?? 0,
-        completion_tokens: toNumber(usage?.output_tokens) ?? toNumber(usage?.completion_tokens) ?? 0,
+        completion_tokens:
+          toNumber(usage?.output_tokens) ?? toNumber(usage?.completion_tokens) ?? 0,
       },
     });
   }
@@ -1840,16 +1849,20 @@ function processResponsesStreamEvent(
 
 async function handleResponsesStreamResponse(
   upstreamResponse: Response,
-  res: http.ServerResponse
+  res: http.ServerResponse,
 ): Promise<void> {
   res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
   });
 
   if (!upstreamResponse.body) {
-    emitSSE(res, 'error', createAnthropicErrorBody('Upstream returned empty stream', 'stream_error'));
+    emitSSE(
+      res,
+      "error",
+      createAnthropicErrorBody("Upstream returned empty stream", "stream_error"),
+    );
     res.end();
     return;
   }
@@ -1859,7 +1872,7 @@ async function handleResponsesStreamResponse(
   const state = createStreamState();
   const context = createResponsesStreamContext();
 
-  let buffer = '';
+  let buffer = "";
   let sawDoneMarker = false;
 
   const flushDone = () => {
@@ -1868,8 +1881,8 @@ async function handleResponsesStreamResponse(
     }
     if (!state.hasMessageStop) {
       closeCurrentBlockIfNeeded(res, state);
-      emitSSE(res, 'message_stop', {
-        type: 'message_stop',
+      emitSSE(res, "message_stop", {
+        type: "message_stop",
       });
       state.hasMessageStop = true;
     }
@@ -1895,7 +1908,7 @@ async function handleResponsesStreamResponse(
         continue;
       }
 
-      if (payload === '[DONE]') {
+      if (payload === "[DONE]") {
         flushDone();
         sawDoneMarker = true;
         break;
@@ -1930,16 +1943,20 @@ async function handleResponsesStreamResponse(
 
 async function handleChatCompletionsStreamResponse(
   upstreamResponse: Response,
-  res: http.ServerResponse
+  res: http.ServerResponse,
 ): Promise<void> {
   res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
   });
 
   if (!upstreamResponse.body) {
-    emitSSE(res, 'error', createAnthropicErrorBody('Upstream returned empty stream', 'stream_error'));
+    emitSSE(
+      res,
+      "error",
+      createAnthropicErrorBody("Upstream returned empty stream", "stream_error"),
+    );
     res.end();
     return;
   }
@@ -1948,7 +1965,7 @@ async function handleChatCompletionsStreamResponse(
   const decoder = new TextDecoder();
   const state = createStreamState();
 
-  let buffer = '';
+  let buffer = "";
   let sawDoneMarker = false;
 
   const flushDone = () => {
@@ -1957,8 +1974,8 @@ async function handleChatCompletionsStreamResponse(
     }
     if (!state.hasMessageStop) {
       closeCurrentBlockIfNeeded(res, state);
-      emitSSE(res, 'message_stop', {
-        type: 'message_stop',
+      emitSSE(res, "message_stop", {
+        type: "message_stop",
       });
       state.hasMessageStop = true;
     }
@@ -1981,18 +1998,18 @@ async function handleChatCompletionsStreamResponse(
       const dataLines: string[] = [];
 
       for (const line of lines) {
-        if (line.startsWith('data:')) {
+        if (line.startsWith("data:")) {
           dataLines.push(line.slice(5).trimStart());
         }
       }
 
-      const payload = dataLines.join('\n');
+      const payload = dataLines.join("\n");
       if (!payload) {
         boundary = findSSEPacketBoundary(buffer);
         continue;
       }
 
-      if (payload === '[DONE]') {
+      if (payload === "[DONE]") {
         flushDone();
         sawDoneMarker = true;
         break;
@@ -2027,10 +2044,10 @@ async function handleChatCompletionsStreamResponse(
 
 async function handleCreateScheduledTask(
   req: http.IncomingMessage,
-  res: http.ServerResponse
+  res: http.ServerResponse,
 ): Promise<void> {
   if (!scheduledTaskDeps) {
-    writeJSON(res, 503, { success: false, error: 'Scheduled task service not available' } as any);
+    writeJSON(res, 503, { success: false, error: "Scheduled task service not available" } as any);
     return;
   }
 
@@ -2038,7 +2055,7 @@ async function handleCreateScheduledTask(
   try {
     body = await readRequestBody(req);
   } catch {
-    writeJSON(res, 400, { success: false, error: 'Invalid request body' } as any);
+    writeJSON(res, 400, { success: false, error: "Invalid request body" } as any);
     return;
   }
 
@@ -2046,41 +2063,50 @@ async function handleCreateScheduledTask(
   try {
     input = JSON.parse(body);
   } catch {
-    writeJSON(res, 400, { success: false, error: 'Invalid JSON' } as any);
+    writeJSON(res, 400, { success: false, error: "Invalid JSON" } as any);
     return;
   }
 
   // Validate required fields
   if (!input.name?.trim()) {
-    writeJSON(res, 400, { success: false, error: 'Missing required field: name' } as any);
+    writeJSON(res, 400, { success: false, error: "Missing required field: name" } as any);
     return;
   }
   if (!input.prompt?.trim()) {
-    writeJSON(res, 400, { success: false, error: 'Missing required field: prompt' } as any);
+    writeJSON(res, 400, { success: false, error: "Missing required field: prompt" } as any);
     return;
   }
   if (!input.schedule?.type) {
-    writeJSON(res, 400, { success: false, error: 'Missing required field: schedule.type' } as any);
+    writeJSON(res, 400, { success: false, error: "Missing required field: schedule.type" } as any);
     return;
   }
-  if (!['at', 'interval', 'cron'].includes(input.schedule.type)) {
-    writeJSON(res, 400, { success: false, error: 'Invalid schedule type. Must be: at, interval, cron' } as any);
+  if (!["at", "interval", "cron"].includes(input.schedule.type)) {
+    writeJSON(res, 400, {
+      success: false,
+      error: "Invalid schedule type. Must be: at, interval, cron",
+    } as any);
     return;
   }
-  if (input.schedule.type === 'cron' && !input.schedule.expression) {
-    writeJSON(res, 400, { success: false, error: 'Cron schedule requires expression field' } as any);
+  if (input.schedule.type === "cron" && !input.schedule.expression) {
+    writeJSON(res, 400, {
+      success: false,
+      error: "Cron schedule requires expression field",
+    } as any);
     return;
   }
-  if (input.schedule.type === 'at' && !input.schedule.datetime) {
-    writeJSON(res, 400, { success: false, error: 'At schedule requires datetime field' } as any);
+  if (input.schedule.type === "at" && !input.schedule.datetime) {
+    writeJSON(res, 400, { success: false, error: "At schedule requires datetime field" } as any);
     return;
   }
 
   // Validate: "at" type must be in the future
-  if (input.schedule.type === 'at' && input.schedule.datetime) {
+  if (input.schedule.type === "at" && input.schedule.datetime) {
     const targetMs = new Date(input.schedule.datetime).getTime();
     if (targetMs <= Date.now()) {
-      writeJSON(res, 400, { success: false, error: 'Execution time must be in the future for one-time (at) tasks' } as any);
+      writeJSON(res, 400, {
+        success: false,
+        error: "Execution time must be in the future for one-time (at) tasks",
+      } as any);
       return;
     }
   }
@@ -2089,7 +2115,10 @@ async function handleCreateScheduledTask(
   if (input.expiresAt) {
     const todayStr = new Date().toISOString().slice(0, 10);
     if (input.expiresAt <= todayStr) {
-      writeJSON(res, 400, { success: false, error: 'Expiration date must be in the future' } as any);
+      writeJSON(res, 400, {
+        success: false,
+        error: "Expiration date must be in the future",
+      } as any);
       return;
     }
   }
@@ -2097,12 +2126,12 @@ async function handleCreateScheduledTask(
   // Build ScheduledTaskInput with defaults
   const taskInput: ScheduledTaskInput = {
     name: input.name.trim(),
-    description: input.description || '',
+    description: input.description || "",
     schedule: input.schedule,
     prompt: input.prompt.trim(),
     workingDirectory: normalizeScheduledTaskWorkingDirectory(input.workingDirectory),
-    systemPrompt: input.systemPrompt || '',
-    executionMode: input.executionMode || 'auto',
+    systemPrompt: input.systemPrompt || "",
+    executionMode: input.executionMode || "auto",
     expiresAt: input.expiresAt || null,
     notifyPlatforms: input.notifyPlatforms || [],
     enabled: input.enabled !== false,
@@ -2114,7 +2143,7 @@ async function handleCreateScheduledTask(
 
     // Notify renderer to refresh task list
     for (const win of BrowserWindow.getAllWindows()) {
-      win.webContents.send('scheduledTask:statusUpdate', {
+      win.webContents.send("scheduledTask:statusUpdate", {
         taskId: task.id,
         state: task.state,
       });
@@ -2123,19 +2152,16 @@ async function handleCreateScheduledTask(
     console.log(`[CoworkProxy] Scheduled task created via API: ${task.id} "${task.name}"`);
     writeJSON(res, 201, { success: true, task } as any);
   } catch (err: any) {
-    console.error('[CoworkProxy] Failed to create scheduled task:', err);
+    console.error("[CoworkProxy] Failed to create scheduled task:", err);
     writeJSON(res, 500, { success: false, error: err.message } as any);
   }
 }
 
-async function handleRequest(
-  req: http.IncomingMessage,
-  res: http.ServerResponse
-): Promise<void> {
-  const method = (req.method || 'GET').toUpperCase();
-  const url = new URL(req.url || '/', `http://${LOCAL_HOST}`);
+async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  const method = (req.method || "GET").toUpperCase();
+  const url = new URL(req.url || "/", `http://${LOCAL_HOST}`);
 
-  if (method === 'GET' && url.pathname === '/healthz') {
+  if (method === "GET" && url.pathname === "/healthz") {
     writeJSON(res, 200, {
       ok: true,
       running: Boolean(proxyServer),
@@ -2146,13 +2172,13 @@ async function handleRequest(
   }
 
   // Scheduled task creation API
-  if (method === 'POST' && url.pathname === '/api/scheduled-tasks') {
+  if (method === "POST" && url.pathname === "/api/scheduled-tasks") {
     await handleCreateScheduledTask(req, res);
     return;
   }
 
-  if (method !== 'POST' || url.pathname !== '/v1/messages') {
-    writeJSON(res, 404, createAnthropicErrorBody('Not found', 'not_found_error'));
+  if (method !== "POST" || url.pathname !== "/v1/messages") {
+    writeJSON(res, 404, createAnthropicErrorBody("Not found", "not_found_error"));
     return;
   }
 
@@ -2160,17 +2186,20 @@ async function handleRequest(
     writeJSON(
       res,
       503,
-      createAnthropicErrorBody('OpenAI compatibility proxy is not configured', 'service_unavailable')
+      createAnthropicErrorBody(
+        "OpenAI compatibility proxy is not configured",
+        "service_unavailable",
+      ),
     );
     return;
   }
 
-  let requestBodyRaw = '';
+  let requestBodyRaw = "";
   try {
     requestBodyRaw = await readRequestBody(req);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Invalid request body';
-    writeJSON(res, 400, createAnthropicErrorBody(message, 'invalid_request_error'));
+    const message = error instanceof Error ? error.message : "Invalid request body";
+    writeJSON(res, 400, createAnthropicErrorBody(message, "invalid_request_error"));
     return;
   }
 
@@ -2178,7 +2207,11 @@ async function handleRequest(
   try {
     parsedRequestBody = JSON.parse(requestBodyRaw);
   } catch {
-    writeJSON(res, 400, createAnthropicErrorBody('Request body must be valid JSON', 'invalid_request_error'));
+    writeJSON(
+      res,
+      400,
+      createAnthropicErrorBody("Request body must be valid JSON", "invalid_request_error"),
+    );
     return;
   }
 
@@ -2190,17 +2223,18 @@ async function handleRequest(
   filterOpenAIToolsForProvider(openAIRequest, upstreamConfig.provider);
   hydrateOpenAIRequestToolCalls(openAIRequest, upstreamConfig.provider, upstreamConfig.baseURL);
 
-  if (upstreamAPIType === 'chat_completions') {
+  if (upstreamAPIType === "chat_completions") {
     normalizeMaxTokensFieldForOpenAIProvider(openAIRequest, upstreamConfig.provider);
   }
 
-  const upstreamRequest = upstreamAPIType === 'responses'
-    ? convertChatCompletionsRequestToResponsesRequest(openAIRequest)
-    : openAIRequest;
+  const upstreamRequest =
+    upstreamAPIType === "responses"
+      ? convertChatCompletionsRequestToResponsesRequest(openAIRequest)
+      : openAIRequest;
   const stream = Boolean(upstreamRequest.stream);
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
   if (upstreamConfig.apiKey) {
     headers.Authorization = `Bearer ${upstreamConfig.apiKey}`;
@@ -2211,11 +2245,11 @@ async function handleRequest(
 
   const sendUpstreamRequest = async (
     payload: Record<string, unknown>,
-    targetURL: string
+    targetURL: string,
   ): Promise<Response> => {
     currentTargetURL = targetURL;
     return session.defaultSession.fetch(targetURL, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify(payload),
     });
@@ -2225,7 +2259,7 @@ async function handleRequest(
   try {
     upstreamResponse = await sendUpstreamRequest(upstreamRequest, targetURLs[0]);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Network error';
+    const message = error instanceof Error ? error.message : "Network error";
     lastProxyError = message;
     writeJSON(res, 502, createAnthropicErrorBody(message));
     return;
@@ -2238,7 +2272,7 @@ async function handleRequest(
         try {
           upstreamResponse = await sendUpstreamRequest(upstreamRequest, retryURL);
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Network error';
+          const message = error instanceof Error ? error.message : "Network error";
           lastProxyError = message;
           writeJSON(res, 502, createAnthropicErrorBody(message));
           return;
@@ -2252,11 +2286,11 @@ async function handleRequest(
     if (!upstreamResponse.ok) {
       const firstErrorText = await upstreamResponse.text();
       let firstErrorMessage = extractErrorMessage(firstErrorText);
-      if (firstErrorMessage === 'Upstream API request failed') {
+      if (firstErrorMessage === "Upstream API request failed") {
         firstErrorMessage = `Upstream API request failed (${upstreamResponse.status}) ${currentTargetURL}`;
       }
 
-      if (upstreamAPIType === 'chat_completions' && upstreamResponse.status === 400) {
+      if (upstreamAPIType === "chat_completions" && upstreamResponse.status === 400) {
         if (isMaxTokensUnsupportedError(firstErrorMessage)) {
           const convertResult = convertMaxTokensToMaxCompletionTokens(upstreamRequest);
           if (convertResult.changed) {
@@ -2267,12 +2301,12 @@ async function handleRequest(
                 firstErrorMessage = extractErrorMessage(retryErrorText);
               } else {
                 console.info(
-                  '[cowork-openai-compat-proxy] Retried request with max_completion_tokens '
-                    + `converted from max_tokens=${convertResult.convertedTo}`
+                  "[cowork-openai-compat-proxy] Retried request with max_completion_tokens " +
+                    `converted from max_tokens=${convertResult.convertedTo}`,
                 );
               }
             } catch (error) {
-              const message = error instanceof Error ? error.message : 'Network error';
+              const message = error instanceof Error ? error.message : "Network error";
               lastProxyError = message;
               writeJSON(res, 502, createAnthropicErrorBody(message));
               return;
@@ -2292,11 +2326,11 @@ async function handleRequest(
                 firstErrorMessage = extractErrorMessage(retryErrorText);
               } else {
                 console.info(
-                  `[cowork-openai-compat-proxy] Retried request with clamped max_tokens=${clampResult.clampedTo}`
+                  `[cowork-openai-compat-proxy] Retried request with clamped max_tokens=${clampResult.clampedTo}`,
                 );
               }
             } catch (error) {
-              const message = error instanceof Error ? error.message : 'Network error';
+              const message = error instanceof Error ? error.message : "Network error";
               lastProxyError = message;
               writeJSON(res, 502, createAnthropicErrorBody(message));
               return;
@@ -2316,7 +2350,7 @@ async function handleRequest(
   lastProxyError = null;
 
   if (stream) {
-    if (upstreamAPIType === 'responses') {
+    if (upstreamAPIType === "responses") {
       await handleResponsesStreamResponse(upstreamResponse, res);
     } else {
       await handleChatCompletionsStreamResponse(upstreamResponse, res);
@@ -2328,12 +2362,12 @@ async function handleRequest(
   try {
     upstreamJSON = await upstreamResponse.json();
   } catch {
-    lastProxyError = 'Failed to parse upstream JSON response';
-    writeJSON(res, 502, createAnthropicErrorBody('Failed to parse upstream JSON response'));
+    lastProxyError = "Failed to parse upstream JSON response";
+    writeJSON(res, 502, createAnthropicErrorBody("Failed to parse upstream JSON response"));
     return;
   }
 
-  if (upstreamAPIType === 'responses') {
+  if (upstreamAPIType === "responses") {
     const syntheticOpenAIResponse = convertResponsesToOpenAIResponse(upstreamJSON);
     cacheToolCallExtraContentFromOpenAIResponse(syntheticOpenAIResponse);
     cacheToolCallExtraContentFromResponsesResponse(upstreamJSON);
@@ -2365,7 +2399,7 @@ export async function startCoworkOpenAICompatProxy(): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const server = http.createServer((req, res) => {
       void handleRequest(req, res).catch((error) => {
-        const message = error instanceof Error ? error.message : 'Internal proxy error';
+        const message = error instanceof Error ? error.message : "Internal proxy error";
         lastProxyError = message;
         if (!res.headersSent) {
           writeJSON(res, 500, createAnthropicErrorBody(message));
@@ -2375,15 +2409,15 @@ export async function startCoworkOpenAICompatProxy(): Promise<void> {
       });
     });
 
-    server.on('error', (error) => {
+    server.on("error", (error) => {
       lastProxyError = error.message;
       reject(error);
     });
 
     server.listen(0, PROXY_BIND_HOST, () => {
       const addr = server.address();
-      if (!addr || typeof addr === 'string') {
-        reject(new Error('Failed to bind OpenAI compatibility proxy port'));
+      if (!addr || typeof addr === "string") {
+        reject(new Error("Failed to bind OpenAI compatibility proxy port"));
         return;
       }
 
@@ -2424,11 +2458,13 @@ export function configureCoworkOpenAICompatProxy(config: OpenAICompatUpstreamCon
   lastProxyError = null;
 }
 
-export function getCoworkOpenAICompatProxyBaseURL(target: OpenAICompatProxyTarget = 'local'): string | null {
+export function getCoworkOpenAICompatProxyBaseURL(
+  target: OpenAICompatProxyTarget = "local",
+): string | null {
   if (!proxyServer || !proxyPort) {
     return null;
   }
-  const host = target === 'sandbox' ? SANDBOX_HOST : LOCAL_HOST;
+  const host = target === "sandbox" ? SANDBOX_HOST : LOCAL_HOST;
   return `http://${host}:${proxyPort}`;
 }
 
@@ -2438,7 +2474,7 @@ export function getCoworkOpenAICompatProxyBaseURL(target: OpenAICompatProxyTarge
  * this always returns the local proxy URL regardless of API format.
  */
 export function getInternalApiBaseURL(): string | null {
-  return getCoworkOpenAICompatProxyBaseURL('local');
+  return getCoworkOpenAICompatProxyBaseURL("local");
 }
 
 export function getCoworkOpenAICompatProxyStatus(): OpenAICompatProxyStatus {

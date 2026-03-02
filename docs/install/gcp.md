@@ -22,7 +22,7 @@ Pricing varies by machine type and region; pick the smallest VM that fits your w
 - Create a Compute Engine VM
 - Install Docker (isolated app runtime)
 - Start the Marv Gateway in Docker
-- Persist `~/.marv` + `~/.openclaw/workspace` on the host (survives restarts/rebuilds)
+- Persist `~/.marv` + `~/.marv/workspace` on the host (survives restarts/rebuilds)
 - Access the Control UI from your laptop via an SSH tunnel
 
 The Gateway can be accessed via:
@@ -89,8 +89,8 @@ All steps can be done via the web UI at [https://console.cloud.google.com](https
 **CLI:**
 
 ```bash
-gcloud projects create my-openclaw-project --name="Marv Gateway"
-gcloud config set project my-openclaw-project
+gcloud projects create my-marv-project --name="Marv Gateway"
+gcloud config set project my-marv-project
 ```
 
 Enable billing at [https://console.cloud.google.com/billing](https://console.cloud.google.com/billing) (required for Compute Engine).
@@ -122,7 +122,7 @@ gcloud services enable compute.googleapis.com
 **CLI:**
 
 ```bash
-gcloud compute instances create openclaw-gateway \
+gcloud compute instances create marv-gateway \
   --zone=us-central1-a \
   --machine-type=e2-small \
   --boot-disk-size=20GB \
@@ -133,7 +133,7 @@ gcloud compute instances create openclaw-gateway \
 **Console:**
 
 1. Go to Compute Engine > VM instances > Create instance
-2. Name: `openclaw-gateway`
+2. Name: `marv-gateway`
 3. Region: `us-central1`, Zone: `us-central1-a`
 4. Machine type: `e2-small`
 5. Boot disk: Debian 12, 20GB
@@ -146,7 +146,7 @@ gcloud compute instances create openclaw-gateway \
 **CLI:**
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a
+gcloud compute ssh marv-gateway --zone=us-central1-a
 ```
 
 **Console:**
@@ -175,7 +175,7 @@ exit
 Then SSH back in:
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a
+gcloud compute ssh marv-gateway --zone=us-central1-a
 ```
 
 Verify:
@@ -190,7 +190,7 @@ docker compose version
 ## 6) Clone the Marv repository
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 ```
 
@@ -205,7 +205,7 @@ All long-lived state must live on the host.
 
 ```bash
 mkdir -p ~/.marv
-mkdir -p ~/.openclaw/workspace
+mkdir -p ~/.marv/workspace
 ```
 
 ---
@@ -215,13 +215,13 @@ mkdir -p ~/.openclaw/workspace
 Create `.env` in the repository root.
 
 ```bash
-OPENCLAW_IMAGE=marv:latest
-OPENCLAW_GATEWAY_TOKEN=change-me-now
-OPENCLAW_GATEWAY_BIND=lan
-OPENCLAW_GATEWAY_PORT=18789
+MARV_IMAGE=marv:latest
+MARV_GATEWAY_TOKEN=change-me-now
+MARV_GATEWAY_BIND=lan
+MARV_GATEWAY_PORT=18789
 
-OPENCLAW_CONFIG_DIR=/home/$USER/.marv
-OPENCLAW_WORKSPACE_DIR=/home/$USER/.openclaw/workspace
+MARV_CONFIG_DIR=/home/$USER/.marv
+MARV_WORKSPACE_DIR=/home/$USER/.marv/workspace
 
 GOG_KEYRING_PASSWORD=change-me-now
 XDG_CONFIG_HOME=/home/node/.marv
@@ -243,8 +243,8 @@ Create or update `docker-compose.yml`.
 
 ```yaml
 services:
-  openclaw-gateway:
-    image: ${OPENCLAW_IMAGE}
+  marv-gateway:
+    image: ${MARV_IMAGE}
     build: .
     restart: unless-stopped
     env_file:
@@ -253,28 +253,28 @@ services:
       - HOME=/home/node
       - NODE_ENV=production
       - TERM=xterm-256color
-      - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
-      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - MARV_GATEWAY_BIND=${MARV_GATEWAY_BIND}
+      - MARV_GATEWAY_PORT=${MARV_GATEWAY_PORT}
+      - MARV_GATEWAY_TOKEN=${MARV_GATEWAY_TOKEN}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
       - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.marv
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${MARV_CONFIG_DIR}:/home/node/.marv
+      - ${MARV_WORKSPACE_DIR}:/home/node/.marv/workspace
     ports:
       # Recommended: keep the Gateway loopback-only on the VM; access via SSH tunnel.
       # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${MARV_GATEWAY_PORT}:18789"
     command:
       [
         "node",
         "dist/index.js",
         "gateway",
         "--bind",
-        "${OPENCLAW_GATEWAY_BIND}",
+        "${MARV_GATEWAY_BIND}",
         "--port",
-        "${OPENCLAW_GATEWAY_PORT}",
+        "${MARV_GATEWAY_PORT}",
       ]
 ```
 
@@ -347,15 +347,15 @@ CMD ["node","dist/index.js"]
 
 ```bash
 docker compose build
-docker compose up -d openclaw-gateway
+docker compose up -d marv-gateway
 ```
 
 Verify binaries:
 
 ```bash
-docker compose exec openclaw-gateway which gog
-docker compose exec openclaw-gateway which goplaces
-docker compose exec openclaw-gateway which wacli
+docker compose exec marv-gateway which gog
+docker compose exec marv-gateway which goplaces
+docker compose exec marv-gateway which wacli
 ```
 
 Expected output:
@@ -371,7 +371,7 @@ Expected output:
 ## 12) Verify Gateway
 
 ```bash
-docker compose logs -f openclaw-gateway
+docker compose logs -f marv-gateway
 ```
 
 Success:
@@ -387,7 +387,7 @@ Success:
 Create an SSH tunnel to forward the Gateway port:
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a -- -L 18789:127.0.0.1:18789
+gcloud compute ssh marv-gateway --zone=us-central1-a -- -L 18789:127.0.0.1:18789
 ```
 
 Open in your browser:
@@ -405,12 +405,12 @@ All long-lived state must survive restarts, rebuilds, and reboots.
 
 | Component           | Location                          | Persistence mechanism  | Notes                           |
 | ------------------- | --------------------------------- | ---------------------- | ------------------------------- |
-| Gateway config      | `/home/node/.openclaw/`           | Host volume mount      | Includes `marv.json`, tokens    |
-| Model auth profiles | `/home/node/.openclaw/`           | Host volume mount      | OAuth tokens, API keys          |
-| Skill configs       | `/home/node/.openclaw/skills/`    | Host volume mount      | Skill-level state               |
-| Agent workspace     | `/home/node/.openclaw/workspace/` | Host volume mount      | Code and agent artifacts        |
-| WhatsApp session    | `/home/node/.openclaw/`           | Host volume mount      | Preserves QR login              |
-| Gmail keyring       | `/home/node/.openclaw/`           | Host volume + password | Requires `GOG_KEYRING_PASSWORD` |
+| Gateway config      | `/home/node/.marv/`           | Host volume mount      | Includes `marv.json`, tokens    |
+| Model auth profiles | `/home/node/.marv/`           | Host volume mount      | OAuth tokens, API keys          |
+| Skill configs       | `/home/node/.marv/skills/`    | Host volume mount      | Skill-level state               |
+| Agent workspace     | `/home/node/.marv/workspace/` | Host volume mount      | Code and agent artifacts        |
+| WhatsApp session    | `/home/node/.marv/`           | Host volume mount      | Preserves QR login              |
+| Gmail keyring       | `/home/node/.marv/`           | Host volume + password | Requires `GOG_KEYRING_PASSWORD` |
 | External binaries   | `/usr/local/bin/`                 | Docker image           | Must be baked at build time     |
 | Node runtime        | Container filesystem              | Docker image           | Rebuilt every image build       |
 | OS packages         | Container filesystem              | Docker image           | Do not install at runtime       |
@@ -453,15 +453,15 @@ If using e2-micro and hitting OOM, upgrade to e2-small or e2-medium:
 
 ```bash
 # Stop the VM first
-gcloud compute instances stop openclaw-gateway --zone=us-central1-a
+gcloud compute instances stop marv-gateway --zone=us-central1-a
 
 # Change machine type
-gcloud compute instances set-machine-type openclaw-gateway \
+gcloud compute instances set-machine-type marv-gateway \
   --zone=us-central1-a \
   --machine-type=e2-small
 
 # Start the VM
-gcloud compute instances start openclaw-gateway --zone=us-central1-a
+gcloud compute instances start marv-gateway --zone=us-central1-a
 ```
 
 ---
@@ -475,15 +475,15 @@ For automation or CI/CD pipelines, create a dedicated service account with minim
 1. Create a service account:
 
    ```bash
-   gcloud iam service-accounts create openclaw-deploy \
+   gcloud iam service-accounts create marv-deploy \
      --display-name="Marv Deployment"
    ```
 
 2. Grant Compute Instance Admin role (or narrower custom role):
 
    ```bash
-   gcloud projects add-iam-policy-binding my-openclaw-project \
-     --member="serviceAccount:openclaw-deploy@my-openclaw-project.iam.gserviceaccount.com" \
+   gcloud projects add-iam-policy-binding my-marv-project \
+     --member="serviceAccount:marv-deploy@my-marv-project.iam.gserviceaccount.com" \
      --role="roles/compute.instanceAdmin.v1"
    ```
 

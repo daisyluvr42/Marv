@@ -60,7 +60,7 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "image",
   ],
   // Legacy alias kept for older configs.
-  "group:openclaw": [
+  "group:marv": [
     "browser",
     "canvas",
     "nodes",

@@ -32,7 +32,7 @@ marv plugins list
 2. 安装官方插件（例如：Voice Call）：
 
 ```bash
-marv plugins install @openclaw/voice-call
+marv plugins install @marv/voice-call
 ```
 
 3. 重启 Gateway 网关，然后在 `plugins.entries.<id>.config` 下配置。
@@ -41,15 +41,15 @@ marv plugins install @openclaw/voice-call
 
 ## 可用插件（官方）
 
-- 从 2026.1.15 起 Microsoft Teams 仅作为插件提供；如果使用 Teams，请安装 `@openclaw/msteams`。
+- 从 2026.1.15 起 Microsoft Teams 仅作为插件提供；如果使用 Teams，请安装 `@marv/msteams`。
 - Memory (Core) — 捆绑的记忆搜索插件（通过 `plugins.slots.memory` 默认启用）
 - Memory (LanceDB) — 捆绑的长期记忆插件（自动召回/捕获；设置 `plugins.slots.memory = "memory-lancedb"`）
-- [Voice Call](/plugins/voice-call) — `@openclaw/voice-call`
-- [Zalo Personal](/plugins/zalouser) — `@openclaw/zalouser`
-- [Matrix](/channels/matrix) — `@openclaw/matrix`
-- [Nostr](/channels/nostr) — `@openclaw/nostr`
-- [Zalo](/channels/zalo) — `@openclaw/zalo`
-- [Microsoft Teams](/channels/msteams) — `@openclaw/msteams`
+- [Voice Call](/plugins/voice-call) — `@marv/voice-call`
+- [Zalo Personal](/plugins/zalouser) — `@marv/zalouser`
+- [Matrix](/channels/matrix) — `@marv/matrix`
+- [Nostr](/channels/nostr) — `@marv/nostr`
+- [Zalo](/channels/zalo) — `@marv/zalo`
+- [Microsoft Teams](/channels/msteams) — `@marv/msteams`
 - Google Antigravity OAuth（提供商认证）— 作为 `google-antigravity-auth` 捆绑（默认禁用）
 - Gemini CLI OAuth（提供商认证）— 作为 `google-gemini-cli-auth` 捆绑（默认禁用）
 - Qwen OAuth（提供商认证）— 作为 `qwen-portal-auth` 捆绑（默认禁用）
@@ -98,17 +98,17 @@ Marv 按顺序扫描：
 
 2. 工作区扩展
 
-- `<workspace>/.openclaw/extensions/*.ts`
-- `<workspace>/.openclaw/extensions/*/index.ts`
+- `<workspace>/.marv/extensions/*.ts`
+- `<workspace>/.marv/extensions/*/index.ts`
 
 3. 全局扩展
 
-- `~/.openclaw/extensions/*.ts`
-- `~/.openclaw/extensions/*/index.ts`
+- `~/.marv/extensions/*.ts`
+- `~/.marv/extensions/*/index.ts`
 
 4. 捆绑扩展（随 Marv 一起发布，**默认禁用**）
 
-- `<openclaw>/extensions/*`
+- `<marv>/extensions/*`
 
 捆绑插件必须通过 `plugins.entries.<id>.enabled` 或 `marv plugins enable <id>` 显式启用。已安装的插件默认启用，但可以用相同方式禁用。
 
@@ -123,7 +123,7 @@ Marv 按顺序扫描：
 ```json
 {
   "name": "my-pack",
-  "openclaw": {
+  "marv": {
     "extensions": ["./src/safety.ts", "./src/tools.ts"]
   }
 }
@@ -141,8 +141,8 @@ Marv 按顺序扫描：
 
 ```json
 {
-  "name": "@openclaw/nextcloud-talk",
-  "openclaw": {
+  "name": "@marv/nextcloud-talk",
+  "marv": {
     "extensions": ["./index.ts"],
     "channel": {
       "id": "nextcloud-talk",
@@ -155,7 +155,7 @@ Marv 按顺序扫描：
       "aliases": ["nc-talk", "nc"]
     },
     "install": {
-      "npmSpec": "@openclaw/nextcloud-talk",
+      "npmSpec": "@marv/nextcloud-talk",
       "localPath": "extensions/nextcloud-talk",
       "defaultChoice": "npm"
     }
@@ -165,11 +165,11 @@ Marv 按顺序扫描：
 
 Marv 还可以合并**外部渠道目录**（例如，MPM 注册表导出）。将 JSON 文件放在以下位置之一：
 
-- `~/.openclaw/mpm/plugins.json`
-- `~/.openclaw/mpm/catalog.json`
-- `~/.openclaw/plugins/catalog.json`
+- `~/.marv/mpm/plugins.json`
+- `~/.marv/mpm/catalog.json`
+- `~/.marv/plugins/catalog.json`
 
-或将 `OPENCLAW_PLUGIN_CATALOG_PATHS`（或 `OPENCLAW_MPM_CATALOG_PATHS`）指向一个或多个 JSON 文件（逗号/分号/`PATH` 分隔）。每个文件应包含 `{ "entries": [ { "name": "@scope/pkg", "openclaw": { "channel": {...}, "install": {...} } } ] }`。
+或将 `MARV_PLUGIN_CATALOG_PATHS`（或 `MARV_MPM_CATALOG_PATHS`）指向一个或多个 JSON 文件（逗号/分号/`PATH` 分隔）。每个文件应包含 `{ "entries": [ { "name": "@scope/pkg", "marv": { "channel": {...}, "install": {...} } } ] }`。
 
 ## 插件 ID
 
@@ -266,12 +266,12 @@ Marv 在运行时根据发现的插件增强 `uiHints`：
 ```bash
 marv plugins list
 marv plugins info <id>
-marv plugins install <path>                 # copy a local file/dir into ~/.openclaw/extensions/<id>
+marv plugins install <path>                 # copy a local file/dir into ~/.marv/extensions/<id>
 marv plugins install ./extensions/voice-call # relative path ok
 marv plugins install ./plugin.tgz           # install from a local tarball
 marv plugins install ./plugin.zip           # install from a local zip
 marv plugins install -l ./extensions/voice-call # link (no copy) for dev
-marv plugins install @openclaw/voice-call # install from npm
+marv plugins install @marv/voice-call # install from npm
 marv plugins update <id>
 marv plugins update --all
 marv plugins enable <id>
@@ -297,7 +297,7 @@ marv plugins doctor
 ### 示例
 
 ```
-import { registerPluginHooksFromDir } from "openclaw/plugin-sdk";
+import { registerPluginHooksFromDir } from "marv/plugin-sdk";
 
 export default function register(api) {
   registerPluginHooksFromDir(api, "./hooks");
@@ -600,13 +600,13 @@ export default function (api) {
 推荐的打包方式：
 
 - 主包：`marv`（本仓库）
-- 插件：`@openclaw/*` 下的独立 npm 包（例如：`@openclaw/voice-call`）
+- 插件：`@marv/*` 下的独立 npm 包（例如：`@marv/voice-call`）
 
 发布契约：
 
 - 插件 `package.json` 必须包含带有一个或多个入口文件的 `marv.extensions`。
 - 入口文件可以是 `.js` 或 `.ts`（jiti 在运行时加载 TS）。
-- `marv plugins install <npm-spec>` 使用 `npm pack`，提取到 `~/.openclaw/extensions/<id>/`，并在配置中启用它。
+- `marv plugins install <npm-spec>` 使用 `npm pack`，提取到 `~/.marv/extensions/<id>/`，并在配置中启用它。
 - 配置键稳定性：作用域包被规范化为 `plugins.entries.*` 的**无作用域** id。
 
 ## 示例插件：Voice Call

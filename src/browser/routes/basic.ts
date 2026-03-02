@@ -140,7 +140,7 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     const cdpUrl = toStringOrEmpty((req.body as { cdpUrl?: unknown })?.cdpUrl);
     const driver = toStringOrEmpty((req.body as { driver?: unknown })?.driver) as
       | "marv"
-      | "openclaw"
+       
       | "extension"
       | "";
 

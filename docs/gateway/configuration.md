@@ -9,7 +9,7 @@ title: "Configuration"
 
 # Configuration
 
-Marv reads an optional <Tooltip tip="JSON5 supports comments and trailing commas">**JSON5**</Tooltip> config from `~/.openclaw/marv.json`.
+Marv reads an optional <Tooltip tip="JSON5 supports comments and trailing commas">**JSON5**</Tooltip> config from `~/.marv/marv.json`.
 
 If the file is missing, Marv uses safe defaults. Common reasons to add a config:
 
@@ -26,9 +26,9 @@ See the [full reference](/gateway/configuration-reference) for every available f
 ## Minimal config
 
 ```json5
-// ~/.openclaw/marv.json
+// ~/.marv/marv.json
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.marv/workspace" } },
   channels: { whatsapp: { allowFrom: ["+15555550123"] } },
 }
 ```
@@ -54,7 +54,7 @@ See the [full reference](/gateway/configuration-reference) for every available f
     The Control UI renders a form from the config schema, with a **Raw JSON** editor as an escape hatch.
   </Tab>
   <Tab title="Direct edit">
-    Edit `~/.openclaw/marv.json` directly. The Gateway watches the file and applies changes automatically (see [hot reload](#config-hot-reload)).
+    Edit `~/.marv/marv.json` directly. The Gateway watches the file and applies changes automatically (see [hot reload](#config-hot-reload)).
   </Tab>
 </Tabs>
 
@@ -156,7 +156,7 @@ When validation fails:
           {
             id: "main",
             groupChat: {
-              mentionPatterns: ["@openclaw", "openclaw"],
+              mentionPatterns: ["@marv", "marv"],
             },
           },
         ],
@@ -289,8 +289,8 @@ When validation fails:
     {
       agents: {
         list: [
-          { id: "home", default: true, workspace: "~/.openclaw/workspace-home" },
-          { id: "work", workspace: "~/.openclaw/workspace-work" },
+          { id: "home", default: true, workspace: "~/.marv/workspace-home" },
+          { id: "work", workspace: "~/.marv/workspace-work" },
         ],
       },
       bindings: [
@@ -308,7 +308,7 @@ When validation fails:
     Use `$include` to organize large configs:
 
     ```json5
-    // ~/.openclaw/marv.json
+    // ~/.marv/marv.json
     {
       gateway: { port: 18789 },
       agents: { $include: "./agents.json5" },
@@ -330,7 +330,7 @@ When validation fails:
 
 ## Config hot reload
 
-The Gateway watches `~/.openclaw/marv.json` and applies changes automatically — no manual restart needed for most settings.
+The Gateway watches `~/.marv/marv.json` and applies changes automatically — no manual restart needed for most settings.
 
 ### Reload modes
 
@@ -389,7 +389,7 @@ Most fields hot-apply without downtime. In `hybrid` mode, restart-required chang
     ```bash
     marv gateway call config.get --params '{}'  # capture payload.hash
     marv gateway call config.apply --params '{
-      "raw": "{ agents: { defaults: { workspace: \"~/.openclaw/workspace\" } } }",
+      "raw": "{ agents: { defaults: { workspace: \"~/.marv/workspace\" } } }",
       "baseHash": "<hash>",
       "sessionKey": "agent:main:whatsapp:dm:+15555550123"
     }'
@@ -458,7 +458,7 @@ Most fields hot-apply without downtime. In `hybrid` mode, restart-required chang
 Marv reads env vars from the parent process plus:
 
 - `.env` from the current working directory (if present)
-- `~/.openclaw/.env` (global fallback)
+- `~/.marv/.env` (global fallback)
 
 Neither file overrides existing env vars. You can also set inline env vars in config:
 
@@ -482,7 +482,7 @@ Neither file overrides existing env vars. You can also set inline env vars in co
 }
 ```
 
-Env var equivalent: `OPENCLAW_LOAD_SHELL_ENV=1`
+Env var equivalent: `MARV_LOAD_SHELL_ENV=1`
 </Accordion>
 
 <Accordion title="Env var substitution in config values">
@@ -490,7 +490,7 @@ Env var equivalent: `OPENCLAW_LOAD_SHELL_ENV=1`
 
 ```json5
 {
-  gateway: { auth: { token: "${OPENCLAW_GATEWAY_TOKEN}" } },
+  gateway: { auth: { token: "${MARV_GATEWAY_TOKEN}" } },
   models: { providers: { custom: { apiKey: "${CUSTOM_API_KEY}" } } },
 }
 ```

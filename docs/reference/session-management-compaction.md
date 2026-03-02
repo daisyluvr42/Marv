@@ -57,8 +57,8 @@ Marv persists sessions in two layers:
 
 Per agent, on the Gateway host:
 
-- Store: `~/.openclaw/agents/<agentId>/sessions/sessions.json`
-- Transcripts: `~/.openclaw/agents/<agentId>/sessions/<sessionId>.jsonl`
+- Store: `~/.marv/agents/<agentId>/sessions/sessions.json`
+- Transcripts: `~/.marv/agents/<agentId>/sessions/<sessionId>.jsonl`
   - Telegram topic sessions: `.../<sessionId>-topic-<threadId>.jsonl`
 
 Marv resolves these via `src/config/sessions.ts`.

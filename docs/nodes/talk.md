@@ -47,7 +47,7 @@ Supported keys:
 - `seed`, `normalize`, `lang`, `output_format`, `latency_tier`
 - `once`
 
-## Config (`~/.openclaw/marv.json`)
+## Config (`~/.marv/marv.json`)
 
 ```json5
 {

@@ -40,7 +40,7 @@ function withLoopbackBrowserAuthImpl(
   if (
     headers.has("authorization") ||
     headers.has("x-marv-password") ||
-    headers.has("x-openclaw-password")
+    headers.has("x-marv-password")
   ) {
     return { ...init, headers };
   }
@@ -57,7 +57,7 @@ function withLoopbackBrowserAuthImpl(
     }
     if (auth.password) {
       headers.set("x-marv-password", auth.password);
-      headers.set("x-openclaw-password", auth.password);
+      headers.set("x-marv-password", auth.password);
       return { ...init, headers };
     }
   } catch {
@@ -79,7 +79,7 @@ function withLoopbackBrowserAuthImpl(
       headers.set("Authorization", `Bearer ${bridgeAuth.token}`);
     } else if (bridgeAuth?.password) {
       headers.set("x-marv-password", bridgeAuth.password);
-      headers.set("x-openclaw-password", bridgeAuth.password);
+      headers.set("x-marv-password", bridgeAuth.password);
     }
   } catch {
     // ignore

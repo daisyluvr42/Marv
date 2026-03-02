@@ -1,4 +1,4 @@
-import { store } from '../store';
+import { store } from "../store";
 import {
   setLoading,
   setError,
@@ -11,19 +11,21 @@ import {
   addOrUpdateRun,
   setAllRuns,
   appendAllRuns,
-} from '../store/slices/scheduledTaskSlice';
+} from "../store/slices/scheduledTaskSlice";
 import type {
   ScheduledTaskInput,
   ScheduledTaskStatusEvent,
   ScheduledTaskRunEvent,
-} from '../types/scheduledTask';
+} from "../types/scheduledTask";
 
 class ScheduledTaskService {
   private cleanupFns: (() => void)[] = [];
   private initialized = false;
 
   async init(): Promise<void> {
-    if (this.initialized) {return;}
+    if (this.initialized) {
+      return;
+    }
     this.initialized = true;
 
     this.setupListeners();
@@ -38,31 +40,31 @@ class ScheduledTaskService {
 
   private setupListeners(): void {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
-    const cleanupStatus = api.onStatusUpdate(
-      (event: ScheduledTaskStatusEvent) => {
-        store.dispatch(
-          updateTaskState({
-            taskId: event.taskId,
-            taskState: event.state,
-          })
-        );
-      }
-    );
+    const cleanupStatus = api.onStatusUpdate((event: ScheduledTaskStatusEvent) => {
+      store.dispatch(
+        updateTaskState({
+          taskId: event.taskId,
+          taskState: event.state,
+        }),
+      );
+    });
     this.cleanupFns.push(cleanupStatus);
 
-    const cleanupRun = api.onRunUpdate(
-      (event: ScheduledTaskRunEvent) => {
-        store.dispatch(addOrUpdateRun(event.run));
-      }
-    );
+    const cleanupRun = api.onRunUpdate((event: ScheduledTaskRunEvent) => {
+      store.dispatch(addOrUpdateRun(event.run));
+    });
     this.cleanupFns.push(cleanupRun);
   }
 
   async loadTasks(): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     store.dispatch(setLoading(true));
     try {
@@ -77,14 +79,16 @@ class ScheduledTaskService {
 
   async createTask(input: ScheduledTaskInput): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       const result = await api.create(input);
       if (result.success && result.task) {
         store.dispatch(addTask(result.task));
       } else {
-        throw new Error(result.error || 'Failed to create task');
+        throw new Error(result.error || "Failed to create task");
       }
     } catch (err: unknown) {
       store.dispatch(setError(err instanceof Error ? err.message : String(err)));
@@ -92,12 +96,11 @@ class ScheduledTaskService {
     }
   }
 
-  async updateTaskById(
-    id: string,
-    input: Partial<ScheduledTaskInput>
-  ): Promise<void> {
+  async updateTaskById(id: string, input: Partial<ScheduledTaskInput>): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       const result = await api.update(id, input);
@@ -112,7 +115,9 @@ class ScheduledTaskService {
 
   async deleteTask(id: string): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       const result = await api.delete(id);
@@ -127,7 +132,9 @@ class ScheduledTaskService {
 
   async toggleTask(id: string, enabled: boolean): Promise<string | null> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return null;}
+    if (!api) {
+      return null;
+    }
 
     try {
       const result = await api.toggle(id, enabled);
@@ -143,7 +150,9 @@ class ScheduledTaskService {
 
   async runManually(id: string): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       await api.runManually(id);
@@ -155,7 +164,9 @@ class ScheduledTaskService {
 
   async stopTask(id: string): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       await api.stop(id);
@@ -167,7 +178,9 @@ class ScheduledTaskService {
 
   async loadRuns(taskId: string, limit?: number, offset?: number): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       const result = await api.listRuns(taskId, limit, offset);
@@ -181,7 +194,9 @@ class ScheduledTaskService {
 
   async loadAllRuns(limit?: number, offset?: number): Promise<void> {
     const api = window.electron?.scheduledTasks;
-    if (!api) {return;}
+    if (!api) {
+      return;
+    }
 
     try {
       const result = await api.listAllRuns(limit, offset);

@@ -1,7 +1,7 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 
 export function resolveChannelAccountConfigBasePath(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   channelKey: string;
   accountId: string;
 }): string {

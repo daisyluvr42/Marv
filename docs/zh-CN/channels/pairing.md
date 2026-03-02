@@ -46,7 +46,7 @@ marv pairing approve telegram <CODE>
 
 ### 状态存储位置
 
-存储在 `~/.openclaw/credentials/` 下：
+存储在 `~/.marv/credentials/` 下：
 
 - 待处理请求：`<channel>-pairing.json`
 - 已批准允许列表存储：`<channel>-allowFrom.json`
@@ -67,7 +67,7 @@ marv devices reject <requestId>
 
 ### 状态存储位置
 
-存储在 `~/.openclaw/devices/` 下：
+存储在 `~/.marv/devices/` 下：
 
 - `pending.json`（短期；待处理请求会过期）
 - `paired.json`（已配对设备 + 令牌）

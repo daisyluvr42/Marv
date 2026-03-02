@@ -96,16 +96,16 @@ vi.mock("@opentelemetry/semantic-conventions", () => ({
   },
 }));
 
-vi.mock("openclaw/plugin-sdk", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk")>("openclaw/plugin-sdk");
+vi.mock("marv/plugin-sdk", async () => {
+  const actual = await vi.importActual<typeof import("marv/plugin-sdk")>("marv/plugin-sdk");
   return {
     ...actual,
     registerLogTransport: registerLogTransportMock,
   };
 });
 
-import type { OpenClawPluginServiceContext } from "openclaw/plugin-sdk";
-import { emitDiagnosticEvent } from "openclaw/plugin-sdk";
+import type { MarvPluginServiceContext } from "marv/plugin-sdk";
+import { emitDiagnosticEvent } from "marv/plugin-sdk";
 import { createDiagnosticsOtelService } from "./service.js";
 
 describe("diagnostics-otel service", () => {
@@ -131,7 +131,7 @@ describe("diagnostics-otel service", () => {
     });
 
     const service = createDiagnosticsOtelService();
-    const ctx: OpenClawPluginServiceContext = {
+    const ctx: MarvPluginServiceContext = {
       config: {
         diagnostics: {
           enabled: true,
@@ -151,7 +151,7 @@ describe("diagnostics-otel service", () => {
         error: vi.fn(),
         debug: vi.fn(),
       },
-      stateDir: "/tmp/openclaw-diagnostics-otel-test",
+      stateDir: "/tmp/marv-diagnostics-otel-test",
     };
     await service.start(ctx);
 
@@ -195,26 +195,26 @@ describe("diagnostics-otel service", () => {
       attempt: 2,
     });
 
-    expect(telemetryState.counters.get("openclaw.webhook.received")?.add).toHaveBeenCalled();
+    expect(telemetryState.counters.get("marv.webhook.received")?.add).toHaveBeenCalled();
     expect(
-      telemetryState.histograms.get("openclaw.webhook.duration_ms")?.record,
+      telemetryState.histograms.get("marv.webhook.duration_ms")?.record,
     ).toHaveBeenCalled();
-    expect(telemetryState.counters.get("openclaw.message.queued")?.add).toHaveBeenCalled();
-    expect(telemetryState.counters.get("openclaw.message.processed")?.add).toHaveBeenCalled();
+    expect(telemetryState.counters.get("marv.message.queued")?.add).toHaveBeenCalled();
+    expect(telemetryState.counters.get("marv.message.processed")?.add).toHaveBeenCalled();
     expect(
-      telemetryState.histograms.get("openclaw.message.duration_ms")?.record,
+      telemetryState.histograms.get("marv.message.duration_ms")?.record,
     ).toHaveBeenCalled();
-    expect(telemetryState.histograms.get("openclaw.queue.wait_ms")?.record).toHaveBeenCalled();
-    expect(telemetryState.counters.get("openclaw.session.stuck")?.add).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("marv.queue.wait_ms")?.record).toHaveBeenCalled();
+    expect(telemetryState.counters.get("marv.session.stuck")?.add).toHaveBeenCalled();
     expect(
-      telemetryState.histograms.get("openclaw.session.stuck_age_ms")?.record,
+      telemetryState.histograms.get("marv.session.stuck_age_ms")?.record,
     ).toHaveBeenCalled();
-    expect(telemetryState.counters.get("openclaw.run.attempt")?.add).toHaveBeenCalled();
+    expect(telemetryState.counters.get("marv.run.attempt")?.add).toHaveBeenCalled();
 
     const spanNames = telemetryState.tracer.startSpan.mock.calls.map((call) => call[0]);
-    expect(spanNames).toContain("openclaw.webhook.processed");
-    expect(spanNames).toContain("openclaw.message.processed");
-    expect(spanNames).toContain("openclaw.session.stuck");
+    expect(spanNames).toContain("marv.webhook.processed");
+    expect(spanNames).toContain("marv.message.processed");
+    expect(spanNames).toContain("marv.session.stuck");
 
     expect(registerLogTransportMock).toHaveBeenCalledTimes(1);
     expect(registeredTransports).toHaveLength(1);

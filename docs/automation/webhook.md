@@ -36,7 +36,7 @@ Notes:
 Every request must include the hook token. Prefer headers:
 
 - `Authorization: Bearer <token>` (recommended)
-- `x-openclaw-token: <token>`
+- `x-marv-token: <token>`
 - Query-string tokens are rejected (`?token=...` returns `400`).
 
 ## Endpoints
@@ -108,7 +108,7 @@ Recommended config:
 {
   hooks: {
     enabled: true,
-    token: "${OPENCLAW_HOOKS_TOKEN}",
+    token: "${MARV_HOOKS_TOKEN}",
     defaultSessionKey: "hook:ingress",
     allowRequestSessionKey: false,
     allowedSessionKeyPrefixes: ["hook:"],
@@ -122,7 +122,7 @@ Compatibility config (legacy behavior):
 {
   hooks: {
     enabled: true,
-    token: "${OPENCLAW_HOOKS_TOKEN}",
+    token: "${MARV_HOOKS_TOKEN}",
     allowRequestSessionKey: true,
     allowedSessionKeyPrefixes: ["hook:"], // strongly recommended
   },
@@ -140,7 +140,7 @@ Mapping options (summary):
 - `hooks.presets: ["gmail"]` enables the built-in Gmail mapping.
 - `hooks.mappings` lets you define `match`, `action`, and templates in config.
 - `hooks.transformsDir` + `transform.module` loads a JS/TS module for custom logic.
-  - `hooks.transformsDir` (if set) must stay within the transforms root under your Marv config directory (typically `~/.openclaw/hooks/transforms`).
+  - `hooks.transformsDir` (if set) must stay within the transforms root under your Marv config directory (typically `~/.marv/hooks/transforms`).
   - `transform.module` must resolve within the effective transforms directory (traversal/escape paths are rejected).
 - Use `match.source` to keep a generic ingest endpoint (payload-driven routing).
 - TS transforms require a TS loader (e.g. `bun` or `tsx`) or precompiled `.js` at runtime.
@@ -176,7 +176,7 @@ curl -X POST http://127.0.0.1:18789/hooks/wake \
 
 ```bash
 curl -X POST http://127.0.0.1:18789/hooks/agent \
-  -H 'x-openclaw-token: SECRET' \
+  -H 'x-marv-token: SECRET' \
   -H 'Content-Type: application/json' \
   -d '{"message":"Summarize inbox","name":"Email","wakeMode":"next-heartbeat"}'
 ```
@@ -187,7 +187,7 @@ Add `model` to the agent payload (or mapping) to override the model for that run
 
 ```bash
 curl -X POST http://127.0.0.1:18789/hooks/agent \
-  -H 'x-openclaw-token: SECRET' \
+  -H 'x-marv-token: SECRET' \
   -H 'Content-Type: application/json' \
   -d '{"message":"Summarize inbox","name":"Email","model":"openai/gpt-5.2-mini"}'
 ```

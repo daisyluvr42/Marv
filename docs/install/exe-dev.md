@@ -31,7 +31,7 @@ Shelley, [exe.dev](https://exe.dev)'s agent, can install Marv instantly with our
 prompt. The prompt used is as below:
 
 ```
-Set up Marv (https://docs.marv.ai/install) on this VM. Use the non-interactive and accept-risk flags for marv onboarding. Add the supplied auth or token as needed. Configure nginx to forward from the default port 18789 to the root location on the default enabled site config, making sure to enable Websocket support. Pairing is done by "marv devices list" and "marv device approve <request id>". Make sure the dashboard shows that Marv's health is OK. exe.dev handles forwarding from port 8000 to port 80/443 and HTTPS for us, so the final "reachable" should be <vm-name>.exe.xyz, without port specification.
+Set up Marv (/install) on this VM. Use the non-interactive and accept-risk flags for marv onboarding. Add the supplied auth or token as needed. Configure nginx to forward from the default port 18789 to the root location on the default enabled site config, making sure to enable Websocket support. Pairing is done by "marv devices list" and "marv device approve <request id>". Make sure the dashboard shows that Marv's health is OK. exe.dev handles forwarding from port 8000 to port 80/443 and HTTPS for us, so the final "reachable" should be <vm-name>.exe.xyz, without port specification.
 ```
 
 ## Manual installation
@@ -50,7 +50,7 @@ Then connect:
 ssh <vm-name>.exe.xyz
 ```
 
-Tip: keep this VM **stateful**. Marv stores state under `~/.openclaw/` and `~/.openclaw/workspace/`.
+Tip: keep this VM **stateful**. Marv stores state under `~/.marv/` and `~/.marv/workspace/`.
 
 ## 2) Install prerequisites (on the VM)
 
@@ -117,7 +117,7 @@ with email auth.
 ## Updating
 
 ```bash
-npm i -g openclaw@latest
+npm i -g marv@latest
 marv doctor
 marv gateway restart
 marv health

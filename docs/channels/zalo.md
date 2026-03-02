@@ -13,7 +13,7 @@ Status: experimental. Direct messages only; groups coming soon per Zalo docs.
 
 Zalo ships as a plugin and is not bundled with the core install.
 
-- Install via CLI: `marv plugins install @openclaw/zalo`
+- Install via CLI: `marv plugins install @marv/zalo`
 - Or select **Zalo** during onboarding and confirm the install prompt
 - Details: [Plugins](/tools/plugin)
 
@@ -21,7 +21,7 @@ Zalo ships as a plugin and is not bundled with the core install.
 
 1. Install the Zalo plugin:
    - From a source checkout: `marv plugins install ./extensions/zalo`
-   - From npm (if published): `marv plugins install @openclaw/zalo`
+   - From npm (if published): `marv plugins install @marv/zalo`
    - Or pick **Zalo** in onboarding and confirm the install prompt
 2. Set the token:
    - Env: `ZALO_BOT_TOKEN=...`

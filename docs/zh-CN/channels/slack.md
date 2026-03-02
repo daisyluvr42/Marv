@@ -180,7 +180,7 @@ HTTP 模式使用 Events API + Interactivity + Slash Commands，共享一个请�
     },
     "slash_commands": [
       {
-        "command": "/openclaw",
+        "command": "/marv",
         "description": "Send a message to Marv",
         "should_escape": false
       }
@@ -343,7 +343,7 @@ Slack 仅使用 Socket Mode（无 HTTP webhook 服务器）。提供两个令牌
     },
     "slashCommand": {
       "enabled": true,
-      "name": "openclaw",
+      "name": "marv",
       "sessionPrefix": "slack:slash",
       "ephemeral": true
     },

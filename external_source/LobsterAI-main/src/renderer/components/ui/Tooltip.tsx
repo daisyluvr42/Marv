@@ -1,10 +1,10 @@
-import React, { useState, useRef, useCallback, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useLayoutEffect, useEffect } from "react";
 
 interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
   className?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: "top" | "bottom" | "left" | "right";
   delay?: number;
   maxWidth?: string;
   disabled?: boolean;
@@ -13,10 +13,10 @@ interface TooltipProps {
 const Tooltip: React.FC<TooltipProps> = ({
   content,
   children,
-  className = '',
-  position = 'top',
+  className = "",
+  position = "top",
   delay = 300,
-  maxWidth = '280px',
+  maxWidth = "280px",
   disabled = false,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -26,7 +26,9 @@ const Tooltip: React.FC<TooltipProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const showTooltip = useCallback(() => {
-    if (disabled) {return;}
+    if (disabled) {
+      return;
+    }
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
     }, delay);
@@ -41,13 +43,15 @@ const Tooltip: React.FC<TooltipProps> = ({
   }, []);
 
   const updatePosition = useCallback(() => {
-    if (!wrapperRef.current || !tooltipRef.current) {return;}
+    if (!wrapperRef.current || !tooltipRef.current) {
+      return;
+    }
     const anchorRect = wrapperRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const margin = 8;
-    type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
+    type TooltipPosition = "top" | "bottom" | "left" | "right";
 
     const positions = {
       top: {
@@ -75,10 +79,10 @@ const Tooltip: React.FC<TooltipProps> = ({
       pos.left + tooltipRect.width <= viewportWidth - margin;
 
     const fallbackOrderMap: Record<TooltipPosition, TooltipPosition[]> = {
-      top: ['top', 'bottom', 'right', 'left'],
-      bottom: ['bottom', 'top', 'right', 'left'],
-      left: ['left', 'right', 'top', 'bottom'],
-      right: ['right', 'left', 'top', 'bottom'],
+      top: ["top", "bottom", "right", "left"],
+      bottom: ["bottom", "top", "right", "left"],
+      left: ["left", "right", "top", "bottom"],
+      right: ["right", "left", "top", "bottom"],
     };
     const fallbackOrder = fallbackOrderMap[position];
 
@@ -93,37 +97,41 @@ const Tooltip: React.FC<TooltipProps> = ({
 
     const clampedLeft = Math.min(
       Math.max(chosen.left, margin),
-      viewportWidth - tooltipRect.width - margin
+      viewportWidth - tooltipRect.width - margin,
     );
     const clampedTop = Math.min(
       Math.max(chosen.top, margin),
-      viewportHeight - tooltipRect.height - margin
+      viewportHeight - tooltipRect.height - margin,
     );
 
     setTooltipStyle({
-      position: 'fixed',
+      position: "fixed",
       top: Math.round(clampedTop),
       left: Math.round(clampedLeft),
       maxWidth,
-      width: 'max-content',
-      whiteSpace: 'pre-wrap',
-      wordBreak: 'break-word',
+      width: "max-content",
+      whiteSpace: "pre-wrap",
+      wordBreak: "break-word",
     });
   }, [maxWidth, position]);
 
   useLayoutEffect(() => {
-    if (!isVisible) {return;}
+    if (!isVisible) {
+      return;
+    }
     updatePosition();
   }, [isVisible, updatePosition, content]);
 
   useEffect(() => {
-    if (!isVisible) {return;}
+    if (!isVisible) {
+      return;
+    }
     const handleUpdate = () => updatePosition();
-    window.addEventListener('resize', handleUpdate);
-    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
     return () => {
-      window.removeEventListener('resize', handleUpdate);
-      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
     };
   }, [isVisible, updatePosition]);
 

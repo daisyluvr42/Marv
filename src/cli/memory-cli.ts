@@ -547,7 +547,7 @@ export function registerMemoryCli(program: Command) {
           ["marv memory index --force", "Force a full reindex."],
           ['marv memory search --query "deployment notes"', "Search indexed memory entries."],
           ["marv memory status --json", "Output machine-readable JSON."],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs.marv.ai/cli/memory")}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs: /cli/memory")}\n`,
     );
 
   memory

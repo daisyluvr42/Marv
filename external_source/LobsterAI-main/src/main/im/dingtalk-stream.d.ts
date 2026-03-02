@@ -2,7 +2,7 @@
  * Type declarations for dingtalk-stream
  */
 
-declare module 'dingtalk-stream' {
+declare module "dingtalk-stream" {
   export const TOPIC_ROBOT: string;
 
   export interface DWClientOptions {
@@ -23,7 +23,7 @@ declare module 'dingtalk-stream' {
     constructor(options: DWClientOptions);
     registerCallbackListener(
       topic: string,
-      callback: (res: CallbackResponse) => void | Promise<void>
+      callback: (res: CallbackResponse) => void | Promise<void>,
     ): void;
     socketCallBackResponse(messageId: string, response: { success: boolean }): void;
     connect(): Promise<void>;

@@ -26,9 +26,9 @@ Marv 分两个阶段处理故障：
 
 Marv 对 API 密钥和 OAuth 令牌都使用**认证配置文件**。
 
-- 密钥存储在 `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`（旧版：`~/.openclaw/agent/auth-profiles.json`）。
+- 密钥存储在 `~/.marv/agents/<agentId>/agent/auth-profiles.json`（旧版：`~/.marv/agent/auth-profiles.json`）。
 - 配置 `auth.profiles` / `auth.order` **仅用于元数据和路由**（不含密钥）。
-- 旧版仅导入 OAuth 文件：`~/.openclaw/credentials/oauth.json`（首次使用时导入到 `auth-profiles.json`）。
+- 旧版仅导入 OAuth 文件：`~/.marv/credentials/oauth.json`（首次使用时导入到 `auth-profiles.json`）。
 
 更多详情：[/concepts/oauth](/concepts/oauth)
 
@@ -44,7 +44,7 @@ OAuth 登录创建不同的配置文件，以便多个账户可以共存。
 - 默认：当没有电子邮件可用时为 `provider:default`。
 - 带电子邮件的 OAuth：`provider:<email>`（例如 `google-antigravity:user@gmail.com`）。
 
-配置文件存储在 `~/.openclaw/agents/<agentId>/agent/auth-profiles.json` 的 `profiles` 下。
+配置文件存储在 `~/.marv/agents/<agentId>/agent/auth-profiles.json` 的 `profiles` 下。
 
 ## 轮换顺序
 

@@ -30,8 +30,8 @@ Marv 的 Gateway 网关暴露了一个简单的 HTTP 端点用于直接调用单
 
 说明：
 
-- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
-- 当 `gateway.auth.mode="password"` 时，使用 `gateway.auth.password`（或 `OPENCLAW_GATEWAY_PASSWORD`）。
+- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）。
+- 当 `gateway.auth.mode="password"` 时，使用 `gateway.auth.password`（或 `MARV_GATEWAY_PASSWORD`）。
 
 ## 请求体
 
@@ -67,8 +67,8 @@ Marv 的 Gateway 网关暴露了一个简单的 HTTP 端点用于直接调用单
 
 为帮助群组策略解析上下文，你可以选择设置：
 
-- `x-openclaw-message-channel: <channel>`（示例：`slack`、`telegram`）
-- `x-openclaw-account-id: <accountId>`（当存在多个账户时）
+- `x-marv-message-channel: <channel>`（示例：`slack`、`telegram`）
+- `x-marv-account-id: <accountId>`（当存在多个账户时）
 
 ## 响应
 

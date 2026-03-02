@@ -1,7 +1,7 @@
-import React from 'react';
-import { scheduledTaskService } from '../../services/scheduledTask';
-import { i18nService } from '../../services/i18n';
-import type { ScheduledTaskRun } from '../../types/scheduledTask';
+import React from "react";
+import { i18nService } from "../../services/i18n";
+import { scheduledTaskService } from "../../services/scheduledTask";
+import type { ScheduledTaskRun } from "../../types/scheduledTask";
 
 interface TaskRunHistoryProps {
   taskId: string;
@@ -9,16 +9,22 @@ interface TaskRunHistoryProps {
 }
 
 function formatDuration(ms: number | null): string {
-  if (!ms) {return '-';}
-  if (ms < 1000) {return `${ms}ms`;}
-  if (ms < 60000) {return `${(ms / 1000).toFixed(1)}s`;}
+  if (!ms) {
+    return "-";
+  }
+  if (ms < 1000) {
+    return `${ms}ms`;
+  }
+  if (ms < 60000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  }
   return `${Math.round(ms / 60000)}m`;
 }
 
 const statusIcons: Record<string, { icon: string; color: string }> = {
-  success: { icon: '✓', color: 'text-green-500' },
-  error: { icon: '✗', color: 'text-red-500' },
-  running: { icon: '●', color: 'text-blue-500' },
+  success: { icon: "✓", color: "text-green-500" },
+  error: { icon: "✗", color: "text-red-500" },
+  running: { icon: "●", color: "text-blue-500" },
 };
 
 const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
@@ -29,7 +35,7 @@ const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
   if (runs.length === 0) {
     return (
       <div className="text-center py-6 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-        {i18nService.t('scheduledTasksNoRuns')}
+        {i18nService.t("scheduledTasksNoRuns")}
       </div>
     );
   }
@@ -38,7 +44,7 @@ const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
     <div>
       <div className="divide-y dark:divide-claude-darkBorder/50 divide-claude-border/50">
         {runs.map((run) => {
-          const statusInfo = statusIcons[run.status] || { icon: '?', color: '' };
+          const statusInfo = statusIcons[run.status] || { icon: "?", color: "" };
           return (
             <div key={run.id} className="flex items-center justify-between py-2.5 px-1">
               <div className="flex items-center gap-3 min-w-0">
@@ -48,9 +54,9 @@ const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
                     {new Date(run.startedAt).toLocaleString()}
                   </span>
                   <span className="ml-2 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    {run.trigger === 'manual'
-                      ? i18nService.t('scheduledTasksManual')
-                      : i18nService.t('scheduledTasksScheduled')}
+                    {run.trigger === "manual"
+                      ? i18nService.t("scheduledTasksManual")
+                      : i18nService.t("scheduledTasksScheduled")}
                   </span>
                 </div>
               </div>
@@ -60,11 +66,8 @@ const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
                     {formatDuration(run.durationMs)}
                   </span>
                 )}
-                {run.status === 'error' && run.error && (
-                  <span
-                    className="text-xs text-red-500 max-w-[150px] truncate"
-                    title={run.error}
-                  >
+                {run.status === "error" && run.error && (
+                  <span className="text-xs text-red-500 max-w-[150px] truncate" title={run.error}>
                     {run.error}
                   </span>
                 )}
@@ -73,13 +76,15 @@ const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
                     type="button"
                     onClick={() => {
                       // Navigate to the cowork session
-                      window.dispatchEvent(new CustomEvent('scheduledTask:viewSession', {
-                        detail: { sessionId: run.sessionId },
-                      }));
+                      window.dispatchEvent(
+                        new CustomEvent("scheduledTask:viewSession", {
+                          detail: { sessionId: run.sessionId },
+                        }),
+                      );
                     }}
                     className="text-xs text-claude-accent hover:text-claude-accentHover transition-colors"
                   >
-                    {i18nService.t('scheduledTasksViewSession')}
+                    {i18nService.t("scheduledTasksViewSession")}
                   </button>
                 )}
               </div>
@@ -93,7 +98,7 @@ const TaskRunHistory: React.FC<TaskRunHistoryProps> = ({ taskId, runs }) => {
           onClick={handleLoadMore}
           className="w-full py-2 mt-2 text-sm text-claude-accent hover:text-claude-accentHover transition-colors"
         >
-          {i18nService.t('scheduledTasksLoadMore')}
+          {i18nService.t("scheduledTasksLoadMore")}
         </button>
       )}
     </div>

@@ -136,7 +136,7 @@ const HttpUrlSchema = z
     return protocol === "http:" || protocol === "https:";
   }, "Expected http:// or https:// URL");
 
-export const OpenClawSchema = z
+export const MarvSchema = z
   .object({
     $schema: z.string().optional(),
     meta: z

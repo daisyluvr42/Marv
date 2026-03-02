@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import type { CoworkPermissionRequest, CoworkPermissionResult } from '../../types/cowork';
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { i18nService } from '../../services/i18n';
+import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import React, { useEffect, useMemo, useState } from "react";
+import { i18nService } from "../../services/i18n";
+import type { CoworkPermissionRequest, CoworkPermissionResult } from "../../types/cowork";
 
 interface CoworkQuestionWizardProps {
   permission: CoworkPermissionRequest;
@@ -20,45 +20,55 @@ type QuestionItem = {
   multiSelect?: boolean;
 };
 
-const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
-  permission,
-  onRespond,
-}) => {
+const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({ permission, onRespond }) => {
   const toolInput = permission.toolInput ?? {};
 
   const questions = useMemo<QuestionItem[]>(() => {
-    if (permission.toolName !== 'AskUserQuestion') {return [];}
-    if (!toolInput || typeof toolInput !== 'object') {return [];}
+    if (permission.toolName !== "AskUserQuestion") {
+      return [];
+    }
+    if (!toolInput || typeof toolInput !== "object") {
+      return [];
+    }
     const rawQuestions = (toolInput as Record<string, unknown>).questions;
-    if (!Array.isArray(rawQuestions)) {return [];}
+    if (!Array.isArray(rawQuestions)) {
+      return [];
+    }
 
     return rawQuestions
       .map((question) => {
-        if (!question || typeof question !== 'object') {return null;}
+        if (!question || typeof question !== "object") {
+          return null;
+        }
         const record = question as Record<string, unknown>;
         const options = Array.isArray(record.options)
-          ? record.options
+          ? (record.options
               .map((option) => {
-                if (!option || typeof option !== 'object') {return null;}
+                if (!option || typeof option !== "object") {
+                  return null;
+                }
                 const optionRecord = option as Record<string, unknown>;
-                if (typeof optionRecord.label !== 'string') {return null;}
+                if (typeof optionRecord.label !== "string") {
+                  return null;
+                }
                 return {
                   label: optionRecord.label,
-                  description: typeof optionRecord.description === 'string'
-                    ? optionRecord.description
-                    : undefined,
+                  description:
+                    typeof optionRecord.description === "string"
+                      ? optionRecord.description
+                      : undefined,
                 } as QuestionOption;
               })
-              .filter(Boolean) as QuestionOption[]
+              .filter(Boolean) as QuestionOption[])
           : [];
 
-        if (typeof record.question !== 'string' || options.length === 0) {
+        if (typeof record.question !== "string" || options.length === 0) {
           return null;
         }
 
         return {
           question: record.question,
-          header: typeof record.header === 'string' ? record.header : undefined,
+          header: typeof record.header === "string" ? record.header : undefined,
           options,
           multiSelect: Boolean(record.multiSelect),
         } as QuestionItem;
@@ -72,10 +82,10 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
 
   useEffect(() => {
     const rawAnswers = (toolInput as Record<string, unknown>).answers;
-    if (rawAnswers && typeof rawAnswers === 'object') {
+    if (rawAnswers && typeof rawAnswers === "object") {
       const initial: Record<string, string> = {};
       Object.entries(rawAnswers as Record<string, unknown>).forEach(([key, value]) => {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           initial[key] = value;
         }
       });
@@ -95,17 +105,21 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
   const isLastStep = currentStep === totalSteps - 1;
 
   const getSelectedValues = (question: QuestionItem): string[] => {
-    const rawValue = answers[question.question] ?? '';
-    if (!rawValue) {return [];}
-    if (!question.multiSelect) {return [rawValue];}
+    const rawValue = answers[question.question] ?? "";
+    if (!rawValue) {
+      return [];
+    }
+    if (!question.multiSelect) {
+      return [rawValue];
+    }
     return rawValue
-      .split('|||')
+      .split("|||")
       .map((value) => value.trim())
       .filter(Boolean);
   };
 
   const handleSelectOption = (question: QuestionItem, optionLabel: string) => {
-    console.log('[CoworkQuestionWizard] handleSelectOption:', {
+    console.log("[CoworkQuestionWizard] handleSelectOption:", {
       question: question.question,
       optionLabel,
       multiSelect: question.multiSelect,
@@ -119,7 +133,7 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
           ...prev,
           [question.question]: optionLabel,
         };
-        console.log('[CoworkQuestionWizard] 单选 - 新答案:', newAnswers);
+        console.log("[CoworkQuestionWizard] 单选 - 新答案:", newAnswers);
         return newAnswers;
       });
 
@@ -138,8 +152,8 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
     } else {
       // 多选模式：切换选项
       setAnswers((prev) => {
-        const rawValue = prev[question.question] ?? '';
-        console.log('[CoworkQuestionWizard] 多选 - 当前值:', rawValue);
+        const rawValue = prev[question.question] ?? "";
+        console.log("[CoworkQuestionWizard] 多选 - 当前值:", rawValue);
 
         // 如果 rawValue 为空，直接添加新选项
         if (!rawValue.trim()) {
@@ -147,41 +161,41 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
             ...prev,
             [question.question]: optionLabel,
           };
-          console.log('[CoworkQuestionWizard] 多选 - 首次选择:', newAnswers);
+          console.log("[CoworkQuestionWizard] 多选 - 首次选择:", newAnswers);
           return newAnswers;
         }
 
         // 否则解析现有值并切换
         const current = new Set(
           rawValue
-            .split('|||')
+            .split("|||")
             .map((value) => value.trim())
-            .filter(Boolean)
+            .filter(Boolean),
         );
 
-        console.log('[CoworkQuestionWizard] 多选 - 解析后的集合:', Array.from(current));
+        console.log("[CoworkQuestionWizard] 多选 - 解析后的集合:", Array.from(current));
 
         if (current.has(optionLabel)) {
           current.delete(optionLabel);
-          console.log('[CoworkQuestionWizard] 多选 - 取消选中:', optionLabel);
+          console.log("[CoworkQuestionWizard] 多选 - 取消选中:", optionLabel);
         } else {
           current.add(optionLabel);
-          console.log('[CoworkQuestionWizard] 多选 - 选中:', optionLabel);
+          console.log("[CoworkQuestionWizard] 多选 - 选中:", optionLabel);
         }
 
         // 如果删除后为空，返回空字符串
         if (current.size === 0) {
           const newAnswers = { ...prev };
           delete newAnswers[question.question];
-          console.log('[CoworkQuestionWizard] 多选 - 所有选项已取消:', newAnswers);
+          console.log("[CoworkQuestionWizard] 多选 - 所有选项已取消:", newAnswers);
           return newAnswers;
         }
 
         const newAnswers = {
           ...prev,
-          [question.question]: Array.from(current).join('|||'),
+          [question.question]: Array.from(current).join("|||"),
         };
-        console.log('[CoworkQuestionWizard] 多选 - 更新后的答案:', newAnswers);
+        console.log("[CoworkQuestionWizard] 多选 - 更新后的答案:", newAnswers);
         return newAnswers;
       });
     }
@@ -231,8 +245,12 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
       const question = questions[Number(stepIndex)];
       if (question && otherValue.trim()) {
         if (question.multiSelect) {
-          const existingAnswers = finalAnswers[question.question]?.split('|||').map(a => a.trim()).filter(Boolean) || [];
-          finalAnswers[question.question] = [...existingAnswers, otherValue.trim()].join('|||');
+          const existingAnswers =
+            finalAnswers[question.question]
+              ?.split("|||")
+              .map((a) => a.trim())
+              .filter(Boolean) || [];
+          finalAnswers[question.question] = [...existingAnswers, otherValue.trim()].join("|||");
         } else {
           finalAnswers[question.question] = otherValue.trim();
         }
@@ -240,9 +258,9 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
     });
 
     onRespond({
-      behavior: 'allow',
+      behavior: "allow",
       updatedInput: {
-        ...(toolInput && typeof toolInput === 'object' ? toolInput : {}),
+        ...(toolInput && typeof toolInput === "object" ? toolInput : {}),
         answers: finalAnswers,
       },
     });
@@ -250,8 +268,8 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
 
   const handleDeny = () => {
     onRespond({
-      behavior: 'deny',
-      message: 'Permission denied',
+      behavior: "deny",
+      message: "Permission denied",
     });
   };
 
@@ -264,7 +282,7 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
         <div className="flex items-center gap-3 px-6 py-4 border-b dark:border-claude-darkBorder border-claude-border">
           <div className="flex-1">
             <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">
-              {i18nService.t('coworkQuestionWizardTitle')}
+              {i18nService.t("coworkQuestionWizardTitle")}
             </h2>
           </div>
           <button
@@ -308,7 +326,7 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
                   <button
                     onClick={handlePrevious}
                     className="p-1.5 rounded-lg dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors"
-                    title={i18nService.t('coworkQuestionWizardPrevious')}
+                    title={i18nService.t("coworkQuestionWizardPrevious")}
                   >
                     <ChevronLeftIcon className="h-5 w-5" />
                   </button>
@@ -318,7 +336,9 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
                 <div className="flex items-center gap-1.5">
                   {questions.map((question, index) => {
                     const isActive = index === currentStep;
-                    const isAnswered = Boolean(answers[question.question]?.trim() || otherInputs[index]?.trim());
+                    const isAnswered = Boolean(
+                      answers[question.question]?.trim() || otherInputs[index]?.trim(),
+                    );
 
                     return (
                       <button
@@ -327,16 +347,22 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
                         onClick={() => setCurrentStep(index)}
                         className={`relative flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium transition-all ${
                           isActive
-                            ? 'bg-claude-accent text-white shadow-md'
+                            ? "bg-claude-accent text-white shadow-md"
                             : isAnswered
-                            ? 'bg-green-500/20 dark:bg-green-600/20 text-green-700 dark:text-green-400 border border-green-500 dark:border-green-600 hover:scale-105'
-                            : 'bg-claude-surfaceHover dark:bg-claude-darkSurfaceHover text-claude-textSecondary dark:text-claude-darkTextSecondary hover:bg-claude-accent/20 dark:hover:bg-claude-accent/20 hover:scale-105'
+                              ? "bg-green-500/20 dark:bg-green-600/20 text-green-700 dark:text-green-400 border border-green-500 dark:border-green-600 hover:scale-105"
+                              : "bg-claude-surfaceHover dark:bg-claude-darkSurfaceHover text-claude-textSecondary dark:text-claude-darkTextSecondary hover:bg-claude-accent/20 dark:hover:bg-claude-accent/20 hover:scale-105"
                         }`}
                         title={question.question}
                       >
                         {isAnswered && !isActive ? (
                           <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none">
-                            <path d="M13 4L6 11L3 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path
+                              d="M13 4L6 11L3 8"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
                         ) : (
                           index + 1
@@ -351,7 +377,7 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
                   <button
                     onClick={handleNext}
                     className="p-1.5 rounded-lg dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors"
-                    title={i18nService.t('coworkQuestionWizardNext')}
+                    title={i18nService.t("coworkQuestionWizardNext")}
                   >
                     <ChevronRightIcon className="h-5 w-5" />
                   </button>
@@ -370,29 +396,43 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
                     onClick={() => handleSelectOption(currentQuestion, option.label)}
                     className={`w-full text-left rounded-lg border px-4 py-3 transition-all ${
                       isSelected
-                        ? 'border-claude-accent bg-claude-accent/10 text-claude-text dark:text-claude-darkText shadow-sm'
-                        : 'border-claude-border dark:border-claude-darkBorder dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover hover:border-claude-accent/50'
+                        ? "border-claude-accent bg-claude-accent/10 text-claude-text dark:text-claude-darkText shadow-sm"
+                        : "border-claude-border dark:border-claude-darkBorder dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover hover:border-claude-accent/50"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       {currentQuestion.multiSelect ? (
-                        <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded border-2 transition-colors ${
-                          isSelected
-                            ? 'bg-claude-accent border-claude-accent'
-                            : 'border-claude-border dark:border-claude-darkBorder'
-                        }`}>
+                        <div
+                          className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded border-2 transition-colors ${
+                            isSelected
+                              ? "bg-claude-accent border-claude-accent"
+                              : "border-claude-border dark:border-claude-darkBorder"
+                          }`}
+                        >
                           {isSelected && (
-                            <svg className="w-full h-full text-white" viewBox="0 0 16 16" fill="none">
-                              <path d="M13 4L6 11L3 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg
+                              className="w-full h-full text-white"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                            >
+                              <path
+                                d="M13 4L6 11L3 8"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                           )}
                         </div>
                       ) : (
-                        <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
-                          isSelected
-                            ? 'border-claude-accent'
-                            : 'border-claude-border dark:border-claude-darkBorder'
-                        }`}>
+                        <div
+                          className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
+                            isSelected
+                              ? "border-claude-accent"
+                              : "border-claude-border dark:border-claude-darkBorder"
+                          }`}
+                        >
                           {isSelected && (
                             <div className="w-full h-full rounded-full bg-claude-accent scale-50" />
                           )}
@@ -414,9 +454,9 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
             <div className="mt-4 flex items-center gap-3">
               <input
                 type="text"
-                value={otherInputs[currentStep] || ''}
+                value={otherInputs[currentStep] || ""}
                 onChange={(e) => handleOtherInputChange(e.target.value)}
-                placeholder={i18nService.t('coworkQuestionWizardOther')}
+                placeholder={i18nService.t("coworkQuestionWizardOther")}
                 className="flex-1 px-3 py-2 rounded-lg border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkBg bg-claude-bg dark:text-claude-darkText text-claude-text placeholder:text-claude-textSecondary dark:placeholder:text-claude-darkTextSecondary focus:outline-none focus:ring-2 focus:ring-claude-accent/50 text-sm"
               />
               <button
@@ -424,7 +464,7 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
                 onClick={handleSkip}
                 className="px-4 py-2 text-sm font-medium rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors whitespace-nowrap"
               >
-                {i18nService.t('coworkQuestionWizardSkip')}
+                {i18nService.t("coworkQuestionWizardSkip")}
               </button>
             </div>
           </div>
@@ -436,7 +476,7 @@ const CoworkQuestionWizard: React.FC<CoworkQuestionWizardProps> = ({
             onClick={handleSubmit}
             className="px-5 py-2 text-sm font-medium rounded-lg bg-claude-accent hover:bg-claude-accentHover text-white transition-colors"
           >
-            {i18nService.t('coworkQuestionWizardSubmit')}
+            {i18nService.t("coworkQuestionWizardSubmit")}
           </button>
         </div>
       </div>

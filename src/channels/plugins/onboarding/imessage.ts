@@ -1,5 +1,5 @@
 import { detectBinary } from "../../../commands/onboard-helpers.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../config/config.js";
 import type { DmPolicy } from "../../../config/types.js";
 import {
   listIMessageAccountIds,
@@ -15,7 +15,7 @@ import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./
 
 const channel = "imessage" as const;
 
-function setIMessageDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy) {
+function setIMessageDmPolicy(cfg: MarvConfig, dmPolicy: DmPolicy) {
   const allowFrom =
     dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.imessage?.allowFrom) : undefined;
   return {
@@ -32,10 +32,10 @@ function setIMessageDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy) {
 }
 
 function setIMessageAllowFrom(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   accountId: string,
   allowFrom: string[],
-): OpenClawConfig {
+): MarvConfig {
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
       ...cfg,
@@ -74,10 +74,10 @@ function parseIMessageAllowFromInput(raw: string): string[] {
 }
 
 async function promptIMessageAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<MarvConfig> {
   const accountId =
     params.accountId && normalizeAccountId(params.accountId)
       ? (normalizeAccountId(params.accountId) ?? DEFAULT_ACCOUNT_ID)

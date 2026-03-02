@@ -15,7 +15,7 @@ export function registerConfigureCommand(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/configure", "docs.marv.ai/cli/configure")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/configure", "docs: /cli/configure")}\n`,
     )
     .option(
       "--section <section>",

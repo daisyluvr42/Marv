@@ -24,7 +24,7 @@ Explainable: keeps core installs lighter and lets MS Teams dependencies update i
 Install via CLI (npm registry):
 
 ```bash
-marv plugins install @openclaw/msteams
+marv plugins install @marv/msteams
 ```
 
 Local checkout (when running from a git repo):
@@ -143,7 +143,7 @@ Example:
 2. Create an **Azure Bot** (App ID + secret + tenant ID).
 3. Build a **Teams app package** that references the bot and includes the RSC permissions below.
 4. Upload/install the Teams app into a team (or personal scope for DMs).
-5. Configure `msteams` in `~/.openclaw/marv.json` (or env vars) and start the gateway.
+5. Configure `msteams` in `~/.marv/marv.json` (or env vars) and start the gateway.
 6. The gateway listens for Bot Framework webhook traffic on `/api/messages` by default.
 
 ## Azure Bot Setup (Prerequisites)
@@ -157,7 +157,7 @@ Before configuring Marv, you need to create an Azure Bot resource.
 
    | Field              | Value                                                    |
    | ------------------ | -------------------------------------------------------- |
-   | **Bot handle**     | Your bot name, e.g., `openclaw-msteams` (must be unique) |
+   | **Bot handle**     | Your bot name, e.g., `marv-msteams` (must be unique) |
    | **Subscription**   | Select your Azure subscription                           |
    | **Resource group** | Create new or use existing                               |
    | **Pricing tier**   | **Free** for dev/testing                                 |
@@ -239,7 +239,7 @@ This is often easier than hand-editing JSON manifests.
 ## Setup (minimal text-only)
 
 1. **Install the Microsoft Teams plugin**
-   - From npm: `marv plugins install @openclaw/msteams`
+   - From npm: `marv plugins install @marv/msteams`
    - From a local checkout: `marv plugins install ./extensions/msteams`
 
 2. **Bot registration**
@@ -592,14 +592,14 @@ Per-user sharing is more secure as only the chat participants can access the fil
 
 ### Files stored location
 
-Uploaded files are stored in a `/OpenClawShared/` folder in the configured SharePoint site's default document library.
+Uploaded files are stored in a `/MarvShared/` folder in the configured SharePoint site's default document library.
 
 ## Polls (Adaptive Cards)
 
 Marv sends Teams polls as Adaptive Cards (there is no native Teams poll API).
 
 - CLI: `marv message poll --channel msteams --target conversation:<id> ...`
-- Votes are recorded by the gateway in `~/.openclaw/msteams-polls.json`.
+- Votes are recorded by the gateway in `~/.marv/msteams-polls.json`.
 - The gateway must stay online to record votes.
 - Polls do not auto-post result summaries yet (inspect the store file if needed).
 

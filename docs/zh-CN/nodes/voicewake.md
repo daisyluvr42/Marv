@@ -25,12 +25,12 @@ Marv 将**唤醒词作为单一全局列表**，由 **Gateway 网关**拥有。
 
 唤醒词存储在 Gateway 网关机器上：
 
-- `~/.openclaw/settings/voicewake.json`
+- `~/.marv/settings/voicewake.json`
 
 结构：
 
 ```json
-{ "triggers": ["openclaw", "claude", "computer"], "updatedAtMs": 1730000000000 }
+{ "triggers": ["marv", "claude", "computer"], "updatedAtMs": 1730000000000 }
 ```
 
 ## 协议

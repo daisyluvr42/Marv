@@ -67,7 +67,7 @@ function validatePluginId(pluginId: string): string | null {
 async function ensureManifestExtensions(manifest: PackageManifest) {
   const extensions = manifest[MANIFEST_KEY]?.extensions;
   if (!Array.isArray(extensions)) {
-    throw new Error("package.json missing marv.extensions (legacy openclaw.extensions accepted)");
+    throw new Error("package.json missing marv.extensions (legacy marv.extensions accepted)");
   }
   const list = extensions.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
   if (list.length === 0) {

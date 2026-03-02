@@ -1,12 +1,12 @@
 import CoreLocation
 import Foundation
-import OpenClawKit
+import MarvKit
 import UIKit
 
 protocol CameraServicing: Sendable {
     func listDevices() async -> [CameraController.CameraDeviceInfo]
-    func snap(params: OpenClawCameraSnapParams) async throws -> (format: String, base64: String, width: Int, height: Int)
-    func clip(params: OpenClawCameraClipParams) async throws -> (format: String, base64: String, durationMs: Int, hasAudio: Bool)
+    func snap(params: MarvCameraSnapParams) async throws -> (format: String, base64: String, width: Int, height: Int)
+    func clip(params: MarvCameraClipParams) async throws -> (format: String, base64: String, durationMs: Int, hasAudio: Bool)
 }
 
 protocol ScreenRecordingServicing: Sendable {
@@ -22,14 +22,14 @@ protocol ScreenRecordingServicing: Sendable {
 protocol LocationServicing: Sendable {
     func authorizationStatus() -> CLAuthorizationStatus
     func accuracyAuthorization() -> CLAccuracyAuthorization
-    func ensureAuthorization(mode: OpenClawLocationMode) async -> CLAuthorizationStatus
+    func ensureAuthorization(mode: MarvLocationMode) async -> CLAuthorizationStatus
     func currentLocation(
-        params: OpenClawLocationGetParams,
-        desiredAccuracy: OpenClawLocationAccuracy,
+        params: MarvLocationGetParams,
+        desiredAccuracy: MarvLocationAccuracy,
         maxAgeMs: Int?,
         timeoutMs: Int?) async throws -> CLLocation
     func startLocationUpdates(
-        desiredAccuracy: OpenClawLocationAccuracy,
+        desiredAccuracy: MarvLocationAccuracy,
         significantChangesOnly: Bool) -> AsyncStream<CLLocation>
     func stopLocationUpdates()
     func startMonitoringSignificantLocationChanges(onUpdate: @escaping @Sendable (CLLocation) -> Void)
@@ -37,32 +37,32 @@ protocol LocationServicing: Sendable {
 }
 
 protocol DeviceStatusServicing: Sendable {
-    func status() async throws -> OpenClawDeviceStatusPayload
-    func info() -> OpenClawDeviceInfoPayload
+    func status() async throws -> MarvDeviceStatusPayload
+    func info() -> MarvDeviceInfoPayload
 }
 
 protocol PhotosServicing: Sendable {
-    func latest(params: OpenClawPhotosLatestParams) async throws -> OpenClawPhotosLatestPayload
+    func latest(params: MarvPhotosLatestParams) async throws -> MarvPhotosLatestPayload
 }
 
 protocol ContactsServicing: Sendable {
-    func search(params: OpenClawContactsSearchParams) async throws -> OpenClawContactsSearchPayload
-    func add(params: OpenClawContactsAddParams) async throws -> OpenClawContactsAddPayload
+    func search(params: MarvContactsSearchParams) async throws -> MarvContactsSearchPayload
+    func add(params: MarvContactsAddParams) async throws -> MarvContactsAddPayload
 }
 
 protocol CalendarServicing: Sendable {
-    func events(params: OpenClawCalendarEventsParams) async throws -> OpenClawCalendarEventsPayload
-    func add(params: OpenClawCalendarAddParams) async throws -> OpenClawCalendarAddPayload
+    func events(params: MarvCalendarEventsParams) async throws -> MarvCalendarEventsPayload
+    func add(params: MarvCalendarAddParams) async throws -> MarvCalendarAddPayload
 }
 
 protocol RemindersServicing: Sendable {
-    func list(params: OpenClawRemindersListParams) async throws -> OpenClawRemindersListPayload
-    func add(params: OpenClawRemindersAddParams) async throws -> OpenClawRemindersAddPayload
+    func list(params: MarvRemindersListParams) async throws -> MarvRemindersListPayload
+    func add(params: MarvRemindersAddParams) async throws -> MarvRemindersAddPayload
 }
 
 protocol MotionServicing: Sendable {
-    func activities(params: OpenClawMotionActivityParams) async throws -> OpenClawMotionActivityPayload
-    func pedometer(params: OpenClawPedometerParams) async throws -> OpenClawPedometerPayload
+    func activities(params: MarvMotionActivityParams) async throws -> MarvMotionActivityPayload
+    func pedometer(params: MarvPedometerParams) async throws -> MarvPedometerPayload
 }
 
 struct WatchMessagingStatus: Sendable, Equatable {
@@ -85,7 +85,7 @@ protocol WatchMessagingServicing: AnyObject, Sendable {
         id: String,
         title: String,
         body: String,
-        priority: OpenClawNotificationPriority?) async throws -> WatchNotificationSendResult
+        priority: MarvNotificationPriority?) async throws -> WatchNotificationSendResult
 }
 
 extension CameraController: CameraServicing {}

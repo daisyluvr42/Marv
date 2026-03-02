@@ -22,6 +22,6 @@ export const TAILSCALE_MISSING_BIN_NOTE_LINES = [
 
 export const TAILSCALE_DOCS_LINES = [
   "Docs:",
-  "https://docs.marv.ai/gateway/tailscale",
-  "https://docs.marv.ai/web",
+  "/gateway/tailscale",
+  "/web",
 ] as const;

@@ -18,8 +18,8 @@ Related:
 
 ```bash
 marv agents list
-marv agents add work --workspace ~/.openclaw/workspace-work
-marv agents set-identity --workspace ~/.openclaw/workspace --from-identity
+marv agents add work --workspace ~/.marv/workspace-work
+marv agents set-identity --workspace ~/.marv/workspace --from-identity
 marv agents set-identity --agent main --avatar avatars/marv.png
 marv agents delete work
 ```
@@ -28,7 +28,7 @@ marv agents delete work
 
 Each agent workspace can include an `IDENTITY.md` at the workspace root:
 
-- Example path: `~/.openclaw/workspace/IDENTITY.md`
+- Example path: `~/.marv/workspace/IDENTITY.md`
 - `set-identity --from-identity` reads from the workspace root (or an explicit `--identity-file`)
 
 Avatar paths resolve relative to the workspace root.
@@ -45,7 +45,7 @@ Avatar paths resolve relative to the workspace root.
 Load from `IDENTITY.md`:
 
 ```bash
-marv agents set-identity --workspace ~/.openclaw/workspace --from-identity
+marv agents set-identity --workspace ~/.marv/workspace --from-identity
 ```
 
 Override fields explicitly:

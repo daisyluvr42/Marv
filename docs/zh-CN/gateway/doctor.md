@@ -59,7 +59,7 @@ marv doctor --deep
 如果你想在写入前查看更改，请先打开配置文件：
 
 ```bash
-cat ~/.openclaw/marv.json
+cat ~/.marv/marv.json
 ```
 
 ## 功能概述
@@ -106,7 +106,7 @@ Doctor 将：
 
 - 解释找到了哪些遗留键。
 - 显示它应用的迁移。
-- 使用更新后的 schema 重写 `~/.openclaw/marv.json`。
+- 使用更新后的 schema 重写 `~/.marv/marv.json`。
 
 Gateway 网关在检测到遗留配置格式时也会在启动时自动运行 doctor 迁移，因此过时的配置无需手动干预即可修复。
 
@@ -136,12 +136,12 @@ Gateway 网关在检测到遗留配置格式时也会在启动时自动运行 do
 Doctor 可以将旧的磁盘布局迁移到当前结构：
 
 - 会话存储 + 记录：
-  - 从 `~/.openclaw/sessions/` 到 `~/.openclaw/agents/<agentId>/sessions/`
+  - 从 `~/.marv/sessions/` 到 `~/.marv/agents/<agentId>/sessions/`
 - 智能体目录：
-  - 从 `~/.openclaw/agent/` 到 `~/.openclaw/agents/<agentId>/agent/`
+  - 从 `~/.marv/agent/` 到 `~/.marv/agents/<agentId>/agent/`
 - WhatsApp 认证状态（Baileys）：
-  - 从遗留的 `~/.openclaw/credentials/*.json`（除 `oauth.json` 外）
-  - 到 `~/.openclaw/credentials/whatsapp/<accountId>/...`（默认账户 id：`default`）
+  - 从遗留的 `~/.marv/credentials/*.json`（除 `oauth.json` 外）
+  - 到 `~/.marv/credentials/whatsapp/<accountId>/...`（默认账户 id：`default`）
 
 这些迁移是尽力而为且幂等的；当 doctor 将任何遗留文件夹作为备份保留时会发出警告。Gateway 网关/CLI 也会在启动时自动迁移遗留会话 + 智能体目录，因此历史/认证/模型会落在每智能体路径中，无需手动运行 doctor。WhatsApp 认证有意仅通过 `marv doctor` 迁移。
 
@@ -156,9 +156,9 @@ Doctor 检查：
 - **会话目录缺失**：`sessions/` 和会话存储目录是持久化历史和避免 `ENOENT` 崩溃所必需的。
 - **记录不匹配**：当最近的会话条目缺少记录文件时发出警告。
 - **主会话"1 行 JSONL"**：当主记录只有一行时标记（历史未累积）。
-- **多个状态目录**：当多个 `~/.marv` 文件夹存在于不同 home 目录或当 `OPENCLAW_STATE_DIR` 指向别处时发出警告（历史可能在安装之间分裂）。
+- **多个状态目录**：当多个 `~/.marv` 文件夹存在于不同 home 目录或当 `MARV_STATE_DIR` 指向别处时发出警告（历史可能在安装之间分裂）。
 - **远程模式提醒**：如果 `gateway.mode=remote`，doctor 会提醒你在远程主机上运行它（状态在那里）。
-- **配置文件权限**：当 `~/.openclaw/marv.json` 对组/其他用户可读时发出警告，并提供收紧到 `600` 的选项。
+- **配置文件权限**：当 `~/.marv/marv.json` 对组/其他用户可读时发出警告，并提供收紧到 `600` 的选项。
 
 ### 5）模型认证健康（OAuth 过期）
 

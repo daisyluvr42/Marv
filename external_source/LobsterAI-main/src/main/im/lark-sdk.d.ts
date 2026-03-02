@@ -3,7 +3,7 @@
  * Minimal types needed for Feishu gateway
  */
 
-declare module '@larksuiteoapi/node-sdk' {
+declare module "@larksuiteoapi/node-sdk" {
   export const Domain: {
     Feishu: symbol;
     Lark: symbol;
@@ -14,10 +14,10 @@ declare module '@larksuiteoapi/node-sdk' {
   };
 
   export enum LoggerLevel {
-    error = 'error',
-    warn = 'warn',
-    info = 'info',
-    debug = 'debug',
+    error = "error",
+    warn = "warn",
+    info = "info",
+    debug = "debug",
   }
 
   export interface ClientOptions {

@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import type { CoworkSessionSummary } from '../../types/cowork';
-import CoworkSessionItem from './CoworkSessionItem';
-import { i18nService } from '../../services/i18n';
+import React, { useMemo } from "react";
+import { useSelector } from "react-redux";
+import { i18nService } from "../../services/i18n";
+import { RootState } from "../../store";
+import type { CoworkSessionSummary } from "../../types/cowork";
+import CoworkSessionItem from "./CoworkSessionItem";
 
 interface CoworkSessionListProps {
   sessions: CoworkSessionSummary[];
@@ -46,7 +46,7 @@ const CoworkSessionList: React.FC<CoworkSessionListProps> = ({
     return (
       <div className="text-center py-8">
         <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-          {i18nService.t('coworkNoSessions')}
+          {i18nService.t("coworkNoSessions")}
         </p>
       </div>
     );

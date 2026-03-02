@@ -1,7 +1,7 @@
 ---
 name: command-logger
 description: "Log all command events to a centralized audit file"
-homepage: https://docs.marv.ai/automation/hooks#command-logger
+homepage: /automation/hooks#command-logger
 metadata:
   {
     "marv":

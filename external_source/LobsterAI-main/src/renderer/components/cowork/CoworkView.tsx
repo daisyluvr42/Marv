@@ -1,22 +1,26 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
-import { clearCurrentSession, setCurrentSession, setStreaming } from '../../store/slices/coworkSlice';
-import { clearActiveSkills, setActiveSkillIds } from '../../store/slices/skillSlice';
-import { setActions, selectAction, clearSelection } from '../../store/slices/quickActionSlice';
-import { coworkService } from '../../services/cowork';
-import { skillService } from '../../services/skill';
-import { quickActionService } from '../../services/quickAction';
-import { i18nService } from '../../services/i18n';
-import CoworkPromptInput, { type CoworkPromptInputRef } from './CoworkPromptInput';
-import CoworkSessionDetail from './CoworkSessionDetail';
-import ModelSelector from '../ModelSelector';
-import SidebarToggleIcon from '../icons/SidebarToggleIcon';
-import ComposeIcon from '../icons/ComposeIcon';
-import WindowTitleBar from '../window/WindowTitleBar';
-import { QuickActionBar, PromptPanel } from '../quick-actions';
-import type { SettingsOpenOptions } from '../Settings';
-import type { CoworkSession } from '../../types/cowork';
+import React, { useEffect, useState, useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { coworkService } from "../../services/cowork";
+import { i18nService } from "../../services/i18n";
+import { quickActionService } from "../../services/quickAction";
+import { skillService } from "../../services/skill";
+import { RootState } from "../../store";
+import {
+  clearCurrentSession,
+  setCurrentSession,
+  setStreaming,
+} from "../../store/slices/coworkSlice";
+import { setActions, selectAction, clearSelection } from "../../store/slices/quickActionSlice";
+import { clearActiveSkills, setActiveSkillIds } from "../../store/slices/skillSlice";
+import type { CoworkSession } from "../../types/cowork";
+import ComposeIcon from "../icons/ComposeIcon";
+import SidebarToggleIcon from "../icons/SidebarToggleIcon";
+import ModelSelector from "../ModelSelector";
+import { QuickActionBar, PromptPanel } from "../quick-actions";
+import type { SettingsOpenOptions } from "../Settings";
+import WindowTitleBar from "../window/WindowTitleBar";
+import CoworkPromptInput, { type CoworkPromptInputRef } from "./CoworkPromptInput";
+import CoworkSessionDetail from "./CoworkSessionDetail";
 
 export interface CoworkViewProps {
   onRequestAppSettings?: (options?: SettingsOpenOptions) => void;
@@ -27,9 +31,16 @@ export interface CoworkViewProps {
   updateBadge?: React.ReactNode;
 }
 
-const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSkills, isSidebarCollapsed, onToggleSidebar, onNewChat, updateBadge }) => {
+const CoworkView: React.FC<CoworkViewProps> = ({
+  onRequestAppSettings,
+  onShowSkills,
+  isSidebarCollapsed,
+  onToggleSidebar,
+  onNewChat,
+  updateBadge,
+}) => {
   const dispatch = useDispatch();
-  const isMac = window.electron.platform === 'darwin';
+  const isMac = window.electron.platform === "darwin";
   const [isInitialized, setIsInitialized] = useState(false);
   // Track if we're starting a session to prevent duplicate submissions
   const isStartingRef = useRef(false);
@@ -39,11 +50,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
   // Ref for CoworkPromptInput
   const promptInputRef = useRef<CoworkPromptInputRef>(null);
 
-  const {
-    currentSession,
-    isStreaming,
-    config,
-  } = useSelector((state: RootState) => state.cowork);
+  const { currentSession, isStreaming, config } = useSelector((state: RootState) => state.cowork);
 
   const activeSkillIds = useSelector((state: RootState) => state.skill.activeSkillIds);
   const skills = useSelector((state: RootState) => state.skill.skills);
@@ -51,14 +58,14 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
   const selectedActionId = useSelector((state: RootState) => state.quickAction.selectedActionId);
 
   const buildApiConfigNotice = (error?: string) => {
-    const baseNotice = i18nService.t('coworkModelSettingsRequired');
+    const baseNotice = i18nService.t("coworkModelSettingsRequired");
     if (!error) {
       return baseNotice;
     }
     const normalizedError = error.trim();
     if (
-      normalizedError.startsWith('No enabled provider found for model:')
-      || normalizedError === 'No available model configured in enabled providers.'
+      normalizedError.startsWith("No enabled provider found for model:") ||
+      normalizedError === "No available model configured in enabled providers."
     ) {
       return baseNotice;
     }
@@ -74,18 +81,18 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         const actions = await quickActionService.getLocalizedActions();
         dispatch(setActions(actions));
       } catch (error) {
-        console.error('Failed to load quick actions:', error);
+        console.error("Failed to load quick actions:", error);
       }
       try {
         const apiConfig = await coworkService.checkApiConfig();
         if (apiConfig && !apiConfig.hasConfig) {
           onRequestAppSettings?.({
-            initialTab: 'model',
+            initialTab: "model",
             notice: buildApiConfigNotice(apiConfig.error),
           });
         }
       } catch (error) {
-        console.error('Failed to check cowork API config:', error);
+        console.error("Failed to check cowork API config:", error);
       }
       setIsInitialized(true);
     };
@@ -97,7 +104,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         const actions = await quickActionService.getLocalizedActions();
         dispatch(setActions(actions));
       } catch (error) {
-        console.error('Failed to reload quick actions:', error);
+        console.error("Failed to reload quick actions:", error);
       }
     });
 
@@ -108,7 +115,9 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
 
   const handleStartSession = async (prompt: string, skillPrompt?: string) => {
     // Prevent duplicate submissions
-    if (isStartingRef.current) {return;}
+    if (isStartingRef.current) {
+      return;
+    }
     isStartingRef.current = true;
     const requestId = ++startRequestIdRef.current;
     pendingStartRef.current = { requestId, cancelled: false };
@@ -122,19 +131,19 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         const apiConfig = await coworkService.checkApiConfig();
         if (apiConfig && !apiConfig.hasConfig) {
           onRequestAppSettings?.({
-            initialTab: 'model',
+            initialTab: "model",
             notice: buildApiConfigNotice(),
           });
           isStartingRef.current = false;
           return;
         }
       } catch (error) {
-        console.error('Failed to check cowork API config:', error);
+        console.error("Failed to check cowork API config:", error);
       }
 
       // Create a temporary session with user message to show immediately
       const tempSessionId = `temp-${Date.now()}`;
-      const fallbackTitle = prompt.split('\n')[0].slice(0, 50) || i18nService.t('coworkNewSession');
+      const fallbackTitle = prompt.split("\n")[0].slice(0, 50) || i18nService.t("coworkNewSession");
       const now = Date.now();
 
       // Capture active skill IDs before clearing them
@@ -144,18 +153,18 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         id: tempSessionId,
         title: fallbackTitle,
         claudeSessionId: null,
-        status: 'running',
+        status: "running",
         pinned: false,
         createdAt: now,
         updatedAt: now,
-        cwd: config.workingDirectory || '',
-        systemPrompt: '',
-        executionMode: config.executionMode || 'local',
+        cwd: config.workingDirectory || "",
+        systemPrompt: "",
+        executionMode: config.executionMode || "local",
         activeSkillIds: sessionSkillIds,
         messages: [
           {
             id: `msg-${now}`,
-            type: 'user',
+            type: "user",
             content: prompt,
             timestamp: now,
             metadata: sessionSkillIds.length > 0 ? { skillIds: sessionSkillIds } : undefined,
@@ -176,20 +185,20 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
       // If no manual skill selected, use auto-routing prompt
       let effectiveSkillPrompt = skillPrompt;
       if (!skillPrompt) {
-        effectiveSkillPrompt = await skillService.getAutoRoutingPrompt() || undefined;
+        effectiveSkillPrompt = (await skillService.getAutoRoutingPrompt()) || undefined;
       }
-      const combinedSystemPrompt = [effectiveSkillPrompt, config.systemPrompt]
-        .filter(p => p?.trim())
-        .join('\n\n') || undefined;
+      const combinedSystemPrompt =
+        [effectiveSkillPrompt, config.systemPrompt].filter((p) => p?.trim()).join("\n\n") ||
+        undefined;
 
       // Generate title in background while starting session
       const [generatedTitle] = await Promise.all([
-        coworkService.generateSessionTitle(prompt).catch(error => {
-          console.error('Failed to generate cowork session title:', error);
+        coworkService.generateSessionTitle(prompt).catch((error) => {
+          console.error("Failed to generate cowork session title:", error);
           return null;
         }),
         // Small delay to ensure UI updates before heavy operations
-        new Promise(resolve => setTimeout(resolve, 0)),
+        new Promise((resolve) => setTimeout(resolve, 0)),
       ]);
 
       if (isPendingStartCancelled()) {
@@ -220,7 +229,9 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
   };
 
   const handleContinueSession = async (prompt: string, skillPrompt?: string) => {
-    if (!currentSession) {return;}
+    if (!currentSession) {
+      return;
+    }
 
     // Capture active skill IDs before clearing
     const sessionSkillIds = [...activeSkillIds];
@@ -234,11 +245,11 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
     // If no manual skill selected, use auto-routing prompt
     let effectiveSkillPrompt = skillPrompt;
     if (!skillPrompt) {
-      effectiveSkillPrompt = await skillService.getAutoRoutingPrompt() || undefined;
+      effectiveSkillPrompt = (await skillService.getAutoRoutingPrompt()) || undefined;
     }
-    const combinedSystemPrompt = [effectiveSkillPrompt, config.systemPrompt]
-      .filter(p => p?.trim())
-      .join('\n\n') || undefined;
+    const combinedSystemPrompt =
+      [effectiveSkillPrompt, config.systemPrompt].filter((p) => p?.trim()).join("\n\n") ||
+      undefined;
 
     await coworkService.continueSession({
       sessionId: currentSession.id,
@@ -249,8 +260,10 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
   };
 
   const handleStopSession = async () => {
-    if (!currentSession) {return;}
-    if (currentSession.id.startsWith('temp-') && pendingStartRef.current) {
+    if (!currentSession) {
+      return;
+    }
+    if (currentSession.id.startsWith("temp-") && pendingStartRef.current) {
       pendingStartRef.current.cancelled = true;
     }
     await coworkService.stopSession(currentSession.id);
@@ -258,15 +271,15 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
 
   // Get selected quick action
   const selectedAction = React.useMemo(() => {
-    return quickActions.find(action => action.id === selectedActionId);
+    return quickActions.find((action) => action.id === selectedActionId);
   }, [quickActions, selectedActionId]);
 
   // Handle quick action button click: select action + activate skill in one batch
   const handleActionSelect = (actionId: string) => {
     dispatch(selectAction(actionId));
-    const action = quickActions.find(a => a.id === actionId);
+    const action = quickActions.find((a) => a.id === actionId);
     if (action) {
-      const targetSkill = skills.find(s => s.id === action.skillMapping);
+      const targetSkill = skills.find((s) => s.id === action.skillMapping);
       if (targetSkill) {
         dispatch(setActiveSkillIds([targetSkill.id]));
       }
@@ -275,8 +288,10 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
 
   // When the mapped skill is deactivated from input area, restore the QuickActionBar
   useEffect(() => {
-    if (!selectedActionId) {return;}
-    const action = quickActions.find(a => a.id === selectedActionId);
+    if (!selectedActionId) {
+      return;
+    }
+    const action = quickActions.find((a) => a.id === selectedActionId);
     if (action) {
       const skillStillActive = activeSkillIds.includes(action.skillMapping);
       if (!skillStillActive) {
@@ -296,13 +311,15 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
     const handleNewSession = () => {
       dispatch(clearCurrentSession());
       dispatch(clearSelection());
-      window.dispatchEvent(new CustomEvent('cowork:focus-input', {
-        detail: { clear: true },
-      }));
+      window.dispatchEvent(
+        new CustomEvent("cowork:focus-input", {
+          detail: { clear: true },
+        }),
+      );
     };
-    window.addEventListener('cowork:shortcut:new-session', handleNewSession);
+    window.addEventListener("cowork:shortcut:new-session", handleNewSession);
     return () => {
-      window.removeEventListener('cowork:shortcut:new-session', handleNewSession);
+      window.removeEventListener("cowork:shortcut:new-session", handleNewSession);
     };
   }, [dispatch]);
 
@@ -314,7 +331,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="dark:text-claude-darkTextSecondary text-claude-textSecondary">
-            {i18nService.t('loading')}
+            {i18nService.t("loading")}
           </div>
         </div>
       </div>
@@ -346,7 +363,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
       <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
         <div className="non-draggable h-8 flex items-center">
           {isSidebarCollapsed && (
-            <div className={`flex items-center gap-1 mr-2 ${isMac ? 'pl-[68px]' : ''}`}>
+            <div className={`flex items-center gap-1 mr-2 ${isMac ? "pl-[68px]" : ""}`}>
               <button
                 type="button"
                 onClick={onToggleSidebar}
@@ -376,10 +393,10 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
           <div className="text-center space-y-5">
             <img src="logo.png" alt="logo" className="w-16 h-16 mx-auto" />
             <h2 className="text-3xl font-bold tracking-tight dark:text-claude-darkText text-claude-text">
-              {i18nService.t('coworkWelcome')}
+              {i18nService.t("coworkWelcome")}
             </h2>
             <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary max-w-md mx-auto">
-              {i18nService.t('coworkDescription')}
+              {i18nService.t("coworkDescription")}
             </p>
           </div>
 
@@ -391,7 +408,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
                 onSubmit={handleStartSession}
                 onStop={handleStopSession}
                 isStreaming={isStreaming}
-                placeholder={i18nService.t('coworkPlaceholder')}
+                placeholder={i18nService.t("coworkPlaceholder")}
                 size="large"
                 workingDirectory={config.workingDirectory}
                 onWorkingDirectoryChange={async (dir: string) => {
@@ -406,10 +423,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
           {/* Quick Actions */}
           <div className="space-y-4">
             {selectedAction ? (
-              <PromptPanel
-                action={selectedAction}
-                onPromptSelect={handleQuickActionPromptSelect}
-              />
+              <PromptPanel action={selectedAction} onPromptSelect={handleQuickActionPromptSelect} />
             ) : (
               <QuickActionBar actions={quickActions} onActionSelect={handleActionSelect} />
             )}

@@ -6,13 +6,13 @@ import { detectMime } from "../media/mime.js";
 import { resolveFileWithinRoot } from "./file-resolver.js";
 
 export const A2UI_PATH = "/__marv__/a2ui";
-export const LEGACY_A2UI_PATH = "/__openclaw__/a2ui";
+export const LEGACY_A2UI_PATH = "/__marv__/a2ui";
 
 export const CANVAS_HOST_PATH = "/__marv__/canvas";
-export const LEGACY_CANVAS_HOST_PATH = "/__openclaw__/canvas";
+export const LEGACY_CANVAS_HOST_PATH = "/__marv__/canvas";
 
 export const CANVAS_WS_PATH = "/__marv__/ws";
-export const LEGACY_CANVAS_WS_PATH = "/__openclaw__/ws";
+export const LEGACY_CANVAS_WS_PATH = "/__marv__/ws";
 
 let cachedA2uiRootReal: string | null | undefined;
 let resolvingA2uiRoot: Promise<string | null> | null = null;
@@ -89,7 +89,7 @@ export function injectCanvasLiveReload(html: string): string {
   // Works on:
   // - iOS: window.webkit.messageHandlers.marvCanvasA2UIAction.postMessage(...)
   // - Android: window.marvCanvasA2UIAction.postMessage(...)
-  const handlerNames = ["marvCanvasA2UIAction", "openclawCanvasA2UIAction"];
+  const handlerNames = ["marvCanvasA2UIAction", "marvCanvasA2UIAction"];
   function postToNode(payload) {
     try {
       const raw = typeof payload === "string" ? payload : JSON.stringify(payload);
@@ -121,8 +121,8 @@ export function injectCanvasLiveReload(html: string): string {
   globalThis.Marv.sendUserAction = sendUserAction;
   globalThis.marvPostMessage = postToNode;
   globalThis.marvSendUserAction = sendUserAction;
-  globalThis.openclawPostMessage = postToNode;
-  globalThis.openclawSendUserAction = sendUserAction;
+  globalThis.marvPostMessage = postToNode;
+  globalThis.marvSendUserAction = sendUserAction;
 
   try {
     const proto = location.protocol === "https:" ? "wss" : "ws";

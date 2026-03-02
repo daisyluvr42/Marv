@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../config/config.js";
 
 let backend: "builtin" | "qmd" = "builtin";
 let searchImpl: () => Promise<unknown[]> = async () => [
@@ -63,8 +63,8 @@ import {
   createMemoryWriteTool,
 } from "./memory-tool.js";
 
-function asOpenClawConfig(config: Partial<OpenClawConfig>): OpenClawConfig {
-  return config as OpenClawConfig;
+function asMarvConfig(config: Partial<MarvConfig>): MarvConfig {
+  return config as MarvConfig;
 }
 
 beforeEach(() => {
@@ -90,7 +90,7 @@ beforeEach(() => {
 describe("memory search citations", () => {
   it("appends source information when citations are enabled", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       memory: { citations: "on" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -106,7 +106,7 @@ describe("memory search citations", () => {
 
   it("leaves snippet untouched when citations are off", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       memory: { citations: "off" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -122,7 +122,7 @@ describe("memory search citations", () => {
 
   it("clamps decorated snippets to qmd injected budget", async () => {
     backend = "qmd";
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       memory: { citations: "on", backend: "qmd", qmd: { limits: { maxInjectedChars: 20 } } },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -137,7 +137,7 @@ describe("memory search citations", () => {
 
   it("honors auto mode for direct chats", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       memory: { citations: "auto" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -155,7 +155,7 @@ describe("memory search citations", () => {
 
   it("suppresses citations for auto mode in group chats", async () => {
     backend = "builtin";
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       memory: { citations: "auto" },
       agents: { list: [{ id: "main", default: true }] },
     });
@@ -176,7 +176,7 @@ describe("memory tools", () => {
   it("skips memory search on small-talk when precheck is enabled", async () => {
     const soulSearchSpy = vi.fn(() => []);
     soulSearchImpl = soulSearchSpy;
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       agents: {
         defaults: {
           memorySearch: {
@@ -210,7 +210,7 @@ describe("memory tools", () => {
     const soulSearchSpy = vi.fn(() => []);
     soulSearchImpl = soulSearchSpy;
     searchImpl = async () => [];
-    const cfg = asOpenClawConfig({
+    const cfg = asMarvConfig({
       agents: {
         defaults: {
           memorySearch: {

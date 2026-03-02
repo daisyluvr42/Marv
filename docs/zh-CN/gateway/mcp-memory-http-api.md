@@ -23,8 +23,8 @@ Marv 的 Gateway 网关提供一个兼容 MCP 的记忆端点（基于 HTTP JSON
 
 说明：
 
-- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
-- 当 `gateway.auth.mode="password"` 时，也通过 Bearer 头传 `gateway.auth.password`（或 `OPENCLAW_GATEWAY_PASSWORD`）。
+- 当 `gateway.auth.mode="token"` 时，使用 `gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）。
+- 当 `gateway.auth.mode="password"` 时，也通过 Bearer 头传 `gateway.auth.password`（或 `MARV_GATEWAY_PASSWORD`）。
 
 ## 支持的 MCP 方法
 

@@ -24,9 +24,9 @@ Marv 有两个日志"界面"：
 
 ## 基于文件的日志记录器
 
-- 默认滚动日志文件位于 `/tmp/openclaw/` 下（每天一个文件）：`openclaw-YYYY-MM-DD.log`
+- 默认滚动日志文件位于 `/tmp/marv/` 下（每天一个文件）：`marv-YYYY-MM-DD.log`
   - 日期使用 Gateway 网关主机的本地时区。
-- 日志文件路径和级别可以通过 `~/.openclaw/marv.json` 配置：
+- 日志文件路径和级别可以通过 `~/.marv/marv.json` 配置：
   - `logging.file`
   - `logging.level`
 

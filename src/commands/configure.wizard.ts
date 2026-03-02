@@ -1,5 +1,5 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { readConfigFileSnapshot, resolveGatewayPort, writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
@@ -46,7 +46,7 @@ import { setupSkills } from "./onboard-skills.js";
 type ConfigureSectionChoice = WizardSection | "__continue";
 
 async function runGatewayHealthCheck(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   runtime: RuntimeEnv;
   port: number;
 }): Promise<void> {
@@ -61,11 +61,11 @@ async function runGatewayHealthCheck(params: {
   const token =
     params.cfg.gateway?.auth?.token ??
     process.env.MARV_GATEWAY_TOKEN ??
-    process.env.OPENCLAW_GATEWAY_TOKEN;
+    process.env.MARV_GATEWAY_TOKEN;
   const password =
     params.cfg.gateway?.auth?.password ??
     process.env.MARV_GATEWAY_PASSWORD ??
-    process.env.OPENCLAW_GATEWAY_PASSWORD;
+    process.env.MARV_GATEWAY_PASSWORD;
 
   await waitForGatewayReachable({
     url: wsUrl,
@@ -81,8 +81,8 @@ async function runGatewayHealthCheck(params: {
     note(
       [
         "Docs:",
-        "https://docs.marv.ai/gateway/health",
-        "https://docs.marv.ai/gateway/troubleshooting",
+        "/gateway/health",
+        "/gateway/troubleshooting",
       ].join("\n"),
       "Health check help",
     );
@@ -133,9 +133,9 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
 }
 
 async function promptWebToolsConfig(
-  nextConfig: OpenClawConfig,
+  nextConfig: MarvConfig,
   runtime: RuntimeEnv,
-): Promise<OpenClawConfig> {
+): Promise<MarvConfig> {
   const existingSearch = nextConfig.tools?.web?.search;
   const existingFetch = nextConfig.tools?.web?.fetch;
   const hasSearchKey = Boolean(existingSearch?.apiKey);
@@ -144,7 +144,7 @@ async function promptWebToolsConfig(
     [
       "Web search lets your agent look things up online using the `web_search` tool.",
       "It requires a Brave Search API key (you can store it in the config or set BRAVE_API_KEY in the Gateway environment).",
-      "Docs: https://docs.marv.ai/tools/web",
+      "Docs: /tools/web",
     ].join("\n"),
     "Web search",
   );
@@ -180,7 +180,7 @@ async function promptWebToolsConfig(
         [
           "No key stored yet, so web_search will stay unavailable.",
           "Store a key here or set BRAVE_API_KEY in the Gateway environment.",
-          "Docs: https://docs.marv.ai/tools/web",
+          "Docs: /tools/web",
         ].join("\n"),
         "Web search",
       );
@@ -223,7 +223,7 @@ export async function runConfigureWizard(
     const prompter = createClackPrompter();
 
     const snapshot = await readConfigFileSnapshot();
-    const baseConfig: OpenClawConfig = snapshot.valid ? snapshot.config : {};
+    const baseConfig: MarvConfig = snapshot.valid ? snapshot.config : {};
 
     if (snapshot.exists) {
       const title = snapshot.valid ? "Existing config detected" : "Invalid config";
@@ -233,7 +233,7 @@ export async function runConfigureWizard(
           [
             ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
             "",
-            "Docs: https://docs.marv.ai/gateway/configuration",
+            "Docs: /gateway/configuration",
           ].join("\n"),
           "Config issues",
         );
@@ -253,11 +253,11 @@ export async function runConfigureWizard(
       token:
         baseConfig.gateway?.auth?.token ??
         process.env.MARV_GATEWAY_TOKEN ??
-        process.env.OPENCLAW_GATEWAY_TOKEN,
+        process.env.MARV_GATEWAY_TOKEN,
       password:
         baseConfig.gateway?.auth?.password ??
         process.env.MARV_GATEWAY_PASSWORD ??
-        process.env.OPENCLAW_GATEWAY_PASSWORD,
+        process.env.MARV_GATEWAY_PASSWORD,
     });
     const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
     const remoteProbe = remoteUrl
@@ -325,7 +325,7 @@ export async function runConfigureWizard(
       nextConfig.gateway?.auth?.token ??
       baseConfig.gateway?.auth?.token ??
       process.env.MARV_GATEWAY_TOKEN ??
-      process.env.OPENCLAW_GATEWAY_TOKEN;
+      process.env.MARV_GATEWAY_TOKEN;
 
     const persistConfig = async () => {
       nextConfig = applyWizardMetadata(nextConfig, {
@@ -522,15 +522,15 @@ export async function runConfigureWizard(
     const newPassword =
       nextConfig.gateway?.auth?.password ??
       process.env.MARV_GATEWAY_PASSWORD ??
-      process.env.OPENCLAW_GATEWAY_PASSWORD;
+      process.env.MARV_GATEWAY_PASSWORD;
     const oldPassword =
       baseConfig.gateway?.auth?.password ??
       process.env.MARV_GATEWAY_PASSWORD ??
-      process.env.OPENCLAW_GATEWAY_PASSWORD;
+      process.env.MARV_GATEWAY_PASSWORD;
     const token =
       nextConfig.gateway?.auth?.token ??
       process.env.MARV_GATEWAY_TOKEN ??
-      process.env.OPENCLAW_GATEWAY_TOKEN;
+      process.env.MARV_GATEWAY_TOKEN;
 
     let gatewayProbe = await probeGatewayReachable({
       url: links.wsUrl,
@@ -554,7 +554,7 @@ export async function runConfigureWizard(
         `Web UI: ${links.httpUrl}`,
         `Gateway WS: ${links.wsUrl}`,
         gatewayStatusLine,
-        "Docs: https://docs.marv.ai/web/control-ui",
+        "Docs: /web/control-ui",
       ].join("\n"),
       "Control UI",
     );

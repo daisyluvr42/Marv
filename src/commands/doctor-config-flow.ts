@@ -7,9 +7,9 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import {
-  OpenClawSchema,
+  MarvSchema,
   CONFIG_PATH,
   migrateLegacyConfig,
   readConfigFileSnapshot,
@@ -75,11 +75,11 @@ function resolvePathTarget(root: unknown, path: Array<string | number>): unknown
   return current;
 }
 
-function stripUnknownConfigKeys(config: OpenClawConfig): {
-  config: OpenClawConfig;
+function stripUnknownConfigKeys(config: MarvConfig): {
+  config: MarvConfig;
   removed: string[];
 } {
-  const parsed = OpenClawSchema.safeParse(config);
+  const parsed = MarvSchema.safeParse(config);
   if (parsed.success) {
     return { config, removed: [] };
   }
@@ -111,7 +111,7 @@ function stripUnknownConfigKeys(config: OpenClawConfig): {
   return { config: next, removed };
 }
 
-function noteOpencodeProviderOverrides(cfg: OpenClawConfig) {
+function noteOpencodeProviderOverrides(cfg: MarvConfig) {
   const providers = cfg.models?.providers;
   if (!providers) {
     return;
@@ -188,7 +188,7 @@ function asObjectRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function collectTelegramAccountScopes(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
 ): Array<{ prefix: string; account: Record<string, unknown> }> {
   const scopes: Array<{ prefix: string; account: Record<string, unknown> }> = [];
   const telegram = asObjectRecord(cfg.channels?.telegram);
@@ -254,7 +254,7 @@ function collectTelegramAllowFromLists(
   return refs;
 }
 
-function scanTelegramAllowFromUsernameEntries(cfg: OpenClawConfig): TelegramAllowFromUsernameHit[] {
+function scanTelegramAllowFromUsernameEntries(cfg: MarvConfig): TelegramAllowFromUsernameHit[] {
   const hits: TelegramAllowFromUsernameHit[] = [];
 
   const scanList = (pathLabel: string, list: unknown) => {
@@ -282,8 +282,8 @@ function scanTelegramAllowFromUsernameEntries(cfg: OpenClawConfig): TelegramAllo
   return hits;
 }
 
-async function maybeRepairTelegramAllowFromUsernames(cfg: OpenClawConfig): Promise<{
-  config: OpenClawConfig;
+async function maybeRepairTelegramAllowFromUsernames(cfg: MarvConfig): Promise<{
+  config: MarvConfig;
   changes: string[];
 }> {
   const hits = scanTelegramAllowFromUsernameEntries(cfg);
@@ -424,7 +424,7 @@ type DiscordIdListRef = {
 };
 
 function collectDiscordAccountScopes(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
 ): Array<{ prefix: string; account: Record<string, unknown> }> {
   const scopes: Array<{ prefix: string; account: Record<string, unknown> }> = [];
   const discord = asObjectRecord(cfg.channels?.discord);
@@ -504,7 +504,7 @@ function collectDiscordIdLists(
   return refs;
 }
 
-function scanDiscordNumericIdEntries(cfg: OpenClawConfig): DiscordNumericIdHit[] {
+function scanDiscordNumericIdEntries(cfg: MarvConfig): DiscordNumericIdHit[] {
   const hits: DiscordNumericIdHit[] = [];
   const scanList = (pathLabel: string, list: unknown) => {
     if (!Array.isArray(list)) {
@@ -527,8 +527,8 @@ function scanDiscordNumericIdEntries(cfg: OpenClawConfig): DiscordNumericIdHit[]
   return hits;
 }
 
-function maybeRepairDiscordNumericIds(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+function maybeRepairDiscordNumericIds(cfg: MarvConfig): {
+  config: MarvConfig;
   changes: string[];
 } {
   const hits = scanDiscordNumericIdEntries(cfg);
@@ -579,8 +579,8 @@ function maybeRepairDiscordNumericIds(cfg: OpenClawConfig): {
  * users (or integrations) set dmPolicy to "open" without realising that an explicit
  * allowFrom wildcard is also required.
  */
-function maybeRepairOpenPolicyAllowFrom(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+function maybeRepairOpenPolicyAllowFrom(cfg: MarvConfig): {
+  config: MarvConfig;
   changes: string[];
 } {
   const channels = cfg.channels;
@@ -721,7 +721,7 @@ async function maybeMigrateLegacyConfig(): Promise<string[]> {
   }
 
   const legacyCandidates = [
-    path.join(home, ".openclaw", "openclaw.json"),
+    path.join(home, ".marv", "marv.json"),
     path.join(home, ".clawdbot", "clawdbot.json"),
     path.join(home, ".moldbot", "moldbot.json"),
     path.join(home, ".moltbot", "moltbot.json"),
@@ -772,7 +772,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
 
   let snapshot = await readConfigFileSnapshot();
   const baseCfg = snapshot.config ?? {};
-  let cfg: OpenClawConfig = baseCfg;
+  let cfg: MarvConfig = baseCfg;
   let candidate = structuredClone(baseCfg);
   let pendingChanges = false;
   let shouldWriteConfig = false;

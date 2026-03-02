@@ -8,7 +8,7 @@ title: "setup"
 
 # `marv setup`
 
-Initialize `~/.openclaw/marv.json` and the agent workspace.
+Initialize `~/.marv/marv.json` and the agent workspace.
 
 Related:
 
@@ -19,7 +19,7 @@ Related:
 
 ```bash
 marv setup
-marv setup --workspace ~/.openclaw/workspace
+marv setup --workspace ~/.marv/workspace
 ```
 
 To run the wizard via setup:

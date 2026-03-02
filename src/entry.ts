@@ -38,13 +38,13 @@ function ensureExperimentalWarningSuppressed(): boolean {
   }
   if (
     isTruthyEnvValue(process.env.MARV_NO_RESPAWN) ||
-    isTruthyEnvValue(process.env.OPENCLAW_NO_RESPAWN)
+    isTruthyEnvValue(process.env.MARV_NO_RESPAWN)
   ) {
     return false;
   }
   if (
     isTruthyEnvValue(process.env.MARV_NODE_OPTIONS_READY) ||
-    isTruthyEnvValue(process.env.OPENCLAW_NODE_OPTIONS_READY)
+    isTruthyEnvValue(process.env.MARV_NODE_OPTIONS_READY)
   ) {
     return false;
   }
@@ -54,7 +54,7 @@ function ensureExperimentalWarningSuppressed(): boolean {
 
   // Respawn guard (and keep recursion bounded if something goes wrong).
   process.env.MARV_NODE_OPTIONS_READY = "1";
-  process.env.OPENCLAW_NODE_OPTIONS_READY = "1";
+  process.env.MARV_NODE_OPTIONS_READY = "1";
   // Pass flag as a Node CLI option, not via NODE_OPTIONS (--disable-warning is disallowed in NODE_OPTIONS).
   const child = spawn(
     process.execPath,

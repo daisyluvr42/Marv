@@ -17,7 +17,7 @@ export function resolveWideAreaDiscoveryDomain(params?: {
 }): string | null {
   const env = params?.env ?? process.env;
   const candidate =
-    params?.configDomain ?? env.MARV_WIDE_AREA_DOMAIN ?? env.OPENCLAW_WIDE_AREA_DOMAIN ?? null;
+    params?.configDomain ?? env.MARV_WIDE_AREA_DOMAIN ?? env.MARV_WIDE_AREA_DOMAIN ?? null;
   return normalizeWideAreaDomain(candidate);
 }
 
@@ -75,7 +75,7 @@ function extractSerial(zoneText: string): number | null {
 }
 
 function extractContentHash(zoneText: string): string | null {
-  const match = zoneText.match(/^\s*;\s*(?:marv|openclaw)-content-hash:\s*(\S+)\s*$/m);
+  const match = zoneText.match(/^\s*;\s*(?:marv|marv)-content-hash:\s*(\S+)\s*$/m);
   return match?.[1] ?? null;
 }
 
@@ -145,7 +145,7 @@ function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string 
     records.push(`${hostLabel} IN AAAA ${opts.tailnetIPv6}`);
   }
 
-  for (const serviceType of ["_marv-gw._tcp", "_openclaw-gw._tcp"]) {
+  for (const serviceType of ["_marv-gw._tcp", "_marv-gw._tcp"]) {
     records.push(`${serviceType} IN PTR ${instanceLabel}.${serviceType}`);
     records.push(`${instanceLabel}.${serviceType} IN SRV 0 0 ${opts.gatewayPort} ${hostLabel}`);
     records.push(`${instanceLabel}.${serviceType} IN TXT ${txt.map(txtQuote).join(" ")}`);

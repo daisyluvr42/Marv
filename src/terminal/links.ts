@@ -1,6 +1,6 @@
 import { formatTerminalLink } from "../utils.js";
 
-export const DOCS_ROOT = "https://docs.marv.ai";
+export const DOCS_ROOT = "";
 
 export function formatDocsLink(
   path: string,

@@ -125,7 +125,7 @@ curl -fsSL https://marv.ai/install.sh | bash
 ### 选项 B：可修改安装（用于调试）
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 npm install
 npm run build

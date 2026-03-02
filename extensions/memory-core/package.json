@@ -1,16 +1,16 @@
 {
-  "name": "@openclaw/memory-core",
+  "name": "@marv/memory-core",
   "version": "2026.2.18",
   "private": true,
-  "description": "OpenClaw core memory search plugin",
+  "description": "Marv core memory search plugin",
   "type": "module",
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "marv": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.1.26"
+    "marv": ">=2026.1.26"
   },
-  "openclaw": {
+  "marv": {
     "extensions": [
       "./index.ts"
     ]

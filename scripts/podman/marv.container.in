@@ -1,0 +1,26 @@
+# Marv gateway — Podman Quadlet (rootless)
+# Installed by setup-podman.sh into marv's ~/.config/containers/systemd/
+# {{MARV_HOME}} is replaced at install time.
+
+[Unit]
+Description=Marv gateway (rootless Podman)
+
+[Container]
+Image=marv:local
+ContainerName=marv
+UserNS=keep-id
+Volume={{MARV_HOME}}/.marv:/home/node/.marv
+EnvironmentFile={{MARV_HOME}}/.marv/.env
+Environment=HOME=/home/node
+Environment=TERM=xterm-256color
+PublishPort=18789:18789
+PublishPort=18790:18790
+Pull=never
+Exec=node dist/index.js gateway --bind lan --port 18789
+
+[Service]
+TimeoutStartSec=300
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

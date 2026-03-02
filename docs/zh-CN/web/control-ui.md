@@ -72,7 +72,7 @@ marv devices approve <requestId>
 - Skills：状态、启用/禁用、安装、API 密钥更新（`skills.*`）
 - 节点：列表 + 能力（`node.list`）
 - 执行批准：编辑 Gateway 网关或节点允许列表 + `exec host=gateway/node` 的询问策略（`exec.approvals.*`）
-- 配置：查看/编辑 `~/.openclaw/marv.json`（`config.get`、`config.set`）
+- 配置：查看/编辑 `~/.marv/marv.json`（`config.get`、`config.set`）
 - 配置：应用 + 带验证的重启（`config.apply`）并唤醒上次活动的会话
 - 配置写入包含基础哈希保护，以防止覆盖并发编辑
 - 配置 schema + 表单渲染（`config.schema`，包括插件 + 渠道 schema）；原始 JSON 编辑器仍然可用
@@ -154,7 +154,7 @@ pnpm ui:build # 首次运行时自动安装 UI 依赖
 可选的绝对基础路径（当你想要固定的资源 URL 时）：
 
 ```bash
-OPENCLAW_CONTROL_UI_BASE_PATH=/openclaw/ pnpm ui:build
+MARV_CONTROL_UI_BASE_PATH=/marv/ pnpm ui:build
 ```
 
 用于本地开发（单独的开发服务器）：

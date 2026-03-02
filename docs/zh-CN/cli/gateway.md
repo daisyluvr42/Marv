@@ -42,7 +42,7 @@ marv gateway run
 
 注意事项：
 
-- 默认情况下，除非在 `~/.openclaw/marv.json` 中设置了 `gateway.mode=local`，否则 Gateway 网关将拒绝启动。使用 `--allow-unconfigured` 进行临时/开发运行。
+- 默认情况下，除非在 `~/.marv/marv.json` 中设置了 `gateway.mode=local`，否则 Gateway 网关将拒绝启动。使用 `--allow-unconfigured` 进行临时/开发运行。
 - 在没有认证的情况下绑定到 loopback 之外的地址会被阻止（安全护栏）。
 - `SIGUSR1` 在授权时触发进程内重启（启用 `commands.restart` 或使用 gateway 工具/config apply/update）。
 - `SIGINT`/`SIGTERM` 处理程序会停止 Gateway 网关进程，但不会恢复任何自定义终端状态。如果你用 TUI 或 raw-mode 输入包装 CLI，请在退出前恢复终端。
@@ -52,8 +52,8 @@ marv gateway run
 - `--port <port>`：WebSocket 端口（默认来自配置/环境变量；通常为 `18789`）。
 - `--bind <loopback|lan|tailnet|auto|custom>`：监听器绑定模式。
 - `--auth <token|password>`：认证模式覆盖。
-- `--token <token>`：令牌覆盖（同时为进程设置 `OPENCLAW_GATEWAY_TOKEN`）。
-- `--password <password>`：密码覆盖（同时为进程设置 `OPENCLAW_GATEWAY_PASSWORD`）。
+- `--token <token>`：令牌覆盖（同时为进程设置 `MARV_GATEWAY_TOKEN`）。
+- `--password <password>`：密码覆盖（同时为进程设置 `MARV_GATEWAY_PASSWORD`）。
 - `--tailscale <off|serve|funnel>`：通过 Tailscale 暴露 Gateway 网关。
 - `--tailscale-reset-on-exit`：关闭时重置 Tailscale serve/funnel 配置。
 - `--allow-unconfigured`：允许在配置中没有 `gateway.mode=local` 的情况下启动 Gateway 网关。
@@ -170,7 +170,7 @@ marv gateway uninstall
 
 ## 发现 Gateway 网关（Bonjour）
 
-`gateway discover` 扫描 Gateway 网关信标（`_openclaw-gw._tcp`）。
+`gateway discover` 扫描 Gateway 网关信标（`_marv-gw._tcp`）。
 
 - 组播 DNS-SD：`local.`
 - 单播 DNS-SD（广域 Bonjour）：选择一个域（示例：`marv.internal.`）并设置分割 DNS + DNS 服务器；参见 [/gateway/bonjour](/gateway/bonjour)

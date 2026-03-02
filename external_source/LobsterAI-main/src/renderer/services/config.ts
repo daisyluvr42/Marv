@@ -1,55 +1,58 @@
-import { AppConfig, CONFIG_KEYS, defaultConfig } from '../config';
-import { localStore } from './store';
+import { AppConfig, CONFIG_KEYS, defaultConfig } from "../config";
+import { localStore } from "./store";
 
-const getFixedProviderApiFormat = (providerKey: string): 'anthropic' | 'openai' | null => {
-  if (providerKey === 'openai' || providerKey === 'gemini') {
-    return 'openai';
+const getFixedProviderApiFormat = (providerKey: string): "anthropic" | "openai" | null => {
+  if (providerKey === "openai" || providerKey === "gemini") {
+    return "openai";
   }
-  if (providerKey === 'anthropic') {
-    return 'anthropic';
+  if (providerKey === "anthropic") {
+    return "anthropic";
   }
   return null;
 };
 
 const normalizeProviderBaseUrl = (providerKey: string, baseUrl: unknown): string => {
-  if (typeof baseUrl !== 'string') {
-    return '';
+  if (typeof baseUrl !== "string") {
+    return "";
   }
 
-  const normalized = baseUrl.trim().replace(/\/+$/, '');
-  if (providerKey !== 'gemini') {
+  const normalized = baseUrl.trim().replace(/\/+$/, "");
+  if (providerKey !== "gemini") {
     return normalized;
   }
 
-  if (!normalized || !normalized.includes('generativelanguage.googleapis.com')) {
+  if (!normalized || !normalized.includes("generativelanguage.googleapis.com")) {
     return normalized;
   }
 
-  if (normalized.endsWith('/v1beta/openai') || normalized.endsWith('/v1/openai')) {
+  if (normalized.endsWith("/v1beta/openai") || normalized.endsWith("/v1/openai")) {
     return normalized;
   }
-  if (normalized.endsWith('/v1beta')) {
+  if (normalized.endsWith("/v1beta")) {
     return `${normalized}/openai`;
   }
-  if (normalized.endsWith('/v1')) {
+  if (normalized.endsWith("/v1")) {
     return `${normalized.slice(0, -3)}v1beta/openai`;
   }
 
-  return 'https://generativelanguage.googleapis.com/v1beta/openai';
+  return "https://generativelanguage.googleapis.com/v1beta/openai";
 };
 
-const normalizeProviderApiFormat = (providerKey: string, apiFormat: unknown): 'anthropic' | 'openai' => {
+const normalizeProviderApiFormat = (
+  providerKey: string,
+  apiFormat: unknown,
+): "anthropic" | "openai" => {
   const fixed = getFixedProviderApiFormat(providerKey);
   if (fixed) {
     return fixed;
   }
-  if (apiFormat === 'openai') {
-    return 'openai';
+  if (apiFormat === "openai") {
+    return "openai";
   }
-  return 'anthropic';
+  return "anthropic";
 };
 
-const normalizeProvidersConfig = (providers: AppConfig['providers']): AppConfig['providers'] => {
+const normalizeProvidersConfig = (providers: AppConfig["providers"]): AppConfig["providers"] => {
   if (!providers) {
     return providers;
   }
@@ -62,8 +65,8 @@ const normalizeProvidersConfig = (providers: AppConfig['providers']): AppConfig[
         baseUrl: normalizeProviderBaseUrl(providerKey, providerConfig.baseUrl),
         apiFormat: normalizeProviderApiFormat(providerKey, providerConfig.apiFormat),
       },
-    ])
-  ) as AppConfig['providers'];
+    ]),
+  ) as AppConfig["providers"];
 };
 
 class ConfigService {
@@ -91,7 +94,7 @@ class ConfigService {
                     apiFormat: normalizeProviderApiFormat(providerKey, mergedProvider.apiFormat),
                   };
                 })(),
-              ])
+              ]),
             )
           : defaultConfig.providers;
 
@@ -113,12 +116,12 @@ class ConfigService {
           shortcuts: {
             ...defaultConfig.shortcuts!,
             ...storedConfig.shortcuts,
-          } as AppConfig['shortcuts'],
-          providers: mergedProviders as AppConfig['providers'],
+          } as AppConfig["shortcuts"],
+          providers: mergedProviders as AppConfig["providers"],
         };
       }
     } catch (error) {
-      console.error('Failed to load config:', error);
+      console.error("Failed to load config:", error);
     }
   }
 
@@ -127,7 +130,9 @@ class ConfigService {
   }
 
   async updateConfig(newConfig: Partial<AppConfig>) {
-    const normalizedProviders = normalizeProvidersConfig(newConfig.providers as AppConfig['providers'] | undefined);
+    const normalizedProviders = normalizeProvidersConfig(
+      newConfig.providers as AppConfig["providers"] | undefined,
+    );
     this.config = {
       ...this.config,
       ...newConfig,
@@ -144,4 +149,4 @@ class ConfigService {
   }
 }
 
-export const configService = new ConfigService(); 
+export const configService = new ConfigService();

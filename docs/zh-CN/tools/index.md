@@ -1,8 +1,8 @@
 ---
 read_when:
   - 添加或修改智能体工具
-  - 停用或更改 `openclaw-*` Skills
-summary: Marv 的智能体工具接口（browser、canvas、nodes、message、cron），替代旧版 `openclaw-*` Skills
+  - 停用或更改 `marv-*` Skills
+summary: Marv 的智能体工具接口（browser、canvas、nodes、message、cron），替代旧版 `marv-*` Skills
 title: 工具
 x-i18n:
   generated_at: "2026-02-03T10:12:41Z"
@@ -16,7 +16,7 @@ x-i18n:
 # 工具（Marv）
 
 Marv 为 browser、canvas、nodes 和 cron 暴露**一流的智能体工具**。
-这些工具取代了旧的 `openclaw-*` Skills：工具是类型化的，无需调用 shell，
+这些工具取代了旧的 `marv-*` Skills：工具是类型化的，无需调用 shell，
 智能体应该直接依赖它们。
 
 ## 禁用工具

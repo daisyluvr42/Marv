@@ -99,7 +99,7 @@ export function registerGatewayCli(program: Command) {
             ["marv gateway status", "Show service status and probe reachability."],
             ["marv gateway discover", "Find local and wide-area gateway beacons."],
             ["marv gateway call health", "Call a gateway RPC method directly."],
-          ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/gateway", "docs.marv.ai/cli/gateway")}\n`,
+          ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/gateway", "docs: /cli/gateway")}\n`,
       ),
   );
 

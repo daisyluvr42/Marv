@@ -58,7 +58,7 @@ Gateway 网关保留在主机上；启用时工具执行在隔离的沙箱中运
 
 `agents.defaults.sandbox.workspaceAccess` 控制**沙箱可以看到什么**：
 
-- `"none"`（默认）：工具看到 `~/.openclaw/sandboxes` 下的沙箱工作区。
+- `"none"`（默认）：工具看到 `~/.marv/sandboxes` 下的沙箱工作区。
 - `"ro"`：以只读方式在 `/agent` 挂载智能体工作区（禁用 `write`/`edit`/`apply_patch`）。
 - `"rw"`：以读写方式在 `/workspace` 挂载智能体工作区。
 
@@ -107,7 +107,7 @@ Skills 注意事项：`read` 工具以沙箱为根。使用 `workspaceAccess: "n
 
 ## 镜像 + 设置
 
-默认镜像：`openclaw-sandbox:bookworm-slim`
+默认镜像：`marv-sandbox:bookworm-slim`
 
 构建一次：
 

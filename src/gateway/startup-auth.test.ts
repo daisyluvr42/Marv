@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 
 const mocks = vi.hoisted(() => ({
-  writeConfigFile: vi.fn(async (_cfg: OpenClawConfig) => {}),
+  writeConfigFile: vi.fn(async (_cfg: MarvConfig) => {}),
 }));
 
 vi.mock("../config/config.js", async (importOriginal) => {
@@ -39,7 +39,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("does not generate when token already exists", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "token",
@@ -61,7 +61,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("does not generate in password mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "password",
@@ -81,7 +81,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("does not generate in trusted-proxy mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "trusted-proxy",
@@ -102,7 +102,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("does not generate in explicit none mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "none",
@@ -122,7 +122,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("treats undefined token override as no override", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "token",
@@ -145,7 +145,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("keeps generated token ephemeral when runtime override flips explicit non-token mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "password",
@@ -167,7 +167,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("keeps generated token ephemeral when runtime override flips explicit none mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           mode: "none",
@@ -189,7 +189,7 @@ describe("ensureGatewayStartupAuth", () => {
   });
 
   it("keeps generated token ephemeral when runtime override flips implicit password mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: MarvConfig = {
       gateway: {
         auth: {
           password: "configured-password",

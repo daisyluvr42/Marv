@@ -28,7 +28,7 @@ Marv 可以运行一个由智能体控制的**专用 Chrome/Brave/Edge/Chromium 
 
 ## 功能概览
 
-- 一个名为 **openclaw** 的独立浏览器配置文件（默认橙色主题）。
+- 一个名为 **marv** 的独立浏览器配置文件（默认橙色主题）。
 - 确定性标签页控制（列出/打开/聚焦/关闭）。
 - 智能体操作（点击/输入/拖动/选择）、快照、截图、PDF。
 - 可选的多配置文件支持（`marv`、`work`、`remote` 等）。
@@ -51,11 +51,11 @@ marv browser --browser-profile marv snapshot
 - `marv`：托管的隔离浏览器（无需扩展）。
 - `chrome`：到你**系统浏览器**的扩展中继（需要将 Marv 扩展附加到标签页）。
 
-如果你希望默认使用托管模式，请设置 `browser.defaultProfile: "openclaw"`。
+如果你希望默认使用托管模式，请设置 `browser.defaultProfile: "marv"`。
 
 ## 配置
 
-浏览器设置位于 `~/.openclaw/marv.json`。
+浏览器设置位于 `~/.marv/marv.json`。
 
 ```json5
 {
@@ -82,13 +82,13 @@ marv browser --browser-profile marv snapshot
 注意事项：
 
 - 浏览器控制服务绑定到 loopback 上的端口，该端口从 `gateway.port` 派生（默认：`18791`，即 gateway + 2）。中继使用下一个端口（`18792`）。
-- 如果你覆盖了 Gateway 网关端口（`gateway.port` 或 `OPENCLAW_GATEWAY_PORT`），派生的浏览器端口会相应调整以保持在同一"系列"中。
+- 如果你覆盖了 Gateway 网关端口（`gateway.port` 或 `MARV_GATEWAY_PORT`），派生的浏览器端口会相应调整以保持在同一"系列"中。
 - 未设置时，`cdpUrl` 默认为中继端口。
 - `remoteCdpTimeoutMs` 适用于远程（非 loopback）CDP 可达性检查。
 - `remoteCdpHandshakeTimeoutMs` 适用于远程 CDP WebSocket 可达性检查。
 - `attachOnly: true` 表示"永不启动本地浏览器；仅在浏览器已运行时附加"。
 - `color` + 每个配置文件的 `color` 为浏览器 UI 着色，以便你能看到哪个配置文件处于活动状态。
-- 默认配置文件是 `chrome`（扩展中继）。使用 `defaultProfile: "openclaw"` 来使用托管浏览器。
+- 默认配置文件是 `chrome`（扩展中继）。使用 `defaultProfile: "marv"` 来使用托管浏览器。
 - 自动检测顺序：如果系统默认浏览器是基于 Chromium 的则使用它；否则 Chrome → Brave → Edge → Chromium → Chrome Canary。
 - 本地 `marv` 配置文件会自动分配 `cdpPort`/`cdpUrl` — 仅为远程 CDP 设置这些。
 
@@ -210,7 +210,7 @@ Marv 支持多个命名配置文件（路由配置）。配置文件可以是：
 
 ## Chrome 扩展中继（使用你现有的 Chrome）
 
-Marv 还可以通过本地 CDP 中继 + Chrome 扩展驱动**你现有的 Chrome 标签页**（无需单独的"openclaw"Chrome 实例）。
+Marv 还可以通过本地 CDP 中继 + Chrome 扩展驱动**你现有的 Chrome 标签页**（无需单独的"marv"Chrome 实例）。
 
 完整指南：[Chrome 扩展](/tools/chrome-extension)
 
@@ -317,11 +317,11 @@ marv browser create-profile \
 如果你的 Gateway 网关在 Docker 中运行，避免使用 `npx playwright`（npm 覆盖冲突）。改用捆绑的 CLI：
 
 ```bash
-docker compose run --rm openclaw-cli \
+docker compose run --rm marv-cli \
   node /app/node_modules/playwright-core/cli.js install chromium
 ```
 
-要持久化浏览器下载，设置 `PLAYWRIGHT_BROWSERS_PATH`（例如 `/home/node/.cache/ms-playwright`）并确保 `/home/node` 通过 `OPENCLAW_HOME_VOLUME` 或绑定挂载持久化。参见 [Docker](/install/docker)。
+要持久化浏览器下载，设置 `PLAYWRIGHT_BROWSERS_PATH`（例如 `/home/node/.cache/ms-playwright`）并确保 `/home/node` 通过 `MARV_HOME_VOLUME` 或绑定挂载持久化。参见 [Docker](/install/docker)。
 
 ## 工作原理（内部）
 
@@ -423,7 +423,7 @@ docker compose run --rm openclaw-cli \
   - `--format ai`（安装 Playwright 时的默认值）：返回带有数字 ref 的 AI 快照（`aria-ref="<n>"`）。
   - `--format aria`：返回无障碍树（无 ref；仅供检查）。
   - `--efficient`（或 `--mode efficient`）：紧凑角色快照预设（interactive + compact + depth + 较低的 maxChars）。
-  - 配置默认值（仅限工具/CLI）：设置 `browser.snapshotDefaults.mode: "efficient"` 以在调用者未传递模式时使用高效快照（参见 [Gateway 网关配置](/gateway/configuration#browser-openclaw-managed-browser)）。
+  - 配置默认值（仅限工具/CLI）：设置 `browser.snapshotDefaults.mode: "efficient"` 以在调用者未传递模式时使用高效快照（参见 [Gateway 网关配置](/gateway/configuration#browser-marv-managed-browser)）。
   - 角色快照选项（`--interactive`、`--compact`、`--depth`、`--selector`）强制使用带有 `ref=e12` 等 ref 的基于角色的快照。
   - `--frame "<iframe selector>"` 将角色快照范围限定到 iframe（与 `e12` 等角色 ref 配合使用）。
   - `--interactive` 输出一个扁平的、易于选择的交互元素列表（最适合驱动操作）。
@@ -544,7 +544,7 @@ JSON 格式的角色快照包含 `refs` 加上一个小的 `stats` 块（lines/c
 - `browser act` 使用快照 `ref` ID 来点击/输入/拖动/选择。
 - `browser screenshot` 捕获像素（整页或元素）。
 - `browser` 接受：
-  - `profile` 来选择命名的浏览器配置文件（openclaw、chrome 或远程 CDP）。
+  - `profile` 来选择命名的浏览器配置文件（marv、chrome 或远程 CDP）。
   - `target`（`sandbox` | `host` | `node`）来选择浏览器所在位置。
   - 在沙箱会话中，`target: "host"` 需要 `agents.defaults.sandbox.browser.allowHostControl=true`。
   - 如果省略 `target`：沙箱会话默认为 `sandbox`，非沙箱会话默认为 `host`。

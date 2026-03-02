@@ -1,7 +1,7 @@
 ---
 name: bootstrap-extra-files
 description: "Inject additional workspace bootstrap files via glob/path patterns"
-homepage: https://docs.marv.ai/automation/hooks#bootstrap-extra-files
+homepage: /automation/hooks#bootstrap-extra-files
 metadata:
   {
     "marv":

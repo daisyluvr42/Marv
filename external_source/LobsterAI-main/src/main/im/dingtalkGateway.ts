@@ -4,8 +4,12 @@
  * Adapted from im-gateway for Electron main process
  */
 
-import { EventEmitter } from 'events';
-import axios from 'axios';
+import { EventEmitter } from "events";
+import axios from "axios";
+import { uploadMediaToDingTalk, detectMediaType, getOapiAccessToken } from "./dingtalkMedia";
+import { parseMediaMarkers } from "./dingtalkMediaParser";
+import { createUtf8JsonBody, JSON_UTF8_CONTENT_TYPE, stringifyAsciiJson } from "./jsonEncoding";
+import { sanitizeLogArg, sanitizeLogArgs } from "./logSanitizer";
 import {
   DingTalkConfig,
   DingTalkGatewayStatus,
@@ -14,13 +18,9 @@ import {
   MediaMarker,
   IMMessage,
   DEFAULT_DINGTALK_STATUS,
-} from './types';
-import { uploadMediaToDingTalk, detectMediaType, getOapiAccessToken } from './dingtalkMedia';
-import { parseMediaMarkers } from './dingtalkMediaParser';
-import { createUtf8JsonBody, JSON_UTF8_CONTENT_TYPE, stringifyAsciiJson } from './jsonEncoding';
-import { sanitizeLogArg, sanitizeLogArgs } from './logSanitizer';
+} from "./types";
 
-const DINGTALK_API = 'https://api.dingtalk.com';
+const DINGTALK_API = "https://api.dingtalk.com";
 
 // Access Token cache
 let accessToken: string | null = null;
@@ -39,8 +39,16 @@ export class DingTalkGateway extends EventEmitter {
   private config: DingTalkConfig | null = null;
   private savedConfig: DingTalkConfig | null = null; // Saved config for reconnection
   private status: DingTalkGatewayStatus = { ...DEFAULT_DINGTALK_STATUS };
-  private onMessageCallback?: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>;
-  private lastConversation: { conversationType: '1' | '2'; userId?: string; openConversationId?: string; sessionWebhook: string } | null = null;
+  private onMessageCallback?: (
+    message: IMMessage,
+    replyFn: (text: string) => Promise<void>,
+  ) => Promise<void>;
+  private lastConversation: {
+    conversationType: "1" | "2";
+    userId?: string;
+    openConversationId?: string;
+    sessionWebhook: string;
+  } | null = null;
   private log: (...args: any[]) => void = () => {};
 
   // Health check and auto-reconnection
@@ -57,10 +65,8 @@ export class DingTalkGateway extends EventEmitter {
   private readonly MESSAGE_TIMEOUT = 60000; // 60 seconds - force reconnect if no message
   private readonly TOKEN_REFRESH_INTERVAL = 3600000; // 1 hour
 
-  
-
   private patchSdkDebugLogger(client: any): void {
-    if (!client || typeof client.printDebug !== 'function') {
+    if (!client || typeof client.printDebug !== "function") {
       return;
     }
     const rawPrintDebug = client.printDebug.bind(client);
@@ -82,7 +88,7 @@ export class DingTalkGateway extends EventEmitter {
   private startHealthCheck(): void {
     this.stopHealthCheck();
 
-    this.log('[DingTalk Gateway] Starting health check monitor...');
+    this.log("[DingTalk Gateway] Starting health check monitor...");
 
     // Health check interval
     this.healthCheckInterval = setInterval(() => {
@@ -127,7 +133,7 @@ export class DingTalkGateway extends EventEmitter {
 
     // If client is null, try to reconnect (previous reconnection might have failed)
     if (!this.client) {
-      this.log('[DingTalk Gateway] Client is null, attempting reconnection...');
+      this.log("[DingTalk Gateway] Client is null, attempting reconnection...");
       await this.reconnect();
       return;
     }
@@ -138,8 +144,12 @@ export class DingTalkGateway extends EventEmitter {
     // If no messages for MESSAGE_TIMEOUT, force reconnection
     // Don't test token because it might be cached and give false positive
     if (timeSinceLastMessage > this.MESSAGE_TIMEOUT) {
-      console.log(`[DingTalk Gateway] No messages for ${Math.floor(timeSinceLastMessage / 1000)}s, forcing reconnection...`);
-      this.log('[DingTalk Gateway] Long silence detected, SDK connection may be dead, forcing reconnection...');
+      console.log(
+        `[DingTalk Gateway] No messages for ${Math.floor(timeSinceLastMessage / 1000)}s, forcing reconnection...`,
+      );
+      this.log(
+        "[DingTalk Gateway] Long silence detected, SDK connection may be dead, forcing reconnection...",
+      );
       await this.reconnect();
     }
   }
@@ -153,12 +163,12 @@ export class DingTalkGateway extends EventEmitter {
     }
 
     try {
-      this.log('[DingTalk Gateway] Proactively refreshing access token...');
+      this.log("[DingTalk Gateway] Proactively refreshing access token...");
       // Force token refresh by clearing cache
       accessToken = null;
       accessTokenExpiry = 0;
       await this.getAccessToken();
-      this.log('[DingTalk Gateway] Access token refreshed successfully');
+      this.log("[DingTalk Gateway] Access token refreshed successfully");
     } catch (error: any) {
       console.error(`[DingTalk Gateway] Failed to refresh token: ${error.message}`);
     }
@@ -175,7 +185,7 @@ export class DingTalkGateway extends EventEmitter {
     // Use savedConfig if config is null (after failed reconnection)
     const configToUse = this.config || this.savedConfig;
     if (!configToUse) {
-      console.error('[DingTalk Gateway] No config available for reconnection');
+      console.error("[DingTalk Gateway] No config available for reconnection");
       return;
     }
 
@@ -185,7 +195,7 @@ export class DingTalkGateway extends EventEmitter {
     this.log(`[DingTalk Gateway] Reconnecting in ${this.reconnectDelayMs}ms...`);
 
     // Use cancellable timeout
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       this.reconnectTimeout = setTimeout(() => {
         this.reconnectTimeout = null;
         resolve();
@@ -203,7 +213,7 @@ export class DingTalkGateway extends EventEmitter {
       await this.stop();
       await this.start(configToUse);
 
-      console.log('[DingTalk Gateway] Reconnected successfully');
+      console.log("[DingTalk Gateway] Reconnected successfully");
     } catch (error: any) {
       console.error(`[DingTalk Gateway] Reconnection failed: ${error.message}`);
       // No retry limit, next health check or network event will retry
@@ -223,7 +233,7 @@ export class DingTalkGateway extends EventEmitter {
    * Set message callback
    */
   setMessageCallback(
-    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>
+    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>,
   ): void {
     this.onMessageCallback = callback;
   }
@@ -233,7 +243,7 @@ export class DingTalkGateway extends EventEmitter {
    */
   reconnectIfNeeded(): void {
     if (!this.client && this.savedConfig) {
-      this.log('[DingTalk Gateway] External reconnection trigger');
+      this.log("[DingTalk Gateway] External reconnection trigger");
       this.reconnect();
     }
   }
@@ -243,30 +253,32 @@ export class DingTalkGateway extends EventEmitter {
    */
   async start(config: DingTalkConfig): Promise<void> {
     if (this.client) {
-      this.log('[DingTalk Gateway] Already running, stopping first...');
+      this.log("[DingTalk Gateway] Already running, stopping first...");
       await this.stop();
     }
 
     if (!config.enabled) {
-      console.log('[DingTalk Gateway] DingTalk is disabled in config');
+      console.log("[DingTalk Gateway] DingTalk is disabled in config");
       return;
     }
 
     if (!config.clientId || !config.clientSecret) {
-      throw new Error('DingTalk clientId and clientSecret are required');
+      throw new Error("DingTalk clientId and clientSecret are required");
     }
 
     this.config = config;
     this.savedConfig = { ...config }; // Save config for reconnection
     this.isStopping = false;
-    this.log = config.debug ? (...args: unknown[]) => {
-      console.log(...sanitizeLogArgs(args));
-    } : () => {};
-    this.log('[DingTalk Gateway] Starting...');
+    this.log = config.debug
+      ? (...args: unknown[]) => {
+          console.log(...sanitizeLogArgs(args));
+        }
+      : () => {};
+    this.log("[DingTalk Gateway] Starting...");
 
     try {
       // Dynamically import dingtalk-stream
-      const { DWClient, TOPIC_ROBOT } = await import('dingtalk-stream');
+      const { DWClient, TOPIC_ROBOT } = await import("dingtalk-stream");
 
       this.client = new DWClient({
         clientId: config.clientId,
@@ -282,7 +294,7 @@ export class DingTalkGateway extends EventEmitter {
       this.client.registerCallbackListener(TOPIC_ROBOT, async (res: any) => {
         // Check if client is still connected (may be null if stopped)
         if (!this.client) {
-          this.log('[DingTalk Gateway] Ignoring message, gateway stopped');
+          this.log("[DingTalk Gateway] Ignoring message, gateway stopped");
           return;
         }
 
@@ -301,7 +313,7 @@ export class DingTalkGateway extends EventEmitter {
         } catch (error: any) {
           console.error(`[DingTalk Gateway] Error processing message: ${error.message}`);
           this.status.lastError = error.message;
-          this.emit('error', error);
+          this.emit("error", error);
         }
       });
 
@@ -319,8 +331,8 @@ export class DingTalkGateway extends EventEmitter {
       // Start health check and token refresh
       this.startHealthCheck();
 
-      console.log('[DingTalk Gateway] Connected successfully with health monitoring enabled');
-      this.emit('connected');
+      console.log("[DingTalk Gateway] Connected successfully with health monitoring enabled");
+      this.emit("connected");
     } catch (error: any) {
       console.error(`[DingTalk Gateway] Failed to start: ${error.message}`);
       this.status = {
@@ -331,7 +343,7 @@ export class DingTalkGateway extends EventEmitter {
         lastOutboundAt: null,
       };
       this.client = null;
-      this.emit('error', error);
+      this.emit("error", error);
       throw error;
     }
   }
@@ -341,11 +353,11 @@ export class DingTalkGateway extends EventEmitter {
    */
   async stop(): Promise<void> {
     if (!this.client) {
-      this.log('[DingTalk Gateway] Not running');
+      this.log("[DingTalk Gateway] Not running");
       return;
     }
 
-    this.log('[DingTalk Gateway] Stopping...');
+    this.log("[DingTalk Gateway] Stopping...");
     this.isStopping = true;
 
     try {
@@ -359,7 +371,7 @@ export class DingTalkGateway extends EventEmitter {
       // Keep savedConfig for reconnection
 
       // Try to disconnect the client
-      if (client && typeof client.disconnect === 'function') {
+      if (client && typeof client.disconnect === "function") {
         try {
           await client.disconnect();
         } catch (e) {
@@ -374,8 +386,8 @@ export class DingTalkGateway extends EventEmitter {
         lastInboundAt: null,
         lastOutboundAt: null,
       };
-      this.log('[DingTalk Gateway] Stopped');
-      this.emit('disconnected');
+      this.log("[DingTalk Gateway] Stopped");
+      this.emit("disconnected");
     } catch (error: any) {
       console.error(`[DingTalk Gateway] Error stopping: ${error.message}`);
       this.status.lastError = error.message;
@@ -390,27 +402,29 @@ export class DingTalkGateway extends EventEmitter {
   private async getAccessToken(): Promise<string> {
     const config = this.config || this.savedConfig;
     if (!config) {
-      throw new Error('DingTalk config not set');
+      throw new Error("DingTalk config not set");
     }
 
     const now = Date.now();
     if (accessToken && accessTokenExpiry > now + 60000) {
-      this.log('[DingTalk Gateway] 使用缓存的 AccessToken');
+      this.log("[DingTalk Gateway] 使用缓存的 AccessToken");
       return accessToken;
     }
 
-    this.log('[DingTalk Gateway] 获取新的 AccessToken...');
+    this.log("[DingTalk Gateway] 获取新的 AccessToken...");
     const response = await axios.post<{ accessToken: string; expireIn: number }>(
       `${DINGTALK_API}/v1.0/oauth2/accessToken`,
       {
         appKey: config.clientId,
         appSecret: config.clientSecret,
-      }
+      },
     );
 
     accessToken = response.data.accessToken;
     accessTokenExpiry = now + response.data.expireIn * 1000;
-    this.log(`[DingTalk Gateway] AccessToken 获取成功, 过期时间: ${new Date(accessTokenExpiry).toLocaleString()}`);
+    this.log(
+      `[DingTalk Gateway] AccessToken 获取成功, 过期时间: ${new Date(accessTokenExpiry).toLocaleString()}`,
+    );
     return accessToken;
   }
 
@@ -418,27 +432,29 @@ export class DingTalkGateway extends EventEmitter {
    * Extract message content from DingTalk inbound message
    */
   private extractMessageContent(data: DingTalkInboundMessage): MessageContent {
-    const msgtype = data.msgtype || 'text';
+    const msgtype = data.msgtype || "text";
 
-    if (msgtype === 'text') {
-      return { text: data.text?.content?.trim() || '', messageType: 'text' };
+    if (msgtype === "text") {
+      return { text: data.text?.content?.trim() || "", messageType: "text" };
     }
 
-    if (msgtype === 'richText') {
+    if (msgtype === "richText") {
       const richTextParts = data.content?.richText || [];
-      let text = '';
+      let text = "";
       for (const part of richTextParts) {
-        if (part.text) {text += part.text;}
+        if (part.text) {
+          text += part.text;
+        }
       }
-      return { text: text.trim() || '[富文本消息]', messageType: 'richText' };
+      return { text: text.trim() || "[富文本消息]", messageType: "richText" };
     }
 
-    if (msgtype === 'audio') {
+    if (msgtype === "audio") {
       return {
-        text: data.content?.recognition || '[语音消息]',
+        text: data.content?.recognition || "[语音消息]",
         mediaPath: data.content?.downloadCode,
-        mediaType: 'audio',
-        messageType: 'audio',
+        mediaType: "audio",
+        messageType: "audio",
       };
     }
 
@@ -451,40 +467,53 @@ export class DingTalkGateway extends EventEmitter {
   private async sendBySession(
     sessionWebhook: string,
     text: string,
-    options: { atUserId?: string | null } = {}
+    options: { atUserId?: string | null } = {},
   ): Promise<void> {
     const token = await this.getAccessToken();
 
     // Detect markdown
-    const hasMarkdown = /^[#*>-]|[*_`#[\]]/.test(text) || text.includes('\n');
+    const hasMarkdown = /^[#*>-]|[*_`#[\]]/.test(text) || text.includes("\n");
     const useMarkdown = hasMarkdown;
 
     let body: any;
     if (useMarkdown) {
-      const title = text.split('\n')[0].replace(/^[#*\s\->]+/, '').slice(0, 20) || 'LobsterAI';
+      const title =
+        text
+          .split("\n")[0]
+          .replace(/^[#*\s\->]+/, "")
+          .slice(0, 20) || "LobsterAI";
       let finalText = text;
-      if (options.atUserId) {finalText = `${finalText} @${options.atUserId}`;}
-      body = { msgtype: 'markdown', markdown: { title, text: finalText } };
+      if (options.atUserId) {
+        finalText = `${finalText} @${options.atUserId}`;
+      }
+      body = { msgtype: "markdown", markdown: { title, text: finalText } };
     } else {
-      body = { msgtype: 'text', text: { content: text } };
+      body = { msgtype: "text", text: { content: text } };
     }
 
     if (options.atUserId) {
       body.at = { atUserIds: [options.atUserId], isAtAll: false };
     }
 
-    this.log(`[DingTalk] 发送文本消息:`, JSON.stringify({
-      sessionWebhook: sessionWebhook.slice(0, 50) + '...',
-      msgType: useMarkdown ? 'markdown' : 'text',
-      textLength: text.length,
-      text,
-    }, null, 2));
+    this.log(
+      `[DingTalk] 发送文本消息:`,
+      JSON.stringify(
+        {
+          sessionWebhook: sessionWebhook.slice(0, 50) + "...",
+          msgType: useMarkdown ? "markdown" : "text",
+          textLength: text.length,
+          text,
+        },
+        null,
+        2,
+      ),
+    );
 
     await axios({
       url: sessionWebhook,
-      method: 'POST',
+      method: "POST",
       data: createUtf8JsonBody(body),
-      headers: { 'x-acs-dingtalk-access-token': token, 'Content-Type': JSON_UTF8_CONTENT_TYPE },
+      headers: { "x-acs-dingtalk-access-token": token, "Content-Type": JSON_UTF8_CONTENT_TYPE },
     });
   }
 
@@ -496,10 +525,10 @@ export class DingTalkGateway extends EventEmitter {
   private async sendMediaViaNewApi(
     mediaMessage: DingTalkMediaMessage,
     options: {
-      conversationType: '1' | '2'; // 1: 单聊, 2: 群聊
+      conversationType: "1" | "2"; // 1: 单聊, 2: 群聊
       userId?: string;
       openConversationId?: string;
-    }
+    },
   ): Promise<void> {
     const token = await this.getAccessToken();
     const robotCode = this.config?.robotCode || this.config?.clientId;
@@ -508,22 +537,22 @@ export class DingTalkGateway extends EventEmitter {
     const msgKey = mediaMessage.msgKey;
     let msgParam: string;
 
-    if ('sampleAudio' in mediaMessage) {
+    if ("sampleAudio" in mediaMessage) {
       msgParam = stringifyAsciiJson(mediaMessage.sampleAudio);
-    } else if ('sampleImageMsg' in mediaMessage) {
+    } else if ("sampleImageMsg" in mediaMessage) {
       msgParam = stringifyAsciiJson(mediaMessage.sampleImageMsg);
-    } else if ('sampleVideo' in mediaMessage) {
+    } else if ("sampleVideo" in mediaMessage) {
       msgParam = stringifyAsciiJson(mediaMessage.sampleVideo);
-    } else if ('sampleFile' in mediaMessage) {
+    } else if ("sampleFile" in mediaMessage) {
       msgParam = stringifyAsciiJson(mediaMessage.sampleFile);
     } else {
-      throw new Error('Unknown media message type');
+      throw new Error("Unknown media message type");
     }
 
     let url: string;
     let body: any;
 
-    if (options.conversationType === '1') {
+    if (options.conversationType === "1") {
       // 单聊
       url = `${DINGTALK_API}/v1.0/robot/oToMessages/batchSend`;
       body = {
@@ -543,22 +572,29 @@ export class DingTalkGateway extends EventEmitter {
       };
     }
 
-    this.log(`[DingTalk] 发送媒体消息:`, JSON.stringify({
-      msgKey,
-      msgParam,
-      conversationType: options.conversationType,
-    }, null, 2));
+    this.log(
+      `[DingTalk] 发送媒体消息:`,
+      JSON.stringify(
+        {
+          msgKey,
+          msgParam,
+          conversationType: options.conversationType,
+        },
+        null,
+        2,
+      ),
+    );
 
     const response = await axios({
       url,
-      method: 'POST',
+      method: "POST",
       data: createUtf8JsonBody(body),
-      headers: { 'x-acs-dingtalk-access-token': token, 'Content-Type': JSON_UTF8_CONTENT_TYPE },
+      headers: { "x-acs-dingtalk-access-token": token, "Content-Type": JSON_UTF8_CONTENT_TYPE },
       timeout: 30000,
     });
 
     // 检查响应 (新版 API 错误格式可能不同)
-    if (response.data?.code && response.data.code !== '0') {
+    if (response.data?.code && response.data.code !== "0") {
       throw new Error(`钉钉API返回错误: ${response.data.message || response.data.code}`);
     }
   }
@@ -571,19 +607,22 @@ export class DingTalkGateway extends EventEmitter {
     text: string,
     options: {
       atUserId?: string | null;
-      conversationType?: '1' | '2';
+      conversationType?: "1" | "2";
       userId?: string;
       openConversationId?: string;
-    } = {}
+    } = {},
   ): Promise<void> {
     // 解析媒体标记
     const markers = parseMediaMarkers(text);
 
-    this.log(`[DingTalk Gateway] 解析媒体标记:`, JSON.stringify({
-      textLength: text.length,
-      markersCount: markers.length,
-      markers: markers.map(m => ({ type: m.type, path: m.path, name: m.name })),
-    }));
+    this.log(
+      `[DingTalk Gateway] 解析媒体标记:`,
+      JSON.stringify({
+        textLength: text.length,
+        markersCount: markers.length,
+        markers: markers.map((m) => ({ type: m.type, path: m.path, name: m.name })),
+      }),
+    );
 
     if (markers.length === 0) {
       // 无媒体，直接发送文本
@@ -593,7 +632,7 @@ export class DingTalkGateway extends EventEmitter {
 
     // 获取 oapi token（用于媒体上传，与新版 API token 不同）
     if (!this.config) {
-      throw new Error('DingTalk config not set');
+      throw new Error("DingTalk config not set");
     }
     const oapiToken = await getOapiAccessToken(this.config.clientId, this.config.clientSecret);
 
@@ -601,13 +640,16 @@ export class DingTalkGateway extends EventEmitter {
 
     // 逐个上传媒体文件
     for (const marker of markers) {
-      const mediaType = marker.type === 'audio' ? 'voice' : detectMediaType(marker.path);
-      this.log(`[DingTalk Gateway] 上传媒体文件:`, JSON.stringify({
-        path: marker.path,
-        name: marker.name,
-        type: marker.type,
-        mediaType,
-      }));
+      const mediaType = marker.type === "audio" ? "voice" : detectMediaType(marker.path);
+      this.log(
+        `[DingTalk Gateway] 上传媒体文件:`,
+        JSON.stringify({
+          path: marker.path,
+          name: marker.name,
+          type: marker.type,
+          mediaType,
+        }),
+      );
       // 传递从 markdown 解析出的文件名
       const result = await uploadMediaToDingTalk(oapiToken, marker.path, mediaType, marker.name);
 
@@ -616,10 +658,13 @@ export class DingTalkGateway extends EventEmitter {
         continue;
       }
 
-      this.log(`[DingTalk Gateway] 媒体上传成功:`, JSON.stringify({
-        mediaId: result.mediaId,
-        path: marker.path,
-      }));
+      this.log(
+        `[DingTalk Gateway] 媒体上传成功:`,
+        JSON.stringify({
+          mediaId: result.mediaId,
+          path: marker.path,
+        }),
+      );
 
       // 发送媒体消息
       try {
@@ -651,17 +696,24 @@ export class DingTalkGateway extends EventEmitter {
    * Build media message payload for Session Webhook
    * Session Webhook uses msgKey + msgParam format
    */
-  private buildMediaMessage(mediaType: string, mediaId: string, fileName?: string): DingTalkMediaMessage {
+  private buildMediaMessage(
+    mediaType: string,
+    mediaId: string,
+    fileName?: string,
+  ): DingTalkMediaMessage {
     switch (mediaType) {
-      case 'image':
-        return { msgKey: 'sampleImageMsg', sampleImageMsg: { photoURL: mediaId } };
-      case 'voice':
-        return { msgKey: 'sampleAudio', sampleAudio: { mediaId, duration: '60000' } };
-      case 'video':
-        return { msgKey: 'sampleVideo', sampleVideo: { mediaId, videoType: 'mp4', duration: '60000' } };
+      case "image":
+        return { msgKey: "sampleImageMsg", sampleImageMsg: { photoURL: mediaId } };
+      case "voice":
+        return { msgKey: "sampleAudio", sampleAudio: { mediaId, duration: "60000" } };
+      case "video":
+        return {
+          msgKey: "sampleVideo",
+          sampleVideo: { mediaId, videoType: "mp4", duration: "60000" },
+        };
       default:
         // 文件类型支持自定义文件名
-        return { msgKey: 'sampleFile', sampleFile: { mediaId, fileName } };
+        return { msgKey: "sampleFile", sampleFile: { mediaId, fileName } };
     }
   }
 
@@ -679,31 +731,38 @@ export class DingTalkGateway extends EventEmitter {
       return;
     }
 
-    const isDirect = data.conversationType === '1';
+    const isDirect = data.conversationType === "1";
     const senderId = data.senderStaffId || data.senderId;
-    const senderName = data.senderNick || 'User';
+    const senderName = data.senderNick || "User";
 
     // 打印完整的输入消息日志
-    this.log(`[DingTalk] 收到消息:`, JSON.stringify({
-      sender: senderName,
-      senderId,
-      conversationId: data.conversationId,
-      chatType: isDirect ? 'direct' : 'group',
-      msgType: content.messageType,
-      content: content.text,
-      mediaPath: content.mediaPath,
-      mediaType: content.mediaType,
-    }, null, 2));
+    this.log(
+      `[DingTalk] 收到消息:`,
+      JSON.stringify(
+        {
+          sender: senderName,
+          senderId,
+          conversationId: data.conversationId,
+          chatType: isDirect ? "direct" : "group",
+          msgType: content.messageType,
+          content: content.text,
+          mediaPath: content.mediaPath,
+          mediaType: content.mediaType,
+        },
+        null,
+        2,
+      ),
+    );
 
     // Create IMMessage
     const message: IMMessage = {
-      platform: 'dingtalk',
+      platform: "dingtalk",
       messageId: data.msgId,
       conversationId: data.conversationId,
       senderId: senderId,
       senderName: senderName,
       content: content.text,
-      chatType: isDirect ? 'direct' : 'group',
+      chatType: isDirect ? "direct" : "group",
       timestamp: data.createAt || Date.now(),
     };
     this.status.lastInboundAt = Date.now();
@@ -711,11 +770,18 @@ export class DingTalkGateway extends EventEmitter {
     // Create reply function with logging
     const replyFn = async (text: string) => {
       // 打印完整的输出消息日志
-      this.log(`[DingTalk] 发送回复:`, JSON.stringify({
-        conversationId: data.conversationId,
-        replyLength: text.length,
-        reply: text,
-      }, null, 2));
+      this.log(
+        `[DingTalk] 发送回复:`,
+        JSON.stringify(
+          {
+            conversationId: data.conversationId,
+            replyLength: text.length,
+            reply: text,
+          },
+          null,
+          2,
+        ),
+      );
 
       await this.sendWithMedia(data.sessionWebhook, text, {
         atUserId: !isDirect ? senderId : null,
@@ -735,7 +801,7 @@ export class DingTalkGateway extends EventEmitter {
     };
 
     // Emit message event
-    this.emit('message', message);
+    this.emit("message", message);
 
     // Call message callback if set
     if (this.onMessageCallback) {
@@ -753,7 +819,7 @@ export class DingTalkGateway extends EventEmitter {
    */
   async sendNotification(text: string): Promise<void> {
     if (!this.lastConversation) {
-      throw new Error('No conversation available for notification');
+      throw new Error("No conversation available for notification");
     }
     await this.sendBySession(this.lastConversation.sessionWebhook, text);
     this.status.lastOutboundAt = Date.now();

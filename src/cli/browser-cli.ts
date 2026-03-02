@@ -30,7 +30,7 @@ export function registerBrowserCli(program: Command) {
           true,
         )}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/browser",
-          "docs.marv.ai/cli/browser",
+          "docs: /cli/browser",
         )}\n`,
     )
     .action(() => {

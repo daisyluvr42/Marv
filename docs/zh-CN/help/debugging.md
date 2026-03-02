@@ -55,14 +55,14 @@ tsx watch src/entry.ts gateway --force
 
 使用 dev 配置文件来隔离状态，并启动一个安全、可丢弃的调试设置。有**两个** `--dev` 标志：
 
-- **全局 `--dev`（配置文件）：** 将状态隔离到 `~/.openclaw-dev` 下，并将 Gateway 网关端口默认为 `19001`（派生端口随之移动）。
+- **全局 `--dev`（配置文件）：** 将状态隔离到 `~/.marv-dev` 下，并将 Gateway 网关端口默认为 `19001`（派生端口随之移动）。
 - **`gateway --dev`：告诉 Gateway 网关在缺失时自动创建默认配置 + 工作区**（并跳过 BOOTSTRAP.md）。
 
 推荐流程（dev 配置文件 + dev 引导）：
 
 ```bash
 pnpm gateway:dev
-OPENCLAW_PROFILE=dev marv tui
+MARV_PROFILE=dev marv tui
 ```
 
 如果你还没有全局安装，请通过 `pnpm marv ...` 运行 CLI。
@@ -70,10 +70,10 @@ OPENCLAW_PROFILE=dev marv tui
 这会执行：
 
 1. **配置文件隔离**（全局 `--dev`）
-   - `OPENCLAW_PROFILE=dev`
-   - `OPENCLAW_STATE_DIR=~/.openclaw-dev`
-   - `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/marv.json`
-   - `OPENCLAW_GATEWAY_PORT=19001`（浏览器/画布相应移动）
+   - `MARV_PROFILE=dev`
+   - `MARV_STATE_DIR=~/.marv-dev`
+   - `MARV_CONFIG_PATH=~/.marv-dev/marv.json`
+   - `MARV_GATEWAY_PORT=19001`（浏览器/画布相应移动）
 
 2. **Dev 引导**（`gateway --dev`）
    - 如果缺失则写入最小配置（`gateway.mode=local`，绑定 loopback）。
@@ -82,7 +82,7 @@ OPENCLAW_PROFILE=dev marv tui
    - 如果缺失则填充工作区文件：
      `AGENTS.md`、`SOUL.md`、`TOOLS.md`、`IDENTITY.md`、`USER.md`、`HEARTBEAT.md`。
    - 默认身份：**C3‑PO**（礼仪机器人）。
-   - 在 dev 模式下跳过渠道提供商（`OPENCLAW_SKIP_CHANNELS=1`）。
+   - 在 dev 模式下跳过渠道提供商（`MARV_SKIP_CHANNELS=1`）。
 
 重置流程（全新开始）：
 
@@ -94,7 +94,7 @@ pnpm gateway:dev:reset
 如果你需要明确拼写，请使用环境变量形式：
 
 ```bash
-OPENCLAW_PROFILE=dev marv gateway --dev --reset
+MARV_PROFILE=dev marv gateway --dev --reset
 ```
 
 `--reset` 清除配置、凭证、会话和 dev 工作区（使用 `trash`，而非 `rm`），然后重新创建默认的 dev 设置。
@@ -119,19 +119,19 @@ pnpm gateway:watch --force --raw-stream
 可选路径覆盖：
 
 ```bash
-pnpm gateway:watch --force --raw-stream --raw-stream-path ~/.openclaw/logs/raw-stream.jsonl
+pnpm gateway:watch --force --raw-stream --raw-stream-path ~/.marv/logs/raw-stream.jsonl
 ```
 
 等效环境变量：
 
 ```bash
-OPENCLAW_RAW_STREAM=1
-OPENCLAW_RAW_STREAM_PATH=~/.openclaw/logs/raw-stream.jsonl
+MARV_RAW_STREAM=1
+MARV_RAW_STREAM_PATH=~/.marv/logs/raw-stream.jsonl
 ```
 
 默认文件：
 
-`~/.openclaw/logs/raw-stream.jsonl`
+`~/.marv/logs/raw-stream.jsonl`
 
 ## 原始块日志（pi-mono）
 

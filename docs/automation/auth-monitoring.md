@@ -34,7 +34,7 @@ gateway host and are tuned for systemd + Termux.
   source of truth (falling back to direct file reads if the CLI is unavailable),
   so keep `marv` on `PATH` for timers.
 - `scripts/auth-monitor.sh`: cron/systemd timer target; sends alerts (ntfy or phone).
-- `scripts/systemd/openclaw-auth-monitor.{service,timer}`: systemd user timer.
+- `scripts/systemd/marv-auth-monitor.{service,timer}`: systemd user timer.
 - `scripts/claude-auth-status.sh`: Claude Code + Marv auth checker (full/json/simple).
 - `scripts/mobile-reauth.sh`: guided re‑auth flow over SSH.
 - `scripts/termux-quick-auth.sh`: one‑tap widget status + open auth URL.

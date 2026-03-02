@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import {
   loadConfig,
   resolveConfigPath,
@@ -24,7 +24,7 @@ export type CallGatewayOptions = {
   token?: string;
   password?: string;
   tlsFingerprint?: string;
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   method: string;
   params?: unknown;
   expectFinal?: boolean;
@@ -90,7 +90,7 @@ export function ensureExplicitGatewayAuth(params: {
 }
 
 export function buildGatewayConnectionDetails(
-  options: { config?: OpenClawConfig; url?: string; configPath?: string } = {},
+  options: { config?: MarvConfig; url?: string; configPath?: string } = {},
 ): GatewayConnectionDetails {
   const config = options.config ?? loadConfig();
   const configPath =
@@ -213,7 +213,7 @@ export async function callGateway<T = Record<string, unknown>>(
           ? remote.token.trim()
           : undefined
         : process.env.MARV_GATEWAY_TOKEN?.trim() ||
-          process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+          process.env.MARV_GATEWAY_TOKEN?.trim() ||
           process.env.CLAWDBOT_GATEWAY_TOKEN?.trim() ||
           (typeof authToken === "string" && authToken.trim().length > 0
             ? authToken.trim()
@@ -223,7 +223,7 @@ export async function callGateway<T = Record<string, unknown>>(
     explicitAuth.password ||
     (!urlOverride
       ? process.env.MARV_GATEWAY_PASSWORD?.trim() ||
-        process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+        process.env.MARV_GATEWAY_PASSWORD?.trim() ||
         process.env.CLAWDBOT_GATEWAY_PASSWORD?.trim() ||
         (isRemoteMode
           ? typeof remote?.password === "string" && remote.password.trim().length > 0

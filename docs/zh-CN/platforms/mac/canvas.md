@@ -26,13 +26,13 @@ Canvas 状态存储在 Application Support 下：
 
 Canvas 面板通过**自定义 URL 方案**提供这些文件：
 
-- `openclaw-canvas://<session>/<path>`
+- `marv-canvas://<session>/<path>`
 
 示例：
 
-- `openclaw-canvas://main/` → `<canvasRoot>/main/index.html`
-- `openclaw-canvas://main/assets/app.css` → `<canvasRoot>/main/assets/app.css`
-- `openclaw-canvas://main/widgets/todo/` → `<canvasRoot>/main/widgets/todo/index.html`
+- `marv-canvas://main/` → `<canvasRoot>/main/index.html`
+- `marv-canvas://main/assets/app.css` → `<canvasRoot>/main/assets/app.css`
+- `marv-canvas://main/widgets/todo/` → `<canvasRoot>/main/widgets/todo/index.html`
 
 如果根目录下没有 `index.html`，应用会显示一个**内置脚手架页面**。
 
@@ -76,7 +76,7 @@ A2UI 由 Gateway 网关 canvas 主机托管并在 Canvas 面板内渲染。
 默认 A2UI 主机 URL：
 
 ```
-http://<gateway-host>:18793/__openclaw__/a2ui/
+http://<gateway-host>:18793/__marv__/a2ui/
 ```
 
 ### A2UI 命令（v0.8）

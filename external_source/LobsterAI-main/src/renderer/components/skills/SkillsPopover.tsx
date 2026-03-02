@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { MagnifyingGlassIcon, Cog6ToothIcon, PuzzlePieceIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { i18nService } from '../../services/i18n';
-import { RootState } from '../../store';
-import { Skill } from '../../types/skill';
+import {
+  MagnifyingGlassIcon,
+  Cog6ToothIcon,
+  PuzzlePieceIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
+import { i18nService } from "../../services/i18n";
+import { RootState } from "../../store";
+import { Skill } from "../../types/skill";
 
 interface SkillsPopoverProps {
   isOpen: boolean;
@@ -20,7 +25,7 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
   onManageSkills,
   anchorRef,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [maxListHeight, setMaxListHeight] = useState(256); // default max-h-64 = 256px
   const popoverRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -29,10 +34,11 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
 
   // Filter enabled skills based on search query
   const filteredSkills = skills
-    .filter(s => s.enabled)
-    .filter(s =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter((s) => s.enabled)
+    .filter(
+      (s) =>
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.description.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
   // Calculate available height and focus search input when popover opens
@@ -51,7 +57,7 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
       }
     }
     if (!isOpen) {
-      setSearchQuery('');
+      setSearchQuery("");
     }
   }, [isOpen, anchorRef]);
 
@@ -69,8 +75,8 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose, anchorRef]);
 
   // Handle escape key
@@ -78,13 +84,13 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
     if (!isOpen) return;
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
   const handleSelectSkill = (skill: Skill) => {
@@ -111,7 +117,7 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
           <input
             ref={searchInputRef}
             type="text"
-            placeholder={i18nService.t('searchSkills')}
+            placeholder={i18nService.t("searchSkills")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg dark:bg-claude-darkSurface bg-claude-surface dark:text-claude-darkText text-claude-text dark:placeholder-claude-darkTextSecondary placeholder-claude-textSecondary border dark:border-claude-darkBorder border-claude-border focus:outline-none focus:ring-2 focus:ring-claude-accent"
@@ -123,7 +129,7 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
       <div className="overflow-y-auto py-1" style={{ maxHeight: `${maxListHeight}px` }}>
         {filteredSkills.length === 0 ? (
           <div className="px-4 py-6 text-center text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-            {i18nService.t('noSkillsAvailable')}
+            {i18nService.t("noSkillsAvailable")}
           </div>
         ) : (
           filteredSkills.map((skill) => {
@@ -134,15 +140,17 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
                 onClick={() => handleSelectSkill(skill)}
                 className={`w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors ${
                   isActive
-                    ? 'dark:bg-claude-accent/10 bg-claude-accent/10'
-                    : 'dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover'
+                    ? "dark:bg-claude-accent/10 bg-claude-accent/10"
+                    : "dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover"
                 }`}
               >
-                <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  isActive
-                    ? 'bg-claude-accent text-white'
-                    : 'dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover'
-                }`}>
+                <div
+                  className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isActive
+                      ? "bg-claude-accent text-white"
+                      : "dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover"
+                  }`}
+                >
                   {isActive ? (
                     <CheckIcon className="h-4 w-4" />
                   ) : (
@@ -151,16 +159,18 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium truncate ${
-                      isActive
-                        ? 'text-claude-accent'
-                        : 'dark:text-claude-darkText text-claude-text'
-                    }`}>
+                    <span
+                      className={`text-sm font-medium truncate ${
+                        isActive
+                          ? "text-claude-accent"
+                          : "dark:text-claude-darkText text-claude-text"
+                      }`}
+                    >
                       {skill.name}
                     </span>
                     {skill.isOfficial && (
                       <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-claude-accent/10 text-claude-accent flex-shrink-0">
-                        {i18nService.t('official')}
+                        {i18nService.t("official")}
                       </span>
                     )}
                   </div>
@@ -180,7 +190,7 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
           onClick={handleManageSkills}
           className="w-full flex items-center justify-between px-4 py-3 text-sm dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors rounded-b-xl"
         >
-          <span>{i18nService.t('manageSkills')}</span>
+          <span>{i18nService.t("manageSkills")}</span>
           <Cog6ToothIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
         </button>
       </div>

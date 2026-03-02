@@ -3,13 +3,8 @@
  * IPC wrapper for IM gateway operations
  */
 
-import { store } from '../store';
-import {
-  setConfig,
-  setStatus,
-  setLoading,
-  setError,
-} from '../store/slices/imSlice';
+import { store } from "../store";
+import { setConfig, setStatus, setLoading, setError } from "../store/slices/imSlice";
 import type {
   IMGatewayConfig,
   IMGatewayStatus,
@@ -19,7 +14,7 @@ import type {
   IMGatewayResult,
   IMConnectivityTestResult,
   IMConnectivityTestResponse,
-} from '../types/im';
+} from "../types/im";
 
 class IMService {
   private statusUnsubscribe: (() => void) | null = null;
@@ -36,7 +31,7 @@ class IMService {
 
     // Set up message listener (for logging/monitoring)
     this.messageUnsubscribe = window.electron.im.onMessageReceived((message) => {
-      console.log('[IM Service] Message received:', message);
+      console.log("[IM Service] Message received:", message);
     });
 
     // Load initial config and status
@@ -69,11 +64,11 @@ class IMService {
         store.dispatch(setConfig(result.config));
         return result.config;
       } else {
-        store.dispatch(setError(result.error || 'Failed to load IM config'));
+        store.dispatch(setError(result.error || "Failed to load IM config"));
         return null;
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load IM config';
+      const message = error instanceof Error ? error.message : "Failed to load IM config";
       store.dispatch(setError(message));
       return null;
     } finally {
@@ -93,7 +88,7 @@ class IMService {
       }
       return null;
     } catch (error) {
-      console.error('[IM Service] Failed to load status:', error);
+      console.error("[IM Service] Failed to load status:", error);
       return null;
     }
   }
@@ -110,11 +105,11 @@ class IMService {
         await this.loadConfig();
         return true;
       } else {
-        store.dispatch(setError(result.error || 'Failed to update IM config'));
+        store.dispatch(setError(result.error || "Failed to update IM config"));
         return false;
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update IM config';
+      const message = error instanceof Error ? error.message : "Failed to update IM config";
       store.dispatch(setError(message));
       return false;
     } finally {
@@ -138,7 +133,8 @@ class IMService {
         return false;
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : `Failed to start ${platform} gateway`;
+      const message =
+        error instanceof Error ? error.message : `Failed to start ${platform} gateway`;
       store.dispatch(setError(message));
       return false;
     } finally {
@@ -174,18 +170,22 @@ class IMService {
    */
   async testGateway(
     platform: IMPlatform,
-    configOverride?: Partial<IMGatewayConfig>
+    configOverride?: Partial<IMGatewayConfig>,
   ): Promise<IMConnectivityTestResult | null> {
     try {
       store.dispatch(setLoading(true));
-      const result: IMConnectivityTestResponse = await window.electron.im.testGateway(platform, configOverride);
+      const result: IMConnectivityTestResponse = await window.electron.im.testGateway(
+        platform,
+        configOverride,
+      );
       if (result.success && result.result) {
         return result.result;
       }
       store.dispatch(setError(result.error || `Failed to test ${platform} connectivity`));
       return null;
     } catch (error) {
-      const message = error instanceof Error ? error.message : `Failed to test ${platform} connectivity`;
+      const message =
+        error instanceof Error ? error.message : `Failed to test ${platform} connectivity`;
       store.dispatch(setError(message));
       return null;
     } finally {
@@ -212,7 +212,12 @@ class IMService {
    */
   isAnyConnected(): boolean {
     const status = this.getStatus();
-    return status.dingtalk.connected || status.feishu.connected || status.telegram.connected || status.discord.connected;
+    return (
+      status.dingtalk.connected ||
+      status.feishu.connected ||
+      status.telegram.connected ||
+      status.discord.connected
+    );
   }
 }
 

@@ -93,7 +93,7 @@ Add a custom ACP agent in `~/.config/zed/settings.json` (or use Zed’s Settings
   "agent_servers": {
     "Marv ACP": {
       "type": "custom",
-      "command": "openclaw",
+      "command": "marv",
       "args": ["acp"],
       "env": {}
     }
@@ -108,7 +108,7 @@ To target a specific Gateway or agent:
   "agent_servers": {
     "Marv ACP": {
       "type": "custom",
-      "command": "openclaw",
+      "command": "marv",
       "args": [
         "acp",
         "--url",

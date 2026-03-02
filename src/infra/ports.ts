@@ -64,7 +64,7 @@ export async function handlePortError(
     if (details) {
       runtime.error(info("Port listener details:"));
       runtime.error(details);
-      if (/(?:marv|openclaw)|src\/index\.ts|dist\/index\.js/.test(details)) {
+      if (/(?:marv|marv)|src\/index\.ts|dist\/index\.js/.test(details)) {
         runtime.error(
           warn(
             "It looks like another Marv instance is already running. Stop it or pick a different port.",

@@ -32,7 +32,7 @@ x-i18n:
 {
   hooks: {
     enabled: true,
-    token: "OPENCLAW_HOOK_TOKEN",
+    token: "MARV_HOOK_TOKEN",
     path: "/hooks",
     presets: ["gmail"],
   },
@@ -45,7 +45,7 @@ x-i18n:
 {
   hooks: {
     enabled: true,
-    token: "OPENCLAW_HOOK_TOKEN",
+    token: "MARV_HOOK_TOKEN",
     presets: ["gmail"],
     mappings: [
       {
@@ -98,7 +98,7 @@ x-i18n:
 
 ```bash
 marv webhooks gmail setup \
-  --account openclaw@gmail.com
+  --account marv@gmail.com
 ```
 
 默认设置：
@@ -117,7 +117,7 @@ marv webhooks gmail setup \
 Gateway 网关自动启动（推荐）：
 
 - 当 `hooks.enabled=true` 且设置了 `hooks.gmail.account` 时，Gateway 网关会在启动时运行 `gog gmail watch serve` 并自动续期 watch。
-- 设置 `OPENCLAW_SKIP_GMAIL_WATCHER=1` 可退出（如果你自己运行守护进程则很有用）。
+- 设置 `MARV_SKIP_GMAIL_WATCHER=1` 可退出（如果你自己运行守护进程则很有用）。
 - 不要同时运行手动守护进程，否则会遇到 `listen tcp 127.0.0.1:8788: bind: address already in use`。
 
 手动守护进程（启动 `gog gmail watch serve` + 自动续期）：
@@ -161,7 +161,7 @@ gcloud pubsub topics add-iam-policy-binding gog-gmail-watch \
 
 ```bash
 gog gmail watch start \
-  --account openclaw@gmail.com \
+  --account marv@gmail.com \
   --label INBOX \
   --topic projects/<project-id>/topics/gog-gmail-watch
 ```
@@ -174,13 +174,13 @@ gog gmail watch start \
 
 ```bash
 gog gmail watch serve \
-  --account openclaw@gmail.com \
+  --account marv@gmail.com \
   --bind 127.0.0.1 \
   --port 8788 \
   --path /gmail-pubsub \
   --token <shared> \
   --hook-url http://127.0.0.1:18789/hooks/gmail \
-  --hook-token OPENCLAW_HOOK_TOKEN \
+  --hook-token MARV_HOOK_TOKEN \
   --include-body \
   --max-bytes 20000
 ```
@@ -221,8 +221,8 @@ gog gmail watch serve --verify-oidc --oidc-email <svc@...>
 
 ```bash
 gog gmail send \
-  --account openclaw@gmail.com \
-  --to openclaw@gmail.com \
+  --account marv@gmail.com \
+  --to marv@gmail.com \
   --subject "watch test" \
   --body "ping"
 ```
@@ -230,8 +230,8 @@ gog gmail send \
 检查 watch 状态和历史记录：
 
 ```bash
-gog gmail watch status --account openclaw@gmail.com
-gog gmail history --account openclaw@gmail.com --since <historyId>
+gog gmail watch status --account marv@gmail.com
+gog gmail history --account marv@gmail.com --since <historyId>
 ```
 
 ## 故障排除
@@ -243,7 +243,7 @@ gog gmail history --account openclaw@gmail.com --since <historyId>
 ## 清理
 
 ```bash
-gog gmail watch stop --account openclaw@gmail.com
+gog gmail watch stop --account marv@gmail.com
 gcloud pubsub subscriptions delete gog-gmail-watch-push
 gcloud pubsub topics delete gog-gmail-watch
 ```

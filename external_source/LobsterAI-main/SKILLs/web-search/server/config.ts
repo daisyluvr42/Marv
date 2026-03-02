@@ -24,9 +24,9 @@ export interface ServerConfig {
 
 export interface SearchConfig {
   /** Default search engine */
-  defaultEngine: 'auto' | 'bing' | 'google';
+  defaultEngine: "auto" | "bing" | "google";
   /** Engine fallback order when defaultEngine is auto */
-  fallbackOrder: Array<'google' | 'bing'>;
+  fallbackOrder: Array<"google" | "bing">;
   /** Default max results per search */
   defaultMaxResults: number;
   /** Search timeout in milliseconds */
@@ -49,24 +49,24 @@ export const defaultConfig: Config = {
     cdpPort: 9222,
     headless: false, // Always visible for transparency
     chromeFlags: [
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding'
-    ]
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
+    ],
   },
   server: {
     port: 8923,
-    host: '127.0.0.1' // Localhost only for security
+    host: "127.0.0.1", // Localhost only for security
   },
   search: {
-    defaultEngine: 'auto',
-    fallbackOrder: ['google', 'bing'],
+    defaultEngine: "auto",
+    fallbackOrder: ["google", "bing"],
     defaultMaxResults: 10,
     searchTimeout: 30000, // 30 seconds
-    navigationTimeout: 15000 // 15 seconds
-  }
+    navigationTimeout: 15000, // 15 seconds
+  },
 };
 
 /**
@@ -80,6 +80,6 @@ export function mergeConfig(userConfig?: Partial<Config>): Config {
   return {
     browser: { ...defaultConfig.browser, ...userConfig.browser },
     server: { ...defaultConfig.server, ...userConfig.server },
-    search: { ...defaultConfig.search, ...userConfig.search }
+    search: { ...defaultConfig.search, ...userConfig.search },
   };
 }

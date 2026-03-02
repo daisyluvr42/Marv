@@ -14,20 +14,20 @@ import {
   writeSoulMemory,
 } from "./soul-memory-store.js";
 
-const ORIGINAL_STATE_DIR = process.env.OPENCLAW_STATE_DIR;
+const ORIGINAL_STATE_DIR = process.env.MARV_STATE_DIR;
 
 let stateDir = "";
 
 beforeEach(async () => {
-  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-soul-memory-"));
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-soul-memory-"));
+  process.env.MARV_STATE_DIR = stateDir;
 });
 
 afterEach(async () => {
   if (ORIGINAL_STATE_DIR === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.MARV_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = ORIGINAL_STATE_DIR;
+    process.env.MARV_STATE_DIR = ORIGINAL_STATE_DIR;
   }
   if (stateDir) {
     await fs.rm(stateDir, { recursive: true, force: true });

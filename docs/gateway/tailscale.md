@@ -22,8 +22,8 @@ Tailscale provides HTTPS, routing, and (for Serve) identity headers.
 
 Set `gateway.auth.mode` to control the handshake:
 
-- `token` (default when `OPENCLAW_GATEWAY_TOKEN` is set)
-- `password` (shared secret via `OPENCLAW_GATEWAY_PASSWORD` or config)
+- `token` (default when `MARV_GATEWAY_TOKEN` is set)
+- `password` (shared secret via `MARV_GATEWAY_PASSWORD` or config)
 
 When `tailscale.mode = "serve"` and `gateway.auth.allowTailscale` is `true`,
 valid Serve proxy requests can authenticate via Tailscale identity headers
@@ -83,7 +83,7 @@ Note: loopback (`http://127.0.0.1:18789`) will **not** work in this mode.
 }
 ```
 
-Prefer `OPENCLAW_GATEWAY_PASSWORD` over committing a password to disk.
+Prefer `MARV_GATEWAY_PASSWORD` over committing a password to disk.
 
 ## CLI examples
 

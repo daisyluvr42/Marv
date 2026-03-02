@@ -17,7 +17,7 @@ Feishu (Lark) is a team chat platform used by companies for messaging and collab
 Install the Feishu plugin:
 
 ```bash
-marv plugins install @openclaw/feishu
+marv plugins install @marv/feishu
 ```
 
 Local checkout (when running from a git repo):
@@ -173,7 +173,7 @@ Choose **Feishu** and paste your App ID + App Secret.
 
 ### Configure via config file
 
-Edit `~/.openclaw/marv.json`:
+Edit `~/.marv/marv.json`:
 
 ```json5
 {
@@ -476,12 +476,12 @@ Use `bindings` to route Feishu DMs or groups to different agents.
       {
         id: "clawd-fan",
         workspace: "/home/user/clawd-fan",
-        agentDir: "/home/user/.openclaw/agents/clawd-fan/agent",
+        agentDir: "/home/user/.marv/agents/clawd-fan/agent",
       },
       {
         id: "clawd-xi",
         workspace: "/home/user/clawd-xi",
-        agentDir: "/home/user/.openclaw/agents/clawd-xi/agent",
+        agentDir: "/home/user/.marv/agents/clawd-xi/agent",
       },
     ],
   },

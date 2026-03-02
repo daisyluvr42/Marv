@@ -104,7 +104,7 @@ export function readSessionMessages(
             kind: "compaction",
             id: typeof parsed.id === "string" ? parsed.id : undefined,
           },
-          __openclaw: {
+          __marv: {
             kind: "compaction",
             id: typeof parsed.id === "string" ? parsed.id : undefined,
           },
@@ -157,7 +157,7 @@ export function resolveSessionTranscriptCandidates(
 
   const home = resolveRequiredHomeDir(process.env, os.homedir);
   const marvDir = path.join(home, ".marv", "sessions");
-  const legacyDir = path.join(home, ".openclaw", "sessions");
+  const legacyDir = path.join(home, ".marv", "sessions");
   pushCandidate(() => resolveSessionTranscriptPathInDir(sessionId, marvDir));
   pushCandidate(() => resolveSessionTranscriptPathInDir(sessionId, legacyDir));
 

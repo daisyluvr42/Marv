@@ -337,7 +337,7 @@ Multi-lingual audio transcription via OpenRouter (Gemini, etc). Available on Cla
 
 <CardGroup cols={2}>
 
-<Card title="Home Assistant Add-on" icon="home" href="https://github.com/ngutman/openclaw-ha-addon">
+<Card title="Home Assistant Add-on" icon="home" href="https://github.com/ngutman/marv-ha-addon">
   **@ngutman** • `homeassistant` `docker` `raspberry-pi`
   
   Marv gateway running on Home Assistant OS with SSH tunnel support and persistent state.
@@ -349,8 +349,8 @@ Multi-lingual audio transcription via OpenRouter (Gemini, etc). Available on Cla
   Control and automate Home Assistant devices via natural language.
 </Card>
 
-<Card title="Nix Packaging" icon="snowflake" href="https://github.com/openclaw/nix-openclaw">
-  **@openclaw** • `nix` `packaging` `deployment`
+<Card title="Nix Packaging" icon="snowflake" href="https://github.com/daisyluvr42/nix-marv">
+  **@marv** • `nix` `packaging` `deployment`
   
   Batteries-included nixified Marv configuration for reproducible deployments.
 </Card>

@@ -607,8 +607,8 @@ export async function statusCommand(
   }
 
   runtime.log("");
-  runtime.log("FAQ: https://docs.marv.ai/faq");
-  runtime.log("Troubleshooting: https://docs.marv.ai/troubleshooting");
+  runtime.log("FAQ: /faq");
+  runtime.log("Troubleshooting: /troubleshooting");
   runtime.log("");
   const updateHint = formatUpdateAvailableHint(update);
   if (updateHint) {

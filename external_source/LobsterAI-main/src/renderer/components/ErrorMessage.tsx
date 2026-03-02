@@ -1,5 +1,5 @@
-import React from 'react';
-import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import React from "react";
 
 interface ErrorMessageProps {
   message: string;
@@ -25,4 +25,4 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onClose }) => {
   );
 };
 
-export default ErrorMessage; 
+export default ErrorMessage;

@@ -52,7 +52,7 @@ describe("ports helpers", () => {
     };
 
     await handlePortError(
-      new PortInUseError(18789, "node dist/index.js openclaw gateway"),
+      new PortInUseError(18789, "node dist/index.js marv gateway"),
       18789,
       "gateway start",
       runtime,
@@ -69,7 +69,7 @@ describe("ports helpers", () => {
     expect(
       classifyPortListener(
         {
-          commandLine: "node /Users/me/Projects/openclaw/dist/entry.js gateway",
+          commandLine: "node /Users/me/Projects/marv/dist/entry.js gateway",
         },
         18789,
       ),

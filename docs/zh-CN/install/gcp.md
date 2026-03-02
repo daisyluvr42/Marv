@@ -29,7 +29,7 @@ x-i18n:
 - 创建 Compute Engine VM
 - 安装 Docker（隔离的应用运行时）
 - 在 Docker 中启动 Marv Gateway 网关
-- 在主机上持久化 `~/.marv` + `~/.openclaw/workspace`（重启/重建后仍保留）
+- 在主机上持久化 `~/.marv` + `~/.marv/workspace`（重启/重建后仍保留）
 - 通过 SSH 隧道从你的笔记本电脑访问控制 UI
 
 Gateway 网关可以通过以下方式访问：
@@ -96,8 +96,8 @@ gcloud auth login
 **CLI：**
 
 ```bash
-gcloud projects create my-openclaw-project --name="Marv Gateway"
-gcloud config set project my-openclaw-project
+gcloud projects create my-marv-project --name="Marv Gateway"
+gcloud config set project my-marv-project
 ```
 
 在 https://console.cloud.google.com/billing 启用计费（Compute Engine 必需）。
@@ -129,7 +129,7 @@ gcloud services enable compute.googleapis.com
 **CLI：**
 
 ```bash
-gcloud compute instances create openclaw-gateway \
+gcloud compute instances create marv-gateway \
   --zone=us-central1-a \
   --machine-type=e2-small \
   --boot-disk-size=20GB \
@@ -140,7 +140,7 @@ gcloud compute instances create openclaw-gateway \
 **Console：**
 
 1. 转到 Compute Engine > VM instances > Create instance
-2. Name：`openclaw-gateway`
+2. Name：`marv-gateway`
 3. Region：`us-central1`，Zone：`us-central1-a`
 4. Machine type：`e2-small`
 5. Boot disk：Debian 12，20GB
@@ -153,7 +153,7 @@ gcloud compute instances create openclaw-gateway \
 **CLI：**
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a
+gcloud compute ssh marv-gateway --zone=us-central1-a
 ```
 
 **Console：**
@@ -182,7 +182,7 @@ exit
 然后重新 SSH 登录：
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a
+gcloud compute ssh marv-gateway --zone=us-central1-a
 ```
 
 验证：
@@ -197,7 +197,7 @@ docker compose version
 ## 6) 克隆 Marv 仓库
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 ```
 
@@ -212,7 +212,7 @@ Docker 容器是临时的。
 
 ```bash
 mkdir -p ~/.marv
-mkdir -p ~/.openclaw/workspace
+mkdir -p ~/.marv/workspace
 ```
 
 ---
@@ -222,13 +222,13 @@ mkdir -p ~/.openclaw/workspace
 在仓库根目录创建 `.env`。
 
 ```bash
-OPENCLAW_IMAGE=marv:latest
-OPENCLAW_GATEWAY_TOKEN=change-me-now
-OPENCLAW_GATEWAY_BIND=lan
-OPENCLAW_GATEWAY_PORT=18789
+MARV_IMAGE=marv:latest
+MARV_GATEWAY_TOKEN=change-me-now
+MARV_GATEWAY_BIND=lan
+MARV_GATEWAY_PORT=18789
 
-OPENCLAW_CONFIG_DIR=/home/$USER/.marv
-OPENCLAW_WORKSPACE_DIR=/home/$USER/.openclaw/workspace
+MARV_CONFIG_DIR=/home/$USER/.marv
+MARV_WORKSPACE_DIR=/home/$USER/.marv/workspace
 
 GOG_KEYRING_PASSWORD=change-me-now
 XDG_CONFIG_HOME=/home/node/.marv
@@ -250,8 +250,8 @@ openssl rand -hex 32
 
 ```yaml
 services:
-  openclaw-gateway:
-    image: ${OPENCLAW_IMAGE}
+  marv-gateway:
+    image: ${MARV_IMAGE}
     build: .
     restart: unless-stopped
     env_file:
@@ -260,19 +260,19 @@ services:
       - HOME=/home/node
       - NODE_ENV=production
       - TERM=xterm-256color
-      - OPENCLAW_GATEWAY_BIND=${OPENCLAW_GATEWAY_BIND}
-      - OPENCLAW_GATEWAY_PORT=${OPENCLAW_GATEWAY_PORT}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - MARV_GATEWAY_BIND=${MARV_GATEWAY_BIND}
+      - MARV_GATEWAY_PORT=${MARV_GATEWAY_PORT}
+      - MARV_GATEWAY_TOKEN=${MARV_GATEWAY_TOKEN}
       - GOG_KEYRING_PASSWORD=${GOG_KEYRING_PASSWORD}
       - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
       - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.marv
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${MARV_CONFIG_DIR}:/home/node/.marv
+      - ${MARV_WORKSPACE_DIR}:/home/node/.marv/workspace
     ports:
       # 推荐：在 VM 上保持 Gateway 网关仅绑定 loopback；通过 SSH 隧道访问。
       # 要公开暴露，移除 `127.0.0.1:` 前缀并相应配置防火墙。
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${MARV_GATEWAY_PORT}:18789"
 
       # 可选：仅当你针对此 VM 运行 iOS/Android 节点并需要 Canvas 主机时。
       # 如果你公开暴露此端口，请阅读 /gateway/security 并相应配置防火墙。
@@ -283,9 +283,9 @@ services:
         "dist/index.js",
         "gateway",
         "--bind",
-        "${OPENCLAW_GATEWAY_BIND}",
+        "${MARV_GATEWAY_BIND}",
         "--port",
-        "${OPENCLAW_GATEWAY_PORT}",
+        "${MARV_GATEWAY_PORT}",
       ]
 ```
 
@@ -358,15 +358,15 @@ CMD ["node","dist/index.js"]
 
 ```bash
 docker compose build
-docker compose up -d openclaw-gateway
+docker compose up -d marv-gateway
 ```
 
 验证二进制文件：
 
 ```bash
-docker compose exec openclaw-gateway which gog
-docker compose exec openclaw-gateway which goplaces
-docker compose exec openclaw-gateway which wacli
+docker compose exec marv-gateway which gog
+docker compose exec marv-gateway which goplaces
+docker compose exec marv-gateway which wacli
 ```
 
 预期输出：
@@ -382,7 +382,7 @@ docker compose exec openclaw-gateway which wacli
 ## 12) 验证 Gateway 网关
 
 ```bash
-docker compose logs -f openclaw-gateway
+docker compose logs -f marv-gateway
 ```
 
 成功：
@@ -398,7 +398,7 @@ docker compose logs -f openclaw-gateway
 创建 SSH 隧道以转发 Gateway 网关端口：
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a -- -L 18789:127.0.0.1:18789
+gcloud compute ssh marv-gateway --zone=us-central1-a -- -L 18789:127.0.0.1:18789
 ```
 
 在浏览器中打开：
@@ -416,12 +416,12 @@ Marv 在 Docker 中运行，但 Docker 不是真实来源。
 
 | 组件             | 位置                              | 持久化机制    | 说明                        |
 | ---------------- | --------------------------------- | ------------- | --------------------------- |
-| Gateway 网关配置 | `/home/node/.openclaw/`           | 主机卷挂载    | 包括 `marv.json`、令牌      |
-| 模型认证配置文件 | `/home/node/.openclaw/`           | 主机卷挂载    | OAuth 令牌、API 密钥        |
-| Skill 配置       | `/home/node/.openclaw/skills/`    | 主机卷挂载    | Skill 级别状态              |
-| 智能体工作区     | `/home/node/.openclaw/workspace/` | 主机卷挂载    | 代码和智能体产物            |
-| WhatsApp 会话    | `/home/node/.openclaw/`           | 主机卷挂载    | 保留 QR 登录                |
-| Gmail 密钥环     | `/home/node/.openclaw/`           | 主机卷 + 密码 | 需要 `GOG_KEYRING_PASSWORD` |
+| Gateway 网关配置 | `/home/node/.marv/`           | 主机卷挂载    | 包括 `marv.json`、令牌      |
+| 模型认证配置文件 | `/home/node/.marv/`           | 主机卷挂载    | OAuth 令牌、API 密钥        |
+| Skill 配置       | `/home/node/.marv/skills/`    | 主机卷挂载    | Skill 级别状态              |
+| 智能体工作区     | `/home/node/.marv/workspace/` | 主机卷挂载    | 代码和智能体产物            |
+| WhatsApp 会话    | `/home/node/.marv/`           | 主机卷挂载    | 保留 QR 登录                |
+| Gmail 密钥环     | `/home/node/.marv/`           | 主机卷 + 密码 | 需要 `GOG_KEYRING_PASSWORD` |
 | 外部二进制文件   | `/usr/local/bin/`                 | Docker 镜像   | 必须在构建时内置            |
 | Node 运行时      | 容器文件系统                      | Docker 镜像   | 每次镜像构建时重建          |
 | OS 包            | 容器文件系统                      | Docker 镜像   | 不要在运行时安装            |
@@ -464,15 +464,15 @@ gcloud compute os-login describe-profile
 
 ```bash
 # 首先停止 VM
-gcloud compute instances stop openclaw-gateway --zone=us-central1-a
+gcloud compute instances stop marv-gateway --zone=us-central1-a
 
 # 更改机器类型
-gcloud compute instances set-machine-type openclaw-gateway \
+gcloud compute instances set-machine-type marv-gateway \
   --zone=us-central1-a \
   --machine-type=e2-small
 
 # 启动 VM
-gcloud compute instances start openclaw-gateway --zone=us-central1-a
+gcloud compute instances start marv-gateway --zone=us-central1-a
 ```
 
 ---
@@ -486,14 +486,14 @@ gcloud compute instances start openclaw-gateway --zone=us-central1-a
 1. 创建服务账户：
 
    ```bash
-   gcloud iam service-accounts create openclaw-deploy \
+   gcloud iam service-accounts create marv-deploy \
      --display-name="Marv Deployment"
    ```
 
 2. 授予 Compute Instance Admin 角色（或更窄的自定义角色）：
    ```bash
-   gcloud projects add-iam-policy-binding my-openclaw-project \
-     --member="serviceAccount:openclaw-deploy@my-openclaw-project.iam.gserviceaccount.com" \
+   gcloud projects add-iam-policy-binding my-marv-project \
+     --member="serviceAccount:marv-deploy@my-marv-project.iam.gserviceaccount.com" \
      --role="roles/compute.instanceAdmin.v1"
    ```
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * BrainIcon - 记忆图标，灯泡与闪电组合（Memory icon）

@@ -142,7 +142,7 @@ signal-cli -a +<BOT_PHONE_NUMBER> verify <VERIFICATION_CODE>
 
 ```bash
 # If you run the gateway as a user systemd service:
-systemctl --user restart openclaw-gateway
+systemctl --user restart marv-gateway
 
 # Then verify:
 marv doctor
@@ -278,7 +278,7 @@ Extra checks:
 ```bash
 marv pairing list signal
 pgrep -af signal-cli
-grep -i "signal" "/tmp/openclaw/openclaw-$(date +%Y-%m-%d).log" | tail -20
+grep -i "signal" "/tmp/marv/marv-$(date +%Y-%m-%d).log" | tail -20
 ```
 
 For triage flow: [/channels/troubleshooting](/channels/troubleshooting).

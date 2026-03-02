@@ -469,7 +469,7 @@ Marv 支持接收和发送 Telegram 贴纸，并具有智能缓存功能。
 2. **缓存存储：** 描述与贴纸的文件 ID、表情符号和集合名称一起保存。
 3. **后续遇到：** 当再次看到相同贴纸时，直接使用缓存的描述。图像不会发送给 AI。
 
-**缓存位置：** `~/.openclaw/telegram/sticker-cache.json`
+**缓存位置：** `~/.marv/telegram/sticker-cache.json`
 
 **缓存条目格式：**
 

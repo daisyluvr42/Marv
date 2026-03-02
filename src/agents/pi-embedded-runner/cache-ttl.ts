@@ -1,7 +1,7 @@
 type CustomEntryLike = { type?: unknown; customType?: unknown; data?: unknown };
 
 export const CACHE_TTL_CUSTOM_TYPE = "marv.cache-ttl";
-const LEGACY_CACHE_TTL_CUSTOM_TYPE = "openclaw.cache-ttl";
+const LEGACY_CACHE_TTL_CUSTOM_TYPE = "marv.cache-ttl";
 
 export type CacheTtlEntryData = {
   timestamp: number;

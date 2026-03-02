@@ -13,7 +13,7 @@ Marv runs a single embedded agent runtime derived from **pi-mono**.
 
 Marv uses a single agent workspace directory (`agents.defaults.workspace`) as the agent’s **only** working directory (`cwd`) for tools and context.
 
-Recommended: use `marv setup` to create `~/.openclaw/marv.json` if missing and initialize the workspace files.
+Recommended: use `marv setup` to create `~/.marv/marv.json` if missing and initialize the workspace files.
 
 Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
 
@@ -58,7 +58,7 @@ guidance for how _you_ want them used.
 Marv loads skills from three locations (workspace wins on name conflict):
 
 - Bundled (shipped with the install)
-- Managed/local: `~/.openclaw/skills`
+- Managed/local: `~/.marv/skills`
 - Workspace: `<workspace>/skills`
 
 Skills can be gated by config/env (see `skills` in [Gateway configuration](/gateway/configuration)).
@@ -74,7 +74,7 @@ Marv reuses pieces of the pi-mono codebase (models/tools), but **session managem
 
 Session transcripts are stored as JSONL at:
 
-- `~/.openclaw/agents/<agentId>/sessions/<SessionId>.jsonl`
+- `~/.marv/agents/<agentId>/sessions/<SessionId>.jsonl`
 
 The session ID is stable and chosen by Marv.
 Legacy Pi/Tau session folders are **not** read.

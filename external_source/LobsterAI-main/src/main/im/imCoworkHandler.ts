@@ -3,14 +3,14 @@
  * Adapter that enables IM (DingTalk/Feishu/Telegram) to use CoworkRunner for tool-enabled AI execution
  */
 
-import { EventEmitter } from 'events';
-import fs from 'fs';
-import path from 'path';
-import type { PermissionResult } from '@anthropic-ai/claude-agent-sdk';
-import type { CoworkRunner, PermissionRequest } from '../libs/coworkRunner';
-import type { CoworkStore, CoworkMessage } from '../coworkStore';
-import type { IMStore } from './imStore';
-import type { IMMessage, IMPlatform, IMMediaAttachment } from './types';
+import { EventEmitter } from "events";
+import fs from "fs";
+import path from "path";
+import type { PermissionResult } from "@anthropic-ai/claude-agent-sdk";
+import type { CoworkStore, CoworkMessage } from "../coworkStore";
+import type { CoworkRunner, PermissionRequest } from "../libs/coworkRunner";
+import type { IMStore } from "./imStore";
+import type { IMMessage, IMPlatform, IMMediaAttachment } from "./types";
 
 interface MessageAccumulator {
   messages: CoworkMessage[];
@@ -32,7 +32,7 @@ interface PendingIMPermission {
 const PERMISSION_CONFIRM_TIMEOUT_MS = 60_000;
 const IM_ALLOW_RESPONSE_RE = /^(允许|同意|yes|y)$/i;
 const IM_DENY_RESPONSE_RE = /^(拒绝|不同意|no|n)$/i;
-const IM_ALLOW_OPTION_LABEL = '允许本次操作';
+const IM_ALLOW_OPTION_LABEL = "允许本次操作";
 
 export interface IMCoworkHandlerOptions {
   coworkRunner: CoworkRunner;
@@ -54,7 +54,8 @@ export class IMCoworkHandler extends EventEmitter {
 
   // Track which sessions are created by IM (to filter events)
   private imSessionIds: Set<string> = new Set();
-  private sessionConversationMap: Map<string, { conversationId: string; platform: IMPlatform }> = new Map();
+  private sessionConversationMap: Map<string, { conversationId: string; platform: IMPlatform }> =
+    new Map();
   private pendingPermissionByConversation: Map<string, PendingIMPermission> = new Map();
 
   constructor(options: IMCoworkHandlerOptions) {
@@ -72,11 +73,11 @@ export class IMCoworkHandler extends EventEmitter {
    * Set up event listeners for CoworkRunner
    */
   private setupEventListeners(): void {
-    this.coworkRunner.on('message', this.handleMessage.bind(this));
-    this.coworkRunner.on('messageUpdate', this.handleMessageUpdate.bind(this));
-    this.coworkRunner.on('permissionRequest', this.handlePermissionRequest.bind(this));
-    this.coworkRunner.on('complete', this.handleComplete.bind(this));
-    this.coworkRunner.on('error', this.handleError.bind(this));
+    this.coworkRunner.on("message", this.handleMessage.bind(this));
+    this.coworkRunner.on("messageUpdate", this.handleMessageUpdate.bind(this));
+    this.coworkRunner.on("permissionRequest", this.handlePermissionRequest.bind(this));
+    this.coworkRunner.on("complete", this.handleComplete.bind(this));
+    this.coworkRunner.on("error", this.handleError.bind(this));
   }
 
   /**
@@ -94,7 +95,7 @@ export class IMCoworkHandler extends EventEmitter {
       if (!this.isSessionNotFoundError(error)) {
         if (this.shouldRetryWithFreshSession(error, message)) {
           console.warn(
-            `[IMCoworkHandler] Detected recoverable API 400 for ${message.platform}:${message.conversationId}, recreating session and retrying once`
+            `[IMCoworkHandler] Detected recoverable API 400 for ${message.platform}:${message.conversationId}, recreating session and retrying once`,
           );
           return this.processMessageInternal(message, true);
         }
@@ -102,17 +103,20 @@ export class IMCoworkHandler extends EventEmitter {
       }
 
       console.warn(
-        `[IMCoworkHandler] Cowork session mapping is stale for ${message.platform}:${message.conversationId}, recreating session`
+        `[IMCoworkHandler] Cowork session mapping is stale for ${message.platform}:${message.conversationId}, recreating session`,
       );
       return this.processMessageInternal(message, true);
     }
   }
 
-  private async processMessageInternal(message: IMMessage, forceNewSession: boolean): Promise<string> {
+  private async processMessageInternal(
+    message: IMMessage,
+    forceNewSession: boolean,
+  ): Promise<string> {
     const coworkSessionId = await this.getOrCreateCoworkSession(
       message.conversationId,
       message.platform,
-      forceNewSession
+      forceNewSession,
     );
     this.sessionConversationMap.set(coworkSessionId, {
       conversationId: message.conversationId,
@@ -125,7 +129,7 @@ export class IMCoworkHandler extends EventEmitter {
     const isActive = this.coworkRunner.isSessionActive(coworkSessionId);
     const formattedContent = this.formatMessageWithMedia(message);
     const systemPrompt = await this.buildSystemPromptWithSkills();
-    const hasAvailableSkills = systemPrompt.includes('<available_skills>');
+    const hasAvailableSkills = systemPrompt.includes("<available_skills>");
     const session = this.coworkStore.getSession(coworkSessionId);
     if (session && session.systemPrompt !== systemPrompt) {
       // Claude resume sessions may ignore updated system prompt.
@@ -134,43 +138,56 @@ export class IMCoworkHandler extends EventEmitter {
         systemPrompt,
         claudeSessionId: null,
       });
-      console.log('[IMCoworkHandler] System prompt changed, reset claudeSessionId for IM session', JSON.stringify({
-        coworkSessionId,
-        platform: message.platform,
-      }));
+      console.log(
+        "[IMCoworkHandler] System prompt changed, reset claudeSessionId for IM session",
+        JSON.stringify({
+          coworkSessionId,
+          platform: message.platform,
+        }),
+      );
     }
     if (!hasAvailableSkills) {
-      console.warn('[IMCoworkHandler] Skills auto-routing prompt missing for current IM turn');
+      console.warn("[IMCoworkHandler] Skills auto-routing prompt missing for current IM turn");
     }
 
     // 打印完整的输入消息日志
-    console.log(`[IMCoworkHandler] 处理消息:`, JSON.stringify({
-      platform: message.platform,
-      conversationId: message.conversationId,
-      coworkSessionId,
-      isActive,
-      originalContent: message.content,
-      formattedContent,
-      attachments: message.attachments,
-      hasAvailableSkills,
-    }, null, 2));
+    console.log(
+      `[IMCoworkHandler] 处理消息:`,
+      JSON.stringify(
+        {
+          platform: message.platform,
+          conversationId: message.conversationId,
+          coworkSessionId,
+          isActive,
+          originalContent: message.content,
+          formattedContent,
+          attachments: message.attachments,
+          hasAvailableSkills,
+        },
+        null,
+        2,
+      ),
+    );
 
     const onSessionStartError = (error: unknown) => {
       this.rejectAccumulator(
         coworkSessionId,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
     };
 
     if (isActive) {
-      this.coworkRunner.continueSession(coworkSessionId, formattedContent, { systemPrompt })
+      this.coworkRunner
+        .continueSession(coworkSessionId, formattedContent, { systemPrompt })
         .catch(onSessionStartError);
     } else {
-      this.coworkRunner.startSession(coworkSessionId, formattedContent, {
-        workspaceRoot: session?.cwd,
-        confirmationMode: 'text',
-        systemPrompt,
-      }).catch(onSessionStartError);
+      this.coworkRunner
+        .startSession(coworkSessionId, formattedContent, {
+          workspaceRoot: session?.cwd,
+          confirmationMode: "text",
+          systemPrompt,
+        })
+        .catch(onSessionStartError);
     }
 
     return responsePromise;
@@ -182,7 +199,7 @@ export class IMCoworkHandler extends EventEmitter {
   private async getOrCreateCoworkSession(
     imConversationId: string,
     platform: IMPlatform,
-    forceNewSession: boolean = false
+    forceNewSession: boolean = false,
   ): Promise<string> {
     if (forceNewSession) {
       const stale = this.imStore.getSessionMapping(imConversationId, platform);
@@ -196,12 +213,14 @@ export class IMCoworkHandler extends EventEmitter {
     }
 
     // Check existing mapping
-    const existing = forceNewSession ? null : this.imStore.getSessionMapping(imConversationId, platform);
+    const existing = forceNewSession
+      ? null
+      : this.imStore.getSessionMapping(imConversationId, platform);
     if (existing) {
       const session = this.coworkStore.getSession(existing.coworkSessionId);
       if (!session) {
         console.warn(
-          `[IMCoworkHandler] Found stale mapping for ${platform}:${imConversationId}, session ${existing.coworkSessionId} is missing`
+          `[IMCoworkHandler] Found stale mapping for ${platform}:${imConversationId}, session ${existing.coworkSessionId} is missing`,
         );
         this.imStore.deleteSessionMapping(imConversationId, platform);
         this.imSessionIds.delete(existing.coworkSessionId);
@@ -225,19 +244,22 @@ export class IMCoworkHandler extends EventEmitter {
 
   private async createCoworkSessionForConversation(
     imConversationId: string,
-    platform: IMPlatform
+    platform: IMPlatform,
   ): Promise<string> {
     // Create new Cowork session
     const config = this.coworkStore.getConfig();
     const title = `IM-${platform}-${Date.now()}`;
     const systemPrompt = await this.buildSystemPromptWithSkills();
 
-    const selectedWorkspaceRoot = (config.workingDirectory || '').trim();
+    const selectedWorkspaceRoot = (config.workingDirectory || "").trim();
     if (!selectedWorkspaceRoot) {
-      throw new Error('IM 工作目录未配置，请先在应用中选择任务目录。');
+      throw new Error("IM 工作目录未配置，请先在应用中选择任务目录。");
     }
     const resolvedWorkspaceRoot = path.resolve(selectedWorkspaceRoot);
-    if (!fs.existsSync(resolvedWorkspaceRoot) || !fs.statSync(resolvedWorkspaceRoot).isDirectory()) {
+    if (
+      !fs.existsSync(resolvedWorkspaceRoot) ||
+      !fs.statSync(resolvedWorkspaceRoot).isDirectory()
+    ) {
       throw new Error(`IM 工作目录不存在或无效: ${resolvedWorkspaceRoot}`);
     }
 
@@ -245,7 +267,7 @@ export class IMCoworkHandler extends EventEmitter {
       title,
       resolvedWorkspaceRoot,
       systemPrompt,
-      'local' // IM always uses local mode
+      "local", // IM always uses local mode
     );
 
     // Save mapping
@@ -262,7 +284,7 @@ export class IMCoworkHandler extends EventEmitter {
   private async buildSystemPromptWithSkills(): Promise<string> {
     const config = this.coworkStore.getConfig();
     const imSettings = this.imStore.getIMSettings();
-    const systemPrompt = config.systemPrompt || '';
+    const systemPrompt = config.systemPrompt || "";
 
     if (!imSettings.skillsEnabled || !this.getSkillsPrompt) {
       return systemPrompt;
@@ -273,9 +295,7 @@ export class IMCoworkHandler extends EventEmitter {
       return systemPrompt;
     }
 
-    return systemPrompt
-      ? `${skillsPrompt}\n\n${systemPrompt}`
-      : skillsPrompt;
+    return systemPrompt ? `${skillsPrompt}\n\n${systemPrompt}` : skillsPrompt;
   }
 
   private isSessionNotFoundError(error: unknown): boolean {
@@ -285,15 +305,15 @@ export class IMCoworkHandler extends EventEmitter {
 
   private isRecoverableApi400Error(error: unknown): boolean {
     const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
-    if (!message.includes('400')) {
+    if (!message.includes("400")) {
       return false;
     }
 
     return (
-      message.includes('api error')
-      || message.includes('bad_response_status_code')
-      || message.includes('invalid chat setting')
-      || message.includes('signature: field required')
+      message.includes("api error") ||
+      message.includes("bad_response_status_code") ||
+      message.includes("invalid chat setting") ||
+      message.includes("signature: field required")
     );
   }
 
@@ -316,7 +336,9 @@ export class IMCoworkHandler extends EventEmitter {
    */
   private handleMessage(sessionId: string, message: CoworkMessage): void {
     // Only process messages from IM sessions
-    if (!this.imSessionIds.has(sessionId)) {return;}
+    if (!this.imSessionIds.has(sessionId)) {
+      return;
+    }
 
     const accumulator = this.messageAccumulators.get(sessionId);
     if (accumulator) {
@@ -329,12 +351,14 @@ export class IMCoworkHandler extends EventEmitter {
    */
   private handleMessageUpdate(sessionId: string, messageId: string, content: string): void {
     // Only process updates from IM sessions
-    if (!this.imSessionIds.has(sessionId)) {return;}
+    if (!this.imSessionIds.has(sessionId)) {
+      return;
+    }
 
     const accumulator = this.messageAccumulators.get(sessionId);
     if (accumulator) {
       // Update the message content in the accumulator
-      const existingIndex = accumulator.messages.findIndex(m => m.id === messageId);
+      const existingIndex = accumulator.messages.findIndex((m) => m.id === messageId);
       if (existingIndex >= 0) {
         accumulator.messages[existingIndex].content = content;
       }
@@ -353,7 +377,7 @@ export class IMCoworkHandler extends EventEmitter {
           clearTimeout(existingAccumulator.timeoutId);
         }
         this.messageAccumulators.delete(sessionId);
-        existingAccumulator.reject(new Error('Replaced by a newer IM request'));
+        existingAccumulator.reject(new Error("Replaced by a newer IM request"));
       }
 
       // Set up timeout
@@ -362,7 +386,7 @@ export class IMCoworkHandler extends EventEmitter {
         if (accumulator) {
           this.messageAccumulators.delete(sessionId);
           this.coworkRunner.stopSession(sessionId);
-          reject(new Error('Request timed out'));
+          reject(new Error("Request timed out"));
         }
       }, this.timeout);
 
@@ -378,14 +402,18 @@ export class IMCoworkHandler extends EventEmitter {
 
   private rejectAccumulator(sessionId: string, error: Error): void {
     const accumulator = this.messageAccumulators.get(sessionId);
-    if (!accumulator) {return;}
+    if (!accumulator) {
+      return;
+    }
     this.cleanupAccumulator(sessionId);
     accumulator.reject(error);
   }
 
   private clearPendingPermissionByKey(key: string): PendingIMPermission | null {
     const pending = this.pendingPermissionByConversation.get(key);
-    if (!pending) {return null;}
+    if (!pending) {
+      return null;
+    }
 
     if (pending.timeoutId) {
       clearTimeout(pending.timeoutId);
@@ -396,7 +424,9 @@ export class IMCoworkHandler extends EventEmitter {
 
   private clearPendingPermissionsBySessionId(sessionId: string): void {
     for (const [key, pending] of this.pendingPermissionByConversation.entries()) {
-      if (pending.sessionId !== sessionId) {continue;}
+      if (pending.sessionId !== sessionId) {
+        continue;
+      }
       this.clearPendingPermissionByKey(key);
     }
   }
@@ -406,52 +436,54 @@ export class IMCoworkHandler extends EventEmitter {
       ? (request.toolInput.questions as Array<Record<string, unknown>>)
       : [];
     const firstQuestion = questions[0];
-    const questionText = typeof firstQuestion?.question === 'string'
-      ? firstQuestion.question
-      : '';
+    const questionText = typeof firstQuestion?.question === "string" ? firstQuestion.question : "";
 
     return [
       `检测到需要安全确认的操作（工具: ${request.toolName}）。`,
-      questionText ? `说明: ${questionText}` : '说明: 当前操作涉及删除或访问任务目录外路径。',
-      '请在 60 秒内回复“允许”或“拒绝”。',
-    ].join('\n');
+      questionText ? `说明: ${questionText}` : "说明: 当前操作涉及删除或访问任务目录外路径。",
+      "请在 60 秒内回复“允许”或“拒绝”。",
+    ].join("\n");
   }
 
   private buildAllowPermissionResult(request: PermissionRequest): PermissionResult {
-    if (request.toolName !== 'AskUserQuestion') {
+    if (request.toolName !== "AskUserQuestion") {
       return {
-        behavior: 'allow',
+        behavior: "allow",
         updatedInput: request.toolInput,
       };
     }
 
-    const input = request.toolInput && typeof request.toolInput === 'object'
-      ? { ...(request.toolInput) }
-      : {};
+    const input =
+      request.toolInput && typeof request.toolInput === "object" ? { ...request.toolInput } : {};
     const rawQuestions = Array.isArray(input.questions)
       ? (input.questions as Array<Record<string, unknown>>)
       : [];
 
     const answers: Record<string, string> = {};
     rawQuestions.forEach((question) => {
-      const questionTitle = typeof question?.question === 'string' ? question.question : '';
-      if (!questionTitle) {return;}
+      const questionTitle = typeof question?.question === "string" ? question.question : "";
+      if (!questionTitle) {
+        return;
+      }
       const options = Array.isArray(question?.options)
         ? (question.options as Array<Record<string, unknown>>)
         : [];
       const preferredOption = options.find((option) => {
-        const label = typeof option?.label === 'string' ? option.label : '';
+        const label = typeof option?.label === "string" ? option.label : "";
         return label.includes(IM_ALLOW_OPTION_LABEL);
       });
       const fallbackOption = options[0];
-      const selectedLabel = typeof preferredOption?.label === 'string'
-        ? preferredOption.label
-        : (typeof fallbackOption?.label === 'string' ? fallbackOption.label : IM_ALLOW_OPTION_LABEL);
+      const selectedLabel =
+        typeof preferredOption?.label === "string"
+          ? preferredOption.label
+          : typeof fallbackOption?.label === "string"
+            ? fallbackOption.label
+            : IM_ALLOW_OPTION_LABEL;
       answers[questionTitle] = selectedLabel;
     });
 
     return {
-      behavior: 'allow',
+      behavior: "allow",
       updatedInput: {
         ...input,
         answers,
@@ -462,38 +494,38 @@ export class IMCoworkHandler extends EventEmitter {
   private async handlePendingPermissionReply(message: IMMessage): Promise<string | null> {
     const key = this.createConversationKey(message.conversationId, message.platform);
     const pending = this.pendingPermissionByConversation.get(key);
-    if (!pending) {return null;}
+    if (!pending) {
+      return null;
+    }
 
-    const normalizedReply = message.content
-      .trim()
-      .replace(/[。！!,.，\s]+$/g, '');
+    const normalizedReply = message.content.trim().replace(/[。！!,.，\s]+$/g, "");
     if (!normalizedReply) {
-      return '当前有待确认操作，请回复“允许”或“拒绝”（60 秒内）。';
+      return "当前有待确认操作，请回复“允许”或“拒绝”（60 秒内）。";
     }
 
     if (!this.coworkRunner.isSessionActive(pending.sessionId)) {
       this.clearPendingPermissionByKey(key);
-      return '该确认请求已过期，请重新发送任务。';
+      return "该确认请求已过期，请重新发送任务。";
     }
 
     if (IM_DENY_RESPONSE_RE.test(normalizedReply)) {
       this.clearPendingPermissionByKey(key);
       this.coworkRunner.respondToPermission(pending.request.requestId, {
-        behavior: 'deny',
-        message: 'Operation denied by IM user confirmation.',
+        behavior: "deny",
+        message: "Operation denied by IM user confirmation.",
       });
-      return '已拒绝本次操作，任务未继续执行。';
+      return "已拒绝本次操作，任务未继续执行。";
     }
 
     if (!IM_ALLOW_RESPONSE_RE.test(normalizedReply)) {
-      return '当前有待确认操作，请回复“允许”或“拒绝”（60 秒内）。';
+      return "当前有待确认操作，请回复“允许”或“拒绝”（60 秒内）。";
     }
 
     this.clearPendingPermissionByKey(key);
     const responsePromise = this.createAccumulatorPromise(pending.sessionId);
     this.coworkRunner.respondToPermission(
       pending.request.requestId,
-      this.buildAllowPermissionResult(pending.request)
+      this.buildAllowPermissionResult(pending.request),
     );
     return responsePromise;
   }
@@ -503,12 +535,14 @@ export class IMCoworkHandler extends EventEmitter {
    */
   private handlePermissionRequest(sessionId: string, request: PermissionRequest): void {
     // Only process permission requests from IM sessions
-    if (!this.imSessionIds.has(sessionId)) {return;}
+    if (!this.imSessionIds.has(sessionId)) {
+      return;
+    }
     const conversation = this.sessionConversationMap.get(sessionId);
     if (!conversation) {
       this.coworkRunner.respondToPermission(request.requestId, {
-        behavior: 'deny',
-        message: 'IM session mapping missing for permission request.',
+        behavior: "deny",
+        message: "IM session mapping missing for permission request.",
       });
       return;
     }
@@ -517,8 +551,8 @@ export class IMCoworkHandler extends EventEmitter {
     const existingPending = this.clearPendingPermissionByKey(key);
     if (existingPending) {
       this.coworkRunner.respondToPermission(existingPending.request.requestId, {
-        behavior: 'deny',
-        message: 'Superseded by a newer permission request.',
+        behavior: "deny",
+        message: "Superseded by a newer permission request.",
       });
     }
 
@@ -529,8 +563,8 @@ export class IMCoworkHandler extends EventEmitter {
       }
       this.clearPendingPermissionByKey(key);
       this.coworkRunner.respondToPermission(request.requestId, {
-        behavior: 'deny',
-        message: 'Permission request timed out after 60s',
+        behavior: "deny",
+        message: "Permission request timed out after 60s",
       });
     }, PERMISSION_CONFIRM_TIMEOUT_MS);
 
@@ -557,7 +591,9 @@ export class IMCoworkHandler extends EventEmitter {
    */
   private handleComplete(sessionId: string): void {
     // Only process complete events from IM sessions
-    if (!this.imSessionIds.has(sessionId)) {return;}
+    if (!this.imSessionIds.has(sessionId)) {
+      return;
+    }
 
     this.clearPendingPermissionsBySessionId(sessionId);
     const accumulator = this.messageAccumulators.get(sessionId);
@@ -565,12 +601,19 @@ export class IMCoworkHandler extends EventEmitter {
       const replyText = this.formatReply(accumulator.messages);
 
       // 打印完整的输出消息日志
-      console.log(`[IMCoworkHandler] 会话完成:`, JSON.stringify({
-        sessionId,
-        messageCount: accumulator.messages.length,
-        replyLength: replyText.length,
-        reply: replyText,
-      }, null, 2));
+      console.log(
+        `[IMCoworkHandler] 会话完成:`,
+        JSON.stringify(
+          {
+            sessionId,
+            messageCount: accumulator.messages.length,
+            replyLength: replyText.length,
+            reply: replyText,
+          },
+          null,
+          2,
+        ),
+      );
 
       this.cleanupAccumulator(sessionId);
       accumulator.resolve(replyText);
@@ -582,7 +625,9 @@ export class IMCoworkHandler extends EventEmitter {
    */
   private handleError(sessionId: string, error: string): void {
     // Only process error events from IM sessions
-    if (!this.imSessionIds.has(sessionId)) {return;}
+    if (!this.imSessionIds.has(sessionId)) {
+      return;
+    }
 
     this.clearPendingPermissionsBySessionId(sessionId);
     const accumulator = this.messageAccumulators.get(sessionId);
@@ -611,15 +656,17 @@ export class IMCoworkHandler extends EventEmitter {
 
     for (const msg of messages) {
       // Skip user messages (they're the input)
-      if (msg.type === 'user') {continue;}
+      if (msg.type === "user") {
+        continue;
+      }
 
       // Only include assistant messages in reply
-      if (msg.type === 'assistant' && msg.content) {
+      if (msg.type === "assistant" && msg.content) {
         parts.push(msg.content);
       }
     }
 
-    return parts.join('\n\n') || '处理完成，但没有生成回复。';
+    return parts.join("\n\n") || "处理完成，但没有生成回复。";
   }
 
   /**
@@ -630,19 +677,29 @@ export class IMCoworkHandler extends EventEmitter {
     let content = message.content;
 
     if (message.attachments && message.attachments.length > 0) {
-      const mediaInfo = message.attachments.map((att: IMMediaAttachment) => {
-        const parts = [`类型: ${att.type}`, `路径: ${att.localPath}`];
-        if (att.fileName) {parts.push(`文件名: ${att.fileName}`);}
-        if (att.mimeType) {parts.push(`MIME: ${att.mimeType}`);}
-        if (att.width && att.height) {parts.push(`尺寸: ${att.width}x${att.height}`);}
-        if (att.duration) {parts.push(`时长: ${att.duration}秒`);}
-        if (att.fileSize) {parts.push(`大小: ${(att.fileSize / 1024).toFixed(1)}KB`);}
-        return `- ${parts.join(', ')}`;
-      }).join('\n');
+      const mediaInfo = message.attachments
+        .map((att: IMMediaAttachment) => {
+          const parts = [`类型: ${att.type}`, `路径: ${att.localPath}`];
+          if (att.fileName) {
+            parts.push(`文件名: ${att.fileName}`);
+          }
+          if (att.mimeType) {
+            parts.push(`MIME: ${att.mimeType}`);
+          }
+          if (att.width && att.height) {
+            parts.push(`尺寸: ${att.width}x${att.height}`);
+          }
+          if (att.duration) {
+            parts.push(`时长: ${att.duration}秒`);
+          }
+          if (att.fileSize) {
+            parts.push(`大小: ${(att.fileSize / 1024).toFixed(1)}KB`);
+          }
+          return `- ${parts.join(", ")}`;
+        })
+        .join("\n");
 
-      content = content
-        ? `${content}\n\n[附件信息]\n${mediaInfo}`
-        : `[附件信息]\n${mediaInfo}`;
+      content = content ? `${content}\n\n[附件信息]\n${mediaInfo}` : `[附件信息]\n${mediaInfo}`;
     }
 
     return content;
@@ -657,7 +714,7 @@ export class IMCoworkHandler extends EventEmitter {
       if (accumulator.timeoutId) {
         clearTimeout(accumulator.timeoutId);
       }
-      accumulator.reject(new Error('Handler destroyed'));
+      accumulator.reject(new Error("Handler destroyed"));
     }
     this.messageAccumulators.clear();
     this.imSessionIds.clear();
@@ -671,10 +728,10 @@ export class IMCoworkHandler extends EventEmitter {
     }
 
     // Remove event listeners
-    this.coworkRunner.removeListener('message', this.handleMessage.bind(this));
-    this.coworkRunner.removeListener('messageUpdate', this.handleMessageUpdate.bind(this));
-    this.coworkRunner.removeListener('permissionRequest', this.handlePermissionRequest.bind(this));
-    this.coworkRunner.removeListener('complete', this.handleComplete.bind(this));
-    this.coworkRunner.removeListener('error', this.handleError.bind(this));
+    this.coworkRunner.removeListener("message", this.handleMessage.bind(this));
+    this.coworkRunner.removeListener("messageUpdate", this.handleMessageUpdate.bind(this));
+    this.coworkRunner.removeListener("permissionRequest", this.handlePermissionRequest.bind(this));
+    this.coworkRunner.removeListener("complete", this.handleComplete.bind(this));
+    this.coworkRunner.removeListener("error", this.handleError.bind(this));
   }
 }

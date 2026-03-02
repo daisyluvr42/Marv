@@ -25,7 +25,7 @@ The macOS app surfaces Marv skills via the gateway; it does not parse skills loc
 
 ## Env/API keys
 
-- The app stores keys in `~/.openclaw/marv.json` under `skills.entries.<skillKey>`.
+- The app stores keys in `~/.marv/marv.json` under `skills.entries.<skillKey>`.
 - `skills.update` patches `enabled`, `apiKey`, and `env`.
 
 ## Remote mode

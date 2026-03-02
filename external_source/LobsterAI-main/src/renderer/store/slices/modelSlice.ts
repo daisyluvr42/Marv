@@ -1,5 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { defaultConfig } from '../../config';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { defaultConfig } from "../../config";
 
 export interface Model {
   id: string;
@@ -14,7 +14,7 @@ function buildInitialModels(): Model[] {
   if (defaultConfig.providers) {
     Object.entries(defaultConfig.providers).forEach(([providerName, config]) => {
       if (config.enabled && config.models) {
-        config.models.forEach(model => {
+        config.models.forEach((model) => {
           models.push({
             id: model.id,
             name: model.name,
@@ -38,12 +38,14 @@ interface ModelState {
 
 const initialState: ModelState = {
   // 使用 config 中的默认模型
-  selectedModel: availableModels.find(model => model.id === defaultConfig.model.defaultModel) || availableModels[0],
+  selectedModel:
+    availableModels.find((model) => model.id === defaultConfig.model.defaultModel) ||
+    availableModels[0],
   availableModels: availableModels,
 };
 
 const modelSlice = createSlice({
-  name: 'model',
+  name: "model",
   initialState,
   reducers: {
     setSelectedModel: (state, action: PayloadAction<Model>) => {
@@ -55,7 +57,7 @@ const modelSlice = createSlice({
       availableModels = action.payload;
       // 同步选中模型信息，确保名称与最新配置一致
       if (action.payload.length > 0) {
-        const matchedModel = action.payload.find(m => m.id === state.selectedModel.id);
+        const matchedModel = action.payload.find((m) => m.id === state.selectedModel.id);
         if (matchedModel) {
           state.selectedModel = matchedModel;
         } else {
@@ -68,4 +70,4 @@ const modelSlice = createSlice({
 });
 
 export const { setSelectedModel, setAvailableModels } = modelSlice.actions;
-export default modelSlice.reducer; 
+export default modelSlice.reducer;

@@ -36,7 +36,7 @@ marv models scan
 添加 `--probe` 可对每个已配置的提供商配置运行实时认证探测。
 探测会发送真实请求（可能消耗令牌并触发速率限制）。
 使用 `--agent <id>` 可检查已配置智能体的模型/认证状态。省略时，
-命令会使用 `OPENCLAW_AGENT_DIR`/`PI_CODING_AGENT_DIR`（如已设置），否则使用
+命令会使用 `MARV_AGENT_DIR`/`PI_CODING_AGENT_DIR`（如已设置），否则使用
 已配置的默认智能体。
 
 注意事项：
@@ -58,7 +58,7 @@ marv models scan
 - `--probe-timeout <ms>`
 - `--probe-concurrency <n>`
 - `--probe-max-tokens <n>`
-- `--agent <id>`（已配置的智能体 ID；覆盖 `OPENCLAW_AGENT_DIR`/`PI_CODING_AGENT_DIR`）
+- `--agent <id>`（已配置的智能体 ID；覆盖 `MARV_AGENT_DIR`/`PI_CODING_AGENT_DIR`）
 
 ## 别名 + 回退
 

@@ -17,7 +17,7 @@ title: 飞书
 安装 Feishu 插件：
 
 ```bash
-marv plugins install @openclaw/feishu
+marv plugins install @marv/feishu
 ```
 
 本地 checkout（在 git 仓库内运行）：
@@ -181,7 +181,7 @@ marv channels add
 
 ### 通过配置文件配置
 
-编辑 `~/.openclaw/marv.json`：
+编辑 `~/.marv/marv.json`：
 
 ```json5
 {
@@ -521,12 +521,12 @@ marv pairing list feishu
       {
         id: "clawd-fan",
         workspace: "/home/user/clawd-fan",
-        agentDir: "/home/user/.openclaw/agents/clawd-fan/agent",
+        agentDir: "/home/user/.marv/agents/clawd-fan/agent",
       },
       {
         id: "clawd-xi",
         workspace: "/home/user/clawd-xi",
-        agentDir: "/home/user/.openclaw/agents/clawd-xi/agent",
+        agentDir: "/home/user/.marv/agents/clawd-xi/agent",
       },
     ],
   },

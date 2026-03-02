@@ -1,8 +1,8 @@
 import { collectTextContentBlocks } from "../../agents/content-blocks.js";
-import { createMarvTools } from "../../agents/openclaw-tools.js";
+import { createMarvTools } from "../../agents/marv-tools.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
 import { getChannelDock } from "../../channels/dock.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { resolveGatewayMessageChannel } from "../../utils/message-channel.js";
@@ -72,7 +72,7 @@ function extractTextFromToolResult(result: any): string | null {
 export async function handleInlineActions(params: {
   ctx: MsgContext;
   sessionCtx: TemplateContext;
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   agentId: string;
   agentDir?: string;
   sessionEntry?: SessionEntry;

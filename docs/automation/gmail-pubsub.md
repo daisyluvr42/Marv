@@ -25,7 +25,7 @@ Example hook config (enable Gmail preset mapping):
 {
   hooks: {
     enabled: true,
-    token: "OPENCLAW_HOOK_TOKEN",
+    token: "MARV_HOOK_TOKEN",
     path: "/hooks",
     presets: ["gmail"],
   },
@@ -39,7 +39,7 @@ that sets `deliver` + optional `channel`/`to`:
 {
   hooks: {
     enabled: true,
-    token: "OPENCLAW_HOOK_TOKEN",
+    token: "MARV_HOOK_TOKEN",
     presets: ["gmail"],
     mappings: [
       {
@@ -88,7 +88,7 @@ Notes:
   To disable (dangerous), set `hooks.gmail.allowUnsafeExternalContent: true`.
 
 To customize payload handling further, add `hooks.mappings` or a JS/TS transform module
-under `~/.openclaw/hooks/transforms` (see [Webhooks](/automation/webhook)).
+under `~/.marv/hooks/transforms` (see [Webhooks](/automation/webhook)).
 
 ## Wizard (recommended)
 
@@ -96,7 +96,7 @@ Use the Marv helper to wire everything together (installs deps on macOS via brew
 
 ```bash
 marv webhooks gmail setup \
-  --account openclaw@gmail.com
+  --account marv@gmail.com
 ```
 
 Defaults:
@@ -122,7 +122,7 @@ Gateway auto-start (recommended):
 
 - When `hooks.enabled=true` and `hooks.gmail.account` is set, the Gateway starts
   `gog gmail watch serve` on boot and auto-renews the watch.
-- Set `OPENCLAW_SKIP_GMAIL_WATCHER=1` to opt out (useful if you run the daemon yourself).
+- Set `MARV_SKIP_GMAIL_WATCHER=1` to opt out (useful if you run the daemon yourself).
 - Do not run the manual daemon at the same time, or you will hit
   `listen tcp 127.0.0.1:8788: bind: address already in use`.
 
@@ -167,7 +167,7 @@ gcloud pubsub topics add-iam-policy-binding gog-gmail-watch \
 
 ```bash
 gog gmail watch start \
-  --account openclaw@gmail.com \
+  --account marv@gmail.com \
   --label INBOX \
   --topic projects/<project-id>/topics/gog-gmail-watch
 ```
@@ -180,13 +180,13 @@ Local example (shared token auth):
 
 ```bash
 gog gmail watch serve \
-  --account openclaw@gmail.com \
+  --account marv@gmail.com \
   --bind 127.0.0.1 \
   --port 8788 \
   --path /gmail-pubsub \
   --token <shared> \
   --hook-url http://127.0.0.1:18789/hooks/gmail \
-  --hook-token OPENCLAW_HOOK_TOKEN \
+  --hook-token MARV_HOOK_TOKEN \
   --include-body \
   --max-bytes 20000
 ```
@@ -228,8 +228,8 @@ Send a message to the watched inbox:
 
 ```bash
 gog gmail send \
-  --account openclaw@gmail.com \
-  --to openclaw@gmail.com \
+  --account marv@gmail.com \
+  --to marv@gmail.com \
   --subject "watch test" \
   --body "ping"
 ```
@@ -237,8 +237,8 @@ gog gmail send \
 Check watch state and history:
 
 ```bash
-gog gmail watch status --account openclaw@gmail.com
-gog gmail history --account openclaw@gmail.com --since <historyId>
+gog gmail watch status --account marv@gmail.com
+gog gmail history --account marv@gmail.com --since <historyId>
 ```
 
 ## Troubleshooting
@@ -250,7 +250,7 @@ gog gmail history --account openclaw@gmail.com --since <historyId>
 ## Cleanup
 
 ```bash
-gog gmail watch stop --account openclaw@gmail.com
+gog gmail watch stop --account marv@gmail.com
 gcloud pubsub subscriptions delete gog-gmail-watch-push
 gcloud pubsub topics delete gog-gmail-watch
 ```

@@ -1,4 +1,4 @@
-export type ArtifactType = 'html' | 'svg' | 'mermaid' | 'react' | 'code';
+export type ArtifactType = "html" | "svg" | "mermaid" | "react" | "code";
 
 export interface Artifact {
   id: string;

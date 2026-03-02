@@ -51,7 +51,7 @@ This will set `huggingface/deepseek-ai/DeepSeek-R1` as the default model.
 ## Environment note
 
 If the Gateway runs as a daemon (launchd/systemd), make sure `HUGGINGFACE_HUB_TOKEN` or `HF_TOKEN`
-is available to that process (for example, in `~/.openclaw/.env` or via
+is available to that process (for example, in `~/.marv/.env` or via
 `env.shellEnv`).
 
 ## Model discovery and onboarding dropdown

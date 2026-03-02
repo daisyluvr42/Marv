@@ -13,7 +13,7 @@ export function registerSetupCommand(program: Command) {
     .description("Initialize ~/.marv/marv.json and the agent workspace")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/setup", "docs.marv.ai/cli/setup")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/setup", "docs: /cli/setup")}\n`,
     )
     .option(
       "--workspace <dir>",

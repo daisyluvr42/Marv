@@ -15,7 +15,7 @@ x-i18n:
 
 # `marv setup`
 
-初始化 `~/.openclaw/marv.json` 和智能体工作区。
+初始化 `~/.marv/marv.json` 和智能体工作区。
 
 相关内容：
 
@@ -26,7 +26,7 @@ x-i18n:
 
 ```bash
 marv setup
-marv setup --workspace ~/.openclaw/workspace
+marv setup --workspace ~/.marv/workspace
 ```
 
 通过 setup 运行向导：

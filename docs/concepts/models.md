@@ -204,5 +204,5 @@ mode, pass `--yes` to accept defaults.
 ## Models registry (`models.json`)
 
 Custom providers in `models.providers` are written into `models.json` under the
-agent directory (default `~/.openclaw/agents/<agentId>/models.json`). This file
+agent directory (default `~/.marv/agents/<agentId>/models.json`). This file
 is merged by default unless `models.mode` is set to `replace`.

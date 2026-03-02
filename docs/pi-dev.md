@@ -51,7 +51,7 @@ For tool call behavior, prompt for a `read` or `exec` action so you can see tool
 
 ## Clean Slate Reset
 
-State lives under the Marv state directory. Default is `~/.marv`. If `OPENCLAW_STATE_DIR` is set, use that directory instead.
+State lives under the Marv state directory. Default is `~/.marv`. If `MARV_STATE_DIR` is set, use that directory instead.
 
 To reset everything:
 
@@ -66,5 +66,5 @@ If you only want to reset sessions, delete `agents/<agentId>/sessions/` and `age
 
 ## References
 
-- [https://docs.marv.ai/testing](https://docs.marv.ai/testing)
-- [https://docs.marv.ai/start/getting-started](https://docs.marv.ai/start/getting-started)
+- [/testing](/testing)
+- [/start/getting-started](/start/getting-started)

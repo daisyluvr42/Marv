@@ -55,7 +55,7 @@ marv channels status --probe
 </Steps>
 
 <Note>
-Gateway config reload watches the active config file path (resolved from profile/state defaults, or `OPENCLAW_CONFIG_PATH` when set).
+Gateway config reload watches the active config file path (resolved from profile/state defaults, or `MARV_CONFIG_PATH` when set).
 Default mode is `gateway.reload.mode="hybrid"`.
 </Note>
 
@@ -71,13 +71,13 @@ Default mode is `gateway.reload.mode="hybrid"`.
     - Marv-mem MCP (`/mcp`)
   - Control UI and hooks
 - Default bind mode: `loopback`.
-- Auth is required by default (`gateway.auth.token` / `gateway.auth.password`, or `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`).
+- Auth is required by default (`gateway.auth.token` / `gateway.auth.password`, or `MARV_GATEWAY_TOKEN` / `MARV_GATEWAY_PASSWORD`).
 
 ### Port and bind precedence
 
 | Setting      | Resolution order                                              |
 | ------------ | ------------------------------------------------------------- |
-| Gateway port | `--port` → `OPENCLAW_GATEWAY_PORT` → `gateway.port` → `18789` |
+| Gateway port | `--port` → `MARV_GATEWAY_PORT` → `gateway.port` → `18789` |
 | Bind mode    | CLI/override → `gateway.bind` → `loopback`                    |
 
 ### Hot reload modes
@@ -141,7 +141,7 @@ LaunchAgent labels are `ai.marv.gateway` (default) or `ai.marv.<profile>` (named
 
 ```bash
 marv gateway install
-systemctl --user enable --now openclaw-gateway[-<profile>].service
+systemctl --user enable --now marv-gateway[-<profile>].service
 marv gateway status
 ```
 
@@ -159,7 +159,7 @@ Use a system unit for multi-user/always-on hosts.
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now openclaw-gateway[-<profile>].service
+sudo systemctl enable --now marv-gateway[-<profile>].service
 ```
 
   </Tab>
@@ -173,15 +173,15 @@ Use multiple only for strict isolation/redundancy (for example a rescue profile)
 Checklist per instance:
 
 - Unique `gateway.port`
-- Unique `OPENCLAW_CONFIG_PATH`
-- Unique `OPENCLAW_STATE_DIR`
+- Unique `MARV_CONFIG_PATH`
+- Unique `MARV_STATE_DIR`
 - Unique `agents.defaults.workspace`
 
 Example:
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json OPENCLAW_STATE_DIR=~/.openclaw-a marv gateway --port 19001
-OPENCLAW_CONFIG_PATH=~/.openclaw/b.json OPENCLAW_STATE_DIR=~/.openclaw-b marv gateway --port 19002
+MARV_CONFIG_PATH=~/.marv/a.json MARV_STATE_DIR=~/.marv-a marv gateway --port 19001
+MARV_CONFIG_PATH=~/.marv/b.json MARV_STATE_DIR=~/.marv-b marv gateway --port 19002
 ```
 
 See: [Multiple gateways](/gateway/multiple-gateways).

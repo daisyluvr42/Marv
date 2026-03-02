@@ -1,9 +1,9 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
-import { selectPrompt } from '../../store/slices/quickActionSlice';
-import type { LocalizedQuickAction, LocalizedPrompt } from '../../types/quickAction';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../store";
+import { selectPrompt } from "../../store/slices/quickActionSlice";
+import type { LocalizedQuickAction, LocalizedPrompt } from "../../types/quickAction";
 
 interface PromptPanelProps {
   action: LocalizedQuickAction;
@@ -12,9 +12,7 @@ interface PromptPanelProps {
 
 const PromptPanel: React.FC<PromptPanelProps> = ({ action, onPromptSelect }) => {
   const dispatch = useDispatch();
-  const selectedPromptId = useSelector(
-    (state: RootState) => state.quickAction.selectedPromptId
-  );
+  const selectedPromptId = useSelector((state: RootState) => state.quickAction.selectedPromptId);
 
   const handlePromptClick = (prompt: LocalizedPrompt) => {
     dispatch(selectPrompt(prompt.id));
@@ -49,14 +47,16 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ action, onPromptSelect }) => 
                 border text-left transition-all duration-200
                 ${
                   isPromptSelected
-                    ? 'dark:bg-claude-accentMuted bg-claude-accentMuted border-claude-accent/50'
-                    : 'dark:bg-claude-darkSurface bg-claude-surface dark:border-claude-darkBorder border-claude-border dark:hover:border-claude-darkBorder hover:border-claude-border dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover'
+                    ? "dark:bg-claude-accentMuted bg-claude-accentMuted border-claude-accent/50"
+                    : "dark:bg-claude-darkSurface bg-claude-surface dark:border-claude-darkBorder border-claude-border dark:hover:border-claude-darkBorder hover:border-claude-border dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover"
                 }
               `}
             >
               {/* 标题 */}
               <div className="flex items-center justify-between w-full">
-                <span className={`text-sm font-medium ${isPromptSelected ? 'text-claude-accent' : 'dark:text-claude-darkText text-claude-text'}`}>
+                <span
+                  className={`text-sm font-medium ${isPromptSelected ? "text-claude-accent" : "dark:text-claude-darkText text-claude-text"}`}
+                >
                   {prompt.label}
                 </span>
                 <ArrowRightIcon
@@ -64,8 +64,8 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ action, onPromptSelect }) => 
                     w-3.5 h-3.5 transition-all duration-200
                     ${
                       isPromptSelected
-                        ? 'text-claude-accent translate-x-0 opacity-100'
-                        : 'dark:text-claude-darkTextSecondary text-claude-textSecondary -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                        ? "text-claude-accent translate-x-0 opacity-100"
+                        : "dark:text-claude-darkTextSecondary text-claude-textSecondary -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
                     }
                   `}
                 />

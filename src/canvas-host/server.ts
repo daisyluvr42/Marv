@@ -105,16 +105,16 @@ function defaultIndexHTML() {
       window.webkit &&
       window.webkit.messageHandlers &&
       (window.webkit.messageHandlers.marvCanvasA2UIAction ||
-        window.webkit.messageHandlers.openclawCanvasA2UIAction)
+        window.webkit.messageHandlers.marvCanvasA2UIAction)
     );
   const hasAndroid = () =>
     !!(
       (window.marvCanvasA2UIAction && typeof window.marvCanvasA2UIAction.postMessage === "function") ||
-      (window.openclawCanvasA2UIAction && typeof window.openclawCanvasA2UIAction.postMessage === "function")
+      (window.marvCanvasA2UIAction && typeof window.marvCanvasA2UIAction.postMessage === "function")
     );
   const hasHelper = () =>
     typeof window.marvSendUserAction === "function" ||
-    typeof window.openclawSendUserAction === "function";
+    typeof window.marvSendUserAction === "function";
   statusEl.innerHTML =
     "Bridge: " +
     (hasHelper() ? "<span class='ok'>ready</span>" : "<span class='bad'>missing</span>") +
@@ -126,7 +126,7 @@ function defaultIndexHTML() {
     log("Action status: id=" + (d.id || "?") + " ok=" + String(!!d.ok) + (d.error ? (" error=" + d.error) : ""));
   };
   window.addEventListener("marv:a2ui-action-status", onStatus);
-  window.addEventListener("openclaw:a2ui-action-status", onStatus);
+  window.addEventListener("marv:a2ui-action-status", onStatus);
 
   function send(name, sourceComponentId) {
     if (!hasHelper()) {
@@ -136,8 +136,8 @@ function defaultIndexHTML() {
     const sendUserAction =
       typeof window.marvSendUserAction === "function"
         ? window.marvSendUserAction
-        : typeof window.openclawSendUserAction === "function"
-          ? window.openclawSendUserAction
+        : typeof window.marvSendUserAction === "function"
+          ? window.marvSendUserAction
           : undefined;
     const ok = sendUserAction({
       name,
@@ -161,7 +161,7 @@ function isDisabledByEnv() {
   if (isTruthyEnvValue(process.env.MARV_SKIP_CANVAS_HOST)) {
     return true;
   }
-  if (isTruthyEnvValue(process.env.OPENCLAW_SKIP_CANVAS_HOST)) {
+  if (isTruthyEnvValue(process.env.MARV_SKIP_CANVAS_HOST)) {
     return true;
   }
   if (process.env.NODE_ENV === "test") {

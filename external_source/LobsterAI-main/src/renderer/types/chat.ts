@@ -7,7 +7,7 @@ export interface ImageAttachment {
 }
 
 export interface ChatMessagePayload {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
   images?: ImageAttachment[];
 }

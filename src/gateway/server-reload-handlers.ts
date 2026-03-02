@@ -96,7 +96,7 @@ export function createGatewayReloadHandlers(params: {
         log: params.logHooks,
         onSkipped: () =>
           params.logHooks.info(
-            "skipping gmail watcher restart (MARV_SKIP_GMAIL_WATCHER=1; legacy OPENCLAW_SKIP_GMAIL_WATCHER=1 also supported)",
+            "skipping gmail watcher restart (MARV_SKIP_GMAIL_WATCHER=1; legacy MARV_SKIP_GMAIL_WATCHER=1 also supported)",
           ),
       });
     }
@@ -104,12 +104,12 @@ export function createGatewayReloadHandlers(params: {
     if (plan.restartChannels.size > 0) {
       if (
         isTruthyEnvValue(process.env.MARV_SKIP_CHANNELS) ||
-        isTruthyEnvValue(process.env.OPENCLAW_SKIP_CHANNELS) ||
+        isTruthyEnvValue(process.env.MARV_SKIP_CHANNELS) ||
         isTruthyEnvValue(process.env.MARV_SKIP_PROVIDERS) ||
-        isTruthyEnvValue(process.env.OPENCLAW_SKIP_PROVIDERS)
+        isTruthyEnvValue(process.env.MARV_SKIP_PROVIDERS)
       ) {
         params.logChannels.info(
-          "skipping channel reload (MARV_SKIP_CHANNELS=1 or MARV_SKIP_PROVIDERS=1; legacy OPENCLAW_* also supported)",
+          "skipping channel reload (MARV_SKIP_CHANNELS=1 or MARV_SKIP_PROVIDERS=1; legacy MARV_* also supported)",
         );
       } else {
         const restartChannel = async (name: ChannelKind) => {

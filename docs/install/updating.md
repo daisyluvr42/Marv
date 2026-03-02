@@ -31,7 +31,7 @@ Notes:
 
   The installer will `git pull --rebase` **only** if the repo is clean.
 
-- For **global installs**, the script uses `npm install -g openclaw@latest` under the hood.
+- For **global installs**, the script uses `npm install -g marv@latest` under the hood.
 - Legacy note: `clawdbot` remains available as a compatibility shim.
 
 ## Before you update
@@ -39,20 +39,20 @@ Notes:
 - Know how you installed: **global** (npm/pnpm) vs **from source** (git clone).
 - Know how your Gateway is running: **foreground terminal** vs **supervised service** (launchd/systemd).
 - Snapshot your tailoring:
-  - Config: `~/.openclaw/marv.json`
-  - Credentials: `~/.openclaw/credentials/`
-  - Workspace: `~/.openclaw/workspace`
+  - Config: `~/.marv/marv.json`
+  - Credentials: `~/.marv/credentials/`
+  - Workspace: `~/.marv/workspace`
 
 ## Update (global install)
 
 Global install (pick one):
 
 ```bash
-npm i -g openclaw@latest
+npm i -g marv@latest
 ```
 
 ```bash
-pnpm add -g openclaw@latest
+pnpm add -g marv@latest
 ```
 
 We do **not** recommend Bun for the Gateway runtime (WhatsApp/Telegram bugs).
@@ -135,7 +135,7 @@ marv health
 
 Notes:
 
-- `pnpm build` matters when you run the packaged `marv` binary ([`marv.mjs`](https://github.com/openclaw/openclaw/blob/main/marv.mjs)) or use Node to run `dist/`.
+- `pnpm build` matters when you run the packaged `marv` binary ([`marv.mjs`](marv.mjs)) or use Node to run `dist/`.
 - If you run from a repo checkout without a global install, use `pnpm marv ...` for CLI commands.
 - If you run directly from TypeScript (`pnpm marv ...`), a rebuild is usually unnecessary, but **config migrations still apply** → run doctor.
 - Switching between global and git installs is easy: install the other flavor, then run `marv doctor` so the gateway service entrypoint is rewritten to the current install.
@@ -171,8 +171,8 @@ marv logs --follow
 If you’re supervised:
 
 - macOS launchd (app-bundled LaunchAgent): `launchctl kickstart -k gui/$UID/bot.molt.gateway` (use `bot.molt.<profile>`; legacy `com.marv.*` still works)
-- Linux systemd user service: `systemctl --user restart openclaw-gateway[-<profile>].service`
-- Windows (WSL2): `systemctl --user restart openclaw-gateway[-<profile>].service`
+- Linux systemd user service: `systemctl --user restart marv-gateway[-<profile>].service`
+- Windows (WSL2): `systemctl --user restart marv-gateway[-<profile>].service`
   - `launchctl`/`systemctl` only work if the service is installed; otherwise run `marv gateway install`.
 
 Runbook + exact service labels: [Gateway runbook](/gateway)
@@ -184,11 +184,11 @@ Runbook + exact service labels: [Gateway runbook](/gateway)
 Install a known-good version (replace `<version>` with the last working one):
 
 ```bash
-npm i -g openclaw@<version>
+npm i -g marv@<version>
 ```
 
 ```bash
-pnpm add -g openclaw@<version>
+pnpm add -g marv@<version>
 ```
 
 Tip: to see the current published version, run `npm view marv version`.

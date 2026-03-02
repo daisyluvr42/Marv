@@ -103,7 +103,7 @@ export function registerBrowserExtensionCommands(
             `- “Load unpacked” → select: ${displayPath}`,
             `- Pin “Marv Browser Relay”, then click it on the tab (badge shows ON)`,
             "",
-            `${theme.muted("Docs:")} ${formatDocsLink("/tools/chrome-extension", "docs.marv.ai/tools/chrome-extension")}`,
+            `${theme.muted("Docs:")} ${formatDocsLink("/tools/chrome-extension", "docs: /tools/chrome-extension")}`,
           ].join("\n"),
         ),
       );
@@ -120,7 +120,7 @@ export function registerBrowserExtensionCommands(
           danger(
             [
               `Chrome extension is not installed. Run: "${formatCliCommand("marv browser extension install")}"`,
-              `Docs: ${formatDocsLink("/tools/chrome-extension", "docs.marv.ai/tools/chrome-extension")}`,
+              `Docs: ${formatDocsLink("/tools/chrome-extension", "docs: /tools/chrome-extension")}`,
             ].join("\n"),
           ),
         );

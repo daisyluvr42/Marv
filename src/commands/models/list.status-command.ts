@@ -1,5 +1,5 @@
 import path from "node:path";
-import { resolveOpenClawAgentDir } from "../../agents/agent-paths.js";
+import { resolveMarvAgentDir } from "../../agents/agent-paths.js";
 import {
   resolveAgentDir,
   resolveAgentModelFallbacksOverride,
@@ -74,7 +74,7 @@ export async function modelsStatusCommand(
   }
   const cfg = loadConfig();
   const agentId = resolveKnownAgentId({ cfg, rawAgentId: opts.agent });
-  const agentDir = agentId ? resolveAgentDir(cfg, agentId) : resolveOpenClawAgentDir();
+  const agentDir = agentId ? resolveAgentDir(cfg, agentId) : resolveMarvAgentDir();
   const agentModelPrimary = agentId ? resolveAgentModelPrimary(cfg, agentId) : undefined;
   const agentFallbacksOverride = agentId
     ? resolveAgentModelFallbacksOverride(cfg, agentId)

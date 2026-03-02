@@ -2,8 +2,8 @@
  * Playwright Manager - Manages browser connections and page sessions using Playwright
  */
 
-import { chromium, Browser, Page, BrowserContext } from 'playwright-core';
-import { v4 as uuidv4 } from 'uuid';
+import { chromium, Browser, Page, BrowserContext } from "playwright-core";
+import { v4 as uuidv4 } from "uuid";
 
 export interface Connection {
   id: string;
@@ -44,7 +44,7 @@ export class PlaywrightManager {
    */
   private async getCDPWebSocketUrl(port: number): Promise<string> {
     const response = await fetch(`http://127.0.0.1:${port}/json/version`);
-    const data = await response.json() as { webSocketDebuggerUrl: string };
+    const data = (await response.json()) as { webSocketDebuggerUrl: string };
     return data.webSocketDebuggerUrl;
   }
 
@@ -79,7 +79,7 @@ export class PlaywrightManager {
         browser,
         context,
         pages: new Map(),
-        connectedAt: Date.now()
+        connectedAt: Date.now(),
       };
 
       this.connections.set(connectionId, connection);
@@ -88,7 +88,10 @@ export class PlaywrightManager {
       return connectionId;
     } catch (error) {
       console.error(`[Playwright] Failed to connect to CDP:`, error);
-      throw new Error(`Failed to connect to CDP: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+      throw new Error(
+        `Failed to connect to CDP: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
     }
   }
 
@@ -109,7 +112,7 @@ export class PlaywrightManager {
     }
 
     // Check for existing pages in the context
-    const contextPages = conn.context.pages().filter(page => !page.isClosed());
+    const contextPages = conn.context.pages().filter((page) => !page.isClosed());
 
     if (contextPages.length === 0) {
       console.log(`[Playwright] No existing pages, creating new page`);
@@ -119,7 +122,10 @@ export class PlaywrightManager {
         return page;
       } catch (error) {
         this.connections.delete(connectionId);
-        throw new Error(`Connection became invalid: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+        throw new Error(
+          `Connection became invalid: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
+        );
       }
     }
 
@@ -152,7 +158,10 @@ export class PlaywrightManager {
       return page;
     } catch (error) {
       this.connections.delete(connectionId);
-      throw new Error(`Connection became invalid: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+      throw new Error(
+        `Connection became invalid: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
     }
   }
 
@@ -184,10 +193,10 @@ export class PlaywrightManager {
   listConnections(): Array<{ id: string; connectedAt: number; pageCount: number }> {
     this.pruneDeadConnections();
 
-    return Array.from(this.connections.values()).map(conn => ({
+    return Array.from(this.connections.values()).map((conn) => ({
       id: conn.id,
       connectedAt: conn.connectedAt,
-      pageCount: conn.context.pages().filter(page => !page.isClosed()).length
+      pageCount: conn.context.pages().filter((page) => !page.isClosed()).length,
     }));
   }
 

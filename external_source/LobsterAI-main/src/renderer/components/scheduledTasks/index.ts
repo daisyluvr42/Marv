@@ -1,1 +1,1 @@
-export { default as ScheduledTasksView } from './ScheduledTasksView';
+export { default as ScheduledTasksView } from "./ScheduledTasksView";

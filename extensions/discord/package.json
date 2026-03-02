@@ -1,12 +1,12 @@
 {
-  "name": "@openclaw/discord",
+  "name": "@marv/discord",
   "version": "2026.2.18",
-  "description": "OpenClaw Discord channel plugin",
+  "description": "Marv Discord channel plugin",
   "type": "module",
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "marv": "workspace:*"
   },
-  "openclaw": {
+  "marv": {
     "extensions": [
       "./index.ts"
     ]

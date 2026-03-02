@@ -148,16 +148,16 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 
 | Variable                                    | Description                                   |
 | ------------------------------------------- | --------------------------------------------- |
-| `OPENCLAW_INSTALL_METHOD=git\|npm`          | Install method                                |
-| `OPENCLAW_VERSION=latest\|next\|<semver>`   | npm version or dist-tag                       |
-| `OPENCLAW_BETA=0\|1`                        | Use beta if available                         |
-| `OPENCLAW_GIT_DIR=<path>`                   | Checkout directory                            |
-| `OPENCLAW_GIT_UPDATE=0\|1`                  | Toggle git updates                            |
-| `OPENCLAW_NO_PROMPT=1`                      | Disable prompts                               |
-| `OPENCLAW_NO_ONBOARD=1`                     | Skip onboarding                               |
-| `OPENCLAW_DRY_RUN=1`                        | Dry run mode                                  |
-| `OPENCLAW_VERBOSE=1`                        | Debug mode                                    |
-| `OPENCLAW_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                 |
+| `MARV_INSTALL_METHOD=git\|npm`          | Install method                                |
+| `MARV_VERSION=latest\|next\|<semver>`   | npm version or dist-tag                       |
+| `MARV_BETA=0\|1`                        | Use beta if available                         |
+| `MARV_GIT_DIR=<path>`                   | Checkout directory                            |
+| `MARV_GIT_UPDATE=0\|1`                  | Toggle git updates                            |
+| `MARV_NO_PROMPT=1`                      | Disable prompts                               |
+| `MARV_NO_ONBOARD=1`                     | Skip onboarding                               |
+| `MARV_DRY_RUN=1`                        | Dry run mode                                  |
+| `MARV_VERBOSE=1`                        | Debug mode                                    |
+| `MARV_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                 |
 | `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`          | Control sharp/libvips behavior (default: `1`) |
 
   </Accordion>
@@ -230,12 +230,12 @@ Designed for environments where you want everything under a local prefix (defaul
 
 | Variable                                    | Description                                                                       |
 | ------------------------------------------- | --------------------------------------------------------------------------------- |
-| `OPENCLAW_PREFIX=<path>`                    | Install prefix                                                                    |
-| `OPENCLAW_VERSION=<ver>`                    | Marv version or dist-tag                                                          |
-| `OPENCLAW_NODE_VERSION=<ver>`               | Node version                                                                      |
-| `OPENCLAW_NO_ONBOARD=1`                     | Skip onboarding                                                                   |
-| `OPENCLAW_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                                                     |
-| `OPENCLAW_GIT_DIR=<path>`                   | Legacy cleanup lookup path (used when removing old `Peekaboo` submodule checkout) |
+| `MARV_PREFIX=<path>`                    | Install prefix                                                                    |
+| `MARV_VERSION=<ver>`                    | Marv version or dist-tag                                                          |
+| `MARV_NODE_VERSION=<ver>`               | Node version                                                                      |
+| `MARV_NO_ONBOARD=1`                     | Skip onboarding                                                                   |
+| `MARV_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                                                     |
+| `MARV_GIT_DIR=<path>`                   | Legacy cleanup lookup path (used when removing old `Peekaboo` submodule checkout) |
 | `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`          | Control sharp/libvips behavior (default: `1`)                                     |
 
   </Accordion>
@@ -278,7 +278,7 @@ Designed for environments where you want everything under a local prefix (defaul
   </Tab>
   <Tab title="Custom git directory">
     ```powershell
-    & ([scriptblock]::Create((iwr -useb https://marv.ai/install.ps1))) -InstallMethod git -GitDir "C:\openclaw"
+    & ([scriptblock]::Create((iwr -useb https://marv.ai/install.ps1))) -InstallMethod git -GitDir "C:\marv"
     ```
   </Tab>
   <Tab title="Dry run">
@@ -314,11 +314,11 @@ Designed for environments where you want everything under a local prefix (defaul
 
 | Variable                           | Description        |
 | ---------------------------------- | ------------------ |
-| `OPENCLAW_INSTALL_METHOD=git\|npm` | Install method     |
-| `OPENCLAW_GIT_DIR=<path>`          | Checkout directory |
-| `OPENCLAW_NO_ONBOARD=1`            | Skip onboarding    |
-| `OPENCLAW_GIT_UPDATE=0`            | Disable git pull   |
-| `OPENCLAW_DRY_RUN=1`               | Dry run mode       |
+| `MARV_INSTALL_METHOD=git\|npm` | Install method     |
+| `MARV_GIT_DIR=<path>`          | Checkout directory |
+| `MARV_NO_ONBOARD=1`            | Skip onboarding    |
+| `MARV_GIT_UPDATE=0`            | Disable git pull   |
+| `MARV_DRY_RUN=1`               | Dry run mode       |
 
   </Accordion>
 </AccordionGroup>
@@ -341,7 +341,7 @@ Use non-interactive flags/env vars for predictable runs.
   </Tab>
   <Tab title="install.sh (non-interactive git)">
     ```bash
-    OPENCLAW_INSTALL_METHOD=git OPENCLAW_NO_PROMPT=1 \
+    MARV_INSTALL_METHOD=git MARV_NO_PROMPT=1 \
       curl -fsSL --proto '=https' --tlsv1.2 https://marv.ai/install.sh | bash
     ```
   </Tab>

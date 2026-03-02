@@ -8,7 +8,7 @@
  *   Linux:   ~/.config/LobsterAI/logs/main.log
  */
 
-import log from 'electron-log/main';
+import log from "electron-log/main";
 
 /**
  * Initialize logging system.
@@ -16,13 +16,13 @@ import log from 'electron-log/main';
  */
 export function initLogger(): void {
   // File transport config
-  log.transports.file.level = 'debug';
+  log.transports.file.level = "debug";
   log.transports.file.maxSize = 10 * 1024 * 1024; // 10MB, then rotate to main.old.log
-  log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+  log.transports.file.format = "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
 
   // Console transport config
-  log.transports.console.level = 'debug';
-  log.transports.console.format = '{text}';
+  log.transports.console.level = "debug";
+  log.transports.console.format = "{text}";
 
   // Intercept console.* methods so all existing console.log/error/warn
   // across 25+ files are automatically captured without any code changes.
@@ -60,9 +60,9 @@ export function initLogger(): void {
   log.transports.console.level = false;
 
   // Log startup marker
-  log.info('='.repeat(60));
+  log.info("=".repeat(60));
   log.info(`LobsterAI started (${process.platform} ${process.arch})`);
-  log.info('='.repeat(60));
+  log.info("=".repeat(60));
 }
 
 /**

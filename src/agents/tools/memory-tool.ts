@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../config/config.js";
 import type { MemoryCitationsMode } from "../../config/types.memory.js";
 import { appendLedgerEvent } from "../../ledger/event-store.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
@@ -45,7 +45,7 @@ const MemoryWriteSchema = Type.Object({
   source: Type.Optional(Type.String()),
 });
 
-function resolveMemoryToolContext(options: { config?: OpenClawConfig; agentSessionKey?: string }) {
+function resolveMemoryToolContext(options: { config?: MarvConfig; agentSessionKey?: string }) {
   const cfg = options.config;
   if (!cfg) {
     return null;
@@ -60,7 +60,7 @@ function resolveMemoryToolContext(options: { config?: OpenClawConfig; agentSessi
   return { cfg, agentId };
 }
 
-function resolveMemorySoulConfig(cfg: OpenClawConfig): SoulMemoryConfig | undefined {
+function resolveMemorySoulConfig(cfg: MarvConfig): SoulMemoryConfig | undefined {
   const memoryConfig = cfg.memory;
   if (!memoryConfig) {
     return undefined;
@@ -81,7 +81,7 @@ function resolveMemorySoulConfig(cfg: OpenClawConfig): SoulMemoryConfig | undefi
 }
 
 export function createMemorySearchTool(options: {
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   agentSessionKey?: string;
 }): AnyAgentTool | null {
   const ctx = resolveMemoryToolContext(options);
@@ -269,7 +269,7 @@ function rewriteMemorySearchQuery(query: string): string {
 }
 
 export function createMemoryGetTool(options: {
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   agentSessionKey?: string;
 }): AnyAgentTool | null {
   const ctx = resolveMemoryToolContext(options);
@@ -329,7 +329,7 @@ export function createMemoryGetTool(options: {
 }
 
 export function createMemoryWriteTool(options: {
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   agentSessionKey?: string;
 }): AnyAgentTool | null {
   const ctx = resolveMemoryToolContext(options);
@@ -540,7 +540,7 @@ function sliceTextByLines(text: string, from?: number, lines?: number): string {
   return items.slice(start - 1, start - 1 + count).join("\n");
 }
 
-function resolveMemoryCitationsMode(cfg: OpenClawConfig): MemoryCitationsMode {
+function resolveMemoryCitationsMode(cfg: MarvConfig): MemoryCitationsMode {
   const mode = cfg.memory?.citations;
   if (mode === "on" || mode === "off" || mode === "auto") {
     return mode;

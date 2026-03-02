@@ -109,6 +109,7 @@ LobsterAI uses Electron's strict process isolation. All cross-process communicat
 ### Process Model
 
 **Main Process** (`src/main/main.ts`):
+
 - Window lifecycle management
 - SQLite persistence
 - CoworkRunner — Claude Agent SDK execution engine
@@ -117,10 +118,12 @@ LobsterAI uses Electron's strict process isolation. All cross-process communicat
 - Security: context isolation enabled, node integration disabled, sandbox enabled
 
 **Preload Script** (`src/main/preload.ts`):
+
 - Exposes `window.electron` API via `contextBridge`
 - Includes `cowork` namespace for session management and stream events
 
 **Renderer Process** (`src/renderer/`):
+
 - React 18 + Redux Toolkit + Tailwind CSS
 - All UI and business logic
 - Communicates with main process exclusively through IPC
@@ -172,10 +175,10 @@ Cowork is the core feature of LobsterAI — an AI working session system built o
 
 ### Execution Modes
 
-| Mode | Description |
-|------|-------------|
-| `auto` | Automatically selects based on context |
-| `local` | Direct local execution, full speed |
+| Mode      | Description                            |
+| --------- | -------------------------------------- |
+| `auto`    | Automatically selects based on context |
+| `local`   | Direct local execution, full speed     |
 | `sandbox` | Isolated Alpine Linux VM, safety first |
 
 ### Stream Events
@@ -196,24 +199,24 @@ All tool invocations involving file system access, terminal commands, or network
 
 LobsterAI ships with 16 built-in skills covering productivity, creative, and automation scenarios, configured via `SKILLs/skills.config.json`:
 
-| Skill | Function | Typical Use Case |
-|-------|----------|-----------------|
-| web-search | Web search | Information retrieval, research |
-| docx | Word document generation | Reports, proposals |
-| xlsx | Excel spreadsheet generation | Data analysis, dashboards |
-| pptx | PowerPoint creation | Presentations, business reviews |
-| pdf | PDF processing | Document parsing, format conversion |
-| remotion | Video generation (Remotion) | Promo videos, data visualization animations |
-| playwright | Web automation | Browser tasks, automated testing |
-| canvas-design | Canvas drawing and design | Posters, chart design |
-| frontend-design | Frontend UI design | Prototyping, page design |
-| develop-web-game | Web game development | Quick game prototypes |
-| scheduled-task | Scheduled tasks | Periodic automated workflows |
-| weather | Weather queries | Weather information |
-| local-tools | Local system tools | File management, system operations |
-| create-plan | Plan authoring | Project planning, task breakdown |
-| skill-creator | Custom skill creation | Extend new capabilities |
-| imap-smtp-email | Email send/receive | Email processing, auto-replies |
+| Skill            | Function                     | Typical Use Case                            |
+| ---------------- | ---------------------------- | ------------------------------------------- |
+| web-search       | Web search                   | Information retrieval, research             |
+| docx             | Word document generation     | Reports, proposals                          |
+| xlsx             | Excel spreadsheet generation | Data analysis, dashboards                   |
+| pptx             | PowerPoint creation          | Presentations, business reviews             |
+| pdf              | PDF processing               | Document parsing, format conversion         |
+| remotion         | Video generation (Remotion)  | Promo videos, data visualization animations |
+| playwright       | Web automation               | Browser tasks, automated testing            |
+| canvas-design    | Canvas drawing and design    | Posters, chart design                       |
+| frontend-design  | Frontend UI design           | Prototyping, page design                    |
+| develop-web-game | Web game development         | Quick game prototypes                       |
+| scheduled-task   | Scheduled tasks              | Periodic automated workflows                |
+| weather          | Weather queries              | Weather information                         |
+| local-tools      | Local system tools           | File management, system operations          |
+| create-plan      | Plan authoring               | Project planning, task breakdown            |
+| skill-creator    | Custom skill creation        | Extend new capabilities                     |
+| imap-smtp-email  | Email send/receive           | Email processing, auto-replies              |
 
 Custom skills can be created via `skill-creator` and hot-loaded at runtime.
 
@@ -228,13 +231,13 @@ LobsterAI supports scheduled tasks that let the Agent automatically execute recu
 
 ### Typical Scenarios
 
-| Scenario | Example |
-|----------|---------|
-| News Collection | Automatically gather industry news and generate a summary every morning |
-| Inbox Cleanup | Periodically check your inbox, categorize emails, and summarize important ones |
-| Data Reports | Generate a weekly business data analysis report |
-| Content Monitoring | Regularly check specific websites for changes and send notifications |
-| Work Reminders | Generate to-do lists or meeting notes on a schedule |
+| Scenario           | Example                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| News Collection    | Automatically gather industry news and generate a summary every morning        |
+| Inbox Cleanup      | Periodically check your inbox, categorize emails, and summarize important ones |
+| Data Reports       | Generate a weekly business data analysis report                                |
+| Content Monitoring | Regularly check specific websites for changes and send notifications           |
+| Work Reminders     | Generate to-do lists or meeting notes on a schedule                            |
 
 Scheduled tasks are powered by Cron expressions, supporting minute, hourly, daily, weekly, and monthly intervals. When a task fires, it automatically starts a Cowork session. Results can be viewed on the desktop or pushed to your phone via IM.
 
@@ -242,12 +245,12 @@ Scheduled tasks are powered by Cron expressions, supporting minute, hourly, dail
 
 LobsterAI can bridge the Agent to multiple IM platforms. Send a message from your phone via IM to remotely trigger the desktop Agent — command your personal assistant anytime, anywhere.
 
-| Platform | Protocol | Description |
-|----------|----------|-------------|
-| DingTalk | DingTalk Stream | Enterprise bot with bidirectional communication |
-| Feishu (Lark) | Lark SDK | Feishu app bot |
-| Telegram | grammY | Bot API integration |
-| Discord | discord.js | Discord bot integration |
+| Platform      | Protocol        | Description                                     |
+| ------------- | --------------- | ----------------------------------------------- |
+| DingTalk      | DingTalk Stream | Enterprise bot with bidirectional communication |
+| Feishu (Lark) | Lark SDK        | Feishu app bot                                  |
+| Telegram      | grammY          | Bot API integration                             |
+| Discord       | discord.js      | Discord bot integration                         |
 
 Configure the corresponding platform Token/Secret in the Settings panel to enable. Once set up, you can send instructions directly to the Agent from your phone IM (e.g., "analyze this dataset", "make a weekly summary PPT"), and the Agent will execute on the desktop and return results.
 
@@ -265,36 +268,36 @@ LobsterAI has a built-in memory system that remembers your personal information 
 
 After each conversation turn, the memory extractor analyzes the dialogue:
 
-| Extraction Type | Example | Confidence |
-|----------------|---------|------------|
-| Personal Profile | "My name is Alex", "I'm a product manager" | High |
-| Personal Ownership | "I have a cat", "I use a MacBook" | High |
-| Personal Preferences | "I like a concise style", "I prefer English replies" | Medium-High |
+| Extraction Type       | Example                                                   | Confidence  |
+| --------------------- | --------------------------------------------------------- | ----------- |
+| Personal Profile      | "My name is Alex", "I'm a product manager"                | High        |
+| Personal Ownership    | "I have a cat", "I use a MacBook"                         | High        |
+| Personal Preferences  | "I like a concise style", "I prefer English replies"      | Medium-High |
 | Assistant Preferences | "Don't use emojis in replies", "Write code in TypeScript" | Medium-High |
-| Explicit Requests | "Remember this", "Please note that down" | Highest |
+| Explicit Requests     | "Remember this", "Please note that down"                  | Highest     |
 
 Extracted memories are automatically deduplicated and merged, then injected into the Agent's context in subsequent sessions — making responses more personalized and aligned with your needs.
 
 ### Memory Settings
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Memory Toggle | Enable or disable the memory feature | On |
-| Auto Capture | Whether to automatically extract memories from conversations | On |
+| Setting            | Description                                                        | Default  |
+| ------------------ | ------------------------------------------------------------------ | -------- |
+| Memory Toggle      | Enable or disable the memory feature                               | On       |
+| Auto Capture       | Whether to automatically extract memories from conversations       | On       |
 | Capture Strictness | Strict / Standard / Relaxed — controls auto-extraction sensitivity | Standard |
-| Max Injected Items | Maximum number of memories injected per session (1–60) | 12 |
+| Max Injected Items | Maximum number of memories injected per session (1–60)             | 12       |
 
 ## Data Storage
 
 All data is stored in a local SQLite database (`lobsterai.sqlite` in the user data directory).
 
-| Table | Purpose |
-|-------|---------|
-| `kv` | App configuration key-value pairs |
-| `cowork_config` | Cowork settings (working directory, system prompt, execution mode) |
-| `cowork_sessions` | Session metadata |
-| `cowork_messages` | Message history |
-| `scheduled_tasks` | Scheduled task definitions |
+| Table             | Purpose                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `kv`              | App configuration key-value pairs                                  |
+| `cowork_config`   | Cowork settings (working directory, system prompt, execution mode) |
+| `cowork_sessions` | Session metadata                                                   |
+| `cowork_messages` | Message history                                                    |
+| `scheduled_tasks` | Scheduled task definitions                                         |
 
 ## Security Model
 
@@ -309,19 +312,19 @@ LobsterAI enforces security at multiple layers:
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Electron 40 |
-| Frontend | React 18 + TypeScript |
-| Build | Vite 5 |
-| Styling | Tailwind CSS 3 |
-| State | Redux Toolkit |
-| AI Engine | Claude Agent SDK (Anthropic) |
-| Storage | sql.js |
-| Markdown | react-markdown + remark-gfm + rehype-katex |
-| Diagrams | Mermaid |
-| Security | DOMPurify |
-| IM | dingtalk-stream · @larksuiteoapi/node-sdk · grammY · discord.js |
+| Layer     | Technology                                                      |
+| --------- | --------------------------------------------------------------- |
+| Framework | Electron 40                                                     |
+| Frontend  | React 18 + TypeScript                                           |
+| Build     | Vite 5                                                          |
+| Styling   | Tailwind CSS 3                                                  |
+| State     | Redux Toolkit                                                   |
+| AI Engine | Claude Agent SDK (Anthropic)                                    |
+| Storage   | sql.js                                                          |
+| Markdown  | react-markdown + remark-gfm + rehype-katex                      |
+| Diagrams  | Mermaid                                                         |
+| Security  | DOMPurify                                                       |
+| IM        | dingtalk-stream · @larksuiteoapi/node-sdk · grammY · discord.js |
 
 ## Configuration
 

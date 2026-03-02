@@ -26,7 +26,7 @@ export type MarvHookMetadata = {
   install?: HookInstallSpec[];
 };
 
-export type OpenClawHookMetadata = MarvHookMetadata;
+export type MarvHookMetadata = MarvHookMetadata;
 
 export type HookInvocationPolicy = {
   enabled: boolean;
@@ -36,23 +36,23 @@ export type ParsedHookFrontmatter = Record<string, string>;
 
 export type MarvHookSource = "marv-bundled" | "marv-managed" | "marv-workspace" | "marv-plugin";
 
-export type LegacyOpenClawHookSource =
-  | "openclaw-bundled"
-  | "openclaw-managed"
-  | "openclaw-workspace"
-  | "openclaw-plugin";
+export type LegacyMarvHookSource =
+  | "marv-bundled"
+  | "marv-managed"
+  | "marv-workspace"
+  | "marv-plugin";
 
-export type HookSource = MarvHookSource | LegacyOpenClawHookSource;
+export type HookSource = MarvHookSource | LegacyMarvHookSource;
 
-const LEGACY_HOOK_SOURCE_ALIASES: Record<LegacyOpenClawHookSource, MarvHookSource> = {
-  "openclaw-bundled": "marv-bundled",
-  "openclaw-managed": "marv-managed",
-  "openclaw-workspace": "marv-workspace",
-  "openclaw-plugin": "marv-plugin",
+const LEGACY_HOOK_SOURCE_ALIASES: Record<LegacyMarvHookSource, MarvHookSource> = {
+  "marv-bundled": "marv-bundled",
+  "marv-managed": "marv-managed",
+  "marv-workspace": "marv-workspace",
+  "marv-plugin": "marv-plugin",
 };
 
 export function normalizeHookSource(source: HookSource): MarvHookSource {
-  return LEGACY_HOOK_SOURCE_ALIASES[source as LegacyOpenClawHookSource] ?? source;
+  return LEGACY_HOOK_SOURCE_ALIASES[source as LegacyMarvHookSource] ?? source;
 }
 
 export function isPluginHookSource(source: HookSource): boolean {

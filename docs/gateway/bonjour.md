@@ -21,7 +21,7 @@ boundary. You can keep the same discovery UX by switching to **unicast DNS‑SD*
 High‑level steps:
 
 1. Run a DNS server on the gateway host (reachable over Tailnet).
-2. Publish DNS‑SD records for `_openclaw-gw._tcp` under a dedicated zone
+2. Publish DNS‑SD records for `_marv-gw._tcp` under a dedicated zone
    (example: `marv.internal.`).
 3. Configure Tailscale **split DNS** so your chosen domain resolves via that
    DNS server for clients (including iOS).
@@ -47,13 +47,13 @@ marv dns setup --apply
 This installs CoreDNS and configures it to:
 
 - listen on port 53 only on the gateway’s Tailscale interfaces
-- serve your chosen domain (example: `marv.internal.`) from `~/.openclaw/dns/<domain>.db`
+- serve your chosen domain (example: `marv.internal.`) from `~/.marv/dns/<domain>.db`
 
 Validate from a tailnet‑connected machine:
 
 ```bash
-dns-sd -B _openclaw-gw._tcp marv.internal.
-dig @<TAILNET_IPV4> -p 53 _openclaw-gw._tcp.marv.internal PTR +short
+dns-sd -B _marv-gw._tcp marv.internal.
+dig @<TAILNET_IPV4> -p 53 _marv-gw._tcp.marv.internal PTR +short
 ```
 
 ### Tailscale DNS settings
@@ -64,7 +64,7 @@ In the Tailscale admin console:
 - Add split DNS so your discovery domain uses that nameserver.
 
 Once clients accept tailnet DNS, iOS nodes can browse
-`_openclaw-gw._tcp` in your discovery domain without multicast.
+`_marv-gw._tcp` in your discovery domain without multicast.
 
 ### Gateway listener security (recommended)
 
@@ -73,16 +73,16 @@ access, bind explicitly and keep auth enabled.
 
 For tailnet‑only setups:
 
-- Set `gateway.bind: "tailnet"` in `~/.openclaw/marv.json`.
+- Set `gateway.bind: "tailnet"` in `~/.marv/marv.json`.
 - Restart the Gateway (or restart the macOS menubar app).
 
 ## What advertises
 
-Only the Gateway advertises `_openclaw-gw._tcp`.
+Only the Gateway advertises `_marv-gw._tcp`.
 
 ## Service types
 
-- `_openclaw-gw._tcp` — gateway transport beacon (used by macOS/iOS/Android nodes).
+- `_marv-gw._tcp` — gateway transport beacon (used by macOS/iOS/Android nodes).
 
 ## TXT keys (non‑secret hints)
 
@@ -114,13 +114,13 @@ Useful built‑in tools:
 - Browse instances:
 
   ```bash
-  dns-sd -B _openclaw-gw._tcp local.
+  dns-sd -B _marv-gw._tcp local.
   ```
 
 - Resolve one instance (replace `<instance>`):
 
   ```bash
-  dns-sd -L "<instance>" _openclaw-gw._tcp local.
+  dns-sd -L "<instance>" _marv-gw._tcp local.
   ```
 
 If browsing works but resolving fails, you’re usually hitting a LAN policy or
@@ -137,7 +137,7 @@ The Gateway writes a rolling log file (printed on startup as
 
 ## Debugging on iOS node
 
-The iOS node uses `NWBrowser` to discover `_openclaw-gw._tcp`.
+The iOS node uses `NWBrowser` to discover `_marv-gw._tcp`.
 
 To capture logs:
 
@@ -165,11 +165,11 @@ sequences (e.g. spaces become `\032`).
 
 ## Disabling / configuration
 
-- `OPENCLAW_DISABLE_BONJOUR=1` disables advertising (legacy: `OPENCLAW_DISABLE_BONJOUR`).
-- `gateway.bind` in `~/.openclaw/marv.json` controls the Gateway bind mode.
-- `OPENCLAW_SSH_PORT` overrides the SSH port advertised in TXT (legacy: `OPENCLAW_SSH_PORT`).
-- `OPENCLAW_TAILNET_DNS` publishes a MagicDNS hint in TXT (legacy: `OPENCLAW_TAILNET_DNS`).
-- `OPENCLAW_CLI_PATH` overrides the advertised CLI path (legacy: `OPENCLAW_CLI_PATH`).
+- `MARV_DISABLE_BONJOUR=1` disables advertising (legacy: `MARV_DISABLE_BONJOUR`).
+- `gateway.bind` in `~/.marv/marv.json` controls the Gateway bind mode.
+- `MARV_SSH_PORT` overrides the SSH port advertised in TXT (legacy: `MARV_SSH_PORT`).
+- `MARV_TAILNET_DNS` publishes a MagicDNS hint in TXT (legacy: `MARV_TAILNET_DNS`).
+- `MARV_CLI_PATH` overrides the advertised CLI path (legacy: `MARV_CLI_PATH`).
 
 ## Related docs
 

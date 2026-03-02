@@ -213,14 +213,14 @@ function auditGatewayToken(
   }
   const serviceToken =
     command?.environment?.MARV_GATEWAY_TOKEN?.trim() ??
-    command?.environment?.OPENCLAW_GATEWAY_TOKEN?.trim();
+    command?.environment?.MARV_GATEWAY_TOKEN?.trim();
   if (serviceToken === expectedToken) {
     return;
   }
   issues.push({
     code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,
     message:
-      "Gateway service MARV_GATEWAY_TOKEN does not match gateway.auth.token in marv.json (legacy OPENCLAW_GATEWAY_TOKEN also supported)",
+      "Gateway service MARV_GATEWAY_TOKEN does not match gateway.auth.token in marv.json (legacy MARV_GATEWAY_TOKEN also supported)",
     detail: serviceToken ? "service token is stale" : "service token is missing",
     level: "recommended",
   });

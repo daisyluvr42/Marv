@@ -100,10 +100,10 @@ marv onboard --install-daemon
 marv status
 
 # Check service
-systemctl --user status openclaw-gateway.service
+systemctl --user status marv-gateway.service
 
 # View logs
-journalctl --user -u openclaw-gateway.service -f
+journalctl --user -u marv-gateway.service -f
 ```
 
 ## 6) 访问控制面板
@@ -201,13 +201,13 @@ htop
 
 所有状态存储在：
 
-- `~/.openclaw/` — 配置、凭证、会话数据
-- `~/.openclaw/workspace/` — 工作区（SOUL.md、记忆等）
+- `~/.marv/` — 配置、凭证、会话数据
+- `~/.marv/workspace/` — 工作区（SOUL.md、记忆等）
 
 这些在重启后保留。定期备份：
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.marv ~/.openclaw/workspace
+tar -czvf marv-backup.tar.gz ~/.marv ~/.marv/workspace
 ```
 
 ---

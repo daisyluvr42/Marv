@@ -212,7 +212,7 @@ function resolveBrowserBaseUrl(params: {
   }
   if (!resolved.enabled) {
     throw new Error(
-      "Browser control is disabled. Set browser.enabled=true in ~/.marv/marv.json (legacy ~/.openclaw/openclaw.json).",
+      "Browser control is disabled. Set browser.enabled=true in ~/.marv/marv.json (legacy ~/.marv/marv.json).",
     );
   }
   return undefined;
@@ -230,7 +230,7 @@ export function createBrowserTool(opts?: {
     name: "browser",
     description: [
       "Control the browser via Marv's browser control server (status/start/stop/profiles/tabs/open/snapshot/screenshot/actions).",
-      'Profiles: use profile="chrome" for Chrome extension relay takeover (your existing Chrome tabs). Use profile="marv" for the isolated marv-managed browser (legacy profile="openclaw" is still supported).',
+      'Profiles: use profile="chrome" for Chrome extension relay takeover (your existing Chrome tabs). Use profile="marv" for the isolated marv-managed browser (legacy profile="marv" is still supported).',
       'If the user mentions the Chrome extension / Browser Relay / toolbar button / “attach tab”, ALWAYS use profile="chrome" (do not ask which profile).',
       'When a node-hosted browser proxy is available, the tool may auto-route to it. Pin a node with node=<id|name> or target="node".',
       "Chrome extension relay needs an attached tab: user must click the Marv Browser Relay toolbar icon on the tab (badge ON). If no tab is connected, ask them to attach it.",

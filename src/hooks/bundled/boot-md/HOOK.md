@@ -1,7 +1,7 @@
 ---
 name: boot-md
 description: "Run BOOT.md on gateway startup"
-homepage: https://docs.marv.ai/automation/hooks#boot-md
+homepage: /automation/hooks#boot-md
 metadata:
   {
     "marv":

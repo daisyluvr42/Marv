@@ -8,7 +8,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../config/config.js";
 import { resolveStateDir } from "../../../config/paths.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import {
@@ -24,7 +24,7 @@ import { generateSlugViaLLM } from "../../llm-slug-generator.js";
 
 const log = createSubsystemLogger("hooks/session-memory");
 
-function resolveMemorySoulConfig(cfg?: OpenClawConfig): SoulMemoryConfig | undefined {
+function resolveMemorySoulConfig(cfg?: MarvConfig): SoulMemoryConfig | undefined {
   const memoryConfig = cfg?.memory;
   if (!memoryConfig) {
     return undefined;
@@ -203,7 +203,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
     log.debug("Hook triggered for /new command");
 
     const context = event.context || {};
-    const cfg = context.cfg as OpenClawConfig | undefined;
+    const cfg = context.cfg as MarvConfig | undefined;
     const agentId = resolveAgentIdFromSessionKey(event.sessionKey);
     const workspaceDir = cfg
       ? resolveAgentWorkspaceDir(cfg, agentId)
@@ -272,7 +272,7 @@ const saveSessionToMemory: HookHandler = async (event) => {
 
       // Avoid calling the model provider in unit tests; keep hooks fast and deterministic.
       const isTestEnv =
-        process.env.OPENCLAW_TEST_FAST === "1" ||
+        process.env.MARV_TEST_FAST === "1" ||
         process.env.VITEST === "true" ||
         process.env.VITEST === "1" ||
         process.env.NODE_ENV === "test";

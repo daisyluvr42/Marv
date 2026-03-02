@@ -79,8 +79,8 @@ marv sandbox recreate --all --force        # Skip confirmation
 
 ```bash
 # Pull new image
-docker pull openclaw-sandbox:latest
-docker tag openclaw-sandbox:latest openclaw-sandbox:bookworm-slim
+docker pull marv-sandbox:latest
+docker tag marv-sandbox:latest marv-sandbox:bookworm-slim
 
 # Update config to use new image
 # Edit config: agents.defaults.sandbox.docker.image (or agents.list[].sandbox.docker.image)
@@ -127,7 +127,7 @@ marv sandbox recreate --agent alfred
 
 ## 配置
 
-沙箱设置位于 `~/.openclaw/marv.json` 的 `agents.defaults.sandbox` 下（每个智能体的覆盖设置在 `agents.list[].sandbox` 中）：
+沙箱设置位于 `~/.marv/marv.json` 的 `agents.defaults.sandbox` 下（每个智能体的覆盖设置在 `agents.list[].sandbox` 中）：
 
 ```jsonc
 {
@@ -137,8 +137,8 @@ marv sandbox recreate --agent alfred
         "mode": "all", // off, non-main, all
         "scope": "agent", // session, agent, shared
         "docker": {
-          "image": "openclaw-sandbox:bookworm-slim",
-          "containerPrefix": "openclaw-sbx-",
+          "image": "marv-sandbox:bookworm-slim",
+          "containerPrefix": "marv-sbx-",
           // ... more Docker options
         },
         "prune": {

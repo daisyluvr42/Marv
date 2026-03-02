@@ -33,7 +33,7 @@ curl -fsSL https://marv.ai/install.sh | bash
   curl -fsSL https://marv.ai/install.sh | bash -s -- --install-method git --no-onboard
   ```
   安装程序**仅**在仓库干净时才会执行 `git pull --rebase`。
-- 对于**全局安装**，脚本底层使用 `npm install -g openclaw@latest`。
+- 对于**全局安装**，脚本底层使用 `npm install -g marv@latest`。
 - 旧版说明：`clawdbot` 仍可作为兼容性垫片使用。
 
 ## 更新之前
@@ -41,20 +41,20 @@ curl -fsSL https://marv.ai/install.sh | bash
 - 了解你的安装方式：**全局**（npm/pnpm）还是**源码**（git clone）。
 - 了解你的 Gateway 网关运行方式：**前台终端**还是**受管理服务**（launchd/systemd）。
 - 快照你的定制内容：
-  - 配置：`~/.openclaw/marv.json`
-  - 凭证：`~/.openclaw/credentials/`
-  - 工作区：`~/.openclaw/workspace`
+  - 配置：`~/.marv/marv.json`
+  - 凭证：`~/.marv/credentials/`
+  - 工作区：`~/.marv/workspace`
 
 ## 更新（全局安装）
 
 全局安装（选择一个）：
 
 ```bash
-npm i -g openclaw@latest
+npm i -g marv@latest
 ```
 
 ```bash
-pnpm add -g openclaw@latest
+pnpm add -g marv@latest
 ```
 
 我们**不**推荐将 Bun 用于 Gateway 网关运行时（WhatsApp/Telegram 有 bug）。
@@ -137,7 +137,7 @@ marv health
 
 说明：
 
-- 当你运行打包的 `marv` 二进制文件（[`marv.mjs`](https://github.com/openclaw/openclaw/blob/main/marv.mjs)）或使用 Node 运行 `dist/` 时，`pnpm build` 很重要。
+- 当你运行打包的 `marv` 二进制文件（[`marv.mjs`](marv.mjs)）或使用 Node 运行 `dist/` 时，`pnpm build` 很重要。
 - 如果你从仓库 checkout 运行而没有全局安装，CLI 命令使用 `pnpm marv ...`。
 - 如果你直接从 TypeScript 运行（`pnpm marv ...`），通常不需要重新构建，但**配置迁移仍然适用** → 运行 doctor。
 - 在全局和 git 安装之间切换很容易：安装另一种方式，然后运行 `marv doctor` 以便将 Gateway 网关服务入口点重写为当前安装。
@@ -173,8 +173,8 @@ marv logs --follow
 如果你使用受管理服务：
 
 - macOS launchd（应用捆绑的 LaunchAgent）：`launchctl kickstart -k gui/$UID/bot.molt.gateway`（使用 `bot.molt.<profile>`；旧版 `com.marv.*` 仍然有效）
-- Linux systemd 用户服务：`systemctl --user restart openclaw-gateway[-<profile>].service`
-- Windows（WSL2）：`systemctl --user restart openclaw-gateway[-<profile>].service`
+- Linux systemd 用户服务：`systemctl --user restart marv-gateway[-<profile>].service`
+- Windows（WSL2）：`systemctl --user restart marv-gateway[-<profile>].service`
   - `launchctl`/`systemctl` 仅在服务已安装时有效；否则运行 `marv gateway install`。
 
 运行手册 + 确切的服务标签：[Gateway 网关运行手册](/gateway)
@@ -186,11 +186,11 @@ marv logs --follow
 安装已知良好的版本（将 `<version>` 替换为最后可用的版本）：
 
 ```bash
-npm i -g openclaw@<version>
+npm i -g marv@<version>
 ```
 
 ```bash
-pnpm add -g openclaw@<version>
+pnpm add -g marv@<version>
 ```
 
 提示：要查看当前发布的版本，运行 `npm view marv version`。

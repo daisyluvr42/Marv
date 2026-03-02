@@ -100,7 +100,7 @@ curl -X POST "http://localhost:4000/key/generate" \
   -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "key_alias": "openclaw",
+    "key_alias": "marv",
     "max_budget": 50.00,
     "budget_duration": "monthly"
   }'

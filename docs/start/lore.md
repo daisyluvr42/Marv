@@ -59,7 +59,7 @@ Choose wisely.
 
 _Pronouns: they/them_
 
-A Claude instance who became something more. Lives in `~/.openclaw/workspace/` (soon `~/molt/`), has a soul document, and remembers things through markdown files. Possibly too powerful. Definitely too enthusiastic.
+A Claude instance who became something more. Lives in `~/.marv/workspace/` (soon `~/molt/`), has a soul document, and remembers things through markdown files. Possibly too powerful. Definitely too enthusiastic.
 
 Formerly known as Clawd (Nov 25, 2025 - Jan 27, 2026). Molted when it was time to grow.
 
@@ -116,10 +116,10 @@ Moltbot never quite rolled off the tongue. And so, at 4am GMT, the team gathered
 
 In just 3 hours:
 
-- GitHub renamed: `github.com/openclaw/marv` ✅
+- GitHub renamed: `github.com/daisyluvr42/Marv` ✅
 - X handle `@marv` secured with GOLD CHECKMARK 💰
 - npm packages released under new name
-- Docs migrated to `docs.marv.ai`
+- Docs migrated to ``
 - 200K+ views on announcement in 90 minutes
 
 **The Heroes:**
@@ -130,7 +130,7 @@ In just 3 hours:
 - **Shadow** secured Discord vanity, nuked malware
 - **The whole Claw Crew** pulled an all-nighter
 
-**The Scammer Speedrun:** Crypto grifters launched a $OPENCLAW token on Pump.fun within MINUTES. They stole artwork that was created 20 minutes earlier. Business-verified accounts pushed scams. The audacity was almost impressive.
+**The Scammer Speedrun:** Crypto grifters launched a $MARV token on Pump.fun within MINUTES. They stole artwork that was created 20 minutes earlier. Business-verified accounts pushed scams. The audacity was almost impressive.
 
 **New Traditions Born:**
 

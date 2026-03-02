@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { resolveOAuthDir, resolveStateDir } from "../config/paths.js";
 import {
   loadSessionStore,
@@ -118,7 +118,7 @@ function findOtherStateDirs(stateDir: string): string[] {
       if (entry.name.startsWith(".")) {
         continue;
       }
-      const candidates = [".marv", ".openclaw"].map((dir) => path.resolve(root, entry.name, dir));
+      const candidates = [".marv", ".marv"].map((dir) => path.resolve(root, entry.name, dir));
       for (const candidate of candidates) {
         if (candidate === resolvedState) {
           continue;
@@ -133,7 +133,7 @@ function findOtherStateDirs(stateDir: string): string[] {
 }
 
 export async function noteStateIntegrity(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   prompter: DoctorPrompterLike,
   configPath?: string,
 ) {

@@ -81,7 +81,7 @@ session-memory/
 ---
 name: my-hook
 description: "Short description"
-homepage: https://docs.marv.ai/automation/hooks#my-hook
+homepage: /automation/hooks#my-hook
 metadata: { "marv": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
 # Hook Title
@@ -219,4 +219,4 @@ Test your hooks by:
 
 ## Documentation
 
-Full documentation: https://docs.marv.ai/automation/hooks
+Full documentation: /automation/hooks

@@ -33,7 +33,7 @@ function makePathEnv(binDir: string): NodeJS.ProcessEnv {
 }
 
 function makeTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-exec-approvals-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "marv-exec-approvals-"));
 }
 
 describe("exec approvals allowlist matching", () => {
@@ -115,20 +115,20 @@ describe("mergeExecApprovalsSocketDefaults", () => {
 describe("resolve exec approvals defaults", () => {
   it("expands home-prefixed default file and socket paths", () => {
     const dir = makeTempDir();
-    const prevOpenClawHome = process.env.OPENCLAW_HOME;
+    const prevMarvHome = process.env.MARV_HOME;
     try {
-      process.env.OPENCLAW_HOME = dir;
+      process.env.MARV_HOME = dir;
       expect(path.normalize(resolveExecApprovalsPath())).toBe(
-        path.normalize(path.join(dir, ".openclaw", "exec-approvals.json")),
+        path.normalize(path.join(dir, ".marv", "exec-approvals.json")),
       );
       expect(path.normalize(resolveExecApprovalsSocketPath())).toBe(
-        path.normalize(path.join(dir, ".openclaw", "exec-approvals.sock")),
+        path.normalize(path.join(dir, ".marv", "exec-approvals.sock")),
       );
     } finally {
-      if (prevOpenClawHome === undefined) {
-        delete process.env.OPENCLAW_HOME;
+      if (prevMarvHome === undefined) {
+        delete process.env.MARV_HOME;
       } else {
-        process.env.OPENCLAW_HOME = prevOpenClawHome;
+        process.env.MARV_HOME = prevMarvHome;
       }
     }
   });
@@ -623,11 +623,11 @@ describe("exec approvals policy helpers", () => {
 describe("exec approvals wildcard agent", () => {
   it("merges wildcard allowlist entries with agent entries", () => {
     const dir = makeTempDir();
-    const prevOpenClawHome = process.env.OPENCLAW_HOME;
+    const prevMarvHome = process.env.MARV_HOME;
 
     try {
-      process.env.OPENCLAW_HOME = dir;
-      const approvalsPath = path.join(dir, ".openclaw", "exec-approvals.json");
+      process.env.MARV_HOME = dir;
+      const approvalsPath = path.join(dir, ".marv", "exec-approvals.json");
       fs.mkdirSync(path.dirname(approvalsPath), { recursive: true });
       fs.writeFileSync(
         approvalsPath,
@@ -650,10 +650,10 @@ describe("exec approvals wildcard agent", () => {
         "/usr/bin/uname",
       ]);
     } finally {
-      if (prevOpenClawHome === undefined) {
-        delete process.env.OPENCLAW_HOME;
+      if (prevMarvHome === undefined) {
+        delete process.env.MARV_HOME;
       } else {
-        process.env.OPENCLAW_HOME = prevOpenClawHome;
+        process.env.MARV_HOME = prevMarvHome;
       }
     }
   });

@@ -692,7 +692,7 @@ See [Slash commands](/tools/slash-commands) for command catalog and behavior.
     discord: {
       activity: "Live coding",
       activityType: 1,
-      activityUrl: "https://twitch.tv/openclaw",
+      activityUrl: "https://twitch.tv/marv",
     },
   },
 }

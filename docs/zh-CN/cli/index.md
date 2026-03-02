@@ -61,8 +61,8 @@ x-i18n:
 
 ## 全局标志
 
-- `--dev`：将状态隔离到 `~/.openclaw-dev` 下并调整默认端口。
-- `--profile <name>`：将状态隔离到 `~/.openclaw-<name>` 下。
+- `--dev`：将状态隔离到 `~/.marv-dev` 下并调整默认端口。
+- `--profile <name>`：将状态隔离到 `~/.marv-<name>` 下。
 - `--no-color`：禁用 ANSI 颜色。
 - `--update`：`marv update` 的简写（仅限源码安装）。
 - `-V`、`--version`、`-v`：打印版本并退出。
@@ -290,7 +290,7 @@ marv [--dev] [--profile <name>] <command>
 
 选项：
 
-- `--workspace <dir>`：智能体工作区路径（默认 `~/.openclaw/workspace`）。
+- `--workspace <dir>`：智能体工作区路径（默认 `~/.marv/workspace`）。
 - `--wizard`：运行新手引导向导。
 - `--non-interactive`：无提示运行向导。
 - `--mode <local|remote>`：向导模式。

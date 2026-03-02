@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prependSystemEvents } from "../auto-reply/reply/session-updates.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { isCronSystemEvent } from "./heartbeat-runner.js";
 import { enqueueSystemEvent, peekSystemEvents, resetSystemEventsForTest } from "./system-events.js";
@@ -10,7 +10,7 @@ vi.mock("../ledger/event-store.js", () => ({
   appendLedgerEvent: (...args: unknown[]) => appendLedgerEventMock(...args),
 }));
 
-const cfg = {} as unknown as OpenClawConfig;
+const cfg = {} as unknown as MarvConfig;
 const mainKey = resolveMainSessionKey(cfg);
 
 describe("system events (session routing)", () => {

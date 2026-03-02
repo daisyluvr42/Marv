@@ -10,7 +10,7 @@ export interface SearchResult {
   /** Text snippet/description */
   snippet: string;
   /** Source engine */
-  source: 'bing' | 'google';
+  source: "bing" | "google";
   /** Position in results (1-based) */
   position: number;
 }
@@ -19,7 +19,7 @@ export interface SearchResponse {
   /** Search query */
   query: string;
   /** Engine used for this response */
-  engine: 'bing' | 'google';
+  engine: "bing" | "google";
   /** Search results */
   results: SearchResult[];
   /** Total results found */

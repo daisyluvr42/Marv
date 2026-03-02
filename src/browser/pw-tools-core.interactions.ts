@@ -541,7 +541,7 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
   try {
     if (boxes.length > 0) {
       await page.evaluate((labels) => {
-        const existing = document.querySelectorAll("[data-marv-labels], [data-openclaw-labels]");
+        const existing = document.querySelectorAll("[data-marv-labels], [data-marv-labels]");
         existing.forEach((el) => el.remove());
 
         const root = document.createElement("div");
@@ -596,7 +596,7 @@ export async function screenshotWithLabelsViaPlaywright(opts: {
   } finally {
     await page
       .evaluate(() => {
-        const existing = document.querySelectorAll("[data-marv-labels], [data-openclaw-labels]");
+        const existing = document.querySelectorAll("[data-marv-labels], [data-marv-labels]");
         existing.forEach((el) => el.remove());
       })
       .catch(() => {});

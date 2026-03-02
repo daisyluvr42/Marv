@@ -304,5 +304,5 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   defaultRuntime.log(`${label("Troubles:")} run ${formatCliCommand("marv status")}`);
-  defaultRuntime.log(`${label("Troubleshooting:")} https://docs.marv.ai/troubleshooting`);
+  defaultRuntime.log(`${label("Troubleshooting:")} /troubleshooting`);
 }

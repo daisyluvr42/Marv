@@ -50,4 +50,4 @@ Use one of these (all supported):
 The service target depends on OS:
 
 - macOS: LaunchAgent (`bot.molt.gateway` or `bot.molt.<profile>`; legacy `com.marv.*`)
-- Linux/WSL2: systemd user service (`openclaw-gateway[-<profile>].service`)
+- Linux/WSL2: systemd user service (`marv-gateway[-<profile>].service`)

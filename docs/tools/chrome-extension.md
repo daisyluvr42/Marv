@@ -9,7 +9,7 @@ title: "Chrome Extension"
 
 # Chrome extension (browser relay)
 
-The Marv Chrome extension lets the agent control your **existing Chrome tabs** (your normal Chrome window) instead of launching a separate openclaw-managed Chrome profile.
+The Marv Chrome extension lets the agent control your **existing Chrome tabs** (your normal Chrome window) instead of launching a separate marv-managed Chrome profile.
 
 Attach/detach happens via a **single Chrome toolbar button**.
 
@@ -161,7 +161,7 @@ This is powerful and risky. Treat it like giving the model “hands on your brow
   - click/type/navigate in that tab
   - read page content
   - access whatever the tab’s logged-in session can access
-- **This is not isolated** like the dedicated openclaw-managed profile.
+- **This is not isolated** like the dedicated marv-managed profile.
   - If you attach to your daily-driver profile/tab, you’re granting access to that account state.
 
 Recommendations:

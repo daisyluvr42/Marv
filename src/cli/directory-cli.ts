@@ -82,7 +82,7 @@ export function registerDirectoryCli(program: Command) {
           ],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/directory",
-          "docs.marv.ai/cli/directory",
+          "docs: /cli/directory",
         )}\n`,
     )
     .action(() => {

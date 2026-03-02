@@ -16,7 +16,7 @@ Native Linux companion apps are planned. Contributions are welcome if you want t
 ## Beginner quick path (VPS)
 
 1. Install Node 22+
-2. `npm i -g openclaw@latest`
+2. `npm i -g marv@latest`
 3. `marv onboard --install-daemon`
 4. From your laptop: `ssh -N -L 18789:127.0.0.1:18789 <user>@<host>`
 5. Open `http://127.0.0.1:18789/` and paste your token
@@ -70,7 +70,7 @@ live in the [Gateway runbook](/gateway).
 
 Minimal setup:
 
-Create `~/.config/systemd/user/openclaw-gateway[-<profile>].service`:
+Create `~/.config/systemd/user/marv-gateway[-<profile>].service`:
 
 ```
 [Unit]
@@ -90,5 +90,5 @@ WantedBy=default.target
 Enable it:
 
 ```
-systemctl --user enable --now openclaw-gateway[-<profile>].service
+systemctl --user enable --now marv-gateway[-<profile>].service
 ```

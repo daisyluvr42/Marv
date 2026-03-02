@@ -3,9 +3,9 @@
  * Manages Discord bot using discord.js
  */
 
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
-import * as path from 'path';
+import { EventEmitter } from "events";
+import * as fs from "fs";
+import * as path from "path";
 import {
   Client,
   GatewayIntentBits,
@@ -14,24 +14,20 @@ import {
   Events,
   AttachmentBuilder,
   type Client as DiscordClient,
-} from 'discord.js';
-import {
-  DiscordConfig,
-  DiscordGatewayStatus,
-  IMMessage,
-  DEFAULT_DISCORD_STATUS,
-} from './types';
-import { parseMediaMarkers, stripMediaMarkers } from './dingtalkMediaParser';
+} from "discord.js";
+import { parseMediaMarkers, stripMediaMarkers } from "./dingtalkMediaParser";
+import { DiscordConfig, DiscordGatewayStatus, IMMessage, DEFAULT_DISCORD_STATUS } from "./types";
 
 export class DiscordGateway extends EventEmitter {
   private client: Client | null = null;
   private config: DiscordConfig | null = null;
   private status: DiscordGatewayStatus = { ...DEFAULT_DISCORD_STATUS };
-  private onMessageCallback?: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>;
+  private onMessageCallback?: (
+    message: IMMessage,
+    replyFn: (text: string) => Promise<void>,
+  ) => Promise<void>;
   private lastChannelId: string | null = null;
   private log: (...args: any[]) => void = () => {};
-
-  
 
   /**
    * Get current gateway status
@@ -52,9 +48,9 @@ export class DiscordGateway extends EventEmitter {
    */
   reconnectIfNeeded(): void {
     if (!this.client && this.config) {
-      this.log('[Discord Gateway] External reconnection trigger');
+      this.log("[Discord Gateway] External reconnection trigger");
       this.start(this.config).catch((error) => {
-        console.error('[Discord Gateway] Reconnection failed:', error.message);
+        console.error("[Discord Gateway] Reconnection failed:", error.message);
       });
     }
   }
@@ -63,7 +59,7 @@ export class DiscordGateway extends EventEmitter {
    * Set message callback
    */
   setMessageCallback(
-    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>
+    callback: (message: IMMessage, replyFn: (text: string) => Promise<void>) => Promise<void>,
   ): void {
     this.onMessageCallback = callback;
   }
@@ -72,7 +68,7 @@ export class DiscordGateway extends EventEmitter {
    * Emit status change event for UI updates
    */
   private emitStatusChange(): void {
-    this.emit('status', this.getStatus());
+    this.emit("status", this.getStatus());
   }
 
   /**
@@ -80,24 +76,24 @@ export class DiscordGateway extends EventEmitter {
    */
   async start(config: DiscordConfig): Promise<void> {
     if (this.client) {
-      this.log('[Discord Gateway] Already running, stopping first...');
+      this.log("[Discord Gateway] Already running, stopping first...");
       await this.stop();
     }
 
     if (!config.enabled) {
-      this.log('[Discord Gateway] Discord is disabled in config');
+      this.log("[Discord Gateway] Discord is disabled in config");
       return;
     }
 
     if (!config.botToken) {
-      throw new Error('Discord bot token is required');
+      throw new Error("Discord bot token is required");
     }
 
     // Store config for reconnection
     this.config = config;
 
     this.log = config.debug ? console.log.bind(console) : () => {};
-    this.log('[Discord Gateway] Starting...');
+    this.log("[Discord Gateway] Starting...");
     this.status = {
       connected: false,
       starting: true,
@@ -111,7 +107,9 @@ export class DiscordGateway extends EventEmitter {
 
     try {
       // Create client instance with required intents
-      this.log('[Discord Gateway] 创建 Client 实例, intents: Guilds, GuildMessages, DirectMessages, MessageContent');
+      this.log(
+        "[Discord Gateway] 创建 Client 实例, intents: Guilds, GuildMessages, DirectMessages, MessageContent",
+      );
       this.client = new Client({
         intents: [
           GatewayIntentBits.Guilds,
@@ -126,7 +124,7 @@ export class DiscordGateway extends EventEmitter {
       });
 
       // Register error handler
-      this.log('[Discord Gateway] 注册事件处理器: Error, ClientReady, MessageCreate');
+      this.log("[Discord Gateway] 注册事件处理器: Error, ClientReady, MessageCreate");
       this.client.on(Events.Error, (error: Error) => {
         console.error(`[Discord Gateway] Client error: ${error.message}`);
         this.status = {
@@ -135,7 +133,7 @@ export class DiscordGateway extends EventEmitter {
           lastError: error.message,
         };
         this.emitStatusChange();
-        this.emit('error', error);
+        this.emit("error", error);
       });
 
       // Register ready handler
@@ -151,7 +149,7 @@ export class DiscordGateway extends EventEmitter {
           lastOutboundAt: null,
         };
         this.emitStatusChange();
-        this.emit('connected');
+        this.emit("connected");
       });
 
       // Register message handler
@@ -160,10 +158,9 @@ export class DiscordGateway extends EventEmitter {
       });
 
       // Login with bot token
-      this.log('[Discord Gateway] 正在登录 Bot...');
+      this.log("[Discord Gateway] 正在登录 Bot...");
       await this.client.login(config.botToken);
-      this.log('[Discord Gateway] 登录请求已发送, 等待 ClientReady 事件...');
-
+      this.log("[Discord Gateway] 登录请求已发送, 等待 ClientReady 事件...");
     } catch (error: any) {
       console.error(`[Discord Gateway] Failed to start: ${error.message}`);
       this.status = {
@@ -177,7 +174,7 @@ export class DiscordGateway extends EventEmitter {
       };
       this.emitStatusChange();
       this.client = null;
-      this.emit('error', error);
+      this.emit("error", error);
       throw error;
     }
   }
@@ -187,18 +184,18 @@ export class DiscordGateway extends EventEmitter {
    */
   async stop(): Promise<void> {
     if (!this.client) {
-      this.log('[Discord Gateway] Not running');
+      this.log("[Discord Gateway] Not running");
       return;
     }
 
-    this.log('[Discord Gateway] Stopping...');
+    this.log("[Discord Gateway] Stopping...");
 
     try {
       const client = this.client;
       this.client = null;
 
       // Destroy the client connection
-      this.log('[Discord Gateway] 销毁 Client 连接...');
+      this.log("[Discord Gateway] 销毁 Client 连接...");
       client.destroy();
 
       this.status = {
@@ -212,8 +209,8 @@ export class DiscordGateway extends EventEmitter {
       };
       this.emitStatusChange();
 
-      this.log('[Discord Gateway] Stopped');
-      this.emit('disconnected');
+      this.log("[Discord Gateway] Stopped");
+      this.emit("disconnected");
     } catch (error: any) {
       console.error(`[Discord Gateway] Error stopping: ${error.message}`);
       this.status.lastError = error.message;
@@ -231,7 +228,7 @@ export class DiscordGateway extends EventEmitter {
       }
 
       // Ignore empty messages
-      if (!message.content || message.content.trim() === '') {
+      if (!message.content || message.content.trim() === "") {
         return;
       }
 
@@ -243,7 +240,7 @@ export class DiscordGateway extends EventEmitter {
       if (!isDM && this.client?.user) {
         const isMentioned = message.mentions.has(this.client.user.id);
         if (!isMentioned) {
-          this.log('[Discord Gateway] Ignoring group message without bot mention');
+          this.log("[Discord Gateway] Ignoring group message without bot mention");
           return;
         }
       }
@@ -252,14 +249,15 @@ export class DiscordGateway extends EventEmitter {
       const conversationId = isDM ? `dm:${message.author.id}` : `guild:${guildId}:${channelId}`;
 
       // Build sender name
-      const senderName = message.member?.displayName || message.author.displayName || message.author.username;
+      const senderName =
+        message.member?.displayName || message.author.displayName || message.author.username;
       const senderId = message.author.id;
 
       // Strip Discord mentions (<@123456789>, <@!123456789>, <#123456789>, <@&123456789>)
       const cleanedContent = message.content
-        .replace(/<@!?\d+>/g, '') // User mentions
-        .replace(/<#\d+>/g, '')   // Channel mentions
-        .replace(/<@&\d+>/g, '')  // Role mentions
+        .replace(/<@!?\d+>/g, "") // User mentions
+        .replace(/<#\d+>/g, "") // Channel mentions
+        .replace(/<@&\d+>/g, "") // Role mentions
         .trim();
 
       // Ignore empty messages after stripping mentions
@@ -268,26 +266,33 @@ export class DiscordGateway extends EventEmitter {
       }
 
       // 打印完整的输入消息日志
-      this.log(`[Discord] 收到消息:`, JSON.stringify({
-        sender: senderName,
-        senderId,
-        conversationId,
-        chatType: isDM ? 'direct' : 'group',
-        messageId: message.id,
-        content: cleanedContent,
-        guildId: guildId || null,
-        channelId,
-      }, null, 2));
+      this.log(
+        `[Discord] 收到消息:`,
+        JSON.stringify(
+          {
+            sender: senderName,
+            senderId,
+            conversationId,
+            chatType: isDM ? "direct" : "group",
+            messageId: message.id,
+            content: cleanedContent,
+            guildId: guildId || null,
+            channelId,
+          },
+          null,
+          2,
+        ),
+      );
 
       // Create IMMessage
       const imMessage: IMMessage = {
-        platform: 'discord',
+        platform: "discord",
         messageId: message.id,
         conversationId: conversationId,
         senderId: senderId,
         senderName: senderName,
         content: cleanedContent,
-        chatType: isDM ? 'direct' : 'group',
+        chatType: isDM ? "direct" : "group",
         timestamp: message.createdTimestamp,
       };
       this.status.lastInboundAt = Date.now();
@@ -298,39 +303,52 @@ export class DiscordGateway extends EventEmitter {
 
       const replyFn = async (text: string) => {
         // 打印完整的输出消息日志
-        this.log(`[Discord] 发送回复:`, JSON.stringify({
-          conversationId,
-          replyLength: text.length,
-          reply: text,
-        }, null, 2));
+        this.log(
+          `[Discord] 发送回复:`,
+          JSON.stringify(
+            {
+              conversationId,
+              replyLength: text.length,
+              reply: text,
+            },
+            null,
+            2,
+          ),
+        );
 
         try {
           // Parse media markers from text
           const markers = parseMediaMarkers(text);
           const validFiles: Array<{ path: string; name?: string }> = [];
 
-          this.log(`[Discord Gateway] 解析媒体标记:`, JSON.stringify({
-            textLength: text.length,
-            markersCount: markers.length,
-            markers: markers.map(m => ({ type: m.type, path: m.path, name: m.name })),
-          }));
+          this.log(
+            `[Discord Gateway] 解析媒体标记:`,
+            JSON.stringify({
+              textLength: text.length,
+              markersCount: markers.length,
+              markers: markers.map((m) => ({ type: m.type, path: m.path, name: m.name })),
+            }),
+          );
 
           // Check which files exist
           for (const marker of markers) {
             // Expand ~ to home directory
             let filePath = marker.path;
-            if (filePath.startsWith('~/')) {
-              filePath = path.join(process.env.HOME || '', filePath.slice(2));
+            if (filePath.startsWith("~/")) {
+              filePath = path.join(process.env.HOME || "", filePath.slice(2));
             }
             if (fs.existsSync(filePath)) {
               const stats = fs.statSync(filePath);
-              this.log(`[Discord Gateway] 发现有效媒体文件:`, JSON.stringify({
-                path: filePath,
-                name: marker.name,
-                type: marker.type,
-                fileSize: stats.size,
-                fileSizeKB: (stats.size / 1024).toFixed(1),
-              }));
+              this.log(
+                `[Discord Gateway] 发现有效媒体文件:`,
+                JSON.stringify({
+                  path: filePath,
+                  name: marker.name,
+                  type: marker.type,
+                  fileSize: stats.size,
+                  fileSizeKB: (stats.size / 1024).toFixed(1),
+                }),
+              );
               validFiles.push({ path: filePath, name: marker.name });
             } else {
               console.warn(`[Discord Gateway] Media file not found: ${filePath}`);
@@ -341,7 +359,7 @@ export class DiscordGateway extends EventEmitter {
           const textContent = validFiles.length > 0 ? stripMediaMarkers(text, markers) : text;
 
           // Build attachments with custom names
-          const attachments = validFiles.map(file => {
+          const attachments = validFiles.map((file) => {
             const attachment = new AttachmentBuilder(file.path);
             if (file.name) {
               const ext = path.extname(file.path);
@@ -350,11 +368,14 @@ export class DiscordGateway extends EventEmitter {
             return attachment;
           });
 
-          this.log(`[Discord Gateway] 准备发送:`, JSON.stringify({
-            textLength: textContent.length,
-            attachmentsCount: attachments.length,
-            attachmentNames: validFiles.map(f => f.name || path.basename(f.path)),
-          }));
+          this.log(
+            `[Discord Gateway] 准备发送:`,
+            JSON.stringify({
+              textLength: textContent.length,
+              attachmentsCount: attachments.length,
+              attachmentNames: validFiles.map((f) => f.name || path.basename(f.path)),
+            }),
+          );
 
           // Split long messages (Discord limit is 2000 characters)
           const MAX_LENGTH = 1900; // Leave some margin
@@ -382,7 +403,7 @@ export class DiscordGateway extends EventEmitter {
                 }
               } else {
                 // Subsequent messages: just send text
-                if ('send' in message.channel && typeof message.channel.send === 'function') {
+                if ("send" in message.channel && typeof message.channel.send === "function") {
                   await message.channel.send(chunks[i]);
                 }
               }
@@ -396,7 +417,7 @@ export class DiscordGateway extends EventEmitter {
       };
 
       // Emit message event
-      this.emit('message', imMessage);
+      this.emit("message", imMessage);
 
       // Call message callback if set
       if (this.onMessageCallback) {
@@ -410,7 +431,7 @@ export class DiscordGateway extends EventEmitter {
     } catch (error: any) {
       console.error(`[Discord Gateway] Error handling message: ${error.message}`);
       this.status.lastError = error.message;
-      this.emit('error', error);
+      this.emit("error", error);
     }
   }
 
@@ -428,10 +449,10 @@ export class DiscordGateway extends EventEmitter {
       }
 
       // Try to split at newline
-      let splitIndex = remaining.lastIndexOf('\n', maxLength);
+      let splitIndex = remaining.lastIndexOf("\n", maxLength);
       if (splitIndex === -1 || splitIndex < maxLength / 2) {
         // Try to split at space
-        splitIndex = remaining.lastIndexOf(' ', maxLength);
+        splitIndex = remaining.lastIndexOf(" ", maxLength);
       }
       if (splitIndex === -1 || splitIndex < maxLength / 2) {
         // Force split at maxLength
@@ -450,20 +471,23 @@ export class DiscordGateway extends EventEmitter {
    */
   async sendNotification(text: string): Promise<void> {
     if (!this.client || !this.lastChannelId) {
-      throw new Error('No conversation available for notification');
+      throw new Error("No conversation available for notification");
     }
-    this.log(`[Discord Gateway] 发送通知消息:`, JSON.stringify({
-      channelId: this.lastChannelId,
-      textLength: text.length,
-      text,
-    }));
+    this.log(
+      `[Discord Gateway] 发送通知消息:`,
+      JSON.stringify({
+        channelId: this.lastChannelId,
+        textLength: text.length,
+        text,
+      }),
+    );
     const channel = await this.client.channels.fetch(this.lastChannelId);
-    if (channel && channel.isTextBased() && 'send' in channel) {
+    if (channel && channel.isTextBased() && "send" in channel) {
       await (channel as any).send(text);
       this.log(`[Discord Gateway] 通知消息已发送`);
       this.status.lastOutboundAt = Date.now();
     } else {
-      throw new Error('Channel is not text-based or not accessible');
+      throw new Error("Channel is not text-based or not accessible");
     }
   }
 }

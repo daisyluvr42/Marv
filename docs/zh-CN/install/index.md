@@ -70,13 +70,13 @@ curl -fsSL https://marv.ai/install.sh | bash -s -- --no-onboard
 如果你已经有 Node：
 
 ```bash
-npm install -g openclaw@latest
+npm install -g marv@latest
 ```
 
 如果你全局安装了 libvips（macOS 上通过 Homebrew 安装很常见）且 `sharp` 安装失败，请强制使用预构建二进制文件：
 
 ```bash
-SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw@latest
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g marv@latest
 ```
 
 如果你看到 `sharp: Please add node-gyp to your dependencies`，要么安装构建工具（macOS：Xcode CLT + `npm install -g node-gyp`），要么使用上面的 `SHARP_IGNORE_GLOBAL_LIBVIPS=1` 变通方法来跳过原生构建。
@@ -84,9 +84,9 @@ SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw@latest
 或使用 pnpm：
 
 ```bash
-pnpm add -g openclaw@latest
-pnpm approve-builds -g                # 批准 openclaw、node-llama-cpp、sharp 等
-pnpm add -g openclaw@latest           # 重新运行以执行 postinstall 脚本
+pnpm add -g marv@latest
+pnpm approve-builds -g                # 批准 marv、node-llama-cpp、sharp 等
+pnpm add -g marv@latest           # 重新运行以执行 postinstall 脚本
 ```
 
 pnpm 需要显式批准带有构建脚本的包。在首次安装显示"Ignored build scripts"警告后，运行 `pnpm approve-builds -g` 并选择列出的包，然后重新运行安装以执行 postinstall 脚本。
@@ -100,7 +100,7 @@ marv onboard --install-daemon
 ### 3）从源代码（贡献者/开发）
 
 ```bash
-git clone https://github.com/openclaw/marv.git
+git clone https://github.com/daisyluvr42/Marv.git
 cd marv
 pnpm install
 pnpm ui:build # 首次运行时自动安装 UI 依赖
@@ -128,7 +128,7 @@ marv onboard --install-daemon
 
 安装器支持两种方式：
 
-- `npm`（默认）：`npm install -g openclaw@latest`
+- `npm`（默认）：`npm install -g marv@latest`
 - `git`：从 GitHub 克隆/构建并从源代码 checkout 运行
 
 ### CLI 标志
@@ -154,12 +154,12 @@ curl -fsSL https://marv.ai/install.sh | bash -s -- --install-method git
 
 等效的环境变量（对自动化有用）：
 
-- `OPENCLAW_INSTALL_METHOD=git|npm`
-- `OPENCLAW_GIT_DIR=...`
-- `OPENCLAW_GIT_UPDATE=0|1`
-- `OPENCLAW_NO_PROMPT=1`
-- `OPENCLAW_DRY_RUN=1`
-- `OPENCLAW_NO_ONBOARD=1`
+- `MARV_INSTALL_METHOD=git|npm`
+- `MARV_GIT_DIR=...`
+- `MARV_GIT_UPDATE=0|1`
+- `MARV_NO_PROMPT=1`
+- `MARV_DRY_RUN=1`
+- `MARV_NO_ONBOARD=1`
 - `SHARP_IGNORE_GLOBAL_LIBVIPS=0|1`（默认：`1`；避免 `sharp` 针对系统 libvips 构建）
 
 ## 故障排除：找不到 `marv`（PATH）

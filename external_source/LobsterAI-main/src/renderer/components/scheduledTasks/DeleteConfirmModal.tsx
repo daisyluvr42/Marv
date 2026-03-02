@@ -1,6 +1,6 @@
-import React from 'react';
-import { i18nService } from '../../services/i18n';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import React from "react";
+import { i18nService } from "../../services/i18n";
 
 interface DeleteConfirmModalProps {
   taskName: string;
@@ -14,10 +14,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   onCancel,
 }) => {
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={onCancel}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 dark:bg-black/60" />
 
@@ -31,10 +28,10 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
           </div>
           <h3 className="text-sm font-semibold dark:text-claude-darkText text-claude-text mb-2">
-            {i18nService.t('scheduledTasksDelete')}
+            {i18nService.t("scheduledTasksDelete")}
           </h3>
           <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary mb-5">
-            {i18nService.t('scheduledTasksDeleteConfirm').replace('{name}', taskName)}
+            {i18nService.t("scheduledTasksDeleteConfirm").replace("{name}", taskName)}
           </p>
           <div className="flex items-center gap-3 w-full">
             <button
@@ -42,14 +39,14 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               onClick={onCancel}
               className="flex-1 px-4 py-2 text-sm rounded-lg dark:text-claude-darkText text-claude-text border dark:border-claude-darkBorder border-claude-border hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
             >
-              {i18nService.t('cancel')}
+              {i18nService.t("cancel")}
             </button>
             <button
               type="button"
               onClick={onConfirm}
               className="flex-1 px-4 py-2 text-sm rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
             >
-              {i18nService.t('scheduledTasksDelete')}
+              {i18nService.t("scheduledTasksDelete")}
             </button>
           </div>
         </div>

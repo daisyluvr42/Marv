@@ -21,7 +21,7 @@ import {
   resolveControlUiLinks,
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
@@ -36,8 +36,8 @@ import type { WizardPrompter } from "./prompts.js";
 type FinalizeOnboardingOptions = {
   flow: WizardFlow;
   opts: OnboardOptions;
-  baseConfig: OpenClawConfig;
-  nextConfig: OpenClawConfig;
+  baseConfig: MarvConfig;
+  nextConfig: MarvConfig;
   workspaceDir: string;
   settings: GatewayWizardSettings;
   prompter: WizardPrompter;
@@ -215,8 +215,8 @@ export async function finalizeOnboardingWizard(
       await prompter.note(
         [
           "Docs:",
-          "https://docs.marv.ai/gateway/health",
-          "https://docs.marv.ai/gateway/troubleshooting",
+          "/gateway/health",
+          "/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );
@@ -279,7 +279,7 @@ export async function finalizeOnboardingWizard(
         : undefined,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
-      "Docs: https://docs.marv.ai/web/control-ui",
+      "Docs: /web/control-ui",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -380,14 +380,14 @@ export async function finalizeOnboardingWizard(
   }
 
   await prompter.note(
-    ["Back up your agent workspace.", "Docs: https://docs.marv.ai/concepts/agent-workspace"].join(
+    ["Back up your agent workspace.", "Docs: /concepts/agent-workspace"].join(
       "\n",
     ),
     "Workspace backup",
   );
 
   await prompter.note(
-    "Running agents on your computer is risky — harden your setup: https://docs.marv.ai/security",
+    "Running agents on your computer is risky — harden your setup: /security",
     "Security",
   );
 
@@ -442,7 +442,7 @@ export async function finalizeOnboardingWizard(
           webSearchKey
             ? "API key: stored in config (tools.web.search.apiKey)."
             : "API key: provided via BRAVE_API_KEY env var (Gateway environment).",
-          "Docs: https://docs.marv.ai/tools/web",
+          "Docs: /tools/web",
         ].join("\n")
       : [
           "If you want your agent to be able to search the web, you’ll need an API key.",
@@ -454,7 +454,7 @@ export async function finalizeOnboardingWizard(
           "- Enable web_search and paste your Brave Search API key",
           "",
           "Alternative: set BRAVE_API_KEY in the Gateway environment (no config changes).",
-          "Docs: https://docs.marv.ai/tools/web",
+          "Docs: /tools/web",
         ].join("\n"),
     "Web search (optional)",
   );

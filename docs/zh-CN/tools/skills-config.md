@@ -15,7 +15,7 @@ x-i18n:
 
 # Skills 配置
 
-所有 Skills 相关配置都位于 `~/.openclaw/marv.json` 中的 `skills` 下。
+所有 Skills 相关配置都位于 `~/.marv/marv.json` 中的 `skills` 下。
 
 ```json5
 {

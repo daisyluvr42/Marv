@@ -1,5 +1,5 @@
 import { formatCliCommand } from "../../../cli/command-format.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../config/config.js";
 import type { DmPolicy } from "../../../config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import {
@@ -15,7 +15,7 @@ import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./
 
 const channel = "telegram" as const;
 
-function setTelegramDmPolicy(cfg: OpenClawConfig, dmPolicy: DmPolicy) {
+function setTelegramDmPolicy(cfg: MarvConfig, dmPolicy: DmPolicy) {
   const allowFrom =
     dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.telegram?.allowFrom) : undefined;
   return {
@@ -59,10 +59,10 @@ async function noteTelegramUserIdHelp(prompter: WizardPrompter): Promise<void> {
 }
 
 async function promptTelegramAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   prompter: WizardPrompter;
   accountId: string;
-}): Promise<OpenClawConfig> {
+}): Promise<MarvConfig> {
   const { cfg, prompter, accountId } = params;
   const resolved = resolveTelegramAccount({ cfg, accountId });
   const existingAllowFrom = resolved.config.allowFrom ?? [];
@@ -155,10 +155,10 @@ async function promptTelegramAllowFrom(params: {
 }
 
 async function promptTelegramAllowFromForAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: MarvConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<MarvConfig> {
   const accountId =
     params.accountId && normalizeAccountId(params.accountId)
       ? (normalizeAccountId(params.accountId) ?? DEFAULT_ACCOUNT_ID)

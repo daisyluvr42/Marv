@@ -64,7 +64,7 @@ ssh-copy-id -i ~/.ssh/id_rsa <REMOTE_USER>@<REMOTE_IP>
 ### 步骤 3：设置 Gateway 网关令牌
 
 ```bash
-launchctl setenv OPENCLAW_GATEWAY_TOKEN "<your-token>"
+launchctl setenv MARV_GATEWAY_TOKEN "<your-token>"
 ```
 
 ### 步骤 4：启动 SSH 隧道

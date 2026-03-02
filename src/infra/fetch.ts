@@ -7,7 +7,7 @@ type FetchWithPreconnect = typeof fetch & {
 type RequestInitWithDuplex = RequestInit & { duplex?: "half" };
 
 const wrapFetchWithAbortSignalMarker = Symbol.for("marv.fetch.abort-signal-wrapped");
-const legacyWrapFetchWithAbortSignalMarker = Symbol.for("openclaw.fetch.abort-signal-wrapped");
+const legacyWrapFetchWithAbortSignalMarker = Symbol.for("marv.fetch.abort-signal-wrapped");
 
 type FetchWithAbortSignalMarker = typeof fetch & {
   [wrapFetchWithAbortSignalMarker]?: true;

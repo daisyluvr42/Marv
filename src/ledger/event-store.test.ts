@@ -8,16 +8,16 @@ let stateDir = "";
 let prevStateDir: string | undefined;
 
 beforeEach(async () => {
-  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ledger-"));
-  prevStateDir = process.env.OPENCLAW_STATE_DIR;
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-ledger-"));
+  prevStateDir = process.env.MARV_STATE_DIR;
+  process.env.MARV_STATE_DIR = stateDir;
 });
 
 afterEach(async () => {
   if (prevStateDir == null) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.MARV_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = prevStateDir;
+    process.env.MARV_STATE_DIR = prevStateDir;
   }
   if (stateDir) {
     await fs.rm(stateDir, { recursive: true, force: true });

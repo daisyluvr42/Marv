@@ -1,5 +1,5 @@
 import { getChannelDock } from "../channels/dock.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { resolveChannelGroupToolsPolicy } from "../config/group-policy.js";
 import { resolveThreadParentSessionKey } from "../sessions/session-key-utils.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
@@ -82,7 +82,7 @@ function resolveSubagentDenyList(depth: number, maxSpawnDepth: number): string[]
   return [...SUBAGENT_TOOL_DENY_ALWAYS];
 }
 
-export function resolveSubagentToolPolicy(cfg?: OpenClawConfig, depth?: number): SandboxToolPolicy {
+export function resolveSubagentToolPolicy(cfg?: MarvConfig, depth?: number): SandboxToolPolicy {
   const configured = cfg?.tools?.subagents?.tools;
   const maxSpawnDepth = cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? 1;
   const effectiveDepth = typeof depth === "number" && depth >= 0 ? depth : 1;
@@ -187,7 +187,7 @@ function resolveProviderToolPolicy(params: {
 }
 
 export function resolveEffectiveToolPolicy(params: {
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   sessionKey?: string;
   modelProvider?: string;
   modelId?: string;
@@ -232,7 +232,7 @@ export function resolveEffectiveToolPolicy(params: {
 }
 
 export function resolveGroupToolPolicy(params: {
-  config?: OpenClawConfig;
+  config?: MarvConfig;
   sessionKey?: string;
   spawnedBy?: string | null;
   messageProvider?: string;

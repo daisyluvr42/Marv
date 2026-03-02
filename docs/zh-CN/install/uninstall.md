@@ -52,15 +52,15 @@ marv gateway uninstall
 3. 删除状态 + 配置：
 
 ```bash
-rm -rf "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
+rm -rf "${MARV_STATE_DIR:-$HOME/.marv}"
 ```
 
-如果你将 `OPENCLAW_CONFIG_PATH` 设置为状态目录外的自定义位置，也请删除该文件。
+如果你将 `MARV_CONFIG_PATH` 设置为状态目录外的自定义位置，也请删除该文件。
 
 4. 删除你的工作区（可选，移除智能体文件）：
 
 ```bash
-rm -rf ~/.openclaw/workspace
+rm -rf ~/.marv/workspace
 ```
 
 5. 移除 CLI 安装（选择你使用的那个）：
@@ -79,7 +79,7 @@ rm -rf /Applications/Marv.app
 
 注意事项：
 
-- 如果你使用了配置文件（`--profile` / `OPENCLAW_PROFILE`），对每个状态目录重复步骤 3（默认为 `~/.openclaw-<profile>`）。
+- 如果你使用了配置文件（`--profile` / `MARV_PROFILE`），对每个状态目录重复步骤 3（默认为 `~/.marv-<profile>`）。
 - 在远程模式下，状态目录位于 **Gateway 网关主机**上，因此也需要在那里运行步骤 1-4。
 
 ## 手动服务移除（CLI 未安装）
@@ -99,11 +99,11 @@ rm -f ~/Library/LaunchAgents/bot.molt.gateway.plist
 
 ### Linux（systemd 用户单元）
 
-默认单元名称是 `openclaw-gateway.service`（或 `openclaw-gateway-<profile>.service`）：
+默认单元名称是 `marv-gateway.service`（或 `marv-gateway-<profile>.service`）：
 
 ```bash
-systemctl --user disable --now openclaw-gateway.service
-rm -f ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user disable --now marv-gateway.service
+rm -f ~/.config/systemd/user/marv-gateway.service
 systemctl --user daemon-reload
 ```
 
@@ -114,16 +114,16 @@ systemctl --user daemon-reload
 
 ```powershell
 schtasks /Delete /F /TN "Marv Gateway"
-Remove-Item -Force "$env:USERPROFILE\.openclaw\gateway.cmd"
+Remove-Item -Force "$env:USERPROFILE\.marv\gateway.cmd"
 ```
 
-如果你使用了配置文件，请删除匹配的任务名称和 `~\.openclaw-<profile>\gateway.cmd`。
+如果你使用了配置文件，请删除匹配的任务名称和 `~\.marv-<profile>\gateway.cmd`。
 
 ## 普通安装 vs 源码检出
 
 ### 普通安装（install.sh / npm / pnpm / bun）
 
-如果你使用了 `https://marv.ai/install.sh` 或 `install.ps1`，CLI 是通过 `npm install -g openclaw@latest` 安装的。
+如果你使用了 `https://marv.ai/install.sh` 或 `install.ps1`，CLI 是通过 `npm install -g marv@latest` 安装的。
 使用 `npm rm -g marv` 移除（或 `pnpm remove -g` / `bun remove -g`，如果你是用那种方式安装的）。
 
 ### 源码检出（git clone）

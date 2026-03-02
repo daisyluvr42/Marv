@@ -1,15 +1,15 @@
-## OpenClaw Vision
+## Marv Vision
 
-OpenClaw is the AI that actually does things.
+Marv is the AI that actually does things.
 It runs on your devices, in your channels, with your rules.
 
 This document explains the current state and direction of the project.
 We are still early, so iteration is fast.
 Project overview and developer docs: [`README.md`](README.md)
 
-OpenClaw started as a personal playground to learn AI and build something genuinely useful:
+Marv started as a personal playground to learn AI and build something genuinely useful:
 an assistant that can run real tasks on a real computer.
-It evolved through several names and shells: Warelay -> Clawdbot -> Moltbot -> OpenClaw.
+It evolved through several names and shells: Warelay -> Clawdbot -> Moltbot -> Marv.
 
 The goal: a personal assistant that is easy to use, supports a wide range of platforms, and respects privacy and security.
 
@@ -39,7 +39,7 @@ Contribution rules:
 
 ## Security
 
-Security in OpenClaw is a deliberate tradeoff: strong defaults without killing capability.
+Security in Marv is a deliberate tradeoff: strong defaults without killing capability.
 The goal is to stay powerful for real work while making risky paths explicit and operator-controlled.
 
 Canonical security policy and reporting:
@@ -49,14 +49,14 @@ We prioritize secure defaults, but also expose clear knobs for trusted high-powe
 
 ## Plugins & Memory
 
-OpenClaw has an extensive plugin API.
+Marv has an extensive plugin API.
 Core stays lean; optional capability should usually ship as plugins.
 
 Preferred plugin path is npm package distribution plus local extension loading for development.
 If you build a plugin, host and maintain it in your own repository.
 The bar for adding optional plugins to core is intentionally high.
 Plugin docs: [`docs/tools/plugin.md`](docs/tools/plugin.md)
-Community plugin listing + PR bar: https://docs.openclaw.ai/plugins/community
+Community plugin listing + PR bar: /plugins/community
 
 Memory is a special plugin slot where only one memory plugin can be active at a time.
 Today we ship multiple memory options; over time we plan to converge on one recommended default path.
@@ -69,7 +69,7 @@ Core skill additions should be rare and require a strong product or security rea
 
 ### MCP Support
 
-OpenClaw supports MCP through `mcporter`: https://github.com/steipete/mcporter
+Marv supports MCP through `mcporter`: https://github.com/steipete/mcporter
 
 This keeps MCP integration flexible and decoupled from core runtime:
 
@@ -82,7 +82,7 @@ If there is an MCP server or feature `mcporter` does not support yet, please ope
 
 ### Setup
 
-OpenClaw is currently terminal-first by design.
+Marv is currently terminal-first by design.
 This keeps setup explicit: users see docs, auth, permissions, and security posture up front.
 
 Long term, we want easier onboarding flows as hardening matures.
@@ -90,8 +90,8 @@ We do not want convenience wrappers that hide critical security decisions from u
 
 ### Why TypeScript?
 
-OpenClaw is primarily an orchestration system: prompts, tools, protocols, and integrations.
-TypeScript was chosen to keep OpenClaw hackable by default.
+Marv is primarily an orchestration system: prompts, tools, protocols, and integrations.
+TypeScript was chosen to keep Marv hackable by default.
 It is widely known, fast to iterate in, and easy to read, modify, and extend.
 
 ## What We Will Not Merge (For Now)

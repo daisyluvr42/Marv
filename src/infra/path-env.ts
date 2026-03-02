@@ -74,7 +74,7 @@ function candidateBinDirs(opts: EnsureMarvPathOpts): { prepend: string[]; append
   const allowProjectLocalBin =
     opts.allowProjectLocalBin === true ||
     isTruthyEnvValue(process.env.MARV_ALLOW_PROJECT_LOCAL_BIN) ||
-    isTruthyEnvValue(process.env.OPENCLAW_ALLOW_PROJECT_LOCAL_BIN);
+    isTruthyEnvValue(process.env.MARV_ALLOW_PROJECT_LOCAL_BIN);
   if (allowProjectLocalBin) {
     const localBinDir = path.join(cwd, "node_modules", ".bin");
     if (isExecutable(path.join(localBinDir, "marv"))) {
@@ -113,12 +113,12 @@ function candidateBinDirs(opts: EnsureMarvPathOpts): { prepend: string[]; append
 export function ensureMarvCliOnPath(opts: EnsureMarvPathOpts = {}) {
   if (
     isTruthyEnvValue(process.env.MARV_PATH_BOOTSTRAPPED) ||
-    isTruthyEnvValue(process.env.OPENCLAW_PATH_BOOTSTRAPPED)
+    isTruthyEnvValue(process.env.MARV_PATH_BOOTSTRAPPED)
   ) {
     return;
   }
   process.env.MARV_PATH_BOOTSTRAPPED = "1";
-  process.env.OPENCLAW_PATH_BOOTSTRAPPED = "1";
+  process.env.MARV_PATH_BOOTSTRAPPED = "1";
 
   const existing = opts.pathEnv ?? process.env.PATH ?? "";
   const { prepend, append } = candidateBinDirs(opts);
@@ -132,4 +132,4 @@ export function ensureMarvCliOnPath(opts: EnsureMarvPathOpts = {}) {
   }
 }
 
-export const ensureOpenClawCliOnPath = ensureMarvCliOnPath;
+export const ensureMarvCliOnPath = ensureMarvCliOnPath;

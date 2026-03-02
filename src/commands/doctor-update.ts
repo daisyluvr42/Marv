@@ -32,7 +32,7 @@ export async function maybeOfferUpdateBeforeDoctor(params: {
   outro: (message: string) => void;
 }) {
   const updateInProgress = isTruthyEnvValue(
-    process.env.MARV_UPDATE_IN_PROGRESS ?? process.env.OPENCLAW_UPDATE_IN_PROGRESS,
+    process.env.MARV_UPDATE_IN_PROGRESS ?? process.env.MARV_UPDATE_IN_PROGRESS,
   );
   const canOfferUpdate =
     !updateInProgress &&

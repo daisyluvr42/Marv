@@ -28,7 +28,7 @@ export type GatewayBonjourAdvertiseOpts = {
 function isDisabledByEnv() {
   if (
     isTruthyEnvValue(process.env.MARV_DISABLE_BONJOUR) ||
-    isTruthyEnvValue(process.env.OPENCLAW_DISABLE_BONJOUR)
+    isTruthyEnvValue(process.env.MARV_DISABLE_BONJOUR)
   ) {
     return true;
   }
@@ -99,7 +99,7 @@ export async function startGatewayBonjourAdvertiser(
   // Keep only the first label and normalize away a trailing `.local`.
   const hostnameRaw =
     process.env.MARV_MDNS_HOSTNAME?.trim() ||
-    process.env.OPENCLAW_MDNS_HOSTNAME?.trim() ||
+    process.env.MARV_MDNS_HOSTNAME?.trim() ||
     process.env.CLAWDBOT_MDNS_HOSTNAME?.trim() ||
     "marv";
   const hostname =
@@ -165,7 +165,7 @@ export async function startGatewayBonjourAdvertiser(
 
   const legacyGateway = responder.createService({
     name: safeServiceName(instanceName),
-    type: "openclaw-gw",
+    type: "marv-gw",
     protocol: Protocol.TCP,
     port: opts.gatewayPort,
     domain: "local",

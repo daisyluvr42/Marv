@@ -252,7 +252,7 @@ export function resolveGatewayConnection(opts: GatewayConnectionOptions) {
           ? remote.token.trim()
           : undefined
         : process.env.MARV_GATEWAY_TOKEN?.trim() ||
-          process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+          process.env.MARV_GATEWAY_TOKEN?.trim() ||
           (typeof authToken === "string" && authToken.trim().length > 0
             ? authToken.trim()
             : undefined)
@@ -262,7 +262,7 @@ export function resolveGatewayConnection(opts: GatewayConnectionOptions) {
     explicitAuth.password ||
     (!urlOverride
       ? process.env.MARV_GATEWAY_PASSWORD?.trim() ||
-        process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+        process.env.MARV_GATEWAY_PASSWORD?.trim() ||
         (typeof remote?.password === "string" && remote.password.trim().length > 0
           ? remote.password.trim()
           : undefined)

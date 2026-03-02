@@ -10,7 +10,7 @@ import {
   resolveShellFromEnv,
   usesSlowDynamicCompletion,
 } from "../cli/completion-cli.js";
-import { resolveOpenClawPackageRoot } from "../infra/openclaw-root.js";
+import { resolveMarvPackageRoot } from "../infra/marv-root.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
@@ -19,7 +19,7 @@ type CompletionShell = "zsh" | "bash" | "fish" | "powershell";
 
 /** Generate the completion cache by spawning the CLI. */
 async function generateCompletionCache(): Promise<boolean> {
-  const root = await resolveOpenClawPackageRoot({
+  const root = await resolveMarvPackageRoot({
     moduleUrl: import.meta.url,
     argv1: process.argv[1],
     cwd: process.cwd(),
@@ -28,7 +28,7 @@ async function generateCompletionCache(): Promise<boolean> {
     return false;
   }
 
-  const binPath = [path.join(root, "marv.mjs"), path.join(root, "openclaw.mjs")].find((candidate) =>
+  const binPath = [path.join(root, "marv.mjs"), path.join(root, "marv.mjs")].find((candidate) =>
     fs.existsSync(candidate),
   );
   if (!binPath) {
@@ -172,7 +172,7 @@ export async function doctorShellCompletion(
  * This is a silent fix - no prompts.
  */
 export async function ensureCompletionCacheExists(binName = "marv"): Promise<boolean> {
-  const resolvedBinName = binName === "openclaw" ? "marv" : binName;
+  const resolvedBinName = binName === "marv" ? "marv" : binName;
   const shell = resolveShellFromEnv() as CompletionShell;
   const cacheExists = await completionCacheExists(shell, resolvedBinName);
 

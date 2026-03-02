@@ -87,10 +87,10 @@ marv hooks info session-memory
 Save session context to memory when /new command is issued
 
 Details:
-  Source: openclaw-bundled
-  Path: /path/to/openclaw/hooks/bundled/session-memory/HOOK.md
-  Handler: /path/to/openclaw/hooks/bundled/session-memory/handler.ts
-  Homepage: https://docs.marv.ai/automation/hooks#session-memory
+  Source: marv-bundled
+  Path: /path/to/marv/hooks/bundled/session-memory/HOOK.md
+  Handler: /path/to/marv/hooks/bundled/session-memory/handler.ts
+  Homepage: /automation/hooks#session-memory
   Events: command:new
 
 Requirements:
@@ -125,7 +125,7 @@ Not ready: 0
 marv hooks enable <name>
 ```
 
-Enable a specific hook by adding it to your config (`~/.openclaw/config.json`).
+Enable a specific hook by adding it to your config (`~/.marv/config.json`).
 
 **Note:** Hooks managed by plugins show `plugin:<id>` in `marv hooks list` and
 can’t be enabled/disabled here. Enable/disable the plugin instead.
@@ -197,7 +197,7 @@ specs are rejected. Dependency installs run with `--ignore-scripts` for safety.
 
 **What it does:**
 
-- Copies the hook pack into `~/.openclaw/hooks/<id>`
+- Copies the hook pack into `~/.marv/hooks/<id>`
 - Enables the installed hooks in `hooks.internal.entries.*`
 - Records the install under `hooks.internal.installs`
 
@@ -217,7 +217,7 @@ marv hooks install ./my-hook-pack
 marv hooks install ./my-hook-pack.zip
 
 # NPM package
-marv hooks install @openclaw/my-hook-pack
+marv hooks install @marv/my-hook-pack
 
 # Link a local directory without copying
 marv hooks install -l ./my-hook-pack
@@ -249,7 +249,7 @@ Saves session context to memory when you issue `/new`.
 marv hooks enable session-memory
 ```
 
-**Output:** `~/.openclaw/workspace/memory/YYYY-MM-DD-slug.md`
+**Output:** `~/.marv/workspace/memory/YYYY-MM-DD-slug.md`
 
 **See:** [session-memory documentation](/automation/hooks#session-memory)
 
@@ -275,19 +275,19 @@ Logs all command events to a centralized audit file.
 marv hooks enable command-logger
 ```
 
-**Output:** `~/.openclaw/logs/commands.log`
+**Output:** `~/.marv/logs/commands.log`
 
 **View logs:**
 
 ```bash
 # Recent commands
-tail -n 20 ~/.openclaw/logs/commands.log
+tail -n 20 ~/.marv/logs/commands.log
 
 # Pretty-print
-cat ~/.openclaw/logs/commands.log | jq .
+cat ~/.marv/logs/commands.log | jq .
 
 # Filter by action
-grep '"action":"new"' ~/.openclaw/logs/commands.log | jq .
+grep '"action":"new"' ~/.marv/logs/commands.log | jq .
 ```
 
 **See:** [command-logger documentation](/automation/hooks#command-logger)

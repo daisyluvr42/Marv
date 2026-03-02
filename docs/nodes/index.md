@@ -52,7 +52,7 @@ forwards `exec` calls to the **node host** when `host=node` is selected.
 
 - **Gateway host**: receives messages, runs the model, routes tool calls.
 - **Node host**: executes `system.run`/`system.which` on the node machine.
-- **Approvals**: enforced on the node host via `~/.openclaw/exec-approvals.json`.
+- **Approvals**: enforced on the node host via `~/.marv/exec-approvals.json`.
 
 ### Start a node host (foreground)
 
@@ -75,14 +75,14 @@ Example (node host -> gateway host):
 ssh -N -L 18790:127.0.0.1:18789 user@gateway-host
 
 # Terminal B: export the gateway token and connect through the tunnel
-export OPENCLAW_GATEWAY_TOKEN="<gateway-token>"
+export MARV_GATEWAY_TOKEN="<gateway-token>"
 marv node run --host 127.0.0.1 --port 18790 --display-name "Build Node"
 ```
 
 Notes:
 
-- The token is `gateway.auth.token` from the gateway config (`~/.openclaw/marv.json` on the gateway host).
-- `marv node run` reads `OPENCLAW_GATEWAY_TOKEN` for auth.
+- The token is `gateway.auth.token` from the gateway config (`~/.marv/marv.json` on the gateway host).
+- `marv node run` reads `MARV_GATEWAY_TOKEN` for auth.
 
 ### Start a node host (service)
 
@@ -103,7 +103,7 @@ marv nodes list
 
 Naming options:
 
-- `--display-name` on `marv node run` / `marv node install` (persists in `~/.openclaw/node.json` on the node).
+- `--display-name` on `marv node run` / `marv node install` (persists in `~/.marv/node.json` on the node).
 - `marv nodes rename --node <id|name|ip> --name "Build Node"` (gateway override).
 
 ### Allowlist the commands
@@ -115,7 +115,7 @@ marv approvals allowlist add --node <id|name|ip> "/usr/bin/uname"
 marv approvals allowlist add --node <id|name|ip> "/usr/bin/sw_vers"
 ```
 
-Approvals live on the node host at `~/.openclaw/exec-approvals.json`.
+Approvals live on the node host at `~/.marv/exec-approvals.json`.
 
 ### Point exec at the node
 
@@ -282,7 +282,7 @@ Notes:
 - Node hosts ignore `PATH` overrides. If you need extra PATH entries, configure the node host service environment (or install tools in standard locations) instead of passing `PATH` via `--env`.
 - On macOS node mode, `system.run` is gated by exec approvals in the macOS app (Settings → Exec approvals).
   Ask/allowlist/full behave the same as the headless node host; denied prompts return `SYSTEM_RUN_DENIED`.
-- On headless node host, `system.run` is gated by exec approvals (`~/.openclaw/exec-approvals.json`).
+- On headless node host, `system.run` is gated by exec approvals (`~/.marv/exec-approvals.json`).
 
 ## Exec node binding
 
@@ -328,12 +328,12 @@ marv node run --host <gateway-host> --port 18789
 Notes:
 
 - Pairing is still required (the Gateway will show a node approval prompt).
-- The node host stores its node id, token, display name, and gateway connection info in `~/.openclaw/node.json`.
-- Exec approvals are enforced locally via `~/.openclaw/exec-approvals.json`
+- The node host stores its node id, token, display name, and gateway connection info in `~/.marv/node.json`.
+- Exec approvals are enforced locally via `~/.marv/exec-approvals.json`
   (see [Exec approvals](/tools/exec-approvals)).
 - On macOS, the headless node host prefers the companion app exec host when reachable and falls
-  back to local execution if the app is unavailable. Set `OPENCLAW_NODE_EXEC_HOST=app` to require
-  the app, or `OPENCLAW_NODE_EXEC_FALLBACK=0` to disable fallback.
+  back to local execution if the app is unavailable. Set `MARV_NODE_EXEC_HOST=app` to require
+  the app, or `MARV_NODE_EXEC_FALLBACK=0` to disable fallback.
 - Add `--tls` / `--tls-fingerprint` when the Gateway WS uses TLS.
 
 ## Mac node mode

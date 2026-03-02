@@ -10,33 +10,33 @@ read_when:
 
 ## First run (recommended)
 
-Marv uses a dedicated workspace directory for the agent. Default: `~/.openclaw/workspace` (configurable via `agents.defaults.workspace`).
+Marv uses a dedicated workspace directory for the agent. Default: `~/.marv/workspace` (configurable via `agents.defaults.workspace`).
 
 1. Create the workspace (if it doesn’t already exist):
 
 ```bash
-mkdir -p ~/.openclaw/workspace
+mkdir -p ~/.marv/workspace
 ```
 
 2. Copy the default workspace templates into the workspace:
 
 ```bash
-cp docs/reference/templates/AGENTS.md ~/.openclaw/workspace/AGENTS.md
-cp docs/reference/templates/SOUL.md ~/.openclaw/workspace/SOUL.md
-cp docs/reference/templates/TOOLS.md ~/.openclaw/workspace/TOOLS.md
+cp docs/reference/templates/AGENTS.md ~/.marv/workspace/AGENTS.md
+cp docs/reference/templates/SOUL.md ~/.marv/workspace/SOUL.md
+cp docs/reference/templates/TOOLS.md ~/.marv/workspace/TOOLS.md
 ```
 
 3. Optional: if you want the personal assistant skill roster, replace AGENTS.md with this file:
 
 ```bash
-cp docs/reference/AGENTS.default.md ~/.openclaw/workspace/AGENTS.md
+cp docs/reference/AGENTS.default.md ~/.marv/workspace/AGENTS.md
 ```
 
 4. Optional: choose a different workspace by setting `agents.defaults.workspace` (supports `~`):
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.marv/workspace" } },
 }
 ```
 
@@ -80,7 +80,7 @@ cp docs/reference/AGENTS.default.md ~/.openclaw/workspace/AGENTS.md
 If you treat this workspace as Clawd’s “memory”, make it a git repo (ideally private) so `AGENTS.md` and your memory files are backed up.
 
 ```bash
-cd ~/.openclaw/workspace
+cd ~/.marv/workspace
 git init
 git add AGENTS.md
 git commit -m "Add Clawd workspace"

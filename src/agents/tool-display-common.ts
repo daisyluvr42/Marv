@@ -841,7 +841,7 @@ function summarizeKnownExec(words: string[]): string {
     return `run ${bin} ${script}`;
   }
 
-  if (bin === "marv" || bin === "openclaw") {
+  if (bin === "marv" || bin === "marv") {
     const sub = firstPositional(words, 1);
     return sub ? `run marv ${sub}` : "run marv";
   }

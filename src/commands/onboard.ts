@@ -40,7 +40,7 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
     runtime.error(
       [
         "Non-interactive onboarding requires explicit risk acknowledgement.",
-        "Read: https://docs.marv.ai/security",
+        "Read: /security",
         `Re-run with: ${formatCliCommand("marv onboard --non-interactive --accept-risk ...")}`,
       ].join("\n"),
     );
@@ -62,7 +62,7 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
         "Windows detected — Marv runs great on WSL2!",
         "Native Windows might be trickier.",
         "Quick setup: wsl --install (one command, one reboot)",
-        "Guide: https://docs.marv.ai/windows",
+        "Guide: /windows",
       ].join("\n"),
     );
   }

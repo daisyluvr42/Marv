@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { resolveGatewayPort, resolveIsNixMode } from "../config/paths.js";
 import { findExtraGatewayServices, renderGatewayServiceCleanupHints } from "../daemon/inspect.js";
 import { renderSystemNodeWarning, resolveSystemNodeInfo } from "../daemon/runtime-paths.js";
@@ -50,13 +50,13 @@ function normalizeExecutablePath(value: string): string {
   return path.resolve(value);
 }
 
-function resolveGatewayAuthToken(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): string | undefined {
+function resolveGatewayAuthToken(cfg: MarvConfig, env: NodeJS.ProcessEnv): string | undefined {
   const configToken = cfg.gateway?.auth?.token?.trim();
   if (configToken) {
     return configToken;
   }
   const envToken =
-    env.MARV_GATEWAY_TOKEN ?? env.OPENCLAW_GATEWAY_TOKEN ?? env.CLAWDBOT_GATEWAY_TOKEN;
+    env.MARV_GATEWAY_TOKEN ?? env.MARV_GATEWAY_TOKEN ?? env.CLAWDBOT_GATEWAY_TOKEN;
   const trimmedEnvToken = envToken?.trim();
   return trimmedEnvToken || undefined;
 }
@@ -100,7 +100,7 @@ async function cleanupLegacyLaunchdService(params: {
 }
 
 export async function maybeRepairGatewayServiceConfig(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   mode: "local" | "remote",
   runtime: RuntimeEnv,
   prompter: DoctorPrompter,

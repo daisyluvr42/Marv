@@ -210,7 +210,7 @@ export function repairToolUseResultPairing(messages: AgentMessage[]): ToolUseRep
     // (e.g., partialJson: true) and should not have synthetic tool_results created.
     // Creating synthetic results for incomplete tool calls causes API 400 errors:
     // "unexpected tool_use_id found in tool_result blocks"
-    // See: https://github.com/openclaw/openclaw/issues/4597
+    // See: #4597
     const stopReason = (assistant as { stopReason?: string }).stopReason;
     if (stopReason === "error" || stopReason === "aborted") {
       out.push(msg);

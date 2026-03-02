@@ -56,6 +56,7 @@ cd <repo-root>
 ```
 
 完整步骤：
+
 1. 将 agent runner 源码放到 `sandbox/agent-runner`。
 2. 如 runner 需要编译，执行：
    `AGENT_RUNNER_BUILD=1 ./scripts/build-sandbox-image-docker.sh`
@@ -70,6 +71,7 @@ ARCHS=arm64 ./scripts/build-sandbox-image-docker.sh
 ```
 
 说明：
+
 - Apple Silicon 可直接构建 `arm64`。
 - `amd64` 建议在 x86_64 机器或 CI 上构建。
 

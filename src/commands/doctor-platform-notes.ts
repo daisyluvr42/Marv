@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { OpenClawConfig } from "../config/config.js";
+import type { MarvConfig } from "../config/config.js";
 import { note } from "../terminal/note.js";
 import { shortenHomePath } from "../utils.js";
 
@@ -20,7 +20,7 @@ export async function noteMacLaunchAgentOverrides() {
   const home = resolveHomeDir();
   const markerCandidates = [
     path.join(home, ".marv", "disable-launchagent"),
-    path.join(home, ".openclaw", "disable-launchagent"),
+    path.join(home, ".marv", "disable-launchagent"),
   ];
   const markerPath = markerCandidates.find((candidate) => fs.existsSync(candidate));
   if (!markerPath) {
@@ -46,7 +46,7 @@ async function launchctlGetenv(name: string): Promise<string | undefined> {
   }
 }
 
-function hasConfigGatewayCreds(cfg: OpenClawConfig): boolean {
+function hasConfigGatewayCreds(cfg: MarvConfig): boolean {
   const localToken =
     typeof cfg.gateway?.auth?.token === "string" ? cfg.gateway?.auth?.token.trim() : "";
   const localPassword =
@@ -59,7 +59,7 @@ function hasConfigGatewayCreds(cfg: OpenClawConfig): boolean {
 }
 
 export async function noteMacLaunchctlGatewayEnvOverrides(
-  cfg: OpenClawConfig,
+  cfg: MarvConfig,
   deps?: {
     platform?: NodeJS.Platform;
     getenv?: (name: string) => Promise<string | undefined>;
@@ -91,11 +91,11 @@ export async function noteMacLaunchctlGatewayEnvOverrides(
 
   const tokenEntries = [
     ["MARV_GATEWAY_TOKEN", await getenv("MARV_GATEWAY_TOKEN")],
-    ["OPENCLAW_GATEWAY_TOKEN", await getenv("OPENCLAW_GATEWAY_TOKEN")],
+    ["MARV_GATEWAY_TOKEN", await getenv("MARV_GATEWAY_TOKEN")],
   ] as const;
   const passwordEntries = [
     ["MARV_GATEWAY_PASSWORD", await getenv("MARV_GATEWAY_PASSWORD")],
-    ["OPENCLAW_GATEWAY_PASSWORD", await getenv("OPENCLAW_GATEWAY_PASSWORD")],
+    ["MARV_GATEWAY_PASSWORD", await getenv("MARV_GATEWAY_PASSWORD")],
   ] as const;
   const tokenEntry = tokenEntries.find(([, value]) => value?.trim());
   const passwordEntry = passwordEntries.find(([, value]) => value?.trim());
@@ -136,7 +136,7 @@ export function noteDeprecatedLegacyEnvVars(
 
   const lines = [
     "- Deprecated legacy environment variables detected (ignored).",
-    "- Use MARV_* equivalents instead (legacy OPENCLAW_* also supported):",
+    "- Use MARV_* equivalents instead (legacy MARV_* also supported):",
     ...entries.map((key) => {
       const suffix = key.slice(key.indexOf("_") + 1);
       return `  ${key} -> MARV_${suffix}`;

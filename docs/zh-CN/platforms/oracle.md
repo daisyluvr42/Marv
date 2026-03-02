@@ -130,7 +130,7 @@ marv doctor --generate-gateway-token
 marv config set gateway.tailscale.mode serve
 marv config set gateway.trustedProxies '["127.0.0.1"]'
 
-systemctl --user restart openclaw-gateway
+systemctl --user restart marv-gateway
 ```
 
 ## 7) 验证
@@ -140,7 +140,7 @@ systemctl --user restart openclaw-gateway
 marv --version
 
 # 检查守护进程状态
-systemctl --user status openclaw-gateway
+systemctl --user status marv-gateway
 
 # 检查 Tailscale Serve
 tailscale serve status
@@ -258,7 +258,7 @@ sudo tailscale up --ssh --hostname=marv --reset
 ```bash
 marv gateway status
 marv doctor --non-interactive
-journalctl --user -u openclaw-gateway -n 50
+journalctl --user -u marv-gateway -n 50
 ```
 
 ### 无法访问控制 UI
@@ -271,7 +271,7 @@ tailscale serve status
 curl http://localhost:18789
 
 # 如需要则重启
-systemctl --user restart openclaw-gateway
+systemctl --user restart marv-gateway
 ```
 
 ### ARM 二进制文件问题
@@ -290,13 +290,13 @@ uname -m  # 应该显示 aarch64
 
 所有状态存储在：
 
-- `~/.openclaw/` — 配置、凭证、会话数据
-- `~/.openclaw/workspace/` — 工作区（SOUL.md、记忆、产物）
+- `~/.marv/` — 配置、凭证、会话数据
+- `~/.marv/workspace/` — 工作区（SOUL.md、记忆、产物）
 
 定期备份：
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.marv ~/.openclaw/workspace
+tar -czvf marv-backup.tar.gz ~/.marv ~/.marv/workspace
 ```
 
 ---

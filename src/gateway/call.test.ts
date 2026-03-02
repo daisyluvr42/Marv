@@ -344,7 +344,7 @@ describe("callGateway url override auth requirements", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_GATEWAY_TOKEN", "OPENCLAW_GATEWAY_PASSWORD"]);
+    envSnapshot = captureEnv(["MARV_GATEWAY_TOKEN", "MARV_GATEWAY_PASSWORD"]);
     resetGatewayCallMocks();
     setGatewayNetworkDefaults(18789);
   });
@@ -354,8 +354,8 @@ describe("callGateway url override auth requirements", () => {
   });
 
   it("throws when url override is set without explicit credentials", async () => {
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "env-password";
+    process.env.MARV_GATEWAY_TOKEN = "env-token";
+    process.env.MARV_GATEWAY_PASSWORD = "env-password";
     loadConfig.mockReturnValue({
       gateway: {
         mode: "local",
@@ -373,9 +373,9 @@ describe("callGateway password resolution", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_GATEWAY_PASSWORD"]);
+    envSnapshot = captureEnv(["MARV_GATEWAY_PASSWORD"]);
     resetGatewayCallMocks();
-    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+    delete process.env.MARV_GATEWAY_PASSWORD;
     setGatewayNetworkDefaults(18789);
   });
 
@@ -398,7 +398,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("prefers env password over local config password", async () => {
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "from-env";
+    process.env.MARV_GATEWAY_PASSWORD = "from-env";
     loadConfig.mockReturnValue({
       gateway: {
         mode: "local",
@@ -421,7 +421,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("prefers env password over remote password in remote mode", async () => {
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "from-env";
+    process.env.MARV_GATEWAY_PASSWORD = "from-env";
     loadConfig.mockReturnValue(makeRemotePasswordGatewayConfig("remote-secret"));
 
     await callGateway({ method: "health" });
@@ -430,7 +430,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("uses explicit password when url override is set", async () => {
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "from-env";
+    process.env.MARV_GATEWAY_PASSWORD = "from-env";
     loadConfig.mockReturnValue({
       gateway: {
         mode: "local",
@@ -452,9 +452,9 @@ describe("callGateway token resolution", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_GATEWAY_TOKEN"]);
+    envSnapshot = captureEnv(["MARV_GATEWAY_TOKEN"]);
     resetGatewayCallMocks();
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.MARV_GATEWAY_TOKEN;
     setGatewayNetworkDefaults(18789);
   });
 
@@ -463,7 +463,7 @@ describe("callGateway token resolution", () => {
   });
 
   it("uses explicit token when url override is set", async () => {
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+    process.env.MARV_GATEWAY_TOKEN = "env-token";
     loadConfig.mockReturnValue({
       gateway: {
         mode: "local",

@@ -51,7 +51,7 @@ marv update --channel dev
 
 当你使用 `--channel` **显式**切换渠道时，Marv 还会对齐安装方式：
 
-- `dev` 确保有一个 git checkout（默认 `~/marv`，可通过 `OPENCLAW_GIT_DIR` 覆盖），
+- `dev` 确保有一个 git checkout（默认 `~/marv`，可通过 `MARV_GIT_DIR` 覆盖），
   更新它，并从该 checkout 安装全局 CLI。
 - `stable`/`beta` 使用匹配的 dist-tag 从 npm 安装。
 

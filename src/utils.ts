@@ -313,13 +313,13 @@ export function resolveConfigDir(
   homedir: () => string = os.homedir,
 ): string {
   const override =
-    env.MARV_STATE_DIR?.trim() || env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+    env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override);
   }
   const home = resolveRequiredHomeDir(env, homedir);
   const newDir = path.join(home, ".marv");
-  const legacyDir = path.join(home, ".openclaw");
+  const legacyDir = path.join(home, ".marv");
   try {
     const hasNew = fs.existsSync(newDir);
     if (hasNew) {
@@ -344,9 +344,9 @@ function resolveHomeDisplayPrefix(): { home: string; prefix: string } | undefine
   if (!home) {
     return undefined;
   }
-  const explicitHome = process.env.MARV_HOME?.trim() || process.env.OPENCLAW_HOME?.trim();
+  const explicitHome = process.env.MARV_HOME?.trim() || process.env.MARV_HOME?.trim();
   if (explicitHome) {
-    return { home, prefix: process.env.MARV_HOME?.trim() ? "$MARV_HOME" : "$OPENCLAW_HOME" };
+    return { home, prefix: process.env.MARV_HOME?.trim() ? "$MARV_HOME" : "$MARV_HOME" };
   }
   return { home, prefix: "~" };
 }
@@ -404,5 +404,5 @@ export function formatTerminalLink(
   return `\u001b]8;;${safeUrl}\u0007${safeLabel}\u001b]8;;\u0007`;
 }
 
-// Configuration root; can be overridden via MARV_STATE_DIR (legacy OPENCLAW_STATE_DIR).
+// Configuration root; can be overridden via MARV_STATE_DIR (legacy MARV_STATE_DIR).
 export const CONFIG_DIR = resolveConfigDir();

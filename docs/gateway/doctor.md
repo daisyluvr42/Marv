@@ -53,7 +53,7 @@ Scan system services for extra gateway installs (launchd/systemd/schtasks).
 If you want to review changes before writing, open the config file first:
 
 ```bash
-cat ~/.openclaw/marv.json
+cat ~/.marv/marv.json
 ```
 
 ## What it does (summary)
@@ -104,7 +104,7 @@ Doctor will:
 
 - Explain which legacy keys were found.
 - Show the migration it applied.
-- Rewrite `~/.openclaw/marv.json` with the updated schema.
+- Rewrite `~/.marv/marv.json` with the updated schema.
 
 The Gateway also auto-runs doctor migrations on startup when it detects a
 legacy config format, so stale configs are repaired without manual intervention.
@@ -138,12 +138,12 @@ remove the override and restore per-model API routing + costs.
 Doctor can migrate older on-disk layouts into the current structure:
 
 - Sessions store + transcripts:
-  - from `~/.openclaw/sessions/` to `~/.openclaw/agents/<agentId>/sessions/`
+  - from `~/.marv/sessions/` to `~/.marv/agents/<agentId>/sessions/`
 - Agent dir:
-  - from `~/.openclaw/agent/` to `~/.openclaw/agents/<agentId>/agent/`
+  - from `~/.marv/agent/` to `~/.marv/agents/<agentId>/agent/`
 - WhatsApp auth state (Baileys):
-  - from legacy `~/.openclaw/credentials/*.json` (except `oauth.json`)
-  - to `~/.openclaw/credentials/whatsapp/<accountId>/...` (default account id: `default`)
+  - from legacy `~/.marv/credentials/*.json` (except `oauth.json`)
+  - to `~/.marv/credentials/whatsapp/<accountId>/...` (default account id: `default`)
 
 These migrations are best-effort and idempotent; doctor will emit warnings when
 it leaves any legacy folders behind as backups. The Gateway/CLI also auto-migrates
@@ -169,11 +169,11 @@ Doctor checks:
 - **Main session “1-line JSONL”**: flags when the main transcript has only one
   line (history is not accumulating).
 - **Multiple state dirs**: warns when multiple `~/.marv` folders exist across
-  home directories or when `OPENCLAW_STATE_DIR` points elsewhere (history can
+  home directories or when `MARV_STATE_DIR` points elsewhere (history can
   split between installs).
 - **Remote mode reminder**: if `gateway.mode=remote`, doctor reminds you to run
   it on the remote host (the state lives there).
-- **Config file permissions**: warns if `~/.openclaw/marv.json` is
+- **Config file permissions**: warns if `~/.marv/marv.json` is
   group/world readable and offers to tighten to `600`.
 
 ### 5) Model auth health (OAuth expiry)

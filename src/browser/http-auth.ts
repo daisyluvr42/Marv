@@ -50,7 +50,7 @@ export function isAuthorizedBrowserRequest(
   if (auth.password) {
     const passwordHeader = (
       firstHeaderValue(req.headers["x-marv-password"]) ||
-      firstHeaderValue(req.headers["x-openclaw-password"])
+      firstHeaderValue(req.headers["x-marv-password"])
     ).trim();
     if (passwordHeader && safeEqualSecret(passwordHeader, auth.password)) {
       return true;

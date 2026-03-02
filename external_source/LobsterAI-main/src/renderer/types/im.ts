@@ -12,7 +12,7 @@ export interface DingTalkConfig {
   robotCode?: string;
   corpId?: string;
   agentId?: string;
-  messageType: 'markdown' | 'card';
+  messageType: "markdown" | "card";
   cardTemplateId?: string;
   debug?: boolean;
 }
@@ -31,10 +31,10 @@ export interface FeishuConfig {
   enabled: boolean;
   appId: string;
   appSecret: string;
-  domain: 'feishu' | 'lark' | string;
+  domain: "feishu" | "lark" | string;
   encryptKey?: string;
   verificationToken?: string;
-  renderMode: 'text' | 'card';
+  renderMode: "text" | "card";
   debug?: boolean;
 }
 
@@ -84,7 +84,7 @@ export interface DiscordGatewayStatus {
 
 // ==================== Common IM Types ====================
 
-export type IMPlatform = 'dingtalk' | 'feishu' | 'telegram' | 'discord';
+export type IMPlatform = "dingtalk" | "feishu" | "telegram" | "discord";
 
 export interface IMGatewayConfig {
   dingtalk: DingTalkConfig;
@@ -108,17 +108,17 @@ export interface IMGatewayStatus {
 
 // ==================== Media Attachment Types ====================
 
-export type TelegramMediaType = 'image' | 'video' | 'audio' | 'voice' | 'document' | 'sticker';
+export type TelegramMediaType = "image" | "video" | "audio" | "voice" | "document" | "sticker";
 
 export interface IMMediaAttachment {
   type: TelegramMediaType;
-  localPath: string;          // 下载后的本地路径
-  mimeType: string;           // MIME 类型
-  fileName?: string;          // 原始文件名
-  fileSize?: number;          // 文件大小（字节）
-  width?: number;             // 图片/视频宽度
-  height?: number;            // 图片/视频高度
-  duration?: number;          // 音视频时长（秒）
+  localPath: string; // 下载后的本地路径
+  mimeType: string; // MIME 类型
+  fileName?: string; // 原始文件名
+  fileSize?: number; // 文件大小（字节）
+  width?: number; // 图片/视频宽度
+  height?: number; // 图片/视频高度
+  duration?: number; // 音视频时长（秒）
 }
 
 export interface IMMessage {
@@ -128,11 +128,11 @@ export interface IMMessage {
   senderId: string;
   senderName?: string;
   content: string;
-  chatType: 'direct' | 'group';
+  chatType: "direct" | "group";
   timestamp: number;
   // 媒体附件（Telegram 支持）
   attachments?: IMMediaAttachment[];
-  mediaGroupId?: string;      // 媒体组 ID（用于合并多张图片）
+  mediaGroupId?: string; // 媒体组 ID（用于合并多张图片）
 }
 
 // ==================== IPC Result Types ====================
@@ -156,22 +156,22 @@ export interface IMGatewayResult {
 
 // ==================== Connectivity Test Types ====================
 
-export type IMConnectivityVerdict = 'pass' | 'warn' | 'fail';
+export type IMConnectivityVerdict = "pass" | "warn" | "fail";
 
-export type IMConnectivityCheckLevel = 'pass' | 'info' | 'warn' | 'fail';
+export type IMConnectivityCheckLevel = "pass" | "info" | "warn" | "fail";
 
 export type IMConnectivityCheckCode =
-  | 'missing_credentials'
-  | 'auth_check'
-  | 'gateway_running'
-  | 'inbound_activity'
-  | 'outbound_activity'
-  | 'platform_last_error'
-  | 'feishu_group_requires_mention'
-  | 'feishu_event_subscription_required'
-  | 'discord_group_requires_mention'
-  | 'telegram_privacy_mode_hint'
-  | 'dingtalk_bot_membership_hint';
+  | "missing_credentials"
+  | "auth_check"
+  | "gateway_running"
+  | "inbound_activity"
+  | "outbound_activity"
+  | "platform_last_error"
+  | "feishu_group_requires_mention"
+  | "feishu_event_subscription_required"
+  | "discord_group_requires_mention"
+  | "telegram_privacy_mode_hint"
+  | "dingtalk_bot_membership_hint";
 
 export interface IMConnectivityCheck {
   code: IMConnectivityCheckCode;
@@ -197,35 +197,35 @@ export interface IMConnectivityTestResponse {
 
 export const DEFAULT_DINGTALK_CONFIG: DingTalkConfig = {
   enabled: false,
-  clientId: '',
-  clientSecret: '',
-  messageType: 'markdown',
+  clientId: "",
+  clientSecret: "",
+  messageType: "markdown",
   debug: true,
 };
 
 export const DEFAULT_FEISHU_CONFIG: FeishuConfig = {
   enabled: false,
-  appId: '',
-  appSecret: '',
-  domain: 'feishu',
-  renderMode: 'text',
+  appId: "",
+  appSecret: "",
+  domain: "feishu",
+  renderMode: "text",
   debug: true,
 };
 
 export const DEFAULT_TELEGRAM_CONFIG: TelegramConfig = {
   enabled: false,
-  botToken: '',
+  botToken: "",
   debug: true,
 };
 
 export const DEFAULT_DISCORD_CONFIG: DiscordConfig = {
   enabled: false,
-  botToken: '',
+  botToken: "",
   debug: true,
 };
 
 export const DEFAULT_IM_SETTINGS: IMSettings = {
-  systemPrompt: '',
+  systemPrompt: "",
   skillsEnabled: true,
 };
 

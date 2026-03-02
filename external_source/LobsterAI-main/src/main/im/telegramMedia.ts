@@ -2,22 +2,22 @@
  * Telegram Media Download Utilities
  * Telegram 媒体下载工具函数
  */
-import * as fs from 'fs';
-import * as path from 'path';
-import { app } from 'electron';
-import type { Context } from 'grammy';
-import type { IMMediaAttachment } from './types';
-import { fetchWithSystemProxy } from './http';
+import * as fs from "fs";
+import * as path from "path";
+import { app } from "electron";
+import type { Context } from "grammy";
+import { fetchWithSystemProxy } from "./http";
+import type { IMMediaAttachment } from "./types";
 
 // 常量
-const MAX_FILE_SIZE = 20 * 1024 * 1024;  // Telegram Bot API 限制 20MB
-const INBOUND_DIR = 'telegram-inbound';
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // Telegram Bot API 限制 20MB
+const INBOUND_DIR = "telegram-inbound";
 
 /**
  * 获取媒体存储目录
  */
 export function getTelegramMediaDir(): string {
-  const userDataPath = app.getPath('userData');
+  const userDataPath = app.getPath("userData");
   const mediaDir = path.join(userDataPath, INBOUND_DIR);
 
   if (!fs.existsSync(mediaDir)) {
@@ -32,7 +32,7 @@ export function getTelegramMediaDir(): string {
  */
 function generateFileName(fileId: string, extension: string): string {
   const timestamp = Date.now();
-  const shortId = fileId.slice(-8);  // 取 file_id 后 8 位
+  const shortId = fileId.slice(-8); // 取 file_id 后 8 位
   return `${timestamp}_${shortId}${extension}`;
 }
 
@@ -41,26 +41,26 @@ function generateFileName(fileId: string, extension: string): string {
  */
 function getExtensionFromMime(mimeType: string): string {
   const mimeMap: Record<string, string> = {
-    'image/jpeg': '.jpg',
-    'image/png': '.png',
-    'image/gif': '.gif',
-    'image/webp': '.webp',
-    'image/bmp': '.bmp',
-    'video/mp4': '.mp4',
-    'video/quicktime': '.mov',
-    'video/webm': '.webm',
-    'video/x-msvideo': '.avi',
-    'audio/ogg': '.ogg',
-    'audio/mpeg': '.mp3',
-    'audio/mp4': '.m4a',
-    'audio/wav': '.wav',
-    'audio/x-wav': '.wav',
-    'application/pdf': '.pdf',
-    'application/zip': '.zip',
-    'application/x-rar-compressed': '.rar',
-    'application/octet-stream': '.bin',
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/bmp": ".bmp",
+    "video/mp4": ".mp4",
+    "video/quicktime": ".mov",
+    "video/webm": ".webm",
+    "video/x-msvideo": ".avi",
+    "audio/ogg": ".ogg",
+    "audio/mpeg": ".mp3",
+    "audio/mp4": ".m4a",
+    "audio/wav": ".wav",
+    "audio/x-wav": ".wav",
+    "application/pdf": ".pdf",
+    "application/zip": ".zip",
+    "application/x-rar-compressed": ".rar",
+    "application/octet-stream": ".bin",
   };
-  return mimeMap[mimeType] || '.bin';
+  return mimeMap[mimeType] || ".bin";
 }
 
 /**
@@ -74,20 +74,22 @@ export async function downloadTelegramFile(
   ctx: Context,
   fileId: string,
   mimeType: string,
-  originalFileName?: string
+  originalFileName?: string,
 ): Promise<{ localPath: string; fileSize: number } | null> {
   try {
     // 1. 获取文件信息
     const file = await ctx.api.getFile(fileId);
 
     if (!file.file_path) {
-      console.warn('[Telegram Media] No file_path returned');
+      console.warn("[Telegram Media] No file_path returned");
       return null;
     }
 
     // 2. 检查文件大小
     if (file.file_size && file.file_size > MAX_FILE_SIZE) {
-      console.warn(`[Telegram Media] File too large: ${(file.file_size / 1024 / 1024).toFixed(1)}MB (limit: 20MB)`);
+      console.warn(
+        `[Telegram Media] File too large: ${(file.file_size / 1024 / 1024).toFixed(1)}MB (limit: 20MB)`,
+      );
       return null;
     }
 
@@ -114,7 +116,9 @@ export async function downloadTelegramFile(
     const buffer = Buffer.from(await response.arrayBuffer());
     fs.writeFileSync(localPath, buffer);
 
-    console.log(`[Telegram Media] Downloaded: ${fileName} (${(buffer.length / 1024).toFixed(1)} KB)`);
+    console.log(
+      `[Telegram Media] Downloaded: ${fileName} (${(buffer.length / 1024).toFixed(1)} KB)`,
+    );
 
     return {
       localPath,
@@ -129,23 +133,23 @@ export async function downloadTelegramFile(
 /**
  * 从 Telegram 消息提取媒体附件
  */
-export async function extractMediaFromMessage(
-  ctx: Context
-): Promise<IMMediaAttachment[]> {
+export async function extractMediaFromMessage(ctx: Context): Promise<IMMediaAttachment[]> {
   const msg = ctx.message;
-  if (!msg) {return [];}
+  if (!msg) {
+    return [];
+  }
 
   const attachments: IMMediaAttachment[] = [];
 
   // 1. 照片 - 取最高分辨率
   if (msg.photo && msg.photo.length > 0) {
-    const photo = msg.photo[msg.photo.length - 1];  // 最后一个是最大的
-    const result = await downloadTelegramFile(ctx, photo.file_id, 'image/jpeg');
+    const photo = msg.photo[msg.photo.length - 1]; // 最后一个是最大的
+    const result = await downloadTelegramFile(ctx, photo.file_id, "image/jpeg");
     if (result) {
       attachments.push({
-        type: 'image',
+        type: "image",
         localPath: result.localPath,
-        mimeType: 'image/jpeg',
+        mimeType: "image/jpeg",
         fileSize: result.fileSize,
         width: photo.width,
         height: photo.height,
@@ -156,11 +160,11 @@ export async function extractMediaFromMessage(
   // 2. 视频
   if (msg.video) {
     const video = msg.video;
-    const mimeType = video.mime_type || 'video/mp4';
+    const mimeType = video.mime_type || "video/mp4";
     const result = await downloadTelegramFile(ctx, video.file_id, mimeType, video.file_name);
     if (result) {
       attachments.push({
-        type: 'video',
+        type: "video",
         localPath: result.localPath,
         mimeType,
         fileName: video.file_name,
@@ -175,12 +179,12 @@ export async function extractMediaFromMessage(
   // 3. 圆形视频 (video_note)
   if (msg.video_note) {
     const videoNote = msg.video_note;
-    const result = await downloadTelegramFile(ctx, videoNote.file_id, 'video/mp4');
+    const result = await downloadTelegramFile(ctx, videoNote.file_id, "video/mp4");
     if (result) {
       attachments.push({
-        type: 'video',
+        type: "video",
         localPath: result.localPath,
-        mimeType: 'video/mp4',
+        mimeType: "video/mp4",
         fileSize: result.fileSize,
         width: videoNote.length,
         height: videoNote.length,
@@ -192,11 +196,11 @@ export async function extractMediaFromMessage(
   // 4. 音频文件
   if (msg.audio) {
     const audio = msg.audio;
-    const mimeType = audio.mime_type || 'audio/mpeg';
+    const mimeType = audio.mime_type || "audio/mpeg";
     const result = await downloadTelegramFile(ctx, audio.file_id, mimeType, audio.file_name);
     if (result) {
       attachments.push({
-        type: 'audio',
+        type: "audio",
         localPath: result.localPath,
         mimeType,
         fileName: audio.file_name,
@@ -209,11 +213,11 @@ export async function extractMediaFromMessage(
   // 5. 语音消息
   if (msg.voice) {
     const voice = msg.voice;
-    const mimeType = voice.mime_type || 'audio/ogg';
+    const mimeType = voice.mime_type || "audio/ogg";
     const result = await downloadTelegramFile(ctx, voice.file_id, mimeType);
     if (result) {
       attachments.push({
-        type: 'voice',
+        type: "voice",
         localPath: result.localPath,
         mimeType,
         fileSize: result.fileSize,
@@ -225,11 +229,11 @@ export async function extractMediaFromMessage(
   // 6. 文档/文件
   if (msg.document) {
     const doc = msg.document;
-    const mimeType = doc.mime_type || 'application/octet-stream';
+    const mimeType = doc.mime_type || "application/octet-stream";
     const result = await downloadTelegramFile(ctx, doc.file_id, mimeType, doc.file_name);
     if (result) {
       attachments.push({
-        type: 'document',
+        type: "document",
         localPath: result.localPath,
         mimeType,
         fileName: doc.file_name,
@@ -243,19 +247,19 @@ export async function extractMediaFromMessage(
     const sticker = msg.sticker;
     // 只处理静态贴纸，跳过动画贴纸 (TGS) 和视频贴纸 (WEBM)
     if (!sticker.is_animated && !sticker.is_video) {
-      const result = await downloadTelegramFile(ctx, sticker.file_id, 'image/webp');
+      const result = await downloadTelegramFile(ctx, sticker.file_id, "image/webp");
       if (result) {
         attachments.push({
-          type: 'sticker',
+          type: "sticker",
           localPath: result.localPath,
-          mimeType: 'image/webp',
+          mimeType: "image/webp",
           fileSize: result.fileSize,
           width: sticker.width,
           height: sticker.height,
         });
       }
     } else {
-      console.log('[Telegram Media] Skipping animated/video sticker');
+      console.log("[Telegram Media] Skipping animated/video sticker");
     }
   }
 

@@ -14,119 +14,119 @@ import {
 
 describe("argv helpers", () => {
   it("detects help/version flags", () => {
-    expect(hasHelpOrVersion(["node", "openclaw", "--help"])).toBe(true);
-    expect(hasHelpOrVersion(["node", "openclaw", "-V"])).toBe(true);
-    expect(hasHelpOrVersion(["node", "openclaw", "status"])).toBe(false);
+    expect(hasHelpOrVersion(["node", "marv", "--help"])).toBe(true);
+    expect(hasHelpOrVersion(["node", "marv", "-V"])).toBe(true);
+    expect(hasHelpOrVersion(["node", "marv", "status"])).toBe(false);
   });
 
   it("extracts command path ignoring flags and terminator", () => {
-    expect(getCommandPath(["node", "openclaw", "status", "--json"], 2)).toEqual(["status"]);
-    expect(getCommandPath(["node", "openclaw", "agents", "list"], 2)).toEqual(["agents", "list"]);
-    expect(getCommandPath(["node", "openclaw", "status", "--", "ignored"], 2)).toEqual(["status"]);
+    expect(getCommandPath(["node", "marv", "status", "--json"], 2)).toEqual(["status"]);
+    expect(getCommandPath(["node", "marv", "agents", "list"], 2)).toEqual(["agents", "list"]);
+    expect(getCommandPath(["node", "marv", "status", "--", "ignored"], 2)).toEqual(["status"]);
   });
 
   it("returns primary command", () => {
-    expect(getPrimaryCommand(["node", "openclaw", "agents", "list"])).toBe("agents");
-    expect(getPrimaryCommand(["node", "openclaw"])).toBeNull();
+    expect(getPrimaryCommand(["node", "marv", "agents", "list"])).toBe("agents");
+    expect(getPrimaryCommand(["node", "marv"])).toBeNull();
   });
 
   it("parses boolean flags and ignores terminator", () => {
-    expect(hasFlag(["node", "openclaw", "status", "--json"], "--json")).toBe(true);
-    expect(hasFlag(["node", "openclaw", "--", "--json"], "--json")).toBe(false);
+    expect(hasFlag(["node", "marv", "status", "--json"], "--json")).toBe(true);
+    expect(hasFlag(["node", "marv", "--", "--json"], "--json")).toBe(false);
   });
 
   it("extracts flag values with equals and missing values", () => {
-    expect(getFlagValue(["node", "openclaw", "status", "--timeout", "5000"], "--timeout")).toBe(
+    expect(getFlagValue(["node", "marv", "status", "--timeout", "5000"], "--timeout")).toBe(
       "5000",
     );
-    expect(getFlagValue(["node", "openclaw", "status", "--timeout=2500"], "--timeout")).toBe(
+    expect(getFlagValue(["node", "marv", "status", "--timeout=2500"], "--timeout")).toBe(
       "2500",
     );
-    expect(getFlagValue(["node", "openclaw", "status", "--timeout"], "--timeout")).toBeNull();
-    expect(getFlagValue(["node", "openclaw", "status", "--timeout", "--json"], "--timeout")).toBe(
+    expect(getFlagValue(["node", "marv", "status", "--timeout"], "--timeout")).toBeNull();
+    expect(getFlagValue(["node", "marv", "status", "--timeout", "--json"], "--timeout")).toBe(
       null,
     );
-    expect(getFlagValue(["node", "openclaw", "--", "--timeout=99"], "--timeout")).toBeUndefined();
+    expect(getFlagValue(["node", "marv", "--", "--timeout=99"], "--timeout")).toBeUndefined();
   });
 
   it("parses verbose flags", () => {
-    expect(getVerboseFlag(["node", "openclaw", "status", "--verbose"])).toBe(true);
-    expect(getVerboseFlag(["node", "openclaw", "status", "--debug"])).toBe(false);
-    expect(getVerboseFlag(["node", "openclaw", "status", "--debug"], { includeDebug: true })).toBe(
+    expect(getVerboseFlag(["node", "marv", "status", "--verbose"])).toBe(true);
+    expect(getVerboseFlag(["node", "marv", "status", "--debug"])).toBe(false);
+    expect(getVerboseFlag(["node", "marv", "status", "--debug"], { includeDebug: true })).toBe(
       true,
     );
   });
 
   it("parses positive integer flag values", () => {
-    expect(getPositiveIntFlagValue(["node", "openclaw", "status"], "--timeout")).toBeUndefined();
+    expect(getPositiveIntFlagValue(["node", "marv", "status"], "--timeout")).toBeUndefined();
     expect(
-      getPositiveIntFlagValue(["node", "openclaw", "status", "--timeout"], "--timeout"),
+      getPositiveIntFlagValue(["node", "marv", "status", "--timeout"], "--timeout"),
     ).toBeNull();
     expect(
-      getPositiveIntFlagValue(["node", "openclaw", "status", "--timeout", "5000"], "--timeout"),
+      getPositiveIntFlagValue(["node", "marv", "status", "--timeout", "5000"], "--timeout"),
     ).toBe(5000);
     expect(
-      getPositiveIntFlagValue(["node", "openclaw", "status", "--timeout", "nope"], "--timeout"),
+      getPositiveIntFlagValue(["node", "marv", "status", "--timeout", "nope"], "--timeout"),
     ).toBeUndefined();
   });
 
   it("builds parse argv from raw args", () => {
     const nodeArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["node", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["node", "marv", "status"],
     });
-    expect(nodeArgv).toEqual(["node", "openclaw", "status"]);
+    expect(nodeArgv).toEqual(["node", "marv", "status"]);
 
     const versionedNodeArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["node-22", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["node-22", "marv", "status"],
     });
-    expect(versionedNodeArgv).toEqual(["node-22", "openclaw", "status"]);
+    expect(versionedNodeArgv).toEqual(["node-22", "marv", "status"]);
 
     const versionedNodeWindowsArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["node-22.2.0.exe", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["node-22.2.0.exe", "marv", "status"],
     });
-    expect(versionedNodeWindowsArgv).toEqual(["node-22.2.0.exe", "openclaw", "status"]);
+    expect(versionedNodeWindowsArgv).toEqual(["node-22.2.0.exe", "marv", "status"]);
 
     const versionedNodePatchlessArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["node-22.2", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["node-22.2", "marv", "status"],
     });
-    expect(versionedNodePatchlessArgv).toEqual(["node-22.2", "openclaw", "status"]);
+    expect(versionedNodePatchlessArgv).toEqual(["node-22.2", "marv", "status"]);
 
     const versionedNodeWindowsPatchlessArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["node-22.2.exe", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["node-22.2.exe", "marv", "status"],
     });
-    expect(versionedNodeWindowsPatchlessArgv).toEqual(["node-22.2.exe", "openclaw", "status"]);
+    expect(versionedNodeWindowsPatchlessArgv).toEqual(["node-22.2.exe", "marv", "status"]);
 
     const versionedNodeWithPathArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["/usr/bin/node-22.2.0", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["/usr/bin/node-22.2.0", "marv", "status"],
     });
-    expect(versionedNodeWithPathArgv).toEqual(["/usr/bin/node-22.2.0", "openclaw", "status"]);
+    expect(versionedNodeWithPathArgv).toEqual(["/usr/bin/node-22.2.0", "marv", "status"]);
 
     const nodejsArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["nodejs", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["nodejs", "marv", "status"],
     });
-    expect(nodejsArgv).toEqual(["nodejs", "openclaw", "status"]);
+    expect(nodejsArgv).toEqual(["nodejs", "marv", "status"]);
 
     const nonVersionedNodeArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["node-dev", "openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["node-dev", "marv", "status"],
     });
-    expect(nonVersionedNodeArgv).toEqual(["node", "openclaw", "node-dev", "openclaw", "status"]);
+    expect(nonVersionedNodeArgv).toEqual(["node", "marv", "node-dev", "marv", "status"]);
 
     const directArgv = buildParseArgv({
-      programName: "openclaw",
-      rawArgs: ["openclaw", "status"],
+      programName: "marv",
+      rawArgs: ["marv", "status"],
     });
-    expect(directArgv).toEqual(["node", "openclaw", "status"]);
+    expect(directArgv).toEqual(["node", "marv", "status"]);
 
     const bunArgv = buildParseArgv({
-      programName: "openclaw",
+      programName: "marv",
       rawArgs: ["bun", "src/entry.ts", "status"],
     });
     expect(bunArgv).toEqual(["bun", "src/entry.ts", "status"]);
@@ -134,24 +134,24 @@ describe("argv helpers", () => {
 
   it("builds parse argv from fallback args", () => {
     const fallbackArgv = buildParseArgv({
-      programName: "openclaw",
+      programName: "marv",
       fallbackArgv: ["status"],
     });
-    expect(fallbackArgv).toEqual(["node", "openclaw", "status"]);
+    expect(fallbackArgv).toEqual(["node", "marv", "status"]);
   });
 
   it("decides when to migrate state", () => {
-    expect(shouldMigrateState(["node", "openclaw", "status"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "health"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "sessions"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "config", "get", "update"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "config", "unset", "update"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "models", "list"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "models", "status"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "memory", "status"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "agent", "--message", "hi"])).toBe(false);
-    expect(shouldMigrateState(["node", "openclaw", "agents", "list"])).toBe(true);
-    expect(shouldMigrateState(["node", "openclaw", "message", "send"])).toBe(true);
+    expect(shouldMigrateState(["node", "marv", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "health"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "sessions"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "config", "get", "update"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "config", "unset", "update"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "models", "list"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "models", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "memory", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "agent", "--message", "hi"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "agents", "list"])).toBe(true);
+    expect(shouldMigrateState(["node", "marv", "message", "send"])).toBe(true);
   });
 
   it("reuses command path for migrate state decisions", () => {

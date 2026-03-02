@@ -64,8 +64,8 @@ Marv 在两个层中持久化会话：
 
 在 Gateway 网关主机上，每个智能体：
 
-- 存储：`~/.openclaw/agents/<agentId>/sessions/sessions.json`
-- 记录：`~/.openclaw/agents/<agentId>/sessions/<sessionId>.jsonl`
+- 存储：`~/.marv/agents/<agentId>/sessions/sessions.json`
+- 记录：`~/.marv/agents/<agentId>/sessions/<sessionId>.jsonl`
   - Telegram 话题会话：`.../<sessionId>-topic-<threadId>.jsonl`
 
 Marv 通过 `src/config/sessions.ts` 解析这些位置。

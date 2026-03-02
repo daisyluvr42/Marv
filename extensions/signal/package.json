@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/signal",
+  "name": "@marv/signal",
   "version": "2026.2.18",
   "private": true,
-  "description": "OpenClaw Signal channel plugin",
+  "description": "Marv Signal channel plugin",
   "type": "module",
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "marv": "workspace:*"
   },
-  "openclaw": {
+  "marv": {
     "extensions": [
       "./index.ts"
     ]

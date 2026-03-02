@@ -1,15 +1,15 @@
-import { Skill } from '../types/skill';
+import { Skill } from "../types/skill";
 
 type EmailConnectivityCheck = {
-  code: 'imap_connection' | 'smtp_connection';
-  level: 'pass' | 'fail';
+  code: "imap_connection" | "smtp_connection";
+  level: "pass" | "fail";
   message: string;
   durationMs: number;
 };
 
 type EmailConnectivityTestResult = {
   testedAt: number;
-  verdict: 'pass' | 'fail';
+  verdict: "pass" | "fail";
   checks: EmailConnectivityCheck[];
 };
 
@@ -18,7 +18,9 @@ class SkillService {
   private initialized = false;
 
   async init(): Promise<void> {
-    if (this.initialized) {return;}
+    if (this.initialized) {
+      return;
+    }
     await this.loadSkills();
     this.initialized = true;
   }
@@ -33,7 +35,7 @@ class SkillService {
       }
       return this.skills;
     } catch (error) {
-      console.error('Failed to load skills:', error);
+      console.error("Failed to load skills:", error);
       this.skills = [];
       return this.skills;
     }
@@ -46,9 +48,9 @@ class SkillService {
         this.skills = result.skills;
         return this.skills;
       }
-      throw new Error(result.error || 'Failed to update skill');
+      throw new Error(result.error || "Failed to update skill");
     } catch (error) {
-      console.error('Failed to update skill:', error);
+      console.error("Failed to update skill:", error);
       throw error;
     }
   }
@@ -61,13 +63,15 @@ class SkillService {
       }
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete skill';
-      console.error('Failed to delete skill:', error);
+      const message = error instanceof Error ? error.message : "Failed to delete skill";
+      console.error("Failed to delete skill:", error);
       return { success: false, error: message };
     }
   }
 
-  async downloadSkill(source: string): Promise<{ success: boolean; skills?: Skill[]; error?: string }> {
+  async downloadSkill(
+    source: string,
+  ): Promise<{ success: boolean; skills?: Skill[]; error?: string }> {
     try {
       const result = await window.electron.skills.download(source);
       if (result.success && result.skills) {
@@ -75,8 +79,8 @@ class SkillService {
       }
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to download skill';
-      console.error('Failed to download skill:', error);
+      const message = error instanceof Error ? error.message : "Failed to download skill";
+      console.error("Failed to download skill:", error);
       return { success: false, error: message };
     }
   }
@@ -89,7 +93,7 @@ class SkillService {
       }
       return null;
     } catch (error) {
-      console.error('Failed to get skills root:', error);
+      console.error("Failed to get skills root:", error);
       return null;
     }
   }
@@ -103,11 +107,11 @@ class SkillService {
   }
 
   getEnabledSkills(): Skill[] {
-    return this.skills.filter(s => s.enabled);
+    return this.skills.filter((s) => s.enabled);
   }
 
   getSkillById(id: string): Skill | undefined {
-    return this.skills.find(s => s.id === id);
+    return this.skills.find((s) => s.id === id);
   }
 
   async getSkillConfig(skillId: string): Promise<Record<string, string>> {
@@ -118,7 +122,7 @@ class SkillService {
       }
       return {};
     } catch (error) {
-      console.error('Failed to get skill config:', error);
+      console.error("Failed to get skill config:", error);
       return {};
     }
   }
@@ -128,14 +132,14 @@ class SkillService {
       const result = await window.electron.skills.setConfig(skillId, config);
       return result.success;
     } catch (error) {
-      console.error('Failed to set skill config:', error);
+      console.error("Failed to set skill config:", error);
       return false;
     }
   }
 
   async testEmailConnectivity(
     skillId: string,
-    config: Record<string, string>
+    config: Record<string, string>,
   ): Promise<EmailConnectivityTestResult | null> {
     try {
       const result = await window.electron.skills.testEmailConnectivity(skillId, config);
@@ -144,7 +148,7 @@ class SkillService {
       }
       return null;
     } catch (error) {
-      console.error('Failed to test email connectivity:', error);
+      console.error("Failed to test email connectivity:", error);
       return null;
     }
   }
@@ -152,9 +156,9 @@ class SkillService {
   async getAutoRoutingPrompt(): Promise<string | null> {
     try {
       const result = await window.electron.skills.autoRoutingPrompt();
-      return result.success ? (result.prompt || null) : null;
+      return result.success ? result.prompt || null : null;
     } catch (error) {
-      console.error('Failed to get auto-routing prompt:', error);
+      console.error("Failed to get auto-routing prompt:", error);
       return null;
     }
   }

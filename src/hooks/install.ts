@@ -72,10 +72,10 @@ export function resolveHookInstallDir(hookId: string, hooksDir?: string): string
   return targetDirResult.path;
 }
 
-async function ensureOpenClawHooks(manifest: HookPackageManifest) {
+async function ensureMarvHooks(manifest: HookPackageManifest) {
   const hooks = manifest[MANIFEST_KEY]?.hooks;
   if (!Array.isArray(hooks)) {
-    throw new Error("package.json missing marv.hooks (legacy openclaw.hooks accepted)");
+    throw new Error("package.json missing marv.hooks (legacy marv.hooks accepted)");
   }
   const list = hooks.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean);
   if (list.length === 0) {
@@ -177,7 +177,7 @@ async function installHookPackageFromDir(params: {
 
   let hookEntries: string[];
   try {
-    hookEntries = await ensureOpenClawHooks(manifest);
+    hookEntries = await ensureMarvHooks(manifest);
   } catch (err) {
     return { ok: false, error: String(err) };
   }

@@ -23,12 +23,12 @@ x-i18n:
 - `marv status --deep` — 还会探测运行中的 Gateway 网关（支持时进行每渠道探测）。
 - `marv health --json` — 向运行中的 Gateway 网关请求完整健康快照（仅 WS；不直接访问 Baileys 套接字）。
 - 在 WhatsApp/WebChat 中单独发送 `/status` 消息可获取状态回复，而不调用智能体。
-- 日志：跟踪 `/tmp/openclaw/openclaw-*.log` 并过滤 `web-heartbeat`、`web-reconnect`、`web-auto-reply`、`web-inbound`。
+- 日志：跟踪 `/tmp/marv/marv-*.log` 并过滤 `web-heartbeat`、`web-reconnect`、`web-auto-reply`、`web-inbound`。
 
 ## 深度诊断
 
-- 磁盘上的凭证：`ls -l ~/.openclaw/credentials/whatsapp/<accountId>/creds.json`（mtime 应该是最近的）。
-- 会话存储：`ls -l ~/.openclaw/agents/<agentId>/sessions/sessions.json`（路径可在配置中覆盖）。计数和最近收件人通过 `status` 显示。
+- 磁盘上的凭证：`ls -l ~/.marv/credentials/whatsapp/<accountId>/creds.json`（mtime 应该是最近的）。
+- 会话存储：`ls -l ~/.marv/agents/<agentId>/sessions/sessions.json`（路径可在配置中覆盖）。计数和最近收件人通过 `status` 显示。
 - 重新链接流程：当日志中出现状态码 409–515 或 `loggedOut` 时，执行 `marv channels logout && marv channels login --verbose`。（注意：配对后状态 515 时 QR 登录流程会自动重启一次。）
 
 ## 当出现故障时

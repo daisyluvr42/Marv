@@ -77,7 +77,7 @@ export async function resolveGatewayRuntimeConfig(params: {
   const hooksConfig = resolveHooksConfig(params.cfg);
   const canvasHostEnabled =
     process.env.MARV_SKIP_CANVAS_HOST !== "1" &&
-    process.env.OPENCLAW_SKIP_CANVAS_HOST !== "1" &&
+    process.env.MARV_SKIP_CANVAS_HOST !== "1" &&
     params.cfg.canvasHost?.enabled !== false;
 
   const trustedProxies = params.cfg.gateway?.trustedProxies ?? [];
@@ -85,7 +85,7 @@ export async function resolveGatewayRuntimeConfig(params: {
   assertGatewayAuthConfigured(resolvedAuth);
   if (tailscaleMode === "funnel" && authMode !== "password") {
     throw new Error(
-      "tailscale funnel requires gateway auth mode=password (set gateway.auth.password or MARV_GATEWAY_PASSWORD; legacy OPENCLAW_GATEWAY_PASSWORD also supported)",
+      "tailscale funnel requires gateway auth mode=password (set gateway.auth.password or MARV_GATEWAY_PASSWORD; legacy MARV_GATEWAY_PASSWORD also supported)",
     );
   }
   if (tailscaleMode !== "off" && !isLoopbackHost(bindHost)) {
@@ -93,7 +93,7 @@ export async function resolveGatewayRuntimeConfig(params: {
   }
   if (!isLoopbackHost(bindHost) && !hasSharedSecret && authMode !== "trusted-proxy") {
     throw new Error(
-      `refusing to bind gateway to ${bindHost}:${params.port} without auth (set gateway.auth.token/password, or set MARV_GATEWAY_TOKEN/MARV_GATEWAY_PASSWORD; legacy OPENCLAW_* also supported)`,
+      `refusing to bind gateway to ${bindHost}:${params.port} without auth (set gateway.auth.token/password, or set MARV_GATEWAY_TOKEN/MARV_GATEWAY_PASSWORD; legacy MARV_* also supported)`,
     );
   }
 

@@ -58,7 +58,7 @@ scripts/pi/run-tests.sh --live
 
 ## 完全重置
 
-状态存储在 Marv 状态目录下。默认为 `~/.marv`。如果设置了 `OPENCLAW_STATE_DIR`，则使用该目录。
+状态存储在 Marv 状态目录下。默认为 `~/.marv`。如果设置了 `MARV_STATE_DIR`，则使用该目录。
 
 要重置所有内容：
 
@@ -73,5 +73,5 @@ scripts/pi/run-tests.sh --live
 
 ## 参考资料
 
-- https://docs.marv.ai/testing
-- https://docs.marv.ai/start/getting-started
+- /testing
+- /start/getting-started

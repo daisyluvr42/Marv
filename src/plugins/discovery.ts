@@ -298,7 +298,7 @@ function discoverFromPath(params: {
   }
 }
 
-export function discoverOpenClawPlugins(params: {
+export function discoverMarvPlugins(params: {
   workspaceDir?: string;
   extraPaths?: string[];
 }): PluginDiscoveryResult {
@@ -329,7 +329,7 @@ export function discoverOpenClawPlugins(params: {
     const workspaceRoot = resolveUserPath(workspaceDir);
     const workspaceExtDirs = [
       path.join(workspaceRoot, ".marv", "extensions"),
-      path.join(workspaceRoot, ".openclaw", "extensions"),
+      path.join(workspaceRoot, ".marv", "extensions"),
     ];
     for (const dir of workspaceExtDirs) {
       discoverInDirectory({

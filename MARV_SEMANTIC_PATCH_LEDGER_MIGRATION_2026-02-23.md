@@ -2,16 +2,16 @@
 
 Date: 2026-02-23
 Workspace Root: /Users/daisyluvr/Documents/Marv
-Target Codebase: /Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main
+Target Codebase: /Users/daisyluvr/Documents/Marv/external_reference_code/marv-main
 
 ## 1. Background
 
-This migration continues the Marv memory upgrade track and ports two capabilities from the original Marv backend design into the OpenClaw-based architecture:
+This migration continues the Marv memory upgrade track and ports two capabilities from the original Marv backend design into the Marv-based architecture:
 
 1. Semantic Config Patching
 2. Event Sourcing Ledger
 
-The goal is to keep OpenClaw as the runtime core while reintroducing structured, auditable config evolution and event timeline replay/query.
+The goal is to keep Marv as the runtime core while reintroducing structured, auditable config evolution and event timeline replay/query.
 
 ## 2. Scope of This Change
 
@@ -24,7 +24,7 @@ Implemented a proposal/commit/rollback lifecycle:
 - rollback: revert a committed semantic revision using stored snapshot
 - list: inspect semantic revision history
 
-Includes persistent storage for proposals and revisions in SQLite under OpenClaw state dir.
+Includes persistent storage for proposals and revisions in SQLite under Marv state dir.
 
 ### 2.2 Event Sourcing Ledger
 
@@ -55,43 +55,43 @@ Added gateway methods:
 
 ### 4.1 New Files
 
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/config/semantic-patches.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/config/semantic-patches.test.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/ledger/event-store.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/ledger/event-store.test.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/server-methods/ledger.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/protocol/schema/ledger.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/config/semantic-patches.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/config/semantic-patches.test.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/ledger/event-store.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/ledger/event-store.test.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/server-methods/ledger.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/protocol/schema/ledger.ts`
 
 ### 4.2 Updated Files (Core Wiring)
 
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/server-methods/config.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/server-methods.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/server-methods-list.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/protocol/index.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/protocol/schema/config.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/protocol/schema.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/protocol/schema/types.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/protocol/schema/protocol-schemas.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/agents/tools/memory-tool.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/agents/tools/gateway-tool.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/agents/openclaw-gateway-tool.e2e.test.ts`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/src/gateway/server.config-patch.e2e.test.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/server-methods/config.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/server-methods.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/server-methods-list.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/protocol/index.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/protocol/schema/config.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/protocol/schema.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/protocol/schema/types.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/protocol/schema/protocol-schemas.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/agents/tools/memory-tool.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/agents/tools/gateway-tool.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/agents/marv-gateway-tool.e2e.test.ts`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/src/gateway/server.config-patch.e2e.test.ts`
 
 ### 4.3 Updated Docs
 
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/docs/gateway/configuration.md`
-- `/Users/daisyluvr/Documents/Marv/external_reference_code/openclaw-main/docs/zh-CN/gateway/configuration.md`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/docs/gateway/configuration.md`
+- `/Users/daisyluvr/Documents/Marv/external_reference_code/marv-main/docs/zh-CN/gateway/configuration.md`
 
 ## 5. Runtime Storage Layout
 
 State-backed SQLite files introduced by this migration:
 
 - semantic patches DB:
-  - `<OPENCLAW_STATE_DIR>/config/semantic-patches.sqlite`
+  - `<MARV_STATE_DIR>/config/semantic-patches.sqlite`
 - ledger DB:
-  - `<OPENCLAW_STATE_DIR>/ledger/events.sqlite`
+  - `<MARV_STATE_DIR>/ledger/events.sqlite`
 
-If `OPENCLAW_STATE_DIR` is unset, OpenClaw default state resolution applies.
+If `MARV_STATE_DIR` is unset, Marv default state resolution applies.
 
 ## 6. Compatibility Notes
 
@@ -107,7 +107,7 @@ Executed and passed:
 - `src/config/semantic-patches.test.ts`
 - `src/ledger/event-store.test.ts`
 - `src/gateway/server.config-patch.e2e.test.ts`
-- `src/agents/openclaw-gateway-tool.e2e.test.ts`
+- `src/agents/marv-gateway-tool.e2e.test.ts`
 - `src/agents/tools/memory-tool.e2e.test.ts`
 
 All targeted tests for this migration passed on 2026-02-23.
@@ -117,13 +117,13 @@ All targeted tests for this migration passed on 2026-02-23.
 ### 8.1 Semantic proposal + commit
 
 ```bash
-openclaw gateway call config.patches.propose --params '{
+marv gateway call config.patches.propose --params '{
   "naturalLanguage": "请更简洁一点",
   "scopeType": "global",
   "scopeId": "gateway"
 }'
 
-openclaw gateway call config.patches.commit --params '{
+marv gateway call config.patches.commit --params '{
   "proposalId": "pp_xxx"
 }'
 ```
@@ -131,7 +131,7 @@ openclaw gateway call config.patches.commit --params '{
 ### 8.2 Revision rollback
 
 ```bash
-openclaw gateway call config.revisions.rollback --params '{
+marv gateway call config.revisions.rollback --params '{
   "revision": "rev_xxx"
 }'
 ```
@@ -139,7 +139,7 @@ openclaw gateway call config.revisions.rollback --params '{
 ### 8.3 Ledger query
 
 ```bash
-openclaw gateway call ledger.events.query --params '{
+marv gateway call ledger.events.query --params '{
   "conversationId": "config:global:gateway",
   "limit": 100
 }'

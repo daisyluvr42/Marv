@@ -29,13 +29,13 @@ You can always override the choice in the prompt.
 ### Manual install
 
 ```bash
-marv plugins install @openclaw/nostr
+marv plugins install @marv/nostr
 ```
 
 Use a local checkout (dev workflows):
 
 ```bash
-marv plugins install --link <path-to-openclaw>/extensions/nostr
+marv plugins install --link <path-to-marv>/extensions/nostr
 ```
 
 Restart the Gateway after installing or enabling plugins.
@@ -93,14 +93,14 @@ Example:
     "nostr": {
       "privateKey": "${NOSTR_PRIVATE_KEY}",
       "profile": {
-        "name": "openclaw",
+        "name": "marv",
         "displayName": "Marv",
         "about": "Personal assistant DM bot",
         "picture": "https://example.com/avatar.png",
         "banner": "https://example.com/banner.png",
         "website": "https://example.com",
-        "nip05": "openclaw@example.com",
-        "lud16": "openclaw@example.com"
+        "nip05": "marv@example.com",
+        "lud16": "marv@example.com"
       }
     }
   }

@@ -51,4 +51,3 @@ sandbox/runtime/out/
 ${BASE_URL}/${VERSION}/runtime-darwin-arm64.tar.gz
 ${BASE_URL}/${VERSION}/runtime-darwin-x64.tar.gz
 ```
-

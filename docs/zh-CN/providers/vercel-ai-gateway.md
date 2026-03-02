@@ -53,5 +53,5 @@ marv onboard --non-interactive \
 ## 环境变量说明
 
 如果 Gateway 网关作为守护进程运行（launchd/systemd），请确保 `AI_GATEWAY_API_KEY`
-对该进程可用（例如，在 `~/.openclaw/.env` 中或通过
+对该进程可用（例如，在 `~/.marv/.env` 中或通过
 `env.shellEnv`）。

@@ -27,7 +27,7 @@ If you use a remote Gateway, install/configure it on the **machine running the G
 ### Option A: install from npm
 
 ```bash
-marv plugins install @openclaw/zalouser
+marv plugins install @marv/zalouser
 ```
 
 Restart the Gateway afterwards.

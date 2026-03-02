@@ -8,7 +8,7 @@ title: "Skills Config"
 
 # Skills Config
 
-All skills-related configuration lives under `skills` in `~/.openclaw/marv.json`.
+All skills-related configuration lives under `skills` in `~/.marv/marv.json`.
 
 ```json5
 {

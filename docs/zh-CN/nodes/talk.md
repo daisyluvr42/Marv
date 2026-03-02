@@ -54,7 +54,7 @@ Talk 模式是一个连续的语音对话循环：
 - `seed`、`normalize`、`lang`、`output_format`、`latency_tier`
 - `once`
 
-## 配置（`~/.openclaw/marv.json`）
+## 配置（`~/.marv/marv.json`）
 
 ```json5
 {

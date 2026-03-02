@@ -1,15 +1,15 @@
 ---
-summary: "Agent tool surface for Marv (browser, canvas, nodes, message, cron) replacing legacy `openclaw-*` skills"
+summary: "Agent tool surface for Marv (browser, canvas, nodes, message, cron) replacing legacy `marv-*` skills"
 read_when:
   - Adding or modifying agent tools
-  - Retiring or changing `openclaw-*` skills
+  - Retiring or changing `marv-*` skills
 title: "Tools"
 ---
 
 # Tools (Marv)
 
 Marv exposes **first-class agent tools** for browser, canvas, nodes, and cron.
-These replace the old `openclaw-*` skills: the tools are typed, no shelling,
+These replace the old `marv-*` skills: the tools are typed, no shelling,
 and the agent should rely on them directly.
 
 ## Disabling tools

@@ -1,6 +1,6 @@
-# @openclaw/voice-call
+# @marv/voice-call
 
-Official Voice Call plugin for **OpenClaw**.
+Official Voice Call plugin for **Marv**.
 
 Providers:
 
@@ -9,15 +9,15 @@ Providers:
 - **Plivo** (Voice API + XML transfer + GetInput speech)
 - **Mock** (dev/no network)
 
-Docs: `https://docs.openclaw.ai/plugins/voice-call`
-Plugin system: `https://docs.openclaw.ai/plugin`
+Docs: `/plugins/voice-call`
+Plugin system: `/plugin`
 
 ## Install (local dev)
 
-### Option A: install via OpenClaw (recommended)
+### Option A: install via Marv (recommended)
 
 ```bash
-openclaw plugins install @openclaw/voice-call
+marv plugins install @marv/voice-call
 ```
 
 Restart the Gateway afterwards.
@@ -25,9 +25,9 @@ Restart the Gateway afterwards.
 ### Option B: copy into your global extensions folder (dev)
 
 ```bash
-mkdir -p ~/.openclaw/extensions
-cp -R extensions/voice-call ~/.openclaw/extensions/voice-call
-cd ~/.openclaw/extensions/voice-call && pnpm install
+mkdir -p ~/.marv/extensions
+cp -R extensions/voice-call ~/.marv/extensions/voice-call
+cd ~/.marv/extensions/voice-call && pnpm install
 ```
 
 ## Config
@@ -132,13 +132,13 @@ Notes:
 ## CLI
 
 ```bash
-openclaw voicecall call --to "+15555550123" --message "Hello from OpenClaw"
-openclaw voicecall continue --call-id <id> --message "Any questions?"
-openclaw voicecall speak --call-id <id> --message "One moment"
-openclaw voicecall end --call-id <id>
-openclaw voicecall status --call-id <id>
-openclaw voicecall tail
-openclaw voicecall expose --mode funnel
+marv voicecall call --to "+15555550123" --message "Hello from Marv"
+marv voicecall continue --call-id <id> --message "Any questions?"
+marv voicecall speak --call-id <id> --message "One moment"
+marv voicecall end --call-id <id>
+marv voicecall status --call-id <id>
+marv voicecall tail
+marv voicecall expose --mode funnel
 ```
 
 ## Tool

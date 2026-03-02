@@ -3,21 +3,26 @@
  * Provides HTTP API for browser control and search operations
  */
 
-import express, { NextFunction, Request, Response } from 'express';
-import { Server } from 'http';
-import { PlaywrightManager } from './playwright/manager';
-import { launchBrowser, closeBrowser, isBrowserRunning, BrowserInstance } from './playwright/browser';
-import { BingSearch } from './search/bing';
-import { GoogleSearch } from './search/google';
-import { navigate, screenshot, getContent, getTextContent } from './playwright/operations';
-import { Config, mergeConfig } from './config';
-import { SearchResponse } from './search/types';
+import { Server } from "http";
+import express, { NextFunction, Request, Response } from "express";
+import { Config, mergeConfig } from "./config";
+import {
+  launchBrowser,
+  closeBrowser,
+  isBrowserRunning,
+  BrowserInstance,
+} from "./playwright/browser";
+import { PlaywrightManager } from "./playwright/manager";
+import { navigate, screenshot, getContent, getTextContent } from "./playwright/operations";
+import { BingSearch } from "./search/bing";
+import { GoogleSearch } from "./search/google";
+import { SearchResponse } from "./search/types";
 
-type SearchEngine = 'google' | 'bing';
-type SearchEnginePreference = SearchEngine | 'auto';
+type SearchEngine = "google" | "bing";
+type SearchEnginePreference = SearchEngine | "auto";
 
 function collectStringValues(input: unknown, out: string[]): void {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     out.push(input);
     return;
   }
@@ -29,7 +34,7 @@ function collectStringValues(input: unknown, out: string[]): void {
     return;
   }
 
-  if (input && typeof input === 'object') {
+  if (input && typeof input === "object") {
     for (const value of Object.values(input as Record<string, unknown>)) {
       collectStringValues(value, out);
     }
@@ -46,8 +51,10 @@ function scoreDecodedJsonText(text: string): number {
 
   const values: string[] = [];
   collectStringValues(parsed, values);
-  const joined = values.join('\n');
-  if (!joined) {return 0;}
+  const joined = values.join("\n");
+  if (!joined) {
+    return 0;
+  }
 
   const cjkCount = (joined.match(/[\u3400-\u9FFF]/g) || []).length;
   const replacementCount = (joined.match(/\uFFFD/g) || []).length;
@@ -59,29 +66,29 @@ function scoreDecodedJsonText(text: string): number {
 
 function decodeJsonRequestBody(raw: Buffer): string {
   if (raw.length === 0) {
-    return '';
+    return "";
   }
 
   if (raw.length >= 3 && raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) {
-    return new TextDecoder('utf-8', { fatal: false }).decode(raw.subarray(3));
+    return new TextDecoder("utf-8", { fatal: false }).decode(raw.subarray(3));
   }
   if (raw.length >= 2 && raw[0] === 0xff && raw[1] === 0xfe) {
-    return new TextDecoder('utf-16le', { fatal: false }).decode(raw.subarray(2));
+    return new TextDecoder("utf-16le", { fatal: false }).decode(raw.subarray(2));
   }
   if (raw.length >= 2 && raw[0] === 0xfe && raw[1] === 0xff) {
-    return new TextDecoder('utf-16be', { fatal: false }).decode(raw.subarray(2));
+    return new TextDecoder("utf-16be", { fatal: false }).decode(raw.subarray(2));
   }
 
   let utf8Decoded: string | null = null;
   try {
-    utf8Decoded = new TextDecoder('utf-8', { fatal: true }).decode(raw);
+    utf8Decoded = new TextDecoder("utf-8", { fatal: true }).decode(raw);
   } catch {
     utf8Decoded = null;
   }
 
   let gbDecoded: string | null = null;
   try {
-    gbDecoded = new TextDecoder('gb18030', { fatal: true }).decode(raw);
+    gbDecoded = new TextDecoder("gb18030", { fatal: true }).decode(raw);
   } catch {
     gbDecoded = null;
   }
@@ -90,7 +97,9 @@ function decodeJsonRequestBody(raw: Buffer): string {
     const utf8Score = scoreDecodedJsonText(utf8Decoded);
     const gbScore = scoreDecodedJsonText(gbDecoded);
     if (gbScore > utf8Score) {
-      console.warn(`[Bridge Server] Request body decoded using gb18030 (score ${gbScore} > utf8 ${utf8Score})`);
+      console.warn(
+        `[Bridge Server] Request body decoded using gb18030 (score ${gbScore} > utf8 ${utf8Score})`,
+      );
       return gbDecoded;
     }
     return utf8Decoded;
@@ -101,11 +110,11 @@ function decodeJsonRequestBody(raw: Buffer): string {
   }
 
   if (gbDecoded) {
-    console.warn('[Bridge Server] Request body decoded using gb18030 fallback');
+    console.warn("[Bridge Server] Request body decoded using gb18030 fallback");
     return gbDecoded;
   }
 
-  return new TextDecoder('utf-8', { fatal: false }).decode(raw);
+  return new TextDecoder("utf-8", { fatal: false }).decode(raw);
 }
 
 export class BridgeServer {
@@ -129,21 +138,23 @@ export class BridgeServer {
   }
 
   private setupMiddleware(): void {
-    this.app.use(express.raw({
-      type: ['application/json', 'application/*+json'],
-      limit: '2mb',
-    }));
+    this.app.use(
+      express.raw({
+        type: ["application/json", "application/*+json"],
+        limit: "2mb",
+      }),
+    );
 
     this.app.use((req: Request, res: Response, next: NextFunction) => {
-      const contentType = req.headers['content-type'];
+      const contentType = req.headers["content-type"];
       const isJsonRequest = Array.isArray(contentType)
-        ? contentType.some((value) => value.includes('application/json') || value.includes('+json'))
-        : typeof contentType === 'string'
-          ? contentType.includes('application/json') || contentType.includes('+json')
+        ? contentType.some((value) => value.includes("application/json") || value.includes("+json"))
+        : typeof contentType === "string"
+          ? contentType.includes("application/json") || contentType.includes("+json")
           : false;
 
       if (!isJsonRequest) {
-        if (!req.body || typeof req.body !== 'object' || Buffer.isBuffer(req.body)) {
+        if (!req.body || typeof req.body !== "object" || Buffer.isBuffer(req.body)) {
           req.body = {};
         }
         next();
@@ -164,16 +175,16 @@ export class BridgeServer {
       } catch (error) {
         res.status(400).json({
           success: false,
-          error: `Invalid JSON body: ${error instanceof Error ? error.message : String(error)}`
+          error: `Invalid JSON body: ${error instanceof Error ? error.message : String(error)}`,
         });
       }
     });
 
     // CORS for localhost only
     this.app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE');
-      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      res.header("Access-Control-Allow-Origin", "http://127.0.0.1:*");
+      res.header("Access-Control-Allow-Methods", "GET, POST, DELETE");
+      res.header("Access-Control-Allow-Headers", "Content-Type");
       next();
     });
 
@@ -186,26 +197,26 @@ export class BridgeServer {
 
   private setupRoutes(): void {
     // Health check
-    this.app.get('/api/health', this.handleHealth.bind(this));
+    this.app.get("/api/health", this.handleHealth.bind(this));
 
     // Browser management
-    this.app.post('/api/browser/launch', this.handleBrowserLaunch.bind(this));
-    this.app.post('/api/browser/connect', this.handleBrowserConnect.bind(this));
-    this.app.post('/api/browser/disconnect', this.handleBrowserDisconnect.bind(this));
-    this.app.get('/api/browser/status', this.handleBrowserStatus.bind(this));
+    this.app.post("/api/browser/launch", this.handleBrowserLaunch.bind(this));
+    this.app.post("/api/browser/connect", this.handleBrowserConnect.bind(this));
+    this.app.post("/api/browser/disconnect", this.handleBrowserDisconnect.bind(this));
+    this.app.get("/api/browser/status", this.handleBrowserStatus.bind(this));
 
     // Search operations
-    this.app.post('/api/search', this.handleSearch.bind(this));
-    this.app.post('/api/search/content', this.handleGetContent.bind(this));
+    this.app.post("/api/search", this.handleSearch.bind(this));
+    this.app.post("/api/search/content", this.handleGetContent.bind(this));
 
     // Page operations
-    this.app.post('/api/page/navigate', this.handleNavigate.bind(this));
-    this.app.post('/api/page/screenshot', this.handleScreenshot.bind(this));
-    this.app.post('/api/page/content', this.handlePageContent.bind(this));
-    this.app.post('/api/page/text', this.handlePageText.bind(this));
+    this.app.post("/api/page/navigate", this.handleNavigate.bind(this));
+    this.app.post("/api/page/screenshot", this.handleScreenshot.bind(this));
+    this.app.post("/api/page/content", this.handlePageContent.bind(this));
+    this.app.post("/api/page/text", this.handlePageText.bind(this));
 
     // Connection management
-    this.app.get('/api/connections', this.handleListConnections.bind(this));
+    this.app.get("/api/connections", this.handleListConnections.bind(this));
   }
 
   private isBrowserProcessAlive(instance: BrowserInstance | null): boolean {
@@ -228,7 +239,7 @@ export class BridgeServer {
   private async isCdpReachable(port: number): Promise<boolean> {
     try {
       const response = await fetch(`http://127.0.0.1:${port}/json/version`, {
-        signal: AbortSignal.timeout(1500)
+        signal: AbortSignal.timeout(1500),
       });
       return response.ok;
     } catch {
@@ -243,7 +254,9 @@ export class BridgeServer {
       try {
         await closeBrowser(this.browserInstance);
       } catch (error) {
-        console.warn(`[Bridge Server] Failed to close stale browser instance: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn(
+          `[Bridge Server] Failed to close stale browser instance: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
       this.browserInstance = null;
     }
@@ -252,13 +265,15 @@ export class BridgeServer {
   private async ensureBrowserReady(): Promise<{ instance: BrowserInstance; reused: boolean }> {
     if (this.browserInstance) {
       const processAlive = this.isBrowserProcessAlive(this.browserInstance);
-      const cdpReachable = processAlive ? await this.isCdpReachable(this.browserInstance.cdpPort) : false;
+      const cdpReachable = processAlive
+        ? await this.isCdpReachable(this.browserInstance.cdpPort)
+        : false;
 
       if (processAlive && cdpReachable) {
         return { instance: this.browserInstance, reused: true };
       }
 
-      console.warn('[Bridge Server] Detected stale browser instance, relaunching...');
+      console.warn("[Bridge Server] Detected stale browser instance, relaunching...");
       await this.resetBrowserState();
     }
 
@@ -271,10 +286,10 @@ export class BridgeServer {
     res.json({
       success: true,
       data: {
-        status: 'healthy',
+        status: "healthy",
         uptime: process.uptime(),
-        connections: this.playwrightManager.getConnectionCount()
-      }
+        connections: this.playwrightManager.getConnectionCount(),
+      },
     });
   }
 
@@ -287,10 +302,10 @@ export class BridgeServer {
         res.json({
           success: true,
           data: {
-            message: 'Browser already running',
+            message: "Browser already running",
             pid: instance.pid,
-            cdpPort: instance.cdpPort
-          }
+            cdpPort: instance.cdpPort,
+          },
         });
         return;
       }
@@ -300,13 +315,13 @@ export class BridgeServer {
         data: {
           pid: instance.pid,
           cdpPort: instance.cdpPort,
-          startTime: instance.startTime
-        }
+          startTime: instance.startTime,
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -329,13 +344,13 @@ export class BridgeServer {
         success: true,
         data: {
           connectionId,
-          cdpPort: port
-        }
+          cdpPort: port,
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -348,7 +363,7 @@ export class BridgeServer {
       if (!connectionId) {
         res.status(400).json({
           success: false,
-          error: 'connectionId is required'
+          error: "connectionId is required",
         });
         return;
       }
@@ -357,12 +372,12 @@ export class BridgeServer {
 
       res.json({
         success: true,
-        data: { message: 'Disconnected successfully' }
+        data: { message: "Disconnected successfully" },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -370,9 +385,10 @@ export class BridgeServer {
   // Get browser status
   private async handleBrowserStatus(req: Request, res: Response): Promise<void> {
     const processAlive = this.isBrowserProcessAlive(this.browserInstance);
-    const cdpReachable = processAlive && this.browserInstance
-      ? await this.isCdpReachable(this.browserInstance.cdpPort)
-      : false;
+    const cdpReachable =
+      processAlive && this.browserInstance
+        ? await this.isCdpReachable(this.browserInstance.cdpPort)
+        : false;
 
     res.json({
       success: true,
@@ -382,8 +398,8 @@ export class BridgeServer {
         cdpReachable,
         connections: this.playwrightManager.getConnectionCount(),
         pid: this.browserInstance?.pid,
-        cdpPort: this.browserInstance?.cdpPort
-      }
+        cdpPort: this.browserInstance?.cdpPort,
+      },
     });
   }
 
@@ -395,28 +411,33 @@ export class BridgeServer {
       if (!connectionId || !query) {
         res.status(400).json({
           success: false,
-          error: 'connectionId and query are required'
+          error: "connectionId and query are required",
         });
         return;
       }
 
       const preferredEngine = this.normalizeEnginePreference(engine);
-      const results = await this.searchWithFallback(connectionId, query, maxResults, preferredEngine);
+      const results = await this.searchWithFallback(
+        connectionId,
+        query,
+        maxResults,
+        preferredEngine,
+      );
 
       res.json({
         success: true,
-        data: results
+        data: results,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private normalizeEnginePreference(engine: unknown): SearchEnginePreference {
-    if (engine === 'google' || engine === 'bing' || engine === 'auto') {
+    if (engine === "google" || engine === "bing" || engine === "auto") {
       return engine;
     }
 
@@ -424,14 +445,14 @@ export class BridgeServer {
   }
 
   private resolveSearchEngineOrder(preferredEngine: SearchEnginePreference): SearchEngine[] {
-    if (preferredEngine === 'google' || preferredEngine === 'bing') {
+    if (preferredEngine === "google" || preferredEngine === "bing") {
       return [preferredEngine];
     }
 
     const configuredOrder = this.config.search.fallbackOrder.filter(
-      (item): item is SearchEngine => item === 'google' || item === 'bing'
+      (item): item is SearchEngine => item === "google" || item === "bing",
     );
-    const fullOrder: SearchEngine[] = [...configuredOrder, 'google', 'bing'];
+    const fullOrder: SearchEngine[] = [...configuredOrder, "google", "bing"];
     return Array.from(new Set<SearchEngine>(fullOrder));
   }
 
@@ -439,7 +460,7 @@ export class BridgeServer {
     connectionId: string,
     query: string,
     maxResults: number | undefined,
-    preferredEngine: SearchEnginePreference
+    preferredEngine: SearchEnginePreference,
   ): Promise<SearchResponse> {
     const engineOrder = this.resolveSearchEngineOrder(preferredEngine);
     const errors: string[] = [];
@@ -447,7 +468,7 @@ export class BridgeServer {
     for (const engine of engineOrder) {
       try {
         console.log(`[Search] Trying engine: ${engine}`);
-        if (engine === 'google') {
+        if (engine === "google") {
           return await this.googleSearch.search(connectionId, query, { maxResults });
         }
 
@@ -459,7 +480,7 @@ export class BridgeServer {
       }
     }
 
-    throw new Error(`All configured search engines failed. ${errors.join(' | ')}`);
+    throw new Error(`All configured search engines failed. ${errors.join(" | ")}`);
   }
 
   // Get content from URL
@@ -470,7 +491,7 @@ export class BridgeServer {
       if (!connectionId || !url) {
         res.status(400).json({
           success: false,
-          error: 'connectionId and url are required'
+          error: "connectionId and url are required",
         });
         return;
       }
@@ -479,12 +500,12 @@ export class BridgeServer {
 
       res.json({
         success: true,
-        data: { content }
+        data: { content },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -497,7 +518,7 @@ export class BridgeServer {
       if (!connectionId || !url) {
         res.status(400).json({
           success: false,
-          error: 'connectionId and url are required'
+          error: "connectionId and url are required",
         });
         return;
       }
@@ -507,12 +528,12 @@ export class BridgeServer {
 
       res.json({
         success: true,
-        data: { url: page.url() }
+        data: { url: page.url() },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -520,12 +541,12 @@ export class BridgeServer {
   // Take screenshot
   private async handleScreenshot(req: Request, res: Response): Promise<void> {
     try {
-      const { connectionId, format = 'png', fullPage = false } = req.body;
+      const { connectionId, format = "png", fullPage = false } = req.body;
 
       if (!connectionId) {
         res.status(400).json({
           success: false,
-          error: 'connectionId is required'
+          error: "connectionId is required",
         });
         return;
       }
@@ -536,15 +557,15 @@ export class BridgeServer {
       res.json({
         success: true,
         data: {
-          screenshot: buffer.toString('base64'),
+          screenshot: buffer.toString("base64"),
           format,
-          size: buffer.length
-        }
+          size: buffer.length,
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -557,7 +578,7 @@ export class BridgeServer {
       if (!connectionId) {
         res.status(400).json({
           success: false,
-          error: 'connectionId is required'
+          error: "connectionId is required",
         });
         return;
       }
@@ -567,12 +588,12 @@ export class BridgeServer {
 
       res.json({
         success: true,
-        data: { content }
+        data: { content },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -585,7 +606,7 @@ export class BridgeServer {
       if (!connectionId) {
         res.status(400).json({
           success: false,
-          error: 'connectionId is required'
+          error: "connectionId is required",
         });
         return;
       }
@@ -595,12 +616,12 @@ export class BridgeServer {
 
       res.json({
         success: true,
-        data: { text }
+        data: { text },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -611,7 +632,7 @@ export class BridgeServer {
 
     res.json({
       success: true,
-      data: { connections }
+      data: { connections },
     });
   }
 
@@ -623,14 +644,18 @@ export class BridgeServer {
       const server = this.app.listen(this.config.server.port, this.config.server.host);
       this.httpServer = server;
 
-      server.once('error', (error) => {
+      server.once("error", (error) => {
         this.httpServer = null;
         reject(error);
       });
 
-      server.once('listening', () => {
-        console.log(`\n[Bridge Server] Started on http://${this.config.server.host}:${this.config.server.port}`);
-        console.log(`[Bridge Server] Health check: http://${this.config.server.host}:${this.config.server.port}/api/health\n`);
+      server.once("listening", () => {
+        console.log(
+          `\n[Bridge Server] Started on http://${this.config.server.host}:${this.config.server.port}`,
+        );
+        console.log(
+          `[Bridge Server] Health check: http://${this.config.server.host}:${this.config.server.port}/api/health\n`,
+        );
         resolve();
       });
     });
@@ -640,7 +665,7 @@ export class BridgeServer {
    * Stop the server and cleanup
    */
   async stop(): Promise<void> {
-    console.log('\n[Bridge Server] Shutting down...');
+    console.log("\n[Bridge Server] Shutting down...");
 
     // Disconnect all Playwright connections
     await this.playwrightManager.disconnectAll();
@@ -664,7 +689,7 @@ export class BridgeServer {
       this.httpServer = null;
     }
 
-    console.log('[Bridge Server] Shutdown complete\n');
+    console.log("[Bridge Server] Shutdown complete\n");
   }
 }
 
@@ -673,19 +698,19 @@ if (require.main === module) {
   const server = new BridgeServer();
 
   // Handle graceful shutdown
-  process.on('SIGINT', async () => {
+  process.on("SIGINT", async () => {
     await server.stop();
     process.exit(0);
   });
 
-  process.on('SIGTERM', async () => {
+  process.on("SIGTERM", async () => {
     await server.stop();
     process.exit(0);
   });
 
   // Start server
   server.start().catch((error) => {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   });
 }

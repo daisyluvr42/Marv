@@ -217,7 +217,7 @@ function buildOversizedHistoryPlaceholder(message?: unknown): Record<string, unk
     timestamp,
     content: [{ type: "text", text: CHAT_HISTORY_OVERSIZED_PLACEHOLDER }],
     __marv: { truncated: true, reason: "oversized" },
-    __openclaw: { truncated: true, reason: "oversized" },
+    __marv: { truncated: true, reason: "oversized" },
   };
 }
 
@@ -406,7 +406,7 @@ function appendAssistantTranscriptMessage(params: {
             origin: params.abortMeta.origin,
             runId: params.abortMeta.runId,
           },
-          openclawAbort: {
+          marvAbort: {
             aborted: true,
             origin: params.abortMeta.origin,
             runId: params.abortMeta.runId,

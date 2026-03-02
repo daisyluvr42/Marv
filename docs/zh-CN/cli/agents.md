@@ -25,8 +25,8 @@ x-i18n:
 
 ```bash
 marv agents list
-marv agents add work --workspace ~/.openclaw/workspace-work
-marv agents set-identity --workspace ~/.openclaw/workspace --from-identity
+marv agents add work --workspace ~/.marv/workspace-work
+marv agents set-identity --workspace ~/.marv/workspace --from-identity
 marv agents set-identity --agent main --avatar avatars/marv.png
 marv agents delete work
 ```
@@ -35,7 +35,7 @@ marv agents delete work
 
 每个智能体工作区可以在工作区根目录包含一个 `IDENTITY.md`：
 
-- 示例路径：`~/.openclaw/workspace/IDENTITY.md`
+- 示例路径：`~/.marv/workspace/IDENTITY.md`
 - `set-identity --from-identity` 从工作区根目录读取（或从显式指定的 `--identity-file` 读取）
 
 头像路径相对于工作区根目录解析。
@@ -52,7 +52,7 @@ marv agents delete work
 从 `IDENTITY.md` 加载：
 
 ```bash
-marv agents set-identity --workspace ~/.openclaw/workspace --from-identity
+marv agents set-identity --workspace ~/.marv/workspace --from-identity
 ```
 
 显式覆盖字段：

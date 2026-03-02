@@ -11,7 +11,7 @@ class LocalStoreService implements LocalStore {
       const value = await window.electron.store.get(key);
       return value || null;
     } catch (error) {
-      console.error('Failed to get item from store:', error);
+      console.error("Failed to get item from store:", error);
       return null;
     }
   }
@@ -20,7 +20,7 @@ class LocalStoreService implements LocalStore {
     try {
       await window.electron.store.set(key, value);
     } catch (error) {
-      console.error('Failed to set item in store:', error);
+      console.error("Failed to set item in store:", error);
       throw error;
     }
   }
@@ -29,10 +29,10 @@ class LocalStoreService implements LocalStore {
     try {
       await window.electron.store.remove(key);
     } catch (error) {
-      console.error('Failed to remove item from store:', error);
+      console.error("Failed to remove item from store:", error);
       throw error;
     }
   }
 }
 
-export const localStore = new LocalStoreService(); 
+export const localStore = new LocalStoreService();

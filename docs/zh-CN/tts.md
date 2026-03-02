@@ -155,7 +155,7 @@ TTS 配置位于 `marv.json` 中的 `messages.tts` 下。完整 schema 在 [Gate
       auto: "always",
       maxTextLength: 4000,
       timeoutMs: 30000,
-      prefsPath: "~/.openclaw/settings/tts.json",
+      prefsPath: "~/.marv/settings/tts.json",
     },
   },
 }
@@ -282,7 +282,7 @@ Here you go.
 
 ## 单用户偏好
 
-斜杠命令将本地覆盖写入 `prefsPath`（默认：`~/.openclaw/settings/tts.json`，可通过 `OPENCLAW_TTS_PREFS` 或 `messages.tts.prefsPath` 覆盖）。
+斜杠命令将本地覆盖写入 `prefsPath`（默认：`~/.marv/settings/tts.json`，可通过 `MARV_TTS_PREFS` 或 `messages.tts.prefsPath` 覆盖）。
 
 存储的字段：
 

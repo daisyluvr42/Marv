@@ -123,7 +123,7 @@ marv doctor --generate-gateway-token
 marv config set gateway.tailscale.mode serve
 marv config set gateway.trustedProxies '["127.0.0.1"]'
 
-systemctl --user restart openclaw-gateway
+systemctl --user restart marv-gateway
 ```
 
 ## 7) Verify
@@ -133,7 +133,7 @@ systemctl --user restart openclaw-gateway
 marv --version
 
 # Check daemon status
-systemctl --user status openclaw-gateway
+systemctl --user status marv-gateway
 
 # Check Tailscale Serve
 tailscale serve status
@@ -251,7 +251,7 @@ sudo tailscale up --ssh --hostname=marv --reset
 ```bash
 marv gateway status
 marv doctor --non-interactive
-journalctl --user -u openclaw-gateway -n 50
+journalctl --user -u marv-gateway -n 50
 ```
 
 ### Can't reach Control UI
@@ -264,7 +264,7 @@ tailscale serve status
 curl http://localhost:18789
 
 # Restart if needed
-systemctl --user restart openclaw-gateway
+systemctl --user restart marv-gateway
 ```
 
 ### ARM binary issues
@@ -283,13 +283,13 @@ Most npm packages work fine. For binaries, look for `linux-arm64` or `aarch64` r
 
 All state lives in:
 
-- `~/.openclaw/` — config, credentials, session data
-- `~/.openclaw/workspace/` — workspace (SOUL.md, memory, artifacts)
+- `~/.marv/` — config, credentials, session data
+- `~/.marv/workspace/` — workspace (SOUL.md, memory, artifacts)
 
 Back up periodically:
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.marv ~/.openclaw/workspace
+tar -czvf marv-backup.tar.gz ~/.marv ~/.marv/workspace
 ```
 
 ---

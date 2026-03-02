@@ -1,5 +1,6 @@
-const UPDATE_CHECK_URL = 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/update';
-const FALLBACK_DOWNLOAD_URL = 'https://lobsterai.youdao.com';
+const UPDATE_CHECK_URL =
+  "https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/update";
+const FALLBACK_DOWNLOAD_URL = "https://lobsterai.youdao.com";
 
 export const UPDATE_POLL_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
@@ -18,14 +19,11 @@ export interface AppUpdateInfo {
   url: string;
 }
 
-const toVersionParts = (version: string): number[] => (
-  version
-    .split('.')
-    .map((part) => {
-      const match = part.trim().match(/^\d+/);
-      return match ? Number.parseInt(match[0], 10) : 0;
-    })
-);
+const toVersionParts = (version: string): number[] =>
+  version.split(".").map((part) => {
+    const match = part.trim().match(/^\d+/);
+    return match ? Number.parseInt(match[0], 10) : 0;
+  });
 
 const compareVersions = (a: string, b: string): number => {
   const aParts = toVersionParts(a);
@@ -35,27 +33,30 @@ const compareVersions = (a: string, b: string): number => {
   for (let i = 0; i < maxLength; i += 1) {
     const left = aParts[i] ?? 0;
     const right = bParts[i] ?? 0;
-    if (left > right) {return 1;}
-    if (left < right) {return -1;}
+    if (left > right) {
+      return 1;
+    }
+    if (left < right) {
+      return -1;
+    }
   }
 
   return 0;
 };
 
-const isNewerVersion = (latestVersion: string, currentVersion: string): boolean => (
-  compareVersions(latestVersion, currentVersion) > 0
-);
+const isNewerVersion = (latestVersion: string, currentVersion: string): boolean =>
+  compareVersions(latestVersion, currentVersion) > 0;
 
 export const checkForAppUpdate = async (currentVersion: string): Promise<AppUpdateInfo | null> => {
   const response = await window.electron.api.fetch({
     url: UPDATE_CHECK_URL,
-    method: 'GET',
+    method: "GET",
     headers: {
-      Accept: 'application/json',
+      Accept: "application/json",
     },
   });
 
-  if (!response.ok || typeof response.data !== 'object' || response.data === null) {
+  if (!response.ok || typeof response.data !== "object" || response.data === null) {
     return null;
   }
 

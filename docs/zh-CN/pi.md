@@ -83,7 +83,7 @@ src/agents/
 ├── pi-embedded-helpers.ts         # Error classification, turn validation
 ├── pi-embedded-helpers/           # Helper modules
 ├── pi-embedded-utils.ts           # Formatting utilities
-├── pi-tools.ts                    # createOpenClawCodingTools()
+├── pi-tools.ts                    # createMarvCodingTools()
 ├── pi-tools.abort.ts              # AbortSignal wrapping for tools
 ├── pi-tools.policy.ts             # Tool allowlist/denylist policy
 ├── pi-tools.read.ts               # Read tool customizations
@@ -115,7 +115,7 @@ src/agents/
 ├── sandbox.ts                     # Sandbox context resolution
 ├── sandbox/                       # Sandbox subsystem
 ├── channel-tools.ts               # Channel-specific tool injection
-├── openclaw-tools.ts              # Marv-specific tools
+├── marv-tools.ts              # Marv-specific tools
 ├── bash-tools.ts                  # exec/process tools
 ├── apply-patch.ts                 # apply_patch tool (OpenAI)
 ├── tools/                         # Individual tool implementations
@@ -149,7 +149,7 @@ const result = await runEmbeddedPiAgent({
   sessionKey: "main:whatsapp:+1234567890",
   sessionFile: "/path/to/session.jsonl",
   workspaceDir: "/path/to/workspace",
-  config: openclawConfig,
+  config: marvConfig,
   prompt: "Hello, how are you?",
   provider: "anthropic",
   model: "claude-sonnet-4-20250514",
@@ -523,7 +523,7 @@ import { ... } from "@mariozechner/pi-tui";
 | 调用方式 | `pi` 命令 / RPC         | 通过 `createAgentSession()` 的 SDK                                                              |
 | 工具     | 默认编码工具            | 自定义 Marv 工具套件                                                                            |
 | 系统提示 | AGENTS.md + prompts     | 按渠道/上下文动态生成                                                                           |
-| 会话存储 | `~/.pi/agent/sessions/` | `~/.openclaw/agents/<agentId>/sessions/`（或 `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/`） |
+| 会话存储 | `~/.pi/agent/sessions/` | `~/.marv/agents/<agentId>/sessions/`（或 `$MARV_STATE_DIR/agents/<agentId>/sessions/`） |
 | 认证     | 单一凭证                | 带轮换的多配置文件                                                                              |
 | 扩展     | 从磁盘加载              | 编程方式 + 磁盘路径                                                                             |
 | 事件处理 | TUI 渲染                | 基于回调（onBlockReply 等）                                                                     |
@@ -610,10 +610,10 @@ import { ... } from "@mariozechner/pi-tui";
 - `src/agents/pi-settings.test.ts`
 - `src/agents/pi-tool-definition-adapter.test.ts`
 - `src/agents/pi-tools-agent-config.test.ts`
-- `src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-b.test.ts`
-- `src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.test.ts`
-- `src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-f.test.ts`
-- `src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping.test.ts`
+- `src/agents/pi-tools.create-marv-coding-tools.adds-claude-style-aliases-schemas-without-dropping-b.test.ts`
+- `src/agents/pi-tools.create-marv-coding-tools.adds-claude-style-aliases-schemas-without-dropping-d.test.ts`
+- `src/agents/pi-tools.create-marv-coding-tools.adds-claude-style-aliases-schemas-without-dropping-f.test.ts`
+- `src/agents/pi-tools.create-marv-coding-tools.adds-claude-style-aliases-schemas-without-dropping.test.ts`
 - `src/agents/pi-tools.policy.test.ts`
 - `src/agents/pi-tools.safe-bins.test.ts`
 - `src/agents/pi-tools.workspace-paths.test.ts`

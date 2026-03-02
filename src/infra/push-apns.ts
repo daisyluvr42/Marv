@@ -247,18 +247,18 @@ export async function loadApnsRegistration(
 export async function resolveApnsAuthConfigFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<ApnsAuthConfigResolution> {
-  const teamId = normalizeNonEmptyString(env.OPENCLAW_APNS_TEAM_ID);
-  const keyId = normalizeNonEmptyString(env.OPENCLAW_APNS_KEY_ID);
+  const teamId = normalizeNonEmptyString(env.MARV_APNS_TEAM_ID);
+  const keyId = normalizeNonEmptyString(env.MARV_APNS_KEY_ID);
   if (!teamId || !keyId) {
     return {
       ok: false,
-      error: "APNs auth missing: set OPENCLAW_APNS_TEAM_ID and OPENCLAW_APNS_KEY_ID",
+      error: "APNs auth missing: set MARV_APNS_TEAM_ID and MARV_APNS_KEY_ID",
     };
   }
 
   const inlineKeyRaw =
-    normalizeNonEmptyString(env.OPENCLAW_APNS_PRIVATE_KEY_P8) ??
-    normalizeNonEmptyString(env.OPENCLAW_APNS_PRIVATE_KEY);
+    normalizeNonEmptyString(env.MARV_APNS_PRIVATE_KEY_P8) ??
+    normalizeNonEmptyString(env.MARV_APNS_PRIVATE_KEY);
   if (inlineKeyRaw) {
     return {
       ok: true,
@@ -270,12 +270,12 @@ export async function resolveApnsAuthConfigFromEnv(
     };
   }
 
-  const keyPath = normalizeNonEmptyString(env.OPENCLAW_APNS_PRIVATE_KEY_PATH);
+  const keyPath = normalizeNonEmptyString(env.MARV_APNS_PRIVATE_KEY_PATH);
   if (!keyPath) {
     return {
       ok: false,
       error:
-        "APNs private key missing: set OPENCLAW_APNS_PRIVATE_KEY_P8 or OPENCLAW_APNS_PRIVATE_KEY_PATH",
+        "APNs private key missing: set MARV_APNS_PRIVATE_KEY_P8 or MARV_APNS_PRIVATE_KEY_PATH",
     };
   }
   try {
@@ -292,7 +292,7 @@ export async function resolveApnsAuthConfigFromEnv(
     const message = err instanceof Error ? err.message : String(err);
     return {
       ok: false,
-      error: `failed reading OPENCLAW_APNS_PRIVATE_KEY_PATH (${keyPath}): ${message}`,
+      error: `failed reading MARV_APNS_PRIVATE_KEY_PATH (${keyPath}): ${message}`,
     };
   }
 }
@@ -453,7 +453,7 @@ export async function sendApnsAlert(params: {
       sound: "default",
     },
     marv: pushMeta,
-    openclaw: pushMeta,
+    marv: pushMeta,
   };
 
   const sender = params.requestSender ?? sendApnsRequest;
@@ -500,7 +500,7 @@ export async function sendApnsBackgroundWake(params: {
       "content-available": 1,
     },
     marv: wakeMeta,
-    openclaw: wakeMeta,
+    marv: wakeMeta,
   };
 
   const sender = params.requestSender ?? sendApnsRequest;

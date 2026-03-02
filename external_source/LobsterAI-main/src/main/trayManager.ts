@@ -1,7 +1,7 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow } from 'electron';
-import path from 'path';
-import { APP_NAME } from './appConstants';
-import type { SqliteStore } from './sqliteStore';
+import path from "path";
+import { app, Tray, Menu, nativeImage, BrowserWindow } from "electron";
+import { APP_NAME } from "./appConstants";
+import type { SqliteStore } from "./sqliteStore";
 
 let tray: Tray | null = null;
 let contextMenu: Menu | null = null;
@@ -9,32 +9,37 @@ let clickHandler: (() => void) | null = null;
 let rightClickHandler: (() => void) | null = null;
 
 function getTrayIconPath(): string {
-  const isMac = process.platform === 'darwin';
-  const isWin = process.platform === 'win32';
+  const isMac = process.platform === "darwin";
+  const isWin = process.platform === "win32";
 
   const basePath = app.isPackaged
-    ? path.join(process.resourcesPath, 'tray')
-    : path.join(__dirname, '..', 'resources', 'tray');
+    ? path.join(process.resourcesPath, "tray")
+    : path.join(__dirname, "..", "resources", "tray");
 
   if (isMac) {
-    return path.join(basePath, 'tray-icon-mac.png');
+    return path.join(basePath, "tray-icon-mac.png");
   }
   if (isWin) {
-    return path.join(basePath, 'tray-icon.ico');
+    return path.join(basePath, "tray-icon.ico");
   }
   // Linux
-  return path.join(basePath, 'tray-icon.png');
+  return path.join(basePath, "tray-icon.png");
 }
 
-function getLabels(store: SqliteStore): { showWindow: string; newTask: string; settings: string; quit: string } {
+function getLabels(store: SqliteStore): {
+  showWindow: string;
+  newTask: string;
+  settings: string;
+  quit: string;
+} {
   try {
-    const config = store.get<{ language?: string }>('app_config');
-    const lang = config?.language === 'en' ? 'en' : 'zh';
-    return lang === 'en'
-      ? { showWindow: 'Open LobsterAI', newTask: 'New Task', settings: 'Settings', quit: 'Quit' }
-      : { showWindow: '打开 LobsterAI', newTask: '新建任务', settings: '设置', quit: '退出' };
+    const config = store.get<{ language?: string }>("app_config");
+    const lang = config?.language === "en" ? "en" : "zh";
+    return lang === "en"
+      ? { showWindow: "Open LobsterAI", newTask: "New Task", settings: "Settings", quit: "Quit" }
+      : { showWindow: "打开 LobsterAI", newTask: "新建任务", settings: "设置", quit: "退出" };
   } catch {
-    return { showWindow: '打开 LobsterAI', newTask: '新建任务', settings: '设置', quit: '退出' };
+    return { showWindow: "打开 LobsterAI", newTask: "新建任务", settings: "设置", quit: "退出" };
   }
 }
 
@@ -47,8 +52,12 @@ function buildContextMenu(getWindow: () => BrowserWindow | null, store: SqliteSt
       click: () => {
         const win = getWindow();
         if (win && !win.isDestroyed()) {
-          if (!win.isVisible()) {win.show();}
-          if (!win.isFocused()) {win.focus();}
+          if (!win.isVisible()) {
+            win.show();
+          }
+          if (!win.isFocused()) {
+            win.focus();
+          }
         }
       },
     },
@@ -57,25 +66,33 @@ function buildContextMenu(getWindow: () => BrowserWindow | null, store: SqliteSt
       click: () => {
         const win = getWindow();
         if (win && !win.isDestroyed()) {
-          if (!win.isVisible()) {win.show();}
-          if (!win.isFocused()) {win.focus();}
-          win.webContents.send('app:newTask');
+          if (!win.isVisible()) {
+            win.show();
+          }
+          if (!win.isFocused()) {
+            win.focus();
+          }
+          win.webContents.send("app:newTask");
         }
       },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
       label: labels.settings,
       click: () => {
         const win = getWindow();
         if (win && !win.isDestroyed()) {
-          if (!win.isVisible()) {win.show();}
-          if (!win.isFocused()) {win.focus();}
-          win.webContents.send('app:openSettings');
+          if (!win.isVisible()) {
+            win.show();
+          }
+          if (!win.isFocused()) {
+            win.focus();
+          }
+          win.webContents.send("app:openSettings");
         }
       },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
       label: labels.quit,
       click: () => {
@@ -93,7 +110,7 @@ export function createTray(getWindow: () => BrowserWindow | null, store: SqliteS
   const iconPath = getTrayIconPath();
   let icon = nativeImage.createFromPath(iconPath);
 
-  if (process.platform === 'darwin') {
+  if (process.platform === "darwin") {
     icon.setTemplateImage(false);
     // Keep the tray icon within macOS menu bar bounds.
     if (icon.getSize().height > 18) {
@@ -109,9 +126,15 @@ export function createTray(getWindow: () => BrowserWindow | null, store: SqliteS
 
   clickHandler = () => {
     const win = getWindow();
-    if (!win || win.isDestroyed()) {return;}
-    if (!win.isVisible()) {win.show();}
-    if (!win.isFocused()) {win.focus();}
+    if (!win || win.isDestroyed()) {
+      return;
+    }
+    if (!win.isVisible()) {
+      win.show();
+    }
+    if (!win.isFocused()) {
+      win.focus();
+    }
   };
 
   rightClickHandler = () => {
@@ -120,21 +143,27 @@ export function createTray(getWindow: () => BrowserWindow | null, store: SqliteS
     }
   };
 
-  tray.on('click', clickHandler);
-  tray.on('right-click', rightClickHandler);
+  tray.on("click", clickHandler);
+  tray.on("right-click", rightClickHandler);
 
   return tray;
 }
 
 export function updateTrayMenu(getWindow: () => BrowserWindow | null, store: SqliteStore): void {
-  if (!tray) {return;}
+  if (!tray) {
+    return;
+  }
   contextMenu = buildContextMenu(getWindow, store);
 }
 
 export function destroyTray(): void {
   if (tray) {
-    if (clickHandler) {tray.removeListener('click', clickHandler);}
-    if (rightClickHandler) {tray.removeListener('right-click', rightClickHandler);}
+    if (clickHandler) {
+      tray.removeListener("click", clickHandler);
+    }
+    if (rightClickHandler) {
+      tray.removeListener("right-click", rightClickHandler);
+    }
     tray.destroy();
     tray = null;
     contextMenu = null;

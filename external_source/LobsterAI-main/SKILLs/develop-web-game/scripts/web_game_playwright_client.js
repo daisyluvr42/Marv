@@ -129,7 +129,8 @@ async function getCanvasHandle(page) {
     let best = null;
     let bestArea = 0;
     for (const canvas of document.querySelectorAll("canvas")) {
-      const area = (canvas.width || canvas.clientWidth || 0) * (canvas.height || canvas.clientHeight || 0);
+      const area =
+        (canvas.width || canvas.clientWidth || 0) * (canvas.height || canvas.clientHeight || 0);
       if (area > bestArea) {
         bestArea = area;
         best = canvas;
@@ -142,7 +143,9 @@ async function getCanvasHandle(page) {
 
 async function captureCanvasPngBase64(canvas) {
   return canvas.evaluate((c) => {
-    if (!c || typeof c.toDataURL !== "function") {return "";}
+    if (!c || typeof c.toDataURL !== "function") {
+      return "";
+    }
     const data = c.toDataURL("image/png");
     const idx = data.indexOf(",");
     return idx === -1 ? "" : data.slice(idx + 1);
@@ -150,22 +153,30 @@ async function captureCanvasPngBase64(canvas) {
 }
 
 async function isCanvasTransparent(canvas) {
-  if (!canvas) {return true;}
+  if (!canvas) {
+    return true;
+  }
   return canvas.evaluate((c) => {
     try {
       const w = c.width || c.clientWidth || 0;
       const h = c.height || c.clientHeight || 0;
-      if (!w || !h) {return true;}
+      if (!w || !h) {
+        return true;
+      }
       const size = Math.max(1, Math.min(16, w, h));
       const probe = document.createElement("canvas");
       probe.width = size;
       probe.height = size;
       const ctx = probe.getContext("2d");
-      if (!ctx) {return true;}
+      if (!ctx) {
+        return true;
+      }
       ctx.drawImage(c, 0, 0, size, size);
       const data = ctx.getImageData(0, 0, size, size).data;
       for (let i = 3; i < data.length; i += 4) {
-        if (data[i] !== 0) {return false;}
+        if (data[i] !== 0) {
+          return false;
+        }
       }
       return true;
     } catch {
@@ -180,7 +191,9 @@ async function captureScreenshot(page, canvas, outPath) {
   if (base64) {
     buffer = Buffer.from(base64, "base64");
     const transparent = canvas ? await isCanvasTransparent(canvas) : false;
-    if (transparent) {buffer = null;}
+    if (transparent) {
+      buffer = null;
+    }
   }
   if (!buffer && canvas) {
     try {
@@ -212,7 +225,9 @@ class ConsoleErrorTracker {
 
   ingest(err) {
     const key = JSON.stringify(err);
-    if (this._seen.has(key)) {return;}
+    if (this._seen.has(key)) {
+      return;
+    }
     this._seen.add(key);
     this._errors.push(err);
   }
@@ -230,7 +245,9 @@ async function doChoreography(page, canvas, steps) {
     for (const button of buttons) {
       if (button === "left_mouse_button" || button === "right_mouse_button") {
         const bbox = canvas ? await canvas.boundingBox() : null;
-        if (!bbox) {continue;}
+        if (!bbox) {
+          continue;
+        }
         const x = typeof step.mouse_x === "number" ? step.mouse_x : bbox.width / 2;
         const y = typeof step.mouse_y === "number" ? step.mouse_y : bbox.height / 2;
         await page.mouse.move(bbox.x + x, bbox.y + y);
@@ -271,7 +288,9 @@ async function main() {
   const consoleErrors = new ConsoleErrorTracker();
 
   page.on("console", (msg) => {
-    if (msg.type() !== "error") {return;}
+    if (msg.type() !== "error") {
+      return;
+    }
     consoleErrors.ingest({ type: "console.error", text: msg.text() });
   });
   page.on("pageerror", (err) => {
@@ -299,12 +318,20 @@ async function main() {
   if (args.actionsFile) {
     const raw = fs.readFileSync(args.actionsFile, "utf-8");
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {steps = parsed;}
-    if (parsed && Array.isArray(parsed.steps)) {steps = parsed.steps;}
+    if (Array.isArray(parsed)) {
+      steps = parsed;
+    }
+    if (parsed && Array.isArray(parsed.steps)) {
+      steps = parsed.steps;
+    }
   } else if (args.actionsJson) {
     const parsed = JSON.parse(args.actionsJson);
-    if (Array.isArray(parsed)) {steps = parsed;}
-    if (parsed && Array.isArray(parsed.steps)) {steps = parsed.steps;}
+    if (Array.isArray(parsed)) {
+      steps = parsed;
+    }
+    if (parsed && Array.isArray(parsed.steps)) {
+      steps = parsed.steps;
+    }
   } else if (args.click) {
     steps = [
       {
@@ -320,7 +347,9 @@ async function main() {
   }
 
   for (let i = 0; i < args.iterations; i++) {
-    if (!canvas) {canvas = await getCanvasHandle(page);}
+    if (!canvas) {
+      canvas = await getCanvasHandle(page);
+    }
     await doChoreography(page, canvas, steps);
     await sleep(args.pauseMs);
 
@@ -341,7 +370,7 @@ async function main() {
     if (freshErrors.length) {
       fs.writeFileSync(
         path.join(args.screenshotDir, `errors-${i}.json`),
-        JSON.stringify(freshErrors, null, 2)
+        JSON.stringify(freshErrors, null, 2),
       );
       break;
     }

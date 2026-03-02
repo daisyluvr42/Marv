@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,33 +6,33 @@
     <title>LobsterAI</title>
     <script>
       // 在页面加载前预设主题，避免闪烁
-      (function() {
+      (function () {
         try {
-          const savedConfig = localStorage.getItem('app_config');
+          const savedConfig = localStorage.getItem("app_config");
           if (savedConfig) {
             const config = JSON.parse(savedConfig);
-            const theme = config.theme || 'system';
-            
-            if (theme === 'dark') {
-              document.documentElement.classList.add('dark');
-              document.documentElement.style.backgroundColor = '#0F1117';
-            } else if (theme === 'light') {
-              document.documentElement.classList.add('light');
-              document.documentElement.style.backgroundColor = '#F8F9FB';
+            const theme = config.theme || "system";
+
+            if (theme === "dark") {
+              document.documentElement.classList.add("dark");
+              document.documentElement.style.backgroundColor = "#0F1117";
+            } else if (theme === "light") {
+              document.documentElement.classList.add("light");
+              document.documentElement.style.backgroundColor = "#F8F9FB";
             } else {
               // 跟随系统
-              const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
               if (prefersDark) {
-                document.documentElement.classList.add('dark');
-                document.documentElement.style.backgroundColor = '#0F1117';
+                document.documentElement.classList.add("dark");
+                document.documentElement.style.backgroundColor = "#0F1117";
               } else {
-                document.documentElement.classList.add('light');
-                document.documentElement.style.backgroundColor = '#F8F9FB';
+                document.documentElement.classList.add("light");
+                document.documentElement.style.backgroundColor = "#F8F9FB";
               }
             }
           }
         } catch (e) {
-          console.error('Error applying theme early:', e);
+          console.error("Error applying theme early:", e);
         }
       })();
     </script>
@@ -41,4 +41,4 @@
     <div id="root"></div>
     <script type="module" src="/src/renderer/main.tsx"></script>
   </body>
-</html> 
+</html>

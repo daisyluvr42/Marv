@@ -32,7 +32,7 @@ import {
   type SemanticPatchProposal,
 } from "../../config/semantic-patches.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { MarvConfig } from "../../config/types.marv.js";
 import {
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,
@@ -40,7 +40,7 @@ import {
 } from "../../infra/restart-sentinel.js";
 import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { appendLedgerEvent, type LedgerAppendEventParams } from "../../ledger/event-store.js";
-import { loadOpenClawPlugins } from "../../plugins/loader.js";
+import { loadMarvPlugins } from "../../plugins/loader.js";
 import {
   ErrorCodes,
   errorShape,
@@ -130,7 +130,7 @@ function parseValidateConfigFromRawOrRespond(
   requestName: string,
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
   respond: RespondFn,
-): { config: OpenClawConfig; schema: ConfigSchemaResponse } | null {
+): { config: MarvConfig; schema: ConfigSchemaResponse } | null {
   const rawValue = parseRawConfigOrRespond(params, requestName, respond);
   if (!rawValue) {
     return null;
@@ -206,7 +206,7 @@ async function mergePatchAndWriteConfigOrRespond(params: {
   writeOptions: Awaited<ReturnType<typeof readConfigFileSnapshotForWrite>>["writeOptions"];
   patch: Record<string, unknown>;
   respond: RespondFn;
-}): Promise<{ config: OpenClawConfig; schema: ConfigSchemaResponse } | null> {
+}): Promise<{ config: MarvConfig; schema: ConfigSchemaResponse } | null> {
   if (!params.snapshot.valid) {
     params.respond(
       false,
@@ -307,7 +307,7 @@ async function tryWriteRestartSentinelPayload(
 function loadSchemaWithPlugins(): ConfigSchemaResponse {
   const cfg = loadConfig();
   const workspaceDir = resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg));
-  const pluginRegistry = loadOpenClawPlugins({
+  const pluginRegistry = loadMarvPlugins({
     config: cfg,
     cache: true,
     workspaceDir,
@@ -319,7 +319,7 @@ function loadSchemaWithPlugins(): ConfigSchemaResponse {
     },
   });
   // Note: We can't easily cache this, as there are no callback that can invalidate
-  // our cache. However, both loadConfig() and loadOpenClawPlugins() already cache
+  // our cache. However, both loadConfig() and loadMarvPlugins() already cache
   // their results, and buildConfigSchema() is just a cheap transformation.
   return buildConfigSchema({
     plugins: pluginRegistry.plugins.map((plugin) => ({
@@ -390,7 +390,7 @@ async function commitSemanticProposalOrRespond(params: {
   respond: RespondFn;
 }): Promise<{
   revision: SemanticConfigRevision;
-  config: OpenClawConfig;
+  config: MarvConfig;
   schema: ConfigSchemaResponse;
   restart: ReturnType<typeof scheduleGatewaySigusr1Restart>;
   sentinelPath: string | null;

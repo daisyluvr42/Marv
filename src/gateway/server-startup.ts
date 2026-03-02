@@ -18,7 +18,7 @@ import {
 } from "../hooks/internal-hooks.js";
 import { loadInternalHooks } from "../hooks/loader.js";
 import { isTruthyEnvValue } from "../infra/env.js";
-import type { loadOpenClawPlugins } from "../plugins/loader.js";
+import type { loadMarvPlugins } from "../plugins/loader.js";
 import { type PluginServicesHandle, startPluginServices } from "../plugins/services.js";
 import { startBrowserControlServerIfEnabled } from "./server-browser.js";
 import {
@@ -31,7 +31,7 @@ const SESSION_LOCK_STALE_MS = 30 * 60 * 1000;
 
 export async function startGatewaySidecars(params: {
   cfg: ReturnType<typeof loadConfig>;
-  pluginRegistry: ReturnType<typeof loadOpenClawPlugins>;
+  pluginRegistry: ReturnType<typeof loadMarvPlugins>;
   defaultWorkspaceDir: string;
   deps: CliDeps;
   startChannels: () => Promise<void>;
@@ -121,12 +121,12 @@ export async function startGatewaySidecars(params: {
   }
 
   // Launch configured channels so gateway replies via the surface the message came from.
-  // Tests can opt out via MARV_SKIP_CHANNELS/MARV_SKIP_PROVIDERS (legacy OPENCLAW_* also supported).
+  // Tests can opt out via MARV_SKIP_CHANNELS/MARV_SKIP_PROVIDERS (legacy MARV_* also supported).
   const skipChannels =
     isTruthyEnvValue(process.env.MARV_SKIP_CHANNELS) ||
     isTruthyEnvValue(process.env.MARV_SKIP_PROVIDERS) ||
-    isTruthyEnvValue(process.env.OPENCLAW_SKIP_CHANNELS) ||
-    isTruthyEnvValue(process.env.OPENCLAW_SKIP_PROVIDERS);
+    isTruthyEnvValue(process.env.MARV_SKIP_CHANNELS) ||
+    isTruthyEnvValue(process.env.MARV_SKIP_PROVIDERS);
   if (!skipChannels) {
     try {
       await params.startChannels();
@@ -135,7 +135,7 @@ export async function startGatewaySidecars(params: {
     }
   } else {
     params.logChannels.info(
-      "skipping channel start (MARV_SKIP_CHANNELS=1 or MARV_SKIP_PROVIDERS=1; legacy OPENCLAW_* also supported)",
+      "skipping channel start (MARV_SKIP_CHANNELS=1 or MARV_SKIP_PROVIDERS=1; legacy MARV_* also supported)",
     );
   }
 

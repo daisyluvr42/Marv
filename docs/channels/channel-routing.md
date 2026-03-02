@@ -84,7 +84,7 @@ Example:
 ```json5
 {
   agents: {
-    list: [{ id: "support", name: "Support", workspace: "~/.openclaw/workspace-support" }],
+    list: [{ id: "support", name: "Support", workspace: "~/.marv/workspace-support" }],
   },
   bindings: [
     { match: { channel: "slack", teamId: "T123" }, agentId: "support" },
@@ -97,7 +97,7 @@ Example:
 
 Session stores live under the state directory (default `~/.marv`):
 
-- `~/.openclaw/agents/<agentId>/sessions/sessions.json`
+- `~/.marv/agents/<agentId>/sessions/sessions.json`
 - JSONL transcripts live alongside the store
 
 You can override the store path via `session.store` and `{agentId}` templating.

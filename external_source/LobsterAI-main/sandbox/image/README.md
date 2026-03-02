@@ -61,6 +61,7 @@ Choose container runtime explicitly:
 ```
 
 Step-by-step:
+
 1. Put the agent runner sources in `sandbox/agent-runner`.
 2. If the runner needs a build step, run the Docker build with:
    `AGENT_RUNNER_BUILD=1 ./scripts/build-sandbox-image-docker.sh`
@@ -75,6 +76,7 @@ ARCHS=arm64 ./scripts/build-sandbox-image-docker.sh
 ```
 
 Notes:
+
 - The container runs with `--privileged` to allow `losetup` and `mount`.
 - Outputs land in `sandbox/image/out/` on the host.
 - The build context ignores `sandbox/image/.work` via `.dockerignore` to avoid

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { expandHomePrefix, resolveRequiredHomeDir } from "../infra/home-dir.js";
-import type { OpenClawConfig } from "./types.js";
+import type { MarvConfig } from "./types.js";
 
 /**
  * Nix mode detection: When MARV_NIX_MODE=1, the gateway is running under Nix.
@@ -12,7 +12,7 @@ import type { OpenClawConfig } from "./types.js";
  * - Config is managed externally (read-only from Nix perspective)
  */
 export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.MARV_NIX_MODE === "1" || env.OPENCLAW_NIX_MODE === "1";
+  return env.MARV_NIX_MODE === "1" || env.MARV_NIX_MODE === "1";
 }
 
 export const isNixMode = resolveIsNixMode();
@@ -54,7 +54,7 @@ export function resolveNewStateDir(homedir: () => string = resolveDefaultHomeDir
 
 /**
  * State directory for mutable data (sessions, logs, caches).
- * Can be overridden via MARV_STATE_DIR (legacy: OPENCLAW_STATE_DIR).
+ * Can be overridden via MARV_STATE_DIR (legacy: MARV_STATE_DIR).
  * Default: ~/.marv
  */
 export function resolveStateDir(
@@ -63,7 +63,7 @@ export function resolveStateDir(
 ): string {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
   const override =
-    env.MARV_STATE_DIR?.trim() || env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+    env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, effectiveHomedir);
   }
@@ -110,7 +110,7 @@ export const STATE_DIR = resolveStateDir();
 
 /**
  * Config file path (JSON5).
- * Can be overridden via MARV_CONFIG_PATH (legacy: OPENCLAW_CONFIG_PATH).
+ * Can be overridden via MARV_CONFIG_PATH (legacy: MARV_CONFIG_PATH).
  * Default: ~/.marv/marv.json (or $MARV_STATE_DIR/marv.json).
  */
 export function resolveCanonicalConfigPath(
@@ -119,7 +119,7 @@ export function resolveCanonicalConfigPath(
 ): string {
   const override =
     env.MARV_CONFIG_PATH?.trim() ||
-    env.OPENCLAW_CONFIG_PATH?.trim() ||
+    env.MARV_CONFIG_PATH?.trim() ||
     env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
@@ -157,11 +157,11 @@ export function resolveConfigPath(
   stateDir: string = resolveStateDir(env, envHomedir(env)),
   homedir: () => string = envHomedir(env),
 ): string {
-  const override = env.MARV_CONFIG_PATH?.trim() || env.OPENCLAW_CONFIG_PATH?.trim();
+  const override = env.MARV_CONFIG_PATH?.trim() || env.MARV_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, homedir);
   }
-  const stateOverride = env.MARV_STATE_DIR?.trim() || env.OPENCLAW_STATE_DIR?.trim();
+  const stateOverride = env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim();
   const candidates = [
     path.join(stateDir, CONFIG_FILENAME),
     ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(stateDir, name)),
@@ -199,7 +199,7 @@ export function resolveDefaultConfigCandidates(
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
   const explicit =
     env.MARV_CONFIG_PATH?.trim() ||
-    env.OPENCLAW_CONFIG_PATH?.trim() ||
+    env.MARV_CONFIG_PATH?.trim() ||
     env.CLAWDBOT_CONFIG_PATH?.trim();
   if (explicit) {
     return [resolveUserPath(explicit, env, effectiveHomedir)];
@@ -207,7 +207,7 @@ export function resolveDefaultConfigCandidates(
 
   const candidates: string[] = [];
   const marvStateDir =
-    env.MARV_STATE_DIR?.trim() || env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+    env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (marvStateDir) {
     const resolved = resolveUserPath(marvStateDir, env, effectiveHomedir);
     candidates.push(path.join(resolved, CONFIG_FILENAME));
@@ -241,14 +241,14 @@ const OAUTH_FILENAME = "oauth.json";
  * OAuth credentials storage directory.
  *
  * Precedence:
- * - `MARV_OAUTH_DIR` (explicit override; legacy: OPENCLAW_OAUTH_DIR)
+ * - `MARV_OAUTH_DIR` (explicit override; legacy: MARV_OAUTH_DIR)
  * - `$*_STATE_DIR/credentials` (canonical server/default)
  */
 export function resolveOAuthDir(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {
-  const override = env.MARV_OAUTH_DIR?.trim() || env.OPENCLAW_OAUTH_DIR?.trim();
+  const override = env.MARV_OAUTH_DIR?.trim() || env.MARV_OAUTH_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
   }
@@ -263,12 +263,12 @@ export function resolveOAuthPath(
 }
 
 export function resolveGatewayPort(
-  cfg?: OpenClawConfig,
+  cfg?: MarvConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): number {
   const envRaw =
     env.MARV_GATEWAY_PORT?.trim() ||
-    env.OPENCLAW_GATEWAY_PORT?.trim() ||
+    env.MARV_GATEWAY_PORT?.trim() ||
     env.CLAWDBOT_GATEWAY_PORT?.trim();
   if (envRaw) {
     const parsed = Number.parseInt(envRaw, 10);

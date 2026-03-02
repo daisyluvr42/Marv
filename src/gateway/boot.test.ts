@@ -54,7 +54,7 @@ describe("runBootOnce", () => {
   };
 
   it("skips when BOOT.md is missing", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     await expect(runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir })).resolves.toEqual({
       status: "skipped",
       reason: "missing",
@@ -64,7 +64,7 @@ describe("runBootOnce", () => {
   });
 
   it("skips when BOOT.md is empty", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), "   \n", "utf-8");
     await expect(runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir })).resolves.toEqual({
       status: "skipped",
@@ -75,7 +75,7 @@ describe("runBootOnce", () => {
   });
 
   it("runs agent command when BOOT.md exists", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     const content = "Say hello when you wake up.";
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), content, "utf-8");
 
@@ -100,7 +100,7 @@ describe("runBootOnce", () => {
   });
 
   it("uses per-agent session key when agentId is provided", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), "Check status.", "utf-8");
 
     agentCommand.mockResolvedValue(undefined);
@@ -118,7 +118,7 @@ describe("runBootOnce", () => {
   });
 
   it("generates new session ID when no existing session exists", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     const content = "Say hello when you wake up.";
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), content, "utf-8");
 
@@ -138,7 +138,7 @@ describe("runBootOnce", () => {
   });
 
   it("uses a fresh boot session ID even when main session mapping already exists", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     const content = "Say hello when you wake up.";
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), content, "utf-8");
 
@@ -169,7 +169,7 @@ describe("runBootOnce", () => {
   });
 
   it("restores the original main session mapping after the boot run", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     const content = "Check if the system is healthy.";
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), content, "utf-8");
 
@@ -196,7 +196,7 @@ describe("runBootOnce", () => {
   });
 
   it("removes a boot-created main-session mapping when none existed before", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-boot-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-boot-"));
     await fs.writeFile(path.join(workspaceDir, "BOOT.md"), "health check", "utf-8");
 
     const cfg = {};

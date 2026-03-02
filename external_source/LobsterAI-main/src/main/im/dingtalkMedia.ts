@@ -1,21 +1,21 @@
+import * as fs from "fs";
+import * as path from "path";
 /**
  * DingTalk Media Upload Utilities
  * 钉钉媒体上传工具函数
  */
-import axios from 'axios';
-import * as fs from 'fs';
-import * as path from 'path';
-import FormData from 'form-data';
-import { sanitizeLogArgs, sanitizeSensitiveString } from './logSanitizer';
+import axios from "axios";
+import FormData from "form-data";
+import { sanitizeLogArgs, sanitizeSensitiveString } from "./logSanitizer";
 
-const DINGTALK_OAPI = 'https://oapi.dingtalk.com';
+const DINGTALK_OAPI = "https://oapi.dingtalk.com";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 // 旧版 oapi access_token 缓存
 let oapiAccessToken: string | null = null;
 let oapiTokenExpiry = 0;
 
-export type DingTalkMediaType = 'image' | 'voice' | 'video' | 'file';
+export type DingTalkMediaType = "image" | "voice" | "video" | "file";
 
 export interface MediaUploadResult {
   success: boolean;
@@ -24,9 +24,9 @@ export interface MediaUploadResult {
 }
 
 // 文件扩展名分类
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']);
-const AUDIO_EXTENSIONS = ['.ogg', '.amr', '.mp3', '.wav', '.m4a', '.aac'];
-const VIDEO_EXTENSIONS = ['.mp4', '.mov'];
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"]);
+const AUDIO_EXTENSIONS = new Set([".ogg", ".amr", ".mp3", ".wav", ".m4a", ".aac"]);
+const VIDEO_EXTENSIONS = [".mp4", ".mov"];
 
 /**
  * 获取旧版 oapi access_token
@@ -35,21 +35,25 @@ const VIDEO_EXTENSIONS = ['.mp4', '.mov'];
 export async function getOapiAccessToken(appKey: string, appSecret: string): Promise<string> {
   const now = Date.now();
   if (oapiAccessToken && oapiTokenExpiry > now + 60000) {
-    console.log(`[DingTalk Media] 使用缓存的 oapi token, 剩余有效期: ${Math.round((oapiTokenExpiry - now) / 1000)}秒`);
+    console.log(
+      `[DingTalk Media] 使用缓存的 oapi token, 剩余有效期: ${Math.round((oapiTokenExpiry - now) / 1000)}秒`,
+    );
     return oapiAccessToken;
   }
 
   console.log(`[DingTalk Media] 获取新的 oapi token...`);
 
-  const response = await axios.get<{ access_token: string; expires_in: number; errcode?: number; errmsg?: string }>(
-    `${DINGTALK_OAPI}/gettoken`,
-    {
-      params: {
-        appkey: appKey,
-        appsecret: appSecret,
-      },
-    }
-  );
+  const response = await axios.get<{
+    access_token: string;
+    expires_in: number;
+    errcode?: number;
+    errmsg?: string;
+  }>(`${DINGTALK_OAPI}/gettoken`, {
+    params: {
+      appkey: appKey,
+      appsecret: appSecret,
+    },
+  });
 
   if (response.data.errcode && response.data.errcode !== 0) {
     console.error(`[DingTalk Media] 获取 oapi token 失败:`, JSON.stringify(response.data));
@@ -69,15 +73,20 @@ export async function uploadMediaToDingTalk(
   accessToken: string,
   filePath: string,
   mediaType: DingTalkMediaType,
-  fileName?: string
+  fileName?: string,
 ): Promise<MediaUploadResult> {
-  console.log(`[DingTalk Media] 开始上传媒体文件:`, JSON.stringify({ filePath, mediaType, fileName }));
+  console.log(
+    `[DingTalk Media] 开始上传媒体文件:`,
+    JSON.stringify({ filePath, mediaType, fileName }),
+  );
 
   try {
     // 处理路径（支持 file:// 协议）
-    const absPath = filePath.startsWith('file://')
-      ? decodeURIComponent(filePath.replace('file://', ''))
-      : path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
+    const absPath = filePath.startsWith("file://")
+      ? decodeURIComponent(filePath.replace("file://", ""))
+      : path.isAbsolute(filePath)
+        ? filePath
+        : path.resolve(filePath);
 
     console.log(`[DingTalk Media] 解析后的绝对路径: ${absPath}`);
 
@@ -91,8 +100,13 @@ export async function uploadMediaToDingTalk(
     console.log(`[DingTalk Media] 文件大小: ${(stats.size / 1024).toFixed(1)}KB`);
 
     if (stats.size > MAX_FILE_SIZE) {
-      console.error(`[DingTalk Media] 文件过大: ${(stats.size / 1024 / 1024).toFixed(1)}MB (限制20MB)`);
-      return { success: false, error: `文件过大: ${(stats.size / 1024 / 1024).toFixed(1)}MB (限制20MB)` };
+      console.error(
+        `[DingTalk Media] 文件过大: ${(stats.size / 1024 / 1024).toFixed(1)}MB (限制20MB)`,
+      );
+      return {
+        success: false,
+        error: `文件过大: ${(stats.size / 1024 / 1024).toFixed(1)}MB (限制20MB)`,
+      };
     }
 
     // 创建 FormData
@@ -102,7 +116,7 @@ export async function uploadMediaToDingTalk(
     const uploadFileName = fileName || path.basename(absPath);
     console.log(`[DingTalk Media] MIME 类型: ${mimeType}, 文件名: ${uploadFileName}`);
 
-    form.append('media', fs.createReadStream(absPath), {
+    form.append("media", fs.createReadStream(absPath), {
       filename: uploadFileName,
       contentType: mimeType,
     });
@@ -111,16 +125,12 @@ export async function uploadMediaToDingTalk(
     const uploadUrl = `${DINGTALK_OAPI}/media/upload?access_token=${accessToken}&type=${mediaType}`;
     console.log(sanitizeSensitiveString(`[DingTalk Media] 上传 URL: ${uploadUrl}`));
 
-    const response = await axios.post(
-      uploadUrl,
-      form,
-      {
-        headers: form.getHeaders(),
-        maxContentLength: MAX_FILE_SIZE,
-        maxBodyLength: MAX_FILE_SIZE,
-        timeout: 60000,
-      }
-    );
+    const response = await axios.post(uploadUrl, form, {
+      headers: form.getHeaders(),
+      maxContentLength: MAX_FILE_SIZE,
+      maxBodyLength: MAX_FILE_SIZE,
+      timeout: 60000,
+    });
 
     console.log(`[DingTalk Media] 上传响应:`, JSON.stringify(response.data));
 
@@ -132,7 +142,9 @@ export async function uploadMediaToDingTalk(
     console.log(`[DingTalk Media] 上传成功, media_id: ${response.data.media_id}`);
     return { success: true, mediaId: response.data.media_id };
   } catch (error: any) {
-    console.error(...sanitizeLogArgs(['[DingTalk Media] 上传失败:', error.message, error.response?.data]));
+    console.error(
+      ...sanitizeLogArgs(["[DingTalk Media] 上传失败:", error.message, error.response?.data]),
+    );
     return { success: false, error: `上传失败: ${error.message}` };
   }
 }
@@ -142,10 +154,10 @@ export async function uploadMediaToDingTalk(
  */
 export function detectMediaType(filePath: string): DingTalkMediaType {
   const ext = path.extname(filePath).toLowerCase();
-  if (IMAGE_EXTENSIONS.has(ext)) return 'image';
-  if (AUDIO_EXTENSIONS.includes(ext)) return 'voice';
-  if (VIDEO_EXTENSIONS.includes(ext)) return 'video';
-  return 'file';
+  if (IMAGE_EXTENSIONS.has(ext)) return "image";
+  if (AUDIO_EXTENSIONS.has(ext)) {return "voice";}
+  if (VIDEO_EXTENSIONS.includes(ext)) {return "video";}
+  return "file";
 }
 
 /**
@@ -154,22 +166,22 @@ export function detectMediaType(filePath: string): DingTalkMediaType {
 export function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   const mimeMap: Record<string, string> = {
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.gif': 'image/gif',
-    '.bmp': 'image/bmp',
-    '.webp': 'image/webp',
-    '.mp4': 'video/mp4',
-    '.mov': 'video/quicktime',
-    '.ogg': 'audio/ogg',
-    '.amr': 'audio/amr',
-    '.mp3': 'audio/mpeg',
-    '.wav': 'audio/wav',
-    '.m4a': 'audio/mp4',
-    '.aac': 'audio/aac',
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".bmp": "image/bmp",
+    ".webp": "image/webp",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".ogg": "audio/ogg",
+    ".amr": "audio/amr",
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
   };
-  return mimeMap[ext] || 'application/octet-stream';
+  return mimeMap[ext] || "application/octet-stream";
 }
 
 /**

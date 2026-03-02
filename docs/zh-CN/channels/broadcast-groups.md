@@ -199,7 +199,7 @@ Agents:
 ```
 Session: agent:alfred:whatsapp:group:120363403215116621@g.us
 History: [user message, alfred's previous responses]
-Workspace: /Users/pascal/openclaw-alfred/
+Workspace: /Users/pascal/marv-alfred/
 Tools: read, write, exec
 ```
 
@@ -208,7 +208,7 @@ Tools: read, write, exec
 ```
 Session: agent:baerbel:whatsapp:group:120363403215116621@g.us
 History: [user message, baerbel's previous responses]
-Workspace: /Users/pascal/openclaw-baerbel/
+Workspace: /Users/pascal/marv-baerbel/
 Tools: read only
 ```
 
@@ -324,7 +324,7 @@ Result: Agent A and C respond, Agent B logs error
 **调试：**
 
 ```bash
-tail -f ~/.openclaw/logs/gateway.log | grep broadcast
+tail -f ~/.marv/logs/gateway.log | grep broadcast
 ```
 
 ### 只有一个智能体响应
@@ -410,7 +410,7 @@ tail -f ~/.openclaw/logs/gateway.log | grep broadcast
 ### 配置模式
 
 ```typescript
-interface OpenClawConfig {
+interface MarvConfig {
   broadcast?: {
     strategy?: "parallel" | "sequential";
     [peerId: string]: string[];

@@ -2,14 +2,14 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { Logger as TsLogger } from "tslog";
-import type { OpenClawConfig } from "../config/types.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import type { MarvConfig } from "../config/types.js";
+import { resolvePreferredMarvTmpDir } from "../infra/tmp-marv-dir.js";
 import { readLoggingConfig } from "./config.js";
 import type { ConsoleStyle } from "./console.js";
 import { type LogLevel, levelToMinLevel, normalizeLogLevel } from "./levels.js";
 import { loggingState } from "./state.js";
 
-export const DEFAULT_LOG_DIR = resolvePreferredOpenClawTmpDir();
+export const DEFAULT_LOG_DIR = resolvePreferredMarvTmpDir();
 export const DEFAULT_LOG_FILE = path.join(DEFAULT_LOG_DIR, "marv.log");
 
 const LOG_PREFIX = "marv";
@@ -51,12 +51,12 @@ function attachExternalTransport(logger: TsLogger<LogObj>, transport: LogTranspo
 }
 
 function resolveSettings(): ResolvedSettings {
-  let cfg: OpenClawConfig["logging"] | undefined =
+  let cfg: MarvConfig["logging"] | undefined =
     (loggingState.overrideSettings as LoggerSettings | null) ?? readLoggingConfig();
   if (!cfg) {
     try {
       const loaded = requireConfig("../config/config.js") as {
-        loadConfig?: () => OpenClawConfig;
+        loadConfig?: () => MarvConfig;
       };
       cfg = loaded.loadConfig?.().logging;
     } catch {
@@ -66,7 +66,7 @@ function resolveSettings(): ResolvedSettings {
   const defaultLevel =
     process.env.VITEST === "true" &&
     process.env.MARV_TEST_FILE_LOG !== "1" &&
-    process.env.OPENCLAW_TEST_FILE_LOG !== "1"
+    process.env.MARV_TEST_FILE_LOG !== "1"
       ? "silent"
       : "info";
   const level = normalizeLogLevel(cfg?.level, defaultLevel);

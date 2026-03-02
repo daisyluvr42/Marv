@@ -89,9 +89,9 @@ const DEFAULT_ASK: ExecAsk = "on-miss";
 const DEFAULT_ASK_FALLBACK: ExecSecurity = "deny";
 const DEFAULT_AUTO_ALLOW_SKILLS = false;
 const DEFAULT_SOCKET = "~/.marv/exec-approvals.sock";
-const LEGACY_SOCKET = "~/.openclaw/exec-approvals.sock";
+const LEGACY_SOCKET = "~/.marv/exec-approvals.sock";
 const DEFAULT_FILE = "~/.marv/exec-approvals.json";
-const LEGACY_FILE = "~/.openclaw/exec-approvals.json";
+const LEGACY_FILE = "~/.marv/exec-approvals.json";
 
 function hashExecApprovalsRaw(raw: string | null): string {
   return crypto

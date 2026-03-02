@@ -30,7 +30,7 @@ export type GatewayBonjourDiscoverOpts = {
 
 const DEFAULT_TIMEOUT_MS = 2000;
 const GATEWAY_SERVICE_TYPE = "_marv-gw._tcp";
-const LEGACY_GATEWAY_SERVICE_TYPE = "_openclaw-gw._tcp";
+const LEGACY_GATEWAY_SERVICE_TYPE = "_marv-gw._tcp";
 const GATEWAY_SERVICE_TYPES = [GATEWAY_SERVICE_TYPE, LEGACY_GATEWAY_SERVICE_TYPE] as const;
 
 function decodeDnsSdEscapes(value: string): string {
@@ -193,7 +193,7 @@ function parseDnsSdBrowse(stdout: string): string[] {
     if (!line.includes("Add")) {
       continue;
     }
-    const match = line.match(/_(?:marv|openclaw)-gw\._tcp\.?\s+(.+)$/);
+    const match = line.match(/_(?:marv|marv)-gw\._tcp\.?\s+(.+)$/);
     if (match?.[1]) {
       instances.add(decodeDnsSdEscapes(match[1].trim()));
     }
@@ -387,7 +387,7 @@ async function discoverWideAreaViaTailnetDns(
     if (!ptrName) {
       continue;
     }
-    const instanceName = ptrName.replace(/\.?_(?:marv|openclaw)-gw\._tcp\..*$/, "");
+    const instanceName = ptrName.replace(/\.?_(?:marv|marv)-gw\._tcp\..*$/, "");
 
     const srv = await run(["dig", "+short", "+time=1", "+tries=1", nameserverArg, ptrName, "SRV"], {
       timeoutMs: Math.max(1, Math.min(350, budget)),

@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import { resolveOpenClawPackageRoot, resolveOpenClawPackageRootSync } from "./openclaw-root.js";
+import { resolveMarvPackageRoot, resolveMarvPackageRootSync } from "./marv-root.js";
 
 const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
 
@@ -86,12 +86,12 @@ export async function resolveControlUiDistIndexPath(
     return path.join(distDir, "control-ui", "index.html");
   }
 
-  const packageRoot = await resolveOpenClawPackageRoot({ argv1: normalized, moduleUrl });
+  const packageRoot = await resolveMarvPackageRoot({ argv1: normalized, moduleUrl });
   if (packageRoot) {
     return path.join(packageRoot, "dist", "control-ui", "index.html");
   }
 
-  // Fallback: traverse up and find package.json with name "marv" (or legacy "openclaw")
+  // Fallback: traverse up and find package.json with name "marv" (or legacy "marv")
   // plus dist/control-ui/index.html.
   // This handles global installs where path-based resolution might fail.
   let dir = path.dirname(normalized);
@@ -102,7 +102,7 @@ export async function resolveControlUiDistIndexPath(
       try {
         const raw = fs.readFileSync(pkgJsonPath, "utf-8");
         const parsed = JSON.parse(raw) as { name?: unknown };
-        if (parsed.name === "marv" || parsed.name === "openclaw") {
+        if (parsed.name === "marv" || parsed.name === "marv") {
           return fs.existsSync(indexPath) ? indexPath : null;
         }
         // Stop at the first package boundary to avoid resolving through unrelated ancestors.
@@ -167,7 +167,7 @@ export function resolveControlUiRootSync(opts: ControlUiRootResolveOptions = {})
       return null;
     }
   })();
-  const packageRoot = resolveOpenClawPackageRootSync({
+  const packageRoot = resolveMarvPackageRootSync({
     argv1,
     moduleUrl: opts.moduleUrl,
     cwd,
@@ -184,7 +184,7 @@ export function resolveControlUiRootSync(opts: ControlUiRootResolveOptions = {})
     addCandidate(candidates, path.join(moduleDir, "../../dist/control-ui"));
   }
   if (argv1Dir) {
-    // marv.mjs/openclaw.mjs or dist/<bundle>.js
+    // marv.mjs/marv.mjs or dist/<bundle>.js
     addCandidate(candidates, path.join(argv1Dir, "dist", "control-ui"));
     addCandidate(candidates, path.join(argv1Dir, "control-ui"));
   }

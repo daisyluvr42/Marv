@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import type { CoworkPermissionRequest, CoworkPermissionResult } from '../../types/cowork';
-import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { i18nService } from '../../services/i18n';
+import { ExclamationTriangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import React, { useEffect, useMemo, useState } from "react";
+import { i18nService } from "../../services/i18n";
+import type { CoworkPermissionRequest, CoworkPermissionResult } from "../../types/cowork";
 
 interface CoworkPermissionModalProps {
   permission: CoworkPermissionRequest;
@@ -20,45 +20,55 @@ type QuestionItem = {
   multiSelect?: boolean;
 };
 
-const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
-  permission,
-  onRespond,
-}) => {
+const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({ permission, onRespond }) => {
   const toolInput = permission.toolInput ?? {};
 
   const questions = useMemo<QuestionItem[]>(() => {
-    if (permission.toolName !== 'AskUserQuestion') {return [];}
-    if (!toolInput || typeof toolInput !== 'object') {return [];}
+    if (permission.toolName !== "AskUserQuestion") {
+      return [];
+    }
+    if (!toolInput || typeof toolInput !== "object") {
+      return [];
+    }
     const rawQuestions = (toolInput as Record<string, unknown>).questions;
-    if (!Array.isArray(rawQuestions)) {return [];}
+    if (!Array.isArray(rawQuestions)) {
+      return [];
+    }
 
     return rawQuestions
       .map((question) => {
-        if (!question || typeof question !== 'object') {return null;}
+        if (!question || typeof question !== "object") {
+          return null;
+        }
         const record = question as Record<string, unknown>;
         const options = Array.isArray(record.options)
-          ? record.options
+          ? (record.options
               .map((option) => {
-                if (!option || typeof option !== 'object') {return null;}
+                if (!option || typeof option !== "object") {
+                  return null;
+                }
                 const optionRecord = option as Record<string, unknown>;
-                if (typeof optionRecord.label !== 'string') {return null;}
+                if (typeof optionRecord.label !== "string") {
+                  return null;
+                }
                 return {
                   label: optionRecord.label,
-                  description: typeof optionRecord.description === 'string'
-                    ? optionRecord.description
-                    : undefined,
+                  description:
+                    typeof optionRecord.description === "string"
+                      ? optionRecord.description
+                      : undefined,
                 } as QuestionOption;
               })
-              .filter(Boolean) as QuestionOption[]
+              .filter(Boolean) as QuestionOption[])
           : [];
 
-        if (typeof record.question !== 'string' || options.length === 0) {
+        if (typeof record.question !== "string" || options.length === 0) {
           return null;
         }
 
         return {
           question: record.question,
-          header: typeof record.header === 'string' ? record.header : undefined,
+          header: typeof record.header === "string" ? record.header : undefined,
           options,
           multiSelect: Boolean(record.multiSelect),
         } as QuestionItem;
@@ -77,10 +87,10 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
     }
 
     const rawAnswers = (toolInput as Record<string, unknown>).answers;
-    if (rawAnswers && typeof rawAnswers === 'object') {
+    if (rawAnswers && typeof rawAnswers === "object") {
       const initial: Record<string, string> = {};
       Object.entries(rawAnswers as Record<string, unknown>).forEach(([key, value]) => {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           initial[key] = value;
         }
       });
@@ -99,8 +109,10 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
   };
 
   const isDangerousBash = (() => {
-    if (permission.toolName !== 'Bash') {return false;}
-    const command = String((permission.toolInput as Record<string, unknown>)?.command ?? '');
+    if (permission.toolName !== "Bash") {
+      return false;
+    }
+    const command = String((permission.toolInput as Record<string, unknown>)?.command ?? "");
     const dangerousPatterns = [
       /\brm\s+-rf?\b/i,
       /\bsudo\b/i,
@@ -109,15 +121,19 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
       /\bformat\b/i,
       />\s*\/dev\//i,
     ];
-    return dangerousPatterns.some(pattern => pattern.test(command));
+    return dangerousPatterns.some((pattern) => pattern.test(command));
   })();
 
   const getSelectedValues = (question: QuestionItem): string[] => {
-    const rawValue = answers[question.question] ?? '';
-    if (!rawValue) {return [];}
-    if (!question.multiSelect) {return [rawValue];}
+    const rawValue = answers[question.question] ?? "";
+    if (!rawValue) {
+      return [];
+    }
+    if (!question.multiSelect) {
+      return [rawValue];
+    }
     return rawValue
-      .split('|||')
+      .split("|||")
       .map((value) => value.trim())
       .filter(Boolean);
   };
@@ -128,12 +144,12 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
         return { ...prev, [question.question]: optionLabel };
       }
 
-      const rawValue = prev[question.question] ?? '';
+      const rawValue = prev[question.question] ?? "";
       const current = new Set(
         rawValue
-          .split('|||')
+          .split("|||")
           .map((value) => value.trim())
-          .filter(Boolean)
+          .filter(Boolean),
       );
       if (current.has(optionLabel)) {
         current.delete(optionLabel);
@@ -143,29 +159,31 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
 
       return {
         ...prev,
-        [question.question]: Array.from(current).join('|||'),
+        [question.question]: Array.from(current).join("|||"),
       };
     });
   };
 
   const isComplete = isQuestionTool
-    ? questions.every((question) => (answers[question.question] ?? '').trim())
+    ? questions.every((question) => (answers[question.question] ?? "").trim())
     : true;
 
   const denyButtonLabel = isQuestionTool
-    ? i18nService.t('coworkDenyRequest')
-    : i18nService.t('coworkDeny');
+    ? i18nService.t("coworkDenyRequest")
+    : i18nService.t("coworkDeny");
   const approveButtonLabel = isQuestionTool
-    ? i18nService.t('coworkConfirmSelection')
-    : i18nService.t('coworkApprove');
+    ? i18nService.t("coworkConfirmSelection")
+    : i18nService.t("coworkApprove");
 
   const handleApprove = () => {
     if (isQuestionTool) {
-      if (!isComplete) {return;}
+      if (!isComplete) {
+        return;
+      }
       onRespond({
-        behavior: 'allow',
+        behavior: "allow",
         updatedInput: {
-          ...(toolInput && typeof toolInput === 'object' ? toolInput : {}),
+          ...(toolInput && typeof toolInput === "object" ? toolInput : {}),
           answers,
         },
       });
@@ -173,15 +191,15 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
     }
 
     onRespond({
-      behavior: 'allow',
-      updatedInput: toolInput && typeof toolInput === 'object' ? toolInput : {},
+      behavior: "allow",
+      updatedInput: toolInput && typeof toolInput === "object" ? toolInput : {},
     });
   };
 
   const handleDeny = () => {
     onRespond({
-      behavior: 'deny',
-      message: 'Permission denied',
+      behavior: "deny",
+      message: "Permission denied",
     });
   };
 
@@ -195,10 +213,10 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">
-              {i18nService.t('coworkPermissionRequired')}
+              {i18nService.t("coworkPermissionRequired")}
             </h2>
             <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-              {i18nService.t('coworkPermissionDescription')}
+              {i18nService.t("coworkPermissionDescription")}
             </p>
           </div>
           <button
@@ -241,8 +259,8 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
                             onClick={() => handleSelectOption(question, option.label)}
                             className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${
                               isSelected
-                                ? 'border-claude-accent bg-claude-accent/10 text-claude-text dark:text-claude-darkText'
-                                : 'border-claude-border dark:border-claude-darkBorder dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+                                ? "border-claude-accent bg-claude-accent/10 text-claude-text dark:text-claude-darkText"
+                                : "border-claude-border dark:border-claude-darkBorder dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover"
                             }`}
                           >
                             <div className="text-sm font-medium">{option.label}</div>
@@ -262,7 +280,7 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
               {/* Tool name */}
               <div>
                 <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary uppercase tracking-wider mb-1">
-                  {i18nService.t('coworkToolName')}
+                  {i18nService.t("coworkToolName")}
                 </label>
                 <div className="px-3 py-2 rounded-lg dark:bg-claude-darkBg bg-claude-bg">
                   <code className="text-sm dark:text-claude-darkText text-claude-text">
@@ -274,7 +292,7 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
               {/* Tool input */}
               <div>
                 <label className="block text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary uppercase tracking-wider mb-1">
-                  {i18nService.t('coworkToolInput')}
+                  {i18nService.t("coworkToolInput")}
                 </label>
                 <div className="px-3 py-2 rounded-lg dark:bg-claude-darkBg bg-claude-bg max-h-48 overflow-y-auto">
                   <pre className="text-xs dark:text-claude-darkText text-claude-text whitespace-pre-wrap break-words font-mono">
@@ -288,7 +306,7 @@ const CoworkPermissionModal: React.FC<CoworkPermissionModalProps> = ({
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                   <ExclamationTriangleIcon className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-700 dark:text-red-400">
-                    {i18nService.t('coworkDangerousOperation')}
+                    {i18nService.t("coworkDangerousOperation")}
                   </p>
                 </div>
               )}

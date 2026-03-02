@@ -1,20 +1,25 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import { scheduledTaskService } from '../../services/scheduledTask';
-import { i18nService } from '../../services/i18n';
-import type { ScheduledTask, Schedule, ScheduledTaskInput, NotifyPlatform } from '../../types/scheduledTask';
+import React, { useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { i18nService } from "../../services/i18n";
+import { scheduledTaskService } from "../../services/scheduledTask";
+import { RootState } from "../../store";
+import type {
+  ScheduledTask,
+  Schedule,
+  ScheduledTaskInput,
+  NotifyPlatform,
+} from "../../types/scheduledTask";
 
 interface TaskFormProps {
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   task?: ScheduledTask;
   onCancel: () => void;
   onSaved: () => void;
 }
 
-type ScheduleMode = 'once' | 'daily' | 'weekly' | 'monthly';
+type ScheduleMode = "once" | "daily" | "weekly" | "monthly";
 
-const NOTIFY_PLATFORMS: NotifyPlatform[] = ['dingtalk', 'feishu', 'telegram', 'discord'];
+const NOTIFY_PLATFORMS: NotifyPlatform[] = ["dingtalk", "feishu", "telegram", "discord"];
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const; // 0=Sunday
 
 // Parse existing schedule into UI state
@@ -25,39 +30,45 @@ function parseScheduleToUI(schedule: Schedule): {
   weekday: number;
   monthDay: number;
 } {
-  const defaults = { mode: 'once' as ScheduleMode, date: '', time: '09:00', weekday: 1, monthDay: 1 };
+  const defaults = {
+    mode: "once" as ScheduleMode,
+    date: "",
+    time: "09:00",
+    weekday: 1,
+    monthDay: 1,
+  };
 
-  if (schedule.type === 'at') {
-    const dt = schedule.datetime ?? '';
+  if (schedule.type === "at") {
+    const dt = schedule.datetime ?? "";
     // datetime-local format: "YYYY-MM-DDTHH:MM"
-    if (dt.includes('T')) {
-      return { ...defaults, mode: 'once', date: dt.slice(0, 10), time: dt.slice(11, 16) };
+    if (dt.includes("T")) {
+      return { ...defaults, mode: "once", date: dt.slice(0, 10), time: dt.slice(11, 16) };
     }
-    return { ...defaults, mode: 'once', date: dt.slice(0, 10) };
+    return { ...defaults, mode: "once", date: dt.slice(0, 10) };
   }
 
-  if (schedule.type === 'cron' && schedule.expression) {
+  if (schedule.type === "cron" && schedule.expression) {
     const parts = schedule.expression.trim().split(/\s+/);
     if (parts.length >= 5) {
       const [min, hour, dom, , dow] = parts;
-      const timeStr = `${hour.padStart(2, '0')}:${min.padStart(2, '0')}`;
+      const timeStr = `${hour.padStart(2, "0")}:${min.padStart(2, "0")}`;
 
-      if (dow !== '*' && dom === '*') {
+      if (dow !== "*" && dom === "*") {
         // Weekly: M H * * DOW
-        return { ...defaults, mode: 'weekly', time: timeStr, weekday: parseInt(dow) || 0 };
+        return { ...defaults, mode: "weekly", time: timeStr, weekday: parseInt(dow) || 0 };
       }
-      if (dom !== '*' && dow === '*') {
+      if (dom !== "*" && dow === "*") {
         // Monthly: M H DOM * *
-        return { ...defaults, mode: 'monthly', time: timeStr, monthDay: parseInt(dom) || 1 };
+        return { ...defaults, mode: "monthly", time: timeStr, monthDay: parseInt(dom) || 1 };
       }
       // Daily: M H * * *
-      return { ...defaults, mode: 'daily', time: timeStr };
+      return { ...defaults, mode: "daily", time: timeStr };
     }
   }
 
   // Fallback for interval type - treat as daily
-  if (schedule.type === 'interval') {
-    return { ...defaults, mode: 'daily' };
+  if (schedule.type === "interval") {
+    return { ...defaults, mode: "daily" };
   }
 
   return defaults;
@@ -65,22 +76,24 @@ function parseScheduleToUI(schedule: Schedule): {
 
 const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) => {
   const coworkConfig = useSelector((state: RootState) => state.cowork.config);
-  const defaultWorkingDirectory = coworkConfig?.workingDirectory ?? '';
+  const defaultWorkingDirectory = coworkConfig?.workingDirectory ?? "";
 
   // Parse existing schedule for edit mode
   const parsed = task ? parseScheduleToUI(task.schedule) : null;
 
   // Form state
-  const [name, setName] = useState(task?.name ?? '');
-  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>(parsed?.mode ?? 'once');
-  const [scheduleDate, setScheduleDate] = useState(parsed?.date ?? '');
-  const [scheduleTime, setScheduleTime] = useState(parsed?.time ?? '09:00');
+  const [name, setName] = useState(task?.name ?? "");
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>(parsed?.mode ?? "once");
+  const [scheduleDate, setScheduleDate] = useState(parsed?.date ?? "");
+  const [scheduleTime, setScheduleTime] = useState(parsed?.time ?? "09:00");
   const [weekday, setWeekday] = useState(parsed?.weekday ?? 1);
   const [monthDay, setMonthDay] = useState(parsed?.monthDay ?? 1);
-  const [prompt, setPrompt] = useState(task?.prompt ?? '');
-  const [workingDirectory, setWorkingDirectory] = useState(task?.workingDirectory ?? '');
-  const [expiresAt, setExpiresAt] = useState(task?.expiresAt ?? '');
-  const [notifyPlatforms, setNotifyPlatforms] = useState<NotifyPlatform[]>(task?.notifyPlatforms ?? []);
+  const [prompt, setPrompt] = useState(task?.prompt ?? "");
+  const [workingDirectory, setWorkingDirectory] = useState(task?.workingDirectory ?? "");
+  const [expiresAt, setExpiresAt] = useState(task?.expiresAt ?? "");
+  const [notifyPlatforms, setNotifyPlatforms] = useState<NotifyPlatform[]>(
+    task?.notifyPlatforms ?? [],
+  );
   const [notifyDropdownOpen, setNotifyDropdownOpen] = useState(false);
   const notifyDropdownRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -93,62 +106,70 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
         setNotifyDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const buildSchedule = (): Schedule => {
-    const [hour, min] = scheduleTime.split(':').map(Number);
+    const [hour, min] = scheduleTime.split(":").map(Number);
     switch (scheduleMode) {
-      case 'once':
-        return { type: 'at', datetime: `${scheduleDate}T${scheduleTime}` };
-      case 'daily':
-        return { type: 'cron', expression: `${min} ${hour} * * *` };
-      case 'weekly':
-        return { type: 'cron', expression: `${min} ${hour} * * ${weekday}` };
-      case 'monthly':
-        return { type: 'cron', expression: `${min} ${hour} ${monthDay} * *` };
+      case "once":
+        return { type: "at", datetime: `${scheduleDate}T${scheduleTime}` };
+      case "daily":
+        return { type: "cron", expression: `${min} ${hour} * * *` };
+      case "weekly":
+        return { type: "cron", expression: `${min} ${hour} * * ${weekday}` };
+      case "monthly":
+        return { type: "cron", expression: `${min} ${hour} ${monthDay} * *` };
     }
   };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!name.trim()) {newErrors.name = i18nService.t('scheduledTasksFormValidationNameRequired');}
-    if (!prompt.trim()) {newErrors.prompt = i18nService.t('scheduledTasksFormValidationPromptRequired');}
-    if (!(workingDirectory.trim() || defaultWorkingDirectory.trim())) {
-      newErrors.workingDirectory = i18nService.t('scheduledTasksFormValidationWorkingDirectoryRequired');
+    if (!name.trim()) {
+      newErrors.name = i18nService.t("scheduledTasksFormValidationNameRequired");
     }
-    if (scheduleMode === 'once') {
+    if (!prompt.trim()) {
+      newErrors.prompt = i18nService.t("scheduledTasksFormValidationPromptRequired");
+    }
+    if (!(workingDirectory.trim() || defaultWorkingDirectory.trim())) {
+      newErrors.workingDirectory = i18nService.t(
+        "scheduledTasksFormValidationWorkingDirectoryRequired",
+      );
+    }
+    if (scheduleMode === "once") {
       if (!scheduleDate || !scheduleTime) {
-        newErrors.schedule = i18nService.t('scheduledTasksFormValidationDatetimeFuture');
+        newErrors.schedule = i18nService.t("scheduledTasksFormValidationDatetimeFuture");
       } else if (new Date(`${scheduleDate}T${scheduleTime}`).getTime() <= Date.now()) {
-        newErrors.schedule = i18nService.t('scheduledTasksFormValidationDatetimeFuture');
+        newErrors.schedule = i18nService.t("scheduledTasksFormValidationDatetimeFuture");
       }
     }
     if (!scheduleTime) {
-      newErrors.schedule = i18nService.t('scheduledTasksFormValidationTimeRequired');
+      newErrors.schedule = i18nService.t("scheduledTasksFormValidationTimeRequired");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validate()) {return;}
+    if (!validate()) {
+      return;
+    }
     setSubmitting(true);
     try {
       const input: ScheduledTaskInput = {
         name: name.trim(),
-        description: '',
+        description: "",
         schedule: buildSchedule(),
         prompt: prompt.trim(),
         workingDirectory: workingDirectory.trim() || defaultWorkingDirectory,
-        systemPrompt: '',
-        executionMode: task?.executionMode ?? 'auto',
+        systemPrompt: "",
+        executionMode: task?.executionMode ?? "auto",
         expiresAt: expiresAt || null,
         notifyPlatforms,
         enabled: task?.enabled ?? true,
       };
-      if (mode === 'create') {
+      if (mode === "create") {
         await scheduledTaskService.createTask(input);
       } else if (task) {
         await scheduledTaskService.updateTaskById(task.id, input);
@@ -173,55 +194,58 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
   };
 
   const weekdayKeys: Record<number, string> = {
-    0: 'scheduledTasksFormWeekSun',
-    1: 'scheduledTasksFormWeekMon',
-    2: 'scheduledTasksFormWeekTue',
-    3: 'scheduledTasksFormWeekWed',
-    4: 'scheduledTasksFormWeekThu',
-    5: 'scheduledTasksFormWeekFri',
-    6: 'scheduledTasksFormWeekSat',
+    0: "scheduledTasksFormWeekSun",
+    1: "scheduledTasksFormWeekMon",
+    2: "scheduledTasksFormWeekTue",
+    3: "scheduledTasksFormWeekWed",
+    4: "scheduledTasksFormWeekThu",
+    5: "scheduledTasksFormWeekFri",
+    6: "scheduledTasksFormWeekSat",
   };
 
-  const inputClass = 'w-full rounded-lg border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-white px-3 py-2 text-sm dark:text-claude-darkText text-claude-text focus:outline-none focus:ring-2 focus:ring-claude-accent/50';
-  const labelClass = 'block text-sm font-medium dark:text-claude-darkText text-claude-text mb-1';
-  const errorClass = 'text-xs text-red-500 mt-1';
+  const inputClass =
+    "w-full rounded-lg border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-white px-3 py-2 text-sm dark:text-claude-darkText text-claude-text focus:outline-none focus:ring-2 focus:ring-claude-accent/50";
+  const labelClass = "block text-sm font-medium dark:text-claude-darkText text-claude-text mb-1";
+  const errorClass = "text-xs text-red-500 mt-1";
 
-  const scheduleModes: ScheduleMode[] = ['once', 'daily', 'weekly', 'monthly'];
+  const scheduleModes: ScheduleMode[] = ["once", "daily", "weekly", "monthly"];
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <h2 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">
-        {mode === 'create' ? i18nService.t('scheduledTasksFormCreate') : i18nService.t('scheduledTasksFormUpdate')}
+        {mode === "create"
+          ? i18nService.t("scheduledTasksFormCreate")
+          : i18nService.t("scheduledTasksFormUpdate")}
       </h2>
 
       {/* Name */}
       <div>
-        <label className={labelClass}>{i18nService.t('scheduledTasksFormName')}</label>
+        <label className={labelClass}>{i18nService.t("scheduledTasksFormName")}</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className={inputClass}
-          placeholder={i18nService.t('scheduledTasksFormNamePlaceholder')}
+          placeholder={i18nService.t("scheduledTasksFormNamePlaceholder")}
         />
         {errors.name && <p className={errorClass}>{errors.name}</p>}
       </div>
 
       {/* Prompt */}
       <div>
-        <label className={labelClass}>{i18nService.t('scheduledTasksPrompt')}</label>
+        <label className={labelClass}>{i18nService.t("scheduledTasksPrompt")}</label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className={inputClass + ' h-28 resize-none'}
-          placeholder={i18nService.t('scheduledTasksFormPromptPlaceholder')}
+          className={inputClass + " h-28 resize-none"}
+          placeholder={i18nService.t("scheduledTasksFormPromptPlaceholder")}
         />
         {errors.prompt && <p className={errorClass}>{errors.prompt}</p>}
       </div>
 
       {/* Schedule */}
       <div>
-        <label className={labelClass}>{i18nService.t('scheduledTasksFormScheduleType')}</label>
+        <label className={labelClass}>{i18nService.t("scheduledTasksFormScheduleType")}</label>
         <div className="grid grid-cols-3 gap-2">
           {/* Schedule Mode Dropdown */}
           <select
@@ -231,13 +255,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
           >
             {scheduleModes.map((m) => (
               <option key={m} value={m}>
-                {i18nService.t(`scheduledTasksFormScheduleMode${m.charAt(0).toUpperCase() + m.slice(1)}`)}
+                {i18nService.t(
+                  `scheduledTasksFormScheduleMode${m.charAt(0).toUpperCase() + m.slice(1)}`,
+                )}
               </option>
             ))}
           </select>
 
           {/* Second column: date/weekday/monthday or time (for daily) */}
-          {scheduleMode === 'once' ? (
+          {scheduleMode === "once" ? (
             <input
               type="date"
               value={scheduleDate}
@@ -245,7 +271,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
               className={inputClass}
               min={new Date().toISOString().slice(0, 10)}
             />
-          ) : scheduleMode === 'weekly' ? (
+          ) : scheduleMode === "weekly" ? (
             <select
               value={weekday}
               onChange={(e) => setWeekday(parseInt(e.target.value))}
@@ -257,7 +283,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
                 </option>
               ))}
             </select>
-          ) : scheduleMode === 'monthly' ? (
+          ) : scheduleMode === "monthly" ? (
             <select
               value={monthDay}
               onChange={(e) => setMonthDay(parseInt(e.target.value))}
@@ -265,7 +291,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
             >
               {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                 <option key={d} value={d}>
-                  {d}{i18nService.t('scheduledTasksFormMonthDaySuffix')}
+                  {d}
+                  {i18nService.t("scheduledTasksFormMonthDaySuffix")}
                 </option>
               ))}
             </select>
@@ -279,7 +306,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
           )}
 
           {/* Third column: time picker (or empty for daily) */}
-          {scheduleMode === 'daily' ? (
+          {scheduleMode === "daily" ? (
             <div />
           ) : (
             <input
@@ -295,21 +322,24 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
 
       {/* Working Directory */}
       <div>
-        <label className={labelClass}>{i18nService.t('scheduledTasksFormWorkingDirectory')}</label>
+        <label className={labelClass}>{i18nService.t("scheduledTasksFormWorkingDirectory")}</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={workingDirectory}
             onChange={(e) => setWorkingDirectory(e.target.value)}
-            className={inputClass + ' flex-1'}
-            placeholder={defaultWorkingDirectory || i18nService.t('scheduledTasksFormWorkingDirectoryPlaceholder')}
+            className={inputClass + " flex-1"}
+            placeholder={
+              defaultWorkingDirectory ||
+              i18nService.t("scheduledTasksFormWorkingDirectoryPlaceholder")
+            }
           />
           <button
             type="button"
             onClick={handleBrowseDirectory}
             className="px-3 py-2 text-sm rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
           >
-            {i18nService.t('browse')}
+            {i18nService.t("browse")}
           </button>
         </div>
       </div>
@@ -318,9 +348,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
       {/* Expires At */}
       <div>
         <label className={labelClass}>
-          {i18nService.t('scheduledTasksFormExpiresAt')}
+          {i18nService.t("scheduledTasksFormExpiresAt")}
           <span className="text-xs font-normal dark:text-claude-darkTextSecondary text-claude-textSecondary ml-1">
-            {i18nService.t('scheduledTasksFormOptional')}
+            {i18nService.t("scheduledTasksFormOptional")}
           </span>
         </label>
         <div className="flex items-center gap-2">
@@ -328,16 +358,16 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
             type="date"
             value={expiresAt}
             onChange={(e) => setExpiresAt(e.target.value)}
-            className={inputClass + ' flex-1'}
+            className={inputClass + " flex-1"}
             min={new Date().toISOString().slice(0, 10)}
           />
           {expiresAt && (
             <button
               type="button"
-              onClick={() => setExpiresAt('')}
+              onClick={() => setExpiresAt("")}
               className="px-3 py-2 text-sm rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
             >
-              {i18nService.t('scheduledTasksFormExpiresAtClear')}
+              {i18nService.t("scheduledTasksFormExpiresAtClear")}
             </button>
           )}
         </div>
@@ -346,26 +376,46 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
       {/* Notification */}
       <div>
         <label className={labelClass}>
-          {i18nService.t('scheduledTasksFormNotify')}
+          {i18nService.t("scheduledTasksFormNotify")}
           <span className="text-xs font-normal dark:text-claude-darkTextSecondary text-claude-textSecondary ml-1">
-            {i18nService.t('scheduledTasksFormOptional')}
+            {i18nService.t("scheduledTasksFormOptional")}
           </span>
         </label>
         <div className="relative" ref={notifyDropdownRef}>
           <button
             type="button"
             onClick={() => setNotifyDropdownOpen(!notifyDropdownOpen)}
-            className={inputClass + ' flex items-center justify-between cursor-pointer text-left'}
+            className={inputClass + " flex items-center justify-between cursor-pointer text-left"}
           >
-            <span className={notifyPlatforms.length === 0 ? 'dark:text-claude-darkTextSecondary text-claude-textSecondary' : ''}>
+            <span
+              className={
+                notifyPlatforms.length === 0
+                  ? "dark:text-claude-darkTextSecondary text-claude-textSecondary"
+                  : ""
+              }
+            >
               {notifyPlatforms.length === 0
-                ? i18nService.t('scheduledTasksFormNotifyNone')
-                : notifyPlatforms.map((p) =>
-                    i18nService.t(`scheduledTasksFormNotify${p.charAt(0).toUpperCase() + p.slice(1)}`)
-                  ).join(', ')}
+                ? i18nService.t("scheduledTasksFormNotifyNone")
+                : notifyPlatforms
+                    .map((p) =>
+                      i18nService.t(
+                        `scheduledTasksFormNotify${p.charAt(0).toUpperCase() + p.slice(1)}`,
+                      ),
+                    )
+                    .join(", ")}
             </span>
-            <svg className={`w-4 h-4 ml-2 transition-transform ${notifyDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className={`w-4 h-4 ml-2 transition-transform ${notifyDropdownOpen ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           {notifyDropdownOpen && (
@@ -384,13 +434,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
                         setNotifyPlatforms(
                           checked
                             ? notifyPlatforms.filter((p) => p !== platform)
-                            : [...notifyPlatforms, platform]
+                            : [...notifyPlatforms, platform],
                         );
                       }}
                       className="text-claude-accent focus:ring-claude-accent rounded"
                     />
                     <span className="text-sm dark:text-claude-darkText text-claude-text">
-                      {i18nService.t(`scheduledTasksFormNotify${platform.charAt(0).toUpperCase() + platform.slice(1)}`)}
+                      {i18nService.t(
+                        `scheduledTasksFormNotify${platform.charAt(0).toUpperCase() + platform.slice(1)}`,
+                      )}
                     </span>
                   </label>
                 );
@@ -407,7 +459,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
           onClick={onCancel}
           className="px-4 py-2 text-sm rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
         >
-          {i18nService.t('cancel')}
+          {i18nService.t("cancel")}
         </button>
         <button
           type="button"
@@ -416,10 +468,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
           className="px-4 py-2 text-sm font-medium bg-claude-accent text-white rounded-lg hover:bg-claude-accentHover transition-colors disabled:opacity-50"
         >
           {submitting
-            ? i18nService.t('saving')
-            : mode === 'create'
-              ? i18nService.t('scheduledTasksFormCreate')
-              : i18nService.t('scheduledTasksFormUpdate')}
+            ? i18nService.t("saving")
+            : mode === "create"
+              ? i18nService.t("scheduledTasksFormCreate")
+              : i18nService.t("scheduledTasksFormUpdate")}
         </button>
       </div>
     </div>
