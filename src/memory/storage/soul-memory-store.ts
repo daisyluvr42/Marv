@@ -5,6 +5,47 @@ import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { resolveStateDir } from "../../core/config/paths.js";
+import {
+  REFERENCE_BOOST_WEIGHT,
+  REFERENCE_EDGE_DECAY,
+  REFERENCE_EXPANSION_ENABLED,
+  REFERENCE_MAX_BOOST,
+  REFERENCE_MAX_HOPS,
+  REFERENCE_SEED_TOPK_MULTIPLIER,
+  SOUL_MEMORY_REF_TABLE,
+  applyReferenceExpansion,
+  loadReferencesBySourceIds,
+  upsertItemReferences,
+} from "../salience/reference-expansion.js";
+import {
+  REINFORCEMENT_LOG_WEIGHT,
+  SOUL_MEMORY_SCOPE_HITS_TABLE,
+  computeReinforcementFactor,
+  recordScopeHits,
+  reinforceRetrievedItems,
+} from "../salience/reinforcement.js";
+import {
+  CROSS_SCOPE_PENALTY,
+  FORGET_CONFIDENCE_THRESHOLD,
+  FORGET_STREAK_HALF_LIVES,
+  MATCH_SCOPE_PENALTY,
+  P0_CLARITY_HALF_LIFE_DAYS,
+  P0_SCOPE_PENALTY,
+  P0_TIER_MULTIPLIER,
+  P1_CLARITY_HALF_LIFE_DAYS,
+  P1_TIER_MULTIPLIER,
+  P2_CLARITY_HALF_LIFE_DAYS,
+  P2_TIER_MULTIPLIER,
+  SCORE_DECAY_WEIGHT,
+  SCORE_SIMILARITY_WEIGHT,
+  clarityDecayFactor,
+  computeCurrentClarity,
+  computeFusionSemanticMatch,
+  computeWeightedScore,
+  resolveScopePenalty,
+  shouldPruneMemoryItem,
+  tierPriorityFactor,
+} from "../salience/salience-compute.js";
 import { requireNodeSqlite } from "./sqlite.js";
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -17,55 +58,21 @@ const TIER_P0 = "P0";
 const TIER_P1 = "P1";
 const TIER_P2 = "P2";
 
-const FORGET_CONFIDENCE_THRESHOLD = 0.1;
-const FORGET_STREAK_HALF_LIVES = 3;
 const DEFAULT_INJECT_THRESHOLD = 0.65;
-const P0_CLARITY_HALF_LIFE_DAYS = 365;
-const P1_CLARITY_HALF_LIFE_DAYS = 45;
-const P2_CLARITY_HALF_LIFE_DAYS = 10;
 const P0_RECALL_RELEVANCE_THRESHOLD = 0.7;
 const P2_TO_P1_MIN_CLARITY = 0.75;
 const P2_TO_P1_MIN_AGE_DAYS = 7;
 const P2_TO_P1_MIN_SCOPE_COUNT = 2;
 const P1_TO_P0_MIN_CLARITY = 0.75;
 const P1_TO_P0_MIN_AGE_DAYS = 150;
-const P0_SCOPE_PENALTY = 0.8;
-const CROSS_SCOPE_PENALTY = 0.2;
-const MATCH_SCOPE_PENALTY = 1;
-const P0_TIER_MULTIPLIER = 1.2;
-const P1_TIER_MULTIPLIER = 1;
-const P2_TIER_MULTIPLIER = 0.75;
-const SCORE_SIMILARITY_WEIGHT = 1;
-const SCORE_DECAY_WEIGHT = 1;
-const REINFORCEMENT_LOG_WEIGHT = 0.2;
-const REFERENCE_EXPANSION_ENABLED = true;
-const REFERENCE_MAX_HOPS = 2;
-const REFERENCE_EDGE_DECAY = 0.8;
-const REFERENCE_BOOST_WEIGHT = 0.3;
-const REFERENCE_MAX_BOOST = 0.6;
-const REFERENCE_SEED_TOPK_MULTIPLIER = 2;
-const FUSION_VECTOR_WEIGHT = 0.32;
-const FUSION_LEXICAL_WEIGHT = 0.15;
-const FUSION_BM25_WEIGHT = 0.15;
-const FUSION_GRAPH_WEIGHT = 0.16;
-const FUSION_CLUSTER_WEIGHT = 0.06;
-const FUSION_WEIGHT_SUM =
-  FUSION_VECTOR_WEIGHT +
-  FUSION_LEXICAL_WEIGHT +
-  FUSION_BM25_WEIGHT +
-  FUSION_GRAPH_WEIGHT +
-  FUSION_CLUSTER_WEIGHT;
 const EMBEDDING_DIMS = 128;
 const SOUL_MEMORY_PATH_PREFIX = "soul-memory/";
 const SOUL_MEMORY_FTS_TABLE = "memory_items_fts";
 const SOUL_MEMORY_VEC_TABLE = "memory_items_vec";
 const SOUL_MEMORY_ENTITY_TABLE = "memory_item_entities";
-const SOUL_MEMORY_SCOPE_HITS_TABLE = "memory_scope_hits";
-const SOUL_MEMORY_REF_TABLE = "memory_item_refs";
 const MEMORY_ITEM_SELECT_COLUMNS =
   "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
   "created_at, last_accessed_at, reinforcement_count, last_reinforced_at";
-const MEMORY_REF_TOKEN_RE = /\[ref:(mem_[a-z0-9]+)\]/gi;
 const RRF_RANK_CONSTANT = 40;
 const VECTOR_RRF_WEIGHT = 0.6;
 const BM25_RRF_WEIGHT = 0.4;
@@ -1101,26 +1108,6 @@ function upsertItemEntities(db: DatabaseSync, memoryId: string, content: string)
   }
 }
 
-function upsertItemReferences(
-  db: DatabaseSync,
-  sourceMemoryId: string,
-  content: string,
-  nowMs: number,
-): void {
-  db.prepare(`DELETE FROM ${SOUL_MEMORY_REF_TABLE} WHERE source_memory_id = ?`).run(sourceMemoryId);
-  const refs = extractMemoryReferenceIds(content).filter((targetId) => targetId !== sourceMemoryId);
-  if (refs.length === 0) {
-    return;
-  }
-  const stmt = db.prepare(
-    `INSERT OR IGNORE INTO ${SOUL_MEMORY_REF_TABLE} (source_memory_id, target_memory_id, created_at) ` +
-      "VALUES (?, ?, ?)",
-  );
-  for (const targetId of refs) {
-    stmt.run(sourceMemoryId, targetId, nowMs);
-  }
-}
-
 function upsertSoulMemoryVector(db: DatabaseSync, memoryId: string, embedding: number[]): void {
   if (!memoryId || embedding.length === 0 || !hasSoulMemoryVecTable(db)) {
     return;
@@ -1182,70 +1169,6 @@ function findExistingMemoryItem(params: {
     }
   }
   return null;
-}
-
-function reinforceRetrievedItems(
-  db: DatabaseSync,
-  results: Array<{ id: string; wasRecallBoosted: boolean }>,
-  nowMs: number,
-): void {
-  if (results.length === 0) {
-    return;
-  }
-  const boosted = db.prepare(
-    "UPDATE memory_items SET " +
-      "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
-      "confidence = 1.0 WHERE id = ?",
-  );
-  const reinforce = db.prepare(
-    "UPDATE memory_items SET " +
-      "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
-      "confidence = MIN(1.0, confidence + 0.05) WHERE id = ?",
-  );
-  const handled = new Set<string>();
-  for (const result of results) {
-    const itemId = result.id;
-    if (!itemId || handled.has(itemId)) {
-      continue;
-    }
-    handled.add(itemId);
-    if (result.wasRecallBoosted) {
-      boosted.run(nowMs, nowMs, itemId);
-      continue;
-    }
-    reinforce.run(nowMs, nowMs, itemId);
-  }
-}
-
-function recordScopeHits(
-  db: DatabaseSync,
-  results: Array<{ id: string }>,
-  scopeId: string,
-  nowMs: number,
-): void {
-  if (results.length === 0) {
-    return;
-  }
-  const normalizedScopeId = normalizeScopeValue(scopeId);
-  if (!normalizedScopeId) {
-    return;
-  }
-  const upsert = db.prepare(
-    `INSERT INTO ${SOUL_MEMORY_SCOPE_HITS_TABLE} (memory_id, scope_id, hit_count, first_hit_at, last_hit_at) ` +
-      "VALUES (?, ?, 1, ?, ?) " +
-      "ON CONFLICT(memory_id, scope_id) DO UPDATE SET " +
-      "hit_count = hit_count + 1, " +
-      "last_hit_at = excluded.last_hit_at",
-  );
-  const seen = new Set<string>();
-  for (const result of results) {
-    const memoryId = result.id.trim();
-    if (!memoryId || seen.has(memoryId)) {
-      continue;
-    }
-    seen.add(memoryId);
-    upsert.run(memoryId, normalizedScopeId, nowMs, nowMs);
-  }
 }
 
 function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): number {
@@ -1496,150 +1419,6 @@ function resolveMemorySource(params: {
   return SOURCE_MANUAL_LOG;
 }
 
-function clarityDecayFactor(
-  tier: SoulMemoryTier,
-  ageDays: number,
-  soulConfig: ResolvedSoulMemoryConfig,
-): number {
-  const normalizedAgeDays = Math.max(0, ageDays);
-  const halfLifeDays =
-    tier === TIER_P0
-      ? soulConfig.p0ClarityHalfLifeDays
-      : tier === TIER_P2
-        ? soulConfig.p2ClarityHalfLifeDays
-        : soulConfig.p1ClarityHalfLifeDays;
-  const factor = 0.5 ** (normalizedAgeDays / halfLifeDays);
-  return clamp(factor, 0, 1);
-}
-
-function computeCurrentClarity(
-  item: SoulMemoryItem,
-  ageDays: number,
-  soulConfig: ResolvedSoulMemoryConfig,
-): number {
-  return clamp(item.confidence * clarityDecayFactor(item.tier, ageDays, soulConfig), 0, 1);
-}
-
-function resolveTierHalfLifeDays(
-  tier: SoulMemoryTier,
-  soulConfig: ResolvedSoulMemoryConfig,
-): number | null {
-  if (tier === TIER_P1) {
-    return soulConfig.p1ClarityHalfLifeDays;
-  }
-  if (tier === TIER_P2) {
-    return soulConfig.p2ClarityHalfLifeDays;
-  }
-  return null;
-}
-
-function computeBelowThresholdDurationDays(params: {
-  item: SoulMemoryItem;
-  ageDays: number;
-  threshold: number;
-  halfLifeDays: number;
-}): number {
-  const ageDays = Math.max(0, params.ageDays);
-  const threshold = clamp(params.threshold, 0, 1);
-  const baseConfidence = clamp(params.item.confidence, 0, 1);
-  if (baseConfidence <= 0 || baseConfidence <= threshold) {
-    return ageDays;
-  }
-  const crossingAgeDays = params.halfLifeDays * Math.log2(baseConfidence / threshold);
-  if (!Number.isFinite(crossingAgeDays) || crossingAgeDays <= 0) {
-    return ageDays;
-  }
-  return Math.max(0, ageDays - crossingAgeDays);
-}
-
-function shouldPruneMemoryItem(
-  item: SoulMemoryItem,
-  ageDays: number,
-  soulConfig: ResolvedSoulMemoryConfig,
-): boolean {
-  const halfLifeDays = resolveTierHalfLifeDays(item.tier, soulConfig);
-  if (!halfLifeDays || !Number.isFinite(halfLifeDays) || halfLifeDays <= 0) {
-    return false;
-  }
-  const clarity = computeCurrentClarity(item, ageDays, soulConfig);
-  if (clarity >= soulConfig.forgetConfidenceThreshold) {
-    return false;
-  }
-  const belowThresholdDays = computeBelowThresholdDurationDays({
-    item,
-    ageDays,
-    threshold: soulConfig.forgetConfidenceThreshold,
-    halfLifeDays,
-  });
-  return belowThresholdDays >= halfLifeDays * soulConfig.forgetStreakHalfLives;
-}
-
-function tierPriorityFactor(tier: SoulMemoryTier, soulConfig: ResolvedSoulMemoryConfig): number {
-  if (tier === TIER_P0) {
-    return soulConfig.p0TierMultiplier;
-  }
-  if (tier === TIER_P2) {
-    return soulConfig.p2TierMultiplier;
-  }
-  return soulConfig.p1TierMultiplier;
-}
-
-function resolveScopePenalty(
-  params: {
-    item: SoulMemoryItem;
-    activeScopeKeySet: Set<string>;
-  },
-  soulConfig: ResolvedSoulMemoryConfig,
-): number {
-  if (params.activeScopeKeySet.has(scopeKey(params.item.scopeType, params.item.scopeId))) {
-    return soulConfig.matchScopePenalty;
-  }
-  if (params.item.scopeType === "global" || params.item.scopeType === "user") {
-    return soulConfig.p0ScopePenalty;
-  }
-  return soulConfig.crossScopePenalty;
-}
-
-function computeWeightedScore(value: number, weight: number): number {
-  const normalizedValue = clamp(value, 0, 1);
-  if (!Number.isFinite(weight) || weight === 1) {
-    return normalizedValue;
-  }
-  return clamp(normalizedValue ** weight, 0, 1);
-}
-
-function computeReinforcementFactor(
-  reinforcementCount: number,
-  soulConfig: ResolvedSoulMemoryConfig,
-): number {
-  const normalizedCount = Math.max(1, Math.floor(reinforcementCount));
-  if (soulConfig.reinforcementLogWeight <= 0) {
-    return 1;
-  }
-  const logBoost = Math.log1p(Math.max(0, normalizedCount - 1));
-  const factor = 1 + logBoost * soulConfig.reinforcementLogWeight;
-  return Math.max(1, factor);
-}
-
-function computeFusionSemanticMatch(params: {
-  vectorScore: number;
-  lexicalScore: number;
-  bm25Score: number;
-  graphScore: number;
-  clusterScore: number;
-}): number {
-  const weighted =
-    params.vectorScore * FUSION_VECTOR_WEIGHT +
-    params.lexicalScore * FUSION_LEXICAL_WEIGHT +
-    params.bm25Score * FUSION_BM25_WEIGHT +
-    params.graphScore * FUSION_GRAPH_WEIGHT +
-    params.clusterScore * FUSION_CLUSTER_WEIGHT;
-  if (FUSION_WEIGHT_SUM <= 0) {
-    return 0;
-  }
-  return clamp(weighted / FUSION_WEIGHT_SUM, 0, 1);
-}
-
 function scopeKey(scopeType: string, scopeId: string): string {
   return `${scopeType}:${scopeId}`;
 }
@@ -1772,119 +1551,6 @@ function loadEntitiesForMemoryIds(db: DatabaseSync, memoryIds: string[]): Map<st
     bucket.add(entity);
   }
   return out;
-}
-
-function loadReferencesBySourceIds(db: DatabaseSync, sourceIds: string[]): Map<string, string[]> {
-  const out = new Map<string, string[]>();
-  if (sourceIds.length === 0) {
-    return out;
-  }
-  const placeholders = sourceIds.map(() => "?").join(", ");
-  type Row = { source_memory_id?: string; target_memory_id?: string };
-  const rows = db
-    .prepare(
-      `SELECT source_memory_id, target_memory_id FROM ${SOUL_MEMORY_REF_TABLE} ` +
-        `WHERE source_memory_id IN (${placeholders}) ` +
-        "ORDER BY source_memory_id ASC, target_memory_id ASC",
-    )
-    .all(...sourceIds) as Row[];
-  for (const row of rows) {
-    const sourceId = String(row.source_memory_id ?? "").trim();
-    const targetId = String(row.target_memory_id ?? "").trim();
-    if (!sourceId || !targetId) {
-      continue;
-    }
-    const bucket = out.get(sourceId);
-    if (!bucket) {
-      out.set(sourceId, [targetId]);
-      continue;
-    }
-    if (!bucket.includes(targetId)) {
-      bucket.push(targetId);
-    }
-  }
-  return out;
-}
-
-function applyReferenceExpansion(params: {
-  db: DatabaseSync;
-  scoredById: Map<string, SoulMemoryQueryResult>;
-  topK: number;
-  soulConfig: ResolvedSoulMemoryConfig;
-}): void {
-  if (
-    !params.soulConfig.referenceExpansionEnabled ||
-    params.soulConfig.referenceMaxHops <= 0 ||
-    params.soulConfig.referenceBoostWeight <= 0 ||
-    params.soulConfig.referenceEdgeDecay <= 0 ||
-    params.scoredById.size === 0
-  ) {
-    return;
-  }
-
-  const sorted = [...params.scoredById.values()].toSorted((a, b) => b.score - a.score);
-  const seedLimit = Math.max(
-    params.topK,
-    Math.min(
-      sorted.length,
-      Math.floor(params.topK * params.soulConfig.referenceSeedTopKMultiplier),
-    ),
-  );
-  const seeds = sorted.slice(0, seedLimit).filter((entry) => entry.score > 0);
-  if (seeds.length === 0) {
-    return;
-  }
-
-  let frontier = new Map<string, number>();
-  for (const seed of seeds) {
-    const existing = frontier.get(seed.id) ?? 0;
-    if (seed.score > existing) {
-      frontier.set(seed.id, seed.score);
-    }
-  }
-
-  const boostById = new Map<string, number>();
-  for (let hop = 1; hop <= params.soulConfig.referenceMaxHops && frontier.size > 0; hop += 1) {
-    const refsBySource = loadReferencesBySourceIds(params.db, [...frontier.keys()]);
-    const nextFrontier = new Map<string, number>();
-    for (const [sourceId, sourceInfluence] of frontier) {
-      const targets = refsBySource.get(sourceId) ?? [];
-      for (const targetId of targets) {
-        if (!targetId || targetId === sourceId) {
-          continue;
-        }
-        const propagated = sourceInfluence * params.soulConfig.referenceEdgeDecay;
-        if (propagated <= 0) {
-          continue;
-        }
-        const boostDelta = propagated * params.soulConfig.referenceBoostWeight;
-        if (boostDelta > 0 && params.scoredById.has(targetId)) {
-          const previousBoost = boostById.get(targetId) ?? 0;
-          boostById.set(
-            targetId,
-            Math.min(params.soulConfig.referenceMaxBoost, previousBoost + boostDelta),
-          );
-        }
-        const previousFrontier = nextFrontier.get(targetId) ?? 0;
-        if (propagated > previousFrontier) {
-          nextFrontier.set(targetId, propagated);
-        }
-      }
-    }
-    frontier = nextFrontier;
-  }
-
-  for (const [itemId, boost] of boostById) {
-    if (boost <= 0) {
-      continue;
-    }
-    const result = params.scoredById.get(itemId);
-    if (!result) {
-      continue;
-    }
-    result.referenceBoost = boost;
-    result.score = clamp(result.score + boost, 0, 1.5);
-  }
 }
 
 function loadRelatedEntityWeights(params: {
@@ -2145,20 +1811,6 @@ function tokenize(value: string): Set<string> {
     }
   }
   return out;
-}
-
-function extractMemoryReferenceIds(value: string): string[] {
-  const refs = new Set<string>();
-  const regex = new RegExp(MEMORY_REF_TOKEN_RE.source, MEMORY_REF_TOKEN_RE.flags);
-  for (const match of value.matchAll(regex)) {
-    const itemId = String(match[1] ?? "")
-      .trim()
-      .toLowerCase();
-    if (/^mem_[a-z0-9]+$/.test(itemId)) {
-      refs.add(itemId);
-    }
-  }
-  return [...refs];
 }
 
 function embedText(value: string): number[] {

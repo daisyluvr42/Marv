@@ -903,8 +903,9 @@ describe("runReplyAgent memory flush", () => {
 
       expect(calls).toHaveLength(2);
       expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
+      expect(calls[0]?.prompt).toContain("memory_write");
+      expect(calls[0]?.prompt).toContain("Do not edit MEMORY.md / memory/*.md");
       expect(calls[0]?.prompt).toContain("Current time:");
-      expect(calls[0]?.prompt).toMatch(/memory\/\d{4}-\d{2}-\d{2}\.md/);
       expect(calls[1]?.prompt).toBe("hello");
 
       const stored = JSON.parse(await fs.readFile(storePath, "utf-8"));

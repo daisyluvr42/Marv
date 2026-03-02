@@ -6,6 +6,15 @@ export type TemporalDecayConfig = {
   halfLifeDays: number;
 };
 
+export type TemporalDecayResult = {
+  score: number;
+  decayedScore: number;
+  multiplier: number;
+  ageInDays: number;
+  timestamp: Date | null;
+  applied: boolean;
+};
+
 export const DEFAULT_TEMPORAL_DECAY_CONFIG: TemporalDecayConfig = {
   enabled: false,
   halfLifeDays: 30,
@@ -118,6 +127,38 @@ function ageInDaysFromTimestamp(timestamp: Date, nowMs: number): number {
   return ageMs / DAY_MS;
 }
 
+function buildTemporalDecayResult(params: {
+  score: number;
+  timestamp: Date | null;
+  nowMs: number;
+  halfLifeDays: number;
+}): TemporalDecayResult {
+  if (!params.timestamp) {
+    return {
+      score: params.score,
+      decayedScore: params.score,
+      multiplier: 1,
+      ageInDays: 0,
+      timestamp: null,
+      applied: false,
+    };
+  }
+
+  const ageInDays = ageInDaysFromTimestamp(params.timestamp, params.nowMs);
+  const multiplier = calculateTemporalDecayMultiplier({
+    ageInDays,
+    halfLifeDays: params.halfLifeDays,
+  });
+  return {
+    score: params.score,
+    decayedScore: params.score * multiplier,
+    multiplier,
+    ageInDays,
+    timestamp: params.timestamp,
+    applied: true,
+  };
+}
+
 export async function applyTemporalDecayToHybridResults<
   T extends { path: string; score: number; source: string },
 >(params: {
@@ -148,19 +189,19 @@ export async function applyTemporalDecayToHybridResults<
       }
 
       const timestamp = await timestampPromise;
-      if (!timestamp) {
+      const decay = buildTemporalDecayResult({
+        score: entry.score,
+        timestamp,
+        nowMs,
+        halfLifeDays: config.halfLifeDays,
+      });
+      if (!decay.applied) {
         return entry;
       }
 
-      const decayedScore = applyTemporalDecayToScore({
-        score: entry.score,
-        ageInDays: ageInDaysFromTimestamp(timestamp, nowMs),
-        halfLifeDays: config.halfLifeDays,
-      });
-
       return {
         ...entry,
-        score: decayedScore,
+        score: decay.decayedScore,
       };
     }),
   );
