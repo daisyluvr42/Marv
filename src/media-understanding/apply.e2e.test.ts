@@ -2,12 +2,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveApiKeyForProvider } from "../agents/model-auth.js";
+import { resolveApiKeyForProvider } from "../agents/model/model-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { MarvConfig } from "../config/config.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 
-vi.mock("../agents/model-auth.js", () => ({
+vi.mock("../agents/model/model-auth.js", () => ({
   resolveApiKeyForProvider: vi.fn(async () => ({
     apiKey: "test-key",
     source: "test",

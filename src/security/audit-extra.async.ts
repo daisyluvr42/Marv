@@ -6,14 +6,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
 import {
   resolveSandboxConfigForAgent,
   resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
+} from "../agents/sandbox/sandbox.js";
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
 import { loadWorkspaceSkillEntries } from "../agents/skills.js";
-import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
+import { isToolAllowedByPolicies } from "../agents/tools/pi-tools.policy.js";
+import { resolveToolProfilePolicy } from "../agents/tools/tool-policy.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { resolveNativeSkillsEnabled } from "../config/commands.js";
@@ -740,7 +740,7 @@ export async function collectInstalledSkillsCodeSafetyFindings(params: {
   for (const workspaceDir of workspaceDirs) {
     const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.cfg });
     for (const entry of entries) {
-      if (entry.skill.source === "marv-bundled" || entry.skill.source === "marv-bundled") {
+      if (entry.skill.source === "marv-bundled") {
         continue;
       }
 

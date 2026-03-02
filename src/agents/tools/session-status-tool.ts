@@ -24,15 +24,15 @@ import {
 import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveAgentDir } from "../agent-scope.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
-import { resolveModelAuthLabel } from "../model-auth-label.js";
-import { loadModelCatalog } from "../model-catalog.js";
+import { resolveModelAuthLabel } from "../model/model-auth-label.js";
+import { loadModelCatalog } from "../model/model-catalog.js";
 import {
   buildAllowedModelSet,
   buildModelAliasIndex,
   modelKey,
   resolveDefaultModelForAgent,
   resolveModelRefFromString,
-} from "../model-selection.js";
+} from "../model/model-selection.js";
 import type { AnyAgentTool } from "./common.js";
 import { readStringParam } from "./common.js";
 import {

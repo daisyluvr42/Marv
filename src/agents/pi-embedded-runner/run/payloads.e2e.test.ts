@@ -1,6 +1,6 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import { describe, expect, it } from "vitest";
-import { formatBillingErrorMessage } from "../../pi-embedded-helpers.js";
+import { formatBillingErrorMessage } from "../../runner/pi-embedded-helpers.js";
 import { buildEmbeddedRunPayloads } from "./payloads.js";
 
 describe("buildEmbeddedRunPayloads", () => {

@@ -1,12 +1,12 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
-import { loadModelCatalog } from "../../agents/model-catalog.js";
+import { loadModelCatalog } from "../../agents/model/model-catalog.js";
 import {
   buildAllowedModelSet,
   buildModelAliasIndex,
   normalizeProviderId,
   resolveConfiguredModelRef,
   resolveModelRefFromString,
-} from "../../agents/model-selection.js";
+} from "../../agents/model/model-selection.js";
 import {
   buildModelsKeyboard,
   buildProviderKeyboard,

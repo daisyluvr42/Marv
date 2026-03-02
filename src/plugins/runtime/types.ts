@@ -6,8 +6,9 @@ type DispatchReplyWithBufferedBlockDispatcher =
 type CreateReplyDispatcherWithTyping =
   typeof import("../../auto-reply/reply/reply-dispatcher.js").createReplyDispatcherWithTyping;
 type ResolveEffectiveMessagesConfig =
-  typeof import("../../agents/identity.js").resolveEffectiveMessagesConfig;
-type ResolveHumanDelayConfig = typeof import("../../agents/identity.js").resolveHumanDelayConfig;
+  typeof import("../../agents/prompt/identity.js").resolveEffectiveMessagesConfig;
+type ResolveHumanDelayConfig =
+  typeof import("../../agents/prompt/identity.js").resolveHumanDelayConfig;
 type ResolveAgentRoute = typeof import("../../routing/resolve-route.js").resolveAgentRoute;
 type BuildPairingReply = typeof import("../../pairing/pairing-messages.js").buildPairingReply;
 type ReadChannelAllowFromStore =

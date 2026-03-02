@@ -2,9 +2,9 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type { MemoryCitationsMode } from "../../config/types.memory.js";
 import type { ResolvedTimeFormat } from "../date-time.js";
-import type { EmbeddedContextFile } from "../pi-embedded-helpers.js";
-import { buildAgentSystemPrompt, type PromptMode } from "../system-prompt.js";
-import { buildToolSummaryMap } from "../tool-summaries.js";
+import { buildAgentSystemPrompt, type PromptMode } from "../prompt/system-prompt.js";
+import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
+import { buildToolSummaryMap } from "../tools/tool-summaries.js";
 import type { EmbeddedSandboxInfo } from "./types.js";
 import type { ReasoningLevel, ThinkLevel } from "./utils.js";
 

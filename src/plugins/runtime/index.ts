@@ -1,5 +1,8 @@
 import { createRequire } from "node:module";
-import { resolveEffectiveMessagesConfig, resolveHumanDelayConfig } from "../../agents/identity.js";
+import {
+  resolveEffectiveMessagesConfig,
+  resolveHumanDelayConfig,
+} from "../../agents/prompt/identity.js";
 import {
   createMemoryGetTool,
   createMemorySearchTool,

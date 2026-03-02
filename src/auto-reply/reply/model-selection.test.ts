@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../../config/config.js";
 import { createModelSelectionState } from "./model-selection.js";
 
-vi.mock("../../agents/model-catalog.js", () => ({
+vi.mock("../../agents/model/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(async () => [
     { provider: "anthropic", id: "claude-opus-4-5", name: "Claude Opus 4.5" },
     { provider: "inferencer", id: "deepseek-v3-4bit-mlx", name: "DeepSeek V3" },

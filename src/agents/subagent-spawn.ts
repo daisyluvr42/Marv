@@ -6,7 +6,7 @@ import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.j
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
-import { resolveSubagentSpawnModelSelection } from "./model-selection.js";
+import { resolveSubagentSpawnModelSelection } from "./model/model-selection.js";
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";

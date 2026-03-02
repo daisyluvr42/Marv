@@ -1,5 +1,5 @@
-import type { ExecToolDefaults } from "../../../agents/bash-tools.js";
 import type { SkillSnapshot } from "../../../agents/skills.js";
+import type { ExecToolDefaults } from "../../../agents/tools/bash-tools.js";
 import type { MarvConfig } from "../../../config/config.js";
 import type { SessionEntry } from "../../../config/sessions.js";
 import type { OriginatingChannelType } from "../../templating.js";

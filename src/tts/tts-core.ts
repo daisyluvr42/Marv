@@ -1,13 +1,13 @@
 import { rmSync } from "node:fs";
 import { completeSimple, type TextContent } from "@mariozechner/pi-ai";
 import { EdgeTTS } from "node-edge-tts";
-import { getApiKeyForModel, requireApiKey } from "../agents/model-auth.js";
+import { getApiKeyForModel, requireApiKey } from "../agents/model/model-auth.js";
 import {
   buildModelAliasIndex,
   resolveDefaultModelForAgent,
   resolveModelRefFromString,
   type ModelRef,
-} from "../agents/model-selection.js";
+} from "../agents/model/model-selection.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
 import type { MarvConfig } from "../config/config.js";
 import type {
@@ -391,10 +391,7 @@ type SummaryModelSelection = {
   source: "summaryModel" | "default";
 };
 
-function resolveSummaryModelRef(
-  cfg: MarvConfig,
-  config: ResolvedTtsConfig,
-): SummaryModelSelection {
+function resolveSummaryModelRef(cfg: MarvConfig, config: ResolvedTtsConfig): SummaryModelSelection {
   const defaultRef = resolveDefaultModelForAgent({ cfg });
   const override = config.summaryModel?.trim();
   if (!override) {

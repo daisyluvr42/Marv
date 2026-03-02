@@ -29,7 +29,7 @@ import type {
 import { resolveDiscordChannelId } from "../../channels/discord/targets.js";
 import type { DiscordActionConfig } from "../../config/config.js";
 import { withNormalizedTimestamp } from "../date-time.js";
-import { assertMediaNotDataUrl } from "../sandbox-paths.js";
+import { assertMediaNotDataUrl } from "../sandbox/sandbox-paths.js";
 import {
   type ActionGate,
   jsonResult,

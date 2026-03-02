@@ -1,14 +1,14 @@
 import { ensureAuthProfileStore, listProfilesForProvider } from "../agents/auth-profiles.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model-auth.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
+import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model/model-auth.js";
+import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import {
   buildAllowedModelSet,
   buildModelAliasIndex,
   modelKey,
   normalizeProviderId,
   resolveConfiguredModelRef,
-} from "../agents/model-selection.js";
+} from "../agents/model/model-selection.js";
 import type { MarvConfig } from "../config/config.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
 import { formatTokenK } from "./models/shared.js";
@@ -516,10 +516,7 @@ export function applyModelAllowlist(cfg: MarvConfig, models: string[]): MarvConf
   };
 }
 
-export function applyModelFallbacksFromSelection(
-  cfg: MarvConfig,
-  selection: string[],
-): MarvConfig {
+export function applyModelFallbacksFromSelection(cfg: MarvConfig, selection: string[]): MarvConfig {
   const normalized = normalizeModelKeys(selection);
   if (normalized.length <= 1) {
     return cfg;

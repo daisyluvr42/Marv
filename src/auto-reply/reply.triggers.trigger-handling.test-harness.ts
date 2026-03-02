@@ -35,7 +35,7 @@ export function getQueueEmbeddedPiMessageMock(): AnyMock {
   return piEmbeddedMocks.queueEmbeddedPiMessage;
 }
 
-vi.mock("../agents/pi-embedded.js", () => ({
+vi.mock("../agents/runner/pi-embedded.js", () => ({
   abortEmbeddedPiRun: (...args: unknown[]) => piEmbeddedMocks.abortEmbeddedPiRun(...args),
   compactEmbeddedPiSession: (...args: unknown[]) =>
     piEmbeddedMocks.compactEmbeddedPiSession(...args),
@@ -89,7 +89,7 @@ export function getModelCatalogMocks(): AnyMocks {
   return modelCatalogMocks;
 }
 
-vi.mock("../agents/model-catalog.js", () => modelCatalogMocks);
+vi.mock("../agents/model/model-catalog.js", () => modelCatalogMocks);
 
 const webSessionMocks = vi.hoisted(() => ({
   webAuthExists: vi.fn().mockResolvedValue(true),

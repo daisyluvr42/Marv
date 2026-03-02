@@ -1,5 +1,5 @@
 import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
-import { parseModelRef } from "../agents/model-selection.js";
+import { parseModelRef } from "../agents/model/model-selection.js";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
 import { resolveTalkApiKey } from "./talk.js";
 import type { MarvConfig } from "./types.js";

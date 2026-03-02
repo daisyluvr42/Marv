@@ -1,20 +1,20 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createMarvTools } from "../agents/marv-tools.js";
+import { ToolInputError } from "../agents/tools/common.js";
+import { createMarvTools } from "../agents/tools/marv-tools.js";
 import {
   resolveEffectiveToolPolicy,
   resolveGroupToolPolicy,
   resolveSubagentToolPolicy,
-} from "../agents/pi-tools.policy.js";
+} from "../agents/tools/pi-tools.policy.js";
 import {
   applyToolPolicyPipeline,
   buildDefaultToolPolicyPipelineSteps,
-} from "../agents/tool-policy-pipeline.js";
+} from "../agents/tools/tool-policy-pipeline.js";
 import {
   collectExplicitAllowlist,
   mergeAlsoAllowPolicy,
   resolveToolProfilePolicy,
-} from "../agents/tool-policy.js";
-import { ToolInputError } from "../agents/tools/common.js";
+} from "../agents/tools/tool-policy.js";
 import { loadConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { logWarn } from "../logger.js";

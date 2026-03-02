@@ -3,7 +3,7 @@ import {
   compactEmbeddedPiSession,
   isEmbeddedPiRunActive,
   waitForEmbeddedPiRunEnd,
-} from "../../agents/pi-embedded.js";
+} from "../../agents/runner/pi-embedded.js";
 import type { MarvConfig } from "../../config/config.js";
 import {
   resolveFreshSessionTotalTokens,

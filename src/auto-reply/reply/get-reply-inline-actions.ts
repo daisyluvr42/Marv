@@ -1,6 +1,6 @@
 import { collectTextContentBlocks } from "../../agents/content-blocks.js";
-import { createMarvTools } from "../../agents/marv-tools.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
+import { createMarvTools } from "../../agents/tools/marv-tools.js";
 import { getChannelDock } from "../../channels/dock.js";
 import type { MarvConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";

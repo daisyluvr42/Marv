@@ -1,7 +1,7 @@
-import type { ExecToolDefaults } from "../../agents/bash-tools.js";
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
-import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
+import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
+import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
+import type { ExecToolDefaults } from "../../agents/tools/bash-tools.js";
 import type { MarvConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";

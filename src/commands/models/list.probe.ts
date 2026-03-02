@@ -9,14 +9,14 @@ import {
   resolveAuthProfileOrder,
 } from "../../agents/auth-profiles.js";
 import { describeFailoverError } from "../../agents/failover-error.js";
-import { getCustomProviderApiKey, resolveEnvApiKey } from "../../agents/model-auth.js";
-import { loadModelCatalog } from "../../agents/model-catalog.js";
+import { getCustomProviderApiKey, resolveEnvApiKey } from "../../agents/model/model-auth.js";
+import { loadModelCatalog } from "../../agents/model/model-catalog.js";
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
   parseModelRef,
-} from "../../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
+} from "../../agents/model/model-selection.js";
+import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import type { MarvConfig } from "../../config/config.js";
 import {

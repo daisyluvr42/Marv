@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { resolveHumanDelayConfig } from "../../../agents/identity.js";
+import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
 import { resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
 import { hasControlCommand } from "../../../auto-reply/command-detection.js";
 import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";

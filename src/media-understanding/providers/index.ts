@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../../agents/model-selection.js";
+import { normalizeProviderId } from "../../agents/model/model-selection.js";
 import type { MediaUnderstandingProvider } from "../types.js";
 import { anthropicProvider } from "./anthropic/index.js";
 import { deepgramProvider } from "./deepgram/index.js";

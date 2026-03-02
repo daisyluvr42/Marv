@@ -3,16 +3,16 @@ import type { MarvConfig } from "../../config/config.js";
 import type { ModelDefinitionConfig } from "../../config/types.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
-import { buildModelAliasLines } from "../model-alias-lines.js";
-import { normalizeModelCompat } from "../model-compat.js";
-import { resolveForwardCompatModel } from "../model-forward-compat.js";
-import { normalizeProviderId } from "../model-selection.js";
+import { buildModelAliasLines } from "../model/model-alias-lines.js";
+import { normalizeModelCompat } from "../model/model-compat.js";
+import { resolveForwardCompatModel } from "../model/model-forward-compat.js";
+import { normalizeProviderId } from "../model/model-selection.js";
 import {
   discoverAuthStorage,
   discoverModels,
   type AuthStorage,
   type ModelRegistry,
-} from "../pi-model-discovery.js";
+} from "../model/pi-model-discovery.js";
 
 type InlineModelEntry = ModelDefinitionConfig & { provider: string; baseUrl?: string };
 type InlineProviderConfig = {

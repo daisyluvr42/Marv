@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildModelAliasIndex } from "../../agents/model-selection.js";
+import { buildModelAliasIndex } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { saveSessionStore } from "../../config/sessions.js";
@@ -18,7 +18,7 @@ vi.mock("../../agents/session-write-lock.js", () => ({
   acquireSessionWriteLock: async () => ({ release: async () => {} }),
 }));
 
-vi.mock("../../agents/model-catalog.js", () => ({
+vi.mock("../../agents/model/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(async () => [
     { provider: "minimax", id: "m2.1", name: "M2.1" },
     { provider: "openai", id: "gpt-4o-mini", name: "GPT-4o mini" },

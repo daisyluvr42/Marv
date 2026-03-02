@@ -1,4 +1,4 @@
-import { resolveHumanDelayConfig } from "../../../agents/identity.js";
+import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
 import { hasControlCommand } from "../../../auto-reply/command-detection.js";
 import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";
 import {

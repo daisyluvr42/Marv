@@ -1,5 +1,5 @@
-import { normalizeToolName } from "../agents/tool-policy.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
+import { normalizeToolName } from "../agents/tools/tool-policy.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { applyTestPluginDefaults, normalizePluginsConfig } from "./config-state.js";
 import { loadMarvPlugins } from "./loader.js";

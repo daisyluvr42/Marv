@@ -17,10 +17,10 @@ import {
   isAnthropicBillingError,
   isAnthropicRateLimitError,
 } from "../agents/live-auth-keys.js";
-import { isModernModelRef } from "../agents/live-model-filter.js";
-import { getApiKeyForModel } from "../agents/model-auth.js";
-import { ensureMarvModelsJson } from "../agents/models-config.js";
-import { discoverAuthStorage, discoverModels } from "../agents/pi-model-discovery.js";
+import { isModernModelRef } from "../agents/model/live-model-filter.js";
+import { getApiKeyForModel } from "../agents/model/model-auth.js";
+import { ensureMarvModelsJson } from "../agents/model/models-config.js";
+import { discoverAuthStorage, discoverModels } from "../agents/model/pi-model-discovery.js";
 import { loadConfig } from "../config/config.js";
 import type { ModelsConfig, MarvConfig, ModelProviderConfig } from "../config/types.js";
 import { isTruthyEnvValue } from "../infra/env.js";

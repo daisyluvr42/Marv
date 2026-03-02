@@ -1,4 +1,4 @@
-import { resolveMessagePrefix } from "../../../../agents/identity.js";
+import { resolveMessagePrefix } from "../../../../agents/prompt/identity.js";
 import {
   formatInboundEnvelope,
   type EnvelopeFormatOptions,

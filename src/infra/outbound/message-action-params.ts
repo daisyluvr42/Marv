@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
+import {
+  assertMediaNotDataUrl,
+  resolveSandboxedMediaSource,
+} from "../../agents/sandbox/sandbox-paths.js";
 import { readStringParam } from "../../agents/tools/common.js";
 import type {
   ChannelId,

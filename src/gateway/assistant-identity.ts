@@ -1,5 +1,5 @@
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { resolveAgentIdentity } from "../agents/identity.js";
+import { resolveAgentIdentity } from "../agents/prompt/identity.js";
 import { loadAgentIdentity } from "../commands/agents.config.js";
 import type { MarvConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";

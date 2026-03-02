@@ -11,7 +11,7 @@ const hookMocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../plugins/hook-runner-global.js", () => ({
+vi.mock("./hook-runner-global.js", () => ({
   getGlobalHookRunner: () => hookMocks.runner,
 }));
 
@@ -33,7 +33,7 @@ describe("compaction hook wiring", () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
     const { handleAutoCompactionStart } =
-      await import("../agents/pi-embedded-subscribe.handlers.compaction.js");
+      await import("../agents/runner/pi-embedded-subscribe.handlers.compaction.js");
 
     const ctx = {
       params: { runId: "r1", session: { messages: [1, 2, 3] } },
@@ -58,7 +58,7 @@ describe("compaction hook wiring", () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
     const { handleAutoCompactionEnd } =
-      await import("../agents/pi-embedded-subscribe.handlers.compaction.js");
+      await import("../agents/runner/pi-embedded-subscribe.handlers.compaction.js");
 
     const ctx = {
       params: { runId: "r2", session: { messages: [1, 2] } },
@@ -92,7 +92,7 @@ describe("compaction hook wiring", () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
     const { handleAutoCompactionEnd } =
-      await import("../agents/pi-embedded-subscribe.handlers.compaction.js");
+      await import("../agents/runner/pi-embedded-subscribe.handlers.compaction.js");
 
     const ctx = {
       params: { runId: "r3", session: { messages: [] } },

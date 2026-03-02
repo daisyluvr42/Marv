@@ -1,1 +1,1 @@
-export { pickSandboxToolPolicy } from "../agents/sandbox-tool-policy.js";
+export { pickSandboxToolPolicy } from "../agents/sandbox/sandbox-tool-policy.js";

@@ -5,7 +5,7 @@ import {
   DEFAULT_SANDBOX_COMMON_IMAGE,
   DEFAULT_SANDBOX_IMAGE,
   resolveSandboxScope,
-} from "../agents/sandbox.js";
+} from "../agents/sandbox/sandbox.js";
 import type { MarvConfig } from "../config/config.js";
 import { runCommandWithTimeout, runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";

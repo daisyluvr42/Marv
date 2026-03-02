@@ -11,7 +11,7 @@ import {
   modelKey,
   resolveDefaultModelForAgent,
   resolveModelRefFromString,
-} from "../../agents/model-selection.js";
+} from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";

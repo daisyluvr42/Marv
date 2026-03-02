@@ -15,7 +15,7 @@ const runCliAgentMock = vi.fn();
 const runWithModelFallbackMock = vi.fn();
 const runtimeErrorMock = vi.fn();
 
-vi.mock("../../agents/model-fallback.js", () => ({
+vi.mock("../../agents/model/model-fallback.js", () => ({
   runWithModelFallback: (params: {
     provider: string;
     model: string;
@@ -23,9 +23,9 @@ vi.mock("../../agents/model-fallback.js", () => ({
   }) => runWithModelFallbackMock(params),
 }));
 
-vi.mock("../../agents/pi-embedded.js", async () => {
-  const actual = await vi.importActual<typeof import("../../agents/pi-embedded.js")>(
-    "../../agents/pi-embedded.js",
+vi.mock("../../agents/runner/pi-embedded.js", async () => {
+  const actual = await vi.importActual<typeof import("../../agents/runner/pi-embedded.js")>(
+    "../../agents/runner/pi-embedded.js",
   );
   return {
     ...actual,
@@ -34,9 +34,9 @@ vi.mock("../../agents/pi-embedded.js", async () => {
   };
 });
 
-vi.mock("../../agents/cli-runner.js", async () => {
-  const actual = await vi.importActual<typeof import("../../agents/cli-runner.js")>(
-    "../../agents/cli-runner.js",
+vi.mock("../../agents/runner/cli-runner.js", async () => {
+  const actual = await vi.importActual<typeof import("../../agents/runner/cli-runner.js")>(
+    "../../agents/runner/cli-runner.js",
   );
   return {
     ...actual,

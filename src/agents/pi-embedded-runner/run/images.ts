@@ -5,7 +5,7 @@ import { loadWebMedia } from "../../../channels/web/media.js";
 import { resolveUserPath } from "../../../utils.js";
 import type { ImageSanitizationLimits } from "../../image-sanitization.js";
 import type { SandboxFsBridge } from "../../sandbox/fs-bridge.js";
-import { sanitizeImageBlocks } from "../../tool-images.js";
+import { sanitizeImageBlocks } from "../../tools/tool-images.js";
 import { log } from "../logger.js";
 
 /**

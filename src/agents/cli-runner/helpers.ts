@@ -9,12 +9,12 @@ import type { MarvConfig } from "../../config/config.js";
 import type { CliBackendConfig } from "../../config/types.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 import { isRecord } from "../../utils.js";
-import { buildModelAliasLines } from "../model-alias-lines.js";
-import { resolveDefaultModelForAgent } from "../model-selection.js";
-import type { EmbeddedContextFile } from "../pi-embedded-helpers.js";
+import { buildModelAliasLines } from "../model/model-alias-lines.js";
+import { resolveDefaultModelForAgent } from "../model/model-selection.js";
+import { buildSystemPromptParams } from "../prompt/system-prompt-params.js";
+import { buildAgentSystemPrompt } from "../prompt/system-prompt.js";
+import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
 import { detectRuntimeShell } from "../shell-utils.js";
-import { buildSystemPromptParams } from "../system-prompt-params.js";
-import { buildAgentSystemPrompt } from "../system-prompt.js";
 export { buildCliSupervisorScopeKey, resolveCliNoOutputTimeoutMs } from "./reliability.js";
 
 const CLI_RUN_QUEUE = new Map<string, Promise<unknown>>();

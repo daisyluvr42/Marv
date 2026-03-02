@@ -6,7 +6,7 @@ import {
   removeSandboxContainer,
   type SandboxBrowserInfo,
   type SandboxContainerInfo,
-} from "../agents/sandbox.js";
+} from "../agents/sandbox/sandbox.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   displayBrowsers,

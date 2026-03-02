@@ -9,7 +9,7 @@ import {
 } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "./agent-scope.js";
-import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
+import { sanitizeForPromptLiteral } from "./prompt/sanitize-for-prompt.js";
 
 export type WorkspaceFallbackReason = "missing" | "blank" | "invalid_type";
 type AgentIdSource = "explicit" | "session_key" | "default";

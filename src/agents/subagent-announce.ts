@@ -27,7 +27,7 @@ import {
   isEmbeddedPiRunActive,
   queueEmbeddedPiMessage,
   waitForEmbeddedPiRunEnd,
-} from "./pi-embedded.js";
+} from "./runner/pi-embedded.js";
 import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { sanitizeTextContent, extractAssistantText } from "./tools/sessions-helpers.js";

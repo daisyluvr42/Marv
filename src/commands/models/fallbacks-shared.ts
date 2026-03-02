@@ -1,4 +1,7 @@
-import { buildModelAliasIndex, resolveModelRefFromString } from "../../agents/model-selection.js";
+import {
+  buildModelAliasIndex,
+  resolveModelRefFromString,
+} from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../config/config.js";
 import { loadConfig } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";

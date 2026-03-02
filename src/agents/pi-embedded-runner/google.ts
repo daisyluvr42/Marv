@@ -15,13 +15,13 @@ import {
   isGoogleModelApi,
   sanitizeGoogleTurnOrdering,
   sanitizeSessionMessagesImages,
-} from "../pi-embedded-helpers.js";
-import { cleanToolSchemaForGemini } from "../pi-tools.schema.js";
+} from "../runner/pi-embedded-helpers.js";
 import {
   sanitizeToolCallInputs,
   stripToolResultDetails,
   sanitizeToolUseResultPairing,
 } from "../session-transcript-repair.js";
+import { cleanToolSchemaForGemini } from "../tools/pi-tools.schema.js";
 import type { TranscriptPolicy } from "../transcript-policy.js";
 import { resolveTranscriptPolicy } from "../transcript-policy.js";
 import { log } from "./logger.js";

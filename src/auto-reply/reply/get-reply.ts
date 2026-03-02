@@ -5,7 +5,7 @@ import {
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
 import { resolveAutoRouting } from "../../agents/auto-routing.js";
-import { resolveModelRefFromString } from "../../agents/model-selection.js";
+import { resolveModelRefFromString } from "../../agents/model/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { type MarvConfig, loadConfig } from "../../config/config.js";

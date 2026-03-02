@@ -62,7 +62,7 @@ vi.mock("../../channels/plugins/pairing.js", async () => {
   };
 });
 
-vi.mock("../../agents/model-catalog.js", () => ({
+vi.mock("../../agents/model/model-catalog.js", () => ({
   loadModelCatalog: vi.fn(async () => [
     { provider: "anthropic", id: "claude-opus-4-5", name: "Claude Opus" },
     { provider: "anthropic", id: "claude-sonnet-4-5", name: "Claude Sonnet" },
@@ -72,7 +72,7 @@ vi.mock("../../agents/model-catalog.js", () => ({
   ]),
 }));
 
-vi.mock("../../agents/pi-embedded.js", () => {
+vi.mock("../../agents/runner/pi-embedded.js", () => {
   const resolveEmbeddedSessionLane = (key: string) => {
     const cleaned = key.trim() || "main";
     return cleaned.startsWith("session:") ? cleaned : `session:${cleaned}`;
@@ -301,7 +301,7 @@ describe("/compact command", () => {
   });
 
   it("returns null when command is not /compact", async () => {
-    const { compactEmbeddedPiSession } = await import("../../agents/pi-embedded.js");
+    const { compactEmbeddedPiSession } = await import("../../agents/runner/pi-embedded.js");
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
@@ -320,7 +320,7 @@ describe("/compact command", () => {
   });
 
   it("rejects unauthorized /compact commands", async () => {
-    const { compactEmbeddedPiSession } = await import("../../agents/pi-embedded.js");
+    const { compactEmbeddedPiSession } = await import("../../agents/runner/pi-embedded.js");
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
@@ -344,7 +344,7 @@ describe("/compact command", () => {
   });
 
   it("routes manual compaction with explicit trigger and context metadata", async () => {
-    const { compactEmbeddedPiSession } = await import("../../agents/pi-embedded.js");
+    const { compactEmbeddedPiSession } = await import("../../agents/runner/pi-embedded.js");
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },

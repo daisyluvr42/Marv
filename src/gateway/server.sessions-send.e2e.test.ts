@@ -12,7 +12,7 @@ import {
   testState,
 } from "./test-helpers.js";
 
-const { createMarvTools } = await import("../agents/marv-tools.js");
+const { createMarvTools } = await import("../agents/tools/marv-tools.js");
 
 installGatewayTestHooks({ scope: "suite" });
 

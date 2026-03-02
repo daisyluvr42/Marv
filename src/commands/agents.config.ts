@@ -4,12 +4,12 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../agents/agent-scope.js";
-import type { AgentIdentityFile } from "../agents/identity-file.js";
+import type { AgentIdentityFile } from "../agents/prompt/identity-file.js";
 import {
   identityHasValues,
   loadAgentIdentityFromWorkspace,
   parseIdentityMarkdown as parseIdentityMarkdownFile,
-} from "../agents/identity-file.js";
+} from "../agents/prompt/identity-file.js";
 import type { MarvConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 

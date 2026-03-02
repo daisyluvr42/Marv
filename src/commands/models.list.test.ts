@@ -32,11 +32,11 @@ vi.mock("../config/config.js", () => ({
   loadConfig,
 }));
 
-vi.mock("../agents/models-config.js", () => ({
+vi.mock("../agents/model/models-config.js", () => ({
   ensureMarvModelsJson,
 }));
 
-vi.mock("../agents/pi-auth-json.js", () => ({
+vi.mock("../agents/runner/pi-auth-json.js", () => ({
   ensurePiAuthJsonFromAuthProfiles,
 }));
 
@@ -52,13 +52,13 @@ vi.mock("../agents/auth-profiles.js", () => ({
   resolveProfileUnusableUntilForDisplay,
 }));
 
-vi.mock("../agents/model-auth.js", () => ({
+vi.mock("../agents/model/model-auth.js", () => ({
   resolveEnvApiKey,
   resolveAwsSdkEnvVarName,
   getCustomProviderApiKey,
 }));
 
-vi.mock("../agents/pi-model-discovery.js", () => {
+vi.mock("../agents/model/pi-model-discovery.js", () => {
   class MockModelRegistry {
     find(provider: string, id: string) {
       return (

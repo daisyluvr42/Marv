@@ -16,10 +16,10 @@ import {
   ensureAuthProfileStore,
   saveAuthProfileStore,
 } from "./auth-profiles.js";
-import { getApiKeyForModel, requireApiKey } from "./model-auth.js";
-import { normalizeProviderId, parseModelRef } from "./model-selection.js";
-import { ensureMarvModelsJson } from "./models-config.js";
-import { discoverAuthStorage, discoverModels } from "./pi-model-discovery.js";
+import { getApiKeyForModel, requireApiKey } from "./model/model-auth.js";
+import { normalizeProviderId, parseModelRef } from "./model/model-selection.js";
+import { ensureMarvModelsJson } from "./model/models-config.js";
+import { discoverAuthStorage, discoverModels } from "./model/pi-model-discovery.js";
 
 const LIVE = isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.MARV_LIVE_TEST);
 const SETUP_TOKEN_RAW = process.env.MARV_LIVE_SETUP_TOKEN?.trim() ?? "";

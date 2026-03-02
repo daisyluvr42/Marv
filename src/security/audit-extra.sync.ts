@@ -1,8 +1,7 @@
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
 import {
   resolveSandboxConfigForAgent,
   resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
+} from "../agents/sandbox/sandbox.js";
 /**
  * Synchronous security audit collector functions.
  *
@@ -10,7 +9,8 @@ import {
  */
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
 import { getBlockedBindReason } from "../agents/sandbox/validate-sandbox-security.js";
-import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
+import { isToolAllowedByPolicies } from "../agents/tools/pi-tools.policy.js";
+import { resolveToolProfilePolicy } from "../agents/tools/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { MarvConfig } from "../config/config.js";

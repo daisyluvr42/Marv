@@ -1,13 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveApiKeyForProvider } from "../../agents/model-auth.js";
-import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
+import { resolveApiKeyForProvider } from "../../agents/model/model-auth.js";
+import type { ModelCatalogEntry } from "../../agents/model/model-catalog.js";
 import {
   findModelInCatalog,
   loadModelCatalog,
   modelSupportsVision,
-} from "../../agents/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
+} from "../../agents/model/model-catalog.js";
+import { resolveDefaultModelForAgent } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../config/config.js";
 import { STATE_DIR } from "../../config/paths.js";
 import { logVerbose } from "../../globals.js";

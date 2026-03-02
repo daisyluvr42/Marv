@@ -24,9 +24,9 @@ import {
   getApiKeyForModel,
   resolveAuthProfileOrder,
   type ResolvedProviderAuth,
-} from "../model-auth.js";
-import { normalizeProviderId } from "../model-selection.js";
-import { ensureMarvModelsJson } from "../models-config.js";
+} from "../model/model-auth.js";
+import { normalizeProviderId } from "../model/model-selection.js";
+import { ensureMarvModelsJson } from "../model/models-config.js";
 import {
   formatBillingErrorMessage,
   classifyFailoverReason,
@@ -43,7 +43,7 @@ import {
   isTimeoutErrorMessage,
   pickFallbackThinkingLevel,
   type FailoverReason,
-} from "../pi-embedded-helpers.js";
+} from "../runner/pi-embedded-helpers.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../usage.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "../workspace-run.js";
 import { compactEmbeddedPiSessionDirect } from "./compact.js";

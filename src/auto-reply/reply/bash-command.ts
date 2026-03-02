@@ -1,8 +1,12 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { getFinishedSession, getSession, markExited } from "../../agents/bash-process-registry.js";
-import { createExecTool } from "../../agents/bash-tools.js";
-import { resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
+import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
 import { killProcessTree } from "../../agents/shell-utils.js";
+import {
+  getFinishedSession,
+  getSession,
+  markExited,
+} from "../../agents/tools/bash-process-registry.js";
+import { createExecTool } from "../../agents/tools/bash-tools.js";
 import type { MarvConfig } from "../../config/config.js";
 import { logVerbose } from "../../globals.js";
 import { clampInt } from "../../utils.js";

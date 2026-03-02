@@ -5,7 +5,7 @@ vi.mock("../../utils.js", () => ({
   resolveUserPath: vi.fn((p: string) => p),
 }));
 
-vi.mock("../pi-embedded-helpers.js", async () => {
+vi.mock("../runner/pi-embedded-helpers.js", async () => {
   return {
     isCompactionFailureError: (msg?: string) => {
       if (!msg) {

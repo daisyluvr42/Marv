@@ -9,7 +9,7 @@ import {
 import { makePrompter } from "./onboarding/__tests__/test-utils.js";
 
 const loadModelCatalog = vi.hoisted(() => vi.fn());
-vi.mock("../agents/model-catalog.js", () => ({
+vi.mock("../agents/model/model-catalog.js", () => ({
   loadModelCatalog,
 }));
 
@@ -31,7 +31,7 @@ vi.mock("../agents/auth-profiles.js", () => ({
 
 const resolveEnvApiKey = vi.hoisted(() => vi.fn(() => undefined));
 const getCustomProviderApiKey = vi.hoisted(() => vi.fn(() => undefined));
-vi.mock("../agents/model-auth.js", () => ({
+vi.mock("../agents/model/model-auth.js", () => ({
   resolveEnvApiKey,
   getCustomProviderApiKey,
 }));

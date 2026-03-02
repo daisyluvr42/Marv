@@ -11,7 +11,7 @@ const hookMocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../plugins/hook-runner-global.js", () => ({
+vi.mock("./hook-runner-global.js", () => ({
   getGlobalHookRunner: () => hookMocks.runner,
 }));
 
@@ -72,7 +72,7 @@ describe("after_tool_call hook wiring", () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
     const { handleToolExecutionEnd, handleToolExecutionStart } =
-      await import("../agents/pi-embedded-subscribe.handlers.tools.js");
+      await import("../agents/runner/pi-embedded-subscribe.handlers.tools.js");
 
     const ctx = createToolHandlerCtx({
       runId: "test-run-1",
@@ -126,7 +126,7 @@ describe("after_tool_call hook wiring", () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
     const { handleToolExecutionEnd, handleToolExecutionStart } =
-      await import("../agents/pi-embedded-subscribe.handlers.tools.js");
+      await import("../agents/runner/pi-embedded-subscribe.handlers.tools.js");
 
     const ctx = createToolHandlerCtx({ runId: "test-run-2" });
 
@@ -167,7 +167,7 @@ describe("after_tool_call hook wiring", () => {
     hookMocks.runner.hasHooks.mockReturnValue(false);
 
     const { handleToolExecutionEnd } =
-      await import("../agents/pi-embedded-subscribe.handlers.tools.js");
+      await import("../agents/runner/pi-embedded-subscribe.handlers.tools.js");
 
     const ctx = createToolHandlerCtx({ runId: "r" });
 

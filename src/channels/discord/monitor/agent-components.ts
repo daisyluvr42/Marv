@@ -17,7 +17,7 @@ import {
 } from "@buape/carbon";
 import type { APIStringSelectComponent } from "discord-api-types/v10";
 import { ButtonStyle, ChannelType } from "discord-api-types/v10";
-import { resolveHumanDelayConfig } from "../../../agents/identity.js";
+import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
 import { resolveChunkMode, resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
 import {
   formatInboundEnvelope,

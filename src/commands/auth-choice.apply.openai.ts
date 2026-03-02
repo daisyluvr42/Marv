@@ -1,4 +1,4 @@
-import { resolveEnvApiKey } from "../agents/model-auth.js";
+import { resolveEnvApiKey } from "../agents/model/model-auth.js";
 import { upsertSharedEnvVar } from "../infra/env-file.js";
 import {
   formatApiKeyPreview,

@@ -9,7 +9,7 @@ import {
 import type { MarvConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { CONFIG_DIR, resolveUserPath } from "../../utils.js";
-import { resolveSandboxPath } from "../sandbox-paths.js";
+import { resolveSandboxPath } from "../sandbox/sandbox-paths.js";
 import { resolveBundledSkillsDir } from "./bundled-dir.js";
 import { shouldIncludeSkill } from "./config.js";
 import { normalizeSkillFilter } from "./filter.js";

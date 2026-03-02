@@ -9,7 +9,7 @@ import { setCompactionSafeguardRuntime } from "../pi-extensions/compaction-safeg
 import { setContextPruningRuntime } from "../pi-extensions/context-pruning/runtime.js";
 import { computeEffectiveSettings } from "../pi-extensions/context-pruning/settings.js";
 import { makeToolPrunablePredicate } from "../pi-extensions/context-pruning/tools.js";
-import { ensurePiCompactionReserveTokens } from "../pi-settings.js";
+import { ensurePiCompactionReserveTokens } from "../runner/pi-settings.js";
 import { isCacheTtlEligibleProvider, readLastCacheTtlTimestamp } from "./cache-ttl.js";
 
 function resolvePiExtensionPath(id: string): string {

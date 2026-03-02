@@ -2,30 +2,30 @@ import {
   buildHuggingfaceModelDefinition,
   HUGGINGFACE_BASE_URL,
   HUGGINGFACE_MODEL_CATALOG,
-} from "../agents/huggingface-models.js";
+} from "../agents/model/huggingface-models.js";
 import {
   buildQianfanProvider,
   buildXiaomiProvider,
   QIANFAN_DEFAULT_MODEL_ID,
   XIAOMI_DEFAULT_MODEL_ID,
-} from "../agents/models-config.providers.js";
+} from "../agents/model/models-config.providers.js";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,
   SYNTHETIC_DEFAULT_MODEL_REF,
   SYNTHETIC_MODEL_CATALOG,
-} from "../agents/synthetic-models.js";
+} from "../agents/model/synthetic-models.js";
 import {
   buildTogetherModelDefinition,
   TOGETHER_BASE_URL,
   TOGETHER_MODEL_CATALOG,
-} from "../agents/together-models.js";
+} from "../agents/model/together-models.js";
 import {
   buildVeniceModelDefinition,
   VENICE_BASE_URL,
   VENICE_DEFAULT_MODEL_REF,
   VENICE_MODEL_CATALOG,
-} from "../agents/venice-models.js";
+} from "../agents/model/venice-models.js";
 import type { MarvConfig } from "../config/config.js";
 import type { ModelApi } from "../config/types.models.js";
 import {
@@ -170,10 +170,7 @@ export function applyMoonshotProviderConfigCn(cfg: MarvConfig): MarvConfig {
   return applyMoonshotProviderConfigWithBaseUrl(cfg, MOONSHOT_CN_BASE_URL);
 }
 
-function applyMoonshotProviderConfigWithBaseUrl(
-  cfg: MarvConfig,
-  baseUrl: string,
-): MarvConfig {
+function applyMoonshotProviderConfigWithBaseUrl(cfg: MarvConfig, baseUrl: string): MarvConfig {
   const models = { ...cfg.agents?.defaults?.models };
   models[MOONSHOT_DEFAULT_MODEL_REF] = {
     ...models[MOONSHOT_DEFAULT_MODEL_REF],

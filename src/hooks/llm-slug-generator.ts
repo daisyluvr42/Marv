@@ -10,7 +10,7 @@ import {
   resolveAgentWorkspaceDir,
   resolveAgentDir,
 } from "../agents/agent-scope.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
 import type { MarvConfig } from "../config/config.js";
 
 /**

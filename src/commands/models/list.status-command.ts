@@ -15,14 +15,14 @@ import {
   resolveAuthStorePathForDisplay,
   resolveProfileUnusableUntilForDisplay,
 } from "../../agents/auth-profiles.js";
-import { resolveEnvApiKey } from "../../agents/model-auth.js";
+import { resolveEnvApiKey } from "../../agents/model/model-auth.js";
 import {
   buildModelAliasIndex,
   parseModelRef,
   resolveConfiguredModelRef,
   resolveDefaultModelForAgent,
   resolveModelRefFromString,
-} from "../../agents/model-selection.js";
+} from "../../agents/model/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { withProgressTotals } from "../../cli/progress.js";
 import { CONFIG_PATH, loadConfig } from "../../config/config.js";

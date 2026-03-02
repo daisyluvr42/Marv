@@ -2,12 +2,12 @@ import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveApiKeyForProvider } from "../agents/model-auth.js";
+import { resolveApiKeyForProvider } from "../agents/model/model-auth.js";
 import {
   findModelInCatalog,
   loadModelCatalog,
   modelSupportsVision,
-} from "../agents/model-catalog.js";
+} from "../agents/model/model-catalog.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { MarvConfig } from "../config/config.js";
 import type {

@@ -26,33 +26,30 @@ import { resolveSessionAgentIds } from "../../agent-scope.js";
 import { createAnthropicPayloadLogger } from "../../anthropic-payload-log.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "../../bootstrap-files.js";
 import { createCacheTrace } from "../../cache-trace.js";
-import {
-  listChannelSupportedActions,
-  resolveChannelMessageToolHints,
-} from "../../channel-tools.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../defaults.js";
 import { resolveMarvDocsPath } from "../../docs-path.js";
 import { isTimeoutError } from "../../failover-error.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
-import { resolveModelAuthMode } from "../../model-auth.js";
-import { resolveDefaultModelForAgent } from "../../model-selection.js";
+import { resolveModelAuthMode } from "../../model/model-auth.js";
+import { resolveDefaultModelForAgent } from "../../model/model-selection.js";
 import { createOllamaStreamFn, OLLAMA_NATIVE_BASE_URL } from "../../ollama-stream.js";
+import { toClientToolDefinitions } from "../../pi-tool-definition-adapter.js";
+import { buildSystemPromptParams } from "../../prompt/system-prompt-params.js";
+import { buildSystemPromptReport } from "../../prompt/system-prompt-report.js";
 import {
   isCloudCodeAssistFormatError,
   resolveBootstrapMaxChars,
   resolveBootstrapTotalMaxChars,
   validateAnthropicTurns,
   validateGeminiTurns,
-} from "../../pi-embedded-helpers.js";
-import { subscribeEmbeddedPiSession } from "../../pi-embedded-subscribe.js";
+} from "../../runner/pi-embedded-helpers.js";
+import { subscribeEmbeddedPiSession } from "../../runner/pi-embedded-subscribe.js";
 import {
   ensurePiCompactionReserveTokens,
   resolveCompactionReserveTokensFloor,
-} from "../../pi-settings.js";
-import { toClientToolDefinitions } from "../../pi-tool-definition-adapter.js";
-import { createMarvCodingTools, resolveToolLoopDetectionConfig } from "../../pi-tools.js";
-import { resolveSandboxContext } from "../../sandbox.js";
+} from "../../runner/pi-settings.js";
 import { resolveSandboxRuntimeStatus } from "../../sandbox/runtime-status.js";
+import { resolveSandboxContext } from "../../sandbox/sandbox.js";
 import { repairSessionFileIfNeeded } from "../../session-file-repair.js";
 import { guardSessionManager } from "../../session-tool-result-guard-wrapper.js";
 import { sanitizeToolUseResultPairing } from "../../session-transcript-repair.js";
@@ -67,8 +64,11 @@ import {
   loadWorkspaceSkillEntries,
   resolveSkillsPromptForRun,
 } from "../../skills.js";
-import { buildSystemPromptParams } from "../../system-prompt-params.js";
-import { buildSystemPromptReport } from "../../system-prompt-report.js";
+import {
+  listChannelSupportedActions,
+  resolveChannelMessageToolHints,
+} from "../../tools/channel-tools.js";
+import { createMarvCodingTools, resolveToolLoopDetectionConfig } from "../../tools/pi-tools.js";
 import { resolveTranscriptPolicy } from "../../transcript-policy.js";
 import { DEFAULT_BOOTSTRAP_FILENAME } from "../../workspace.js";
 import { isRunnerAbortError } from "../abort.js";

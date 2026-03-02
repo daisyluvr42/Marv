@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseModelRef } from "../agents/model-selection.js";
+import { parseModelRef } from "../agents/model/model-selection.js";
 import { loadConfig } from "../config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { getFreePortBlockWithPermissionFallback } from "../test-utils/ports.js";
@@ -201,15 +201,11 @@ describeLive("gateway live (cli backend)", () => {
 
     const cliCommand = process.env.MARV_LIVE_CLI_BACKEND_COMMAND ?? providerDefaults?.command;
     if (!cliCommand) {
-      throw new Error(
-        `MARV_LIVE_CLI_BACKEND_COMMAND is required for provider "${providerId}".`,
-      );
+      throw new Error(`MARV_LIVE_CLI_BACKEND_COMMAND is required for provider "${providerId}".`);
     }
     const baseCliArgs =
-      parseJsonStringArray(
-        "MARV_LIVE_CLI_BACKEND_ARGS",
-        process.env.MARV_LIVE_CLI_BACKEND_ARGS,
-      ) ?? providerDefaults?.args;
+      parseJsonStringArray("MARV_LIVE_CLI_BACKEND_ARGS", process.env.MARV_LIVE_CLI_BACKEND_ARGS) ??
+      providerDefaults?.args;
     if (!baseCliArgs || baseCliArgs.length === 0) {
       throw new Error(`MARV_LIVE_CLI_BACKEND_ARGS is required for provider "${providerId}".`);
     }
@@ -222,9 +218,7 @@ describeLive("gateway live (cli backend)", () => {
     const cliImageMode = parseImageMode(process.env.MARV_LIVE_CLI_BACKEND_IMAGE_MODE);
 
     if (cliImageMode && !cliImageArg) {
-      throw new Error(
-        "MARV_LIVE_CLI_BACKEND_IMAGE_MODE requires MARV_LIVE_CLI_BACKEND_IMAGE_ARG.",
-      );
+      throw new Error("MARV_LIVE_CLI_BACKEND_IMAGE_MODE requires MARV_LIVE_CLI_BACKEND_IMAGE_ARG.");
     }
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-live-cli-"));

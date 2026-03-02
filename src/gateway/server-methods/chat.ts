@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { CURRENT_SESSION_VERSION, SessionManager } from "@mariozechner/pi-coding-agent";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { resolveThinkingDefault } from "../../agents/model-selection.js";
+import { resolveThinkingDefault } from "../../agents/model/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../auto-reply/reply/reply-dispatcher.js";
@@ -217,7 +217,6 @@ function buildOversizedHistoryPlaceholder(message?: unknown): Record<string, unk
     timestamp,
     content: [{ type: "text", text: CHAT_HISTORY_OVERSIZED_PLACEHOLDER }],
     __marv: { truncated: true, reason: "oversized" },
-    __marv: { truncated: true, reason: "oversized" },
   };
 }
 
@@ -401,11 +400,6 @@ function appendAssistantTranscriptMessage(params: {
     ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
     ...(params.abortMeta
       ? {
-          marvAbort: {
-            aborted: true,
-            origin: params.abortMeta.origin,
-            runId: params.abortMeta.runId,
-          },
           marvAbort: {
             aborted: true,
             origin: params.abortMeta.origin,

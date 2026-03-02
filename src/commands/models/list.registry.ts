@@ -6,15 +6,15 @@ import {
   getCustomProviderApiKey,
   resolveAwsSdkEnvVarName,
   resolveEnvApiKey,
-} from "../../agents/model-auth.js";
+} from "../../agents/model/model-auth.js";
 import {
   ANTIGRAVITY_OPUS_46_FORWARD_COMPAT_CANDIDATES,
   resolveForwardCompatModel,
-} from "../../agents/model-forward-compat.js";
-import { ensureMarvModelsJson } from "../../agents/models-config.js";
-import { ensurePiAuthJsonFromAuthProfiles } from "../../agents/pi-auth-json.js";
-import type { ModelRegistry } from "../../agents/pi-model-discovery.js";
-import { discoverAuthStorage, discoverModels } from "../../agents/pi-model-discovery.js";
+} from "../../agents/model/model-forward-compat.js";
+import { ensureMarvModelsJson } from "../../agents/model/models-config.js";
+import type { ModelRegistry } from "../../agents/model/pi-model-discovery.js";
+import { discoverAuthStorage, discoverModels } from "../../agents/model/pi-model-discovery.js";
+import { ensurePiAuthJsonFromAuthProfiles } from "../../agents/runner/pi-auth-json.js";
 import type { MarvConfig } from "../../config/config.js";
 import {
   formatErrorWithStack,
@@ -24,11 +24,7 @@ import {
 import type { ModelRow } from "./list.types.js";
 import { isLocalBaseUrl, modelKey } from "./shared.js";
 
-const hasAuthForProvider = (
-  provider: string,
-  cfg?: MarvConfig,
-  authStore?: AuthProfileStore,
-) => {
+const hasAuthForProvider = (provider: string, cfg?: MarvConfig, authStore?: AuthProfileStore) => {
   if (!cfg || !authStore) {
     return false;
   }

@@ -8,12 +8,11 @@ import {
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
-import { runCliAgent } from "../agents/cli-runner.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
-import { loadModelCatalog } from "../agents/model-catalog.js";
-import { runWithModelFallback } from "../agents/model-fallback.js";
+import { loadModelCatalog } from "../agents/model/model-catalog.js";
+import { runWithModelFallback } from "../agents/model/model-fallback.js";
 import {
   buildAllowedModelSet,
   isCliProvider,
@@ -21,8 +20,9 @@ import {
   normalizeModelRef,
   resolveConfiguredModelRef,
   resolveThinkingDefault,
-} from "../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
+} from "../agents/model/model-selection.js";
+import { runCliAgent } from "../agents/runner/cli-runner.js";
+import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
 import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";

@@ -3,7 +3,7 @@
 
 import { loadConfig } from "../config/config.js";
 import { resolveMarvAgentDir } from "./agent-paths.js";
-import { ensureMarvModelsJson } from "./models-config.js";
+import { ensureMarvModelsJson } from "./model/models-config.js";
 
 type ModelEntry = { id: string; contextWindow?: number };
 type ModelRegistryLike = {
@@ -77,7 +77,7 @@ const loadPromise = (async () => {
   }
 
   try {
-    const { discoverAuthStorage, discoverModels } = await import("./pi-model-discovery.js");
+    const { discoverAuthStorage, discoverModels } = await import("./model/pi-model-discovery.js");
     const agentDir = resolveMarvAgentDir();
     const authStorage = discoverAuthStorage(agentDir);
     const modelRegistry = discoverModels(authStorage, agentDir) as unknown as ModelRegistryLike;

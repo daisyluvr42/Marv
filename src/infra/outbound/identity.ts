@@ -1,5 +1,5 @@
-import { resolveAgentAvatar } from "../../agents/identity-avatar.js";
-import { resolveAgentIdentity } from "../../agents/identity.js";
+import { resolveAgentAvatar } from "../../agents/prompt/identity-avatar.js";
+import { resolveAgentIdentity } from "../../agents/prompt/identity.js";
 import type { MarvConfig } from "../../config/config.js";
 
 export type OutboundIdentity = {

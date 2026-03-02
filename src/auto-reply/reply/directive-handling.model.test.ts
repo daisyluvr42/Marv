@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ModelAliasIndex } from "../../agents/model-selection.js";
+import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { handleDirectiveOnly } from "./directive-handling.impl.js";
@@ -16,7 +16,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveSessionAgentId: vi.fn(() => "main"),
 }));
 
-vi.mock("../../agents/sandbox.js", () => ({
+vi.mock("../../agents/sandbox/sandbox.js", () => ({
   resolveSandboxRuntimeStatus: vi.fn(() => ({ sandboxed: false })),
 }));
 

@@ -5,13 +5,12 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
-import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId, setCliSessionId } from "../../agents/cli-session.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
-import { loadModelCatalog } from "../../agents/model-catalog.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
+import { loadModelCatalog } from "../../agents/model/model-catalog.js";
+import { runWithModelFallback } from "../../agents/model/model-fallback.js";
 import {
   getModelRefStatus,
   isCliProvider,
@@ -19,9 +18,10 @@ import {
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
   resolveThinkingDefault,
-} from "../../agents/model-selection.js";
-import type { MessagingToolSend } from "../../agents/pi-embedded-messaging.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
+} from "../../agents/model/model-selection.js";
+import { runCliAgent } from "../../agents/runner/cli-runner.js";
+import type { MessagingToolSend } from "../../agents/runner/pi-embedded-messaging.js";
+import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";
 import { runSubagentAnnounceFlow } from "../../agents/subagent-announce.js";
 import { countActiveDescendantRuns } from "../../agents/subagent-registry.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";

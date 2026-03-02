@@ -1,17 +1,17 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
-import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId } from "../../agents/cli-session.js";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
-import { isCliProvider } from "../../agents/model-selection.js";
+import { runWithModelFallback } from "../../agents/model/model-fallback.js";
+import { isCliProvider } from "../../agents/model/model-selection.js";
+import { runCliAgent } from "../../agents/runner/cli-runner.js";
 import {
   isCompactionFailureError,
   isContextOverflowError,
   isLikelyContextOverflowError,
   isTransientHttpError,
   sanitizeUserFacingText,
-} from "../../agents/pi-embedded-helpers.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
+} from "../../agents/runner/pi-embedded-helpers.js";
+import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";
 import {
   resolveGroupSessionKey,
   resolveSessionTranscriptPath,

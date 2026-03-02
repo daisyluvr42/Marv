@@ -42,9 +42,7 @@ const mocks = vi.hoisted(() => {
         .map(([id]) => id);
     }),
     resolveAuthProfileDisplayLabel: vi.fn(({ profileId }: { profileId: string }) => profileId),
-    resolveAuthStorePathForDisplay: vi
-      .fn()
-      .mockReturnValue("/tmp/marv-agent/auth-profiles.json"),
+    resolveAuthStorePathForDisplay: vi.fn().mockReturnValue("/tmp/marv-agent/auth-profiles.json"),
     resolveEnvApiKey: vi.fn((provider: string) => {
       if (provider === "openai") {
         return {
@@ -98,7 +96,7 @@ vi.mock("../../agents/auth-profiles.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../agents/model-auth.js", () => ({
+vi.mock("../../agents/model/model-auth.js", () => ({
   resolveEnvApiKey: mocks.resolveEnvApiKey,
   getCustomProviderApiKey: mocks.getCustomProviderApiKey,
 }));

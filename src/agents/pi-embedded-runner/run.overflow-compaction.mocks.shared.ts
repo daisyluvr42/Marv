@@ -36,7 +36,7 @@ vi.mock("../workspace-run.js", () => ({
   redactRunIdentifier: vi.fn((value?: string) => value ?? ""),
 }));
 
-vi.mock("../pi-embedded-helpers.js", () => ({
+vi.mock("../runner/pi-embedded-helpers.js", () => ({
   formatBillingErrorMessage: vi.fn(() => ""),
   classifyFailoverReason: vi.fn(() => null),
   formatAssistantErrorText: vi.fn(() => ""),
@@ -80,7 +80,7 @@ vi.mock("./model.js", () => ({
   })),
 }));
 
-vi.mock("../model-auth.js", () => ({
+vi.mock("../model/model-auth.js", () => ({
   ensureAuthProfileStore: vi.fn(() => ({})),
   getApiKeyForModel: vi.fn(async () => ({
     apiKey: "test-key",
@@ -90,7 +90,7 @@ vi.mock("../model-auth.js", () => ({
   resolveAuthProfileOrder: vi.fn(() => []),
 }));
 
-vi.mock("../models-config.js", () => ({
+vi.mock("../model/models-config.js", () => ({
   ensureMarvModelsJson: vi.fn(async () => {}),
 }));
 

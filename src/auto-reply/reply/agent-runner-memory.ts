@@ -1,8 +1,11 @@
 import crypto from "node:crypto";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
-import { isCliProvider } from "../../agents/model-selection.js";
-import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
-import { resolveSandboxConfigForAgent, resolveSandboxRuntimeStatus } from "../../agents/sandbox.js";
+import { runWithModelFallback } from "../../agents/model/model-fallback.js";
+import { isCliProvider } from "../../agents/model/model-selection.js";
+import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";
+import {
+  resolveSandboxConfigForAgent,
+  resolveSandboxRuntimeStatus,
+} from "../../agents/sandbox/sandbox.js";
 import type { MarvConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStoreEntry } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";

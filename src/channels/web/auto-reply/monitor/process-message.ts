@@ -1,4 +1,4 @@
-import { resolveIdentityNamePrefix } from "../../../../agents/identity.js";
+import { resolveIdentityNamePrefix } from "../../../../agents/prompt/identity.js";
 import { resolveChunkMode, resolveTextChunkLimit } from "../../../../auto-reply/chunk.js";
 import { shouldComputeCommandAuthorized } from "../../../../auto-reply/command-detection.js";
 import {
@@ -13,8 +13,6 @@ import {
 import { finalizeInboundContext } from "../../../../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../../../../auto-reply/types.js";
-import { toLocationContext } from "../../../../channels/location.js";
-import { createReplyPrefixOptions } from "../../../../channels/reply-prefix.js";
 import type { loadConfig } from "../../../../config/config.js";
 import { resolveMarkdownTableMode } from "../../../../config/markdown-tables.js";
 import {
@@ -28,6 +26,8 @@ import { getAgentScopedMediaLocalRoots } from "../../../../media/local-roots.js"
 import { readChannelAllowFromStore } from "../../../../pairing/pairing-store.js";
 import type { resolveAgentRoute } from "../../../../routing/resolve-route.js";
 import { jidToE164, normalizeE164 } from "../../../../utils.js";
+import { toLocationContext } from "../../../location.js";
+import { createReplyPrefixOptions } from "../../../reply-prefix.js";
 import { newConnectionId } from "../../reconnect.js";
 import { formatError } from "../../session.js";
 import { deliverWebReply } from "../deliver-reply.js";

@@ -554,8 +554,8 @@ export async function registerSlackMonitorSlashCommands(params: {
           import("../../../auto-reply/reply/provider-dispatcher.js"),
         ]);
       const [{ resolveConversationLabel }, { createReplyPrefixOptions }] = await Promise.all([
-        import("../../../channels/conversation-label.js"),
-        import("../../../channels/reply-prefix.js"),
+        import("../../conversation-label.js"),
+        import("../../reply-prefix.js"),
       ]);
 
       const route = resolveAgentRoute({

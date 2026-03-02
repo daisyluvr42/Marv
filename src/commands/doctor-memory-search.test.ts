@@ -21,7 +21,7 @@ vi.mock("../agents/memory-search.js", () => ({
   resolveMemorySearchConfig,
 }));
 
-vi.mock("../agents/model-auth.js", () => ({
+vi.mock("../agents/model/model-auth.js", () => ({
   resolveApiKeyForProvider,
 }));
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runWithModelFallback } from "../../agents/model-fallback.js";
+import { runWithModelFallback } from "../../agents/model/model-fallback.js";
 
 // ---------- mocks ----------
 
@@ -28,11 +28,11 @@ vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
 }));
 
-vi.mock("../../agents/model-catalog.js", () => ({
+vi.mock("../../agents/model/model-catalog.js", () => ({
   loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
 }));
 
-vi.mock("../../agents/model-selection.js", () => ({
+vi.mock("../../agents/model/model-selection.js", () => ({
   getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
   isCliProvider: vi.fn().mockReturnValue(false),
   resolveAllowedModelRef: vi.fn().mockReturnValue({ ref: { provider: "openai", model: "gpt-4" } }),
@@ -41,7 +41,7 @@ vi.mock("../../agents/model-selection.js", () => ({
   resolveThinkingDefault: vi.fn().mockReturnValue(undefined),
 }));
 
-vi.mock("../../agents/model-fallback.js", () => ({
+vi.mock("../../agents/model/model-fallback.js", () => ({
   runWithModelFallback: vi.fn().mockResolvedValue({
     result: {
       payloads: [{ text: "test output" }],
@@ -54,7 +54,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
 
 const runWithModelFallbackMock = vi.mocked(runWithModelFallback);
 
-vi.mock("../../agents/pi-embedded.js", () => ({
+vi.mock("../../agents/runner/pi-embedded.js", () => ({
   runEmbeddedPiAgent: vi.fn().mockResolvedValue({
     payloads: [{ text: "test output" }],
     meta: { agentMeta: { usage: { input: 10, output: 20 } } },
@@ -84,7 +84,7 @@ vi.mock("../../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../../agents/cli-runner.js", () => ({
+vi.mock("../../agents/runner/cli-runner.js", () => ({
   runCliAgent: vi.fn(),
 }));
 

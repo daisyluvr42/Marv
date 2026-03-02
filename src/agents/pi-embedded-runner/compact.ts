@@ -24,25 +24,22 @@ import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import { resolveSessionAgentIds } from "../agent-scope.js";
-import type { ExecElevatedDefaults } from "../bash-tools.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "../bootstrap-files.js";
-import { listChannelSupportedActions, resolveChannelMessageToolHints } from "../channel-tools.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import { resolveMarvDocsPath } from "../docs-path.js";
-import { getApiKeyForModel, resolveModelAuthMode } from "../model-auth.js";
-import { ensureMarvModelsJson } from "../models-config.js";
+import { getApiKeyForModel, resolveModelAuthMode } from "../model/model-auth.js";
+import { ensureMarvModelsJson } from "../model/models-config.js";
 import {
   ensureSessionHeader,
   validateAnthropicTurns,
   validateGeminiTurns,
-} from "../pi-embedded-helpers.js";
+} from "../runner/pi-embedded-helpers.js";
 import {
   ensurePiCompactionReserveTokens,
   resolveCompactionReserveTokensFloor,
-} from "../pi-settings.js";
-import { createMarvCodingTools } from "../pi-tools.js";
-import { resolveSandboxContext } from "../sandbox.js";
+} from "../runner/pi-settings.js";
+import { resolveSandboxContext } from "../sandbox/sandbox.js";
 import { repairSessionFileIfNeeded } from "../session-file-repair.js";
 import { guardSessionManager } from "../session-tool-result-guard-wrapper.js";
 import { sanitizeToolUseResultPairing } from "../session-transcript-repair.js";
@@ -58,6 +55,12 @@ import {
   resolveSkillsPromptForRun,
   type SkillSnapshot,
 } from "../skills.js";
+import type { ExecElevatedDefaults } from "../tools/bash-tools.js";
+import {
+  listChannelSupportedActions,
+  resolveChannelMessageToolHints,
+} from "../tools/channel-tools.js";
+import { createMarvCodingTools } from "../tools/pi-tools.js";
 import { resolveTranscriptPolicy } from "../transcript-policy.js";
 import {
   compactWithSafetyTimeout,

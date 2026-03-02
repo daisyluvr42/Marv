@@ -1,12 +1,12 @@
 import crypto from "node:crypto";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
-import type { ExecToolDefaults } from "../../agents/bash-tools.js";
 import {
   abortEmbeddedPiRun,
   isEmbeddedPiRunActive,
   isEmbeddedPiRunStreaming,
   resolveEmbeddedSessionLane,
-} from "../../agents/pi-embedded.js";
+} from "../../agents/runner/pi-embedded.js";
+import type { ExecToolDefaults } from "../../agents/tools/bash-tools.js";
 import type { MarvConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,

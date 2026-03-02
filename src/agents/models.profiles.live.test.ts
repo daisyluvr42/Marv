@@ -9,11 +9,11 @@ import {
   isAnthropicBillingError,
   isAnthropicRateLimitError,
 } from "./live-auth-keys.js";
-import { isModernModelRef } from "./live-model-filter.js";
-import { getApiKeyForModel, requireApiKey } from "./model-auth.js";
-import { ensureMarvModelsJson } from "./models-config.js";
+import { isModernModelRef } from "./model/live-model-filter.js";
+import { getApiKeyForModel, requireApiKey } from "./model/model-auth.js";
+import { ensureMarvModelsJson } from "./model/models-config.js";
+import { discoverAuthStorage, discoverModels } from "./model/pi-model-discovery.js";
 import { isRateLimitErrorMessage } from "./pi-embedded-helpers/errors.js";
-import { discoverAuthStorage, discoverModels } from "./pi-model-discovery.js";
 
 const LIVE = isTruthyEnvValue(process.env.LIVE) || isTruthyEnvValue(process.env.MARV_LIVE_TEST);
 const DIRECT_ENABLED = Boolean(process.env.MARV_LIVE_MODELS?.trim());
@@ -179,9 +179,7 @@ describeLive("live models (profile keys)", () => {
       const cfg = loadConfig();
       await ensureMarvModelsJson(cfg);
       if (!DIRECT_ENABLED) {
-        logProgress(
-          "[live-models] skipping (set MARV_LIVE_MODELS=modern|all|<list>; all=modern)",
-        );
+        logProgress("[live-models] skipping (set MARV_LIVE_MODELS=modern|all|<list>; all=modern)");
         return;
       }
       const anthropicKeys = collectAnthropicApiKeys();

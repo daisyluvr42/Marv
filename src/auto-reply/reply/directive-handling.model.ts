@@ -5,7 +5,7 @@ import {
   normalizeProviderId,
   resolveConfiguredModelRef,
   resolveModelRefFromString,
-} from "../../agents/model-selection.js";
+} from "../../agents/model/model-selection.js";
 import { buildBrowseProvidersButton } from "../../channels/telegram/model-buttons.js";
 import type { MarvConfig } from "../../config/config.js";
 import { shortenHomePath } from "../../utils.js";

@@ -2,7 +2,7 @@ import { formatCliCommand } from "../../cli/command-format.js";
 import type { MarvConfig } from "../../config/config.js";
 import { canonicalizeMainSessionAlias, resolveAgentMainSessionKey } from "../../config/sessions.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
-import { expandToolGroups } from "../tool-policy.js";
+import { expandToolGroups } from "../tools/tool-policy.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
 import { resolveSandboxToolPolicyForAgent } from "./tool-policy.js";
 import type { SandboxConfig, SandboxToolPolicyResolved } from "./types.js";
@@ -17,10 +17,7 @@ function shouldSandboxSession(cfg: SandboxConfig, sessionKey: string, mainSessio
   return sessionKey.trim() !== mainSessionKey.trim();
 }
 
-function resolveMainSessionKeyForSandbox(params: {
-  cfg?: MarvConfig;
-  agentId: string;
-}): string {
+function resolveMainSessionKeyForSandbox(params: { cfg?: MarvConfig; agentId: string }): string {
   if (params.cfg?.session?.scope === "global") {
     return "global";
   }
@@ -42,10 +39,7 @@ function resolveComparableSessionKeyForSandbox(params: {
   });
 }
 
-export function resolveSandboxRuntimeStatus(params: {
-  cfg?: MarvConfig;
-  sessionKey?: string;
-}): {
+export function resolveSandboxRuntimeStatus(params: { cfg?: MarvConfig; sessionKey?: string }): {
   agentId: string;
   sessionKey: string;
   mainSessionKey: string;

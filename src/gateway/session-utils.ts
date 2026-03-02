@@ -7,7 +7,7 @@ import {
   parseModelRef,
   resolveConfiguredModelRef,
   resolveDefaultModelForAgent,
-} from "../agents/model-selection.js";
+} from "../agents/model/model-selection.js";
 import { type MarvConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import {
@@ -422,10 +422,7 @@ function resolveDefaultStoreAgentId(cfg: MarvConfig): string {
   return normalizeAgentId(resolveDefaultAgentId(cfg));
 }
 
-export function resolveSessionStoreKey(params: {
-  cfg: MarvConfig;
-  sessionKey: string;
-}): string {
+export function resolveSessionStoreKey(params: { cfg: MarvConfig; sessionKey: string }): string {
   const raw = params.sessionKey.trim();
   if (!raw) {
     return raw;

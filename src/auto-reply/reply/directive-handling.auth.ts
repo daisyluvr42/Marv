@@ -9,8 +9,11 @@ import {
   getCustomProviderApiKey,
   resolveAuthProfileOrder,
   resolveEnvApiKey,
-} from "../../agents/model-auth.js";
-import { findNormalizedProviderValue, normalizeProviderId } from "../../agents/model-selection.js";
+} from "../../agents/model/model-auth.js";
+import {
+  findNormalizedProviderValue,
+  normalizeProviderId,
+} from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../config/config.js";
 import { shortenHomePath } from "../../utils.js";
 import { maskApiKey } from "../../utils/mask-api-key.js";

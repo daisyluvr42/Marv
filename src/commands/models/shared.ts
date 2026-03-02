@@ -5,13 +5,9 @@ import {
   modelKey,
   parseModelRef,
   resolveModelRefFromString,
-} from "../../agents/model-selection.js";
+} from "../../agents/model/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
-import {
-  type MarvConfig,
-  readConfigFileSnapshot,
-  writeConfigFile,
-} from "../../config/config.js";
+import { type MarvConfig, readConfigFileSnapshot, writeConfigFile } from "../../config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 
 export const ensureFlagCompatibility = (opts: { json?: boolean; plain?: boolean }) => {
@@ -68,9 +64,7 @@ export async function loadValidConfigOrThrow(): Promise<MarvConfig> {
   return snapshot.config;
 }
 
-export async function updateConfig(
-  mutator: (cfg: MarvConfig) => MarvConfig,
-): Promise<MarvConfig> {
+export async function updateConfig(mutator: (cfg: MarvConfig) => MarvConfig): Promise<MarvConfig> {
   const config = await loadValidConfigOrThrow();
   const next = mutator(config);
   await writeConfigFile(next);

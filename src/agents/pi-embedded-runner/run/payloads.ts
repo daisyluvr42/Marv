@@ -11,14 +11,14 @@ import {
   getApiErrorPayloadFingerprint,
   isRawApiErrorPayload,
   normalizeTextForComparison,
-} from "../../pi-embedded-helpers.js";
-import type { ToolResultFormat } from "../../pi-embedded-subscribe.js";
+} from "../../runner/pi-embedded-helpers.js";
+import type { ToolResultFormat } from "../../runner/pi-embedded-subscribe.js";
 import {
   extractAssistantText,
   extractAssistantThinking,
   formatReasoningMessage,
-} from "../../pi-embedded-utils.js";
-import { isLikelyMutatingToolName } from "../../tool-mutation.js";
+} from "../../runner/pi-embedded-utils.js";
+import { isLikelyMutatingToolName } from "../../tools/tool-mutation.js";
 
 type ToolMetaEntry = { toolName: string; meta?: string };
 type LastToolError = {

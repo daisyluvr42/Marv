@@ -2,7 +2,7 @@ import { resolveAgentConfig } from "../agents/agent-scope.js";
 import {
   resolveSandboxConfigForAgent,
   resolveSandboxToolPolicyForAgent,
-} from "../agents/sandbox.js";
+} from "../agents/sandbox/sandbox.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
 import type { MarvConfig } from "../config/config.js";
 import { loadConfig } from "../config/config.js";

@@ -356,3 +356,52 @@ npx vitest run --config vitest.e2e.config.ts  # E2E 测试
 ### 5) 本阶段结论
 
 Phase 2（Memory 细分）已完成：目录结构完成重组、引用已修复、memory 相关测试全绿，可在此基础上继续执行 Phase 3（Agents 拆分）。
+
+---
+
+## Phase 3 Walkthrough（2026-03-02）
+
+本阶段继续执行 `agents/` 拆分，目标是把原本大量平铺在 `src/agents/` 根目录的文件，按职责下沉到 `runner / tools / prompt / model / sandbox`。
+
+### 1) 目录拆分结果
+
+新增并使用：
+
+- `src/agents/model/`
+- `src/agents/prompt/`
+- `src/agents/runner/`
+
+同时补齐并扩展既有目录承载：
+
+- `src/agents/tools/`（吸收 root 下 `pi-tools* / marv-tools* / bash-tools* / tool-*`）
+- `src/agents/sandbox/`（吸收 root 下 `sandbox*.ts` 族）
+
+### 2) 迁移范围（按族）
+
+- Model 族（`model-*`, `models-*`, `*models*`, `synthetic/together/venice/minimax/pi-model-discovery`）整体迁移到 `agents/model/`
+- Prompt 族（`system-prompt*`, `identity*`, `sanitize-for-prompt*`）迁移到 `agents/prompt/`
+- Runner 族（`pi-embedded*`, `pi-auth-json*`, `pi-settings*`, `cli-runner*`, `claude-cli-runner*`）迁移到 `agents/runner/`
+- Tools 族（`pi-tools*`, `marv-tools*`, `bash-tools*`, `bash-process-registry*`, `channel-tools*`, `tool-*`）迁移到 `agents/tools/`
+- Sandbox 根文件（`sandbox*.ts`）迁移到 `agents/sandbox/`
+
+### 3) Import 修复策略
+
+- 使用“rename 映射驱动”的批量重写脚本修复相对路径
+- 对两次迁移叠加导致的“相对路径二次偏移”问题，采用以下修复流程：
+  1. 先将所有 moved 文件恢复为 `HEAD` 的旧内容
+  2. 再基于完整 rename 映射执行一次性重写
+- 额外修复 `src/plugins/extensionAPI.ts` 中对 `identity/model-selection` 的新路径引用
+
+### 4) 验证结果
+
+- `npx tsc --noEmit`
+  - 与本次 Agents 拆分相关的新增错误已清零
+  - 当前仅剩仓库既有基线错误（`daemon/*`, `gateway/*`, `infra/*` 等）
+- `pnpm test -- src/agents/model src/agents/prompt src/agents/sandbox src/agents/runner src/agents/tools`
+  - 45 个测试文件通过（273 tests passed）
+- `pnpm build`
+  - 仍被既有问题阻断：`Cannot resolve entry module src/extensionAPI.ts`（与本阶段拆分无关）
+
+### 5) 本阶段结论
+
+Phase 3 已完成核心拆分：`agents/` 的主干职责已下沉到 `runner / tools / prompt / model / sandbox`，并完成跨模块引用修复与回归验证，可继续进入 Phase 4（Gateway + Config -> Core）。

@@ -1,8 +1,8 @@
 import type { SlackEventMiddlewareArgs } from "@slack/bolt";
-import { resolveChannelConfigWrites } from "../../../../channels/plugins/config-writes.js";
 import { loadConfig, writeConfigFile } from "../../../../config/config.js";
 import { danger, warn } from "../../../../globals.js";
 import { enqueueSystemEvent } from "../../../../infra/system-events.js";
+import { resolveChannelConfigWrites } from "../../../plugins/config-writes.js";
 import { migrateSlackChannelConfig } from "../../channel-migration.js";
 import { resolveSlackChannelLabel } from "../channel-config.js";
 import type { SlackMonitorContext } from "../context.js";

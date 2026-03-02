@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import "./test-helpers/fast-core-tools.js";
 import {
-  getCallGatewayMock,
-  getSessionsSpawnTool,
-  setSessionsSpawnConfigOverride,
-} from "./marv-tools.subagents.sessions-spawn.test-harness.js";
-import {
   listSubagentRunsForRequester,
   resetSubagentRegistryForTests,
 } from "./subagent-registry.js";
+import {
+  getCallGatewayMock,
+  getSessionsSpawnTool,
+  setSessionsSpawnConfigOverride,
+} from "./tools/marv-tools.subagents.sessions-spawn.test-harness.js";
 
 describe("sessions_spawn requesterOrigin threading", () => {
   beforeEach(() => {

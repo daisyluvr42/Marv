@@ -1,5 +1,5 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model-selection.js";
+import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
 import type { SkillCommandSpec } from "../agents/skills.js";
 import type { MarvConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";

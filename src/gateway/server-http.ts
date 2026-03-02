@@ -7,7 +7,7 @@ import {
 import { createServer as createHttpsServer } from "node:https";
 import type { TlsOptions } from "node:tls";
 import type { WebSocketServer } from "ws";
-import { resolveAgentAvatar } from "../agents/identity-avatar.js";
+import { resolveAgentAvatar } from "../agents/prompt/identity-avatar.js";
 import {
   A2UI_PATH,
   CANVAS_HOST_PATH,

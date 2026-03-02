@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SandboxBrowserInfo, SandboxContainerInfo } from "../agents/sandbox.js";
+import type { SandboxBrowserInfo, SandboxContainerInfo } from "../agents/sandbox/sandbox.js";
 
 // --- Mocks ---
 
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   clackConfirm: vi.fn(),
 }));
 
-vi.mock("../agents/sandbox.js", () => ({
+vi.mock("../agents/sandbox/sandbox.js", () => ({
   listSandboxContainers: mocks.listSandboxContainers,
   listSandboxBrowsers: mocks.listSandboxBrowsers,
   removeSandboxContainer: mocks.removeSandboxContainer,
