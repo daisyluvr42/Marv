@@ -42,6 +42,21 @@ Principle: prefer deletion over retention for unused upstream surfaces.
 - Remove root-level and automation artifacts that no longer match active Marv workflow.
 - Keep core runtime and Marv-specific docs/assets.
 
+### 9) GitHub automation trim
+
+- Remove CI/workflows tied to native apps and sandbox image release lanes.
+- Keep only core Node checks and secret scan.
+
+### 10) Agent/internal workflow trim
+
+- Remove archived `.agents/archive` legacy workflow snapshots.
+- Keep active `.agents/skills/*` and `.pi/*` because they are still used by local coding-agent tooling.
+
+### 11) Scripts + package commands trim
+
+- Remove scripts for macOS app packaging/signing/notarization, iOS tooling, Swift protocol generation, and sandbox image setup.
+- Remove corresponding npm scripts from `package.json`; keep CLI/gateway/build/test scripts.
+
 ### 8) Validation policy
 
 - Run `pnpm build` after each major deletion category.
@@ -72,3 +87,41 @@ Principle: prefer deletion over retention for unused upstream surfaces.
   - `src/gateway/session-utils.fs.ts`
   - `src/plugins/loader.ts`
 - Reason: these duplicates blocked required build checks and were minimal no-behavior cleanup edits.
+
+### Completed: Swabble removal
+
+- Deleted `Swabble/`.
+- Build validation: `pnpm build` passed.
+
+### Completed: Sandbox Dockerfiles removal
+
+- Deleted `Dockerfile.sandbox`, `Dockerfile.sandbox-browser`, `Dockerfile.sandbox-common`.
+- Build validation: `pnpm build` passed.
+
+### Completed: Deploy config cleanup
+
+- Deleted `fly.toml`, `fly.private.toml`, `render.yaml`, `setup-podman.sh`, `marv.podman.env`.
+- Build validation: `pnpm build` passed.
+
+### Completed: Vitest config consolidation
+
+- Removed split configs (`vitest.unit.config.ts`, `vitest.gateway.config.ts`, `vitest.extensions.config.ts`, `vitest.live.config.ts`).
+- Kept only `vitest.config.ts` (projects) and `vitest.e2e.config.ts`.
+- Updated scripts to run via `--project`.
+
+### Completed: Root misc cleanup
+
+- Removed `.pre-commit-config.yaml`, `docs.acp.md`, `zizmor.yml`.
+- Kept detect-secrets, markdownlint, shellcheck, oxfmt/oxlint configs, and `tsconfig.plugin-sdk.dts.json` because they remain referenced.
+
+### Completed: GitHub cleanup
+
+- Removed app/sandbox-heavy workflows and simplified CI to lint/build/test/secrets.
+- Trimmed dependabot entries for Swift/Gradle and removed app labels from labeler config.
+
+### Completed: Scripts and command cleanup
+
+- Removed archived `.agents/archive`.
+- Removed native app + sandbox setup scripts from `scripts/`.
+- Updated `package.json` scripts to drop `ios:*`, `android:*`, `mac:*`, `*:swift`, and `protocol:gen:swift`.
+- Build validation: `pnpm build` passed.
