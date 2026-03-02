@@ -13,7 +13,6 @@ Run it locally (or on your own server), connect channels, and message your agent
 - Local-first deployment and data ownership.
 - Strong CLI + automation surface (gateway, channels, routing, memory, tools).
 - Plugin/extension architecture for channels, providers, and custom commands.
-- Companion apps for macOS/iOS/Android.
 
 ## How It Works
 
@@ -23,9 +22,9 @@ Chat apps (WhatsApp/Telegram/Discord/Slack/...) + WebChat + device nodes
                               v
                  Marv Gateway (ws://127.0.0.1:18789)
                               |
-          -------------------------------------------------
-          |               |               |               |
-        Agent           CLI         Control UI       Apps/Nodes
+          ---------------------------------------------
+          |               |               |            |
+        Agent           CLI         Control UI      Extensions
 ```
 
 The Gateway is the control plane: sessions, routing, channels, tool access, and health.
@@ -494,10 +493,14 @@ pnpm gateway:watch    # Gateway watch/dev loop
 ```text
 src/             CLI, gateway, channels, routing, media pipeline
 extensions/      Built-in extension packages (channels/providers/features)
-apps/            macOS, iOS, Android clients
+external_source/ External data source integrations
+install/         Installation scripts
 ui/              Web Control UI
 docs/            Mintlify documentation
-scripts/         Build, release, QA, and automation scripts
+scripts/         Build and automation scripts
+packages/        Shared packages
+skills/          Built-in skill definitions
+test/            Test suites
 ```
 
 ## Plugins and Extension Development
@@ -552,7 +555,6 @@ MIT. See [`LICENSE`](LICENSE).
 - 本地优先，数据由你掌控
 - CLI 与自动化能力完善（网关、渠道、路由、记忆、工具）
 - 插件/扩展架构，方便扩展渠道、模型与命令
-- 提供 macOS/iOS/Android 配套应用
 
 ## 工作原理
 
@@ -1012,10 +1014,14 @@ pnpm gateway:watch    # Gateway watch/dev
 ```text
 src/             CLI、gateway、channels、routing、media
 extensions/      内置扩展包（渠道/模型/功能）
-apps/            macOS、iOS、Android 客户端
+external_source/ 外部数据源集成
+install/         安装脚本
 ui/              Web 控制台
 docs/            Mintlify 文档
-scripts/         构建、发布、QA 与自动化脚本
+scripts/         构建与自动化脚本
+packages/        共享包
+skills/          内置技能定义
+test/            测试
 ```
 
 ## 插件与扩展开发
