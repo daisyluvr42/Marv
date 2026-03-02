@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CURRENT_SESSION_VERSION, SessionManager } from "@mariozechner/pi-coding-agent";
-import { emitSessionTranscriptUpdate } from "../../../sessions/transcript-events.js";
+import { emitSessionTranscriptUpdate } from "../../session/transcript-events.js";
 import { resolveDefaultSessionStorePath, resolveSessionFilePath } from "./paths.js";
 import { loadSessionStore, updateSessionStore } from "./store.js";
 import type { SessionEntry } from "./types.js";

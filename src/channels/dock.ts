@@ -6,7 +6,6 @@ import {
 import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 import { escapeRegExp, normalizeE164 } from "../utils.js";
-import { normalizeWhatsAppTarget } from "../whatsapp/normalize.js";
 import { resolveDiscordAccount } from "./discord/accounts.js";
 import { resolveIMessageAccount } from "./imessage/accounts.js";
 import {
@@ -43,6 +42,7 @@ import { resolveSlackAccount, resolveSlackReplyToMode } from "./slack/accounts.j
 import { buildSlackThreadingToolContext } from "./slack/threading-tool-context.js";
 import { resolveTelegramAccount } from "./telegram/accounts.js";
 import { resolveWhatsAppAccount } from "./web/accounts.js";
+import { normalizeWhatsAppTarget } from "./whatsapp/normalize.js";
 
 export type ChannelDock = {
   id: ChannelId;

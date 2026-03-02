@@ -63,7 +63,7 @@ vi.mock("./sessions.js", () => ({
   },
 }));
 
-vi.mock("../../../sessions/send-policy.js", () => ({
+vi.mock("../../session/send-policy.js", () => ({
   resolveSendPolicy: () => "allow",
 }));
 

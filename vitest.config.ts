@@ -20,6 +20,35 @@ const baseExclude = [
   "**/*.e2e.test.ts",
 ] as const;
 
+const unitFastExtraExclude = [
+  "src/plugins/loader.test.ts",
+  "src/plugins/tools.optional.test.ts",
+  "src/agents/session-tool-result-guard.tool-result-persist-hook.test.ts",
+  "src/security/fix.test.ts",
+  "src/security/audit.test.ts",
+  "src/utils.test.ts",
+  "src/auto-reply/tool-meta.test.ts",
+  "src/auto-reply/envelope.test.ts",
+  "src/commands/auth-choice.test.ts",
+  "src/media/store.test.ts",
+  "src/media/store.header-ext.test.ts",
+  "src/channels/web/media.test.ts",
+  "src/channels/web/auto-reply.web-auto-reply.falls-back-text-media-send-fails.test.ts",
+  "src/browser/server.covers-additional-endpoint-branches.test.ts",
+  "src/browser/server.post-tabs-open-profile-unknown-returns-404.test.ts",
+  "src/browser/server.agent-contract-snapshot-endpoints.test.ts",
+  "src/browser/server.agent-contract-form-layout-act-commands.test.ts",
+  "src/browser/server.skips-default-maxchars-explicitly-set-zero.test.ts",
+  "src/browser/server.auth-token-gates-http.test.ts",
+  "src/auto-reply/reply.block-streaming.test.ts",
+  "src/hooks/install.test.ts",
+  "src/channels/telegram/bot.create-telegram-bot.test.ts",
+  "src/channels/telegram/bot.test.ts",
+  "src/channels/slack/monitor/slash.test.ts",
+  "src/channels/imessage/monitor.shutdown.unhandled-rejection.test.ts",
+  "src/process/exec.test.ts",
+] as const;
+
 const sharedProjectTest = {
   testTimeout: 120_000,
   hookTimeout: isWindows ? 180_000 : 120_000,
@@ -58,6 +87,25 @@ export default defineConfig({
   test: {
     alias: pluginSdkAliases,
     projects: [
+      defineProject({
+        ...pluginSdkProjectConfig,
+        test: {
+          ...sharedProjectTest,
+          name: "unit-fast",
+          pool: "vmForks",
+          include: [
+            "src/**/*.test.ts",
+            "test/**/*.test.ts",
+            "ui/src/ui/views/usage-render-details.test.ts",
+          ],
+          exclude: [
+            ...baseExclude,
+            "**/*.live.test.ts",
+            "src/core/gateway/**",
+            ...unitFastExtraExclude,
+          ],
+        },
+      }),
       defineProject({
         ...pluginSdkProjectConfig,
         test: {

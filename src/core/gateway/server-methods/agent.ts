@@ -9,11 +9,6 @@ import {
 } from "../../../infra/outbound/agent-delivery.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../../routing/session-key.js";
 import { defaultRuntime } from "../../../runtime.js";
-import {
-  normalizeInputProvenance,
-  type InputProvenance,
-} from "../../../sessions/input-provenance.js";
-import { resolveSendPolicy } from "../../../sessions/send-policy.js";
 import { normalizeSessionDeliveryFields } from "../../../utils/delivery-context.js";
 import {
   INTERNAL_MESSAGE_CHANNEL,
@@ -29,6 +24,8 @@ import {
   type SessionEntry,
   updateSessionStore,
 } from "../../config/sessions.js";
+import { normalizeInputProvenance, type InputProvenance } from "../../session/input-provenance.js";
+import { resolveSendPolicy } from "../../session/send-policy.js";
 import { resolveAssistantIdentity } from "../assistant-identity.js";
 import { parseMessageWithAttachments } from "../chat-attachments.js";
 import { resolveAssistantAvatarUrl } from "../control-ui-shared.js";

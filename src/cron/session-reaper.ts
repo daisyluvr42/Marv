@@ -9,7 +9,7 @@
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { updateSessionStore } from "../core/config/sessions.js";
 import type { CronConfig } from "../core/config/types.cron.js";
-import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
+import { isCronRunSessionKey } from "../core/session/session-key-utils.js";
 import type { Logger } from "./service/state.js";
 
 const DEFAULT_RETENTION_MS = 24 * 3_600_000; // 24 hours

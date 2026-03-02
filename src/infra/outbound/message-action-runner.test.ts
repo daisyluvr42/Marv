@@ -15,8 +15,9 @@ import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.
 import { runMessageAction } from "./message-action-runner.js";
 
 vi.mock("../../channels/web/media.js", async () => {
-  const actual =
-    await vi.importActual<typeof import("../../channels/web/media.js")>("../../web/media.js");
+  const actual = await vi.importActual<typeof import("../../channels/web/media.js")>(
+    "../../channels/web/media.js",
+  );
   return {
     ...actual,
     loadWebMedia: vi.fn(actual.loadWebMedia),

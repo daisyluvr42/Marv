@@ -1,4 +1,4 @@
-import { normalizeWhatsAppTarget } from "../../../whatsapp/normalize.js";
+import { normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 
 export function normalizeWhatsAppMessagingTarget(raw: string): string | undefined {
   const trimmed = raw.trim();

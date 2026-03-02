@@ -3,7 +3,7 @@ import * as normalize from "./normalize.js";
 import { resolveWhatsAppOutboundTarget } from "./resolve-outbound-target.js";
 
 vi.mock("./normalize.js");
-vi.mock("../infra/outbound/target-errors.js", () => ({
+vi.mock("../../infra/outbound/target-errors.js", () => ({
   missingTargetError: (platform: string, format: string) => new Error(`${platform}: ${format}`),
 }));
 

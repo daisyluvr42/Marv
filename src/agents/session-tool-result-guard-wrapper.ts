@@ -1,9 +1,9 @@
 import type { SessionManager } from "@mariozechner/pi-coding-agent";
-import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import {
   applyInputProvenanceToUserMessage,
   type InputProvenance,
-} from "../sessions/input-provenance.js";
+} from "../core/session/input-provenance.js";
+import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { installSessionToolResultGuard } from "./session-tool-result-guard.js";
 
 export type GuardedSessionManager = SessionManager & {

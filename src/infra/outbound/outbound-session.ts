@@ -16,11 +16,11 @@ import { parseSlackTarget } from "../../channels/slack/targets.js";
 import { buildTelegramGroupPeerId } from "../../channels/telegram/bot/helpers.js";
 import { resolveTelegramTargetChatType } from "../../channels/telegram/inline-buttons.js";
 import { parseTelegramTarget } from "../../channels/telegram/targets.js";
+import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../channels/whatsapp/normalize.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { recordSessionMetaFromInbound, resolveStorePath } from "../../core/config/sessions.js";
 import { buildAgentSessionKey, type RoutePeer } from "../../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../routing/session-key.js";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import type { ResolvedMessagingTarget } from "./target-resolver.js";
 
 export type OutboundSessionRoute = {

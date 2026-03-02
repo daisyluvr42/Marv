@@ -520,3 +520,41 @@ Phase 5 已完成核心目标：`daemon / heartbeat / update` 已统一进入 `s
 ### 4) 本阶段结论
 
 Phase 6 已完成“基线解锁”目标：项目重新具备可构建能力，核心重构链路（infra heartbeat/update + extensions plugin-sdk 导入）恢复稳定，可继续进入下一阶段的功能/测试面收敛。
+
+## Phase 7 Walkthrough（2026-03-02）
+
+本阶段目标是完成全量测试收敛，解决 Phase 6 之后残留的并行测试不稳定问题，并恢复 `pnpm test` 全绿。
+
+### 1) 问题定位
+
+- 全量运行中剩余失败集中在：
+  - `src/plugins/loader.test.ts`（11 failures）
+  - `src/process/exec.test.ts`（偶发 1 failure）
+- 复现后确认：
+  - `loader.test` 在 `--pool=forks` 通过，在 `--pool=vmForks` 稳定失败。
+  - 根因不是业务逻辑，而是测试编排：`test-parallel` 的 `unit-fast` 路径里 `--exclude` 在当前 Vitest 组合下未生效，导致本应 isolated 的文件被 `vmForks` 执行。
+
+### 2) 改动内容
+
+- `vitest.config.ts`
+  - 新增 `unit-fast` project（`pool: "vmForks"`）。
+  - 在该 project 内置 `unitFastExtraExclude`，把需要 isolated 的测试文件（含 `loader.test`、`exec.test`）从 fast lane 排除。
+- `scripts/test-parallel.mjs`
+  - `unit-fast` 运行项从 `--project unit` 改为 `--project unit-fast`。
+  - 删除 `unit-fast` 上无效的 CLI `--exclude` 拼接，避免“看似排除、实际未排除”。
+  - 将 `src/process/exec.test.ts` 加入 isolated 文件列表，降低高并发下的时序抖动。
+
+### 3) 验证结果
+
+- 针对性验证：
+  - `pnpm vitest run --config vitest.config.ts --project unit-fast src/plugins`
+    - `loader.test` 不再进入 `unit-fast`。
+  - `pnpm vitest run --config vitest.config.ts --project unit --pool=forks src/plugins/loader.test.ts src/process/exec.test.ts`
+    - 全通过（19 tests passed）。
+- 全量验证：
+  - `pnpm test`：通过（`731 passed / 731`, `6059 passed / 6059`）。
+  - `pnpm build`：通过。
+
+### 4) 本阶段结论
+
+Phase 7 已完成：测试编排中的池化与隔离边界已修正，`pnpm test` 与 `pnpm build` 均恢复通过，可继续进入下一阶段功能性收敛或结构重组工作。

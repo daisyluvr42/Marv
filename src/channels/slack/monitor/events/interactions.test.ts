@@ -898,6 +898,7 @@ describe("registerSlackInteractionEvents", () => {
     const payload = JSON.parse(eventText.replace("Slack interaction: ", "")) as {
       inputs: Array<{
         actionId: string;
+        inputValue?: string;
         inputKind?: string;
         selectedValues?: string[];
         selectedUsers?: string[];
@@ -962,7 +963,7 @@ describe("registerSlackInteractionEvents", () => {
         expect.objectContaining({
           actionId: "url_input",
           inputKind: "url",
-          inputUrl: "/",
+          inputValue: "",
         }),
         expect.objectContaining({
           actionId: "richtext_input",

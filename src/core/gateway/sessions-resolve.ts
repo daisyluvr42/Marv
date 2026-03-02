@@ -1,6 +1,6 @@
-import { parseSessionLabel } from "../../sessions/session-label.js";
 import type { MarvConfig } from "../config/config.js";
 import { loadSessionStore, updateSessionStore } from "../config/sessions.js";
+import { parseSessionLabel } from "../session/session-label.js";
 import {
   ErrorCodes,
   type ErrorShape,

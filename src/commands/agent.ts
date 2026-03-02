@@ -45,6 +45,9 @@ import {
   type SessionEntry,
   updateSessionStore,
 } from "../core/config/sessions.js";
+import { applyVerboseOverride } from "../core/session/level-overrides.js";
+import { applyModelOverrideToSessionEntry } from "../core/session/model-overrides.js";
+import { resolveSendPolicy } from "../core/session/send-policy.js";
 import {
   clearAgentRunContext,
   emitAgentEvent,
@@ -53,9 +56,6 @@ import {
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import { applyVerboseOverride } from "../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../sessions/model-overrides.js";
-import { resolveSendPolicy } from "../sessions/send-policy.js";
 import { resolveMessageChannel } from "../utils/message-channel.js";
 import { deliverAgentCommandResult } from "./agent/delivery.js";
 import { resolveAgentRunContext } from "./agent/run-context.js";

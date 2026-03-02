@@ -13,7 +13,6 @@ import {
   normalizeMainKey,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
-import { isCronRunSessionKey } from "../../sessions/session-key-utils.js";
 import { normalizeSessionDeliveryFields } from "../../utils/delivery-context.js";
 import { type MarvConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
@@ -28,6 +27,7 @@ import {
   type SessionEntry,
   type SessionScope,
 } from "../config/sessions.js";
+import { isCronRunSessionKey } from "../session/session-key-utils.js";
 import { readSessionTitleFieldsFromTranscript } from "./session-utils.fs.js";
 import type {
   GatewayAgentRow,

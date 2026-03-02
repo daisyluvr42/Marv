@@ -2,7 +2,7 @@ import fs from "node:fs";
 import JSON5 from "json5";
 import type { MarvConfig } from "../core/config/config.js";
 import { resolveStorePath } from "../core/config/sessions/paths.js";
-import { getSubagentDepth, parseAgentSessionKey } from "../sessions/session-key-utils.js";
+import { getSubagentDepth, parseAgentSessionKey } from "../core/session/session-key-utils.js";
 import { resolveDefaultAgentId } from "./agent-scope.js";
 
 type SessionDepthEntry = {

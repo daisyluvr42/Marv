@@ -6,10 +6,10 @@ import {
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
+import { applyVerboseOverride } from "../../core/session/level-overrides.js";
+import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
 import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
-import { applyVerboseOverride } from "../../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { formatThinkingLevels, formatXHighModelHint, supportsXHighThinking } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
 import {

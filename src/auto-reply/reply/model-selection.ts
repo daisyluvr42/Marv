@@ -12,8 +12,8 @@ import {
 } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
-import { resolveThreadParentSessionKey } from "../../sessions/session-key-utils.js";
+import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
+import { resolveThreadParentSessionKey } from "../../core/session/session-key-utils.js";
 import type { ThinkLevel } from "./directives.js";
 
 export type ModelDirectiveSelection = {

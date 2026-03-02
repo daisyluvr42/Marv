@@ -9,7 +9,7 @@ import {
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import { updateSessionStore } from "../../core/config/sessions.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
+import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import { resolveModelDirectiveSelection, type ModelDirectiveSelection } from "./model-selection.js";
 

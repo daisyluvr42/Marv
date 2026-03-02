@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { SESSION_LABEL_MAX_LENGTH } from "../../../../sessions/session-label.js";
+import { SESSION_LABEL_MAX_LENGTH } from "../../../session/session-label.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "../client-info.js";
 
 export const NonEmptyString = Type.String({ minLength: 1 });

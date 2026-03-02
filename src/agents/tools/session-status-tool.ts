@@ -11,6 +11,7 @@ import {
   updateSessionStore,
 } from "../../core/config/sessions.js";
 import { loadCombinedSessionStoreForGateway } from "../../core/gateway/session-utils.js";
+import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
 import {
   formatUsageWindowSummary,
   loadProviderUsageSummary,
@@ -21,7 +22,6 @@ import {
   DEFAULT_AGENT_ID,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveAgentDir } from "../agent-scope.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
 import { resolveModelAuthLabel } from "../model/model-auth-label.js";

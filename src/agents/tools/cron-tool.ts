@@ -1,9 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import { loadConfig } from "../../core/config/config.js";
+import { parseAgentSessionKey } from "../../core/session/session-key-utils.js";
 import { normalizeCronJobCreate, normalizeCronJobPatch } from "../../cron/normalize.js";
 import type { CronDelivery, CronMessageChannel } from "../../cron/types.js";
 import { normalizeHttpWebhookUrl } from "../../cron/webhook-url.js";
-import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";
 import { isRecord, truncateUtf16Safe } from "../../utils.js";
 import { resolveSessionAgentId } from "../agent-scope.js";

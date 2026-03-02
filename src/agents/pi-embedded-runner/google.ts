@@ -3,11 +3,11 @@ import type { AgentMessage, AgentTool } from "@mariozechner/pi-agent-core";
 import type { SessionManager } from "@mariozechner/pi-coding-agent";
 import type { TSchema } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
-import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
 import {
   hasInterSessionUserProvenance,
   normalizeInputProvenance,
-} from "../../sessions/input-provenance.js";
+} from "../../core/session/input-provenance.js";
+import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
 import { resolveImageSanitizationLimits } from "../image-sanitization.js";
 import {
   downgradeOpenAIReasoningBlocks,

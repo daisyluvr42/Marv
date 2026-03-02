@@ -1,4 +1,4 @@
-import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
+import { parseAgentSessionKey } from "../../core/session/session-key-utils.js";
 import type { ResolvedQmdConfig } from "../backend-config.js";
 
 type ParsedQmdSessionScope = {

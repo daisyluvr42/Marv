@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSubagentDepth, isCronSessionKey } from "../sessions/session-key-utils.js";
+import { getSubagentDepth, isCronSessionKey } from "../core/session/session-key-utils.js";
 import { classifySessionKeyShape } from "./session-key.js";
 
 describe("classifySessionKeyShape", () => {

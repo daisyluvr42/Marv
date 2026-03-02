@@ -1,7 +1,7 @@
 import { getChannelDock } from "../../channels/dock.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveChannelGroupToolsPolicy } from "../../core/config/group-policy.js";
-import { resolveThreadParentSessionKey } from "../../sessions/session-key-utils.js";
+import { resolveThreadParentSessionKey } from "../../core/session/session-key-utils.js";
 import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import { resolveAgentConfig, resolveAgentIdFromSessionKey } from "../agent-scope.js";
 import { compileGlobPatterns, matchesAnyGlobPattern } from "../glob-pattern.js";

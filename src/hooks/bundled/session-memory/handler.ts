@@ -10,6 +10,7 @@ import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import { resolveStateDir } from "../../../core/config/paths.js";
+import { hasInterSessionUserProvenance } from "../../../core/session/input-provenance.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import {
   buildSoulMemoryPath,
@@ -17,7 +18,6 @@ import {
   writeSoulMemory,
 } from "../../../memory/storage/soul-memory-store.js";
 import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
-import { hasInterSessionUserProvenance } from "../../../sessions/input-provenance.js";
 import { resolveHookConfig } from "../../config.js";
 import type { HookHandler } from "../../hooks.js";
 import { generateSlugViaLLM } from "../../llm-slug-generator.js";

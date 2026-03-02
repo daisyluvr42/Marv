@@ -8,9 +8,9 @@ import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../../auto-reply/reply/reply-dispatcher.js";
 import type { MsgContext } from "../../../auto-reply/templating.js";
 import { createReplyPrefixOptions } from "../../../channels/reply-prefix.js";
-import { resolveSendPolicy } from "../../../sessions/send-policy.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../../utils/message-channel.js";
 import { resolveSessionFilePath } from "../../config/sessions.js";
+import { resolveSendPolicy } from "../../session/send-policy.js";
 import {
   abortChatRunById,
   abortChatRunsForSessionKey,

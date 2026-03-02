@@ -14,9 +14,9 @@ import {
 } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
+import { applyVerboseOverride } from "../../core/session/level-overrides.js";
+import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
-import { applyVerboseOverride } from "../../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveProfileOverride } from "./directive-handling.auth.js";
 import type { InlineDirectives } from "./directive-handling.parse.js";
 import { enqueueModeSwitchEvents } from "./directive-handling.shared.js";

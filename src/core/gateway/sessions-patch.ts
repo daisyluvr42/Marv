@@ -21,12 +21,12 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
-import { applyVerboseOverride, parseVerboseOverride } from "../../sessions/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
-import { normalizeSendPolicy } from "../../sessions/send-policy.js";
-import { parseSessionLabel } from "../../sessions/session-label.js";
 import type { MarvConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
+import { applyVerboseOverride, parseVerboseOverride } from "../session/level-overrides.js";
+import { applyModelOverrideToSessionEntry } from "../session/model-overrides.js";
+import { normalizeSendPolicy } from "../session/send-policy.js";
+import { parseSessionLabel } from "../session/session-label.js";
 import {
   ErrorCodes,
   type ErrorShape,
