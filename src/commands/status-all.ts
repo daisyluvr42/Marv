@@ -6,19 +6,22 @@ import { buildGatewayConnectionDetails, callGateway } from "../core/gateway/call
 import { normalizeControlUiBasePath } from "../core/gateway/control-ui-shared.js";
 import { resolveGatewayProbeAuth } from "../core/gateway/probe-auth.js";
 import { probeGateway } from "../core/gateway/probe.js";
-import { readLastGatewayErrorLine } from "../daemon/diagnostics.js";
-import { resolveNodeService } from "../daemon/node-service.js";
-import type { GatewayService } from "../daemon/service.js";
-import { resolveGatewayService } from "../daemon/service.js";
 import { collectChannelStatusIssues } from "../infra/channels-status-issues.js";
+import { readLastGatewayErrorLine } from "../infra/daemon/diagnostics.js";
+import { resolveNodeService } from "../infra/daemon/node-service.js";
+import type { GatewayService } from "../infra/daemon/service.js";
+import { resolveGatewayService } from "../infra/daemon/service.js";
 import { resolveMarvPackageRoot } from "../infra/marv-root.js";
 import { resolveOsSummary } from "../infra/os-summary.js";
 import { inspectPortUsage } from "../infra/ports.js";
 import { readRestartSentinel } from "../infra/restart-sentinel.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
 import { readTailscaleStatusJson } from "../infra/tailscale.js";
-import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
-import { checkUpdateStatus, formatGitInstallLabel } from "../infra/update-check.js";
+import {
+  normalizeUpdateChannel,
+  resolveUpdateChannelDisplay,
+} from "../infra/update/update-channels.js";
+import { checkUpdateStatus, formatGitInstallLabel } from "../infra/update/update-check.js";
 import { runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { VERSION } from "../version.js";

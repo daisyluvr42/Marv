@@ -17,8 +17,11 @@ import {
 import { isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { logAcceptedEnvOption } from "../../infra/env.js";
 import { createExecApprovalForwarder } from "../../infra/exec-approval-forwarder.js";
-import { onHeartbeatEvent } from "../../infra/heartbeat-events.js";
-import { startHeartbeatRunner, type HeartbeatRunner } from "../../infra/heartbeat-runner.js";
+import { onHeartbeatEvent } from "../../infra/heartbeat/heartbeat-events.js";
+import {
+  startHeartbeatRunner,
+  type HeartbeatRunner,
+} from "../../infra/heartbeat/heartbeat-runner.js";
 import { getMachineDisplayName } from "../../infra/machine-name.js";
 import { ensureMarvCliOnPath } from "../../infra/path-env.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../../infra/restart.js";
@@ -27,7 +30,7 @@ import {
   refreshRemoteBinsForConnectedNodes,
   setSkillsRemoteRegistry,
 } from "../../infra/skills-remote.js";
-import { scheduleGatewayUpdateCheck } from "../../infra/update-startup.js";
+import { scheduleGatewayUpdateCheck } from "../../infra/update/update-startup.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../../logging/diagnostic.js";
 import { createSubsystemLogger, runtimeForLogger } from "../../logging/subsystem.js";
 import {

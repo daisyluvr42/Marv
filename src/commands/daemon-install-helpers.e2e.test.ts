@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
   buildServiceEnvironment: vi.fn(),
 }));
 
-vi.mock("../daemon/runtime-paths.js", () => ({
+vi.mock("../infra/daemon/runtime-paths.js", () => ({
   resolvePreferredNodePath: mocks.resolvePreferredNodePath,
   resolveSystemNodeInfo: mocks.resolveSystemNodeInfo,
   renderSystemNodeWarning: mocks.renderSystemNodeWarning,
 }));
 
-vi.mock("../daemon/program-args.js", () => ({
+vi.mock("../infra/daemon/program-args.js", () => ({
   resolveGatewayProgramArguments: mocks.resolveGatewayProgramArguments,
 }));
 
-vi.mock("../daemon/service-env.js", () => ({
+vi.mock("../infra/daemon/service-env.js", () => ({
   buildServiceEnvironment: mocks.buildServiceEnvironment,
 }));
 
@@ -35,9 +35,7 @@ afterEach(() => {
 describe("resolveGatewayDevMode", () => {
   it("detects dev mode for src ts entrypoints", () => {
     expect(resolveGatewayDevMode(["node", "/Users/me/marv/src/cli/index.ts"])).toBe(true);
-    expect(resolveGatewayDevMode(["node", "C:\\Users\\me\\marv\\src\\cli\\index.ts"])).toBe(
-      true,
-    );
+    expect(resolveGatewayDevMode(["node", "C:\\Users\\me\\marv\\src\\cli\\index.ts"])).toBe(true);
     expect(resolveGatewayDevMode(["node", "/Users/me/marv/dist/cli/index.js"])).toBe(false);
   });
 });

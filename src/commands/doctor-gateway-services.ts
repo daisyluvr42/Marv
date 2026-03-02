@@ -5,14 +5,17 @@ import path from "node:path";
 import { promisify } from "node:util";
 import type { MarvConfig } from "../core/config/config.js";
 import { resolveGatewayPort, resolveIsNixMode } from "../core/config/paths.js";
-import { findExtraGatewayServices, renderGatewayServiceCleanupHints } from "../daemon/inspect.js";
-import { renderSystemNodeWarning, resolveSystemNodeInfo } from "../daemon/runtime-paths.js";
+import {
+  findExtraGatewayServices,
+  renderGatewayServiceCleanupHints,
+} from "../infra/daemon/inspect.js";
+import { renderSystemNodeWarning, resolveSystemNodeInfo } from "../infra/daemon/runtime-paths.js";
 import {
   auditGatewayServiceConfig,
   needsNodeRuntimeMigration,
   SERVICE_AUDIT_CODES,
-} from "../daemon/service-audit.js";
-import { resolveGatewayService } from "../daemon/service.js";
+} from "../infra/daemon/service-audit.js";
+import { resolveGatewayService } from "../infra/daemon/service.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { buildGatewayInstallPlan } from "./daemon-install-helpers.js";

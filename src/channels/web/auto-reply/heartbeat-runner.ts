@@ -14,8 +14,11 @@ import {
   resolveStorePath,
   updateSessionStore,
 } from "../../../core/config/sessions.js";
-import { emitHeartbeatEvent, resolveIndicatorType } from "../../../infra/heartbeat-events.js";
-import { resolveHeartbeatVisibility } from "../../../infra/heartbeat-visibility.js";
+import {
+  emitHeartbeatEvent,
+  resolveIndicatorType,
+} from "../../../infra/heartbeat/heartbeat-events.js";
+import { resolveHeartbeatVisibility } from "../../../infra/heartbeat/heartbeat-visibility.js";
 import { getChildLogger } from "../../../logging.js";
 import { normalizeMainKey } from "../../../routing/session-key.js";
 import { resolveWhatsAppHeartbeatRecipients } from "../../plugins/whatsapp-heartbeat.js";

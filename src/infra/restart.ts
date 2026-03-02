@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import {
   resolveGatewayLaunchAgentLabel,
   resolveGatewaySystemdServiceName,
-} from "../daemon/constants.js";
+} from "./daemon/constants.js";
 
 export type RestartAttempt = {
   ok: boolean;
@@ -229,10 +229,7 @@ export function triggerMarvRestart(): RestartAttempt {
   const tried: string[] = [];
   if (process.platform !== "darwin") {
     if (process.platform === "linux") {
-      const unit = normalizeSystemdUnit(
-        process.env.MARV_SYSTEMD_UNIT,
-        process.env.MARV_PROFILE,
-      );
+      const unit = normalizeSystemdUnit(process.env.MARV_SYSTEMD_UNIT, process.env.MARV_PROFILE);
       const userArgs = ["--user", "restart", unit];
       tried.push(`systemctl ${userArgs.join(" ")}`);
       const userRestart = spawnSync("systemctl", userArgs, {
@@ -265,8 +262,7 @@ export function triggerMarvRestart(): RestartAttempt {
   }
 
   const label =
-    process.env.MARV_LAUNCHD_LABEL ||
-    resolveGatewayLaunchAgentLabel(process.env.MARV_PROFILE);
+    process.env.MARV_LAUNCHD_LABEL || resolveGatewayLaunchAgentLabel(process.env.MARV_PROFILE);
   const uid = typeof process.getuid === "function" ? process.getuid() : undefined;
   const target = uid !== undefined ? `gui/${uid}/${label}` : label;
   const args = ["kickstart", "-k", target];

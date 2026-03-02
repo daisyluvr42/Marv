@@ -22,9 +22,9 @@ import {
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
 import type { MarvConfig } from "../core/config/config.js";
-import { resolveGatewayService } from "../daemon/service.js";
-import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
+import { resolveGatewayService } from "../infra/daemon/service.js";
+import { isSystemdUserServiceAvailable } from "../infra/daemon/systemd.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { restoreTerminalState } from "../terminal/restore.js";
 import { runTui } from "../tui/tui.js";

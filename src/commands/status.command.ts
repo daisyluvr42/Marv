@@ -3,11 +3,14 @@ import { withProgress } from "../cli/progress.js";
 import { resolveGatewayPort } from "../core/config/config.js";
 import { buildGatewayConnectionDetails, callGateway } from "../core/gateway/call.js";
 import { info } from "../globals.js";
-import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
-import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
+import { formatTimeAgo } from "../infra/format-time/format-relative.js";
+import type { HeartbeatEventPayload } from "../infra/heartbeat/heartbeat-events.js";
 import { formatUsageReportLines, loadProviderUsageSummary } from "../infra/provider-usage.js";
-import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../infra/update-channels.js";
-import { formatGitInstallLabel } from "../infra/update-check.js";
+import {
+  normalizeUpdateChannel,
+  resolveUpdateChannelDisplay,
+} from "../infra/update/update-channels.js";
+import { formatGitInstallLabel } from "../infra/update/update-check.js";
 import {
   resolveMemoryCacheSummary,
   resolveMemoryFtsState,
