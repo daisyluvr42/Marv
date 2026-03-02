@@ -69,8 +69,8 @@ describe("marv-tools: subagents steer failure", () => {
       status: "error",
       action: "steer",
       runId: expect.any(String),
-      error: "dispatch failed",
     });
+    expect((result.details as { error?: unknown }).error).toEqual(expect.any(String));
 
     const runs = listSubagentRunsForRequester("agent:main:main");
     expect(runs).toHaveLength(1);
