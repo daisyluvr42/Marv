@@ -5,8 +5,8 @@ import {
   writeRestartSentinel,
 } from "../../../infra/restart-sentinel.js";
 import { scheduleGatewaySigusr1Restart } from "../../../infra/restart.js";
-import { normalizeUpdateChannel } from "../../../infra/update-channels.js";
-import { runGatewayUpdate } from "../../../infra/update-runner.js";
+import { normalizeUpdateChannel } from "../../../infra/update/update-channels.js";
+import { runGatewayUpdate } from "../../../infra/update/update-runner.js";
 import { loadConfig } from "../../config/config.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
 import { validateUpdateRunParams } from "../protocol/index.js";

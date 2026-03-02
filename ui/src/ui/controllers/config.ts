@@ -1,13 +1,13 @@
-import type { GatewayBrowserClient } from "../gateway.ts";
-import type { ConfigSchemaResponse, ConfigSnapshot, ConfigUiHints } from "../types.ts";
-import type { JsonSchema } from "../views/config-form.shared.ts";
-import { coerceFormValues } from "./config/form-coerce.ts";
+import type { GatewayBrowserClient } from "../gateway.js";
+import type { ConfigSchemaResponse, ConfigSnapshot, ConfigUiHints } from "../types.js";
+import type { JsonSchema } from "../views/config-form.shared.js";
+import { coerceFormValues } from "./config/form-coerce.js";
 import {
   cloneConfigObject,
   removePathValue,
   serializeConfigForm,
   setPathValue,
-} from "./config/form-utils.ts";
+} from "./config/form-utils.js";
 
 export type ConfigState = {
   client: GatewayBrowserClient | null;

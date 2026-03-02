@@ -1,3 +1,3 @@
-export * from "./lib/types.ts";
-export * from "./lib/translate.ts";
-export * from "./lib/lit-controller.ts";
+export * from "./lib/types.js";
+export * from "./lib/translate.js";
+export * from "./lib/lit-controller.js";

@@ -1,5 +1,5 @@
 import { html, nothing } from "lit";
-import { extractQueryTerms, filterSessionsByQuery } from "../usage-helpers.ts";
+import { extractQueryTerms, filterSessionsByQuery } from "../usage-helpers.js";
 import {
   buildAggregatesFromSessions,
   buildPeakErrorHours,
@@ -10,7 +10,7 @@ import {
   getZonedHour,
   renderUsageMosaic,
   setToHourEnd,
-} from "./usage-metrics.ts";
+} from "./usage-metrics.js";
 import {
   addQueryToken,
   applySuggestionToQuery,
@@ -21,16 +21,16 @@ import {
   normalizeQueryText,
   removeQueryToken,
   setQueryTokensForKey,
-} from "./usage-query.ts";
-import { renderEmptyDetailState, renderSessionDetailPanel } from "./usage-render-details.ts";
+} from "./usage-query.js";
+import { renderEmptyDetailState, renderSessionDetailPanel } from "./usage-render-details.js";
 import {
   renderCostBreakdownCompact,
   renderDailyChartCompact,
   renderFilterChips,
   renderSessionsCard,
   renderUsageInsights,
-} from "./usage-render-overview.ts";
-import { usageStylesString } from "./usageStyles.ts";
+} from "./usage-render-overview.js";
+import { usageStylesString } from "./usageStyles.js";
 import {
   SessionLogEntry,
   SessionLogRole,
@@ -38,7 +38,7 @@ import {
   UsageProps,
   UsageSessionEntry,
   UsageTotals,
-} from "./usageTypes.ts";
+} from "./usageTypes.js";
 
 export type { UsageColumnId, SessionLogEntry, SessionLogRole };
 

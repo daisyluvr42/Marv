@@ -1,4 +1,4 @@
-import { schemaType, type JsonSchema } from "../../views/config-form.shared.ts";
+import { schemaType, type JsonSchema } from "../../views/config-form.shared.js";
 
 function coerceNumberString(value: string, integer: boolean): number | undefined | string {
   const trimmed = value.trim();

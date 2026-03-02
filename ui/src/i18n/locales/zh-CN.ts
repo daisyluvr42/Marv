@@ -1,4 +1,4 @@
-import type { TranslationMap } from "../lib/types.ts";
+import type { TranslationMap } from "../lib/types.js";
 
 export const zh_CN: TranslationMap = {
   common: {

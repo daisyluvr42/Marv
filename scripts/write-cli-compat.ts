@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import {
   LEGACY_DAEMON_CLI_EXPORTS,
   resolveLegacyDaemonCliAccessors,
-} from "../src/cli/daemon-cli-compat.ts";
+} from "../src/cli/daemon-cli-compat.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");

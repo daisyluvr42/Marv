@@ -1,6 +1,6 @@
 import { html } from "lit";
 import { buildUsageAggregateTail } from "../../../../src/shared/usage-aggregates.js";
-import { UsageSessionEntry, UsageTotals, UsageAggregates } from "./usageTypes.ts";
+import { UsageSessionEntry, UsageTotals, UsageAggregates } from "./usageTypes.js";
 
 const CHARS_PER_TOKEN = 4;
 

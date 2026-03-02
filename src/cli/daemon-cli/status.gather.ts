@@ -6,12 +6,12 @@ import {
 } from "../../core/config/config.js";
 import type { GatewayBindMode, GatewayControlUiConfig } from "../../core/config/types.js";
 import { resolveGatewayBindHost } from "../../core/gateway/net.js";
-import { readLastGatewayErrorLine } from "../../daemon/diagnostics.js";
-import type { FindExtraGatewayServicesOptions } from "../../daemon/inspect.js";
-import { findExtraGatewayServices } from "../../daemon/inspect.js";
-import type { ServiceConfigAudit } from "../../daemon/service-audit.js";
-import { auditGatewayServiceConfig } from "../../daemon/service-audit.js";
-import { resolveGatewayService } from "../../daemon/service.js";
+import { readLastGatewayErrorLine } from "../../infra/daemon/diagnostics.js";
+import type { FindExtraGatewayServicesOptions } from "../../infra/daemon/inspect.js";
+import { findExtraGatewayServices } from "../../infra/daemon/inspect.js";
+import type { ServiceConfigAudit } from "../../infra/daemon/service-audit.js";
+import { auditGatewayServiceConfig } from "../../infra/daemon/service-audit.js";
+import { resolveGatewayService } from "../../infra/daemon/service.js";
 import {
   formatPortDiagnostics,
   inspectPortUsage,

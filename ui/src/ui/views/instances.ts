@@ -1,6 +1,6 @@
 import { html, nothing } from "lit";
-import { formatPresenceAge, formatPresenceSummary } from "../presenter.ts";
-import type { PresenceEntry } from "../types.ts";
+import { formatPresenceAge, formatPresenceSummary } from "../presenter.js";
+import type { PresenceEntry } from "../types.js";
 
 export type InstancesProps = {
   loading: boolean;

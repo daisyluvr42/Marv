@@ -1,26 +1,26 @@
-import { refreshChat } from "./app-chat.ts";
+import { refreshChat } from "./app-chat.js";
 import {
   startLogsPolling,
   stopLogsPolling,
   startDebugPolling,
   stopDebugPolling,
-} from "./app-polling.ts";
-import { scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.ts";
-import type { MarvApp } from "./app.ts";
-import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
-import { loadAgentSkills } from "./controllers/agent-skills.ts";
-import { loadAgents } from "./controllers/agents.ts";
-import { loadChannels } from "./controllers/channels.ts";
-import { loadConfig, loadConfigSchema } from "./controllers/config.ts";
-import { loadCronJobs, loadCronStatus } from "./controllers/cron.ts";
-import { loadDebug } from "./controllers/debug.ts";
-import { loadDevices } from "./controllers/devices.ts";
-import { loadExecApprovals } from "./controllers/exec-approvals.ts";
-import { loadLogs } from "./controllers/logs.ts";
-import { loadNodes } from "./controllers/nodes.ts";
-import { loadPresence } from "./controllers/presence.ts";
-import { loadSessions } from "./controllers/sessions.ts";
-import { loadSkills } from "./controllers/skills.ts";
+} from "./app-polling.js";
+import { scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.js";
+import type { MarvApp } from "./app.js";
+import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.js";
+import { loadAgentSkills } from "./controllers/agent-skills.js";
+import { loadAgents } from "./controllers/agents.js";
+import { loadChannels } from "./controllers/channels.js";
+import { loadConfig, loadConfigSchema } from "./controllers/config.js";
+import { loadCronJobs, loadCronStatus } from "./controllers/cron.js";
+import { loadDebug } from "./controllers/debug.js";
+import { loadDevices } from "./controllers/devices.js";
+import { loadExecApprovals } from "./controllers/exec-approvals.js";
+import { loadLogs } from "./controllers/logs.js";
+import { loadNodes } from "./controllers/nodes.js";
+import { loadPresence } from "./controllers/presence.js";
+import { loadSessions } from "./controllers/sessions.js";
+import { loadSkills } from "./controllers/skills.js";
 import {
   inferBasePathFromPathname,
   normalizeBasePath,
@@ -28,11 +28,11 @@ import {
   pathForTab,
   tabFromPath,
   type Tab,
-} from "./navigation.ts";
-import { saveSettings, type UiSettings } from "./storage.ts";
-import { startThemeTransition, type ThemeTransitionContext } from "./theme-transition.ts";
-import { resolveTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
-import type { AgentsListResult } from "./types.ts";
+} from "./navigation.js";
+import { saveSettings, type UiSettings } from "./storage.js";
+import { startThemeTransition, type ThemeTransitionContext } from "./theme-transition.js";
+import { resolveTheme, type ResolvedTheme, type ThemeMode } from "./theme.js";
+import type { AgentsListResult } from "./types.js";
 
 type SettingsHost = {
   settings: UiSettings;

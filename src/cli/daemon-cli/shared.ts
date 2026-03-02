@@ -3,9 +3,9 @@ import {
   resolveGatewayLaunchAgentLabel,
   resolveGatewaySystemdServiceName,
   resolveGatewayWindowsTaskName,
-} from "../../daemon/constants.js";
-import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
-import { formatRuntimeStatus } from "../../daemon/runtime-format.js";
+} from "../../infra/daemon/constants.js";
+import { resolveGatewayLogPaths } from "../../infra/daemon/launchd.js";
+import { formatRuntimeStatus } from "../../infra/daemon/runtime-format.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { formatCliCommand } from "../command-format.js";

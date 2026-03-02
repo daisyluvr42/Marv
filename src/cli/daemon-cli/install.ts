@@ -12,7 +12,7 @@ import {
 } from "../../core/config/config.js";
 import { resolveIsNixMode } from "../../core/config/paths.js";
 import { resolveGatewayAuth } from "../../core/gateway/auth.js";
-import { resolveGatewayService } from "../../daemon/service.js";
+import { resolveGatewayService } from "../../infra/daemon/service.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
 import {

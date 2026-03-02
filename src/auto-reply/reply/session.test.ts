@@ -6,7 +6,7 @@ import { buildModelAliasIndex } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import { saveSessionStore } from "../../core/config/sessions.js";
-import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
+import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.js";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
 import { applyResetModelOverride } from "./session-reset-model.js";
 import { prependSystemEvents } from "./session-updates.js";

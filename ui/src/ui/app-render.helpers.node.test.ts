@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseSessionKey, resolveSessionDisplayName } from "./app-render.helpers.ts";
-import type { SessionsListResult } from "./types.ts";
+import { parseSessionKey, resolveSessionDisplayName } from "./app-render.helpers.js";
+import type { SessionsListResult } from "./types.js";
 
 type SessionRow = SessionsListResult["sessions"][number];
 

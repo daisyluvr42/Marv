@@ -40,7 +40,7 @@ vi.mock("../../../routing/session-key.js", () => ({
   normalizeMainKey: () => null,
 }));
 
-vi.mock("../../../infra/heartbeat-visibility.js", () => ({
+vi.mock("../../../infra/heartbeat/heartbeat-visibility.js", () => ({
   resolveHeartbeatVisibility: () => state.visibility,
 }));
 
@@ -57,7 +57,7 @@ vi.mock("./session-snapshot.js", () => ({
   getSessionSnapshot: () => state.snapshot,
 }));
 
-vi.mock("../../../infra/heartbeat-events.js", () => ({
+vi.mock("../../../infra/heartbeat/heartbeat-events.js", () => ({
   emitHeartbeatEvent: (event: unknown) => state.events.push(event),
   resolveIndicatorType: (status: string) => `indicator:${status}`,
 }));

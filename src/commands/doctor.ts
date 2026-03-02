@@ -14,7 +14,7 @@ import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../core/co
 import { logConfigUpdated } from "../core/config/logging.js";
 import { resolveGatewayAuth } from "../core/gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../core/gateway/call.js";
-import { resolveGatewayService } from "../daemon/service.js";
+import { resolveGatewayService } from "../infra/daemon/service.js";
 import { resolveMarvPackageRoot } from "../infra/marv-root.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";

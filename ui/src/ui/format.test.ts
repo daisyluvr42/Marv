@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRelativeTimestamp, stripThinkingTags } from "./format.ts";
+import { formatRelativeTimestamp, stripThinkingTags } from "./format.js";
 
 describe("formatAgo", () => {
   it("returns 'in <1m' for timestamps less than 60s in the future", () => {

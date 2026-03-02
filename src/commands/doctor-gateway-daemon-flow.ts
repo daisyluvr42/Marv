@@ -4,17 +4,17 @@ import { resolveGatewayPort } from "../core/config/config.js";
 import {
   resolveGatewayLaunchAgentLabel,
   resolveNodeLaunchAgentLabel,
-} from "../daemon/constants.js";
-import { readLastGatewayErrorLine } from "../daemon/diagnostics.js";
+} from "../infra/daemon/constants.js";
+import { readLastGatewayErrorLine } from "../infra/daemon/diagnostics.js";
 import {
   isLaunchAgentListed,
   isLaunchAgentLoaded,
   launchAgentPlistExists,
   repairLaunchAgentBootstrap,
-} from "../daemon/launchd.js";
-import { resolveGatewayService } from "../daemon/service.js";
-import { renderSystemdUnavailableHints } from "../daemon/systemd-hints.js";
-import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
+} from "../infra/daemon/launchd.js";
+import { resolveGatewayService } from "../infra/daemon/service.js";
+import { renderSystemdUnavailableHints } from "../infra/daemon/systemd-hints.js";
+import { isSystemdUserServiceAvailable } from "../infra/daemon/systemd.js";
 import { formatPortDiagnostics, inspectPortUsage } from "../infra/ports.js";
 import { isWSL } from "../infra/wsl.js";
 import type { RuntimeEnv } from "../runtime.js";

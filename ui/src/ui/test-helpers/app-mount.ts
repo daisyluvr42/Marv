@@ -1,5 +1,5 @@
 import { afterEach, beforeEach } from "vitest";
-import { MarvApp } from "../app.ts";
+import { MarvApp } from "../app.js";
 
 export function mountApp(pathname: string) {
   window.history.replaceState({}, "", pathname);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectTextDirection } from "./text-direction.ts";
+import { detectTextDirection } from "./text-direction.js";
 
 describe("detectTextDirection", () => {
   it("returns ltr for null and empty input", () => {

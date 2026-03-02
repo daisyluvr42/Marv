@@ -1,4 +1,4 @@
-import { t } from "../i18n/index.ts";
+import { t } from "../i18n/index.js";
 import type { IconName } from "./icons.js";
 
 export const TAB_GROUPS = [

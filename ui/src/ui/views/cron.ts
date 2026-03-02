@@ -1,9 +1,9 @@
 import { html, nothing } from "lit";
-import { formatRelativeTimestamp, formatMs } from "../format.ts";
-import { pathForTab } from "../navigation.ts";
-import { formatCronSchedule, formatNextRun } from "../presenter.ts";
-import type { ChannelUiMetaEntry, CronJob, CronRunLogEntry, CronStatus } from "../types.ts";
-import type { CronFormState } from "../ui-types.ts";
+import { formatRelativeTimestamp, formatMs } from "../format.js";
+import { pathForTab } from "../navigation.js";
+import { formatCronSchedule, formatNextRun } from "../presenter.js";
+import type { ChannelUiMetaEntry, CronJob, CronRunLogEntry, CronStatus } from "../types.js";
+import type { CronFormState } from "../ui-types.js";
 
 export type CronProps = {
   basePath: string;

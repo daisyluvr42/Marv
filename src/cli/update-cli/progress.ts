@@ -1,10 +1,10 @@
 import { spinner } from "@clack/prompts";
-import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
+import { formatDurationPrecise } from "../../infra/format-time/format-duration.js";
 import type {
   UpdateRunResult,
   UpdateStepInfo,
   UpdateStepProgress,
-} from "../../infra/update-runner.js";
+} from "../../infra/update/update-runner.js";
 import { defaultRuntime } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";
 import type { UpdateCommandOptions } from "./shared.js";

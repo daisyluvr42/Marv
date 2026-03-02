@@ -6,24 +6,24 @@ import {
 } from "../../commands/doctor-completion.js";
 import { doctorCommand } from "../../commands/doctor.js";
 import { readConfigFileSnapshot, writeConfigFile } from "../../core/config/config.js";
-import { resolveGatewayService } from "../../daemon/service.js";
+import { resolveGatewayService } from "../../infra/daemon/service.js";
 import {
   channelToNpmTag,
   DEFAULT_GIT_CHANNEL,
   DEFAULT_PACKAGE_CHANNEL,
   normalizeUpdateChannel,
-} from "../../infra/update-channels.js";
+} from "../../infra/update/update-channels.js";
 import {
   compareSemverStrings,
   resolveNpmChannelTag,
   checkUpdateStatus,
-} from "../../infra/update-check.js";
+} from "../../infra/update/update-check.js";
 import {
   cleanupGlobalRenameDirs,
   globalInstallArgs,
   resolveGlobalPackageRoot,
-} from "../../infra/update-global.js";
-import { runGatewayUpdate, type UpdateRunResult } from "../../infra/update-runner.js";
+} from "../../infra/update/update-global.js";
+import { runGatewayUpdate, type UpdateRunResult } from "../../infra/update/update-runner.js";
 import { syncPluginsForUpdateChannel, updateNpmInstalledPlugins } from "../../plugins/update.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";

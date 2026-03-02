@@ -1,6 +1,6 @@
 import { LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { i18n, I18nController, isSupportedLocale } from "../i18n/index.ts";
+import { i18n, I18nController, isSupportedLocale } from "../i18n/index.js";
 import {
   handleChannelConfigReload as handleChannelConfigReloadInternal,
   handleChannelConfigSave as handleChannelConfigSaveInternal,
@@ -13,29 +13,29 @@ import {
   handleWhatsAppLogout as handleWhatsAppLogoutInternal,
   handleWhatsAppStart as handleWhatsAppStartInternal,
   handleWhatsAppWait as handleWhatsAppWaitInternal,
-} from "./app-channels.ts";
+} from "./app-channels.js";
 import {
   handleAbortChat as handleAbortChatInternal,
   handleSendChat as handleSendChatInternal,
   removeQueuedMessage as removeQueuedMessageInternal,
-} from "./app-chat.ts";
-import { DEFAULT_CRON_FORM, DEFAULT_LOG_LEVEL_FILTERS } from "./app-defaults.ts";
-import type { EventLogEntry } from "./app-events.ts";
-import { connectGateway as connectGatewayInternal } from "./app-gateway.ts";
+} from "./app-chat.js";
+import { DEFAULT_CRON_FORM, DEFAULT_LOG_LEVEL_FILTERS } from "./app-defaults.js";
+import type { EventLogEntry } from "./app-events.js";
+import { connectGateway as connectGatewayInternal } from "./app-gateway.js";
 import {
   handleConnected,
   handleDisconnected,
   handleFirstUpdated,
   handleUpdated,
-} from "./app-lifecycle.ts";
-import { renderApp } from "./app-render.ts";
+} from "./app-lifecycle.js";
+import { renderApp } from "./app-render.js";
 import {
   exportLogs as exportLogsInternal,
   handleChatScroll as handleChatScrollInternal,
   handleLogsScroll as handleLogsScrollInternal,
   resetChatScroll as resetChatScrollInternal,
   scheduleChatScroll as scheduleChatScrollInternal,
-} from "./app-scroll.ts";
+} from "./app-scroll.js";
 import {
   applySettings as applySettingsInternal,
   loadCron as loadCronInternal,
@@ -43,23 +43,23 @@ import {
   setTab as setTabInternal,
   setTheme as setThemeInternal,
   onPopState as onPopStateInternal,
-} from "./app-settings.ts";
+} from "./app-settings.js";
 import {
   resetToolStream as resetToolStreamInternal,
   type ToolStreamEntry,
   type CompactionStatus,
-} from "./app-tool-stream.ts";
-import type { AppViewState } from "./app-view-state.ts";
-import { normalizeAssistantIdentity } from "./assistant-identity.ts";
-import { loadAssistantIdentity as loadAssistantIdentityInternal } from "./controllers/assistant-identity.ts";
-import type { DevicePairingList } from "./controllers/devices.ts";
-import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
-import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-import type { SkillMessage } from "./controllers/skills.ts";
-import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
-import type { Tab } from "./navigation.ts";
-import { loadSettings, type UiSettings } from "./storage.ts";
-import type { ResolvedTheme, ThemeMode } from "./theme.ts";
+} from "./app-tool-stream.js";
+import type { AppViewState } from "./app-view-state.js";
+import { normalizeAssistantIdentity } from "./assistant-identity.js";
+import { loadAssistantIdentity as loadAssistantIdentityInternal } from "./controllers/assistant-identity.js";
+import type { DevicePairingList } from "./controllers/devices.js";
+import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
+import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.js";
+import type { SkillMessage } from "./controllers/skills.js";
+import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.js";
+import type { Tab } from "./navigation.js";
+import { loadSettings, type UiSettings } from "./storage.js";
+import type { ResolvedTheme, ThemeMode } from "./theme.js";
 import type {
   AgentsListResult,
   AgentsFilesListResult,
@@ -78,9 +78,9 @@ import type {
   SkillStatusReport,
   StatusSummary,
   NostrProfile,
-} from "./types.ts";
-import { type ChatAttachment, type ChatQueueItem, type CronFormState } from "./ui-types.ts";
-import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
+} from "./types.js";
+import { type ChatAttachment, type ChatQueueItem, type CronFormState } from "./ui-types.js";
+import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.js";
 
 declare global {
   interface Window {

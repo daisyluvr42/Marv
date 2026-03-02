@@ -4,7 +4,7 @@ import type { CliDeps } from "../../cli/deps.js";
 import { startGmailWatcherWithLogs } from "../../hooks/gmail-watcher-lifecycle.js";
 import { stopGmailWatcher } from "../../hooks/gmail-watcher.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
-import type { HeartbeatRunner } from "../../infra/heartbeat-runner.js";
+import type { HeartbeatRunner } from "../../infra/heartbeat/heartbeat-runner.js";
 import { resetDirectoryCache } from "../../infra/outbound/target-resolver.js";
 import {
   deferGatewayRestartUntilIdle,

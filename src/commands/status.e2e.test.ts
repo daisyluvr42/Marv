@@ -254,7 +254,7 @@ vi.mock("../infra/os-summary.js", () => ({
     label: "macos 14.0 (arm64)",
   }),
 }));
-vi.mock("../infra/update-check.js", () => ({
+vi.mock("../infra/update/update-check.js", () => ({
   checkUpdateStatus: vi.fn().mockResolvedValue({
     root: "/tmp/marv",
     installKind: "git",
@@ -286,7 +286,7 @@ vi.mock("../core/config/config.js", async (importOriginal) => {
     loadConfig: () => ({ session: {} }),
   };
 });
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../infra/daemon/service.js", () => ({
   resolveGatewayService: () => ({
     label: "LaunchAgent",
     loadedText: "loaded",
@@ -299,7 +299,7 @@ vi.mock("../daemon/service.js", () => ({
     }),
   }),
 }));
-vi.mock("../daemon/node-service.js", () => ({
+vi.mock("../infra/daemon/node-service.js", () => ({
   resolveNodeService: () => ({
     label: "LaunchAgent",
     loadedText: "loaded",

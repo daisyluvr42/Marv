@@ -1,5 +1,5 @@
-import type { GatewayBrowserClient } from "../gateway.ts";
-import type { SkillStatusReport } from "../types.ts";
+import type { GatewayBrowserClient } from "../gateway.js";
+import type { SkillStatusReport } from "../types.js";
 
 export type SkillsState = {
   client: GatewayBrowserClient | null;

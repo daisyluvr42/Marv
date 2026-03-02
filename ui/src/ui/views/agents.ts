@@ -7,13 +7,13 @@ import type {
   CronJob,
   CronStatus,
   SkillStatusReport,
-} from "../types.ts";
+} from "../types.js";
 import {
   renderAgentFiles,
   renderAgentChannels,
   renderAgentCron,
-} from "./agents-panels-status-files.ts";
-import { renderAgentTools, renderAgentSkills } from "./agents-panels-tools-skills.ts";
+} from "./agents-panels-status-files.js";
+import { renderAgentTools, renderAgentSkills } from "./agents-panels-tools-skills.js";
 import {
   agentBadgeText,
   buildAgentContext,
@@ -26,7 +26,7 @@ import {
   resolveModelFallbacks,
   resolveModelLabel,
   resolveModelPrimary,
-} from "./agents-utils.ts";
+} from "./agents-utils.js";
 
 export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
 

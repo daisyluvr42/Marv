@@ -2,7 +2,7 @@ import path from "node:path";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";
-import { requestHeartbeatNow } from "../../infra/heartbeat-wake.js";
+import { requestHeartbeatNow } from "../../infra/heartbeat/heartbeat-wake.js";
 import { mergePathPrepend } from "../../infra/path-prepend.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import type { ProcessSession } from "./bash-process-registry.js";

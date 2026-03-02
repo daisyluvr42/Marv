@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prependSystemEvents } from "../auto-reply/reply/session-updates.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { resolveMainSessionKey } from "../core/config/sessions.js";
-import { isCronSystemEvent } from "./heartbeat-runner.js";
+import { isCronSystemEvent } from "./heartbeat/heartbeat-runner.js";
 import { enqueueSystemEvent, peekSystemEvents, resetSystemEventsForTest } from "./system-events.js";
 
 const appendLedgerEventMock = vi.hoisted(() => vi.fn());

@@ -6,7 +6,7 @@ import {
   resolveGatewayLaunchAgentLabel,
   resolveGatewaySystemdServiceName,
   resolveGatewayWindowsTaskName,
-} from "../../daemon/constants.js";
+} from "../../infra/daemon/constants.js";
 
 /**
  * Shell-escape a string for embedding in single-quoted shell arguments.

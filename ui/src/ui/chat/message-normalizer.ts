@@ -2,7 +2,7 @@
  * Message normalization utilities for chat rendering.
  */
 
-import type { NormalizedMessage, MessageContentItem } from "../types/chat-types.ts";
+import type { NormalizedMessage, MessageContentItem } from "../types/chat-types.js";
 
 /**
  * Normalize a raw message object into a consistent structure.

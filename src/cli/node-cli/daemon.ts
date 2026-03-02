@@ -8,10 +8,10 @@ import {
   resolveNodeLaunchAgentLabel,
   resolveNodeSystemdServiceName,
   resolveNodeWindowsTaskName,
-} from "../../daemon/constants.js";
-import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
-import { resolveNodeService } from "../../daemon/node-service.js";
-import type { GatewayServiceRuntime } from "../../daemon/service-runtime.js";
+} from "../../infra/daemon/constants.js";
+import { resolveGatewayLogPaths } from "../../infra/daemon/launchd.js";
+import { resolveNodeService } from "../../infra/daemon/node-service.js";
+import type { GatewayServiceRuntime } from "../../infra/daemon/service-runtime.js";
 import { loadNodeHostConfig } from "../../node-host/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import { colorize } from "../../terminal/theme.js";

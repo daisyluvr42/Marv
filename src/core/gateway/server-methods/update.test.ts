@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RestartSentinelPayload } from "../../../infra/restart-sentinel.js";
-import type { UpdateRunResult } from "../../../infra/update-runner.js";
+import type { UpdateRunResult } from "../../../infra/update/update-runner.js";
 
 // Capture the sentinel payload written during update.run
 let capturedPayload: RestartSentinelPayload | undefined;
@@ -51,11 +51,11 @@ vi.mock("../../../infra/restart.js", () => ({
   scheduleGatewaySigusr1Restart: scheduleGatewaySigusr1RestartMock,
 }));
 
-vi.mock("../../../infra/update-channels.js", () => ({
+vi.mock("../../../infra/update/update-channels.js", () => ({
   normalizeUpdateChannel: () => undefined,
 }));
 
-vi.mock("../../../infra/update-runner.js", () => ({
+vi.mock("../../../infra/update/update-runner.js", () => ({
   runGatewayUpdate: runGatewayUpdateMock,
 }));
 

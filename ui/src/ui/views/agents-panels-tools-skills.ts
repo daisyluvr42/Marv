@@ -1,6 +1,6 @@
 import { html, nothing } from "lit";
 import { normalizeToolName } from "../../../../src/agents/tools/tool-policy.js";
-import type { SkillStatusEntry, SkillStatusReport } from "../types.ts";
+import type { SkillStatusEntry, SkillStatusReport } from "../types.js";
 import {
   isAllowedByPolicy,
   matchesList,
@@ -8,14 +8,14 @@ import {
   resolveAgentConfig,
   resolveToolProfile,
   TOOL_SECTIONS,
-} from "./agents-utils.ts";
-import type { SkillGroup } from "./skills-grouping.ts";
-import { groupSkills } from "./skills-grouping.ts";
+} from "./agents-utils.js";
+import type { SkillGroup } from "./skills-grouping.js";
+import { groupSkills } from "./skills-grouping.js";
 import {
   computeSkillMissing,
   computeSkillReasons,
   renderSkillStatusChips,
-} from "./skills-shared.ts";
+} from "./skills-shared.js";
 
 export function renderAgentTools(params: {
   agentId: string;

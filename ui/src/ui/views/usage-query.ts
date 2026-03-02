@@ -1,5 +1,5 @@
-import { extractQueryTerms } from "../usage-helpers.ts";
-import { CostDailyEntry, UsageAggregates, UsageSessionEntry } from "./usageTypes.ts";
+import { extractQueryTerms } from "../usage-helpers.js";
+import { CostDailyEntry, UsageAggregates, UsageSessionEntry } from "./usageTypes.js";
 
 function downloadTextFile(filename: string, content: string, type = "text/plain") {
   const blob = new Blob([content], { type: `${type};charset=utf-8` });

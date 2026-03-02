@@ -16,17 +16,17 @@ vi.mock("../core/config/paths.js", () => ({
   resolveIsNixMode: mocks.resolveIsNixMode,
 }));
 
-vi.mock("../daemon/inspect.js", () => ({
+vi.mock("../infra/daemon/inspect.js", () => ({
   findExtraGatewayServices: vi.fn().mockResolvedValue([]),
   renderGatewayServiceCleanupHints: vi.fn().mockReturnValue([]),
 }));
 
-vi.mock("../daemon/runtime-paths.js", () => ({
+vi.mock("../infra/daemon/runtime-paths.js", () => ({
   renderSystemNodeWarning: vi.fn().mockReturnValue(undefined),
   resolveSystemNodeInfo: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("../daemon/service-audit.js", () => ({
+vi.mock("../infra/daemon/service-audit.js", () => ({
   auditGatewayServiceConfig: mocks.auditGatewayServiceConfig,
   needsNodeRuntimeMigration: vi.fn(() => false),
   SERVICE_AUDIT_CODES: {
@@ -34,7 +34,7 @@ vi.mock("../daemon/service-audit.js", () => ({
   },
 }));
 
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../infra/daemon/service.js", () => ({
   resolveGatewayService: () => ({
     readCommand: mocks.readCommand,
     install: mocks.install,

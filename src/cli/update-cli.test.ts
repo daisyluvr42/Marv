@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarvConfig, ConfigFileSnapshot } from "../core/config/types.marv.js";
-import type { UpdateRunResult } from "../infra/update-runner.js";
+import type { UpdateRunResult } from "../infra/update/update-runner.js";
 import { captureEnv } from "../test-utils/env.js";
 
 const confirm = vi.fn();
@@ -26,7 +26,7 @@ vi.mock("@clack/prompts", () => ({
 }));
 
 // Mock the update-runner module
-vi.mock("../infra/update-runner.js", () => ({
+vi.mock("../infra/update/update-runner.js", () => ({
   runGatewayUpdate: vi.fn(),
 }));
 
@@ -39,8 +39,8 @@ vi.mock("../core/config/config.js", () => ({
   writeConfigFile: vi.fn(),
 }));
 
-vi.mock("../infra/update-check.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../infra/update-check.js")>();
+vi.mock("../infra/update/update-check.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../infra/update/update-check.js")>();
   return {
     ...actual,
     checkUpdateStatus: vi.fn(),
@@ -78,7 +78,7 @@ vi.mock("./update-cli/shared.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../infra/daemon/service.js", () => ({
   resolveGatewayService: vi.fn(() => ({
     isLoaded: (...args: unknown[]) => serviceLoaded(...args),
   })),
@@ -107,11 +107,11 @@ vi.mock("../runtime.js", () => ({
   },
 }));
 
-const { runGatewayUpdate } = await import("../infra/update-runner.js");
+const { runGatewayUpdate } = await import("../infra/update/update-runner.js");
 const { resolveMarvPackageRoot } = await import("../infra/marv-root.js");
 const { readConfigFileSnapshot, writeConfigFile } = await import("../core/config/config.js");
 const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
-  await import("../infra/update-check.js");
+  await import("../infra/update/update-check.js");
 const { runCommandWithTimeout } = await import("../process/exec.js");
 const { runDaemonRestart } = await import("./daemon-cli.js");
 const { doctorCommand } = await import("../commands/doctor.js");

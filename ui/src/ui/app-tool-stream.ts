@@ -1,4 +1,4 @@
-import { truncateText } from "./format.ts";
+import { truncateText } from "./format.js";
 
 const TOOL_STREAM_LIMIT = 50;
 const TOOL_STREAM_THROTTLE_MS = 80;

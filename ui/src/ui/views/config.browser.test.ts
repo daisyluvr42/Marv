@@ -1,6 +1,6 @@
 import { render } from "lit";
 import { describe, expect, it, vi } from "vitest";
-import { renderConfig } from "./config.ts";
+import { renderConfig } from "./config.js";
 
 describe("config view", () => {
   const baseProps = () => ({

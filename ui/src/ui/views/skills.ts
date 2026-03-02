@@ -1,13 +1,13 @@
 import { html, nothing } from "lit";
-import type { SkillMessageMap } from "../controllers/skills.ts";
-import { clampText } from "../format.ts";
-import type { SkillStatusEntry, SkillStatusReport } from "../types.ts";
-import { groupSkills } from "./skills-grouping.ts";
+import type { SkillMessageMap } from "../controllers/skills.js";
+import { clampText } from "../format.js";
+import type { SkillStatusEntry, SkillStatusReport } from "../types.js";
+import { groupSkills } from "./skills-grouping.js";
 import {
   computeSkillMissing,
   computeSkillReasons,
   renderSkillStatusChips,
-} from "./skills-shared.ts";
+} from "./skills-shared.js";
 
 export type SkillsProps = {
   loading: boolean;

@@ -7,8 +7,8 @@ import { readConfigFileSnapshot } from "../../core/config/config.js";
 import {
   normalizeUpdateChannel,
   resolveUpdateChannelDisplay,
-} from "../../infra/update-channels.js";
-import { checkUpdateStatus } from "../../infra/update-check.js";
+} from "../../infra/update/update-channels.js";
+import { checkUpdateStatus } from "../../infra/update/update-check.js";
 import { defaultRuntime } from "../../runtime.js";
 import { renderTable } from "../../terminal/table.js";
 import { theme } from "../../terminal/theme.js";

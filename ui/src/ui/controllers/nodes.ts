@@ -1,4 +1,4 @@
-import type { GatewayBrowserClient } from "../gateway.ts";
+import type { GatewayBrowserClient } from "../gateway.js";
 
 export type NodesState = {
   client: GatewayBrowserClient | null;

@@ -118,7 +118,7 @@ export default defineConfig({
         "src/logging.ts",
         "src/cli/**",
         "src/commands/**",
-        "src/daemon/**",
+        "src/infra/daemon/**",
         "src/hooks/**",
         "src/macos/**",
 
@@ -146,7 +146,7 @@ export default defineConfig({
         // Hard-to-unit-test modules; exercised indirectly by integration tests.
         "src/infra/state-migrations.ts",
         "src/infra/skills-remote.ts",
-        "src/infra/update-check.ts",
+        "src/infra/update/update-check.ts",
         "src/infra/ports-inspect.ts",
         "src/infra/outbound/outbound-session.ts",
         "src/memory/batch-gemini.ts",

@@ -1,14 +1,14 @@
 import { html, svg, nothing } from "lit";
-import { formatDurationCompact } from "../../../../src/infra/format-time/format-duration.ts";
-import { parseToolSummary } from "../usage-helpers.ts";
-import { charsToTokens, formatCost, formatTokens } from "./usage-metrics.ts";
-import { renderInsightList } from "./usage-render-overview.ts";
+import { formatDurationCompact } from "../../../../src/infra/format-time/format-duration.js";
+import { parseToolSummary } from "../usage-helpers.js";
+import { charsToTokens, formatCost, formatTokens } from "./usage-metrics.js";
+import { renderInsightList } from "./usage-render-overview.js";
 import {
   SessionLogEntry,
   SessionLogRole,
   TimeSeriesPoint,
   UsageSessionEntry,
-} from "./usageTypes.ts";
+} from "./usageTypes.js";
 
 // Chart constants
 const CHART_BAR_WIDTH_RATIO = 0.75; // Fraction of slot used for bar (rest is gap)

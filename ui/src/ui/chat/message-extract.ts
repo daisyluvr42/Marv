@@ -1,5 +1,5 @@
 import { stripEnvelope } from "../../../../src/shared/chat-envelope.js";
-import { stripThinkingTags } from "../format.ts";
+import { stripThinkingTags } from "../format.js";
 
 const textCache = new WeakMap<object, string | null>();
 const thinkingCache = new WeakMap<object, string | null>();

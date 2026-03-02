@@ -1,14 +1,14 @@
 import { parseAgentSessionKey } from "../../../src/sessions/session-key-utils.js";
-import { scheduleChatScroll } from "./app-scroll.ts";
-import { setLastActiveSessionKey } from "./app-settings.ts";
-import { resetToolStream } from "./app-tool-stream.ts";
-import type { MarvApp } from "./app.ts";
-import { abortChatRun, loadChatHistory, sendChatMessage } from "./controllers/chat.ts";
-import { loadSessions } from "./controllers/sessions.ts";
-import type { GatewayHelloOk } from "./gateway.ts";
-import { normalizeBasePath } from "./navigation.ts";
-import type { ChatAttachment, ChatQueueItem } from "./ui-types.ts";
-import { generateUUID } from "./uuid.ts";
+import { scheduleChatScroll } from "./app-scroll.js";
+import { setLastActiveSessionKey } from "./app-settings.js";
+import { resetToolStream } from "./app-tool-stream.js";
+import type { MarvApp } from "./app.js";
+import { abortChatRun, loadChatHistory, sendChatMessage } from "./controllers/chat.js";
+import { loadSessions } from "./controllers/sessions.js";
+import type { GatewayHelloOk } from "./gateway.js";
+import { normalizeBasePath } from "./navigation.js";
+import type { ChatAttachment, ChatQueueItem } from "./ui-types.js";
+import { generateUUID } from "./uuid.js";
 
 export type ChatHost = {
   connected: boolean;

@@ -4,7 +4,7 @@ import {
   checkUpdateStatus,
   compareSemverStrings,
   type UpdateCheckResult,
-} from "../infra/update-check.js";
+} from "../infra/update/update-check.js";
 import { VERSION } from "../version.js";
 
 export async function getUpdateCheckResult(params: {

@@ -7,7 +7,7 @@ import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-
 import { CONFIG_PATH } from "../config/config.js";
 import type { GatewayClient } from "./client.js";
 
-vi.mock("../../infra/update-runner.js", () => ({
+vi.mock("../../infra/update/update-runner.js", () => ({
   runGatewayUpdate: vi.fn(async () => ({
     status: "ok",
     mode: "git",
@@ -17,7 +17,7 @@ vi.mock("../../infra/update-runner.js", () => ({
   })),
 }));
 
-import { runGatewayUpdate } from "../../infra/update-runner.js";
+import { runGatewayUpdate } from "../../infra/update/update-runner.js";
 import { connectGatewayClient } from "./test-helpers.e2e.js";
 import { connectOk, installGatewayTestHooks, onceMessage, rpcReq } from "./test-helpers.js";
 import { installConnectedControlUiServerSuite } from "./test-with-server.js";

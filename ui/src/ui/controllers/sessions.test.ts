@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deleteSession, deleteSessionAndRefresh, type SessionsState } from "./sessions.ts";
+import { deleteSession, deleteSessionAndRefresh, type SessionsState } from "./sessions.js";
 
 type RequestFn = (method: string, params?: unknown) => Promise<unknown>;
 

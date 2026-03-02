@@ -1,14 +1,14 @@
-import type { EventLogEntry } from "./app-events.ts";
-import type { CompactionStatus } from "./app-tool-stream.ts";
-import type { DevicePairingList } from "./controllers/devices.ts";
-import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
-import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-import type { SkillMessage } from "./controllers/skills.ts";
-import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
-import type { Tab } from "./navigation.ts";
-import type { UiSettings } from "./storage.ts";
-import type { ThemeTransitionContext } from "./theme-transition.ts";
-import type { ThemeMode } from "./theme.ts";
+import type { EventLogEntry } from "./app-events.js";
+import type { CompactionStatus } from "./app-tool-stream.js";
+import type { DevicePairingList } from "./controllers/devices.js";
+import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
+import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.js";
+import type { SkillMessage } from "./controllers/skills.js";
+import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.js";
+import type { Tab } from "./navigation.js";
+import type { UiSettings } from "./storage.js";
+import type { ThemeTransitionContext } from "./theme-transition.js";
+import type { ThemeMode } from "./theme.js";
 import type {
   AgentsListResult,
   AgentsFilesListResult,
@@ -30,10 +30,10 @@ import type {
   SessionsListResult,
   SkillStatusReport,
   StatusSummary,
-} from "./types.ts";
-import type { ChatAttachment, ChatQueueItem, CronFormState } from "./ui-types.ts";
-import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
-import type { SessionLogEntry } from "./views/usage.ts";
+} from "./types.js";
+import type { ChatAttachment, ChatQueueItem, CronFormState } from "./ui-types.js";
+import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.js";
+import type { SessionLogEntry } from "./views/usage.js";
 
 export type AppViewState = {
   settings: UiSettings;

@@ -27,7 +27,7 @@ const buildSessionLookup = (
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: vi.fn(),
 }));
-vi.mock("../../infra/heartbeat-wake.js", () => ({
+vi.mock("../../infra/heartbeat/heartbeat-wake.js", () => ({
   requestHeartbeatNow: vi.fn(),
 }));
 vi.mock("../../commands/agent.js", () => ({
@@ -52,7 +52,7 @@ vi.mock("./session-utils.js", () => ({
 import type { CliDeps } from "../../cli/deps.js";
 import { agentCommand } from "../../commands/agent.js";
 import type { HealthSummary } from "../../commands/health.js";
-import { requestHeartbeatNow } from "../../infra/heartbeat-wake.js";
+import { requestHeartbeatNow } from "../../infra/heartbeat/heartbeat-wake.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { updateSessionStore } from "../config/sessions.js";
 import type { NodeEventContext } from "./server-node-events-types.js";

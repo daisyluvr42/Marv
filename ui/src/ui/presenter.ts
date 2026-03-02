@@ -1,5 +1,5 @@
-import { formatRelativeTimestamp, formatDurationHuman, formatMs } from "./format.ts";
-import type { CronJob, GatewaySessionRow, PresenceEntry } from "./types.ts";
+import { formatRelativeTimestamp, formatDurationHuman, formatMs } from "./format.js";
+import type { CronJob, GatewaySessionRow, PresenceEntry } from "./types.js";
 
 export function formatPresenceSummary(entry: PresenceEntry): string {
   const host = entry.host ?? "unknown";

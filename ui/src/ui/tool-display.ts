@@ -11,7 +11,7 @@ import {
   resolveWriteDetail,
   type ToolDisplaySpec as ToolDisplaySpecBase,
 } from "../../../src/agents/tools/tool-display-common.js";
-import type { IconName } from "./icons.ts";
+import type { IconName } from "./icons.js";
 import rawConfig from "./tool-display.json" with { type: "json" };
 
 type ToolDisplaySpec = ToolDisplaySpecBase & {

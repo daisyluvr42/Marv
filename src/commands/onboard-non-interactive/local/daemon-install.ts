@@ -1,6 +1,6 @@
 import type { MarvConfig } from "../../../core/config/config.js";
-import { resolveGatewayService } from "../../../daemon/service.js";
-import { isSystemdUserServiceAvailable } from "../../../daemon/systemd.js";
+import { resolveGatewayService } from "../../../infra/daemon/service.js";
+import { isSystemdUserServiceAvailable } from "../../../infra/daemon/systemd.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { buildGatewayInstallPlan, gatewayInstallErrorHint } from "../../daemon-install-helpers.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME, isGatewayDaemonRuntime } from "../../daemon-runtime.js";

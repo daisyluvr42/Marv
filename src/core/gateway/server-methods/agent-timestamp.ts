@@ -1,5 +1,5 @@
 import { resolveUserTimezone } from "../../../agents/date-time.js";
-import { formatZonedTimestamp } from "../../../infra/format-time/format-datetime.ts";
+import { formatZonedTimestamp } from "../../../infra/format-time/format-datetime.js";
 import type { MarvConfig } from "../../config/types.js";
 
 /**

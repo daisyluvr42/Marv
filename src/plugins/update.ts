@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import type { MarvConfig } from "../core/config/config.js";
-import type { UpdateChannel } from "../infra/update-channels.js";
+import type { UpdateChannel } from "../infra/update/update-channels.js";
 import { resolveUserPath } from "../utils.js";
 import { discoverMarvPlugins } from "./discovery.js";
 import { installPluginFromNpmSpec, resolvePluginInstallDir } from "./install.js";

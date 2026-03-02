@@ -1,13 +1,13 @@
-import type { MarvApp } from "./app.ts";
+import type { MarvApp } from "./app.js";
 import {
   loadChannels,
   logoutWhatsApp,
   startWhatsAppLogin,
   waitWhatsAppLogin,
-} from "./controllers/channels.ts";
-import { loadConfig, saveConfig } from "./controllers/config.ts";
-import type { NostrProfile } from "./types.ts";
-import { createNostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
+} from "./controllers/channels.js";
+import { loadConfig, saveConfig } from "./controllers/config.js";
+import type { NostrProfile } from "./types.js";
+import { createNostrProfileFormState } from "./views/channels.nostr-profile-form.js";
 
 export async function handleWhatsAppStart(host: MarvApp, force: boolean) {
   await startWhatsAppLogin(host, force);

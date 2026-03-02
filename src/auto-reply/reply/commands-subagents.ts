@@ -25,7 +25,7 @@ import {
 } from "../../core/config/sessions.js";
 import { callGateway } from "../../core/gateway/call.js";
 import { logVerbose } from "../../globals.js";
-import { formatTimeAgo } from "../../infra/format-time/format-relative.ts";
+import { formatTimeAgo } from "../../infra/format-time/format-relative.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";
 import {

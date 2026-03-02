@@ -1,4 +1,4 @@
-import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
+import type { HeartbeatRunResult } from "../../infra/heartbeat/heartbeat-wake.js";
 import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import { sweepCronRunSessions } from "../session-reaper.js";

@@ -1,5 +1,5 @@
-import { en } from "../locales/en.ts";
-import type { Locale, TranslationMap } from "./types.ts";
+import { en } from "../locales/en.js";
+import type { Locale, TranslationMap } from "./types.js";
 
 type Subscriber = (locale: Locale) => void;
 
@@ -48,11 +48,11 @@ class I18nManager {
       try {
         let module: Record<string, TranslationMap>;
         if (locale === "zh-CN") {
-          module = await import("../locales/zh-CN.ts");
+          module = await import("../locales/zh-CN.js");
         } else if (locale === "zh-TW") {
-          module = await import("../locales/zh-TW.ts");
+          module = await import("../locales/zh-TW.js");
         } else if (locale === "pt-BR") {
-          module = await import("../locales/pt-BR.ts");
+          module = await import("../locales/pt-BR.js");
         } else {
           return;
         }

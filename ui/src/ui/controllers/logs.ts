@@ -1,5 +1,5 @@
-import type { GatewayBrowserClient } from "../gateway.ts";
-import type { LogEntry, LogLevel } from "../types.ts";
+import type { GatewayBrowserClient } from "../gateway.js";
+import type { LogEntry, LogLevel } from "../types.js";
 
 export type LogsState = {
   client: GatewayBrowserClient | null;

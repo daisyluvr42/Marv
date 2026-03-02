@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatToolOutputForSidebar, getTruncatedPreview } from "./tool-helpers.ts";
+import { formatToolOutputForSidebar, getTruncatedPreview } from "./tool-helpers.js";
 
 describe("tool-helpers", () => {
   describe("formatToolOutputForSidebar", () => {

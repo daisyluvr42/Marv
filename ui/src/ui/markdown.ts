@@ -1,6 +1,6 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { truncateText } from "./format.ts";
+import { truncateText } from "./format.js";
 
 marked.setOptions({
   gfm: true,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractQueryTerms, filterSessionsByQuery, parseToolSummary } from "./usage-helpers.ts";
+import { extractQueryTerms, filterSessionsByQuery, parseToolSummary } from "./usage-helpers.js";
 
 describe("usage-helpers", () => {
   it("tokenizes query terms including quoted strings", () => {

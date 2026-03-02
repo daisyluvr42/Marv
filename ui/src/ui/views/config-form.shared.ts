@@ -1,4 +1,4 @@
-import type { ConfigUiHints } from "../types.ts";
+import type { ConfigUiHints } from "../types.js";
 
 export type JsonSchema = {
   type?: string | string[];

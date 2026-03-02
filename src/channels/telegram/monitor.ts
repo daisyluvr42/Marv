@@ -4,7 +4,7 @@ import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import { computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
 import { formatErrorMessage } from "../../infra/errors.js";
-import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
+import { formatDurationPrecise } from "../../infra/format-time/format-duration.js";
 import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { resolveTelegramAccount } from "./accounts.js";

@@ -2,8 +2,8 @@ import {
   CONTROL_UI_BOOTSTRAP_CONFIG_PATH,
   type ControlUiBootstrapConfig,
 } from "../../../../src/core/gateway/control-ui-contract.js";
-import { normalizeAssistantIdentity } from "../assistant-identity.ts";
-import { normalizeBasePath } from "../navigation.ts";
+import { normalizeAssistantIdentity } from "../assistant-identity.js";
+import { normalizeBasePath } from "../navigation.js";
 
 export type ControlUiBootstrapState = {
   basePath: string;

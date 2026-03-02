@@ -1,8 +1,8 @@
 import { html, nothing } from "lit";
-import { icons } from "../icons.ts";
-import type { ConfigUiHints } from "../types.ts";
-import { renderNode } from "./config-form.node.ts";
-import { hintForPath, humanize, schemaType, type JsonSchema } from "./config-form.shared.ts";
+import { icons } from "../icons.js";
+import type { ConfigUiHints } from "../types.js";
+import { renderNode } from "./config-form.node.js";
+import { hintForPath, humanize, schemaType, type JsonSchema } from "./config-form.shared.js";
 
 export type ConfigFormProps = {
   schema: JsonSchema | null;

@@ -442,3 +442,47 @@ Phase 3 已完成核心拆分：`agents/` 的主干职责已下沉到 `runner / 
 ### 4) 本阶段结论
 
 Phase 4 已完成核心目标：`gateway` 与 `config` 已进入 `core/` 命名空间，且已通过针对性测试验证，可继续执行 Phase 5（Infra 细分）。
+
+---
+
+## Phase 5 Walkthrough（2026-03-02）
+
+本阶段执行 `Infra 细分`，把与基础设施生命周期最相关的模块按 `daemon / heartbeat / update` 收拢到 `src/infra/` 下的子目录，目标是降低 `src/` 顶层分散度并统一 infra 命名空间。
+
+### 1) 目录迁移结果
+
+已完成以下迁移：
+
+- `src/daemon/` -> `src/infra/daemon/`
+- `src/infra/heartbeat-*.ts`（及相关 test/harness/utils）-> `src/infra/heartbeat/`
+- `src/infra/update-*.ts`（及相关 tests）-> `src/infra/update/`
+
+迁移后，`daemon + heartbeat + update` 三组能力均位于 `src/infra/*` 下，目录语义与职责边界更清晰。
+
+### 2) Import 修复策略
+
+- 先使用 `git mv` 保留 rename 历史
+- 再基于当前工作区 rename 映射执行批量相对导入重写（覆盖 `src/`, `ui/`, `test/`, `scripts/`, `extensions/`, `packages/`）
+- 批量重写结果：
+  - 第一次（heartbeat/update）：`Adjusted imports in 59 files`
+  - 第二次（补齐 daemon 后）：`Adjusted imports in 203 files (585 import rewrites)`
+- 额外手动确认了 `src/infra/heartbeat/*` 中 extension 测试导入路径，保持为 `../../../extensions/*`（从新目录层级计算后的正确路径）
+
+### 3) 验证结果
+
+- `npx tsc --noEmit`
+  - 与本阶段迁移相关的路径错误已清零
+  - 当前剩余报错仍为仓库既有基线问题：
+    - `src/core/gateway/hooks.ts` (`trim` on `never`)
+    - `src/core/gateway/server.chat.gateway-server-chat-b.e2e.test.ts` 签名不匹配
+- `pnpm test -- src/infra/daemon src/infra/update`
+  - 11 个测试文件通过（128 tests passed）
+- `pnpm test -- src/infra/heartbeat`
+  - 6 个 heartbeat 测试文件通过；5 个 suite 失败
+  - 失败原因是既有基线问题：extension channel 文件导入 `marv/plugin-sdk` 解析失败（同样可在 `src/infra/outbound/outbound.test.ts` 复现），非本次路径迁移新增
+- `pnpm build`
+  - 仍被既有问题阻断：`Cannot resolve entry module src/extensionAPI.ts`
+
+### 4) 本阶段结论
+
+Phase 5 已完成核心目标：`daemon / heartbeat / update` 已统一进入 `src/infra/` 命名空间，并完成大范围导入修复。类型检查未引入新的迁移路径错误；测试层面仅剩仓库既有基线阻断，可在此基础上继续后续阶段或专项修复基线问题。

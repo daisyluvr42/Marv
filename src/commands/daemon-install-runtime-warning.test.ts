@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   renderSystemNodeWarning: vi.fn(),
 }));
 
-vi.mock("../daemon/runtime-paths.js", () => ({
+vi.mock("../infra/daemon/runtime-paths.js", () => ({
   resolveSystemNodeInfo: mocks.resolveSystemNodeInfo,
   renderSystemNodeWarning: mocks.renderSystemNodeWarning,
 }));

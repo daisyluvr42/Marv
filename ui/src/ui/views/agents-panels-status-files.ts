@@ -1,11 +1,11 @@
 import { html, nothing } from "lit";
-import { formatRelativeTimestamp } from "../format.ts";
+import { formatRelativeTimestamp } from "../format.js";
 import {
   formatCronPayload,
   formatCronSchedule,
   formatCronState,
   formatNextRun,
-} from "../presenter.ts";
+} from "../presenter.js";
 import type {
   AgentFileEntry,
   AgentsFilesListResult,
@@ -13,8 +13,8 @@ import type {
   ChannelsStatusSnapshot,
   CronJob,
   CronStatus,
-} from "../types.ts";
-import { formatBytes, type AgentContext } from "./agents-utils.ts";
+} from "../types.js";
+import { formatBytes, type AgentContext } from "./agents-utils.js";
 
 function renderAgentContextCard(context: AgentContext, subtitle: string) {
   return html`

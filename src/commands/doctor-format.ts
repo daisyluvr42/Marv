@@ -3,14 +3,14 @@ import {
   resolveGatewayLaunchAgentLabel,
   resolveGatewaySystemdServiceName,
   resolveGatewayWindowsTaskName,
-} from "../daemon/constants.js";
-import { resolveGatewayLogPaths } from "../daemon/launchd.js";
-import { formatRuntimeStatus } from "../daemon/runtime-format.js";
-import type { GatewayServiceRuntime } from "../daemon/service-runtime.js";
+} from "../infra/daemon/constants.js";
+import { resolveGatewayLogPaths } from "../infra/daemon/launchd.js";
+import { formatRuntimeStatus } from "../infra/daemon/runtime-format.js";
+import type { GatewayServiceRuntime } from "../infra/daemon/service-runtime.js";
 import {
   isSystemdUnavailableDetail,
   renderSystemdUnavailableHints,
-} from "../daemon/systemd-hints.js";
+} from "../infra/daemon/systemd-hints.js";
 import { isWSLEnv } from "../infra/wsl.js";
 import { getResolvedLoggerSettings } from "../logging.js";
 

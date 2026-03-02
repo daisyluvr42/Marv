@@ -3,7 +3,7 @@ import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import { createOutboundSendDeps } from "../../cli/outbound-send-deps.js";
 import { agentCommand } from "../../commands/agent.js";
-import { requestHeartbeatNow } from "../../infra/heartbeat-wake.js";
+import { requestHeartbeatNow } from "../../infra/heartbeat/heartbeat-wake.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
 import { resolveOutboundTarget } from "../../infra/outbound/targets.js";
 import { registerApnsToken } from "../../infra/push-apns.js";

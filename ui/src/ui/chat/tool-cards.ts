@@ -1,11 +1,11 @@
 import { html, nothing } from "lit";
-import { icons } from "../icons.ts";
-import { formatToolDetail, resolveToolDisplay } from "../tool-display.ts";
-import type { ToolCard } from "../types/chat-types.ts";
-import { TOOL_INLINE_THRESHOLD } from "./constants.ts";
-import { extractTextCached } from "./message-extract.ts";
-import { isToolResultMessage } from "./message-normalizer.ts";
-import { formatToolOutputForSidebar, getTruncatedPreview } from "./tool-helpers.ts";
+import { icons } from "../icons.js";
+import { formatToolDetail, resolveToolDisplay } from "../tool-display.js";
+import type { ToolCard } from "../types/chat-types.js";
+import { TOOL_INLINE_THRESHOLD } from "./constants.js";
+import { extractTextCached } from "./message-extract.js";
+import { isToolResultMessage } from "./message-normalizer.js";
+import { formatToolOutputForSidebar, getTruncatedPreview } from "./tool-helpers.js";
 
 export function extractToolCards(message: unknown): ToolCard[] {
   const m = message as Record<string, unknown>;

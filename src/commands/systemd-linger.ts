@@ -2,7 +2,7 @@ import {
   enableSystemdUserLinger,
   isSystemdUserServiceAvailable,
   readSystemdUserLingerStatus,
-} from "../daemon/systemd.js";
+} from "../infra/daemon/systemd.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 

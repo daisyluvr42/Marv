@@ -4,8 +4,8 @@ import {
   formatUpdateChannelLabel,
   normalizeUpdateChannel,
   resolveEffectiveUpdateChannel,
-} from "../../infra/update-channels.js";
-import { checkUpdateStatus } from "../../infra/update-check.js";
+} from "../../infra/update/update-channels.js";
+import { checkUpdateStatus } from "../../infra/update/update-check.js";
 import { defaultRuntime } from "../../runtime.js";
 import { selectStyled } from "../../terminal/prompt-select-styled.js";
 import { stylePromptMessage } from "../../terminal/prompt-style.js";

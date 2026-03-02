@@ -1,5 +1,5 @@
-import type { GatewayBrowserClient } from "../gateway.ts";
-import { cloneConfigObject, removePathValue, setPathValue } from "./config/form-utils.ts";
+import type { GatewayBrowserClient } from "../gateway.js";
+import { cloneConfigObject, removePathValue, setPathValue } from "./config/form-utils.js";
 
 export type ExecApprovalsDefaults = {
   security?: string;

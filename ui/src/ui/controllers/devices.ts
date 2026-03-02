@@ -1,6 +1,6 @@
-import { clearDeviceAuthToken, storeDeviceAuthToken } from "../device-auth.ts";
-import { loadOrCreateDeviceIdentity } from "../device-identity.ts";
-import type { GatewayBrowserClient } from "../gateway.ts";
+import { clearDeviceAuthToken, storeDeviceAuthToken } from "../device-auth.js";
+import { loadOrCreateDeviceIdentity } from "../device-identity.js";
+import type { GatewayBrowserClient } from "../gateway.js";
 
 export type DeviceTokenSummary = {
   role: string;

@@ -1,7 +1,7 @@
-import type { MarvApp } from "./app.ts";
-import { loadDebug } from "./controllers/debug.ts";
-import { loadLogs } from "./controllers/logs.ts";
-import { loadNodes } from "./controllers/nodes.ts";
+import type { MarvApp } from "./app.js";
+import { loadDebug } from "./controllers/debug.js";
+import { loadLogs } from "./controllers/logs.js";
+import { loadNodes } from "./controllers/nodes.js";
 
 type PollingHost = {
   nodesPollInterval: number | null;

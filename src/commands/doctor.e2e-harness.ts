@@ -200,12 +200,12 @@ vi.mock("../daemon/legacy.js", () => ({
   uninstallLegacyGatewayServices,
 }));
 
-vi.mock("../daemon/inspect.js", () => ({
+vi.mock("../infra/daemon/inspect.js", () => ({
   findExtraGatewayServices,
   renderGatewayServiceCleanupHints,
 }));
 
-vi.mock("../daemon/program-args.js", () => ({
+vi.mock("../infra/daemon/program-args.js", () => ({
   resolveGatewayProgramArguments,
 }));
 
@@ -226,7 +226,7 @@ vi.mock("../infra/marv-root.js", () => ({
   resolveMarvPackageRoot,
 }));
 
-vi.mock("../infra/update-runner.js", () => ({
+vi.mock("../infra/update/update-runner.js", () => ({
   runGatewayUpdate,
 }));
 
@@ -238,7 +238,7 @@ vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../infra/daemon/service.js", () => ({
   resolveGatewayService: () => ({
     label: "LaunchAgent",
     loadedText: "loaded",

@@ -1,4 +1,4 @@
-import { connectGateway } from "./app-gateway.ts";
+import { connectGateway } from "./app-gateway.js";
 import {
   startLogsPolling,
   startNodesPolling,
@@ -6,8 +6,8 @@ import {
   stopNodesPolling,
   startDebugPolling,
   stopDebugPolling,
-} from "./app-polling.ts";
-import { observeTopbar, scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.ts";
+} from "./app-polling.js";
+import { observeTopbar, scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.js";
 import {
   applySettingsFromUrl,
   attachThemeListener,
@@ -15,9 +15,9 @@ import {
   inferBasePath,
   syncTabWithLocation,
   syncThemeWithSettings,
-} from "./app-settings.ts";
-import { loadControlUiBootstrapConfig } from "./controllers/control-ui-bootstrap.ts";
-import type { Tab } from "./navigation.ts";
+} from "./app-settings.js";
+import { loadControlUiBootstrapConfig } from "./controllers/control-ui-bootstrap.js";
+import type { Tab } from "./navigation.js";
 
 type LifecycleHost = {
   basePath: string;

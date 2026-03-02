@@ -1,5 +1,5 @@
 import { html, nothing } from "lit";
-import { formatRelativeTimestamp } from "../format.ts";
+import { formatRelativeTimestamp } from "../format.js";
 import type {
   ChannelAccountSnapshot,
   ChannelUiMetaEntry,
@@ -13,18 +13,18 @@ import type {
   SlackStatus,
   TelegramStatus,
   WhatsAppStatus,
-} from "../types.ts";
-import { renderChannelConfigSection } from "./channels.config.ts";
-import { renderDiscordCard } from "./channels.discord.ts";
-import { renderGoogleChatCard } from "./channels.googlechat.ts";
-import { renderIMessageCard } from "./channels.imessage.ts";
-import { renderNostrCard } from "./channels.nostr.ts";
-import { channelEnabled, renderChannelAccountCount } from "./channels.shared.ts";
-import { renderSignalCard } from "./channels.signal.ts";
-import { renderSlackCard } from "./channels.slack.ts";
-import { renderTelegramCard } from "./channels.telegram.ts";
-import type { ChannelKey, ChannelsChannelData, ChannelsProps } from "./channels.types.ts";
-import { renderWhatsAppCard } from "./channels.whatsapp.ts";
+} from "../types.js";
+import { renderChannelConfigSection } from "./channels.config.js";
+import { renderDiscordCard } from "./channels.discord.js";
+import { renderGoogleChatCard } from "./channels.googlechat.js";
+import { renderIMessageCard } from "./channels.imessage.js";
+import { renderNostrCard } from "./channels.nostr.js";
+import { channelEnabled, renderChannelAccountCount } from "./channels.shared.js";
+import { renderSignalCard } from "./channels.signal.js";
+import { renderSlackCard } from "./channels.slack.js";
+import { renderTelegramCard } from "./channels.telegram.js";
+import type { ChannelKey, ChannelsChannelData, ChannelsProps } from "./channels.types.js";
+import { renderWhatsAppCard } from "./channels.whatsapp.js";
 
 export function renderChannels(props: ChannelsProps) {
   const channels = props.snapshot?.channels as Record<string, unknown> | null;

@@ -7,13 +7,13 @@ import { resolveMarvPackageRoot } from "../../infra/marv-root.js";
 import { readPackageName, readPackageVersion } from "../../infra/package-json.js";
 import { trimLogTail } from "../../infra/restart-sentinel.js";
 import { parseSemver } from "../../infra/runtime-guard.js";
-import { fetchNpmTagVersion } from "../../infra/update-check.js";
+import { fetchNpmTagVersion } from "../../infra/update/update-check.js";
 import {
   detectGlobalInstallManagerByPresence,
   detectGlobalInstallManagerForRoot,
   type GlobalInstallManager,
-} from "../../infra/update-global.js";
-import type { UpdateStepProgress, UpdateStepResult } from "../../infra/update-runner.js";
+} from "../../infra/update/update-global.js";
+import type { UpdateStepProgress, UpdateStepResult } from "../../infra/update/update-runner.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";

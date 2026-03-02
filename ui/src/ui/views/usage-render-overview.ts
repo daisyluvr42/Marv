@@ -1,19 +1,19 @@
 import { html, nothing } from "lit";
-import { formatDurationCompact } from "../../../../src/infra/format-time/format-duration.ts";
+import { formatDurationCompact } from "../../../../src/infra/format-time/format-duration.js";
 import {
   formatCost,
   formatDayLabel,
   formatFullDate,
   formatTokens,
   UsageInsightStats,
-} from "./usage-metrics.ts";
+} from "./usage-metrics.js";
 import {
   UsageAggregates,
   UsageColumnId,
   UsageSessionEntry,
   UsageTotals,
   CostDailyEntry,
-} from "./usageTypes.ts";
+} from "./usageTypes.js";
 
 function pct(part: number, total: number): number {
   if (total === 0) {

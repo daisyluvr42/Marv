@@ -1,16 +1,16 @@
 import { html, nothing } from "lit";
 import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
-import { t } from "../i18n/index.ts";
-import { refreshChatAvatar } from "./app-chat.ts";
-import { renderUsageTab } from "./app-render-usage-tab.ts";
-import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.helpers.ts";
-import type { AppViewState } from "./app-view-state.ts";
-import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.ts";
-import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
-import { loadAgentSkills } from "./controllers/agent-skills.ts";
-import { loadAgents } from "./controllers/agents.ts";
-import { loadChannels } from "./controllers/channels.ts";
-import { loadChatHistory } from "./controllers/chat.ts";
+import { t } from "../i18n/index.js";
+import { refreshChatAvatar } from "./app-chat.js";
+import { renderUsageTab } from "./app-render-usage-tab.js";
+import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.helpers.js";
+import type { AppViewState } from "./app-view-state.js";
+import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.js";
+import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.js";
+import { loadAgentSkills } from "./controllers/agent-skills.js";
+import { loadAgents } from "./controllers/agents.js";
+import { loadChannels } from "./controllers/channels.js";
+import { loadChatHistory } from "./controllers/chat.js";
 import {
   applyConfig,
   loadConfig,
@@ -18,7 +18,7 @@ import {
   saveConfig,
   updateConfigFormValue,
   removeConfigFormValue,
-} from "./controllers/config.ts";
+} from "./controllers/config.js";
 import {
   loadCronRuns,
   toggleCronJob,
@@ -26,48 +26,48 @@ import {
   removeCronJob,
   addCronJob,
   normalizeCronFormState,
-} from "./controllers/cron.ts";
-import { loadDebug, callDebugMethod } from "./controllers/debug.ts";
+} from "./controllers/cron.js";
+import { loadDebug, callDebugMethod } from "./controllers/debug.js";
 import {
   approveDevicePairing,
   loadDevices,
   rejectDevicePairing,
   revokeDeviceToken,
   rotateDeviceToken,
-} from "./controllers/devices.ts";
+} from "./controllers/devices.js";
 import {
   loadExecApprovals,
   removeExecApprovalsFormValue,
   saveExecApprovals,
   updateExecApprovalsFormValue,
-} from "./controllers/exec-approvals.ts";
-import { loadLogs } from "./controllers/logs.ts";
-import { loadNodes } from "./controllers/nodes.ts";
-import { loadPresence } from "./controllers/presence.ts";
-import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.ts";
+} from "./controllers/exec-approvals.js";
+import { loadLogs } from "./controllers/logs.js";
+import { loadNodes } from "./controllers/nodes.js";
+import { loadPresence } from "./controllers/presence.js";
+import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.js";
 import {
   installSkill,
   loadSkills,
   saveSkillApiKey,
   updateSkillEdit,
   updateSkillEnabled,
-} from "./controllers/skills.ts";
-import { icons } from "./icons.ts";
-import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
-import { renderAgents } from "./views/agents.ts";
-import { renderChannels } from "./views/channels.ts";
-import { renderChat } from "./views/chat.ts";
-import { renderConfig } from "./views/config.ts";
-import { renderCron } from "./views/cron.ts";
-import { renderDebug } from "./views/debug.ts";
-import { renderExecApprovalPrompt } from "./views/exec-approval.ts";
-import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.ts";
-import { renderInstances } from "./views/instances.ts";
-import { renderLogs } from "./views/logs.ts";
-import { renderNodes } from "./views/nodes.ts";
-import { renderOverview } from "./views/overview.ts";
-import { renderSessions } from "./views/sessions.ts";
-import { renderSkills } from "./views/skills.ts";
+} from "./controllers/skills.js";
+import { icons } from "./icons.js";
+import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.js";
+import { renderAgents } from "./views/agents.js";
+import { renderChannels } from "./views/channels.js";
+import { renderChat } from "./views/chat.js";
+import { renderConfig } from "./views/config.js";
+import { renderCron } from "./views/cron.js";
+import { renderDebug } from "./views/debug.js";
+import { renderExecApprovalPrompt } from "./views/exec-approval.js";
+import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.js";
+import { renderInstances } from "./views/instances.js";
+import { renderLogs } from "./views/logs.js";
+import { renderNodes } from "./views/nodes.js";
+import { renderOverview } from "./views/overview.js";
+import { renderSessions } from "./views/sessions.js";
+import { renderSkills } from "./views/skills.js";
 
 const AVATAR_DATA_RE = /^data:/i;
 const AVATAR_HTTP_RE = /^https?:\/\//i;

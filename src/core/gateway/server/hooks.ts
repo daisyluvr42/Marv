@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { CliDeps } from "../../../cli/deps.js";
 import { runCronIsolatedAgentTurn } from "../../../cron/isolated-agent.js";
 import type { CronJob } from "../../../cron/types.js";
-import { requestHeartbeatNow } from "../../../infra/heartbeat-wake.js";
+import { requestHeartbeatNow } from "../../../infra/heartbeat/heartbeat-wake.js";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";
 import type { createSubsystemLogger } from "../../../logging/subsystem.js";
 import { loadConfig } from "../../config/config.js";

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { connectGateway } from "./app-gateway.ts";
+import { connectGateway } from "./app-gateway.js";
 
 type GatewayClientMock = {
   start: ReturnType<typeof vi.fn>;
@@ -11,7 +11,7 @@ type GatewayClientMock = {
 
 const gatewayClientInstances: GatewayClientMock[] = [];
 
-vi.mock("./gateway.ts", () => {
+vi.mock("./gateway.js", () => {
   class GatewayBrowserClient {
     readonly start = vi.fn();
     readonly stop = vi.fn();

@@ -432,7 +432,7 @@ export type {
   SessionsUsageTotals,
   SessionUsageTimePoint,
   SessionUsageTimeSeries,
-} from "./usage-types.ts";
+} from "./usage-types.js";
 
 export type CronSchedule =
   | { kind: "at"; at: string }

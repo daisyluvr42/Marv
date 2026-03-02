@@ -14,7 +14,7 @@ vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
 }));
 
-vi.mock("../../infra/heartbeat-wake.js", () => ({
+vi.mock("../../infra/heartbeat/heartbeat-wake.js", () => ({
   requestHeartbeatNow: (...args: unknown[]) => requestHeartbeatNowMock(...args),
 }));
 

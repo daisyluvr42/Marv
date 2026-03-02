@@ -1,4 +1,4 @@
-import { resolveGatewayService } from "../../daemon/service.js";
+import { resolveGatewayService } from "../../infra/daemon/service.js";
 import {
   runServiceRestart,
   runServiceStart,

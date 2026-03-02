@@ -1,5 +1,5 @@
 import { Writable } from "node:stream";
-import type { GatewayService } from "../../daemon/service.js";
+import type { GatewayService } from "../../infra/daemon/service.js";
 import { defaultRuntime } from "../../runtime.js";
 
 export type DaemonAction = "install" | "uninstall" | "start" | "stop" | "restart";

@@ -1,33 +1,33 @@
 import { GATEWAY_CLIENT_IDS } from "../../../src/core/gateway/protocol/client-info.js";
-import { CHAT_SESSIONS_ACTIVE_MINUTES, flushChatQueueForEvent } from "./app-chat.ts";
-import type { EventLogEntry } from "./app-events.ts";
+import { CHAT_SESSIONS_ACTIVE_MINUTES, flushChatQueueForEvent } from "./app-chat.js";
+import type { EventLogEntry } from "./app-events.js";
 import {
   applySettings,
   loadCron,
   refreshActiveTab,
   setLastActiveSessionKey,
-} from "./app-settings.ts";
-import { handleAgentEvent, resetToolStream, type AgentEventPayload } from "./app-tool-stream.ts";
-import type { MarvApp } from "./app.ts";
-import { loadAgents } from "./controllers/agents.ts";
-import { loadAssistantIdentity } from "./controllers/assistant-identity.ts";
-import { loadChatHistory } from "./controllers/chat.ts";
-import { handleChatEvent, type ChatEventPayload } from "./controllers/chat.ts";
-import { loadDevices } from "./controllers/devices.ts";
-import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
+} from "./app-settings.js";
+import { handleAgentEvent, resetToolStream, type AgentEventPayload } from "./app-tool-stream.js";
+import type { MarvApp } from "./app.js";
+import { loadAgents } from "./controllers/agents.js";
+import { loadAssistantIdentity } from "./controllers/assistant-identity.js";
+import { loadChatHistory } from "./controllers/chat.js";
+import { handleChatEvent, type ChatEventPayload } from "./controllers/chat.js";
+import { loadDevices } from "./controllers/devices.js";
+import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
 import {
   addExecApproval,
   parseExecApprovalRequested,
   parseExecApprovalResolved,
   removeExecApproval,
-} from "./controllers/exec-approval.ts";
-import { loadNodes } from "./controllers/nodes.ts";
-import { loadSessions } from "./controllers/sessions.ts";
-import type { GatewayEventFrame, GatewayHelloOk } from "./gateway.ts";
-import { GatewayBrowserClient } from "./gateway.ts";
-import type { Tab } from "./navigation.ts";
-import type { UiSettings } from "./storage.ts";
-import type { AgentsListResult, PresenceEntry, HealthSnapshot, StatusSummary } from "./types.ts";
+} from "./controllers/exec-approval.js";
+import { loadNodes } from "./controllers/nodes.js";
+import { loadSessions } from "./controllers/sessions.js";
+import type { GatewayEventFrame, GatewayHelloOk } from "./gateway.js";
+import { GatewayBrowserClient } from "./gateway.js";
+import type { Tab } from "./navigation.js";
+import type { UiSettings } from "./storage.js";
+import type { AgentsListResult, PresenceEntry, HealthSnapshot, StatusSummary } from "./types.js";
 
 type GatewayHost = {
   settings: UiSettings;

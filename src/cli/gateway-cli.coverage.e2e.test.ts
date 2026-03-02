@@ -56,7 +56,7 @@ vi.mock("./ports.js", () => ({
   forceFreePortAndWait: (port: number) => forceFreePortAndWait(port),
 }));
 
-vi.mock("../daemon/service.js", () => ({
+vi.mock("../infra/daemon/service.js", () => ({
   resolveGatewayService: () => ({
     label: "LaunchAgent",
     loadedText: "loaded",
@@ -71,7 +71,7 @@ vi.mock("../daemon/service.js", () => ({
   }),
 }));
 
-vi.mock("../daemon/program-args.js", () => ({
+vi.mock("../infra/daemon/program-args.js", () => ({
   resolveGatewayProgramArguments: async () => ({
     programArguments: ["/bin/node", "cli", "gateway", "--port", "18789"],
   }),

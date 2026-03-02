@@ -1,6 +1,6 @@
 import { html, nothing } from "lit";
-import type { ChannelAccountSnapshot } from "../types.ts";
-import type { ChannelKey, ChannelsProps } from "./channels.types.ts";
+import type { ChannelAccountSnapshot } from "../types.js";
+import type { ChannelKey, ChannelsProps } from "./channels.types.js";
 
 export function channelEnabled(key: ChannelKey, props: ChannelsProps) {
   const snapshot = props.snapshot;

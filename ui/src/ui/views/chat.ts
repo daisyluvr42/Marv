@@ -5,14 +5,14 @@ import {
   renderMessageGroup,
   renderReadingIndicatorGroup,
   renderStreamingGroup,
-} from "../chat/grouped-render.ts";
-import { normalizeMessage, normalizeRoleForGrouping } from "../chat/message-normalizer.ts";
-import { icons } from "../icons.ts";
-import { detectTextDirection } from "../text-direction.ts";
-import type { SessionsListResult } from "../types.ts";
-import type { ChatItem, MessageGroup } from "../types/chat-types.ts";
-import type { ChatAttachment, ChatQueueItem } from "../ui-types.ts";
-import { renderMarkdownSidebar } from "./markdown-sidebar.ts";
+} from "../chat/grouped-render.js";
+import { normalizeMessage, normalizeRoleForGrouping } from "../chat/message-normalizer.js";
+import { icons } from "../icons.js";
+import { detectTextDirection } from "../text-direction.js";
+import type { SessionsListResult } from "../types.js";
+import type { ChatItem, MessageGroup } from "../types/chat-types.js";
+import type { ChatAttachment, ChatQueueItem } from "../ui-types.js";
+import { renderMarkdownSidebar } from "./markdown-sidebar.js";
 import "../components/resizable-divider.ts";
 
 export type CompactionIndicatorStatus = {

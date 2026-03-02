@@ -1,10 +1,10 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { collectConfigEnvVars } from "../core/config/env-vars.js";
 import type { MarvConfig } from "../core/config/types.js";
-import { resolveGatewayLaunchAgentLabel } from "../daemon/constants.js";
-import { resolveGatewayProgramArguments } from "../daemon/program-args.js";
-import { resolvePreferredNodePath } from "../daemon/runtime-paths.js";
-import { buildServiceEnvironment } from "../daemon/service-env.js";
+import { resolveGatewayLaunchAgentLabel } from "../infra/daemon/constants.js";
+import { resolveGatewayProgramArguments } from "../infra/daemon/program-args.js";
+import { resolvePreferredNodePath } from "../infra/daemon/runtime-paths.js";
+import { buildServiceEnvironment } from "../infra/daemon/service-env.js";
 import {
   emitNodeRuntimeWarning,
   type DaemonInstallWarnFn,

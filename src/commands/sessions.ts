@@ -10,7 +10,7 @@ import {
 } from "../core/config/sessions.js";
 import { classifySessionKey, resolveSessionModelRef } from "../core/gateway/session-utils.js";
 import { info } from "../globals.js";
-import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
+import { formatTimeAgo } from "../infra/format-time/format-relative.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { isRich, theme } from "../terminal/theme.js";

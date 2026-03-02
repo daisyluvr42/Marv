@@ -1,7 +1,7 @@
 const KEY = "marv.control.settings.v1";
 
-import { isSupportedLocale } from "../i18n/index.ts";
-import type { ThemeMode } from "./theme.ts";
+import { isSupportedLocale } from "../i18n/index.js";
+import type { ThemeMode } from "./theme.js";
 
 export type UiSettings = {
   gatewayUrl: string;

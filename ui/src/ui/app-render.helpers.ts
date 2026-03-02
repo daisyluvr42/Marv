@@ -1,16 +1,16 @@
 import { html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import { t } from "../i18n/index.ts";
-import { refreshChat } from "./app-chat.ts";
-import { syncUrlWithSessionKey } from "./app-settings.ts";
-import type { AppViewState } from "./app-view-state.ts";
-import { MarvApp } from "./app.ts";
-import { ChatState, loadChatHistory } from "./controllers/chat.ts";
-import { icons } from "./icons.ts";
-import { iconForTab, pathForTab, titleForTab, type Tab } from "./navigation.ts";
-import type { ThemeTransitionContext } from "./theme-transition.ts";
-import type { ThemeMode } from "./theme.ts";
-import type { SessionsListResult } from "./types.ts";
+import { t } from "../i18n/index.js";
+import { refreshChat } from "./app-chat.js";
+import { syncUrlWithSessionKey } from "./app-settings.js";
+import type { AppViewState } from "./app-view-state.js";
+import { MarvApp } from "./app.js";
+import { ChatState, loadChatHistory } from "./controllers/chat.js";
+import { icons } from "./icons.js";
+import { iconForTab, pathForTab, titleForTab, type Tab } from "./navigation.js";
+import type { ThemeTransitionContext } from "./theme-transition.js";
+import type { ThemeMode } from "./theme.js";
+import type { SessionsListResult } from "./types.js";
 
 type SessionDefaultsSnapshot = {
   mainSessionKey?: string;
