@@ -11,12 +11,12 @@ import { resolveSlackAccount } from "../../channels/slack/accounts.js";
 import { resolveSlackUserAllowlist } from "../../channels/slack/resolve-users.js";
 import { resolveTelegramAccount } from "../../channels/telegram/accounts.js";
 import { resolveWhatsAppAccount } from "../../channels/web/accounts.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   readConfigFileSnapshot,
   validateConfigObjectWithPlugins,
   writeConfigFile,
-} from "../../config/config.js";
+} from "../../core/config/config.js";
 import { logVerbose } from "../../globals.js";
 import {
   addChannelAllowFromStoreEntry,

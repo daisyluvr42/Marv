@@ -59,7 +59,7 @@ vi.mock("../../commands/health.js", () => ({
   formatHealthChannelLines: () => [],
 }));
 
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   loadConfig: () => ({}),
 }));
 

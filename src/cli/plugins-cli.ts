@@ -2,9 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig, writeConfigFile } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig, writeConfigFile } from "../core/config/config.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { resolveArchiveKind } from "../infra/archive.js";
 import { installPluginFromNpmSpec, installPluginFromPath } from "../plugins/install.js";
 import { recordPluginInstall } from "../plugins/installs.js";
@@ -166,8 +166,7 @@ export function registerPluginsCli(program: Command) {
     .description("Manage Marv plugins and extensions")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/plugins", "docs: /cli/plugins")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/plugins", "docs: /cli/plugins")}\n`,
     );
 
   plugins

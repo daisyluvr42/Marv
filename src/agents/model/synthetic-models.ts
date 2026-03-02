@@ -1,4 +1,4 @@
-import type { ModelDefinitionConfig } from "../../config/types.js";
+import type { ModelDefinitionConfig } from "../../core/config/types.js";
 
 export const SYNTHETIC_BASE_URL = "https://api.synthetic.new/anthropic";
 export const SYNTHETIC_DEFAULT_MODEL_ID = "hf:MiniMaxAI/MiniMax-M2.1";

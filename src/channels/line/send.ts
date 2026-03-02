@@ -1,5 +1,5 @@
 import { messagingApi } from "@line/bot-sdk";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { logVerbose } from "../../globals.js";
 import { recordChannelActivity } from "../../infra/channel-activity.js";
 import { resolveLineAccount } from "./accounts.js";

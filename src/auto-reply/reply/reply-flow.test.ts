@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { expectInboundContextContract } from "../../../test/helpers/inbound-contract.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import { HEARTBEAT_TOKEN, SILENT_REPLY_TOKEN } from "../tokens.js";

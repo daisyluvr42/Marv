@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { MarvConfig } from "../../config/config.js";
-import { resolveOAuthDir } from "../../config/paths.js";
-import type { DmPolicy, GroupPolicy, WhatsAppAccountConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { resolveOAuthDir } from "../../core/config/paths.js";
+import type { DmPolicy, GroupPolicy, WhatsAppAccountConfig } from "../../core/config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
 import { createAccountListHelpers } from "../plugins/account-helpers.js";

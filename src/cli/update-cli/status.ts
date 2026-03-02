@@ -3,7 +3,7 @@ import {
   formatUpdateOneLiner,
   resolveUpdateAvailability,
 } from "../../commands/status.update.js";
-import { readConfigFileSnapshot } from "../../config/config.js";
+import { readConfigFileSnapshot } from "../../core/config/config.js";
 import {
   normalizeUpdateChannel,
   resolveUpdateChannelDisplay,

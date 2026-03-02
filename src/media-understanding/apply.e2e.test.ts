@@ -4,7 +4,7 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveApiKeyForProvider } from "../agents/model/model-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 
 vi.mock("../agents/model/model-auth.js", () => ({

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GatewayBindMode } from "../config/types.gateway.js";
+import type { GatewayBindMode } from "../core/config/types.gateway.js";
 import { dashboardCommand } from "./dashboard.js";
 
 const mocks = vi.hoisted(() => ({
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   copyToClipboard: vi.fn(),
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   readConfigFileSnapshot: mocks.readConfigFileSnapshot,
   resolveGatewayPort: mocks.resolveGatewayPort,
 }));

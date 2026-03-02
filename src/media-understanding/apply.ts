@@ -1,7 +1,7 @@
 import path from "node:path";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import {
   extractFileContentFromSource,

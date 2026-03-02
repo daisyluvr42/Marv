@@ -3,7 +3,7 @@ import {
   formatInboundEnvelope,
   type EnvelopeFormatOptions,
 } from "../../../../auto-reply/envelope.js";
-import type { loadConfig } from "../../../../config/config.js";
+import type { loadConfig } from "../../../../core/config/config.js";
 import type { WebInboundMsg } from "../types.js";
 
 export function formatReplyContext(msg: WebInboundMsg) {

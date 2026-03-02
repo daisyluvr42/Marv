@@ -4,8 +4,8 @@ import {
   resolveSessionAgentId,
 } from "../../agents/agent-scope.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
-import type { MarvConfig } from "../../config/config.js";
-import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { applyVerboseOverride } from "../../sessions/level-overrides.js";

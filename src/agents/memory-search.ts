@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
-import type { MarvConfig, MemorySearchConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
+import type { MarvConfig, MemorySearchConfig } from "../core/config/config.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { clampInt, clampNumber, resolveUserPath } from "../utils.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 

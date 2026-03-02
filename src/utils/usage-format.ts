@@ -1,5 +1,5 @@
 import type { NormalizedUsage } from "../agents/usage.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 export type ModelCostConfig = {
   input: number;

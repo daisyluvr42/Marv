@@ -1,4 +1,4 @@
-import { loadSessionStore } from "../../config/sessions.js";
+import { loadSessionStore } from "../../core/config/sessions.js";
 import { isAudioFileName } from "../../media/mime.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";

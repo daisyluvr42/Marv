@@ -8,11 +8,11 @@ import {
 import { requireApiKey, resolveApiKeyForProvider } from "../agents/model/model-auth.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import { applyTemplate } from "../auto-reply/templating.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type {
   MediaUnderstandingConfig,
   MediaUnderstandingModelConfig,
-} from "../config/types.tools.js";
+} from "../core/config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { runExec } from "../process/exec.js";
 import { MediaAttachmentCache } from "./attachments.js";

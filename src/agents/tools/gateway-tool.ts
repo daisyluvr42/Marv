@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
-import type { MarvConfig } from "../../config/config.js";
-import { resolveConfigSnapshotHash } from "../../config/io.js";
-import { extractDeliveryInfo } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { resolveConfigSnapshotHash } from "../../core/config/io.js";
+import { extractDeliveryInfo } from "../../core/config/sessions.js";
 import {
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,

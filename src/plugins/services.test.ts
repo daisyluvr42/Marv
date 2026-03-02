@@ -13,7 +13,7 @@ vi.mock("../logging/subsystem.js", () => ({
   createSubsystemLogger: () => mockedLogger,
 }));
 
-import { STATE_DIR } from "../config/paths.js";
+import { STATE_DIR } from "../core/config/paths.js";
 import { startPluginServices } from "./services.js";
 
 function createRegistry(services: MarvPluginService[]) {

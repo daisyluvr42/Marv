@@ -10,8 +10,8 @@ import { createTestRegistry } from "../test-utils/channel-plugins.js";
 const loadMessageCommand = async () => await import("./message.js");
 
 let testConfig: Record<string, unknown> = {};
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => testConfig,
@@ -19,7 +19,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
 });
 
 const callGatewayMock = vi.fn();
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: callGatewayMock,
   randomIdempotencyKey: () => "idem-1",
 }));

@@ -19,11 +19,11 @@ vi.mock("../../../auto-reply/chunk.js", () => ({
   resolveChunkMode: () => resolveChunkModeMock(),
 }));
 
-vi.mock("../../../config/config.js", () => ({
+vi.mock("../../../core/config/config.js", () => ({
   loadConfig: () => ({}),
 }));
 
-vi.mock("../../../config/markdown-tables.js", () => ({
+vi.mock("../../../core/config/markdown-tables.js", () => ({
   resolveMarkdownTableMode: () => resolveMarkdownTableModeMock(),
 }));
 

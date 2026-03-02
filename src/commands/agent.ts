@@ -38,13 +38,13 @@ import {
 } from "../auto-reply/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   resolveAgentIdFromSessionKey,
   resolveSessionFilePath,
   type SessionEntry,
   updateSessionStore,
-} from "../config/sessions.js";
+} from "../core/config/sessions.js";
 import {
   clearAgentRunContext,
   emitAgentEvent,

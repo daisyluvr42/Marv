@@ -1,5 +1,5 @@
 import { detectBinary } from "../../commands/onboard-helpers.js";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { BaseProbeResult } from "../plugins/types.js";

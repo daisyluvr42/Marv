@@ -12,7 +12,7 @@ import { loadSubagentRegistryFromDisk } from "./subagent-registry.store.js";
 
 const noop = () => {};
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: vi.fn(async () => ({
     status: "ok",
     startedAt: 111,

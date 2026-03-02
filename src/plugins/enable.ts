@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import { ensurePluginAllowlisted } from "../config/plugins-allowlist.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { ensurePluginAllowlisted } from "../core/config/plugins-allowlist.js";
 
 export type PluginEnableResult = {
   config: MarvConfig;

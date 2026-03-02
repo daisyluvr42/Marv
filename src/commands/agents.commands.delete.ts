@@ -1,7 +1,7 @@
 import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
-import { writeConfigFile } from "../config/config.js";
-import { logConfigUpdated } from "../config/logging.js";
-import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
+import { writeConfigFile } from "../core/config/config.js";
+import { logConfigUpdated } from "../core/config/logging.js";
+import { resolveSessionTranscriptsDirForAgent } from "../core/config/sessions.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";

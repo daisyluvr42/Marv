@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DisconnectReason } from "@whiskeysockets/baileys";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { danger, info, success } from "../../globals.js";
 import { logInfo } from "../../logger.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";

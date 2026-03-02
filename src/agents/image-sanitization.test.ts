@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { resolveImageSanitizationLimits } from "./image-sanitization.js";
 
 describe("image sanitization config", () => {

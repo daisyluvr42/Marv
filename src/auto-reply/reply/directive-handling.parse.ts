@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { ExecAsk, ExecHost, ExecSecurity } from "../../infra/exec-approvals.js";
 import { extractModelDirective } from "../model.js";
 import type { MsgContext } from "../templating.js";

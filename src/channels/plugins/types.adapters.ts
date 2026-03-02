@@ -1,6 +1,6 @@
 import type { ReplyPayload } from "../../auto-reply/types.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { GroupToolPolicyConfig } from "../../config/types.tools.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { GroupToolPolicyConfig } from "../../core/config/types.tools.js";
 import type { OutboundDeliveryResult, OutboundSendDeps } from "../../infra/outbound/deliver.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity.js";
 import type { RuntimeEnv } from "../../runtime.js";
@@ -22,11 +22,7 @@ import type {
 
 export type ChannelSetupAdapter = {
   resolveAccountId?: (params: { cfg: MarvConfig; accountId?: string }) => string;
-  applyAccountName?: (params: {
-    cfg: MarvConfig;
-    accountId: string;
-    name?: string;
-  }) => MarvConfig;
+  applyAccountName?: (params: { cfg: MarvConfig; accountId: string; name?: string }) => MarvConfig;
   applyAccountConfig: (params: {
     cfg: MarvConfig;
     accountId: string;
@@ -188,11 +184,7 @@ export type ChannelLogoutContext<ResolvedAccount = unknown> = {
 export type ChannelPairingAdapter = {
   idLabel: string;
   normalizeAllowEntry?: (entry: string) => string;
-  notifyApproval?: (params: {
-    cfg: MarvConfig;
-    id: string;
-    runtime?: RuntimeEnv;
-  }) => Promise<void>;
+  notifyApproval?: (params: { cfg: MarvConfig; id: string; runtime?: RuntimeEnv }) => Promise<void>;
 };
 
 export type ChannelGatewayAdapter<ResolvedAccount = unknown> = {

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resolveOAuthDir } from "../config/paths.js";
+import { resolveOAuthDir } from "../core/config/paths.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import {
   expandHomePrefix,

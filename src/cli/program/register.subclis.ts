@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { getPrimaryCommand, hasHelpOrVersion } from "../argv.js";
 import { reparseProgramFromActionArgs } from "./action-reparse.js";
@@ -28,7 +28,7 @@ const shouldEagerRegisterSubcommands = (_argv: string[]) => {
 };
 
 const loadConfig = async (): Promise<MarvConfig> => {
-  const mod = await import("../../config/config.js");
+  const mod = await import("../../core/config/config.js");
   return mod.loadConfig();
 };
 

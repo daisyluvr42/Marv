@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,

@@ -13,10 +13,10 @@ import { isToolAllowedByPolicies } from "../agents/tools/pi-tools.policy.js";
 import { resolveToolProfilePolicy } from "../agents/tools/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
-import type { AgentToolsConfig } from "../config/types.tools.js";
-import { resolveGatewayAuth } from "../gateway/auth.js";
-import { resolveNodeCommandAllowlist } from "../gateway/node-command-policy.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentToolsConfig } from "../core/config/types.tools.js";
+import { resolveGatewayAuth } from "../core/gateway/auth.js";
+import { resolveNodeCommandAllowlist } from "../core/gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 

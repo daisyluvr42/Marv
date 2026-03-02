@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/types.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../whatsapp/normalize.js";
 import { resolveDiscordAccount } from "../discord/accounts.js";
 import { resolveSlackAccount } from "../slack/accounts.js";

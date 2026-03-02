@@ -1,11 +1,11 @@
-import type { BrowserConfig, BrowserProfileConfig, MarvConfig } from "../config/config.js";
-import { resolveGatewayPort } from "../config/paths.js";
+import type { BrowserConfig, BrowserProfileConfig, MarvConfig } from "../core/config/config.js";
+import { resolveGatewayPort } from "../core/config/paths.js";
 import {
   deriveDefaultBrowserCdpPortRange,
   deriveDefaultBrowserControlPort,
   DEFAULT_BROWSER_CONTROL_PORT,
-} from "../config/port-defaults.js";
-import { isLoopbackHost } from "../gateway/net.js";
+} from "../core/config/port-defaults.js";
+import { isLoopbackHost } from "../core/gateway/net.js";
 import {
   DEFAULT_MARV_BROWSER_COLOR,
   DEFAULT_MARV_BROWSER_ENABLED,

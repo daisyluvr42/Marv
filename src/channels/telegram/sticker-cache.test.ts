@@ -10,8 +10,8 @@ import {
 } from "./sticker-cache.js";
 
 // Mock the state directory to use a temp location
-vi.mock("../../config/paths.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/paths.js")>();
+vi.mock("../../core/config/paths.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/paths.js")>();
   return {
     ...actual,
     STATE_DIR: "/tmp/marv-test-sticker-cache",

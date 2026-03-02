@@ -1,10 +1,10 @@
-import type { MarvConfig } from "../config/config.js";
-import type { AgentModelEntryConfig } from "../config/types.agent-defaults.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentModelEntryConfig } from "../core/config/types.agent-defaults.js";
 import type {
   ModelApi,
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "../config/types.models.js";
+} from "../core/config/types.models.js";
 
 function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined {
   if (!model || typeof model !== "object") {
@@ -40,10 +40,7 @@ export function applyOnboardAuthAgentModelsAndProviders(
   };
 }
 
-export function applyAgentDefaultModelPrimary(
-  cfg: MarvConfig,
-  primary: string,
-): MarvConfig {
+export function applyAgentDefaultModelPrimary(cfg: MarvConfig, primary: string): MarvConfig {
   const existingFallbacks = extractAgentDefaultModelFallbacks(cfg.agents?.defaults?.model);
   return {
     ...cfg,

@@ -9,7 +9,7 @@
  * 2. Environment variable: MARV_TWITCH_ACCESS_TOKEN (default account only)
  */
 
-import type { MarvConfig } from "../../../src/config/config.js";
+import type { MarvConfig } from "../../../src/core/config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 
 export type TwitchTokenSource = "env" | "config" | "none";

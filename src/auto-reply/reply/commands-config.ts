@@ -5,18 +5,18 @@ import {
   parseConfigPath,
   setConfigValueAtPath,
   unsetConfigValueAtPath,
-} from "../../config/config-paths.js";
+} from "../../core/config/config-paths.js";
 import {
   readConfigFileSnapshot,
   validateConfigObjectWithPlugins,
   writeConfigFile,
-} from "../../config/config.js";
+} from "../../core/config/config.js";
 import {
   getConfigOverrides,
   resetConfigOverrides,
   setConfigOverride,
   unsetConfigOverride,
-} from "../../config/runtime-overrides.js";
+} from "../../core/config/runtime-overrides.js";
 import { logVerbose } from "../../globals.js";
 import type { CommandHandler } from "./commands-types.js";
 import { parseConfigCommand } from "./config-commands.js";

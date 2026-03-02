@@ -4,8 +4,8 @@ import path from "node:path";
 import type { ButtonInteraction, ComponentData } from "@buape/carbon";
 import { Routes } from "discord-api-types/v10";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { clearSessionStoreCacheForTest } from "../../../config/sessions.js";
-import type { DiscordExecApprovalConfig } from "../../../config/types.discord.js";
+import { clearSessionStoreCacheForTest } from "../../../core/config/sessions.js";
+import type { DiscordExecApprovalConfig } from "../../../core/config/types.discord.js";
 import {
   buildExecApprovalCustomId,
   extractDiscordChannelId,
@@ -49,7 +49,7 @@ vi.mock("../send.shared.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../../gateway/client.js", () => ({
+vi.mock("../../../core/gateway/client.js", () => ({
   GatewayClient: class {
     private params: Record<string, unknown>;
     constructor(params: Record<string, unknown>) {

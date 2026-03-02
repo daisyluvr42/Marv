@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Command, Option } from "commander";
-import { resolveStateDir } from "../config/paths.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { routeLogsToStderr } from "../logging/console.js";
 import { pathExists } from "../utils.js";
 import { getCoreCliCommandNames, registerCoreCliByName } from "./program/command-registry.js";

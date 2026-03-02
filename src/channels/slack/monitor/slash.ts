@@ -4,7 +4,7 @@ import type { ReplyPayload } from "../../../auto-reply/types.js";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "../../../config/commands.js";
+} from "../../../core/config/commands.js";
 import { danger, logVerbose } from "../../../globals.js";
 import { buildPairingReply } from "../../../pairing/pairing-messages.js";
 import {
@@ -631,7 +631,7 @@ export async function registerSlackMonitorSlashCommands(params: {
           await Promise.all([
             import("./replies.js"),
             import("../../../auto-reply/chunk.js"),
-            import("../../../config/markdown-tables.js"),
+            import("../../../core/config/markdown-tables.js"),
           ]);
         await deliverSlackSlashReplies({
           replies,

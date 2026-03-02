@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import "../test-helpers/fast-coding-tools.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
 import type { SandboxDockerConfig } from "../sandbox/sandbox.js";
 import { createMarvCodingTools } from "./pi-tools.js";

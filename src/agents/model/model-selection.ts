@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentConfig, resolveAgentModelPrimary } from "../agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";

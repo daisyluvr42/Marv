@@ -2,7 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { formatCliCommand } from "../../cli/command-format.js";
-import { resolveOAuthDir } from "../../config/paths.js";
+import { resolveOAuthDir } from "../../core/config/paths.js";
 import { info, success } from "../../globals.js";
 import { getChildLogger } from "../../logging.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";

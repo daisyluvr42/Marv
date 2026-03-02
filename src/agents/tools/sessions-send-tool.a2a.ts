@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { callGateway } from "../../gateway/call.js";
+import { callGateway } from "../../core/gateway/call.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { GatewayMessageChannel } from "../../utils/message-channel.js";

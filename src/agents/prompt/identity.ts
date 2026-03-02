@@ -1,4 +1,4 @@
-import type { MarvConfig, HumanDelayConfig, IdentityConfig } from "../../config/config.js";
+import type { MarvConfig, HumanDelayConfig, IdentityConfig } from "../../core/config/config.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 
 const DEFAULT_ACK_REACTION = "👀";

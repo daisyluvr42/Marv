@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import { callGateway } from "../../gateway/call.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { callGateway } from "../../core/gateway/call.js";
 import { isAcpSessionKey, normalizeMainKey } from "../../routing/session-key.js";
 
 function normalizeKey(value?: string) {

@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { webhookCallback } from "grammy";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { installRequestBodyLimitGuard } from "../../infra/http-body.js";

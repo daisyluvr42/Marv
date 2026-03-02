@@ -8,14 +8,14 @@ import { describe, expect, test, vi, beforeEach, afterEach } from "vitest";
  * forever via the max-retry and expiration guards.
  */
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   loadConfig: () => ({
     session: { store: "/tmp/test-store", mainKey: "main" },
     agents: {},
   }),
 }));
 
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../core/config/sessions.js", () => ({
   loadSessionStore: () => ({}),
   resolveAgentIdFromSessionKey: (key: string) => {
     const match = key.match(/^agent:([^:]+)/);
@@ -26,7 +26,7 @@ vi.mock("../config/sessions.js", () => ({
   updateSessionStore: vi.fn(),
 }));
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: vi.fn().mockResolvedValue({ status: "ok" }),
 }));
 

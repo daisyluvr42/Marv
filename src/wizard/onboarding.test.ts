@@ -126,7 +126,7 @@ vi.mock("../commands/onboard-hooks.js", () => ({
   setupInternalHooks,
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   DEFAULT_GATEWAY_PORT: 18789,
   resolveGatewayPort: () => 18789,
   readConfigFileSnapshot,
@@ -174,7 +174,7 @@ vi.mock("../channels/plugins/index.js", () => ({
   listChannelPlugins,
 }));
 
-vi.mock("../config/logging.js", () => ({
+vi.mock("../core/config/logging.js", () => ({
   logConfigUpdated,
 }));
 

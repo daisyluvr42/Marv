@@ -7,14 +7,14 @@ import { monitorWebChannel } from "./channels/web/channel-web.js";
 import { createDefaultDeps } from "./cli/deps.js";
 import { promptYesNo } from "./cli/prompt.js";
 import { waitForever } from "./cli/wait.js";
-import { loadConfig } from "./config/config.js";
+import { loadConfig } from "./core/config/config.js";
 import {
   deriveSessionKey,
   loadSessionStore,
   resolveSessionKey,
   resolveStorePath,
   saveSessionStore,
-} from "./config/sessions.js";
+} from "./core/config/sessions.js";
 import { ensureBinary } from "./infra/binaries.js";
 import { loadDotEnv } from "./infra/dotenv.js";
 import { normalizeEnv } from "./infra/env.js";

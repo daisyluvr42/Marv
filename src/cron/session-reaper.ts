@@ -7,8 +7,8 @@
  */
 
 import { parseDurationMs } from "../cli/parse-duration.js";
-import { updateSessionStore } from "../config/sessions.js";
-import type { CronConfig } from "../config/types.cron.js";
+import { updateSessionStore } from "../core/config/sessions.js";
+import type { CronConfig } from "../core/config/types.cron.js";
 import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
 import type { Logger } from "./service/state.js";
 

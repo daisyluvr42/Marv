@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
@@ -22,8 +22,7 @@ export function registerSkillsCli(program: Command) {
     .description("List and inspect available skills")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/skills", "docs: /cli/skills")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/skills", "docs: /cli/skills")}\n`,
     );
 
   skills

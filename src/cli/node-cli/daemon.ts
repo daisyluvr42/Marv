@@ -3,7 +3,7 @@ import {
   DEFAULT_NODE_DAEMON_RUNTIME,
   isNodeDaemonRuntime,
 } from "../../commands/node-daemon-runtime.js";
-import { resolveIsNixMode } from "../../config/paths.js";
+import { resolveIsNixMode } from "../../core/config/paths.js";
 import {
   resolveNodeLaunchAgentLabel,
   resolveNodeSystemdServiceName,

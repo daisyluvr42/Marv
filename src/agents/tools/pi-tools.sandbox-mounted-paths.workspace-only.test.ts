@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { SandboxFsBridge, SandboxResolvedPath } from "../sandbox/fs-bridge.js";
 import type { SandboxContext } from "../sandbox/sandbox.js";
 import { createSandboxFsBridgeFromResolver } from "../test-helpers/host-sandbox-fs-bridge.js";

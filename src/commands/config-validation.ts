@@ -1,10 +1,8 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import { type MarvConfig, readConfigFileSnapshot } from "../config/config.js";
+import { type MarvConfig, readConfigFileSnapshot } from "../core/config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 
-export async function requireValidConfigSnapshot(
-  runtime: RuntimeEnv,
-): Promise<MarvConfig | null> {
+export async function requireValidConfigSnapshot(runtime: RuntimeEnv): Promise<MarvConfig | null> {
   const snapshot = await readConfigFileSnapshot();
   if (snapshot.exists && !snapshot.valid) {
     const issues =

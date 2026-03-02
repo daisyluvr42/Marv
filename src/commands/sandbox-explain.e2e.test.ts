@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 let mockCfg: unknown = {};
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: vi.fn().mockImplementation(() => mockCfg),

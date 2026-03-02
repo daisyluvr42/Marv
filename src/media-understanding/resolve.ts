@@ -1,10 +1,10 @@
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type {
   MediaUnderstandingConfig,
   MediaUnderstandingModelConfig,
   MediaUnderstandingScopeConfig,
-} from "../config/types.tools.js";
+} from "../core/config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import {
   DEFAULT_MAX_BYTES,

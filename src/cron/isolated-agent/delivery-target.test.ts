@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CHAT_CHANNEL } from "../../channels/registry.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   loadSessionStore: vi.fn().mockReturnValue({}),
   resolveAgentMainSessionKey: vi.fn().mockReturnValue("agent:test:main"),
   resolveStorePath: vi.fn().mockReturnValue("/tmp/test-store.json"),
@@ -12,7 +12,7 @@ vi.mock("../../infra/outbound/channel-selection.js", () => ({
   resolveMessageChannelSelection: vi.fn().mockResolvedValue({ channel: "telegram" }),
 }));
 
-import { loadSessionStore } from "../../config/sessions.js";
+import { loadSessionStore } from "../../core/config/sessions.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { resolveDeliveryTarget } from "./delivery-target.js";
 

@@ -1,5 +1,5 @@
 import { Routes } from "discord-api-types/v10";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import {
   buildReactionIdentifier,
   createDiscordClient,

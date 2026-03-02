@@ -1,7 +1,7 @@
 import { getChannelDock } from "../../channels/dock.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { BlockStreamingCoalesceConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { BlockStreamingCoalesceConfig } from "../../core/config/types.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 import {
   INTERNAL_MESSAGE_CHANNEL,

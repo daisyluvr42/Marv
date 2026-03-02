@@ -13,8 +13,8 @@ import {
 import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
 import { createReplyDispatcherWithTyping } from "../../../auto-reply/reply/reply-dispatcher.js";
 import type { ReplyPayload } from "../../../auto-reply/types.js";
-import { resolveMarkdownTableMode } from "../../../config/markdown-tables.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../../config/sessions.js";
+import { resolveMarkdownTableMode } from "../../../core/config/markdown-tables.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { buildAgentSessionKey } from "../../../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../routing/session-key.js";

@@ -6,14 +6,14 @@ import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../agents/sandbox/sandbox.js";
 import type { SkillCommandSpec } from "../agents/skills.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   resolveMainSessionKey,
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
   type SessionScope,
-} from "../config/sessions.js";
+} from "../core/config/sessions.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
 import type { MediaUnderstandingDecision } from "../media-understanding/types.js";

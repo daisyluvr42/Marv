@@ -8,8 +8,8 @@ const readAllowFromStoreMock = vi.fn().mockResolvedValue([]);
 const upsertPairingRequestMock = vi.fn().mockResolvedValue({ code: "PAIRCODE", created: true });
 const saveMediaBufferSpy = vi.fn();
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: vi.fn().mockReturnValue({

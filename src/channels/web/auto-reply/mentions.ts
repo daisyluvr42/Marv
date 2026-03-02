@@ -1,5 +1,5 @@
 import { buildMentionRegexes, normalizeMentionText } from "../../../auto-reply/reply/mentions.js";
-import type { loadConfig } from "../../../config/config.js";
+import type { loadConfig } from "../../../core/config/config.js";
 import { isSelfChatMode, jidToE164, normalizeE164 } from "../../../utils.js";
 import type { WebInboundMsg } from "./types.js";
 

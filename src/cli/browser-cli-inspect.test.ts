@@ -18,7 +18,7 @@ vi.mock("./gateway-rpc.js", () => ({
 const configMocks = vi.hoisted(() => ({
   loadConfig: vi.fn(() => ({ browser: {} })),
 }));
-vi.mock("../config/config.js", () => configMocks);
+vi.mock("../core/config/config.js", () => configMocks);
 
 const sharedMocks = vi.hoisted(() => ({
   callBrowserRequest: vi.fn(

@@ -27,7 +27,7 @@ describe("discord audit", () => {
           },
         },
       },
-    } as unknown as import("../../config/config.js").MarvConfig;
+    } as unknown as import("../../core/config/config.js").MarvConfig;
 
     const collected = collectDiscordAuditChannelIds({
       cfg,

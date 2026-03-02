@@ -111,19 +111,19 @@ import {
 } from "../../channels/web/auth-store.js";
 import { loadWebMedia } from "../../channels/web/media.js";
 import { registerMemoryCli } from "../../cli/memory-cli.js";
-import { loadConfig, writeConfigFile } from "../../config/config.js";
+import { loadConfig, writeConfigFile } from "../../core/config/config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
-} from "../../config/group-policy.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
-import { resolveStateDir } from "../../config/paths.js";
+} from "../../core/config/group-policy.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
+import { resolveStateDir } from "../../core/config/paths.js";
 import {
   readSessionUpdatedAt,
   recordSessionMetaFromInbound,
   resolveStorePath,
   updateLastRoute,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { shouldLogVerbose } from "../../globals.js";
 import { getChannelActivity, recordChannelActivity } from "../../infra/channel-activity.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { BackoffPolicy } from "../../infra/backoff.js";
 import { computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
 import { clamp } from "../../utils.js";

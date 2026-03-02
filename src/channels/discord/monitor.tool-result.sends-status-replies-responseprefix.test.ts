@@ -11,7 +11,7 @@ import {
 import { createDiscordMessageHandler } from "./monitor/message-handler.js";
 import { __resetDiscordChannelInfoCacheForTest } from "./monitor/message-utils.js";
 
-type Config = ReturnType<typeof import("../../config/config.js").loadConfig>;
+type Config = ReturnType<typeof import("../../core/config/config.js").loadConfig>;
 
 beforeEach(() => {
   __resetDiscordChannelInfoCacheForTest();

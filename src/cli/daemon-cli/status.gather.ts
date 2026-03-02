@@ -3,15 +3,15 @@ import {
   resolveConfigPath,
   resolveGatewayPort,
   resolveStateDir,
-} from "../../config/config.js";
-import type { GatewayBindMode, GatewayControlUiConfig } from "../../config/types.js";
+} from "../../core/config/config.js";
+import type { GatewayBindMode, GatewayControlUiConfig } from "../../core/config/types.js";
+import { resolveGatewayBindHost } from "../../core/gateway/net.js";
 import { readLastGatewayErrorLine } from "../../daemon/diagnostics.js";
 import type { FindExtraGatewayServicesOptions } from "../../daemon/inspect.js";
 import { findExtraGatewayServices } from "../../daemon/inspect.js";
 import type { ServiceConfigAudit } from "../../daemon/service-audit.js";
 import { auditGatewayServiceConfig } from "../../daemon/service-audit.js";
 import { resolveGatewayService } from "../../daemon/service.js";
-import { resolveGatewayBindHost } from "../../gateway/net.js";
 import {
   formatPortDiagnostics,
   inspectPortUsage,

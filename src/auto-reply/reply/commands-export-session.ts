@@ -6,9 +6,9 @@ import { SessionManager } from "@mariozechner/pi-coding-agent";
 import {
   resolveDefaultSessionStorePath,
   resolveSessionFilePath,
-} from "../../config/sessions/paths.js";
-import { loadSessionStore } from "../../config/sessions/store.js";
-import type { SessionEntry } from "../../config/sessions/types.js";
+} from "../../core/config/sessions/paths.js";
+import { loadSessionStore } from "../../core/config/sessions/store.js";
+import type { SessionEntry } from "../../core/config/sessions/types.js";
 import type { ReplyPayload } from "../types.js";
 import { resolveCommandsSystemPromptBundle } from "./commands-system-prompt.js";
 import type { HandleCommandsParams } from "./commands-types.js";

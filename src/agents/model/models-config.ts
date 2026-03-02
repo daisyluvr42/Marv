@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { type MarvConfig, loadConfig } from "../../config/config.js";
+import { type MarvConfig, loadConfig } from "../../core/config/config.js";
 import { isRecord } from "../../utils.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import {

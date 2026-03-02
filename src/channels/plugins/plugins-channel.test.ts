@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { normalizeIMessageMessagingTarget } from "./normalize/imessage.js";
 import { looksLikeSignalTargetId, normalizeSignalMessagingTarget } from "./normalize/signal.js";
 import { normalizeSignalAccountInput } from "./onboarding/signal.js";

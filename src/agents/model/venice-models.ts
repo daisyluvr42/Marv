@@ -1,4 +1,4 @@
-import type { ModelDefinitionConfig } from "../../config/types.js";
+import type { ModelDefinitionConfig } from "../../core/config/types.js";
 
 export const VENICE_BASE_URL = "https://api.venice.ai/api/v1";
 export const VENICE_DEFAULT_MODEL_ID = "llama-3.3-70b";

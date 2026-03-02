@@ -12,20 +12,20 @@ import {
 import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
 import { listSkillCommandsForAgents } from "../../auto-reply/skill-commands.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { ChannelGroupPolicy } from "../../config/group-policy.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { ChannelGroupPolicy } from "../../core/config/group-policy.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import {
   normalizeTelegramCommandName,
   resolveTelegramCustomCommands,
   TELEGRAM_COMMAND_NAME_PATTERN,
-} from "../../config/telegram-custom-commands.js";
+} from "../../core/config/telegram-custom-commands.js";
 import type {
   ReplyToMode,
   TelegramAccountConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "../../config/types.js";
+} from "../../core/config/types.js";
 import { danger, logVerbose } from "../../globals.js";
 import { getChildLogger } from "../../logging.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";

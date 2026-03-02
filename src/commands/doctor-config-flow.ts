@@ -8,14 +8,14 @@ import {
 } from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   MarvSchema,
   CONFIG_PATH,
   migrateLegacyConfig,
   readConfigFileSnapshot,
-} from "../config/config.js";
-import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
+} from "../core/config/config.js";
+import { applyPluginAutoEnable } from "../core/config/plugin-auto-enable.js";
 import { note } from "../terminal/note.js";
 import { isRecord, resolveHomeDir } from "../utils.js";
 import { normalizeLegacyConfigValues } from "./doctor-legacy-config.js";

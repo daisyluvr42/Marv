@@ -22,7 +22,7 @@ import type {
   ChannelMeta,
 } from "../../../src/channels/plugins/types.core.js";
 import type { ChannelPlugin } from "../../../src/channels/plugins/types.plugin.js";
-import type { MarvConfig } from "../../../src/config/config.js";
+import type { MarvConfig } from "../../../src/core/config/config.js";
 import type { OutboundDeliveryResult } from "../../../src/infra/outbound/deliver.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 

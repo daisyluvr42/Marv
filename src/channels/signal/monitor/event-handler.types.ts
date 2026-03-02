@@ -1,11 +1,11 @@
 import type { HistoryEntry } from "../../../auto-reply/reply/history.js";
 import type { ReplyPayload } from "../../../auto-reply/types.js";
-import type { MarvConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../core/config/config.js";
 import type {
   DmPolicy,
   GroupPolicy,
   SignalReactionNotificationMode,
-} from "../../../config/types.js";
+} from "../../../core/config/types.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import type { SignalSender } from "../identity.js";
 

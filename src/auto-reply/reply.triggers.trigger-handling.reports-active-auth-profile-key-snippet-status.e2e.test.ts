@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { resolveSessionKey } from "../config/sessions.js";
+import { resolveSessionKey } from "../core/config/sessions.js";
 import {
   createBlockReplyCollector,
   getRunEmbeddedPiAgentMock,

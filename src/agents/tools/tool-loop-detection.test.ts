@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ToolLoopDetectionConfig } from "../../config/types.tools.js";
+import type { ToolLoopDetectionConfig } from "../../core/config/types.tools.js";
 import type { SessionState } from "../../logging/diagnostic-session-state.js";
 import {
   CRITICAL_THRESHOLD,

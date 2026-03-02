@@ -7,10 +7,14 @@ import {
   sortSubagentRuns,
   type SubagentTargetResolution,
 } from "../../auto-reply/reply/subagents-utils.js";
-import { loadConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
-import { loadSessionStore, resolveStorePath, updateSessionStore } from "../../config/sessions.js";
-import { callGateway } from "../../gateway/call.js";
+import { loadConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
+import {
+  loadSessionStore,
+  resolveStorePath,
+  updateSessionStore,
+} from "../../core/config/sessions.js";
+import { callGateway } from "../../core/gateway/call.js";
 import { logVerbose } from "../../globals.js";
 import {
   isSubagentSessionKey,

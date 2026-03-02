@@ -5,8 +5,8 @@ import { serializePayload, type MessagePayloadObject, type RequestClient } from 
 import type { APIChannel } from "discord-api-types/v10";
 import { ChannelType, Routes } from "discord-api-types/v10";
 import { resolveChunkMode } from "../../auto-reply/chunk.js";
-import { loadConfig } from "../../config/config.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
+import { loadConfig } from "../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import { recordChannelActivity } from "../../infra/channel-activity.js";
 import type { RetryConfig } from "../../infra/retry.js";
 import { resolvePreferredMarvTmpDir } from "../../infra/tmp-marv-dir.js";

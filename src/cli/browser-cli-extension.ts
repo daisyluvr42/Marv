@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Command } from "commander";
 import { movePathToTrash } from "../browser/trash.js";
-import { resolveStateDir } from "../config/paths.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { danger, info } from "../globals.js";
 import { copyToClipboard } from "../infra/clipboard.js";
 import { defaultRuntime } from "../runtime.js";

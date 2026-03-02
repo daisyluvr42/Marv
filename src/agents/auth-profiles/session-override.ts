@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import { updateSessionStore, type SessionEntry } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { updateSessionStore, type SessionEntry } from "../../core/config/sessions.js";
 import {
   ensureAuthProfileStore,
   isProfileInCooldown,

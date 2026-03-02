@@ -1,7 +1,7 @@
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import { DEFAULT_CHAT_CHANNEL } from "../channels/registry.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { setVerbose } from "../globals.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 

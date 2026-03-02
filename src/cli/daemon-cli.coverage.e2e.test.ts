@@ -23,7 +23,7 @@ const inspectPortUsage = vi.fn(async (port: number) => ({
 
 const { runtimeLogs, defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGateway(opts),
 }));
 

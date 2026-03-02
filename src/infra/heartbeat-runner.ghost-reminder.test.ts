@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { telegramPlugin } from "../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../extensions/telegram/src/runtime.js";
 import * as replyModule from "../auto-reply/reply.js";
-import type { MarvConfig } from "../config/config.js";
-import { resolveMainSessionKey } from "../config/sessions.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveMainSessionKey } from "../core/config/sessions.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
@@ -31,9 +31,7 @@ afterEach(() => {
 });
 
 describe("Ghost reminder bug (issue #13317)", () => {
-  const createConfig = async (
-    tmpDir: string,
-  ): Promise<{ cfg: MarvConfig; sessionKey: string }> => {
+  const createConfig = async (tmpDir: string): Promise<{ cfg: MarvConfig; sessionKey: string }> => {
     const storePath = path.join(tmpDir, "sessions.json");
     const cfg: MarvConfig = {
       agents: {

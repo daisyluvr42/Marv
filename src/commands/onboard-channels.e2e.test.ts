@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { setDefaultChannelPluginRegistryForTests } from "./channel-test-helpers.js";
 import { setupChannels } from "./onboard-channels.js";

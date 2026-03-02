@@ -8,7 +8,7 @@ import {
   resolveGatewayPort,
   validateConfigObjectWithPlugins,
   writeConfigFile,
-} from "../config/config.js";
+} from "../core/config/config.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime } from "../runtime.js";
 import { displayPath } from "../utils.js";

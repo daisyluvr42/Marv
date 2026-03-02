@@ -1,6 +1,6 @@
 import path from "node:path";
-import type { MarvConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,
@@ -127,10 +127,7 @@ export function resolveAgentConfig(
   };
 }
 
-export function resolveAgentSkillsFilter(
-  cfg: MarvConfig,
-  agentId: string,
-): string[] | undefined {
+export function resolveAgentSkillsFilter(cfg: MarvConfig, agentId: string): string[] | undefined {
   return normalizeSkillFilter(resolveAgentConfig(cfg, agentId)?.skills);
 }
 

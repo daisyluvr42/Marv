@@ -1,4 +1,4 @@
-import type { MarvConfig, HookConfig } from "../config/config.js";
+import type { MarvConfig, HookConfig } from "../core/config/config.js";
 import {
   evaluateRuntimeRequires,
   hasBinary,

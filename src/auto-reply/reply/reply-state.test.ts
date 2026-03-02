@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { SessionEntry } from "../../config/sessions.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
 import {
   appendHistoryEntry,
   buildHistoryContext,

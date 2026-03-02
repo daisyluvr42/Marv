@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
-import type { ChannelGroupPolicy } from "../../config/group-policy.js";
-import type { TelegramAccountConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { ChannelGroupPolicy } from "../../core/config/group-policy.js";
+import type { TelegramAccountConfig } from "../../core/config/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 

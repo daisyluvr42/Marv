@@ -1,5 +1,5 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { extractAssistantText } from "../runner/pi-embedded-utils.js";
 
 export type ImageModelConfig = { primary?: string; fallbacks?: string[] };

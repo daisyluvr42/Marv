@@ -3,9 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildModelAliasIndex } from "../../agents/model/model-selection.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
-import { saveSessionStore } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
+import { saveSessionStore } from "../../core/config/sessions.js";
 import { formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "../../infra/system-events.js";
 import { applyResetModelOverride } from "./session-reset-model.js";
@@ -1094,7 +1094,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
       sessionId: existingSessionId,
       overrides: { verboseLevel: "on" },
     });
-    const sessionUtils = await import("../../gateway/session-utils.fs.js");
+    const sessionUtils = await import("../../core/gateway/session-utils.fs.js");
     const archiveSpy = vi.spyOn(sessionUtils, "archiveSessionTranscripts");
 
     const cfg = {

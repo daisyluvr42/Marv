@@ -1,6 +1,6 @@
-import { resolveGatewayPort } from "../../config/config.js";
-import type { MarvConfig, ConfigFileSnapshot } from "../../config/types.js";
-import type { GatewayProbeResult } from "../../gateway/probe.js";
+import { resolveGatewayPort } from "../../core/config/config.js";
+import type { MarvConfig, ConfigFileSnapshot } from "../../core/config/types.js";
+import type { GatewayProbeResult } from "../../core/gateway/probe.js";
 import { pickPrimaryTailnetIPv4 } from "../../infra/tailnet.js";
 import { colorize, theme } from "../../terminal/theme.js";
 import { pickGatewaySelfPresence } from "../gateway-presence.js";
@@ -169,9 +169,7 @@ export function resolveAuthForTarget(
   const envToken =
     process.env.MARV_GATEWAY_TOKEN?.trim() || process.env.MARV_GATEWAY_TOKEN?.trim() || "";
   const envPassword =
-    process.env.MARV_GATEWAY_PASSWORD?.trim() ||
-    process.env.MARV_GATEWAY_PASSWORD?.trim() ||
-    "";
+    process.env.MARV_GATEWAY_PASSWORD?.trim() || process.env.MARV_GATEWAY_PASSWORD?.trim() || "";
   const cfgToken =
     typeof cfg.gateway?.auth?.token === "string" ? cfg.gateway.auth.token.trim() : "";
   const cfgPassword =

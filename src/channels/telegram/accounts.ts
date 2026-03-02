@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { TelegramAccountConfig, TelegramActionConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { TelegramAccountConfig, TelegramActionConfig } from "../../core/config/types.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { listBoundAccountIds, resolveDefaultAgentBoundAccountId } from "../../routing/bindings.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";

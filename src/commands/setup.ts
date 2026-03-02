@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import JSON5 from "json5";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../agents/workspace.js";
-import { type MarvConfig, createConfigIO, writeConfigFile } from "../config/config.js";
-import { formatConfigPath, logConfigUpdated } from "../config/logging.js";
-import { resolveSessionTranscriptsDir } from "../config/sessions.js";
+import { type MarvConfig, createConfigIO, writeConfigFile } from "../core/config/config.js";
+import { formatConfigPath, logConfigUpdated } from "../core/config/logging.js";
+import { resolveSessionTranscriptsDir } from "../core/config/sessions.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";

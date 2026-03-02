@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import type { MarvConfig } from "../config/config.js";
-import { loadSessionStore } from "../config/sessions.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadSessionStore } from "../core/config/sessions.js";
 import {
   getAbortEmbeddedPiRunMock,
   getRunEmbeddedPiAgentMock,

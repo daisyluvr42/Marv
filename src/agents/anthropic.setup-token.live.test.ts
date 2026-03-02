@@ -8,7 +8,7 @@ import {
   ANTHROPIC_SETUP_TOKEN_PREFIX,
   validateAnthropicSetupToken,
 } from "../commands/auth-token.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { resolveMarvAgentDir } from "./agent-paths.js";
 import {

@@ -174,7 +174,7 @@ vi.mock("../memory/manager.js", () => ({
   },
 }));
 
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../core/config/sessions.js", () => ({
   loadSessionStore: mocks.loadSessionStore,
   resolveMainSessionKey: mocks.resolveMainSessionKey,
   resolveStorePath: mocks.resolveStorePath,
@@ -229,15 +229,15 @@ vi.mock("../channels/web/session.js", () => ({
   readWebSelfId: mocks.readWebSelfId,
   logWebSelfId: mocks.logWebSelfId,
 }));
-vi.mock("../gateway/probe.js", () => ({
+vi.mock("../core/gateway/probe.js", () => ({
   probeGateway: mocks.probeGateway,
 }));
-vi.mock("../gateway/call.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../gateway/call.js")>();
+vi.mock("../core/gateway/call.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/gateway/call.js")>();
   return { ...actual, callGateway: mocks.callGateway };
 });
-vi.mock("../gateway/session-utils.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../gateway/session-utils.js")>();
+vi.mock("../core/gateway/session-utils.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/gateway/session-utils.js")>();
   return {
     ...actual,
     listAgentsForGateway: mocks.listAgentsForGateway,
@@ -279,8 +279,8 @@ vi.mock("../infra/update-check.js", () => ({
   formatGitInstallLabel: vi.fn(() => "main · @ deadbeef"),
   compareSemverStrings: vi.fn(() => 0),
 }));
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => ({ session: {} }),

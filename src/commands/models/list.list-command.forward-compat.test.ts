@@ -36,7 +36,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   loadConfig: mocks.loadConfig,
 }));
 

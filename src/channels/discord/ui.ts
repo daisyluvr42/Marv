@@ -1,5 +1,5 @@
 import { Container } from "@buape/carbon";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveDiscordAccount } from "./accounts.js";
 
 const DEFAULT_DISCORD_ACCENT_COLOR = "#5865F2";

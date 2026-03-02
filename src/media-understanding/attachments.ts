@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { MediaUnderstandingAttachmentsConfig } from "../config/types.tools.js";
+import type { MediaUnderstandingAttachmentsConfig } from "../core/config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { isAbortError } from "../infra/unhandled-rejections.js";
 import { fetchRemoteMedia, MediaFetchError } from "../media/fetch.js";

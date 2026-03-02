@@ -15,9 +15,9 @@ import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "../../../config/commands.js";
-import type { MarvConfig, ReplyToMode } from "../../../config/config.js";
-import { loadConfig } from "../../../config/config.js";
+} from "../../../core/config/commands.js";
+import type { MarvConfig, ReplyToMode } from "../../../core/config/config.js";
+import { loadConfig } from "../../../core/config/config.js";
 import { danger, logVerbose, shouldLogVerbose, warn } from "../../../globals.js";
 import { formatErrorMessage } from "../../../infra/errors.js";
 import { createDiscordRetryRunner } from "../../../infra/retry-policy.js";

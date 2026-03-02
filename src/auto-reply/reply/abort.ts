@@ -8,13 +8,13 @@ import {
   resolveInternalSessionKey,
   resolveMainSessionAlias,
 } from "../../agents/tools/sessions-helpers.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   loadSessionStore,
   resolveStorePath,
   type SessionEntry,
   updateSessionStore,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { resolveCommandAuthorization } from "../command-auth.js";

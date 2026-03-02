@@ -1,7 +1,7 @@
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { normalizeChatChannelId } from "../channels/registry.js";
-import type { MarvConfig } from "../config/config.js";
-import type { AgentBinding } from "../config/types.agents.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentBinding } from "../core/config/types.agents.js";
 import { normalizeAccountId, normalizeAgentId } from "./session-key.js";
 
 function normalizeBindingChannelId(raw?: string | null): string | null {

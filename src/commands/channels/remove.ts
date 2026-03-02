@@ -5,7 +5,7 @@ import {
   normalizeChannelId,
 } from "../../channels/plugins/index.js";
 import { deleteTelegramUpdateOffset } from "../../channels/telegram/update-offset-store.js";
-import { type MarvConfig, writeConfigFile } from "../../config/config.js";
+import { type MarvConfig, writeConfigFile } from "../../core/config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";

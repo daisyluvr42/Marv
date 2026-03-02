@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { TelegramInlineButtonsScope } from "../../config/types.telegram.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { TelegramInlineButtonsScope } from "../../core/config/types.telegram.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
 
 const DEFAULT_INLINE_BUTTONS_SCOPE: TelegramInlineButtonsScope = "allowlist";

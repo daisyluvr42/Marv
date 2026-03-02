@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ConfigFileSnapshot, MarvConfig } from "../config/types.js";
+import type { ConfigFileSnapshot, MarvConfig } from "../core/config/types.js";
 
 /**
  * Test for issue #6070:
@@ -11,7 +11,7 @@ import type { ConfigFileSnapshot, MarvConfig } from "../config/types.js";
 const mockReadConfigFileSnapshot = vi.fn<() => Promise<ConfigFileSnapshot>>();
 const mockWriteConfigFile = vi.fn<(cfg: MarvConfig) => Promise<void>>(async () => {});
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   readConfigFileSnapshot: () => mockReadConfigFileSnapshot(),
   writeConfigFile: (cfg: MarvConfig) => mockWriteConfigFile(cfg),
 }));
@@ -31,10 +31,7 @@ vi.mock("../runtime.js", () => ({
   },
 }));
 
-function buildSnapshot(params: {
-  resolved: MarvConfig;
-  config: MarvConfig;
-}): ConfigFileSnapshot {
+function buildSnapshot(params: { resolved: MarvConfig; config: MarvConfig }): ConfigFileSnapshot {
   return {
     path: "/tmp/marv.json",
     exists: true,

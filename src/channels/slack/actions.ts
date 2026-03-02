@@ -1,5 +1,5 @@
 import type { Block, KnownBlock, WebClient } from "@slack/web-api";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { logVerbose } from "../../globals.js";
 import { resolveSlackAccount } from "./accounts.js";
 import { buildSlackBlocksFallbackText } from "./blocks-fallback.js";

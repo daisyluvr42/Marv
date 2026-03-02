@@ -1,5 +1,5 @@
 import type { TUI } from "@mariozechner/pi-tui";
-import type { SessionsPatchResult } from "../gateway/protocol/index.js";
+import type { SessionsPatchResult } from "../core/gateway/protocol/index.js";
 import {
   normalizeAgentId,
   normalizeMainKey,

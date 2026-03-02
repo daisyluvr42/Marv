@@ -1,4 +1,4 @@
-import type { ReplyToMode } from "../../config/types.js";
+import type { ReplyToMode } from "../../core/config/types.js";
 import { logVerbose } from "../../globals.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import type { OriginatingChannelType } from "../templating.js";

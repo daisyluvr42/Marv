@@ -14,7 +14,7 @@ import type {
 import { parseSlackTarget } from "../../channels/slack/targets.js";
 import { parseTelegramTarget } from "../../channels/telegram/targets.js";
 import { loadWebMedia } from "../../channels/web/media.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { extensionForMime } from "../../media/mime.js";
 
 export function readBooleanParam(

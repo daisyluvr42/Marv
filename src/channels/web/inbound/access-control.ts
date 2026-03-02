@@ -1,4 +1,4 @@
-import { loadConfig } from "../../../config/config.js";
+import { loadConfig } from "../../../core/config/config.js";
 import { logVerbose } from "../../../globals.js";
 import { buildPairingReply } from "../../../pairing/pairing-messages.js";
 import {

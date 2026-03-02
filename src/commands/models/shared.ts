@@ -7,7 +7,11 @@ import {
   resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
-import { type MarvConfig, readConfigFileSnapshot, writeConfigFile } from "../../config/config.js";
+import {
+  type MarvConfig,
+  readConfigFileSnapshot,
+  writeConfigFile,
+} from "../../core/config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 
 export const ensureFlagCompatibility = (opts: { json?: boolean; plain?: boolean }) => {

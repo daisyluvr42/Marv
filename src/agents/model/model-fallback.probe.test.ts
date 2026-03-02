@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { AuthProfileStore } from "../auth-profiles.js";
 
 // Mock auth-profiles module — must be before importing model-fallback

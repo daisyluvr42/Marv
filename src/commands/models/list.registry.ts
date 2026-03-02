@@ -15,7 +15,7 @@ import { ensureMarvModelsJson } from "../../agents/model/models-config.js";
 import type { ModelRegistry } from "../../agents/model/pi-model-discovery.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/model/pi-model-discovery.js";
 import { ensurePiAuthJsonFromAuthProfiles } from "../../agents/runner/pi-auth-json.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   formatErrorWithStack,
   MODEL_AVAILABILITY_UNAVAILABLE_CODE,

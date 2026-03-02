@@ -1,6 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
-import { resolveGatewayPort } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveGatewayPort } from "../core/config/config.js";
 import {
   resolveGatewayLaunchAgentLabel,
   resolveNodeLaunchAgentLabel,

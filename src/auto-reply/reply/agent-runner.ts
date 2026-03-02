@@ -13,8 +13,8 @@ import {
   type SessionEntry,
   updateSessionStore,
   updateSessionStoreEntry,
-} from "../../config/sessions.js";
-import type { TypingMode } from "../../config/types.js";
+} from "../../core/config/sessions.js";
+import type { TypingMode } from "../../core/config/types.js";
 import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { defaultRuntime } from "../../runtime.js";

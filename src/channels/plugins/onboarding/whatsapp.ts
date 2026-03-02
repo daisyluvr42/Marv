@@ -1,8 +1,8 @@
 import path from "node:path";
 import { formatCliCommand } from "../../../cli/command-format.js";
-import type { MarvConfig } from "../../../config/config.js";
-import { mergeWhatsAppConfig } from "../../../config/merge-config.js";
-import type { DmPolicy } from "../../../config/types.js";
+import type { MarvConfig } from "../../../core/config/config.js";
+import { mergeWhatsAppConfig } from "../../../core/config/merge-config.js";
+import type { DmPolicy } from "../../../core/config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { formatDocsLink } from "../../../terminal/links.js";

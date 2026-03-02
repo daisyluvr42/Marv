@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { WorkspaceBootstrapFile } from "../workspace.js";
 import { DEFAULT_AGENTS_FILENAME } from "../workspace.js";
 import {

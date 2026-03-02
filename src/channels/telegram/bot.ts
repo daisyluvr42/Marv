@@ -11,14 +11,14 @@ import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "../../config/commands.js";
-import type { MarvConfig, ReplyToMode } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
+} from "../../core/config/commands.js";
+import type { MarvConfig, ReplyToMode } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
-} from "../../config/group-policy.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
+} from "../../core/config/group-policy.js";
+import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../globals.js";
 import { formatUncaughtError } from "../../infra/errors.js";
 import { getChildLogger } from "../../logging.js";

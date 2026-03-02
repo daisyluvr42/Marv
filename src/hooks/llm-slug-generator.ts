@@ -11,7 +11,7 @@ import {
   resolveAgentDir,
 } from "../agents/agent-scope.js";
 import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 /**
  * Generate a short 1-2 word filename slug from session content using LLM

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../core/config/config.js";
 
 vi.mock("./slack/send.js", () => ({
   sendMessageSlack: vi.fn().mockResolvedValue({ messageId: "1234.5678", channelId: "C123" }),

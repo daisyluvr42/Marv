@@ -3,12 +3,12 @@ import path from "node:path";
 import readline from "node:readline";
 import type { NormalizedUsage, UsageLike } from "../agents/usage.js";
 import { normalizeUsage } from "../agents/usage.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   resolveSessionFilePath,
   resolveSessionTranscriptsDirForAgent,
-} from "../config/sessions/paths.js";
-import type { SessionEntry } from "../config/sessions/types.js";
+} from "../core/config/sessions/paths.js";
+import type { SessionEntry } from "../core/config/sessions/types.js";
 import { countToolResults, extractToolCallNames } from "../utils/transcript-tools.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../utils/usage-format.js";
 import type {

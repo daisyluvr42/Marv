@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveStateDir } from "../config/paths.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 
 const SNAPSHOT_TOOL_NAMES = new Set(["write", "edit", "apply_patch"]);

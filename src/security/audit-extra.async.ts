@@ -16,12 +16,12 @@ import { isToolAllowedByPolicies } from "../agents/tools/pi-tools.policy.js";
 import { resolveToolProfilePolicy } from "../agents/tools/tool-policy.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
-import { resolveNativeSkillsEnabled } from "../config/commands.js";
-import type { MarvConfig, ConfigFileSnapshot } from "../config/config.js";
-import { createConfigIO } from "../config/config.js";
-import { collectIncludePathsRecursive } from "../config/includes-scan.js";
-import { resolveOAuthDir } from "../config/paths.js";
-import type { AgentToolsConfig } from "../config/types.tools.js";
+import { resolveNativeSkillsEnabled } from "../core/config/commands.js";
+import type { MarvConfig, ConfigFileSnapshot } from "../core/config/config.js";
+import { createConfigIO } from "../core/config/config.js";
+import { collectIncludePathsRecursive } from "../core/config/includes-scan.js";
+import { resolveOAuthDir } from "../core/config/paths.js";
+import type { AgentToolsConfig } from "../core/config/types.tools.js";
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {

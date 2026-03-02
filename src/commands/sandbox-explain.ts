@@ -4,14 +4,14 @@ import {
   resolveSandboxToolPolicyForAgent,
 } from "../agents/sandbox/sandbox.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   loadSessionStore,
   resolveAgentMainSessionKey,
   resolveMainSessionKey,
   resolveStorePath,
-} from "../config/sessions.js";
+} from "../core/config/sessions.js";
 import {
   buildAgentMainSessionKey,
   normalizeAgentId,

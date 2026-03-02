@@ -21,12 +21,12 @@ import { sendMessageSignal } from "../../channels/signal/send.js";
 import type { sendMessageSlack } from "../../channels/slack/send.js";
 import type { sendMessageTelegram } from "../../channels/telegram/send.js";
 import type { sendMessageWhatsApp } from "../../channels/web/outbound.js";
-import type { MarvConfig } from "../../config/config.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import {
   appendAssistantMessageToSessionTranscript,
   resolveMirroredTranscriptText,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";

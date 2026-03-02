@@ -1,7 +1,7 @@
 import { getChannelDock } from "../../channels/dock.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { ReplyToMode } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { ReplyToMode } from "../../core/config/types.js";
 import type { OriginatingChannelType } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
 

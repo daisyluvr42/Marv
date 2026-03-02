@@ -4,8 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
 import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
-import type { MarvConfig } from "../../config/config.js";
-import { resolveStateDir } from "../../config/paths.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { resolveStateDir } from "../../core/config/paths.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import {
   listSessionFilesForAgent,

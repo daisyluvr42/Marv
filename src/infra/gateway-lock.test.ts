@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveConfigPath, resolveGatewayLockDir, resolveStateDir } from "../config/paths.js";
+import { resolveConfigPath, resolveGatewayLockDir, resolveStateDir } from "../core/config/paths.js";
 import { acquireGatewayLock, GatewayLockError } from "./gateway-lock.js";
 
 let fixtureRoot = "";

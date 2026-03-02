@@ -1,15 +1,15 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
-import type { MarvConfig } from "../config/config.js";
-import type { SessionSendPolicyConfig } from "../config/types.base.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { SessionSendPolicyConfig } from "../core/config/types.base.js";
 import type {
   MemoryBackend,
   MemoryCitationsMode,
   MemoryQmdConfig,
   MemoryQmdIndexPath,
   MemoryQmdSearchMode,
-} from "../config/types.memory.js";
+} from "../core/config/types.memory.js";
 import { resolveUserPath } from "../utils.js";
 import { splitShellArgs } from "../utils/shell-argv.js";
 

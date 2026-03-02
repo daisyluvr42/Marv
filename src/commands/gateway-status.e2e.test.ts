@@ -91,7 +91,7 @@ const probeGateway = vi.fn(async (opts: { url: string }) => {
   };
 });
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   loadConfig,
   resolveGatewayPort,
 }));
@@ -116,7 +116,7 @@ vi.mock("../infra/ssh-config.js", () => ({
   resolveSshConfig,
 }));
 
-vi.mock("../gateway/probe.js", () => ({
+vi.mock("../core/gateway/probe.js", () => ({
   probeGateway,
 }));
 

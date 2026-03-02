@@ -1,7 +1,7 @@
 import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
 import { normalizeProviderId } from "../../../agents/model/model-selection.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
-import type { MarvConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../core/config/config.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { shortenHomePath } from "../../../utils.js";

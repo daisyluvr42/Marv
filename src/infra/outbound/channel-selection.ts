@@ -1,6 +1,6 @@
 import { listChannelPlugins } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   listDeliverableMessageChannels,
   type DeliverableMessageChannel,
@@ -49,9 +49,7 @@ async function isPluginConfigured(plugin: ChannelPlugin, cfg: MarvConfig): Promi
   return false;
 }
 
-export async function listConfiguredMessageChannels(
-  cfg: MarvConfig,
-): Promise<MessageChannelId[]> {
+export async function listConfiguredMessageChannels(cfg: MarvConfig): Promise<MessageChannelId[]> {
   const channels: MessageChannelId[] = [];
   for (const plugin of listChannelPlugins()) {
     if (!isKnownChannel(plugin.id)) {

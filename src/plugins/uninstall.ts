@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { MarvConfig } from "../config/config.js";
-import type { PluginInstallRecord } from "../config/types.plugins.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { PluginInstallRecord } from "../core/config/types.plugins.js";
 import { resolvePluginInstallDir } from "./install.js";
 import { defaultSlotIdForKey } from "./slots.js";
 

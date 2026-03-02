@@ -1,7 +1,7 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
-import { resolveGatewayPort } from "../config/config.js";
-import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
+import { resolveGatewayPort } from "../core/config/config.js";
+import { buildGatewayConnectionDetails, callGateway } from "../core/gateway/call.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";

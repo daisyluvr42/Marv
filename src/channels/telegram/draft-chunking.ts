@@ -1,5 +1,5 @@
 import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 import { getChannelDock } from "../dock.js";
 

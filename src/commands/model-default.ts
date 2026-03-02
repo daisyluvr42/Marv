@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { AgentModelListConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentModelListConfig } from "../core/config/types.js";
 
 export function resolvePrimaryModel(model?: AgentModelListConfig | string): string | undefined {
   if (typeof model === "string") {

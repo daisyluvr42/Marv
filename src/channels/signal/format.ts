@@ -1,4 +1,4 @@
-import type { MarkdownTableMode } from "../../config/types.base.js";
+import type { MarkdownTableMode } from "../../core/config/types.base.js";
 import {
   chunkMarkdownIR,
   markdownToIR,

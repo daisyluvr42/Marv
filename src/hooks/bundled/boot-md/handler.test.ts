@@ -10,7 +10,7 @@ const logDebug = vi.fn();
 const MAIN_WORKSPACE_DIR = path.join(path.sep, "ws", "main");
 const OPS_WORKSPACE_DIR = path.join(path.sep, "ws", "ops");
 
-vi.mock("../../../gateway/boot.js", () => ({ runBootOnce }));
+vi.mock("../../../core/gateway/boot.js", () => ({ runBootOnce }));
 vi.mock("../../../agents/agent-scope.js", () => ({
   listAgentIds,
   resolveAgentWorkspaceDir,

@@ -18,8 +18,8 @@ import {
 import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
 import { buildMentionRegexes, matchesMentionPatterns } from "../../../auto-reply/reply/mentions.js";
 import { createReplyDispatcherWithTyping } from "../../../auto-reply/reply/reply-dispatcher.js";
-import { resolveChannelGroupRequireMention } from "../../../config/group-policy.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../../config/sessions.js";
+import { resolveChannelGroupRequireMention } from "../../../core/config/group-policy.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";
 import { mediaKindFromMime } from "../../../media/constants.js";

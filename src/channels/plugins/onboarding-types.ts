@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { DmPolicy } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { DmPolicy } from "../../core/config/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 import type { ChannelId } from "./types.js";

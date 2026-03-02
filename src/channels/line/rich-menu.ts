@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { messagingApi } from "@line/bot-sdk";
-import { loadConfig } from "../../config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { logVerbose } from "../../globals.js";
 import { resolveLineAccount } from "./accounts.js";
 import { datetimePickerAction, messageAction, postbackAction, uriAction } from "./actions.js";

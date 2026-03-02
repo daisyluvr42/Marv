@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { saveSessionStore } from "../../../config/sessions.js";
+import { saveSessionStore } from "../../../core/config/sessions.js";
 import { isBotMentionedFromTargets, resolveMentionTargets } from "./mentions.js";
 import { getSessionSnapshot } from "./session-snapshot.js";
 import type { WebInboundMsg } from "./types.js";

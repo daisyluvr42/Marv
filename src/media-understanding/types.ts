@@ -98,7 +98,7 @@ export type ImageDescriptionRequest = {
   profile?: string;
   preferredProfile?: string;
   agentDir: string;
-  cfg: import("../config/config.js").MarvConfig;
+  cfg: import("../core/config/config.js").MarvConfig;
 };
 
 export type ImageDescriptionResult = {

@@ -26,7 +26,7 @@ const modelRegistryState = {
 };
 let previousExitCode: typeof process.exitCode;
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   CONFIG_PATH: "/tmp/marv.json",
   STATE_DIR: "/tmp/marv-state",
   loadConfig,

@@ -1,7 +1,7 @@
 import { formatCliCommand } from "../../cli/command-format.js";
-import type { MarvConfig } from "../../config/config.js";
-import { resolveGatewayPort, writeConfigFile } from "../../config/config.js";
-import { logConfigUpdated } from "../../config/logging.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { resolveGatewayPort, writeConfigFile } from "../../core/config/config.js";
+import { logConfigUpdated } from "../../core/config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME } from "../daemon-runtime.js";
 import { healthCommand } from "../health.js";

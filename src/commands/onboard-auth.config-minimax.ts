@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { ModelProviderConfig } from "../config/types.models.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { ModelProviderConfig } from "../core/config/types.models.js";
 import {
   applyAgentDefaultModelPrimary,
   applyOnboardAuthAgentModelsAndProviders,

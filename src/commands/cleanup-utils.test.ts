@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it, test } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { buildCleanupPlan } from "./cleanup-utils.js";
 import { applyAgentDefaultPrimaryModel } from "./model-default.js";
 
@@ -23,10 +23,7 @@ describe("buildCleanupPlan", () => {
     expect(plan.configInsideState).toBe(true);
     expect(plan.oauthInsideState).toBe(false);
     expect(new Set(plan.workspaceDirs)).toEqual(
-      new Set([
-        path.join(tmpRoot, "marv-workspace-1"),
-        path.join(tmpRoot, "marv-workspace-2"),
-      ]),
+      new Set([path.join(tmpRoot, "marv-workspace-1"), path.join(tmpRoot, "marv-workspace-2")]),
     );
   });
 });

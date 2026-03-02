@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   loadSessionStore: vi.fn(),
   resolveStorePath: vi.fn().mockReturnValue("/tmp/test-store.json"),
   evaluateSessionFreshness: vi.fn().mockReturnValue({ fresh: true }),
   resolveSessionResetPolicy: vi.fn().mockReturnValue({ mode: "idle", idleMinutes: 60 }),
 }));
 
-import { loadSessionStore, evaluateSessionFreshness } from "../../config/sessions.js";
+import { loadSessionStore, evaluateSessionFreshness } from "../../core/config/sessions.js";
 import { resolveCronSession } from "./session.js";
 
 const NOW_MS = 1_737_600_000_000;

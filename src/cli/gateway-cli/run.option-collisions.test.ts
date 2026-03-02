@@ -19,7 +19,7 @@ const runGatewayLoop = vi.fn(async ({ start }: { start: () => Promise<unknown> }
 
 const { defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
 
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   getConfigPath: () => "/tmp/marv-test-missing-config.json",
   loadConfig: () => ({}),
   readConfigFileSnapshot: async () => ({ exists: false }),
@@ -27,7 +27,7 @@ vi.mock("../../config/config.js", () => ({
   resolveGatewayPort: () => 18789,
 }));
 
-vi.mock("../../gateway/auth.js", () => ({
+vi.mock("../../core/gateway/auth.js", () => ({
   resolveGatewayAuth: (params: { authConfig?: { token?: string }; env?: NodeJS.ProcessEnv }) => ({
     mode: "token",
     token: params.authConfig?.token ?? params.env?.MARV_GATEWAY_TOKEN,
@@ -36,11 +36,11 @@ vi.mock("../../gateway/auth.js", () => ({
   }),
 }));
 
-vi.mock("../../gateway/server.js", () => ({
+vi.mock("../../core/gateway/server.js", () => ({
   startGatewayServer: (port: number, opts?: unknown) => startGatewayServer(port, opts),
 }));
 
-vi.mock("../../gateway/ws-logging.js", () => ({
+vi.mock("../../core/gateway/ws-logging.js", () => ({
   setGatewayWsLogStyle: (style: string) => setGatewayWsLogStyle(style),
 }));
 

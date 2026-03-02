@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import util from "node:util";
-import type { MarvConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/types.js";
 import { isVerbose } from "../globals.js";
 import { stripAnsi } from "../terminal/ansi.js";
 import { readLoggingConfig } from "./config.js";
@@ -20,7 +20,7 @@ const requireConfig = createRequire(import.meta.url);
 type ConsoleConfigLoader = () => MarvConfig["logging"] | undefined;
 const loadConfigFallbackDefault: ConsoleConfigLoader = () => {
   try {
-    const loaded = requireConfig("../config/config.js") as {
+    const loaded = requireConfig("../core/config/config.js") as {
       loadConfig?: () => MarvConfig;
     };
     return loaded.loadConfig?.().logging;

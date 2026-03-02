@@ -11,4 +11,4 @@ export {
   loadSessionStore,
   saveSessionStore,
   resolveSessionFilePath,
-} from "../config/sessions.ts";
+} from "../core/config/sessions.ts";

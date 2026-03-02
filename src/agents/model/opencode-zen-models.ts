@@ -11,7 +11,7 @@
  * Auth URL: https://opencode.ai/auth
  */
 
-import type { ModelApi, ModelDefinitionConfig } from "../../config/types.js";
+import type { ModelApi, ModelDefinitionConfig } from "../../core/config/types.js";
 
 export const OPENCODE_ZEN_API_BASE_URL = "https://opencode.ai/zen/v1";
 export const OPENCODE_ZEN_DEFAULT_MODEL = "claude-opus-4-6";

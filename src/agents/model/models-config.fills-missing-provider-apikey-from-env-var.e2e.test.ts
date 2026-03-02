@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import {
   CUSTOM_PROXY_MODELS_CONFIG,

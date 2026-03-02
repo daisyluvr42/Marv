@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import JSON5 from "json5";
-import { readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
+import { readConfigFileSnapshot, writeConfigFile } from "../core/config/config.js";
 import { danger, info } from "../globals.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -285,8 +285,7 @@ export function registerConfigCli(program: Command) {
     )
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/config", "docs: /cli/config")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/config", "docs: /cli/config")}\n`,
     )
     .option(
       "--section <section>",

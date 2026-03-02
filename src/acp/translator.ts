@@ -20,9 +20,9 @@ import type {
   StopReason,
 } from "@agentclientprotocol/sdk";
 import { PROTOCOL_VERSION } from "@agentclientprotocol/sdk";
-import type { GatewayClient } from "../gateway/client.js";
-import type { EventFrame } from "../gateway/protocol/index.js";
-import type { SessionsListResult } from "../gateway/session-utils.js";
+import type { GatewayClient } from "../core/gateway/client.js";
+import type { EventFrame } from "../core/gateway/protocol/index.js";
+import type { SessionsListResult } from "../core/gateway/session-utils.js";
 import { getAvailableCommands } from "./commands.js";
 import {
   extractAttachmentsFromPrompt,

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { findGitRoot } from "../../infra/git-root.js";
 import {
   formatUserTime,

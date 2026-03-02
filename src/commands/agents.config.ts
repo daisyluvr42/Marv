@@ -10,7 +10,7 @@ import {
   loadAgentIdentityFromWorkspace,
   parseIdentityMarkdown as parseIdentityMarkdownFile,
 } from "../agents/prompt/identity-file.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 
 export type AgentSummary = {

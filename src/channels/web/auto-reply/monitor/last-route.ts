@@ -1,6 +1,6 @@
 import type { MsgContext } from "../../../../auto-reply/templating.js";
-import type { loadConfig } from "../../../../config/config.js";
-import { resolveStorePath, updateLastRoute } from "../../../../config/sessions.js";
+import type { loadConfig } from "../../../../core/config/config.js";
+import { resolveStorePath, updateLastRoute } from "../../../../core/config/sessions.js";
 import { formatError } from "../../session.js";
 
 export function trackBackgroundTask(

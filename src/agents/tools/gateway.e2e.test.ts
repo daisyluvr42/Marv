@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { callGatewayTool, resolveGatewayOptions } from "./gateway.js";
 
 const callGatewayMock = vi.fn();
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   loadConfig: () => ({}),
   resolveGatewayPort: () => 18789,
 }));
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (...args: unknown[]) => callGatewayMock(...args),
 }));
 

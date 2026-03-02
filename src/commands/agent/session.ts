@@ -7,7 +7,7 @@ import {
   type ThinkLevel,
   type VerboseLevel,
 } from "../../auto-reply/thinking.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   evaluateSessionFreshness,
   loadSessionStore,
@@ -19,7 +19,7 @@ import {
   resolveSessionKey,
   resolveStorePath,
   type SessionEntry,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
 
 export type SessionResolution = {

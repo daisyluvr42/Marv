@@ -17,7 +17,7 @@ import type {
   ChannelOutboundAdapter,
   ChannelPlugin,
 } from "../src/channels/plugins/types.js";
-import type { MarvConfig } from "../src/config/config.js";
+import type { MarvConfig } from "../src/core/config/config.js";
 import type { OutboundSendDeps } from "../src/infra/outbound/deliver.js";
 import { withIsolatedTestHome } from "./test-env.js";
 

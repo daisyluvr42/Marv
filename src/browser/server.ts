@@ -1,6 +1,6 @@
 import type { Server } from "node:http";
 import express from "express";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveBrowserConfig } from "./config.js";
 import { ensureBrowserControlAuth, resolveBrowserControlAuth } from "./control-auth.js";

@@ -4,7 +4,7 @@ import { resolveChannelDefaultAccountId } from "../../channels/plugins/helpers.j
 import { getChannelPlugin, listChannelPlugins } from "../../channels/plugins/index.js";
 import type { ChannelCapabilities, ChannelPlugin } from "../../channels/plugins/types.js";
 import { fetchSlackScopes, type SlackScopesResult } from "../../channels/slack/scopes.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { danger } from "../../globals.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";

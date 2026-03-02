@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import { STATE_DIR } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { STATE_DIR } from "../core/config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import type { PluginRegistry } from "./registry.js";
 import type { MarvPluginServiceContext, PluginLogger } from "./types.js";

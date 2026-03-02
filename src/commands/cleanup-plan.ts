@@ -1,10 +1,10 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   loadConfig,
   resolveConfigPath,
   resolveOAuthDir,
   resolveStateDir,
-} from "../config/config.js";
+} from "../core/config/config.js";
 import { buildCleanupPlan } from "./cleanup-utils.js";
 
 export function resolveCleanupPlanFromDisk(): {

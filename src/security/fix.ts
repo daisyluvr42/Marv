@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { MarvConfig } from "../config/config.js";
-import { createConfigIO } from "../config/config.js";
-import { collectIncludePathsRecursive } from "../config/includes-scan.js";
-import { resolveConfigPath, resolveOAuthDir, resolveStateDir } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { createConfigIO } from "../core/config/config.js";
+import { collectIncludePathsRecursive } from "../core/config/includes-scan.js";
+import { resolveConfigPath, resolveOAuthDir, resolveStateDir } from "../core/config/paths.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { runExec } from "../process/exec.js";
 import { normalizeAgentId } from "../routing/session-key.js";

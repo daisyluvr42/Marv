@@ -3,8 +3,8 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import type { Command } from "commander";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig, writeConfigFile } from "../config/io.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig, writeConfigFile } from "../core/config/io.js";
 import {
   buildWorkspaceHookStatus,
   type HookStatusEntry,

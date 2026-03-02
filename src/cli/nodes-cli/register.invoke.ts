@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { resolveAgentConfig, resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { loadConfig } from "../../config/config.js";
-import { randomIdempotencyKey } from "../../gateway/call.js";
+import { loadConfig } from "../../core/config/config.js";
+import { randomIdempotencyKey } from "../../core/gateway/call.js";
 import {
   DEFAULT_EXEC_APPROVAL_TIMEOUT_MS,
   type ExecApprovalsFile,

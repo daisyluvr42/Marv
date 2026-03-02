@@ -3,8 +3,8 @@ import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { isCliProvider } from "../../agents/model/model-selection.js";
 import { deriveSessionTotalTokens, hasNonzeroUsage } from "../../agents/usage.js";
-import type { MarvConfig } from "../../config/config.js";
-import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 
 type RunResult = Awaited<
   ReturnType<(typeof import("../../agents/runner/pi-embedded.js"))["runEmbeddedPiAgent"]>

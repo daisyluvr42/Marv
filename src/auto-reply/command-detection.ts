@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/types.js";
 import {
   type CommandNormalizeOptions,
   listChatCommands,

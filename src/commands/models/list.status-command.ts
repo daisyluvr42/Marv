@@ -25,7 +25,7 @@ import {
 } from "../../agents/model/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { withProgressTotals } from "../../cli/progress.js";
-import { CONFIG_PATH, loadConfig } from "../../config/config.js";
+import { CONFIG_PATH, loadConfig } from "../../core/config/config.js";
 import {
   formatUsageWindowSummary,
   loadProviderUsageSummary,

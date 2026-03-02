@@ -8,7 +8,7 @@ const rmMock = vi.spyOn(fs, "rm");
 
 const authDir = path.join(os.tmpdir(), "wa-creds");
 
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   loadConfig: () =>
     ({
       channels: {

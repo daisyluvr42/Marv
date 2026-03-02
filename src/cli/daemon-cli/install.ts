@@ -9,10 +9,10 @@ import {
   readConfigFileSnapshot,
   resolveGatewayPort,
   writeConfigFile,
-} from "../../config/config.js";
-import { resolveIsNixMode } from "../../config/paths.js";
+} from "../../core/config/config.js";
+import { resolveIsNixMode } from "../../core/config/paths.js";
+import { resolveGatewayAuth } from "../../core/gateway/auth.js";
 import { resolveGatewayService } from "../../daemon/service.js";
-import { resolveGatewayAuth } from "../../gateway/auth.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
 import {

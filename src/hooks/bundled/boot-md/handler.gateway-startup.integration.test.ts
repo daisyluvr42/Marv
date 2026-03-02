@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
 import type { CliDeps } from "../../../cli/deps.js";
-import type { MarvConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../core/config/config.js";
 
 const runBootOnce = vi.fn();
 
-vi.mock("../../../gateway/boot.js", () => ({ runBootOnce }));
+vi.mock("../../../core/gateway/boot.js", () => ({ runBootOnce }));
 vi.mock("../../../logging/subsystem.js", () => ({
   createSubsystemLogger: () => ({
     warn: vi.fn(),

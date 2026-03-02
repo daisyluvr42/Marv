@@ -8,8 +8,8 @@ const pickPrimaryLanIPv4 = vi.fn();
 const originalEnvToken = process.env.MARV_GATEWAY_TOKEN;
 const originalEnvPassword = process.env.MARV_GATEWAY_PASSWORD;
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     loadConfig,
@@ -21,7 +21,7 @@ vi.mock("../infra/tailnet.js", () => ({
   pickPrimaryTailnetIPv4,
 }));
 
-vi.mock("../gateway/net.js", () => ({
+vi.mock("../core/gateway/net.js", () => ({
   pickPrimaryLanIPv4,
 }));
 

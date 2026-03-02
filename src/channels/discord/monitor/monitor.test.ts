@@ -7,8 +7,8 @@ import type {
 import type { Client } from "@buape/carbon";
 import type { GatewayPresenceUpdate } from "discord-api-types/v10";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../../config/config.js";
-import type { DiscordAccountConfig } from "../../../config/types.discord.js";
+import type { MarvConfig } from "../../../core/config/config.js";
+import type { DiscordAccountConfig } from "../../../core/config/types.discord.js";
 import { buildAgentSessionKey } from "../../../routing/resolve-route.js";
 import {
   clearDiscordComponentEntries,
@@ -79,8 +79,8 @@ vi.mock("../../session.js", () => ({
   recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
 }));
 
-vi.mock("../../../config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../config/sessions.js")>();
+vi.mock("../../../core/config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../core/config/sessions.js")>();
   return {
     ...actual,
     readSessionUpdatedAt: (...args: unknown[]) => readSessionUpdatedAtMock(...args),

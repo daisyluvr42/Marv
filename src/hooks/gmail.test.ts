@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type MarvConfig, DEFAULT_GATEWAY_PORT } from "../config/config.js";
+import { type MarvConfig, DEFAULT_GATEWAY_PORT } from "../core/config/config.js";
 import {
   buildDefaultHookUrl,
   buildTopicPath,

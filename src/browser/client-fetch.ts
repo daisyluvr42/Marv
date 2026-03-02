@@ -1,5 +1,5 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { getBridgeAuthForPort } from "./bridge-auth-registry.js";
 import { resolveBrowserControlAuth } from "./control-auth.js";
 import {

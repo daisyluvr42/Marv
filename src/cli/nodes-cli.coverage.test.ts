@@ -64,7 +64,7 @@ const randomIdempotencyKey = vi.fn(() => "rk_test");
 
 const { defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGateway(opts as NodeInvokeCall),
   randomIdempotencyKey: () => randomIdempotencyKey(),
 }));
@@ -73,7 +73,7 @@ vi.mock("../runtime.js", () => ({
   defaultRuntime,
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   loadConfig: () => ({}),
 }));
 

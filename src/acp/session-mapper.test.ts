@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { GatewayClient } from "../gateway/client.js";
+import type { GatewayClient } from "../core/gateway/client.js";
 import { parseSessionMeta, resolveSessionKey } from "./session-mapper.js";
 import { createInMemorySessionStore } from "./session.js";
 

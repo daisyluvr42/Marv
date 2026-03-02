@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { TelegramGroupConfig } from "../../config/types.telegram.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { TelegramGroupConfig } from "../../core/config/types.telegram.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 
 type TelegramGroups = Record<string, TelegramGroupConfig>;

@@ -5,8 +5,8 @@ import {
   normalizeChannelId,
 } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
-import type { MarvConfig } from "../config/config.js";
-import type { AgentBinding } from "../config/types.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentBinding } from "../core/config/types.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
 type ProviderAccountStatus = {

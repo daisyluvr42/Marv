@@ -8,7 +8,7 @@ import {
   type SessionSystemPromptReport,
   type SessionEntry,
   updateSessionStoreEntry,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 
 function applyCliSessionIdToSessionPatch(

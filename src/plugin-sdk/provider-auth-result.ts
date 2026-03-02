@@ -1,5 +1,5 @@
 import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type { ProviderAuthResult } from "../plugins/types.js";
 
 export function buildOauthProviderAuthResult(params: {

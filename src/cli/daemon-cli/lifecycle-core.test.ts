@@ -30,7 +30,7 @@ const service = {
   restart: vi.fn(),
 };
 
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   loadConfig: () => loadConfig(),
 }));
 

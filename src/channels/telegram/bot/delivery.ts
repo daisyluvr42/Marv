@@ -1,8 +1,8 @@
 import { type Bot, GrammyError, InputFile } from "grammy";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../auto-reply/chunk.js";
 import type { ReplyPayload } from "../../../auto-reply/types.js";
-import type { ReplyToMode } from "../../../config/config.js";
-import type { MarkdownTableMode } from "../../../config/types.base.js";
+import type { ReplyToMode } from "../../../core/config/config.js";
+import type { MarkdownTableMode } from "../../../core/config/types.base.js";
 import { danger, logVerbose, warn } from "../../../globals.js";
 import { formatErrorMessage } from "../../../infra/errors.js";
 import { retryAsync } from "../../../infra/retry.js";

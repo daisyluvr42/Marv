@@ -1,7 +1,7 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { loadSessionStore, resolveSessionKey } from "../config/sessions.js";
+import { loadSessionStore, resolveSessionKey } from "../core/config/sessions.js";
 import {
   getCompactEmbeddedPiSessionMock,
   getRunEmbeddedPiAgentMock,

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { dispatchInboundMessage, withReplyDispatcher } from "./dispatch.js";
 import type { ReplyDispatcher } from "./reply/reply-dispatcher.js";
 import { buildTestCtx } from "./reply/test-ctx.js";

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { slackPlugin } from "../../../extensions/slack/src/channel.js";
 import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 
@@ -20,9 +20,9 @@ vi.mock("./outbound-send-service.js", async () => {
   };
 });
 
-vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
-    "../../config/sessions.js",
+vi.mock("../../core/config/sessions.js", async () => {
+  const actual = await vi.importActual<typeof import("../../core/config/sessions.js")>(
+    "../../core/config/sessions.js",
   );
   return {
     ...actual,

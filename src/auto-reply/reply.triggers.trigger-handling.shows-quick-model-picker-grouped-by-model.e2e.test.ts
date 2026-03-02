@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { normalizeTestText } from "../../test/helpers/normalize-text.js";
-import { loadSessionStore } from "../config/sessions.js";
+import { loadSessionStore } from "../core/config/sessions.js";
 import {
   installTriggerHandlingE2eTestHooks,
   makeCfg,

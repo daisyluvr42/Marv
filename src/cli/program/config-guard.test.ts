@@ -7,7 +7,7 @@ vi.mock("../../commands/doctor-config-flow.js", () => ({
   loadAndMaybeMigrateDoctorConfig: loadAndMaybeMigrateDoctorConfigMock,
 }));
 
-vi.mock("../../config/config.js", () => ({
+vi.mock("../../core/config/config.js", () => ({
   readConfigFileSnapshot: readConfigFileSnapshotMock,
 }));
 

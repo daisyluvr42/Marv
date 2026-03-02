@@ -7,9 +7,9 @@ import type { ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
 import type { createVpsAwareOAuthHandlers } from "../commands/oauth-flow.js";
-import type { MarvConfig } from "../config/config.js";
-import type { ModelProviderConfig } from "../config/types.js";
-import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { ModelProviderConfig } from "../core/config/types.js";
+import type { GatewayRequestHandler } from "../core/gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -251,10 +251,7 @@ export type MarvPluginApi = {
   pluginConfig?: Record<string, unknown>;
   runtime: PluginRuntime;
   logger: PluginLogger;
-  registerTool: (
-    tool: AnyAgentTool | MarvPluginToolFactory,
-    opts?: MarvPluginToolOptions,
-  ) => void;
+  registerTool: (tool: AnyAgentTool | MarvPluginToolFactory, opts?: MarvPluginToolOptions) => void;
   registerHook: (
     events: string | string[],
     handler: InternalHookHandler,

@@ -3,7 +3,7 @@ import {
   ListFoundationModelsCommand,
   type ListFoundationModelsCommandOutput,
 } from "@aws-sdk/client-bedrock";
-import type { BedrockDiscoveryConfig, ModelDefinitionConfig } from "../config/types.js";
+import type { BedrockDiscoveryConfig, ModelDefinitionConfig } from "../core/config/types.js";
 
 const DEFAULT_REFRESH_INTERVAL_SECONDS = 3600;
 const DEFAULT_CONTEXT_WINDOW = 32000;

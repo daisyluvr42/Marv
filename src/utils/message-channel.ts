@@ -11,7 +11,7 @@ import {
   type GatewayClientName,
   normalizeGatewayClientMode,
   normalizeGatewayClientName,
-} from "../gateway/protocol/client-info.js";
+} from "../core/gateway/protocol/client-info.js";
 import { getActivePluginRegistry } from "../plugins/runtime.js";
 
 export const INTERNAL_MESSAGE_CHANNEL = "webchat" as const;

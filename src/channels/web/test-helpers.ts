@@ -30,8 +30,8 @@ export function resetLoadConfigMock() {
   (globalThis as Record<symbol, unknown>)[CONFIG_KEY] = () => DEFAULT_CONFIG;
 }
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => {
@@ -51,7 +51,7 @@ vi.mock("../../../config/config.js", async (importOriginal) => {
   // `../../config/config.js` is correct for modules under `src/web/auto-reply/*`.
   // For typing in this file (which lives in `src/web/*`), refer to the same module
   // via the local relative path.
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => {

@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { randomIdempotencyKey } from "../../gateway/call.js";
+import { randomIdempotencyKey } from "../../core/gateway/call.js";
 import { defaultRuntime } from "../../runtime.js";
 import { getNodesTheme, runNodesCommand } from "./cli-utils.js";
 import { callGatewayCli, nodesCallOpts, resolveNodeId } from "./rpc.js";

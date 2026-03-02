@@ -1,7 +1,7 @@
 // Lazy-load pi-coding-agent model metadata so we can infer context windows when
 // the agent reports a model id. This includes custom models.json entries.
 
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { resolveMarvAgentDir } from "./agent-paths.js";
 import { ensureMarvModelsJson } from "./model/models-config.js";
 

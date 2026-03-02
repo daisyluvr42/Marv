@@ -32,7 +32,7 @@ vi.mock("../../plugins/whatsapp-heartbeat.js", () => ({
   resolveWhatsAppHeartbeatRecipients: () => [],
 }));
 
-vi.mock("../../../config/config.js", () => ({
+vi.mock("../../../core/config/config.js", () => ({
   loadConfig: () => ({ agents: { defaults: {} }, session: {} }),
 }));
 
@@ -44,7 +44,7 @@ vi.mock("../../../infra/heartbeat-visibility.js", () => ({
   resolveHeartbeatVisibility: () => state.visibility,
 }));
 
-vi.mock("../../../config/sessions.js", () => ({
+vi.mock("../../../core/config/sessions.js", () => ({
   loadSessionStore: () => state.store,
   resolveSessionKey: () => "k",
   resolveStorePath: () => "/tmp/store.json",

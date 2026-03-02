@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import { callGateway, randomIdempotencyKey } from "../../gateway/call.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { callGateway, randomIdempotencyKey } from "../../core/gateway/call.js";
 import { logVerbose } from "../../globals.js";
 import type { CommandHandler } from "./commands-types.js";
 

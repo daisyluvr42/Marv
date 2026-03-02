@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetSubagentRegistryForTests } from "../../agents/subagent-registry.js";
 import type { SpawnSubagentResult } from "../../agents/subagent-spawn.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
 const hoisted = vi.hoisted(() => {
   const spawnSubagentDirectMock = vi.fn();
@@ -13,12 +13,12 @@ vi.mock("../../agents/subagent-spawn.js", () => ({
   spawnSubagentDirect: (...args: unknown[]) => hoisted.spawnSubagentDirectMock(...args),
 }));
 
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => hoisted.callGatewayMock(opts),
 }));
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => ({}),

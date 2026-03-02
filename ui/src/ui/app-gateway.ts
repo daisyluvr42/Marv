@@ -1,4 +1,4 @@
-import { GATEWAY_CLIENT_IDS } from "../../../src/gateway/protocol/client-info.js";
+import { GATEWAY_CLIENT_IDS } from "../../../src/core/gateway/protocol/client-info.js";
 import { CHAT_SESSIONS_ACTIVE_MINUTES, flushChatQueueForEvent } from "./app-chat.ts";
 import type { EventLogEntry } from "./app-events.ts";
 import {

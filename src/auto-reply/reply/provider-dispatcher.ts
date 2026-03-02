@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { DispatchInboundResult } from "../dispatch.js";
 import {
   dispatchInboundMessageWithBufferedDispatcher,

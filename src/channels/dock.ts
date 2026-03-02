@@ -1,8 +1,8 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   resolveChannelGroupRequireMention,
   resolveChannelGroupToolsPolicy,
-} from "../config/group-policy.js";
+} from "../core/config/group-policy.js";
 import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 import { escapeRegExp, normalizeE164 } from "../utils.js";

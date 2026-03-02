@@ -4,7 +4,7 @@ import {
   type GroupKeyResolution,
   type SessionEntry,
   updateLastRoute,
-} from "../config/sessions.js";
+} from "../core/config/sessions.js";
 
 export type InboundLastRouteUpdate = {
   sessionKey: string;

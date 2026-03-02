@@ -5,7 +5,7 @@ import {
   ensureCompletionCacheExists,
 } from "../../commands/doctor-completion.js";
 import { doctorCommand } from "../../commands/doctor.js";
-import { readConfigFileSnapshot, writeConfigFile } from "../../config/config.js";
+import { readConfigFileSnapshot, writeConfigFile } from "../../core/config/config.js";
 import { resolveGatewayService } from "../../daemon/service.js";
 import {
   channelToNpmTag,

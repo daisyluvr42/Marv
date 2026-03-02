@@ -5,7 +5,7 @@ let lifecycleHandler:
   | ((evt: { stream?: string; runId: string; data?: { phase?: string } }) => void)
   | undefined;
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: vi.fn(async (opts: unknown) => {
     const request = opts as { method?: string };
     if (request.method === "agent.wait") {
@@ -22,7 +22,7 @@ vi.mock("../infra/agent-events.js", () => ({
   }),
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   loadConfig: vi.fn(() => ({
     agents: { defaults: { subagents: { archiveAfterMinutes: 0 } } },
   })),
@@ -241,7 +241,7 @@ describe("subagent registry steer restarts", () => {
   });
 
   it("retries completion-mode announce delivery with backoff and then gives up after retry limit", async () => {
-    const callGateway = vi.mocked((await import("../gateway/call.js")).callGateway);
+    const callGateway = vi.mocked((await import("../core/gateway/call.js")).callGateway);
     const originalCallGateway = callGateway.getMockImplementation();
     callGateway.mockImplementation(async (request: unknown) => {
       const typed = request as { method?: string };

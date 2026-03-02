@@ -1,19 +1,19 @@
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   loadSessionStore,
   resolveFreshSessionTotalTokens,
   resolveMainSessionKey,
   resolveStorePath,
   type SessionEntry,
-} from "../config/sessions.js";
+} from "../core/config/sessions.js";
 import {
   classifySessionKey,
   listAgentsForGateway,
   resolveSessionModelRef,
-} from "../gateway/session-utils.js";
+} from "../core/gateway/session-utils.js";
 import { buildChannelSummary } from "../infra/channel-summary.js";
 import { resolveHeartbeatSummaryForAgent } from "../infra/heartbeat-runner.js";
 import { peekSystemEvents } from "../infra/system-events.js";

@@ -1,10 +1,10 @@
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig } from "../config/config.js";
-import { loadSessionStore, resolveStorePath } from "../config/sessions.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig } from "../core/config/config.js";
+import { loadSessionStore, resolveStorePath } from "../core/config/sessions.js";
 import type {
   ExecApprovalForwardingConfig,
   ExecApprovalForwardTarget,
-} from "../config/types.approvals.js";
+} from "../core/config/types.approvals.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { isDeliverableMessageChannel, normalizeMessageChannel } from "../utils/message-channel.js";

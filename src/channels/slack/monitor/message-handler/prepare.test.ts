@@ -4,7 +4,7 @@ import path from "node:path";
 import type { App } from "@slack/bolt";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { expectInboundContextContract } from "../../../../../test/helpers/inbound-contract.js";
-import type { MarvConfig } from "../../../../config/config.js";
+import type { MarvConfig } from "../../../../core/config/config.js";
 import { resolveAgentRoute } from "../../../../routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../../routing/session-key.js";
 import type { RuntimeEnv } from "../../../../runtime.js";

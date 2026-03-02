@@ -1,6 +1,6 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveAllowlistModelKey } from "../agents/model/model-selection.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 export function ensureModelAllowlistEntry(params: {
   cfg: MarvConfig;

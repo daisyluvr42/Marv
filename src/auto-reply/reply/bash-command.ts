@@ -7,7 +7,7 @@ import {
   markExited,
 } from "../../agents/tools/bash-process-registry.js";
 import { createExecTool } from "../../agents/tools/bash-tools.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { logVerbose } from "../../globals.js";
 import { clampInt } from "../../utils.js";
 import type { MsgContext } from "../templating.js";

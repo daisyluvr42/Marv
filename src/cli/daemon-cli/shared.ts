@@ -1,3 +1,4 @@
+import { pickPrimaryLanIPv4 } from "../../core/gateway/net.js";
 import {
   resolveGatewayLaunchAgentLabel,
   resolveGatewaySystemdServiceName,
@@ -5,7 +6,6 @@ import {
 } from "../../daemon/constants.js";
 import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
 import { formatRuntimeStatus } from "../../daemon/runtime-format.js";
-import { pickPrimaryLanIPv4 } from "../../gateway/net.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { formatCliCommand } from "../command-format.js";

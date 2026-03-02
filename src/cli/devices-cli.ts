@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { callGateway } from "../gateway/call.js";
+import { callGateway } from "../core/gateway/call.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { defaultRuntime } from "../runtime.js";
 import { renderTable } from "../terminal/table.js";

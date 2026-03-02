@@ -13,8 +13,8 @@ import {
 import { __resetDiscordChannelInfoCacheForTest } from "./monitor/message-utils.js";
 const loadConfigMock = vi.fn();
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: (...args: unknown[]) => loadConfigMock(...args),
@@ -62,7 +62,7 @@ beforeEach(() => {
 
 const MENTION_PATTERNS_TEST_TIMEOUT_MS = process.platform === "win32" ? 90_000 : 60_000;
 
-type LoadedConfig = ReturnType<(typeof import("../../config/config.js"))["loadConfig"]>;
+type LoadedConfig = ReturnType<(typeof import("../../core/config/config.js"))["loadConfig"]>;
 
 function makeRuntime() {
   return {
@@ -221,7 +221,7 @@ describe("discord tool result dispatch", () => {
           responsePrefix: "PFX",
           groupChat: { mentionPatterns: ["\\bmarv\\b"] },
         },
-      } as ReturnType<typeof import("../../config/config.js").loadConfig>;
+      } as ReturnType<typeof import("../../core/config/config.js").loadConfig>;
 
       const handler = await createHandler(cfg);
 
@@ -278,7 +278,7 @@ describe("discord tool result dispatch", () => {
         channels: {
           discord: { dm: { enabled: true, policy: "open" } },
         },
-      } as ReturnType<typeof import("../../config/config.js").loadConfig>;
+      } as ReturnType<typeof import("../../core/config/config.js").loadConfig>;
 
       const command = createDiscordNativeCommand({
         command: {
@@ -331,7 +331,7 @@ describe("discord tool result dispatch", () => {
           guilds: { "*": { requireMention: true } },
         },
       },
-    } as ReturnType<typeof import("../../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../core/config/config.js").loadConfig>;
 
     const handler = await createHandler(cfg);
 
@@ -460,7 +460,7 @@ describe("discord tool result dispatch", () => {
         },
       },
       routing: { allowFrom: [] },
-    } as ReturnType<typeof import("../../config/config.js").loadConfig>;
+    } as ReturnType<typeof import("../../core/config/config.js").loadConfig>;
 
     const handler = await createHandler(cfg);
 

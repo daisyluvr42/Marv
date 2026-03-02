@@ -1,6 +1,6 @@
 import { resolveUserTimezone } from "../agents/date-time.js";
-import type { MarvConfig } from "../config/config.js";
-import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentDefaultsConfig } from "../core/config/types.agent-defaults.js";
 
 type HeartbeatConfig = AgentDefaultsConfig["heartbeat"];
 

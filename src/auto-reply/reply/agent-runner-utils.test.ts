@@ -12,7 +12,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
     hoisted.resolveAgentModelFallbacksOverrideMock(...args),
 }));
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   resolveAgentIdFromSessionKey: (...args: unknown[]) =>
     hoisted.resolveAgentIdFromSessionKeyMock(...args),
 }));

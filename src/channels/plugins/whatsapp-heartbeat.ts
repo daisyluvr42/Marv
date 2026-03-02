@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";
 import { normalizeE164 } from "../../utils.js";
 import { normalizeChatChannelId } from "../registry.js";
 

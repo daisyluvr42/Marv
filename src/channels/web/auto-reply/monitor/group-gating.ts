@@ -1,7 +1,7 @@
 import { hasControlCommand } from "../../../../auto-reply/command-detection.js";
 import { parseActivationCommand } from "../../../../auto-reply/group-activation.js";
 import { recordPendingHistoryEntryIfEnabled } from "../../../../auto-reply/reply/history.js";
-import type { loadConfig } from "../../../../config/config.js";
+import type { loadConfig } from "../../../../core/config/config.js";
 import { normalizeE164 } from "../../../../utils.js";
 import { resolveMentionGating } from "../../../mention-gating.js";
 import type { MentionConfig } from "../mentions.js";

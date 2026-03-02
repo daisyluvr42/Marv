@@ -10,12 +10,12 @@ import {
   type TopLevelComponents,
 } from "@buape/carbon";
 import { ButtonStyle, Routes } from "discord-api-types/v10";
-import type { MarvConfig } from "../../../config/config.js";
-import { loadSessionStore, resolveStorePath } from "../../../config/sessions.js";
-import type { DiscordExecApprovalConfig } from "../../../config/types.discord.js";
-import { buildGatewayConnectionDetails } from "../../../gateway/call.js";
-import { GatewayClient } from "../../../gateway/client.js";
-import type { EventFrame } from "../../../gateway/protocol/index.js";
+import type { MarvConfig } from "../../../core/config/config.js";
+import { loadSessionStore, resolveStorePath } from "../../../core/config/sessions.js";
+import type { DiscordExecApprovalConfig } from "../../../core/config/types.discord.js";
+import { buildGatewayConnectionDetails } from "../../../core/gateway/call.js";
+import { GatewayClient } from "../../../core/gateway/client.js";
+import type { EventFrame } from "../../../core/gateway/protocol/index.js";
 import type {
   ExecApprovalDecision,
   ExecApprovalRequest,

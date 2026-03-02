@@ -33,10 +33,10 @@ const makeConfig = (overrides: Record<string, unknown>) =>
     },
     session: { store: sessionStorePath },
     ...overrides,
-  }) as unknown as ReturnType<typeof import("../../../config/config.js").loadConfig>;
+  }) as unknown as ReturnType<typeof import("../../../core/config/config.js").loadConfig>;
 
 function runGroupGating(params: {
-  cfg: ReturnType<typeof import("../../../config/config.js").loadConfig>;
+  cfg: ReturnType<typeof import("../../../core/config/config.js").loadConfig>;
   msg: Record<string, unknown>;
   conversationId?: string;
   agentId?: string;

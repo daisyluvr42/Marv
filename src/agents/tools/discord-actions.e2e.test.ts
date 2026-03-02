@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DiscordActionConfig, MarvConfig } from "../../config/config.js";
+import type { DiscordActionConfig, MarvConfig } from "../../core/config/config.js";
 import { handleDiscordGuildAction } from "./discord-actions-guild.js";
 import { handleDiscordMessagingAction } from "./discord-actions-messaging.js";
 import { handleDiscordModerationAction } from "./discord-actions-moderation.js";

@@ -1,11 +1,10 @@
 import path from "node:path";
-import { resolveStateDir } from "../config/paths.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { DEFAULT_AGENT_ID } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
 
 export function resolveMarvAgentDir(): string {
-  const override =
-    process.env.MARV_AGENT_DIR?.trim() || process.env.PI_CODING_AGENT_DIR?.trim();
+  const override = process.env.MARV_AGENT_DIR?.trim() || process.env.PI_CODING_AGENT_DIR?.trim();
   if (override) {
     return resolveUserPath(override);
   }

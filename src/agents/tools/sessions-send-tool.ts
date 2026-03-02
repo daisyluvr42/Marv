@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { Type } from "@sinclair/typebox";
-import { loadConfig } from "../../config/config.js";
-import { callGateway } from "../../gateway/call.js";
+import { loadConfig } from "../../core/config/config.js";
+import { callGateway } from "../../core/gateway/call.js";
 import { normalizeAgentId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { SESSION_LABEL_MAX_LENGTH } from "../../sessions/session-label.js";
 import {

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
-import { loadSessionStore } from "../config/sessions.js";
+import { loadSessionStore } from "../core/config/sessions.js";
 
 export { loadModelCatalog } from "../agents/model/model-catalog.js";
 export { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";

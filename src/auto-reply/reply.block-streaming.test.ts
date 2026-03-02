@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
-import type { MarvConfig } from "../config/config.js";
-import { withTempHome as withTempHomeHarness } from "../config/home-env.test-harness.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { withTempHome as withTempHomeHarness } from "../core/config/home-env.test-harness.js";
 import { getReplyFromConfig } from "./reply.js";
 
 type RunEmbeddedPiAgent = typeof import("../agents/runner/pi-embedded.js").runEmbeddedPiAgent;

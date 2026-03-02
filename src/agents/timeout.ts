@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 const DEFAULT_AGENT_TIMEOUT_SECONDS = 600;
 const MAX_SAFE_TIMEOUT_MS = 2_147_000_000;

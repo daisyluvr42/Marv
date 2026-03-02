@@ -2,7 +2,7 @@ import type { Bot } from "grammy";
 import {
   normalizeTelegramCommandName,
   TELEGRAM_COMMAND_NAME_PATTERN,
-} from "../../config/telegram-custom-commands.js";
+} from "../../core/config/telegram-custom-commands.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 

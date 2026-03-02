@@ -12,11 +12,11 @@ import {
 } from "../../../auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
 import { buildMentionRegexes, matchesMentionPatterns } from "../../../auto-reply/reply/mentions.js";
-import type { MarvConfig } from "../../../config/config.js";
+import type { MarvConfig } from "../../../core/config/config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
-} from "../../../config/group-policy.js";
+} from "../../../core/config/group-policy.js";
 import { resolveAgentRoute } from "../../../routing/resolve-route.js";
 import { truncateUtf16Safe } from "../../../utils.js";
 import { resolveControlCommandGate } from "../../command-gating.js";

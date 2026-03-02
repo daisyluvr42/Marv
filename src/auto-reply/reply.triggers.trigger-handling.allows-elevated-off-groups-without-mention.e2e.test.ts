@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { beforeAll, describe, expect, it } from "vitest";
-import { loadSessionStore } from "../config/sessions.js";
+import { loadSessionStore } from "../core/config/sessions.js";
 import {
   installTriggerHandlingE2eTestHooks,
   loadGetReplyFromConfig,

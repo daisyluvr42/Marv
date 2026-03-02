@@ -3,8 +3,8 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { resolveAgentConfig } from "../agents/agent-scope.js";
-import { loadConfig } from "../config/config.js";
-import { GatewayClient } from "../gateway/client.js";
+import { loadConfig } from "../core/config/config.js";
+import { GatewayClient } from "../core/gateway/client.js";
 import {
   addAllowlistEntry,
   analyzeArgvCommand,
@@ -39,8 +39,7 @@ const OUTPUT_EVENT_TAIL = 20_000;
 const DEFAULT_NODE_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
 const execHostEnforced = process.env.MARV_NODE_EXEC_HOST?.trim().toLowerCase() === "app";
-const execHostFallbackAllowed =
-  process.env.MARV_NODE_EXEC_FALLBACK?.trim().toLowerCase() !== "0";
+const execHostFallbackAllowed = process.env.MARV_NODE_EXEC_FALLBACK?.trim().toLowerCase() !== "0";
 
 const blockedEnvKeys = new Set([
   "NODE_OPTIONS",

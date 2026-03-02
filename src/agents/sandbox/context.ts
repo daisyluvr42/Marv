@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import { DEFAULT_BROWSER_EVALUATE_ENABLED } from "../../browser/constants.js";
 import { ensureBrowserControlAuth, resolveBrowserControlAuth } from "../../browser/control-auth.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { defaultRuntime } from "../../runtime.js";
 import { resolveUserPath } from "../../utils.js";
 import { syncSkillsToWorkspace } from "../skills.js";

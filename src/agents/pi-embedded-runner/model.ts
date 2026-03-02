@@ -1,6 +1,6 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
-import type { MarvConfig } from "../../config/config.js";
-import type { ModelDefinitionConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { ModelDefinitionConfig } from "../../core/config/types.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
 import { buildModelAliasLines } from "../model/model-alias-lines.js";

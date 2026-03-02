@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { createSessionsSpawnTool } from "./sessions-spawn-tool.js";
 
-vi.mock("../../config/config.js", async () => {
-  const actual = await vi.importActual("../../config/config.js");
+vi.mock("../../core/config/config.js", async () => {
+  const actual = await vi.importActual("../../core/config/config.js");
   return {
     ...actual,
     loadConfig: () => ({
@@ -22,7 +22,7 @@ vi.mock("../../config/config.js", async () => {
   };
 });
 
-vi.mock("../../gateway/call.js", () => {
+vi.mock("../../core/gateway/call.js", () => {
   return {
     callGateway: vi.fn(async ({ method }: { method: string }) => {
       if (method === "agent") {
@@ -36,7 +36,7 @@ vi.mock("../../gateway/call.js", () => {
 type GatewayCall = { method: string; params?: Record<string, unknown> };
 
 async function getGatewayCalls(): Promise<GatewayCall[]> {
-  const { callGateway } = await import("../../gateway/call.js");
+  const { callGateway } = await import("../../core/gateway/call.js");
   return (callGateway as unknown as ReturnType<typeof vi.fn>).mock.calls.map(
     (call) => call[0] as GatewayCall,
   );

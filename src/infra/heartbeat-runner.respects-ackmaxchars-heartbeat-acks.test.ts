@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
-import { resolveMainSessionKey } from "../config/sessions.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveMainSessionKey } from "../core/config/sessions.js";
 import { runHeartbeatOnce, type HeartbeatDeps } from "./heartbeat-runner.js";
 import { installHeartbeatRunnerTestRuntime } from "./heartbeat-runner.test-harness.js";
 import { seedSessionStore, withTempHeartbeatSandbox } from "./heartbeat-runner.test-utils.js";

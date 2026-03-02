@@ -1,6 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import { collectConfigEnvVars } from "../config/env-vars.js";
-import type { MarvConfig } from "../config/types.js";
+import { collectConfigEnvVars } from "../core/config/env-vars.js";
+import type { MarvConfig } from "../core/config/types.js";
 import { resolveGatewayLaunchAgentLabel } from "../daemon/constants.js";
 import { resolveGatewayProgramArguments } from "../daemon/program-args.js";
 import { resolvePreferredNodePath } from "../daemon/runtime-paths.js";

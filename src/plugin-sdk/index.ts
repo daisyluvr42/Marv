@@ -73,14 +73,14 @@ export type {
   GatewayRequestHandler,
   GatewayRequestHandlerOptions,
   RespondFn,
-} from "../gateway/server-methods/types.js";
+} from "../core/gateway/server-methods/types.js";
 export type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 export { normalizePluginHttpPath } from "../plugins/http-path.js";
 export { registerPluginHttpRoute } from "../plugins/http-registry.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
-export type { MarvConfig } from "../config/config.js";
+export type { MarvConfig } from "../core/config/config.js";
 /** @deprecated Use MarvConfig instead */
-export type { MarvConfig as ClawdbotConfig } from "../config/config.js";
+export type { MarvConfig as ClawdbotConfig } from "../core/config/config.js";
 
 export type { FileLockHandle, FileLockOptions } from "./file-lock.js";
 export { acquireFileLock, withFileLock } from "./file-lock.js";
@@ -118,7 +118,7 @@ export type {
   MSTeamsConfig,
   MSTeamsReplyStyle,
   MSTeamsTeamConfig,
-} from "../config/types.js";
+} from "../core/config/types.js";
 export {
   DiscordConfigSchema,
   GoogleChatConfigSchema,
@@ -127,8 +127,8 @@ export {
   SignalConfigSchema,
   SlackConfigSchema,
   TelegramConfigSchema,
-} from "../config/zod-schema.providers-core.js";
-export { WhatsAppConfigSchema } from "../config/zod-schema.providers-whatsapp.js";
+} from "../core/config/zod-schema.providers-core.js";
+export { WhatsAppConfigSchema } from "../core/config/zod-schema.providers-whatsapp.js";
 export {
   BlockStreamingCoalesceSchema,
   DmConfigSchema,
@@ -142,8 +142,8 @@ export {
   TtsConfigSchema,
   TtsModeSchema,
   TtsProviderSchema,
-} from "../config/zod-schema.core.js";
-export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
+} from "../core/config/zod-schema.core.js";
+export { ToolPolicySchema } from "../core/config/zod-schema.agent-runtime.js";
 export type { RuntimeEnv } from "../runtime.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
@@ -186,7 +186,7 @@ export type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
 export { rawDataToString } from "../infra/ws.js";
 export { isWSLSync, isWSL2Sync, isWSLEnv } from "../infra/wsl.js";
 export { isTruthyEnvValue } from "../infra/env.js";
-export { resolveToolsBySender } from "../config/group-policy.js";
+export { resolveToolsBySender } from "../core/config/group-policy.js";
 export {
   buildPendingHistoryContextFromMap,
   clearHistoryEntries,

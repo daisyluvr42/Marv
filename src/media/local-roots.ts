@@ -1,8 +1,8 @@
 import os from "node:os";
 import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
-import type { MarvConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveStateDir } from "../core/config/paths.js";
 
 function buildMediaLocalRoots(stateDir: string): string[] {
   const resolvedStateDir = path.resolve(stateDir);

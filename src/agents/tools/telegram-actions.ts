@@ -19,7 +19,7 @@ import {
 } from "../../channels/telegram/send.js";
 import { getCacheStats, searchStickers } from "../../channels/telegram/sticker-cache.js";
 import { resolveTelegramToken } from "../../channels/telegram/token.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   jsonResult,
   readNumberParam,

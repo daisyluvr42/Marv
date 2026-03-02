@@ -3,7 +3,7 @@ import { dispatchInboundMessage } from "../../../../auto-reply/dispatch.js";
 import { clearHistoryEntriesIfEnabled } from "../../../../auto-reply/reply/history.js";
 import { createReplyDispatcherWithTyping } from "../../../../auto-reply/reply/reply-dispatcher.js";
 import type { ReplyPayload } from "../../../../auto-reply/types.js";
-import { resolveStorePath, updateLastRoute } from "../../../../config/sessions.js";
+import { resolveStorePath, updateLastRoute } from "../../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../../globals.js";
 import { removeAckReactionAfterReply } from "../../../ack-reactions.js";
 import { logAckFailure, logTypingFailure } from "../../../logging.js";

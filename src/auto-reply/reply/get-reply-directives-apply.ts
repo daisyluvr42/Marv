@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
 import type { MsgContext } from "../templating.js";
 import type { ElevatedLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";

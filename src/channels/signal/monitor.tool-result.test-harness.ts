@@ -47,8 +47,8 @@ export function setSignalToolResultTestConfig(next: Record<string, unknown>) {
 
 export const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => config,
@@ -70,7 +70,7 @@ vi.mock("../../pairing/pairing-store.js", () => ({
   upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
 }));
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   resolveStorePath: vi.fn(() => "/tmp/marv-sessions.json"),
   updateLastRoute: (...args: unknown[]) => updateLastRouteMock(...args),
   readSessionUpdatedAt: vi.fn(() => undefined),

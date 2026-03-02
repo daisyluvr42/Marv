@@ -15,7 +15,7 @@ function createRecentSessionRows(now = Date.now()) {
   ];
 }
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: (...args: unknown[]) => callGatewayMock(...args),
 }));
 

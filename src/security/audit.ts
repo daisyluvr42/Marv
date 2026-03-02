@@ -2,12 +2,12 @@ import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
-import { resolveConfigPath, resolveStateDir } from "../config/paths.js";
-import { resolveGatewayAuth } from "../gateway/auth.js";
-import { buildGatewayConnectionDetails } from "../gateway/call.js";
-import { resolveGatewayProbeAuth } from "../gateway/probe-auth.js";
-import { probeGateway } from "../gateway/probe.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveConfigPath, resolveStateDir } from "../core/config/paths.js";
+import { resolveGatewayAuth } from "../core/gateway/auth.js";
+import { buildGatewayConnectionDetails } from "../core/gateway/call.js";
+import { resolveGatewayProbeAuth } from "../core/gateway/probe-auth.js";
+import { probeGateway } from "../core/gateway/probe.js";
 import { collectChannelSecurityFindings } from "./audit-channel.js";
 import {
   collectAttackSurfaceSummaryFindings,

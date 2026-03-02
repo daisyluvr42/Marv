@@ -1,6 +1,6 @@
 import type { ChannelType, Client, User } from "@buape/carbon";
 import type { HistoryEntry } from "../../../auto-reply/reply/history.js";
-import type { ReplyToMode } from "../../../config/config.js";
+import type { ReplyToMode } from "../../../core/config/config.js";
 import type { resolveAgentRoute } from "../../../routing/resolve-route.js";
 import type { DiscordChannelConfigResolved, DiscordGuildEntryResolved } from "./allow-list.js";
 import type { DiscordChannelInfo } from "./message-utils.js";
@@ -9,14 +9,16 @@ import type { DiscordSenderIdentity } from "./sender-identity.js";
 export type { DiscordSenderIdentity } from "./sender-identity.js";
 import type { DiscordThreadChannel } from "./threading.js";
 
-export type LoadedConfig = ReturnType<typeof import("../../../config/config.js").loadConfig>;
+export type LoadedConfig = ReturnType<typeof import("../../../core/config/config.js").loadConfig>;
 export type RuntimeEnv = import("../../../runtime.js").RuntimeEnv;
 
 export type DiscordMessageEvent = import("./listeners.js").DiscordMessageEvent;
 
 export type DiscordMessagePreflightContext = {
   cfg: LoadedConfig;
-  discordConfig: NonNullable<import("../../../config/config.js").MarvConfig["channels"]>["discord"];
+  discordConfig: NonNullable<
+    import("../../../core/config/config.js").MarvConfig["channels"]
+  >["discord"];
   accountId: string;
   token: string;
   runtime: RuntimeEnv;

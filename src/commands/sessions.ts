@@ -1,14 +1,14 @@
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   loadSessionStore,
   resolveFreshSessionTotalTokens,
   resolveStorePath,
   type SessionEntry,
-} from "../config/sessions.js";
-import { classifySessionKey, resolveSessionModelRef } from "../gateway/session-utils.js";
+} from "../core/config/sessions.js";
+import { classifySessionKey, resolveSessionModelRef } from "../core/gateway/session-utils.js";
 import { info } from "../globals.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { parseAgentSessionKey } from "../routing/session-key.js";

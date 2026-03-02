@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { DiscordAccountConfig, DiscordActionConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { DiscordAccountConfig, DiscordActionConfig } from "../../core/config/types.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 import { createAccountActionGate } from "../plugins/account-action-gate.js";
 import { createAccountListHelpers } from "../plugins/account-helpers.js";

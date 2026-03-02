@@ -355,7 +355,7 @@ describe("local media root guard", () => {
   });
 
   it("allows default Marv state workspace and sandbox roots", async () => {
-    const { resolveStateDir } = await import("../../config/paths.js");
+    const { resolveStateDir } = await import("../../core/config/paths.js");
     const stateDir = resolveStateDir();
     const readFile = vi.fn(async () => Buffer.from("generated-media"));
 
@@ -383,7 +383,7 @@ describe("local media root guard", () => {
   });
 
   it("rejects default Marv state per-agent workspace-* roots without explicit local roots", async () => {
-    const { resolveStateDir } = await import("../../config/paths.js");
+    const { resolveStateDir } = await import("../../core/config/paths.js");
     const stateDir = resolveStateDir();
     const readFile = vi.fn(async () => Buffer.from("generated-media"));
 
@@ -396,7 +396,7 @@ describe("local media root guard", () => {
   });
 
   it("allows per-agent workspace-* paths with explicit local roots", async () => {
-    const { resolveStateDir } = await import("../../config/paths.js");
+    const { resolveStateDir } = await import("../../core/config/paths.js");
     const stateDir = resolveStateDir();
     const readFile = vi.fn(async () => Buffer.from("generated-media"));
     const agentWorkspaceDir = path.join(stateDir, "workspace-clawdy");

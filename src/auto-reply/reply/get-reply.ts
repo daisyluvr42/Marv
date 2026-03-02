@@ -8,7 +8,7 @@ import { resolveAutoRouting } from "../../agents/auto-routing.js";
 import { resolveModelRefFromString } from "../../agents/model/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
-import { type MarvConfig, loadConfig } from "../../config/config.js";
+import { type MarvConfig, loadConfig } from "../../core/config/config.js";
 import { applyLinkUnderstanding } from "../../link-understanding/apply.js";
 import { applyMediaUnderstanding } from "../../media-understanding/apply.js";
 import { defaultRuntime } from "../../runtime.js";

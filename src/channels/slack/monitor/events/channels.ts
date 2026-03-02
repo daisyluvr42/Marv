@@ -1,5 +1,5 @@
 import type { SlackEventMiddlewareArgs } from "@slack/bolt";
-import { loadConfig, writeConfigFile } from "../../../../config/config.js";
+import { loadConfig, writeConfigFile } from "../../../../core/config/config.js";
 import { danger, warn } from "../../../../globals.js";
 import { enqueueSystemEvent } from "../../../../infra/system-events.js";
 import { resolveChannelConfigWrites } from "../../../plugins/config-writes.js";

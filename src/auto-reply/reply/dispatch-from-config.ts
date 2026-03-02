@@ -1,6 +1,6 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
@@ -54,10 +54,7 @@ const isInboundAudioContext = (ctx: FinalizedMsgContext): boolean => {
   return AUDIO_HEADER_RE.test(trimmed);
 };
 
-const resolveSessionTtsAuto = (
-  ctx: FinalizedMsgContext,
-  cfg: MarvConfig,
-): string | undefined => {
+const resolveSessionTtsAuto = (ctx: FinalizedMsgContext, cfg: MarvConfig): string | undefined => {
   const targetSessionKey =
     ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
   const sessionKey = (targetSessionKey ?? ctx.SessionKey)?.trim();

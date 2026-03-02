@@ -21,7 +21,7 @@ import {
   resolveControlUiLinks,
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../daemon/systemd.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
@@ -213,11 +213,7 @@ export async function finalizeOnboardingWizard(
     } catch (err) {
       runtime.error(formatHealthCheckFailure(err));
       await prompter.note(
-        [
-          "Docs:",
-          "/gateway/health",
-          "/gateway/troubleshooting",
-        ].join("\n"),
+        ["Docs:", "/gateway/health", "/gateway/troubleshooting"].join("\n"),
         "Health check help",
       );
     }
@@ -380,9 +376,7 @@ export async function finalizeOnboardingWizard(
   }
 
   await prompter.note(
-    ["Back up your agent workspace.", "Docs: /concepts/agent-workspace"].join(
-      "\n",
-    ),
+    ["Back up your agent workspace.", "Docs: /concepts/agent-workspace"].join("\n"),
     "Workspace backup",
   );
 

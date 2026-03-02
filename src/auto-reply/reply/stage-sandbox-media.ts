@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertSandboxPath } from "../../agents/sandbox/sandbox-paths.js";
 import { ensureSandboxWorkspaceForSession } from "../../agents/sandbox/sandbox.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { logVerbose } from "../../globals.js";
 import { getMediaDir } from "../../media/store.js";
 import { CONFIG_DIR } from "../../utils.js";

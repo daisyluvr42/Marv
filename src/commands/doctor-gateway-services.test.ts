@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 const mocks = vi.hoisted(() => ({
   readCommand: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   note: vi.fn(),
 }));
 
-vi.mock("../config/paths.js", () => ({
+vi.mock("../core/config/paths.js", () => ({
   resolveGatewayPort: mocks.resolveGatewayPort,
   resolveIsNixMode: mocks.resolveIsNixMode,
 }));

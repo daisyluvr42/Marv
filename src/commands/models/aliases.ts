@@ -1,5 +1,5 @@
-import { loadConfig } from "../../config/config.js";
-import { logConfigUpdated } from "../../config/logging.js";
+import { loadConfig } from "../../core/config/config.js";
+import { logConfigUpdated } from "../../core/config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import {
   ensureFlagCompatibility,

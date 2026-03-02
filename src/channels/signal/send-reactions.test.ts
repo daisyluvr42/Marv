@@ -3,8 +3,8 @@ import { removeReactionSignal, sendReactionSignal } from "./send-reactions.js";
 
 const rpcMock = vi.fn();
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => ({}),

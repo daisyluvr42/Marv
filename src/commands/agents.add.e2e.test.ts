@@ -8,8 +8,8 @@ const wizardMocks = vi.hoisted(() => ({
   createClackPrompter: vi.fn(),
 }));
 
-vi.mock("../config/config.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../config/config.js")>()),
+vi.mock("../core/config/config.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../core/config/config.js")>()),
   readConfigFileSnapshot: readConfigFileSnapshotMock,
   writeConfigFile: writeConfigFileMock,
 }));

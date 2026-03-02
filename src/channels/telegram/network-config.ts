@@ -1,5 +1,5 @@
 import process from "node:process";
-import type { TelegramNetworkConfig } from "../../config/types.telegram.js";
+import type { TelegramNetworkConfig } from "../../core/config/types.telegram.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 
 export const TELEGRAM_DISABLE_AUTO_SELECT_FAMILY_ENV = "MARV_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY";

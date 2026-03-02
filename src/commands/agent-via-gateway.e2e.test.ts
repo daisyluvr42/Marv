@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: vi.fn(),
   randomIdempotencyKey: () => "idem-1",
 }));
@@ -11,9 +11,9 @@ vi.mock("./agent.js", () => ({
   agentCommand: vi.fn(),
 }));
 
-import type { MarvConfig } from "../config/config.js";
-import * as configModule from "../config/config.js";
-import { callGateway } from "../gateway/call.js";
+import type { MarvConfig } from "../core/config/config.js";
+import * as configModule from "../core/config/config.js";
+import { callGateway } from "../core/gateway/call.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { agentCliCommand } from "./agent-via-gateway.js";
 import { agentCommand } from "./agent.js";

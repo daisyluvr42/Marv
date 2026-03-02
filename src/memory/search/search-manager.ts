@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { ResolvedQmdConfig } from "../backend-config.js";
 import { resolveMemoryBackendConfig } from "../backend-config.js";

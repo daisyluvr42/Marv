@@ -1,5 +1,5 @@
 import os from "node:os";
-import type { MarvConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/types.js";
 
 const DEFAULT_GATEWAY_PORT = 18789;
 

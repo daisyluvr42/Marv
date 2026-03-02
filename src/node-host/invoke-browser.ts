@@ -5,7 +5,7 @@ import {
   startBrowserControlServiceFromConfig,
 } from "../browser/control-service.js";
 import { createBrowserRouteDispatcher } from "../browser/routes/dispatcher.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { detectMime } from "../media/mime.js";
 import { withTimeout } from "./with-timeout.js";
 

@@ -1,12 +1,12 @@
 import { GatewayIntents, GatewayPlugin } from "@buape/carbon/gateway";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import WebSocket from "ws";
-import type { DiscordAccountConfig } from "../../../config/types.js";
+import type { DiscordAccountConfig } from "../../../core/config/types.js";
 import { danger } from "../../../globals.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 
 export function resolveDiscordGatewayIntents(
-  intentsConfig?: import("../../../config/types.discord.js").DiscordIntentsConfig,
+  intentsConfig?: import("../../../core/config/types.discord.js").DiscordIntentsConfig,
 ): number {
   let intents =
     GatewayIntents.Guilds |

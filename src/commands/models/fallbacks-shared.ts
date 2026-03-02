@@ -2,9 +2,9 @@ import {
   buildModelAliasIndex,
   resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
-import { logConfigUpdated } from "../../config/logging.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
+import { logConfigUpdated } from "../../core/config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import {
   DEFAULT_PROVIDER,

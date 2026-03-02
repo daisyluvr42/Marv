@@ -169,7 +169,7 @@ describe("web processMessage inbound contract", () => {
           },
           messages: {},
           session: { store: sessionStorePath },
-        } as unknown as ReturnType<typeof import("../../../../config/config.js").loadConfig>,
+        } as unknown as ReturnType<typeof import("../../../../core/config/config.js").loadConfig>,
         msg: {
           id: "msg1",
           from: "+1555",
@@ -208,7 +208,7 @@ describe("web processMessage inbound contract", () => {
         cfg: {
           messages: {},
           session: { store: sessionStorePath },
-        } as unknown as ReturnType<typeof import("../../../../config/config.js").loadConfig>,
+        } as unknown as ReturnType<typeof import("../../../../core/config/config.js").loadConfig>,
         msg: {
           id: "g1",
           from: "123@g.us",

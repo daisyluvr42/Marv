@@ -12,7 +12,7 @@ vi.mock("../../agents/runner/pi-embedded.js", () => ({
   resolveEmbeddedSessionLane: vi.fn().mockReturnValue("session:session-key"),
 }));
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   resolveGroupSessionKey: vi.fn().mockReturnValue(undefined),
   resolveSessionFilePath: vi.fn().mockReturnValue("/tmp/session.jsonl"),
   resolveSessionFilePathOptions: vi.fn().mockReturnValue({}),

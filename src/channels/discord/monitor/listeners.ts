@@ -22,7 +22,7 @@ import { formatDiscordReactionEmoji, formatDiscordUserTag } from "./format.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { setPresence } from "./presence-cache.js";
 
-type LoadedConfig = ReturnType<typeof import("../../../config/config.js").loadConfig>;
+type LoadedConfig = ReturnType<typeof import("../../../core/config/config.js").loadConfig>;
 type RuntimeEnv = import("../../../runtime.js").RuntimeEnv;
 type Logger = ReturnType<typeof import("../../../logging/subsystem.js").createSubsystemLogger>;
 

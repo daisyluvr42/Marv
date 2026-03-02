@@ -1,7 +1,7 @@
 import "./reply.directive.directive-behavior.e2e-mocks.js";
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../config/config.js";
-import { loadSessionStore } from "../config/sessions.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadSessionStore } from "../core/config/sessions.js";
 import {
   AUTHORIZED_WHATSAPP_COMMAND,
   installDirectiveBehaviorE2EHooks,

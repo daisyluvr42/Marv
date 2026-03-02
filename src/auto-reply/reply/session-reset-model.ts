@@ -6,9 +6,9 @@ import {
   resolveModelRefFromString,
   type ModelAliasIndex,
 } from "../../agents/model/model-selection.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
-import { updateSessionStore } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
+import { updateSessionStore } from "../../core/config/sessions.js";
 import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import { resolveModelDirectiveSelection, type ModelDirectiveSelection } from "./model-selection.js";

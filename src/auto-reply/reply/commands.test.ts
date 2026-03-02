@@ -7,8 +7,8 @@ import {
   listSubagentRunsForRequester,
   resetSubagentRegistryForTests,
 } from "../../agents/subagent-registry.js";
-import type { MarvConfig } from "../../config/config.js";
-import { updateSessionStore } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { updateSessionStore } from "../../core/config/sessions.js";
 import * as internalHooks from "../../hooks/internal-hooks.js";
 import { clearPluginCommands, registerPluginCommand } from "../../plugins/commands.js";
 import type { MsgContext } from "../templating.js";
@@ -25,9 +25,10 @@ const readConfigFileSnapshotMock = vi.hoisted(() => vi.fn());
 const validateConfigObjectWithPluginsMock = vi.hoisted(() => vi.fn());
 const writeConfigFileMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../../config/config.js", async () => {
-  const actual =
-    await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
+vi.mock("../../core/config/config.js", async () => {
+  const actual = await vi.importActual<typeof import("../../core/config/config.js")>(
+    "../../core/config/config.js",
+  );
   return {
     ...actual,
     readConfigFileSnapshot: readConfigFileSnapshotMock,
@@ -105,7 +106,7 @@ vi.mock("../../infra/workspace-rollback.js", () => ({
 }));
 
 const callGatewayMock = vi.fn();
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGatewayMock(opts),
 }));
 

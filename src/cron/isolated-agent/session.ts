@@ -1,12 +1,12 @@
 import crypto from "node:crypto";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   evaluateSessionFreshness,
   loadSessionStore,
   resolveSessionResetPolicy,
   resolveStorePath,
   type SessionEntry,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 
 export function resolveCronSession(params: {
   cfg: MarvConfig;

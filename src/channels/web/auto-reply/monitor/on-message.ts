@@ -1,6 +1,6 @@
 import type { getReplyFromConfig } from "../../../../auto-reply/reply.js";
 import type { MsgContext } from "../../../../auto-reply/templating.js";
-import { loadConfig } from "../../../../config/config.js";
+import { loadConfig } from "../../../../core/config/config.js";
 import { logVerbose } from "../../../../globals.js";
 import { resolveAgentRoute } from "../../../../routing/resolve-route.js";
 import { buildGroupHistoryKey } from "../../../../routing/session-key.js";

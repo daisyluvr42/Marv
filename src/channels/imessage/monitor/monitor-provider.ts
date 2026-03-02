@@ -13,8 +13,8 @@ import {
   type HistoryEntry,
 } from "../../../auto-reply/reply/history.js";
 import { createReplyDispatcher } from "../../../auto-reply/reply/reply-dispatcher.js";
-import { loadConfig } from "../../../config/config.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../../config/sessions.js";
+import { loadConfig } from "../../../core/config/config.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { waitForTransportReady } from "../../../infra/transport-ready.js";
 import { mediaKindFromMime } from "../../../media/constants.js";

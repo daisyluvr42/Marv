@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
 const mocks = vi.hoisted(() => ({
   loadSessionStore: vi.fn(),
@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => ({
   listAgentIds: vi.fn(),
 }));
 
-vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
-    "../../config/sessions.js",
+vi.mock("../../core/config/sessions.js", async () => {
+  const actual = await vi.importActual<typeof import("../../core/config/sessions.js")>(
+    "../../core/config/sessions.js",
   );
   return {
     ...actual,

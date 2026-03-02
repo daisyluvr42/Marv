@@ -1,5 +1,5 @@
-import { loadConfig, resolveGatewayPort } from "../../config/config.js";
-import { callGateway } from "../../gateway/call.js";
+import { loadConfig, resolveGatewayPort } from "../../core/config/config.js";
+import { callGateway } from "../../core/gateway/call.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
 import { readStringParam } from "./common.js";
 

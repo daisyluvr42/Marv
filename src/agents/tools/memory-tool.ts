@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
-import type { MarvConfig } from "../../config/config.js";
-import type { MemoryCitationsMode } from "../../config/types.memory.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
 import { appendLedgerEvent } from "../../ledger/event-store.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
 import { getMemorySearchManager } from "../../memory/index.js";

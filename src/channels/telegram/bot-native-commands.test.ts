@@ -1,9 +1,9 @@
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
-import { STATE_DIR } from "../../config/paths.js";
-import { TELEGRAM_COMMAND_NAME_PATTERN } from "../../config/telegram-custom-commands.js";
-import type { TelegramAccountConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { STATE_DIR } from "../../core/config/paths.js";
+import { TELEGRAM_COMMAND_NAME_PATTERN } from "../../core/config/telegram-custom-commands.js";
+import type { TelegramAccountConfig } from "../../core/config/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 

@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { ModelDefinitionConfig } from "../../config/types.models.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { ModelDefinitionConfig } from "../../core/config/types.models.js";
 import {
   DEFAULT_COPILOT_API_BASE_URL,
   resolveCopilotApiToken,

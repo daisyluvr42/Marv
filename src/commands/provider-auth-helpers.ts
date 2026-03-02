@@ -1,5 +1,5 @@
 import { normalizeProviderId } from "../agents/model/model-selection.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type { ProviderAuthMethod, ProviderPlugin } from "../plugins/types.js";
 
 export function resolveProviderMatch(

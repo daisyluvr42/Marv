@@ -5,8 +5,8 @@ import { resolveBrowserConfig } from "./config.js";
 import { createBrowserProfilesService } from "./profiles-service.js";
 import type { BrowserRouteContext, BrowserServerState } from "./server-context.js";
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("./chrome.js", () => ({
   resolveMarvUserDataDir: vi.fn(() => "/tmp/marv-test/marv/user-data"),
 }));
 
-import { loadConfig, writeConfigFile } from "../config/config.js";
+import { loadConfig, writeConfigFile } from "../core/config/config.js";
 import { resolveMarvUserDataDir } from "./chrome.js";
 import { movePathToTrash } from "./trash.js";
 

@@ -2,8 +2,8 @@ import { collectTextContentBlocks } from "../../agents/content-blocks.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
 import { createMarvTools } from "../../agents/tools/marv-tools.js";
 import { getChannelDock } from "../../channels/dock.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { resolveGatewayMessageChannel } from "../../utils/message-channel.js";
 import {

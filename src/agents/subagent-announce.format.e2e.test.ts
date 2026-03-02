@@ -28,7 +28,7 @@ const chatHistoryMock = vi.fn(async (_sessionKey?: string) => ({
   messages: [] as Array<unknown>,
 }));
 let sessionStore: Record<string, Record<string, unknown>> = {};
-let configOverride: ReturnType<(typeof import("../config/config.js"))["loadConfig"]> = {
+let configOverride: ReturnType<(typeof import("../core/config/config.js"))["loadConfig"]> = {
   session: {
     mainKey: "main",
     scope: "per-sender",
@@ -61,7 +61,7 @@ function loadSessionStoreFixture(): Record<string, Record<string, unknown>> {
   });
 }
 
-vi.mock("../gateway/call.js", () => ({
+vi.mock("../core/gateway/call.js", () => ({
   callGateway: vi.fn(async (req: unknown) => {
     const typed = req as { method?: string; params?: { message?: string; sessionKey?: string } };
     if (typed.method === "agent") {
@@ -91,7 +91,7 @@ vi.mock("./tools/agent-step.js", () => ({
   readLatestAssistantReply: readLatestAssistantReplyMock,
 }));
 
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../core/config/sessions.js", () => ({
   loadSessionStore: vi.fn(() => loadSessionStoreFixture()),
   resolveAgentIdFromSessionKey: () => "main",
   resolveStorePath: () => "/tmp/sessions.json",
@@ -104,8 +104,8 @@ vi.mock("./runner/pi-embedded.js", () => embeddedRunMock);
 
 vi.mock("./subagent-registry.js", () => subagentRegistryMock);
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => configOverride,

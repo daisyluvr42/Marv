@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizePluginsConfig, type NormalizedPluginsConfig } from "./config-state.js";
 import { discoverMarvPlugins, type PluginCandidate } from "./discovery.js";

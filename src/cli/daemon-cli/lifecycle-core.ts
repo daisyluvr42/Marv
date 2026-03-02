@@ -1,5 +1,5 @@
-import { loadConfig } from "../../config/config.js";
-import { resolveIsNixMode } from "../../config/paths.js";
+import { loadConfig } from "../../core/config/config.js";
+import { resolveIsNixMode } from "../../core/config/paths.js";
 import { checkTokenDrift } from "../../daemon/service-audit.js";
 import type { GatewayService } from "../../daemon/service.js";
 import { renderSystemdUnavailableHints } from "../../daemon/systemd-hints.js";

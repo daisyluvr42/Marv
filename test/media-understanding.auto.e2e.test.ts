@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { MsgContext } from "../src/auto-reply/templating.js";
-import type { MarvConfig } from "../src/config/config.js";
+import type { MarvConfig } from "../src/core/config/config.js";
 import { applyMediaUnderstanding } from "../src/media-understanding/apply.js";
 import { clearMediaUnderstandingBinaryCacheForTests } from "../src/media-understanding/runner.js";
 

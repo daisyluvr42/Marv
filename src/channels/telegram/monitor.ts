@@ -1,7 +1,7 @@
 import { type RunOptions, run } from "@grammyjs/runner";
-import { resolveAgentMaxConcurrent } from "../../config/agent-limits.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
+import { resolveAgentMaxConcurrent } from "../../core/config/agent-limits.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveResponsePrefix, resolveEffectiveMessagesConfig } from "./identity.js";
 
 const makeConfig = <T extends MarvConfig>(cfg: T) => cfg;

@@ -1,6 +1,6 @@
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../auto-reply/chunk.js";
 import type { ReplyPayload } from "../../../auto-reply/types.js";
-import type { MarkdownTableMode } from "../../../config/types.base.js";
+import type { MarkdownTableMode } from "../../../core/config/types.base.js";
 import { logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { convertMarkdownTables } from "../../../markdown/tables.js";
 import { markdownToWhatsApp } from "../../../markdown/whatsapp.js";

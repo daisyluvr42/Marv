@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { PluginSlotsConfig } from "../config/types.plugins.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { PluginSlotsConfig } from "../core/config/types.plugins.js";
 import type { PluginKind } from "./types.js";
 
 export type PluginSlotKey = keyof PluginSlotsConfig;

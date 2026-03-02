@@ -1,5 +1,5 @@
 import { confirm, isCancel } from "@clack/prompts";
-import { readConfigFileSnapshot } from "../../config/config.js";
+import { readConfigFileSnapshot } from "../../core/config/config.js";
 import {
   formatUpdateChannelLabel,
   normalizeUpdateChannel,

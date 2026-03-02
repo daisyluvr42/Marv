@@ -20,7 +20,7 @@ import {
   uploadEmojiDiscord,
   uploadStickerDiscord,
 } from "../../channels/discord/send.js";
-import type { DiscordActionConfig } from "../../config/config.js";
+import type { DiscordActionConfig } from "../../core/config/config.js";
 import {
   type ActionGate,
   jsonResult,

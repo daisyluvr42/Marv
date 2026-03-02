@@ -1,4 +1,4 @@
-import type { loadConfig } from "../../../../config/config.js";
+import type { loadConfig } from "../../../../core/config/config.js";
 import { logVerbose } from "../../../../globals.js";
 import { shouldAckReactionForWhatsApp } from "../../../ack-reactions.js";
 import { sendReactionWhatsApp } from "../../outbound.js";

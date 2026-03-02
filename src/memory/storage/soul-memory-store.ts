@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { resolveStateDir } from "../../config/paths.js";
+import { resolveStateDir } from "../../core/config/paths.js";
 import { requireNodeSqlite } from "./sqlite.js";
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;

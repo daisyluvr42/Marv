@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { textToSpeech } from "../../tts/tts.js";
 import type { GatewayMessageChannel } from "../../utils/message-channel.js";
 import type { AnyAgentTool } from "./common.js";

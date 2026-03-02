@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 // Mock session store so we can control what entries exist.
 const mockStore: Record<string, Record<string, unknown>> = {};
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../core/config/sessions.js", () => ({
   loadSessionStore: vi.fn((storePath: string) => mockStore[storePath] ?? {}),
   resolveAgentMainSessionKey: vi.fn(({ agentId }: { agentId: string }) => `agent:${agentId}:main`),
   resolveStorePath: vi.fn((_store: unknown, _opts: unknown) => "/mock/store.json"),

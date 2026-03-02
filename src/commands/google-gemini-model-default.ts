@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { applyAgentDefaultPrimaryModel } from "./model-default.js";
 
 export const GOOGLE_GEMINI_DEFAULT_MODEL = "google/gemini-3-pro-preview";

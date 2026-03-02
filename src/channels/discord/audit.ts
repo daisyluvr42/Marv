@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { DiscordGuildChannelConfig, DiscordGuildEntry } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { DiscordGuildChannelConfig, DiscordGuildEntry } from "../../core/config/types.js";
 import { isRecord } from "../../utils.js";
 import { resolveDiscordAccount } from "./accounts.js";
 import { fetchChannelPermissionsDiscord } from "./send.js";

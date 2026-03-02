@@ -4,7 +4,7 @@ import { getReplyFromConfig } from "../../../auto-reply/reply.js";
 import { DEFAULT_GROUP_HISTORY_LIMIT } from "../../../auto-reply/reply/history.js";
 import { formatCliCommand } from "../../../cli/command-format.js";
 import { waitForever } from "../../../cli/wait.js";
-import { loadConfig } from "../../../config/config.js";
+import { loadConfig } from "../../../core/config/config.js";
 import { logVerbose } from "../../../globals.js";
 import { formatDurationPrecise } from "../../../infra/format-time/format-duration.ts";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";

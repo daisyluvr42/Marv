@@ -8,8 +8,8 @@ const hoisted = vi.hoisted(() => {
   return { loadSessionStoreMock, scheduleFollowupDrainMock };
 });
 
-vi.mock("../../config/sessions.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/sessions.js")>();
+vi.mock("../../core/config/sessions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/sessions.js")>();
   return {
     ...actual,
     loadSessionStore: (...args: unknown[]) => hoisted.loadSessionStoreMock(...args),

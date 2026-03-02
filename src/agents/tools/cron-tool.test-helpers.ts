@@ -7,7 +7,7 @@ type GatewayMockFn = ((opts: unknown) => unknown) & {
 
 export const callGatewayMock = vi.fn() as GatewayMockFn;
 
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGatewayMock(opts),
 }));
 

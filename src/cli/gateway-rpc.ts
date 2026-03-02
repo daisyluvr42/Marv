@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { callGateway } from "../gateway/call.js";
+import { callGateway } from "../core/gateway/call.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { withProgress } from "./progress.js";
 

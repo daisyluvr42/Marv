@@ -1,7 +1,7 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { buildModelAliasIndex, modelKey } from "../agents/model/model-selection.js";
-import type { MarvConfig } from "../config/config.js";
-import type { ModelProviderConfig } from "../config/types.models.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { ModelProviderConfig } from "../core/config/types.models.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
 import type { WizardPrompter } from "../wizard/prompts.js";

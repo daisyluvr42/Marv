@@ -21,7 +21,7 @@ export async function modelsListCommand(
   runtime: RuntimeEnv,
 ) {
   ensureFlagCompatibility(opts);
-  const { loadConfig } = await import("../../config/config.js");
+  const { loadConfig } = await import("../../core/config/config.js");
   const { ensureAuthProfileStore } = await import("../../agents/auth-profiles.js");
   const cfg = loadConfig();
   const authStore = ensureAuthProfileStore();

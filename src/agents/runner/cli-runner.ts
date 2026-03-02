@@ -1,7 +1,7 @@
 import type { ImageContent } from "@mariozechner/pi-ai";
 import { resolveHeartbeatPrompt } from "../../auto-reply/heartbeat.js";
 import type { ThinkLevel } from "../../auto-reply/thinking.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { shouldLogVerbose } from "../../globals.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";

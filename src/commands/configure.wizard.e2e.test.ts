@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 const mocks = vi.hoisted(() => ({
   clackIntro: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock("@clack/prompts", () => ({
   confirm: mocks.clackConfirm,
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   CONFIG_PATH: "~/.marv/marv.json",
   readConfigFileSnapshot: mocks.readConfigFileSnapshot,
   writeConfigFile: mocks.writeConfigFile,

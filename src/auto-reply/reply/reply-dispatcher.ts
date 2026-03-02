@@ -1,4 +1,4 @@
-import type { HumanDelayConfig } from "../../config/types.js";
+import type { HumanDelayConfig } from "../../core/config/types.js";
 import { sleep } from "../../utils.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { registerDispatcher } from "./dispatcher-registry.js";

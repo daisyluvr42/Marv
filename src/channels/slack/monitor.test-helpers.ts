@@ -148,8 +148,8 @@ export function resetSlackTestState(config: Record<string, unknown> = defaultSla
   getSlackHandlers()?.clear();
 }
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => slackTestState.config,
@@ -180,7 +180,7 @@ vi.mock("../../pairing/pairing-store.js", () => ({
     slackTestState.upsertPairingRequestMock(...args),
 }));
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   resolveStorePath: vi.fn(() => "/tmp/marv-sessions.json"),
   updateLastRoute: (...args: unknown[]) => slackTestState.updateLastRouteMock(...args),
   resolveSessionKey: vi.fn(),

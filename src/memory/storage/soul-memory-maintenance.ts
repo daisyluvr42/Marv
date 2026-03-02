@@ -1,5 +1,5 @@
 import { listAgentIds } from "../../agents/agent-scope.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import {
   applySoulMemoryConfidenceDecay,

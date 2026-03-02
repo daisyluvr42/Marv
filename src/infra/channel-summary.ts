@@ -4,7 +4,7 @@ import {
 } from "../channels/account-summary.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelAccountSnapshot, ChannelPlugin } from "../channels/plugins/types.js";
-import { type MarvConfig, loadConfig } from "../config/config.js";
+import { type MarvConfig, loadConfig } from "../core/config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 import { theme } from "../terminal/theme.js";
 import { formatTimeAgo } from "./format-time/format-relative.ts";

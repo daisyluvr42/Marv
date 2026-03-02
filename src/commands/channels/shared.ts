@@ -1,5 +1,5 @@
 import { type ChannelId, getChannelPlugin } from "../../channels/plugins/index.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { requireValidConfigSnapshot } from "../config-validation.js";

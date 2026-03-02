@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { isLoopbackHost } from "../gateway/net.js";
+import { isLoopbackHost } from "../core/gateway/net.js";
 
 function firstHeader(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");

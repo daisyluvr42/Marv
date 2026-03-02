@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { loadConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
+import type { loadConfig } from "../core/config/config.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { VERSION } from "../version.js";
 import { resolveMarvPackageRoot } from "./marv-root.js";
 import { normalizeUpdateChannel, DEFAULT_PACKAGE_CHANNEL } from "./update-channels.js";

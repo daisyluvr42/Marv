@@ -7,14 +7,14 @@ import {
   resolveEmbeddedSessionLane,
 } from "../../agents/runner/pi-embedded.js";
 import type { ExecToolDefaults } from "../../agents/tools/bash-tools.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   resolveGroupSessionKey,
   resolveSessionFilePath,
   resolveSessionFilePathOptions,
   type SessionEntry,
   updateSessionStore,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";

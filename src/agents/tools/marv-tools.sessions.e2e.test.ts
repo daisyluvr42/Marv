@@ -6,12 +6,12 @@ import {
 } from "../subagent-registry.js";
 
 const callGatewayMock = vi.fn();
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGatewayMock(opts),
 }));
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => ({
@@ -765,7 +765,7 @@ describe("sessions tools", () => {
       startedAt: now - 2 * 60_000,
     });
 
-    const sessionsModule = await import("../../config/sessions.js");
+    const sessionsModule = await import("../../core/config/sessions.js");
     const loadSessionStoreSpy = vi
       .spyOn(sessionsModule, "loadSessionStore")
       .mockImplementation(() => ({
@@ -825,7 +825,7 @@ describe("sessions tools", () => {
       startedAt: Date.now() - 60_000,
     });
 
-    const sessionsModule = await import("../../config/sessions.js");
+    const sessionsModule = await import("../../core/config/sessions.js");
     const loadSessionStoreSpy = vi
       .spyOn(sessionsModule, "loadSessionStore")
       .mockImplementation(() => ({

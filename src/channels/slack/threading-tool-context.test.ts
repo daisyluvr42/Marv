@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { buildSlackThreadingToolContext } from "./threading-tool-context.js";
 
 const emptyCfg = {} as MarvConfig;

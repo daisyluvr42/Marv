@@ -1,5 +1,5 @@
 import { withProgress } from "../cli/progress.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { resolveGatewayService } from "../daemon/service.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";

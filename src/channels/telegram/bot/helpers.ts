@@ -1,5 +1,5 @@
 import type { Chat, Message, MessageOrigin, User } from "@grammyjs/types";
-import type { TelegramGroupConfig, TelegramTopicConfig } from "../../../config/types.js";
+import type { TelegramGroupConfig, TelegramTopicConfig } from "../../../core/config/types.js";
 import { readChannelAllowFromStore } from "../../../pairing/pairing-store.js";
 import { formatLocationText, type NormalizedLocation } from "../../location.js";
 import {

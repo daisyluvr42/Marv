@@ -1,5 +1,5 @@
 import { OPENCODE_ZEN_DEFAULT_MODEL_REF } from "../agents/model/opencode-zen-models.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { applyAgentDefaultModelPrimary } from "./onboard-auth.config-shared.js";
 
 export function applyOpencodeZenProviderConfig(cfg: MarvConfig): MarvConfig {

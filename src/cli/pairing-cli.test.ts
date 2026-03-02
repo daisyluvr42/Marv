@@ -40,7 +40,7 @@ vi.mock("../channels/plugins/index.js", () => ({
   normalizeChannelId,
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   loadConfig: vi.fn().mockReturnValue({}),
 }));
 

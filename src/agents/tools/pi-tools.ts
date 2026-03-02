@@ -5,8 +5,8 @@ import {
   createWriteTool,
   readTool,
 } from "@mariozechner/pi-coding-agent";
-import type { MarvConfig } from "../../config/config.js";
-import type { ToolLoopDetectionConfig } from "../../config/types.tools.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { ToolLoopDetectionConfig } from "../../core/config/types.tools.js";
 import { logWarn } from "../../logger.js";
 import { getPluginToolMeta } from "../../plugins/tools.js";
 import { isSubagentSessionKey } from "../../routing/session-key.js";

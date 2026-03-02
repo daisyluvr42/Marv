@@ -405,3 +405,40 @@ Phase 2（Memory 细分）已完成：目录结构完成重组、引用已修复
 ### 5) 本阶段结论
 
 Phase 3 已完成核心拆分：`agents/` 的主干职责已下沉到 `runner / tools / prompt / model / sandbox`，并完成跨模块引用修复与回归验证，可继续进入 Phase 4（Gateway + Config -> Core）。
+
+---
+
+## Phase 4 Walkthrough（2026-03-02）
+
+本阶段执行 `Gateway + Config -> Core`，把 `src/gateway` 与 `src/config` 收拢到 `src/core/` 下，作为后续 `core/session/shared` 进一步整理的基础。
+
+### 1) 目录迁移结果
+
+已完成整体迁移：
+
+- `src/config/` -> `src/core/config/`
+- `src/gateway/` -> `src/core/gateway/`
+
+目录层级保留原结构（`protocol/`, `server/`, `server-methods/`, `sessions/` 等），仅调整上层归属。
+
+### 2) Import 修复策略
+
+- 先执行 `git mv`，保留 rename 历史
+- 基于 rename 映射自动重写全仓相对导入路径（覆盖 `src/`, `ui/`, `extensions/`, `packages/`, `test/` 内 TS 文件）
+- 重写后人工复跑类型检查，确认没有新增“找不到模块”问题
+
+本阶段批量修正了 1000+ 文件的导入路径（一次性重写 1157 个文件）。
+
+### 3) 验证结果
+
+- `npx tsc --noEmit`
+  - 与本阶段迁移相关的路径错误已清零
+  - 当前剩余报错属于仓库既有基线问题（`daemon/*`, `infra/*`, `core/gateway/hooks.ts` 等）
+- `pnpm test -- src/core/config src/core/gateway`
+  - 102 个测试文件通过（895 tests passed）
+- `pnpm build`
+  - 仍被既有问题阻断：`Cannot resolve entry module src/extensionAPI.ts`
+
+### 4) 本阶段结论
+
+Phase 4 已完成核心目标：`gateway` 与 `config` 已进入 `core/` 命名空间，且已通过针对性测试验证，可继续执行 Phase 5（Infra 细分）。

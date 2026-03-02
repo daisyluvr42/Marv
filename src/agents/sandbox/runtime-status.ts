@@ -1,6 +1,9 @@
 import { formatCliCommand } from "../../cli/command-format.js";
-import type { MarvConfig } from "../../config/config.js";
-import { canonicalizeMainSessionAlias, resolveAgentMainSessionKey } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import {
+  canonicalizeMainSessionAlias,
+  resolveAgentMainSessionKey,
+} from "../../core/config/sessions.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
 import { expandToolGroups } from "../tools/tool-policy.js";
 import { resolveSandboxConfigForAgent } from "./config.js";

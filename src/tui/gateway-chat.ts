@@ -1,19 +1,19 @@
 import { randomUUID } from "node:crypto";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   buildGatewayConnectionDetails,
   ensureExplicitGatewayAuth,
   resolveExplicitGatewayAuth,
-} from "../gateway/call.js";
-import { GatewayClient } from "../gateway/client.js";
-import { GATEWAY_CLIENT_CAPS } from "../gateway/protocol/client-info.js";
+} from "../core/gateway/call.js";
+import { GatewayClient } from "../core/gateway/client.js";
+import { GATEWAY_CLIENT_CAPS } from "../core/gateway/protocol/client-info.js";
 import {
   type HelloOk,
   PROTOCOL_VERSION,
   type SessionsListParams,
   type SessionsPatchResult,
   type SessionsPatchParams,
-} from "../gateway/protocol/index.js";
+} from "../core/gateway/protocol/index.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { VERSION } from "../version.js";
 

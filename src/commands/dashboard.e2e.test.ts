@@ -9,7 +9,7 @@ const openUrlMock = vi.hoisted(() => vi.fn());
 const formatControlUiSshHintMock = vi.hoisted(() => vi.fn());
 const copyToClipboardMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   readConfigFileSnapshot: readConfigFileSnapshotMock,
   resolveGatewayPort: resolveGatewayPortMock,
 }));

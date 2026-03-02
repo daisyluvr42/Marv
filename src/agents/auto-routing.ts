@@ -1,10 +1,10 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type {
   AutoRoutingComplexity,
   AutoRoutingConfig,
   AutoRoutingRule,
   AutoRoutingThresholds,
-} from "../config/types.agent-defaults.js";
+} from "../core/config/types.agent-defaults.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import type { ThinkLevel } from "./model/model-selection.js";
 import { parseModelRef } from "./model/model-selection.js";

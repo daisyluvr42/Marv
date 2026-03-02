@@ -18,11 +18,11 @@ import {
 } from "../../agents/model/model-selection.js";
 import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   resolveSessionTranscriptPath,
   resolveSessionTranscriptsDirForAgent,
-} from "../../config/sessions/paths.js";
+} from "../../core/config/sessions/paths.js";
 import { redactSecrets } from "../status-all/format.js";
 import { DEFAULT_PROVIDER, formatMs } from "./shared.js";
 

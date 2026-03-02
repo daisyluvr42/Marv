@@ -14,7 +14,7 @@ import {
   findNormalizedProviderValue,
   normalizeProviderId,
 } from "../../agents/model/model-selection.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { shortenHomePath } from "../../utils.js";
 import { maskApiKey } from "../../utils/mask-api-key.js";
 

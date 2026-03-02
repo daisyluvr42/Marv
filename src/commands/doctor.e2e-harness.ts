@@ -183,8 +183,8 @@ vi.mock("../plugins/loader.js", () => ({
   loadMarvPlugins: () => ({ plugins: [], diagnostics: [] }),
 }));
 
-vi.mock("../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     CONFIG_PATH: "/tmp/marv.json",
@@ -209,8 +209,8 @@ vi.mock("../daemon/program-args.js", () => ({
   resolveGatewayProgramArguments,
 }));
 
-vi.mock("../gateway/call.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../gateway/call.js")>();
+vi.mock("../core/gateway/call.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../core/gateway/call.js")>();
   return {
     ...actual,
     callGateway,

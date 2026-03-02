@@ -12,7 +12,7 @@ vi.mock("../memory/index.js", () => ({
   getMemorySearchManager,
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   loadConfig,
 }));
 

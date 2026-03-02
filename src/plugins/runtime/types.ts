@@ -27,9 +27,9 @@ type ShouldAckReaction = typeof import("../../channels/ack-reactions.js").should
 type RemoveAckReactionAfterReply =
   typeof import("../../channels/ack-reactions.js").removeAckReactionAfterReply;
 type ResolveChannelGroupPolicy =
-  typeof import("../../config/group-policy.js").resolveChannelGroupPolicy;
+  typeof import("../../core/config/group-policy.js").resolveChannelGroupPolicy;
 type ResolveChannelGroupRequireMention =
-  typeof import("../../config/group-policy.js").resolveChannelGroupRequireMention;
+  typeof import("../../core/config/group-policy.js").resolveChannelGroupRequireMention;
 type CreateInboundDebouncer =
   typeof import("../../auto-reply/inbound-debounce.js").createInboundDebouncer;
 type ResolveInboundDebounceMs =
@@ -45,7 +45,7 @@ type ChunkText = typeof import("../../auto-reply/chunk.js").chunkText;
 type ChunkTextWithMode = typeof import("../../auto-reply/chunk.js").chunkTextWithMode;
 type ChunkByNewline = typeof import("../../auto-reply/chunk.js").chunkByNewline;
 type ResolveMarkdownTableMode =
-  typeof import("../../config/markdown-tables.js").resolveMarkdownTableMode;
+  typeof import("../../core/config/markdown-tables.js").resolveMarkdownTableMode;
 type ConvertMarkdownTables = typeof import("../../markdown/tables.js").convertMarkdownTables;
 type HasControlCommand = typeof import("../../auto-reply/command-detection.js").hasControlCommand;
 type IsControlCommandMessage =
@@ -62,15 +62,15 @@ type FormatAgentEnvelope = typeof import("../../auto-reply/envelope.js").formatA
 type FormatInboundEnvelope = typeof import("../../auto-reply/envelope.js").formatInboundEnvelope;
 type ResolveEnvelopeFormatOptions =
   typeof import("../../auto-reply/envelope.js").resolveEnvelopeFormatOptions;
-type ResolveStateDir = typeof import("../../config/paths.js").resolveStateDir;
+type ResolveStateDir = typeof import("../../core/config/paths.js").resolveStateDir;
 type RecordInboundSession = typeof import("../../channels/session.js").recordInboundSession;
 type RecordSessionMetaFromInbound =
-  typeof import("../../config/sessions.js").recordSessionMetaFromInbound;
-type ResolveStorePath = typeof import("../../config/sessions.js").resolveStorePath;
-type ReadSessionUpdatedAt = typeof import("../../config/sessions.js").readSessionUpdatedAt;
-type UpdateLastRoute = typeof import("../../config/sessions.js").updateLastRoute;
-type LoadConfig = typeof import("../../config/config.js").loadConfig;
-type WriteConfigFile = typeof import("../../config/config.js").writeConfigFile;
+  typeof import("../../core/config/sessions.js").recordSessionMetaFromInbound;
+type ResolveStorePath = typeof import("../../core/config/sessions.js").resolveStorePath;
+type ReadSessionUpdatedAt = typeof import("../../core/config/sessions.js").readSessionUpdatedAt;
+type UpdateLastRoute = typeof import("../../core/config/sessions.js").updateLastRoute;
+type LoadConfig = typeof import("../../core/config/config.js").loadConfig;
+type WriteConfigFile = typeof import("../../core/config/config.js").writeConfigFile;
 type RecordChannelActivity = typeof import("../../infra/channel-activity.js").recordChannelActivity;
 type GetChannelActivity = typeof import("../../infra/channel-activity.js").getChannelActivity;
 type EnqueueSystemEvent = typeof import("../../infra/system-events.js").enqueueSystemEvent;

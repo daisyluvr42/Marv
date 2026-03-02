@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { Logger as TsLogger } from "tslog";
-import type { MarvConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/types.js";
 import { resolvePreferredMarvTmpDir } from "../infra/tmp-marv-dir.js";
 import { readLoggingConfig } from "./config.js";
 import type { ConsoleStyle } from "./console.js";
@@ -55,7 +55,7 @@ function resolveSettings(): ResolvedSettings {
     (loggingState.overrideSettings as LoggerSettings | null) ?? readLoggingConfig();
   if (!cfg) {
     try {
-      const loaded = requireConfig("../config/config.js") as {
+      const loaded = requireConfig("../core/config/config.js") as {
         loadConfig?: () => MarvConfig;
       };
       cfg = loaded.loadConfig?.().logging;

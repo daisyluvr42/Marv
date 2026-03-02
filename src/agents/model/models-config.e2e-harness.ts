@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { withTempHome as withTempHomeBase } from "../../../test/helpers/temp-home.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { MockFn } from "../../test-utils/vitest-mock-fn.js";
 
 export async function withModelsTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {

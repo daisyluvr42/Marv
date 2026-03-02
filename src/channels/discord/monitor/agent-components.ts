@@ -26,10 +26,10 @@ import {
 import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../../auto-reply/reply/provider-dispatcher.js";
 import { createReplyReferencePlanner } from "../../../auto-reply/reply/reply-reference.js";
-import type { MarvConfig } from "../../../config/config.js";
-import { resolveMarkdownTableMode } from "../../../config/markdown-tables.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../../config/sessions.js";
-import type { DiscordAccountConfig } from "../../../config/types.discord.js";
+import type { MarvConfig } from "../../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../../core/config/markdown-tables.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
+import type { DiscordAccountConfig } from "../../../core/config/types.discord.js";
 import { logVerbose } from "../../../globals.js";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";
 import { logDebug, logError } from "../../../logger.js";

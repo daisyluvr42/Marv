@@ -1,7 +1,7 @@
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig } from "../config/config.js";
-import { resolveGatewayAuth } from "../gateway/auth.js";
-import { ensureGatewayStartupAuth } from "../gateway/startup-auth.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig } from "../core/config/config.js";
+import { resolveGatewayAuth } from "../core/gateway/auth.js";
+import { ensureGatewayStartupAuth } from "../core/gateway/startup-auth.js";
 
 export type BrowserControlAuth = {
   token?: string;

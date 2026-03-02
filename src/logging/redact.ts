@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 const requireConfig = createRequire(import.meta.url);
 
@@ -110,7 +110,7 @@ function redactText(text: string, patterns: RegExp[]): string {
 function resolveConfigRedaction(): RedactOptions {
   let cfg: MarvConfig["logging"] | undefined;
   try {
-    const loaded = requireConfig("../config/config.js") as {
+    const loaded = requireConfig("../core/config/config.js") as {
       loadConfig?: () => MarvConfig;
     };
     cfg = loaded.loadConfig?.().logging;

@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { loadMarvPlugins } from "./loader.js";
 import type { PluginLogger } from "./types.js";

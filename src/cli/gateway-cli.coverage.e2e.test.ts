@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
-import { withEnvOverride } from "../config/test-helpers.js";
+import { withEnvOverride } from "../core/config/test-helpers.js";
 import { createCliRuntimeCapture } from "./test-runtime-capture.js";
 
 type DiscoveredBeacon = Awaited<
@@ -38,7 +38,7 @@ vi.mock(
   }),
 );
 
-vi.mock("../gateway/server.js", () => ({
+vi.mock("../core/gateway/server.js", () => ({
   startGatewayServer: (port: number, opts?: unknown) => startGatewayServer(port, opts),
 }));
 

@@ -10,8 +10,8 @@ import {
   resolveModelRefFromString,
   resolveThinkingDefault,
 } from "../../agents/model/model-selection.js";
-import type { MarvConfig } from "../../config/config.js";
-import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import { applyModelOverrideToSessionEntry } from "../../sessions/model-overrides.js";
 import { resolveThreadParentSessionKey } from "../../sessions/session-key-utils.js";
 import type { ThinkLevel } from "./directives.js";

@@ -1,4 +1,4 @@
-import { type MarvConfig, loadConfig } from "../../config/config.js";
+import { type MarvConfig, loadConfig } from "../../core/config/config.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import { ensureMarvModelsJson } from "./models-config.js";
 

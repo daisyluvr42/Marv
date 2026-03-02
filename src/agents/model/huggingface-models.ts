@@ -1,4 +1,4 @@
-import type { ModelDefinitionConfig } from "../../config/types.models.js";
+import type { ModelDefinitionConfig } from "../../core/config/types.models.js";
 
 /** Hugging Face Inference Providers (router) — OpenAI-compatible chat completions. */
 export const HUGGINGFACE_BASE_URL = "https://router.huggingface.co/v1";

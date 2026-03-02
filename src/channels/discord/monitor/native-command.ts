@@ -31,7 +31,7 @@ import {
 import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithDispatcher } from "../../../auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../../../auto-reply/types.js";
-import type { MarvConfig, loadConfig } from "../../../config/config.js";
+import type { MarvConfig, loadConfig } from "../../../core/config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../../media/local-roots.js";
 import { buildPairingReply } from "../../../pairing/pairing-messages.js";
 import {

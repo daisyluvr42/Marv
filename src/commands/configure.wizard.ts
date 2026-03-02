@@ -1,7 +1,11 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
-import { readConfigFileSnapshot, resolveGatewayPort, writeConfigFile } from "../config/config.js";
-import { logConfigUpdated } from "../config/logging.js";
+import type { MarvConfig } from "../core/config/config.js";
+import {
+  readConfigFileSnapshot,
+  resolveGatewayPort,
+  writeConfigFile,
+} from "../core/config/config.js";
+import { logConfigUpdated } from "../core/config/logging.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -78,14 +82,7 @@ async function runGatewayHealthCheck(params: {
     await healthCommand({ json: false, timeoutMs: 10_000 }, params.runtime);
   } catch (err) {
     params.runtime.error(formatHealthCheckFailure(err));
-    note(
-      [
-        "Docs:",
-        "/gateway/health",
-        "/gateway/troubleshooting",
-      ].join("\n"),
-      "Health check help",
-    );
+    note(["Docs:", "/gateway/health", "/gateway/troubleshooting"].join("\n"), "Health check help");
   }
 }
 

@@ -9,12 +9,12 @@ import {
   resolveHooksGmailModel,
 } from "../agents/model/model-selection.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
-import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
-import { logConfigUpdated } from "../config/logging.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../core/config/config.js";
+import { logConfigUpdated } from "../core/config/logging.js";
+import { resolveGatewayAuth } from "../core/gateway/auth.js";
+import { buildGatewayConnectionDetails } from "../core/gateway/call.js";
 import { resolveGatewayService } from "../daemon/service.js";
-import { resolveGatewayAuth } from "../gateway/auth.js";
-import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { resolveMarvPackageRoot } from "../infra/marv-root.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";

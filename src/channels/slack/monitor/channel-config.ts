@@ -1,4 +1,4 @@
-import type { SlackReactionNotificationMode } from "../../../config/config.js";
+import type { SlackReactionNotificationMode } from "../../../core/config/config.js";
 import {
   applyChannelMatchMeta,
   buildChannelKeyCandidates,

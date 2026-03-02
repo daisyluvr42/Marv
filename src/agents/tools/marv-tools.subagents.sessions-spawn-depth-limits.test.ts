@@ -7,7 +7,7 @@ import { createSessionsSpawnTool } from "./sessions-spawn-tool.js";
 
 const callGatewayMock = vi.fn();
 
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGatewayMock(opts),
 }));
 
@@ -19,8 +19,8 @@ let configOverride: Record<string, unknown> = {
   },
 };
 
-vi.mock("../../config/config.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../config/config.js")>();
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
   return {
     ...actual,
     loadConfig: () => configOverride,

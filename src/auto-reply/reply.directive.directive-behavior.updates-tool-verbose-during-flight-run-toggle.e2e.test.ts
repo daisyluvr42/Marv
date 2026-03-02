@@ -1,6 +1,6 @@
 import "./reply.directive.directive-behavior.e2e-mocks.js";
 import { describe, expect, it, vi } from "vitest";
-import { loadSessionStore, resolveSessionKey, saveSessionStore } from "../config/sessions.js";
+import { loadSessionStore, resolveSessionKey, saveSessionStore } from "../core/config/sessions.js";
 import {
   installDirectiveBehaviorE2EHooks,
   makeEmbeddedTextResult,

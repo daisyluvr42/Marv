@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { normalizeChannelId } from "../channels/plugins/index.js";
 import { listPairingChannels, notifyPairingApproved } from "../channels/plugins/pairing.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { resolvePairingIdLabel } from "../pairing/pairing-labels.js";
 import {
   approveChannelPairingCode,
@@ -56,8 +56,7 @@ export function registerPairingCli(program: Command) {
     .description("Secure DM pairing (approve inbound requests)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/pairing", "docs: /cli/pairing")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/pairing", "docs: /cli/pairing")}\n`,
     );
 
   pairing

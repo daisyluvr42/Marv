@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { AgentModelListConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AgentModelListConfig } from "../core/config/types.js";
 
 export const OPENAI_CODEX_DEFAULT_MODEL = "openai-codex/gpt-5.3-codex";
 

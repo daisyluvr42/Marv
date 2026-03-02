@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveTelegramReactionLevel } from "./reaction-level.js";
 
 describe("resolveTelegramReactionLevel", () => {

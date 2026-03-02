@@ -9,7 +9,7 @@ import {
   type ModelRef,
 } from "../agents/model/model-selection.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,

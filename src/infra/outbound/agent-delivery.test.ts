@@ -12,7 +12,7 @@ vi.mock("./targets.js", async () => {
   };
 });
 
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentDeliveryPlan, resolveAgentOutboundTarget } from "./agent-delivery.js";
 
 describe("agent delivery helpers", () => {

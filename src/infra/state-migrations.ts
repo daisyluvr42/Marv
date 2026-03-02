@@ -2,17 +2,17 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   resolveLegacyStateDirs,
   resolveNewStateDir,
   resolveOAuthDir,
   resolveStateDir,
-} from "../config/paths.js";
-import type { SessionEntry } from "../config/sessions.js";
-import { saveSessionStore } from "../config/sessions.js";
-import { canonicalizeMainSessionAlias } from "../config/sessions/main-session.js";
-import type { SessionScope } from "../config/sessions/types.js";
+} from "../core/config/paths.js";
+import type { SessionEntry } from "../core/config/sessions.js";
+import { saveSessionStore } from "../core/config/sessions.js";
+import { canonicalizeMainSessionAlias } from "../core/config/sessions/main-session.js";
+import type { SessionScope } from "../core/config/sessions/types.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   buildAgentMainSessionKey,

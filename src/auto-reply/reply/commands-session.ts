@@ -1,6 +1,6 @@
 import { abortEmbeddedPiRun } from "../../agents/runner/pi-embedded.js";
-import type { SessionEntry } from "../../config/sessions.js";
-import { updateSessionStore } from "../../config/sessions.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
+import { updateSessionStore } from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { scheduleGatewaySigusr1Restart, triggerMarvRestart } from "../../infra/restart.js";

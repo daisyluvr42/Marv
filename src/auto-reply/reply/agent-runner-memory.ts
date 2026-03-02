@@ -6,8 +6,8 @@ import {
   resolveSandboxConfigForAgent,
   resolveSandboxRuntimeStatus,
 } from "../../agents/sandbox/sandbox.js";
-import type { MarvConfig } from "../../config/config.js";
-import { type SessionEntry, updateSessionStoreEntry } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { type SessionEntry, updateSessionStoreEntry } from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import type { TemplateContext } from "../templating.js";

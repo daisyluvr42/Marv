@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { CliBackendConfig } from "../config/types.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { CliBackendConfig } from "../core/config/types.js";
 import {
   CLI_FRESH_WATCHDOG_DEFAULTS,
   CLI_RESUME_WATCHDOG_DEFAULTS,

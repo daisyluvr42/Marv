@@ -9,8 +9,8 @@ import {
   resolveChunkMode,
   resolveTextChunkLimit,
 } from "../../auto-reply/chunk.js";
-import { loadConfig } from "../../config/config.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
+import { loadConfig } from "../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import { logVerbose } from "../../globals.js";
 import { loadWebMedia } from "../web/media.js";
 import type { SlackTokenSource } from "./accounts.js";

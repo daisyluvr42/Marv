@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { ChannelAccountSnapshot, ChannelPlugin } from "./types.js";
 
 // Channel docking: status snapshots flow through plugin.status hooks here.

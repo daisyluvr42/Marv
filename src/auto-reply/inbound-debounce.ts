@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { InboundDebounceByProvider } from "../config/types.messages.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { InboundDebounceByProvider } from "../core/config/types.messages.js";
 
 const resolveMs = (value: unknown): number | undefined => {
   if (typeof value !== "number" || !Number.isFinite(value)) {

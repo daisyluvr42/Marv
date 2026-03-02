@@ -3,8 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { MarvConfig } from "../config/config.js";
-import { resolveGatewayPort, resolveIsNixMode } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveGatewayPort, resolveIsNixMode } from "../core/config/paths.js";
 import { findExtraGatewayServices, renderGatewayServiceCleanupHints } from "../daemon/inspect.js";
 import { renderSystemNodeWarning, resolveSystemNodeInfo } from "../daemon/runtime-paths.js";
 import {
@@ -55,8 +55,7 @@ function resolveGatewayAuthToken(cfg: MarvConfig, env: NodeJS.ProcessEnv): strin
   if (configToken) {
     return configToken;
   }
-  const envToken =
-    env.MARV_GATEWAY_TOKEN ?? env.MARV_GATEWAY_TOKEN ?? env.CLAWDBOT_GATEWAY_TOKEN;
+  const envToken = env.MARV_GATEWAY_TOKEN ?? env.MARV_GATEWAY_TOKEN ?? env.CLAWDBOT_GATEWAY_TOKEN;
   const trimmedEnvToken = envToken?.trim();
   return trimmedEnvToken || undefined;
 }

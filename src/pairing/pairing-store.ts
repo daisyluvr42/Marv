@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { getPairingAdapter } from "../channels/plugins/pairing.js";
 import type { ChannelId, ChannelPairingAdapter } from "../channels/plugins/types.js";
-import { resolveOAuthDir, resolveStateDir } from "../config/paths.js";
+import { resolveOAuthDir, resolveStateDir } from "../core/config/paths.js";
 import { withFileLock as withPathLock } from "../infra/file-lock.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { readJsonFileWithFallback, writeJsonFileAtomically } from "../plugin-sdk/json-store.js";

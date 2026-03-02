@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { getDmHistoryLimitFromSessionKey } from "./pi-embedded-runner.js";
 
 describe("getDmHistoryLimitFromSessionKey", () => {

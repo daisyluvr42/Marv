@@ -1,8 +1,8 @@
 import type { App } from "@slack/bolt";
 import type { HistoryEntry } from "../../../auto-reply/reply/history.js";
-import type { MarvConfig, SlackReactionNotificationMode } from "../../../config/config.js";
-import { resolveSessionKey, type SessionScope } from "../../../config/sessions.js";
-import type { DmPolicy, GroupPolicy } from "../../../config/types.js";
+import type { MarvConfig, SlackReactionNotificationMode } from "../../../core/config/config.js";
+import { resolveSessionKey, type SessionScope } from "../../../core/config/sessions.js";
+import type { DmPolicy, GroupPolicy } from "../../../core/config/types.js";
 import { logVerbose } from "../../../globals.js";
 import { createDedupeCache } from "../../../infra/dedupe.js";
 import { getChildLogger } from "../../../logging.js";
@@ -79,7 +79,7 @@ export type SlackMonitorContext = {
   replyToMode: "off" | "first" | "all";
   threadHistoryScope: "thread" | "channel";
   threadInheritParent: boolean;
-  slashCommand: Required<import("../../../config/config.js").SlackSlashCommandConfig>;
+  slashCommand: Required<import("../../../core/config/config.js").SlackSlashCommandConfig>;
   textLimit: number;
   ackReactionScope: string;
   mediaMaxBytes: number;

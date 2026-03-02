@@ -1,4 +1,4 @@
-import type { loadConfig } from "../../../../config/config.js";
+import type { loadConfig } from "../../../../core/config/config.js";
 import type { resolveAgentRoute } from "../../../../routing/resolve-route.js";
 import { buildAgentSessionKey } from "../../../../routing/resolve-route.js";
 import {

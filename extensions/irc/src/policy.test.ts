@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveChannelGroupPolicy } from "../../../src/config/group-policy.js";
+import { resolveChannelGroupPolicy } from "../../../src/core/config/group-policy.js";
 import {
   resolveIrcGroupAccessGate,
   resolveIrcGroupMatch,

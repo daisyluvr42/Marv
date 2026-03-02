@@ -1,4 +1,4 @@
-import { readConfigFileSnapshot, resolveGatewayPort } from "../config/config.js";
+import { readConfigFileSnapshot, resolveGatewayPort } from "../core/config/config.js";
 import { copyToClipboard } from "../infra/clipboard.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";

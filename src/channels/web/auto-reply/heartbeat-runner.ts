@@ -7,13 +7,13 @@ import {
 } from "../../../auto-reply/heartbeat.js";
 import { getReplyFromConfig } from "../../../auto-reply/reply.js";
 import { HEARTBEAT_TOKEN } from "../../../auto-reply/tokens.js";
-import { loadConfig } from "../../../config/config.js";
+import { loadConfig } from "../../../core/config/config.js";
 import {
   loadSessionStore,
   resolveSessionKey,
   resolveStorePath,
   updateSessionStore,
-} from "../../../config/sessions.js";
+} from "../../../core/config/sessions.js";
 import { emitHeartbeatEvent, resolveIndicatorType } from "../../../infra/heartbeat-events.js";
 import { resolveHeartbeatVisibility } from "../../../infra/heartbeat-visibility.js";
 import { getChildLogger } from "../../../logging.js";

@@ -1,6 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { MarvConfig } from "../config/config.js";
-import { readConfigFileSnapshot } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { readConfigFileSnapshot } from "../core/config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { runNonInteractiveOnboardingLocal } from "./onboard-non-interactive/local.js";

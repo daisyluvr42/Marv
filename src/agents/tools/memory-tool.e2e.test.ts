@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
 let backend: "builtin" | "qmd" = "builtin";
 let searchImpl: () => Promise<unknown[]> = async () => [

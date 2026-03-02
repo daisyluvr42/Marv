@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
 export function buildModelAliasLines(cfg?: MarvConfig) {
   const models = cfg?.agents?.defaults?.models ?? {};

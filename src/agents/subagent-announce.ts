@@ -1,13 +1,13 @@
 import { resolveQueueSettings } from "../auto-reply/reply/queue.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   loadSessionStore,
   resolveAgentIdFromSessionKey,
   resolveMainSessionKey,
   resolveStorePath,
-} from "../config/sessions.js";
-import { callGateway } from "../gateway/call.js";
+} from "../core/config/sessions.js";
+import { callGateway } from "../core/gateway/call.js";
 import { normalizeMainKey } from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
 import { extractTextFromChatContent } from "../shared/chat-content.js";

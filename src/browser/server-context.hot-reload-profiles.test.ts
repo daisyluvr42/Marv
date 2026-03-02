@@ -22,7 +22,7 @@ function buildConfig() {
   };
 }
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   createConfigIO: () => ({
     loadConfig: () => {
       // Always return fresh config for createConfigIO to simulate fresh disk read
@@ -49,7 +49,7 @@ describe("server-context hot-reload profiles", () => {
   });
 
   it("forProfile hot-reloads newly added profiles from config", async () => {
-    const { loadConfig } = await import("../config/config.js");
+    const { loadConfig } = await import("../core/config/config.js");
 
     // Start with only marv profile
     // 1. Prime the cache by calling loadConfig() first
@@ -101,7 +101,7 @@ describe("server-context hot-reload profiles", () => {
   });
 
   it("forProfile still throws for profiles that don't exist in fresh config", async () => {
-    const { loadConfig } = await import("../config/config.js");
+    const { loadConfig } = await import("../core/config/config.js");
 
     const cfg = loadConfig();
     const resolved = resolveBrowserConfig(cfg.browser, cfg);
@@ -123,7 +123,7 @@ describe("server-context hot-reload profiles", () => {
   });
 
   it("forProfile refreshes existing profile config after loadConfig cache updates", async () => {
-    const { loadConfig } = await import("../config/config.js");
+    const { loadConfig } = await import("../core/config/config.js");
 
     const cfg = loadConfig();
     const resolved = resolveBrowserConfig(cfg.browser, cfg);
@@ -147,7 +147,7 @@ describe("server-context hot-reload profiles", () => {
   });
 
   it("listProfiles refreshes config before enumerating profiles", async () => {
-    const { loadConfig } = await import("../config/config.js");
+    const { loadConfig } = await import("../core/config/config.js");
 
     const cfg = loadConfig();
     const resolved = resolveBrowserConfig(cfg.browser, cfg);

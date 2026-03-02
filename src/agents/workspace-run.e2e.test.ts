@@ -1,7 +1,7 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { resolveRunWorkspaceDir } from "./workspace-run.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 

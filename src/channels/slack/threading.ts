@@ -1,4 +1,4 @@
-import type { ReplyToMode } from "../../config/types.js";
+import type { ReplyToMode } from "../../core/config/types.js";
 import type { SlackAppMentionEvent, SlackMessageEvent } from "./types.js";
 
 export type SlackThreadContext = {

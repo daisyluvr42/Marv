@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MarvConfig, ConfigFileSnapshot } from "../config/types.marv.js";
+import type { MarvConfig, ConfigFileSnapshot } from "../core/config/types.marv.js";
 import type { UpdateRunResult } from "../infra/update-runner.js";
 import { captureEnv } from "../test-utils/env.js";
 
@@ -34,7 +34,7 @@ vi.mock("../infra/marv-root.js", () => ({
   resolveMarvPackageRoot: vi.fn(),
 }));
 
-vi.mock("../config/config.js", () => ({
+vi.mock("../core/config/config.js", () => ({
   readConfigFileSnapshot: vi.fn(),
   writeConfigFile: vi.fn(),
 }));
@@ -109,7 +109,7 @@ vi.mock("../runtime.js", () => ({
 
 const { runGatewayUpdate } = await import("../infra/update-runner.js");
 const { resolveMarvPackageRoot } = await import("../infra/marv-root.js");
-const { readConfigFileSnapshot, writeConfigFile } = await import("../config/config.js");
+const { readConfigFileSnapshot, writeConfigFile } = await import("../core/config/config.js");
 const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
   await import("../infra/update-check.js");
 const { runCommandWithTimeout } = await import("../process/exec.js");

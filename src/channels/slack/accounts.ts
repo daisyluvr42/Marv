@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { SlackAccountConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SlackAccountConfig } from "../../core/config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { normalizeChatType } from "../chat-type.js";
 import { createAccountListHelpers } from "../plugins/account-helpers.js";

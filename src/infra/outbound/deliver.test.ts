@@ -4,8 +4,8 @@ import { signalOutbound } from "../../channels/plugins/outbound/signal.js";
 import { telegramOutbound } from "../../channels/plugins/outbound/telegram.js";
 import { whatsappOutbound } from "../../channels/plugins/outbound/whatsapp.js";
 import { markdownToSignalTextChunks } from "../../channels/signal/format.js";
-import type { MarvConfig } from "../../config/config.js";
-import { STATE_DIR } from "../../config/paths.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { STATE_DIR } from "../../core/config/paths.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.js";
@@ -30,9 +30,9 @@ const queueMocks = vi.hoisted(() => ({
   failDelivery: vi.fn(async () => {}),
 }));
 
-vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
-    "../../config/sessions.js",
+vi.mock("../../core/config/sessions.js", async () => {
+  const actual = await vi.importActual<typeof import("../../core/config/sessions.js")>(
+    "../../core/config/sessions.js",
   );
   return {
     ...actual,

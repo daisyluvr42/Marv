@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolveStateDir } from "../../config/paths.js";
+import { resolveStateDir } from "../../core/config/paths.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 
 const RAW_STREAM_ENABLED = isTruthyEnvValue(process.env.MARV_RAW_STREAM);

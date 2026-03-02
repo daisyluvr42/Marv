@@ -15,7 +15,7 @@ import {
   matchesMentionWithExplicit,
 } from "../../../../auto-reply/reply/mentions.js";
 import type { FinalizedMsgContext } from "../../../../auto-reply/templating.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../../../config/sessions.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../../../core/config/sessions.js";
 import { logVerbose, shouldLogVerbose } from "../../../../globals.js";
 import { enqueueSystemEvent } from "../../../../infra/system-events.js";
 import { buildPairingReply } from "../../../../pairing/pairing-messages.js";

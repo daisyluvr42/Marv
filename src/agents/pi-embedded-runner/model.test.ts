@@ -5,7 +5,7 @@ vi.mock("../model/pi-model-discovery.js", () => ({
   discoverModels: vi.fn(() => ({ find: vi.fn(() => null) })),
 }));
 
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { buildInlineProviderModels, resolveModel } from "./model.js";
 import {
   makeModel,

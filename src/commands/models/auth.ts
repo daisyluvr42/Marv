@@ -10,7 +10,7 @@ import { normalizeProviderId } from "../../agents/model/model-selection.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
-import { logConfigUpdated } from "../../config/logging.js";
+import { logConfigUpdated } from "../../core/config/logging.js";
 import { resolvePluginProviders } from "../../plugins/providers.js";
 import type { ProviderAuthResult, ProviderPlugin } from "../../plugins/types.js";
 import type { RuntimeEnv } from "../../runtime.js";

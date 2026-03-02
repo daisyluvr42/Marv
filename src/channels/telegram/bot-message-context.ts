@@ -20,10 +20,14 @@ import {
   matchesMentionWithExplicit,
 } from "../../auto-reply/reply/mentions.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
-import { readSessionUpdatedAt, resolveStorePath } from "../../config/sessions.js";
-import type { DmPolicy, TelegramGroupConfig, TelegramTopicConfig } from "../../config/types.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
+import { readSessionUpdatedAt, resolveStorePath } from "../../core/config/sessions.js";
+import type {
+  DmPolicy,
+  TelegramGroupConfig,
+  TelegramTopicConfig,
+} from "../../core/config/types.js";
 import { logVerbose, shouldLogVerbose } from "../../globals.js";
 import { recordChannelActivity } from "../../infra/channel-activity.js";
 import { buildPairingReply } from "../../pairing/pairing-messages.js";

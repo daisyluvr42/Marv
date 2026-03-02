@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
 import { handleDirectiveOnly } from "./directive-handling.impl.js";
 import { parseInlineDirectives } from "./directive-handling.js";
 import {
@@ -20,7 +20,7 @@ vi.mock("../../agents/sandbox/sandbox.js", () => ({
   resolveSandboxRuntimeStatus: vi.fn(() => ({ sandboxed: false })),
 }));
 
-vi.mock("../../config/sessions.js", () => ({
+vi.mock("../../core/config/sessions.js", () => ({
   updateSessionStore: vi.fn(async () => {}),
 }));
 

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinking.js";
-import { loadConfig } from "../config/config.js";
-import { callGateway } from "../gateway/call.js";
+import { loadConfig } from "../core/config/config.js";
+import { callGateway } from "../core/gateway/call.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";

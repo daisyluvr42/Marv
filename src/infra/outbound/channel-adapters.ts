@@ -1,7 +1,7 @@
 import { Separator, TextDisplay, type TopLevelComponents } from "@buape/carbon";
 import { DiscordUiContainer } from "../../channels/discord/ui.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 
 export type CrossContextComponentsBuilder = (message: string) => TopLevelComponents[];
 

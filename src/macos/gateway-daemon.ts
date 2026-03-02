@@ -60,9 +60,9 @@ async function main() {
     commandQueueMod,
     { createRestartIterationHook },
   ] = await Promise.all([
-    import("../config/config.js"),
-    import("../gateway/server.js"),
-    import("../gateway/ws-logging.js"),
+    import("../core/config/config.js"),
+    import("../core/gateway/server.js"),
+    import("../core/gateway/ws-logging.js"),
     import("../globals.js"),
     import("../infra/gateway-lock.js"),
     import("../infra/restart.js"),

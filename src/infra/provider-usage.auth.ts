@@ -10,7 +10,7 @@ import {
 } from "../agents/auth-profiles.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model/model-auth.js";
 import { normalizeProviderId } from "../agents/model/model-selection.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import type { UsageProviderId } from "./provider-usage.types.js";
 

@@ -1,6 +1,6 @@
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { loadMarvPlugins } from "./loader.js";
 import { createPluginLoaderLogger } from "./logger.js";

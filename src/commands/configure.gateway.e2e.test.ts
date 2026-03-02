@@ -11,8 +11,8 @@ const mocks = vi.hoisted(() => ({
   randomToken: vi.fn(),
 }));
 
-vi.mock("../config/config.js", async (importActual) => {
-  const actual = await importActual<typeof import("../config/config.js")>();
+vi.mock("../core/config/config.js", async (importActual) => {
+  const actual = await importActual<typeof import("../core/config/config.js")>();
   return {
     ...actual,
     resolveGatewayPort: mocks.resolveGatewayPort,

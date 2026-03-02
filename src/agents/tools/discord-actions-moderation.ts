@@ -4,7 +4,7 @@ import {
   kickMemberDiscord,
   timeoutMemberDiscord,
 } from "../../channels/discord/send.js";
-import type { DiscordActionConfig } from "../../config/config.js";
+import type { DiscordActionConfig } from "../../core/config/config.js";
 import { type ActionGate, jsonResult, readStringParam } from "./common.js";
 
 export async function handleDiscordModerationAction(

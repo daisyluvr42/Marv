@@ -6,7 +6,7 @@ import path from "node:path";
 import type { Duplex } from "node:stream";
 import chokidar from "chokidar";
 import { type WebSocket, WebSocketServer } from "ws";
-import { resolveStateDir } from "../config/paths.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { detectMime } from "../media/mime.js";
 import type { RuntimeEnv } from "../runtime.js";

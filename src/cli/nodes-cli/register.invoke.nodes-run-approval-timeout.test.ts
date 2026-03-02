@@ -23,7 +23,7 @@ const callGatewaySpy = vi.fn<
   (opts: Record<string, unknown>) => Promise<{ decision: "allow-once" }>
 >(async () => ({ decision: "allow-once" }));
 
-vi.mock("../../gateway/call.js", () => ({
+vi.mock("../../core/gateway/call.js", () => ({
   callGateway: callGatewaySpy,
   randomIdempotencyKey: () => "mock-key",
 }));

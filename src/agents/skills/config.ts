@@ -1,4 +1,4 @@
-import type { MarvConfig, SkillConfig } from "../../config/config.js";
+import type { MarvConfig, SkillConfig } from "../../core/config/config.js";
 import {
   evaluateRuntimeRequires,
   hasBinary,

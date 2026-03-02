@@ -1,5 +1,5 @@
-import { loadConfig } from "../../config/config.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
+import { loadConfig } from "../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import { mediaKindFromMime } from "../../media/constants.js";
 import { resolveOutboundAttachmentFromUrl } from "../../media/outbound-attachment.js";
 import { resolveSignalAccount } from "./accounts.js";

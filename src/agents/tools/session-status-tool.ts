@@ -2,15 +2,15 @@ import { Type } from "@sinclair/typebox";
 import { normalizeGroupActivation } from "../../auto-reply/group-activation.js";
 import { getFollowupQueueDepth, resolveQueueSettings } from "../../auto-reply/reply/queue.js";
 import { buildStatusMessage } from "../../auto-reply/status.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import {
   loadSessionStore,
   resolveStorePath,
   type SessionEntry,
   updateSessionStore,
-} from "../../config/sessions.js";
-import { loadCombinedSessionStoreForGateway } from "../../gateway/session-utils.js";
+} from "../../core/config/sessions.js";
+import { loadCombinedSessionStoreForGateway } from "../../core/gateway/session-utils.js";
 import {
   formatUsageWindowSummary,
   loadProviderUsageSummary,

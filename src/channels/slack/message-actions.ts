@@ -1,5 +1,5 @@
 import { createActionGate } from "../../agents/tools/common.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import type { ChannelMessageActionName, ChannelToolSend } from "../plugins/types.js";
 import { listEnabledSlackAccounts } from "./accounts.js";
 

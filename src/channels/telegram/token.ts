@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import type { MarvConfig } from "../../config/config.js";
-import type { TelegramAccountConfig } from "../../config/types.telegram.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { TelegramAccountConfig } from "../../core/config/types.telegram.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import type { BaseTokenResolution } from "../plugins/types.js";
 

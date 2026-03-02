@@ -45,7 +45,7 @@ vi.mock("../../session.js", () => ({
   recordInboundSession,
 }));
 
-vi.mock("../../../config/sessions.js", () => ({
+vi.mock("../../../core/config/sessions.js", () => ({
   readSessionUpdatedAt,
   resolveStorePath,
 }));

@@ -1,7 +1,7 @@
 import { type Api, completeSimple, type Model } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
-import { loadConfig } from "../config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { resolveMarvAgentDir } from "./agent-paths.js";
 import {

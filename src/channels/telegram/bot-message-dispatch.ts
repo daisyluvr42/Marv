@@ -10,8 +10,8 @@ import { EmbeddedBlockChunker } from "../../agents/runner/pi-embedded-block-chun
 import { resolveChunkMode } from "../../auto-reply/chunk.js";
 import { clearHistoryEntriesIfEnabled } from "../../auto-reply/reply/history.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
-import type { MarvConfig, ReplyToMode, TelegramAccountConfig } from "../../config/types.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
+import type { MarvConfig, ReplyToMode, TelegramAccountConfig } from "../../core/config/types.js";
 import { danger, logVerbose } from "../../globals.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import type { RuntimeEnv } from "../../runtime.js";

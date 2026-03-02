@@ -1,7 +1,7 @@
 import type { Model } from "@mariozechner/pi-ai";
 import { getModel, streamSimple } from "@mariozechner/pi-ai";
 import { describe, expect, it } from "vitest";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { applyExtraParamsToAgent } from "./pi-embedded-runner.js";
 

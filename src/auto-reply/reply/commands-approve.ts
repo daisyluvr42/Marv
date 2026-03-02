@@ -1,4 +1,4 @@
-import { callGateway } from "../../gateway/call.js";
+import { callGateway } from "../../core/gateway/call.js";
 import { logVerbose } from "../../globals.js";
 import {
   GATEWAY_CLIENT_MODES,

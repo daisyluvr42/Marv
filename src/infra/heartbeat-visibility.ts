@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { ChannelHeartbeatVisibilityConfig } from "../config/types.channels.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { ChannelHeartbeatVisibilityConfig } from "../core/config/types.channels.js";
 import type { GatewayMessageChannel } from "../utils/message-channel.js";
 
 export type ResolvedHeartbeatVisibility = {

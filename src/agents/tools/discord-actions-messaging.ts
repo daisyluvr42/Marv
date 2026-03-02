@@ -27,7 +27,7 @@ import type {
   DiscordSendEmbeds,
 } from "../../channels/discord/send.shared.js";
 import { resolveDiscordChannelId } from "../../channels/discord/targets.js";
-import type { DiscordActionConfig } from "../../config/config.js";
+import type { DiscordActionConfig } from "../../core/config/config.js";
 import { withNormalizedTimestamp } from "../date-time.js";
 import { assertMediaNotDataUrl } from "../sandbox/sandbox-paths.js";
 import {

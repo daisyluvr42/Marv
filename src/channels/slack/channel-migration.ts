@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../../config/config.js";
-import type { SlackChannelConfig } from "../../config/types.slack.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SlackChannelConfig } from "../../core/config/types.slack.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 
 type SlackChannels = Record<string, SlackChannelConfig>;

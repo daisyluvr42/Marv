@@ -1,7 +1,7 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Api, AssistantMessage, Model } from "@mariozechner/pi-ai";
 import type { ThinkLevel } from "../../../auto-reply/thinking.js";
-import type { SessionSystemPromptReport } from "../../../config/sessions/types.js";
+import type { SessionSystemPromptReport } from "../../../core/config/sessions/types.js";
 import type { AuthStorage, ModelRegistry } from "../../model/pi-model-discovery.js";
 import type { MessagingToolSend } from "../../runner/pi-embedded-messaging.js";
 import type { NormalizedUsage } from "../../usage.js";

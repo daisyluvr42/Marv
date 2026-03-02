@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { AutoRoutingConfig, AutoRoutingRule } from "../config/types.agent-defaults.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { AutoRoutingConfig, AutoRoutingRule } from "../core/config/types.agent-defaults.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
 type ModelOption = { value: string; label: string };

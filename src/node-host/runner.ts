@@ -1,6 +1,6 @@
 import { resolveBrowserConfig } from "../browser/config.js";
-import { loadConfig } from "../config/config.js";
-import { GatewayClient } from "../gateway/client.js";
+import { loadConfig } from "../core/config/config.js";
+import { GatewayClient } from "../core/gateway/client.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
 import { ensureMarvCliOnPath } from "../infra/path-env.js";

@@ -14,14 +14,14 @@ import type { ReplyPayload } from "../auto-reply/types.js";
 import { stripMarkdown } from "../channels/line/markdown-to-line.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type {
   TtsConfig,
   TtsAutoMode,
   TtsMode,
   TtsProvider,
   TtsModelOverrideConfig,
-} from "../config/types.tts.js";
+} from "../core/config/types.tts.js";
 import { logVerbose } from "../globals.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";

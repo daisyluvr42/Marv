@@ -5,13 +5,13 @@ import type {
   OnboardOptions,
   ResetScope,
 } from "../commands/onboard-types.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import {
   DEFAULT_GATEWAY_PORT,
   readConfigFileSnapshot,
   resolveGatewayPort,
   writeConfigFile,
-} from "../config/config.js";
+} from "../core/config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
@@ -319,7 +319,7 @@ export async function runOnboardingWizard(
 
   if (mode === "remote") {
     const { promptRemoteGatewayConfig } = await import("../commands/onboard-remote.js");
-    const { logConfigUpdated } = await import("../config/logging.js");
+    const { logConfigUpdated } = await import("../core/config/logging.js");
     let nextConfig = await promptRemoteGatewayConfig(baseConfig, prompter);
     nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
     await writeConfigFile(nextConfig);
@@ -442,7 +442,7 @@ export async function runOnboardingWizard(
   }
 
   await writeConfigFile(nextConfig);
-  const { logConfigUpdated } = await import("../config/logging.js");
+  const { logConfigUpdated } = await import("../core/config/logging.js");
   logConfigUpdated(runtime);
   await onboardHelpers.ensureWorkspaceAndSessions(workspaceDir, runtime, {
     skipBootstrap: Boolean(nextConfig.agents?.defaults?.skipBootstrap),

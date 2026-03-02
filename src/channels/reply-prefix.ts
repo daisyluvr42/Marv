@@ -4,7 +4,7 @@ import {
   type ResponsePrefixContext,
 } from "../auto-reply/reply/response-prefix-template.js";
 import type { GetReplyOptions } from "../auto-reply/types.js";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 
 type ModelSelectionContext = Parameters<NonNullable<GetReplyOptions["onModelSelected"]>>[0];
 

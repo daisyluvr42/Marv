@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import {
@@ -41,10 +41,7 @@ function expectPrimaryModelChanged(
   expect(applied.next.agents?.defaults?.model).toEqual({ primary });
 }
 
-function expectConfigUnchanged(
-  applied: { changed: boolean; next: MarvConfig },
-  cfg: MarvConfig,
-) {
+function expectConfigUnchanged(applied: { changed: boolean; next: MarvConfig }, cfg: MarvConfig) {
   expect(applied.changed).toBe(false);
   expect(applied.next).toEqual(cfg);
 }

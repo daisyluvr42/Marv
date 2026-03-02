@@ -1,4 +1,4 @@
-import { logConfigUpdated } from "../../config/logging.js";
+import { logConfigUpdated } from "../../core/config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { applyDefaultModelPrimaryUpdate, updateConfig } from "./shared.js";
 

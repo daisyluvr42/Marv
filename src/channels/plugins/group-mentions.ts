@@ -1,14 +1,14 @@
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   resolveChannelGroupRequireMention,
   resolveChannelGroupToolsPolicy,
   resolveToolsBySender,
-} from "../../config/group-policy.js";
-import type { DiscordConfig } from "../../config/types.js";
+} from "../../core/config/group-policy.js";
+import type { DiscordConfig } from "../../core/config/types.js";
 import type {
   GroupToolPolicyBySenderConfig,
   GroupToolPolicyConfig,
-} from "../../config/types.tools.js";
+} from "../../core/config/types.tools.js";
 import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
 import { resolveSlackAccount } from "../slack/accounts.js";
 

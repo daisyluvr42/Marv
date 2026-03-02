@@ -17,7 +17,7 @@ import {
 } from "../../channels/slack/actions.js";
 import { parseSlackBlocksInput } from "../../channels/slack/blocks-input.js";
 import { parseSlackTarget, resolveSlackChannelId } from "../../channels/slack/targets.js";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { withNormalizedTimestamp } from "../date-time.js";
 import {
   createActionGate,

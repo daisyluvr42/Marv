@@ -22,8 +22,8 @@ import type { ReplyPayload } from "../auto-reply/types.js";
 import { getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelHeartbeatDeps } from "../channels/plugins/types.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
-import type { MarvConfig } from "../config/config.js";
-import { loadConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
+import { loadConfig } from "../core/config/config.js";
 import {
   canonicalizeMainSessionAlias,
   loadSessionStore,
@@ -33,8 +33,8 @@ import {
   resolveStorePath,
   saveSessionStore,
   updateSessionStore,
-} from "../config/sessions.js";
-import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
+} from "../core/config/sessions.js";
+import type { AgentDefaultsConfig } from "../core/config/types.agent-defaults.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";

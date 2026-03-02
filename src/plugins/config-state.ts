@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import type { PluginRecord } from "./registry.js";
 import { defaultSlotIdForKey } from "./slots.js";
 
@@ -62,9 +62,7 @@ const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entr
   return normalized;
 };
 
-export const normalizePluginsConfig = (
-  config?: MarvConfig["plugins"],
-): NormalizedPluginsConfig => {
+export const normalizePluginsConfig = (config?: MarvConfig["plugins"]): NormalizedPluginsConfig => {
   const memorySlot = normalizeSlotValue(config?.slots?.memory);
   return {
     enabled: config?.enabled !== false,

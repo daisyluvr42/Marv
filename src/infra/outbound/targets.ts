@@ -2,9 +2,9 @@ import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/ind
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 import { parseTelegramTarget } from "../../channels/telegram/targets.js";
 import { formatCliCommand } from "../../cli/command-format.js";
-import type { MarvConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
-import type { AgentDefaultsConfig } from "../../config/types.agent-defaults.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
+import type { AgentDefaultsConfig } from "../../core/config/types.agent-defaults.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 import { deliveryContextFromSession } from "../../utils/delivery-context.js";
 import type {

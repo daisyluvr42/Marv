@@ -1,4 +1,4 @@
-import type { MarvConfig } from "../config/config.js";
+import type { MarvConfig } from "../core/config/config.js";
 import { applyAgentDefaultPrimaryModel } from "./model-default.js";
 
 export const OPENCODE_ZEN_DEFAULT_MODEL = "opencode/claude-opus-4-6";

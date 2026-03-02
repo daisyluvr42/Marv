@@ -17,7 +17,7 @@ import {
   resolveSessionTranscriptPath,
   type SessionEntry,
   updateSessionStore,
-} from "../../config/sessions.js";
+} from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { defaultRuntime } from "../../runtime.js";

@@ -1,5 +1,5 @@
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
-import type { MarvConfig, GatewayAuthConfig } from "../config/config.js";
+import type { MarvConfig, GatewayAuthConfig } from "../core/config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { promptAuthChoiceGrouped } from "./auth-choice-prompt.js";

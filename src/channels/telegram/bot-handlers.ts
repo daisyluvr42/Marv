@@ -10,10 +10,10 @@ import { buildModelsProviderData } from "../../auto-reply/reply/commands-models.
 import { resolveStoredModelOverride } from "../../auto-reply/reply/model-selection.js";
 import { listSkillCommandsForAgents } from "../../auto-reply/skill-commands.js";
 import { buildCommandsMessagePaginated } from "../../auto-reply/status.js";
-import { loadConfig } from "../../config/config.js";
-import { writeConfigFile } from "../../config/io.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
-import type { TelegramGroupConfig, TelegramTopicConfig } from "../../config/types.js";
+import { loadConfig } from "../../core/config/config.js";
+import { writeConfigFile } from "../../core/config/io.js";
+import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";
+import type { TelegramGroupConfig, TelegramTopicConfig } from "../../core/config/types.js";
 import { danger, logVerbose, warn } from "../../globals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { readChannelAllowFromStore } from "../../pairing/pairing-store.js";

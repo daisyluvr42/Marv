@@ -2,7 +2,7 @@ import { createHash, createPrivateKey, sign as signJwt } from "node:crypto";
 import fs from "node:fs/promises";
 import http2 from "node:http2";
 import path from "node:path";
-import { resolveStateDir } from "../config/paths.js";
+import { resolveStateDir } from "../core/config/paths.js";
 import { createAsyncLock, readJsonFile, writeJsonAtomic } from "./json-files.js";
 
 export type ApnsEnvironment = "sandbox" | "production";
@@ -274,8 +274,7 @@ export async function resolveApnsAuthConfigFromEnv(
   if (!keyPath) {
     return {
       ok: false,
-      error:
-        "APNs private key missing: set MARV_APNS_PRIVATE_KEY_P8 or MARV_APNS_PRIVATE_KEY_PATH",
+      error: "APNs private key missing: set MARV_APNS_PRIVATE_KEY_P8 or MARV_APNS_PRIVATE_KEY_PATH",
     };
   }
   try {
@@ -453,7 +452,6 @@ export async function sendApnsAlert(params: {
       sound: "default",
     },
     marv: pushMeta,
-    marv: pushMeta,
   };
 
   const sender = params.requestSender ?? sendApnsRequest;
@@ -499,7 +497,6 @@ export async function sendApnsBackgroundWake(params: {
     aps: {
       "content-available": 1,
     },
-    marv: wakeMeta,
     marv: wakeMeta,
   };
 

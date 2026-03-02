@@ -1,5 +1,5 @@
-import type { MarvConfig } from "../config/config.js";
-import type { HookInstallRecord } from "../config/types.hooks.js";
+import type { MarvConfig } from "../core/config/config.js";
+import type { HookInstallRecord } from "../core/config/types.hooks.js";
 
 export type HookInstallUpdate = HookInstallRecord & { hookId: string };
 

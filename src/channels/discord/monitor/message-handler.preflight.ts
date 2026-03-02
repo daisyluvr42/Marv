@@ -9,7 +9,7 @@ import {
   buildMentionRegexes,
   matchesMentionWithExplicit,
 } from "../../../auto-reply/reply/mentions.js";
-import { loadConfig } from "../../../config/config.js";
+import { loadConfig } from "../../../core/config/config.js";
 import { logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { recordChannelActivity } from "../../../infra/channel-activity.js";
 import { enqueueSystemEvent } from "../../../infra/system-events.js";

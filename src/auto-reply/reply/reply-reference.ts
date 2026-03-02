@@ -1,4 +1,4 @@
-import type { ReplyToMode } from "../../config/types.js";
+import type { ReplyToMode } from "../../core/config/types.js";
 
 export type ReplyReferencePlanner = {
   /** Returns the effective reply/thread id for the next send and updates state. */

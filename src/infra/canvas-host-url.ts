@@ -1,4 +1,4 @@
-import { isLoopbackHost } from "../gateway/net.js";
+import { isLoopbackHost } from "../core/gateway/net.js";
 
 type HostSource = string | null | undefined;
 

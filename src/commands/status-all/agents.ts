@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
-import type { MarvConfig } from "../../config/config.js";
-import { loadSessionStore, resolveStorePath } from "../../config/sessions.js";
-import { listAgentsForGateway } from "../../gateway/session-utils.js";
+import type { MarvConfig } from "../../core/config/config.js";
+import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";
+import { listAgentsForGateway } from "../../core/gateway/session-utils.js";
 
 async function fileExists(p: string): Promise<boolean> {
   try {

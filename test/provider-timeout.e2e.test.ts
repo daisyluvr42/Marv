@@ -3,8 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { startGatewayWithClient } from "../src/gateway/test-helpers.e2e.js";
-import { buildOpenAiResponsesProviderConfig } from "../src/gateway/test-openai-responses-model.js";
+import { startGatewayWithClient } from "../src/core/gateway/test-helpers.e2e.js";
+import { buildOpenAiResponsesProviderConfig } from "../src/core/gateway/test-openai-responses-model.js";
 
 type OpenAIResponseStreamEvent =
   | { type: "response.output_item.added"; item: Record<string, unknown> }

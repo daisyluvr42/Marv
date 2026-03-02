@@ -5,8 +5,8 @@ import type {
   ReactionTypeEmoji,
 } from "@grammyjs/types";
 import { type ApiClientOptions, Bot, HttpError, InputFile } from "grammy";
-import { loadConfig } from "../../config/config.js";
-import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
+import { loadConfig } from "../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import { logVerbose } from "../../globals.js";
 import { recordChannelActivity } from "../../infra/channel-activity.js";
 import { isDiagnosticFlagEnabled } from "../../infra/diagnostic-flags.js";

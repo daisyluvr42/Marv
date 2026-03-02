@@ -56,7 +56,7 @@ export function installBaseProgramMocks() {
   vi.mock("../runtime.js", () => ({ defaultRuntime: runtime }));
   vi.mock("./channel-auth.js", () => ({ runChannelLogin, runChannelLogout }));
   vi.mock("../tui/tui.js", () => ({ runTui }));
-  vi.mock("../gateway/call.js", () => ({
+  vi.mock("../core/gateway/call.js", () => ({
     callGateway,
     randomIdempotencyKey: () => "idem-test",
     buildGatewayConnectionDetails: () => ({

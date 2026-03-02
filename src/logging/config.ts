@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import json5 from "json5";
-import { resolveConfigPath } from "../config/paths.js";
-import type { MarvConfig } from "../config/types.js";
+import { resolveConfigPath } from "../core/config/paths.js";
+import type { MarvConfig } from "../core/config/types.js";
 
 type LoggingConfig = MarvConfig["logging"];
 

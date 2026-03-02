@@ -13,13 +13,13 @@ import {
 import { finalizeInboundContext } from "../../../../auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../../../../auto-reply/types.js";
-import type { loadConfig } from "../../../../config/config.js";
-import { resolveMarkdownTableMode } from "../../../../config/markdown-tables.js";
+import type { loadConfig } from "../../../../core/config/config.js";
+import { resolveMarkdownTableMode } from "../../../../core/config/markdown-tables.js";
 import {
   readSessionUpdatedAt,
   recordSessionMetaFromInbound,
   resolveStorePath,
-} from "../../../../config/sessions.js";
+} from "../../../../core/config/sessions.js";
 import { logVerbose, shouldLogVerbose } from "../../../../globals.js";
 import type { getChildLogger } from "../../../../logging.js";
 import { getAgentScopedMediaLocalRoots } from "../../../../media/local-roots.js";

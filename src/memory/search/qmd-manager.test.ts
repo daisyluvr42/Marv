@@ -78,7 +78,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 });
 
 import { spawn as mockedSpawn } from "node:child_process";
-import type { MarvConfig } from "../../config/config.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { resolveMemoryBackendConfig } from "../backend-config.js";
 import { QmdMemoryManager } from "./qmd-manager.js";
 
