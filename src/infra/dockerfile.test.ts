@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
+const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "../..");
 const dockerfilePath = join(repoRoot, "Dockerfile");
 
 describe("Dockerfile", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as channelWeb from "../channel-web.js";
 import { normalizeChatType } from "./chat-type.js";
+import * as channelWeb from "./web/channel-web.js";
 import * as webEntry from "./web/index.js";
 
 describe("channel-web barrel", () => {

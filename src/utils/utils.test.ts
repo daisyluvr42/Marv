@@ -170,9 +170,9 @@ describe("shortenHomeInString", () => {
     vi.stubEnv("MARV_HOME", "/srv/marv-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(
-      shortenHomeInString(`config: ${path.resolve("/srv/marv-home")}/.marv/marv.json`),
-    ).toBe("config: $MARV_HOME/.marv/marv.json");
+    expect(shortenHomeInString(`config: ${path.resolve("/srv/marv-home")}/.marv/marv.json`)).toBe(
+      "config: $MARV_HOME/.marv/marv.json",
+    );
 
     vi.unstubAllEnvs();
   });
