@@ -29,23 +29,37 @@ const sharedProjectTest = {
   maxWorkers: defaultMaxWorkers,
 } as const;
 
+const pluginSdkAliases = [
+  {
+    find: "marv/plugin-sdk/account-id",
+    replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
+  },
+  {
+    find: "marv/plugin-sdk",
+    replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),
+  },
+] as const;
+
+const pluginSdkProjectConfig = {
+  resolve: { alias: pluginSdkAliases },
+  server: { deps: { inline: [/^marv\/plugin-sdk(?:\/.*)?$/] } },
+} as const;
+
 export default defineConfig({
   resolve: {
     // Keep this ordered: the base `marv/plugin-sdk` alias is a prefix match.
-    alias: [
-      {
-        find: "marv/plugin-sdk/account-id",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
-      },
-      {
-        find: "marv/plugin-sdk",
-        replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),
-      },
-    ],
+    alias: pluginSdkAliases,
+  },
+  server: {
+    deps: {
+      inline: [/^marv\/plugin-sdk(?:\/.*)?$/],
+    },
   },
   test: {
+    alias: pluginSdkAliases,
     projects: [
       defineProject({
+        ...pluginSdkProjectConfig,
         test: {
           ...sharedProjectTest,
           name: "unit",
@@ -55,10 +69,11 @@ export default defineConfig({
             "test/**/*.test.ts",
             "ui/src/ui/views/usage-render-details.test.ts",
           ],
-          exclude: [...baseExclude, "**/*.live.test.ts", "src/gateway/**", "extensions/**"],
+          exclude: [...baseExclude, "**/*.live.test.ts", "src/gateway/**"],
         },
       }),
       defineProject({
+        ...pluginSdkProjectConfig,
         test: {
           ...sharedProjectTest,
           name: "extensions",
@@ -68,6 +83,7 @@ export default defineConfig({
         },
       }),
       defineProject({
+        ...pluginSdkProjectConfig,
         test: {
           ...sharedProjectTest,
           name: "gateway",
@@ -77,6 +93,7 @@ export default defineConfig({
         },
       }),
       defineProject({
+        ...pluginSdkProjectConfig,
         test: {
           ...sharedProjectTest,
           name: "live",

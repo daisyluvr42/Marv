@@ -164,11 +164,12 @@ export function extractHookToken(req: IncomingMessage): string | undefined {
       return token;
     }
   }
+  const rawHeaderToken = req.headers["x-marv-token"];
   const headerToken =
-    typeof req.headers["x-marv-token"] === "string"
-      ? req.headers["x-marv-token"].trim()
-      : typeof req.headers["x-marv-token"] === "string"
-        ? req.headers["x-marv-token"].trim()
+    typeof rawHeaderToken === "string"
+      ? rawHeaderToken.trim()
+      : Array.isArray(rawHeaderToken)
+        ? (rawHeaderToken[0]?.trim() ?? "")
         : "";
   if (headerToken) {
     return headerToken;
