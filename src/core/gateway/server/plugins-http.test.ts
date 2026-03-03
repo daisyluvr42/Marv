@@ -5,7 +5,7 @@ import { createTestRegistry } from "./__tests__/test-utils.js";
 import { createGatewayPluginRequestHandler } from "./plugins-http.js";
 
 describe("createGatewayPluginRequestHandler", () => {
-  it("returns false when no handlers are registered", async () => {
+  it("returns false when no routes are registered", async () => {
     const log = { warn: vi.fn() } as unknown as Parameters<
       typeof createGatewayPluginRequestHandler
     >[0]["log"];
@@ -18,33 +18,11 @@ describe("createGatewayPluginRequestHandler", () => {
     expect(handled).toBe(false);
   });
 
-  it("continues until a handler reports it handled the request", async () => {
-    const first = vi.fn(async () => false);
-    const second = vi.fn(async () => true);
-    const handler = createGatewayPluginRequestHandler({
-      registry: createTestRegistry({
-        httpHandlers: [
-          { pluginId: "first", handler: first, source: "first" },
-          { pluginId: "second", handler: second, source: "second" },
-        ],
-      }),
-      log: { warn: vi.fn() } as unknown as Parameters<
-        typeof createGatewayPluginRequestHandler
-      >[0]["log"],
-    });
-
-    const { res } = makeMockHttpResponse();
-    const handled = await handler({} as IncomingMessage, res);
-    expect(handled).toBe(true);
-    expect(first).toHaveBeenCalledTimes(1);
-    expect(second).toHaveBeenCalledTimes(1);
-  });
-
-  it("handles registered http routes before generic handlers", async () => {
+  it("returns false when request path has no matching route", async () => {
     const routeHandler = vi.fn(async (_req, res: ServerResponse) => {
       res.statusCode = 200;
+      res.end("ok");
     });
-    const fallback = vi.fn(async () => true);
     const handler = createGatewayPluginRequestHandler({
       registry: createTestRegistry({
         httpRoutes: [
@@ -55,7 +33,33 @@ describe("createGatewayPluginRequestHandler", () => {
             source: "route",
           },
         ],
-        httpHandlers: [{ pluginId: "fallback", handler: fallback, source: "fallback" }],
+      }),
+      log: { warn: vi.fn() } as unknown as Parameters<
+        typeof createGatewayPluginRequestHandler
+      >[0]["log"],
+    });
+
+    const { res } = makeMockHttpResponse();
+    const handled = await handler({ url: "/other" } as IncomingMessage, res);
+    expect(handled).toBe(false);
+    expect(routeHandler).not.toHaveBeenCalled();
+  });
+
+  it("handles a matched registered route", async () => {
+    const routeHandler = vi.fn(async (_req, res: ServerResponse) => {
+      res.statusCode = 200;
+      res.end("ok");
+    });
+    const handler = createGatewayPluginRequestHandler({
+      registry: createTestRegistry({
+        httpRoutes: [
+          {
+            pluginId: "route",
+            path: "/demo",
+            handler: routeHandler,
+            source: "route",
+          },
+        ],
       }),
       log: { warn: vi.fn() } as unknown as Parameters<
         typeof createGatewayPluginRequestHandler
@@ -66,21 +70,21 @@ describe("createGatewayPluginRequestHandler", () => {
     const handled = await handler({ url: "/demo" } as IncomingMessage, res);
     expect(handled).toBe(true);
     expect(routeHandler).toHaveBeenCalledTimes(1);
-    expect(fallback).not.toHaveBeenCalled();
   });
 
-  it("logs and responds with 500 when a handler throws", async () => {
+  it("logs and responds with 500 when a route handler throws", async () => {
     const log = { warn: vi.fn() } as unknown as Parameters<
       typeof createGatewayPluginRequestHandler
     >[0]["log"];
     const handler = createGatewayPluginRequestHandler({
       registry: createTestRegistry({
-        httpHandlers: [
+        httpRoutes: [
           {
             pluginId: "boom",
             handler: async () => {
               throw new Error("boom");
             },
+            path: "/boom",
             source: "boom",
           },
         ],
@@ -89,7 +93,7 @@ describe("createGatewayPluginRequestHandler", () => {
     });
 
     const { res, setHeader, end } = makeMockHttpResponse();
-    const handled = await handler({} as IncomingMessage, res);
+    const handled = await handler({ url: "/boom" } as IncomingMessage, res);
     expect(handled).toBe(true);
     expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("boom"));
     expect(res.statusCode).toBe(500);

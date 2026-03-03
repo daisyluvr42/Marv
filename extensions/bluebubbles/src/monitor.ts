@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { MarvConfig } from "marv/plugin-sdk";
 import {
+  registerPluginHttpRoute,
   registerWebhookTarget,
   rejectNonPostWebhookRequest,
   resolveWebhookTargets,
@@ -110,6 +111,7 @@ function combineDebounceEntries(entries: BlueBubblesDebounceEntry[]): Normalized
 }
 
 const webhookTargets = new Map<string, WebhookTarget[]>();
+const webhookRouteRefs = new Map<string, { refCount: number; unregister: () => void }>();
 
 type BlueBubblesDebouncer = {
   enqueue: (item: BlueBubblesDebounceEntry) => Promise<void>;
@@ -122,10 +124,7 @@ type BlueBubblesDebouncer = {
  */
 const targetDebouncers = new Map<WebhookTarget, BlueBubblesDebouncer>();
 
-function resolveBlueBubblesDebounceMs(
-  config: MarvConfig,
-  core: BlueBubblesCoreRuntime,
-): number {
+function resolveBlueBubblesDebounceMs(config: MarvConfig, core: BlueBubblesCoreRuntime): number {
   const inbound = config.messages?.inbound;
   const hasExplicitDebounce =
     typeof inbound?.debounceMs === "number" || typeof inbound?.byChannel?.bluebubbles === "number";
@@ -236,6 +235,56 @@ export function registerBlueBubblesWebhookTarget(target: WebhookTarget): () => v
     registered.unregister();
     // Clean up debouncer when target is unregistered
     removeDebouncer(registered.target);
+  };
+}
+
+function retainBlueBubblesWebhookRoute(params: {
+  path: string;
+  accountId: string;
+  core: BlueBubblesCoreRuntime;
+  runtime: BlueBubblesMonitorOptions["runtime"];
+}): () => void {
+  const existing = webhookRouteRefs.get(params.path);
+  if (existing) {
+    existing.refCount += 1;
+    return () => {
+      const current = webhookRouteRefs.get(params.path);
+      if (!current) {
+        return;
+      }
+      current.refCount -= 1;
+      if (current.refCount <= 0) {
+        current.unregister();
+        webhookRouteRefs.delete(params.path);
+      }
+    };
+  }
+
+  const unregister = registerPluginHttpRoute({
+    path: params.path,
+    pluginId: "bluebubbles",
+    accountId: params.accountId,
+    log: (message) => logVerbose(params.core, params.runtime, message),
+    handler: async (req, res) => {
+      const handled = await handleBlueBubblesWebhookRequest(req, res);
+      if (!handled && !res.headersSent) {
+        res.statusCode = 404;
+        res.end("not found");
+      }
+    },
+  });
+  webhookRouteRefs.set(params.path, { refCount: 1, unregister });
+
+  return () => {
+    const current = webhookRouteRefs.get(params.path);
+    if (!current) {
+      return;
+    }
+    current.refCount -= 1;
+    if (current.refCount <= 0) {
+      current.unregister();
+      webhookRouteRefs.delete(params.path);
+    }
   };
 }
 
@@ -553,6 +602,12 @@ export async function monitorBlueBubblesProvider(
   const { account, config, runtime, abortSignal, statusSink } = options;
   const core = getBlueBubblesRuntime();
   const path = options.webhookPath?.trim() || DEFAULT_WEBHOOK_PATH;
+  const releaseRoute = retainBlueBubblesWebhookRoute({
+    path,
+    accountId: account.accountId,
+    core,
+    runtime,
+  });
 
   // Fetch and cache server info (for macOS version detection in action gating)
   const serverInfo = await fetchBlueBubblesServerInfo({
@@ -582,6 +637,7 @@ export async function monitorBlueBubblesProvider(
   return await new Promise((resolve) => {
     const stop = () => {
       unregister();
+      releaseRoute();
       resolve();
     };
 

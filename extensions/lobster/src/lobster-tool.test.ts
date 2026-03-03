@@ -28,7 +28,6 @@ function fakeApi(overrides: Partial<MarvPluginApi> = {}): MarvPluginApi {
     runtime: { version: "test" } as any,
     logger: { info() {}, warn() {}, error() {}, debug() {} },
     registerTool() {},
-    registerHttpHandler() {},
     registerChannel() {},
     registerGatewayMethod() {},
     registerCli() {},

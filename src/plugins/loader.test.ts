@@ -332,32 +332,6 @@ describe("loadMarvPlugins", () => {
     expect(channel).toBeDefined();
   });
 
-  it("registers http handlers", () => {
-    process.env.MARV_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
-    const plugin = writePlugin({
-      id: "http-demo",
-      body: `export default { id: "http-demo", register(api) {
-  api.registerHttpHandler(async () => false);
-} };`,
-    });
-
-    const registry = loadMarvPlugins({
-      cache: false,
-      workspaceDir: plugin.dir,
-      config: {
-        plugins: {
-          load: { paths: [plugin.file] },
-          allow: ["http-demo"],
-        },
-      },
-    });
-
-    const handler = registry.httpHandlers.find((entry) => entry.pluginId === "http-demo");
-    expect(handler).toBeDefined();
-    const httpPlugin = registry.plugins.find((entry) => entry.id === "http-demo");
-    expect(httpPlugin?.httpHandlers).toBe(1);
-  });
-
   it("registers http routes", () => {
     process.env.MARV_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
     const plugin = writePlugin({

@@ -3,6 +3,7 @@ import type { MarvConfig, MarkdownTableMode } from "marv/plugin-sdk";
 import {
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
+  registerPluginHttpRoute,
   registerWebhookTarget,
   rejectNonPostWebhookRequest,
   resolveSenderCommandAuthorization,
@@ -84,9 +85,60 @@ type WebhookTarget = {
 };
 
 const webhookTargets = new Map<string, WebhookTarget[]>();
+const webhookRouteRefs = new Map<string, { refCount: number; unregister: () => void }>();
 
 export function registerZaloWebhookTarget(target: WebhookTarget): () => void {
   return registerWebhookTarget(webhookTargets, target).unregister;
+}
+
+function retainZaloWebhookRoute(params: {
+  path: string;
+  accountId: string;
+  core: ZaloCoreRuntime;
+  runtime: ZaloRuntimeEnv;
+}): () => void {
+  const existing = webhookRouteRefs.get(params.path);
+  if (existing) {
+    existing.refCount += 1;
+    return () => {
+      const current = webhookRouteRefs.get(params.path);
+      if (!current) {
+        return;
+      }
+      current.refCount -= 1;
+      if (current.refCount <= 0) {
+        current.unregister();
+        webhookRouteRefs.delete(params.path);
+      }
+    };
+  }
+
+  const unregister = registerPluginHttpRoute({
+    path: params.path,
+    pluginId: "zalo",
+    accountId: params.accountId,
+    log: (message) => logVerbose(params.core, params.runtime, message),
+    handler: async (req, res) => {
+      const handled = await handleZaloWebhookRequest(req, res);
+      if (!handled && !res.headersSent) {
+        res.statusCode = 404;
+        res.end("not found");
+      }
+    },
+  });
+  webhookRouteRefs.set(params.path, { refCount: 1, unregister });
+
+  return () => {
+    const current = webhookRouteRefs.get(params.path);
+    if (!current) {
+      return;
+    }
+    current.refCount -= 1;
+    if (current.refCount <= 0) {
+      current.unregister();
+      webhookRouteRefs.delete(params.path);
+    }
+  };
 }
 
 export async function handleZaloWebhookRequest(
@@ -665,6 +717,14 @@ export async function monitorZaloProvider(options: ZaloMonitorOptions): Promise<
     }
 
     await setWebhook(token, { url: webhookUrl, secret_token: webhookSecret }, fetcher);
+
+    const releaseRoute = retainZaloWebhookRoute({
+      path,
+      accountId: account.accountId,
+      core,
+      runtime,
+    });
+    stopHandlers.push(releaseRoute);
 
     const unregister = registerZaloWebhookTarget({
       token,

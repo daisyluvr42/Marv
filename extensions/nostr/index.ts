@@ -4,7 +4,11 @@ import { nostrPlugin } from "./src/channel.js";
 import type { NostrProfile } from "./src/config-schema.js";
 import { createNostrProfileHttpHandler } from "./src/nostr-profile-http.js";
 import { setNostrRuntime, getNostrRuntime } from "./src/runtime.js";
-import { resolveNostrAccount } from "./src/types.js";
+import {
+  listNostrAccountIds,
+  resolveDefaultNostrAccountId,
+  resolveNostrAccount,
+} from "./src/types.js";
 
 const plugin = {
   id: "nostr",
@@ -61,7 +65,37 @@ const plugin = {
       log: api.logger,
     });
 
-    api.registerHttpHandler(httpHandler);
+    const accountIds = new Set([
+      resolveDefaultNostrAccountId(api.config),
+      ...listNostrAccountIds(api.config),
+    ]);
+
+    for (const accountId of accountIds) {
+      const encodedAccountId = encodeURIComponent(accountId);
+      const profilePath = `/api/channels/nostr/${encodedAccountId}/profile`;
+      const importPath = `/api/channels/nostr/${encodedAccountId}/profile/import`;
+
+      api.registerHttpRoute({
+        path: profilePath,
+        handler: async (req, res) => {
+          const handled = await httpHandler(req, res);
+          if (!handled && !res.headersSent) {
+            res.statusCode = 404;
+            res.end("not found");
+          }
+        },
+      });
+      api.registerHttpRoute({
+        path: importPath,
+        handler: async (req, res) => {
+          const handled = await httpHandler(req, res);
+          if (!handled && !res.headersSent) {
+            res.statusCode = 404;
+            res.end("not found");
+          }
+        },
+      });
+    }
   },
 };
 

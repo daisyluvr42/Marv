@@ -21,7 +21,6 @@ const registryState = vi.hoisted(() => ({
     channels: [],
     providers: [],
     gatewayHandlers: {},
-    httpHandlers: [],
     httpRoutes: [],
     cliRegistrars: [],
     services: [],

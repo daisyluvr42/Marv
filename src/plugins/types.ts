@@ -189,11 +189,6 @@ export type MarvPluginCommandDefinition = {
   handler: PluginCommandHandler;
 };
 
-export type MarvPluginHttpHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-) => Promise<boolean> | boolean;
-
 export type MarvPluginHttpRouteHandler = (
   req: IncomingMessage,
   res: ServerResponse,
@@ -257,7 +252,6 @@ export type MarvPluginApi = {
     handler: InternalHookHandler,
     opts?: MarvPluginHookOptions,
   ) => void;
-  registerHttpHandler: (handler: MarvPluginHttpHandler) => void;
   registerHttpRoute: (params: { path: string; handler: MarvPluginHttpRouteHandler }) => void;
   registerChannel: (registration: MarvPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;

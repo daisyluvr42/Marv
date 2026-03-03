@@ -17,7 +17,6 @@ import type {
   MarvPluginChannelRegistration,
   MarvPluginCliRegistrar,
   MarvPluginCommandDefinition,
-  MarvPluginHttpHandler,
   MarvPluginHttpRouteHandler,
   MarvPluginHookOptions,
   ProviderPlugin,
@@ -46,12 +45,6 @@ export type PluginCliRegistration = {
   pluginId: string;
   register: MarvPluginCliRegistrar;
   commands: string[];
-  source: string;
-};
-
-export type PluginHttpRegistration = {
-  pluginId: string;
-  handler: MarvPluginHttpHandler;
   source: string;
 };
 
@@ -129,7 +122,6 @@ export type PluginRegistry = {
   channels: PluginChannelRegistration[];
   providers: PluginProviderRegistration[];
   gatewayHandlers: GatewayRequestHandlers;
-  httpHandlers: PluginHttpRegistration[];
   httpRoutes: PluginHttpRouteRegistration[];
   cliRegistrars: PluginCliRegistration[];
   services: PluginServiceRegistration[];
@@ -152,7 +144,6 @@ export function createEmptyPluginRegistry(): PluginRegistry {
     channels: [],
     providers: [],
     gatewayHandlers: {},
-    httpHandlers: [],
     httpRoutes: [],
     cliRegistrars: [],
     services: [],
@@ -286,15 +277,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     }
     registry.gatewayHandlers[trimmed] = handler;
     record.gatewayMethods.push(trimmed);
-  };
-
-  const registerHttpHandler = (record: PluginRecord, handler: MarvPluginHttpHandler) => {
-    record.httpHandlers += 1;
-    registry.httpHandlers.push({
-      pluginId: record.id,
-      handler,
-      source: record.source,
-    });
   };
 
   const registerHttpRoute = (
@@ -489,7 +471,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerTool: (tool, opts) => registerTool(record, tool, opts),
       registerHook: (events, handler, opts) =>
         registerHook(record, events, handler, opts, params.config),
-      registerHttpHandler: (handler) => registerHttpHandler(record, handler),
       registerHttpRoute: (params) => registerHttpRoute(record, params),
       registerChannel: (registration) => registerChannel(record, registration),
       registerProvider: (provider) => registerProvider(record, provider),

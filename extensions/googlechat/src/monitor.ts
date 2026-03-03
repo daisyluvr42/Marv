@@ -3,6 +3,7 @@ import type { MarvConfig } from "marv/plugin-sdk";
 import {
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
+  registerPluginHttpRoute,
   registerWebhookTarget,
   rejectNonPostWebhookRequest,
   resolveWebhookPath,
@@ -58,6 +59,7 @@ type WebhookTarget = {
 };
 
 const webhookTargets = new Map<string, WebhookTarget[]>();
+const webhookRouteRefs = new Map<string, { refCount: number; unregister: () => void }>();
 
 function logVerbose(core: GoogleChatCoreRuntime, runtime: GoogleChatRuntimeEnv, message: string) {
   if (core.logging.shouldLogVerbose()) {
@@ -92,6 +94,56 @@ function warnDeprecatedUsersEmailEntries(
 
 export function registerGoogleChatWebhookTarget(target: WebhookTarget): () => void {
   return registerWebhookTarget(webhookTargets, target).unregister;
+}
+
+function retainGoogleChatWebhookRoute(params: {
+  path: string;
+  accountId: string;
+  core: GoogleChatCoreRuntime;
+  runtime: GoogleChatRuntimeEnv;
+}): () => void {
+  const existing = webhookRouteRefs.get(params.path);
+  if (existing) {
+    existing.refCount += 1;
+    return () => {
+      const current = webhookRouteRefs.get(params.path);
+      if (!current) {
+        return;
+      }
+      current.refCount -= 1;
+      if (current.refCount <= 0) {
+        current.unregister();
+        webhookRouteRefs.delete(params.path);
+      }
+    };
+  }
+
+  const unregister = registerPluginHttpRoute({
+    path: params.path,
+    pluginId: "googlechat",
+    accountId: params.accountId,
+    log: (message) => logVerbose(params.core, params.runtime, message),
+    handler: async (req, res) => {
+      const handled = await handleGoogleChatWebhookRequest(req, res);
+      if (!handled && !res.headersSent) {
+        res.statusCode = 404;
+        res.end("not found");
+      }
+    },
+  });
+  webhookRouteRefs.set(params.path, { refCount: 1, unregister });
+
+  return () => {
+    const current = webhookRouteRefs.get(params.path);
+    if (!current) {
+      return;
+    }
+    current.refCount -= 1;
+    if (current.refCount <= 0) {
+      current.unregister();
+      webhookRouteRefs.delete(params.path);
+    }
+  };
 }
 
 function normalizeAudienceType(value?: string | null): GoogleChatAudienceType | undefined {
@@ -903,11 +955,18 @@ export function monitorGoogleChatProvider(options: GoogleChatMonitorOptions): ()
     return () => {};
   }
 
+  const releaseRoute = retainGoogleChatWebhookRoute({
+    path: webhookPath,
+    accountId: options.account.accountId,
+    core,
+    runtime: options.runtime,
+  });
+
   const audienceType = normalizeAudienceType(options.account.config.audienceType);
   const audience = options.account.config.audience?.trim();
   const mediaMaxMb = options.account.config.mediaMaxMb ?? 20;
 
-  const unregister = registerGoogleChatWebhookTarget({
+  const unregisterTarget = registerGoogleChatWebhookTarget({
     account: options.account,
     config: options.config,
     runtime: options.runtime,
@@ -919,7 +978,10 @@ export function monitorGoogleChatProvider(options: GoogleChatMonitorOptions): ()
     mediaMaxMb,
   });
 
-  return unregister;
+  return () => {
+    unregisterTarget();
+    releaseRoute();
+  };
 }
 
 export async function startGoogleChatMonitor(

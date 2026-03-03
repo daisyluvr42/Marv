@@ -13,7 +13,6 @@ const createRegistry = (channels: PluginRegistry["channels"]): PluginRegistry =>
   commands: [],
   providers: [],
   gatewayHandlers: {},
-  httpHandlers: [],
   httpRoutes: [],
   cliRegistrars: [],
   services: [],
