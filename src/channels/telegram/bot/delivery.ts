@@ -10,6 +10,7 @@ import { mediaKindFromMime } from "../../../media/constants.js";
 import { fetchRemoteMedia } from "../../../media/fetch.js";
 import { isGifMedia } from "../../../media/mime.js";
 import { saveMediaBuffer } from "../../../media/store.js";
+import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { loadWebMedia } from "../../web/media.js";
 import { withTelegramApiErrorLogging } from "../api-logging.js";
@@ -39,6 +40,7 @@ const FILE_TOO_BIG_RE = /file is too big/i;
 export async function deliverReplies(params: {
   replies: ReplyPayload[];
   chatId: string;
+  accountId?: string;
   token: string;
   runtime: RuntimeEnv;
   bot: Bot;
@@ -69,9 +71,14 @@ export async function deliverReplies(params: {
   const chunkMode = params.chunkMode ?? "length";
   let hasReplied = false;
   let hasDelivered = false;
+  let deliveredCount = 0;
   const markDelivered = () => {
     hasDelivered = true;
+    deliveredCount += 1;
   };
+  const hookRunner = getGlobalHookRunner();
+  const hasMessageSendingHooks = hookRunner?.hasHooks("message_sending") ?? false;
+  const hasMessageSentHooks = hookRunner?.hasHooks("message_sent") ?? false;
   const chunkText = (markdown: string) => {
     const markdownChunks =
       chunkMode === "newline"
@@ -93,8 +100,14 @@ export async function deliverReplies(params: {
     }
     return chunks;
   };
-  for (const reply of replies) {
-    const hasMedia = Boolean(reply?.mediaUrl) || (reply?.mediaUrls?.length ?? 0) > 0;
+  for (const originalReply of replies) {
+    let reply = originalReply;
+    const mediaList = reply?.mediaUrls?.length
+      ? reply.mediaUrls
+      : reply?.mediaUrl
+        ? [reply.mediaUrl]
+        : [];
+    const hasMedia = mediaList.length > 0;
     if (!reply?.text && !hasMedia) {
       if (reply?.audioAsVoice) {
         logVerbose("telegram reply has audioAsVoice without media/text; skipping");
@@ -103,198 +116,257 @@ export async function deliverReplies(params: {
       runtime.error?.(danger("reply missing text/media"));
       continue;
     }
-    const replyToId = replyToMode === "off" ? undefined : resolveTelegramReplyId(reply.replyToId);
-    const replyToMessageIdForPayload =
-      replyToId && (replyToMode === "all" || !hasReplied) ? replyToId : undefined;
-    const mediaList = reply.mediaUrls?.length
-      ? reply.mediaUrls
-      : reply.mediaUrl
-        ? [reply.mediaUrl]
-        : [];
-    const telegramData = reply.channelData?.telegram as
-      | { buttons?: TelegramInlineButtons }
-      | undefined;
-    const replyMarkup = buildInlineKeyboard(telegramData?.buttons);
-    if (mediaList.length === 0) {
-      const chunks = chunkText(reply.text || "");
-      let sentTextChunk = false;
-      for (let i = 0; i < chunks.length; i += 1) {
-        const chunk = chunks[i];
-        if (!chunk) {
-          continue;
-        }
-        // Only attach buttons to the first chunk.
-        const shouldAttachButtons = i === 0 && replyMarkup;
-        await sendTelegramText(bot, chatId, chunk.html, runtime, {
-          replyToMessageId: replyToMessageIdForPayload,
-          replyQuoteText,
-          thread,
-          textMode: "html",
-          plainText: chunk.text,
-          linkPreview,
-          replyMarkup: shouldAttachButtons ? replyMarkup : undefined,
-        });
-        sentTextChunk = true;
-        markDelivered();
-      }
-      if (replyToMessageIdForPayload && !hasReplied && sentTextChunk) {
-        hasReplied = true;
-      }
-      continue;
-    }
-    // media with optional caption on first item
-    let first = true;
-    // Track if we need to send a follow-up text message after media
-    // (when caption exceeds Telegram's 1024-char limit)
-    let pendingFollowUpText: string | undefined;
-    for (const mediaUrl of mediaList) {
-      const isFirstMedia = first;
-      const media = await loadWebMedia(mediaUrl, {
-        localRoots: params.mediaLocalRoots,
-      });
-      const kind = mediaKindFromMime(media.contentType ?? undefined);
-      const isGif = isGifMedia({
-        contentType: media.contentType,
-        fileName: media.fileName,
-      });
-      const fileName = media.fileName ?? (isGif ? "animation.gif" : "file");
-      const file = new InputFile(media.buffer, fileName);
-      // Caption only on first item; if text exceeds limit, defer to follow-up message.
-      const { caption, followUpText } = splitTelegramCaption(
-        isFirstMedia ? (reply.text ?? undefined) : undefined,
+    const rawContent = reply.text || "";
+    if (hasMessageSendingHooks) {
+      const hookResult = await hookRunner?.runMessageSending(
+        {
+          to: chatId,
+          content: rawContent,
+          metadata: {
+            channel: "telegram",
+            mediaUrls: mediaList,
+            threadId: thread?.id,
+          },
+        },
+        {
+          channelId: "telegram",
+          accountId: params.accountId,
+          conversationId: chatId,
+        },
       );
-      const htmlCaption = caption
-        ? renderTelegramHtmlText(caption, { tableMode: params.tableMode })
-        : undefined;
-      if (followUpText) {
-        pendingFollowUpText = followUpText;
+      if (hookResult?.cancel) {
+        continue;
       }
-      first = false;
-      const replyToMessageId = replyToMessageIdForPayload;
-      const shouldAttachButtonsToMedia = isFirstMedia && replyMarkup && !followUpText;
-      const mediaParams: Record<string, unknown> = {
-        caption: htmlCaption,
-        ...(htmlCaption ? { parse_mode: "HTML" } : {}),
-        ...(shouldAttachButtonsToMedia ? { reply_markup: replyMarkup } : {}),
-        ...buildTelegramSendParams({
-          replyToMessageId,
-          thread,
-        }),
-      };
-      if (isGif) {
-        await withTelegramApiErrorLogging({
-          operation: "sendAnimation",
-          runtime,
-          fn: () => bot.api.sendAnimation(chatId, file, { ...mediaParams }),
-        });
-        markDelivered();
-      } else if (kind === "image") {
-        await withTelegramApiErrorLogging({
-          operation: "sendPhoto",
-          runtime,
-          fn: () => bot.api.sendPhoto(chatId, file, { ...mediaParams }),
-        });
-        markDelivered();
-      } else if (kind === "video") {
-        await withTelegramApiErrorLogging({
-          operation: "sendVideo",
-          runtime,
-          fn: () => bot.api.sendVideo(chatId, file, { ...mediaParams }),
-        });
-        markDelivered();
-      } else if (kind === "audio") {
-        const { useVoice } = resolveTelegramVoiceSend({
-          wantsVoice: reply.audioAsVoice === true, // default false (backward compatible)
-          contentType: media.contentType,
-          fileName,
-          logFallback: logVerbose,
-        });
-        if (useVoice) {
-          // Voice message - displays as round playable bubble (opt-in via [[audio_as_voice]])
-          // Switch typing indicator to record_voice before sending.
-          await params.onVoiceRecording?.();
-          try {
-            await withTelegramApiErrorLogging({
-              operation: "sendVoice",
-              runtime,
-              shouldLog: (err) => !isVoiceMessagesForbidden(err),
-              fn: () => bot.api.sendVoice(chatId, file, { ...mediaParams }),
-            });
-            markDelivered();
-          } catch (voiceErr) {
-            // Fall back to text if voice messages are forbidden in this chat.
-            // This happens when the recipient has Telegram Premium privacy settings
-            // that block voice messages (Settings > Privacy > Voice Messages).
-            if (isVoiceMessagesForbidden(voiceErr)) {
-              const fallbackText = reply.text;
-              if (!fallbackText || !fallbackText.trim()) {
-                throw voiceErr;
-              }
-              logVerbose(
-                "telegram sendVoice forbidden (recipient has voice messages blocked in privacy settings); falling back to text",
-              );
-              await sendTelegramVoiceFallbackText({
-                bot,
-                chatId,
-                runtime,
-                text: fallbackText,
-                chunkText,
-                replyToId: replyToMessageIdForPayload,
-                thread,
-                linkPreview,
-                replyMarkup,
-                replyQuoteText,
-              });
-              if (replyToMessageIdForPayload && !hasReplied) {
-                hasReplied = true;
-              }
-              markDelivered();
-              // Skip this media item; continue with next.
-              continue;
-            }
-            throw voiceErr;
-          }
-        } else {
-          // Audio file - displays with metadata (title, duration) - DEFAULT
-          await withTelegramApiErrorLogging({
-            operation: "sendAudio",
-            runtime,
-            fn: () => bot.api.sendAudio(chatId, file, { ...mediaParams }),
-          });
-          markDelivered();
-        }
-      } else {
-        await withTelegramApiErrorLogging({
-          operation: "sendDocument",
-          runtime,
-          fn: () => bot.api.sendDocument(chatId, file, { ...mediaParams }),
-        });
-        markDelivered();
+      if (typeof hookResult?.content === "string" && hookResult.content !== rawContent) {
+        reply = { ...reply, text: hookResult.content };
       }
-      if (replyToId && !hasReplied) {
-        hasReplied = true;
-      }
-      // Send deferred follow-up text right after the first media item.
-      // Chunk it in case it's extremely long (same logic as text-only replies).
-      if (pendingFollowUpText && isFirstMedia) {
-        const chunks = chunkText(pendingFollowUpText);
+    }
+
+    const contentForSentHook = reply.text || "";
+
+    try {
+      const deliveredCountBeforeReply = deliveredCount;
+      const replyToId = replyToMode === "off" ? undefined : resolveTelegramReplyId(reply.replyToId);
+      const replyToMessageIdForPayload =
+        replyToId && (replyToMode === "all" || !hasReplied) ? replyToId : undefined;
+      const telegramData = reply.channelData?.telegram as
+        | { buttons?: TelegramInlineButtons }
+        | undefined;
+      const replyMarkup = buildInlineKeyboard(telegramData?.buttons);
+      if (mediaList.length === 0) {
+        const chunks = chunkText(reply.text || "");
+        let sentTextChunk = false;
         for (let i = 0; i < chunks.length; i += 1) {
           const chunk = chunks[i];
+          if (!chunk) {
+            continue;
+          }
+          // Only attach buttons to the first chunk.
+          const shouldAttachButtons = i === 0 && replyMarkup;
           await sendTelegramText(bot, chatId, chunk.html, runtime, {
             replyToMessageId: replyToMessageIdForPayload,
+            replyQuoteText,
             thread,
             textMode: "html",
             plainText: chunk.text,
             linkPreview,
-            replyMarkup: i === 0 ? replyMarkup : undefined,
+            replyMarkup: shouldAttachButtons ? replyMarkup : undefined,
           });
+          sentTextChunk = true;
           markDelivered();
         }
-        pendingFollowUpText = undefined;
+        if (replyToMessageIdForPayload && !hasReplied && sentTextChunk) {
+          hasReplied = true;
+        }
+      } else {
+        // media with optional caption on first item
+        let first = true;
+        // Track if we need to send a follow-up text message after media
+        // (when caption exceeds Telegram's 1024-char limit)
+        let pendingFollowUpText: string | undefined;
+        for (const mediaUrl of mediaList) {
+          const isFirstMedia = first;
+          const media = await loadWebMedia(mediaUrl, {
+            localRoots: params.mediaLocalRoots,
+          });
+          const kind = mediaKindFromMime(media.contentType ?? undefined);
+          const isGif = isGifMedia({
+            contentType: media.contentType,
+            fileName: media.fileName,
+          });
+          const fileName = media.fileName ?? (isGif ? "animation.gif" : "file");
+          const file = new InputFile(media.buffer, fileName);
+          // Caption only on first item; if text exceeds limit, defer to follow-up message.
+          const { caption, followUpText } = splitTelegramCaption(
+            isFirstMedia ? (reply.text ?? undefined) : undefined,
+          );
+          const htmlCaption = caption
+            ? renderTelegramHtmlText(caption, { tableMode: params.tableMode })
+            : undefined;
+          if (followUpText) {
+            pendingFollowUpText = followUpText;
+          }
+          first = false;
+          const replyToMessageId = replyToMessageIdForPayload;
+          const shouldAttachButtonsToMedia = isFirstMedia && replyMarkup && !followUpText;
+          const mediaParams: Record<string, unknown> = {
+            caption: htmlCaption,
+            ...(htmlCaption ? { parse_mode: "HTML" } : {}),
+            ...(shouldAttachButtonsToMedia ? { reply_markup: replyMarkup } : {}),
+            ...buildTelegramSendParams({
+              replyToMessageId,
+              thread,
+            }),
+          };
+          if (isGif) {
+            await withTelegramApiErrorLogging({
+              operation: "sendAnimation",
+              runtime,
+              fn: () => bot.api.sendAnimation(chatId, file, { ...mediaParams }),
+            });
+            markDelivered();
+          } else if (kind === "image") {
+            await withTelegramApiErrorLogging({
+              operation: "sendPhoto",
+              runtime,
+              fn: () => bot.api.sendPhoto(chatId, file, { ...mediaParams }),
+            });
+            markDelivered();
+          } else if (kind === "video") {
+            await withTelegramApiErrorLogging({
+              operation: "sendVideo",
+              runtime,
+              fn: () => bot.api.sendVideo(chatId, file, { ...mediaParams }),
+            });
+            markDelivered();
+          } else if (kind === "audio") {
+            const { useVoice } = resolveTelegramVoiceSend({
+              wantsVoice: reply.audioAsVoice === true, // default false (backward compatible)
+              contentType: media.contentType,
+              fileName,
+              logFallback: logVerbose,
+            });
+            if (useVoice) {
+              // Voice message - displays as round playable bubble (opt-in via [[audio_as_voice]])
+              // Switch typing indicator to record_voice before sending.
+              await params.onVoiceRecording?.();
+              try {
+                await withTelegramApiErrorLogging({
+                  operation: "sendVoice",
+                  runtime,
+                  shouldLog: (err) => !isVoiceMessagesForbidden(err),
+                  fn: () => bot.api.sendVoice(chatId, file, { ...mediaParams }),
+                });
+                markDelivered();
+              } catch (voiceErr) {
+                // Fall back to text if voice messages are forbidden in this chat.
+                // This happens when the recipient has Telegram Premium privacy settings
+                // that block voice messages (Settings > Privacy > Voice Messages).
+                if (isVoiceMessagesForbidden(voiceErr)) {
+                  const fallbackText = reply.text;
+                  if (!fallbackText || !fallbackText.trim()) {
+                    throw voiceErr;
+                  }
+                  logVerbose(
+                    "telegram sendVoice forbidden (recipient has voice messages blocked in privacy settings); falling back to text",
+                  );
+                  await sendTelegramVoiceFallbackText({
+                    bot,
+                    chatId,
+                    runtime,
+                    text: fallbackText,
+                    chunkText,
+                    replyToId: replyToMessageIdForPayload,
+                    thread,
+                    linkPreview,
+                    replyMarkup,
+                    replyQuoteText,
+                  });
+                  if (replyToMessageIdForPayload && !hasReplied) {
+                    hasReplied = true;
+                  }
+                  markDelivered();
+                  // Skip this media item; continue with next.
+                  continue;
+                }
+                throw voiceErr;
+              }
+            } else {
+              // Audio file - displays with metadata (title, duration) - DEFAULT
+              await withTelegramApiErrorLogging({
+                operation: "sendAudio",
+                runtime,
+                fn: () => bot.api.sendAudio(chatId, file, { ...mediaParams }),
+              });
+              markDelivered();
+            }
+          } else {
+            await withTelegramApiErrorLogging({
+              operation: "sendDocument",
+              runtime,
+              fn: () => bot.api.sendDocument(chatId, file, { ...mediaParams }),
+            });
+            markDelivered();
+          }
+          if (replyToId && !hasReplied) {
+            hasReplied = true;
+          }
+          // Send deferred follow-up text right after the first media item.
+          // Chunk it in case it's extremely long (same logic as text-only replies).
+          if (pendingFollowUpText && isFirstMedia) {
+            const chunks = chunkText(pendingFollowUpText);
+            for (let i = 0; i < chunks.length; i += 1) {
+              const chunk = chunks[i];
+              await sendTelegramText(bot, chatId, chunk.html, runtime, {
+                replyToMessageId: replyToMessageIdForPayload,
+                thread,
+                textMode: "html",
+                plainText: chunk.text,
+                linkPreview,
+                replyMarkup: i === 0 ? replyMarkup : undefined,
+              });
+              markDelivered();
+            }
+            pendingFollowUpText = undefined;
+          }
+          if (replyToMessageIdForPayload && !hasReplied) {
+            hasReplied = true;
+          }
+        }
       }
-      if (replyToMessageIdForPayload && !hasReplied) {
-        hasReplied = true;
+
+      if (hasMessageSentHooks) {
+        const deliveredThisReply = deliveredCount > deliveredCountBeforeReply;
+        void hookRunner?.runMessageSent(
+          {
+            to: chatId,
+            content: contentForSentHook,
+            success: deliveredThisReply,
+          },
+          {
+            channelId: "telegram",
+            accountId: params.accountId,
+            conversationId: chatId,
+          },
+        );
       }
+    } catch (error) {
+      if (hasMessageSentHooks) {
+        void hookRunner?.runMessageSent(
+          {
+            to: chatId,
+            content: contentForSentHook,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          {
+            channelId: "telegram",
+            accountId: params.accountId,
+            conversationId: chatId,
+          },
+        );
+      }
+      throw error;
     }
   }
 

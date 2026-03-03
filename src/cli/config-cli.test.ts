@@ -50,6 +50,21 @@ function setSnapshot(resolved: MarvConfig, config: MarvConfig) {
   mockReadConfigFileSnapshot.mockResolvedValueOnce(buildSnapshot({ resolved, config }));
 }
 
+function setInvalidSnapshot(issues: Array<{ path: string; message: string }>) {
+  mockReadConfigFileSnapshot.mockResolvedValueOnce({
+    path: "/tmp/marv.json",
+    exists: true,
+    raw: "{",
+    parsed: {},
+    resolved: {},
+    valid: false,
+    config: {},
+    issues,
+    warnings: [],
+    legacyIssues: [],
+  } as ConfigFileSnapshot);
+}
+
 async function runConfigCommand(args: string[]) {
   const { registerConfigCli } = await import("./config-cli.js");
   const program = new Command();
@@ -164,6 +179,29 @@ describe("config cli", () => {
       expect(written.gateway).toEqual(resolved.gateway);
       expect(written.tools?.profile).toBe("coding");
       expect(written.logging).toEqual(resolved.logging);
+    });
+  });
+
+  describe("config validate", () => {
+    it("prints success output for a valid config", async () => {
+      const resolved: MarvConfig = { gateway: { port: 18789 } };
+      setSnapshot(resolved, resolved);
+
+      await runConfigCommand(["config", "validate"]);
+
+      expect(mockLog).toHaveBeenCalledWith(expect.stringContaining("Config valid:"));
+    });
+
+    it("prints JSON issues and exits non-zero for an invalid config", async () => {
+      setInvalidSnapshot([{ path: "gateway.port", message: "Expected number, received string" }]);
+
+      await expect(runConfigCommand(["config", "validate", "--json"])).rejects.toThrow(
+        "__exit__:1",
+      );
+
+      const output = String(mockLog.mock.calls.at(-1)?.[0] ?? "");
+      expect(output).toContain('"valid": false');
+      expect(output).toContain('"gateway.port"');
     });
   });
 });

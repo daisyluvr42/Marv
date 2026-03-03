@@ -35,4 +35,9 @@ describe("program routes", () => {
     expect(route).not.toBeNull();
     await expect(route?.run(["node", "marv", "config", "unset"])).resolves.toBe(false);
   });
+
+  it("matches config validate route", () => {
+    const route = findRoutedCommand(["config", "validate"]);
+    expect(route).not.toBeNull();
+  });
 });

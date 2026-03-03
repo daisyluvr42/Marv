@@ -160,6 +160,16 @@ const routeConfigUnset: RouteSpec = {
   },
 };
 
+const routeConfigValidate: RouteSpec = {
+  match: (path) => path[0] === "config" && path[1] === "validate",
+  run: async (argv) => {
+    const json = hasFlag(argv, "--json");
+    const { runConfigValidate } = await import("../config-cli.js");
+    await runConfigValidate({ json });
+    return true;
+  },
+};
+
 const routeModelsList: RouteSpec = {
   match: (path) => path[0] === "models" && path[1] === "list",
   run: async (argv) => {
@@ -242,6 +252,7 @@ const routes: RouteSpec[] = [
   routeMemoryStatus,
   routeConfigGet,
   routeConfigUnset,
+  routeConfigValidate,
   routeModelsList,
   routeModelsStatus,
 ];

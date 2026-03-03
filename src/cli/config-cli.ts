@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import JSON5 from "json5";
 import { readConfigFileSnapshot, writeConfigFile } from "../core/config/config.js";
-import { danger, info } from "../globals.js";
+import { danger, info, success } from "../globals.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
@@ -277,11 +277,101 @@ export async function runConfigUnset(opts: { path: string; runtime?: RuntimeEnv 
   }
 }
 
+export async function runConfigValidate(opts: { json?: boolean; runtime?: RuntimeEnv } = {}) {
+  const runtime = opts.runtime ?? defaultRuntime;
+  try {
+    const snapshot = await readConfigFileSnapshot();
+
+    if (!snapshot.exists) {
+      if (opts.json) {
+        runtime.log(
+          JSON.stringify(
+            {
+              valid: false,
+              path: snapshot.path,
+              issues: [{ path: "", message: "config file not found" }],
+            },
+            null,
+            2,
+          ),
+        );
+      } else {
+        runtime.error(danger(`Config file not found: ${shortenHomePath(snapshot.path)}`));
+      }
+      runtime.exit(1);
+      return;
+    }
+
+    if (!snapshot.valid) {
+      if (opts.json) {
+        runtime.log(
+          JSON.stringify(
+            {
+              valid: false,
+              path: snapshot.path,
+              issues: snapshot.issues,
+              warnings: snapshot.warnings,
+            },
+            null,
+            2,
+          ),
+        );
+      } else {
+        runtime.error(danger(`Config invalid at ${shortenHomePath(snapshot.path)}.`));
+        for (const issue of snapshot.issues) {
+          runtime.error(`- ${issue.path || "<root>"}: ${issue.message}`);
+        }
+      }
+      runtime.exit(1);
+      return;
+    }
+
+    if (opts.json) {
+      runtime.log(
+        JSON.stringify(
+          {
+            valid: true,
+            path: snapshot.path,
+            warnings: snapshot.warnings,
+          },
+          null,
+          2,
+        ),
+      );
+      return;
+    }
+
+    runtime.log(success(`Config valid: ${shortenHomePath(snapshot.path)}`));
+    for (const warning of snapshot.warnings) {
+      runtime.log(info(`warning: ${warning.path || "<root>"}: ${warning.message}`));
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("__exit__:")) {
+      throw err;
+    }
+    if (opts.json) {
+      runtime.log(
+        JSON.stringify(
+          {
+            valid: false,
+            issues: [{ path: "", message: String(err) }],
+          },
+          null,
+          2,
+        ),
+      );
+    } else {
+      runtime.error(danger(`Config validation failed: ${String(err)}`));
+    }
+    runtime.exit(1);
+  }
+}
+
 export function registerConfigCli(program: Command) {
   const cmd = program
     .command("config")
     .description(
-      "Non-interactive config helpers (get/set/unset). Run without subcommand for the setup wizard.",
+      "Non-interactive config helpers (get/set/unset/validate). Run without subcommand for the setup wizard.",
     )
     .addHelpText(
       "after",
@@ -340,5 +430,13 @@ export function registerConfigCli(program: Command) {
     .argument("<path>", "Config path (dot or bracket notation)")
     .action(async (path: string) => {
       await runConfigUnset({ path });
+    });
+
+  cmd
+    .command("validate")
+    .description("Validate current config without starting the gateway")
+    .option("--json", "Output validation result as JSON", false)
+    .action(async (opts) => {
+      await runConfigValidate({ json: Boolean(opts.json) });
     });
 }
