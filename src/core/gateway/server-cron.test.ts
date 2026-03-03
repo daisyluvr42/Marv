@@ -162,7 +162,8 @@ describe("buildGatewayCronService", () => {
       await ensureSoulMemoryMaintenanceCronJob({ cron: state.cron });
       const jobs = await state.cron.list({ includeDisabled: true });
       const maintenance = jobs.find(
-        (job) => job.payload.kind === "systemTask" && job.payload.task === "soulMemoryMaintenance",
+        (job) =>
+          job.payload.kind === "systemTask" && job.payload.task === "soulMemoryNightlyMaintenance",
       );
       expect(maintenance).toBeDefined();
       if (!maintenance) {
@@ -216,7 +217,8 @@ describe("buildGatewayCronService", () => {
 
       const jobs = await state.cron.list({ includeDisabled: true });
       const maintenance = jobs.find(
-        (job) => job.payload.kind === "systemTask" && job.payload.task === "soulMemoryMaintenance",
+        (job) =>
+          job.payload.kind === "systemTask" && job.payload.task === "soulMemoryNightlyMaintenance",
       );
       expect(maintenance).toBeDefined();
       if (!maintenance) {

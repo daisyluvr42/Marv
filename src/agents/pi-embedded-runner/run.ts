@@ -1,5 +1,12 @@
 import fs from "node:fs/promises";
 import type { ThinkLevel } from "../../auto-reply/thinking.js";
+import {
+  TaskContextManager,
+  addTaskDecisionBookmark,
+  buildTaskContextPrelude,
+  extractDecisionCandidates,
+  maybeCompressTaskContext,
+} from "../../memory/task-context/index.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { enqueueCommandInLane } from "../../process/command-queue.js";
 import { isMarkdownCapableMessageChannel } from "../../utils/message-channel.js";
@@ -170,6 +177,31 @@ function resolveActiveErrorContext(params: {
     provider: params.lastAssistant?.provider ?? params.provider,
     model: params.lastAssistant?.model ?? params.model,
   };
+}
+
+function resolveTaskTitle(prompt: string, fallback: string): string {
+  const firstLine =
+    prompt
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find(Boolean) ?? "";
+  const compact = firstLine.replace(/\s+/g, " ").trim();
+  if (!compact) {
+    return fallback;
+  }
+  return compact.length > 96 ? `${compact.slice(0, 93)}...` : compact;
+}
+
+function mergeExtraSystemPrompt(base: string | undefined, taskPrelude: string): string | undefined {
+  const baseTrimmed = base?.trim();
+  const preludeTrimmed = taskPrelude.trim();
+  if (!preludeTrimmed) {
+    return baseTrimmed || undefined;
+  }
+  if (!baseTrimmed) {
+    return preludeTrimmed;
+  }
+  return `${baseTrimmed}\n\n${preludeTrimmed}`.trim();
 }
 
 export async function runEmbeddedPiAgent(
@@ -498,6 +530,127 @@ export async function runEmbeddedPiAgent(
         }
       }
 
+      const taskManager = new TaskContextManager();
+      const taskContextEnabled = params.taskContextEnabled !== false && !isProbeSession;
+      let taskRef: { agentId: string; taskId: string } | null = null;
+      let taskPrelude = "";
+      const appendDecisionBookmarks = (content: string, sequence?: number) => {
+        if (!taskRef) {
+          return;
+        }
+        const candidates = extractDecisionCandidates(content).slice(0, 6);
+        for (const candidate of candidates) {
+          addTaskDecisionBookmark({
+            agentId: taskRef.agentId,
+            taskId: taskRef.taskId,
+            content: candidate,
+            sequence,
+          });
+        }
+      };
+      if (taskContextEnabled) {
+        try {
+          const requestedTaskId =
+            params.taskId?.trim() || params.sessionKey?.trim() || params.sessionId;
+          const requestedTitle =
+            params.taskTitle?.trim() || resolveTaskTitle(params.prompt, `Task ${requestedTaskId}`);
+          let task = taskManager.getTask({
+            agentId: workspaceResolution.agentId,
+            taskId: requestedTaskId,
+          });
+          if (!task || task.status === "completed" || task.status === "archived") {
+            const nextTaskId =
+              !task || task.status === "active" || task.status === "paused"
+                ? requestedTaskId
+                : `${requestedTaskId}-${Date.now().toString(36)}`;
+            task = taskManager.startTask({
+              agentId: workspaceResolution.agentId,
+              taskId: nextTaskId,
+              title: requestedTitle,
+            });
+          } else if (task.status === "paused") {
+            const resumed = taskManager.resumeTask({
+              agentId: task.agentId,
+              taskId: task.taskId,
+            });
+            if (resumed) {
+              task = resumed;
+            }
+          }
+          taskRef = { agentId: task.agentId, taskId: task.taskId };
+          taskPrelude = buildTaskContextPrelude({
+            agentId: task.agentId,
+            taskId: task.taskId,
+            currentQuery: params.prompt,
+          });
+          const userEntry = taskManager.appendEntry({
+            agentId: task.agentId,
+            taskId: task.taskId,
+            role: "user",
+            content: params.prompt,
+            metadata: {
+              sessionId: params.sessionId,
+              sessionKey: params.sessionKey ?? null,
+              runId: params.runId,
+              source: "runner",
+            },
+          });
+          if (userEntry) {
+            appendDecisionBookmarks(params.prompt, userEntry.sequence);
+          }
+        } catch (err) {
+          log.warn(`task context init failed: ${describeUnknownError(err)}`);
+        }
+      }
+      const extraSystemPrompt = mergeExtraSystemPrompt(params.extraSystemPrompt, taskPrelude);
+
+      const recordAssistantTaskTurn = async (input: {
+        assistantTexts?: string[];
+        errorText?: string;
+        status: "ok" | "error";
+      }) => {
+        if (!taskRef) {
+          return;
+        }
+        try {
+          const assistantTexts = input.assistantTexts ?? [];
+          const mergedText = assistantTexts
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .join("\n\n")
+            .trim();
+          const content =
+            mergedText ||
+            input.errorText?.trim() ||
+            (input.status === "ok" ? "" : "assistant failed");
+          if (!content) {
+            return;
+          }
+          const entry = taskManager.appendEntry({
+            agentId: taskRef.agentId,
+            taskId: taskRef.taskId,
+            role: "assistant",
+            content,
+            metadata: {
+              sessionId: params.sessionId,
+              sessionKey: params.sessionKey ?? null,
+              runId: params.runId,
+              source: "runner",
+              status: input.status,
+            },
+          });
+          if (entry) {
+            appendDecisionBookmarks(content, entry.sequence);
+          }
+          await maybeCompressTaskContext({
+            agentId: taskRef.agentId,
+            taskId: taskRef.taskId,
+          });
+        } catch (err) {
+          log.warn(`task context append failed: ${describeUnknownError(err)}`);
+        }
+      };
+
       const MAX_OVERFLOW_COMPACTION_ATTEMPTS = 3;
       let overflowCompactionAttempts = 0;
       let toolResultTruncationAttempted = false;
@@ -564,7 +717,7 @@ export async function runEmbeddedPiAgent(
             onReasoningEnd: params.onReasoningEnd,
             onToolResult: params.onToolResult,
             onAgentEvent: params.onAgentEvent,
-            extraSystemPrompt: params.extraSystemPrompt,
+            extraSystemPrompt,
             inputProvenance: params.inputProvenance,
             streamParams: params.streamParams,
             ownerNumbers: params.ownerNumbers,
@@ -687,7 +840,7 @@ export async function runEmbeddedPiAgent(
                 thinkLevel,
                 reasoningLevel: params.reasoningLevel,
                 bashElevated: params.bashElevated,
-                extraSystemPrompt: params.extraSystemPrompt,
+                extraSystemPrompt,
                 ownerNumbers: params.ownerNumbers,
                 trigger: "overflow",
                 diagId: overflowDiagId,
@@ -766,6 +919,10 @@ export async function runEmbeddedPiAgent(
               );
             }
             const kind = isCompactionFailure ? "compaction_failure" : "context_overflow";
+            await recordAssistantTaskTurn({
+              status: "error",
+              errorText,
+            });
             return {
               payloads: [
                 {
@@ -792,6 +949,10 @@ export async function runEmbeddedPiAgent(
             const errorText = describeUnknownError(promptError);
             // Handle role ordering errors with a user-friendly message
             if (/incorrect role information|roles must alternate/i.test(errorText)) {
+              await recordAssistantTaskTurn({
+                status: "error",
+                errorText,
+              });
               return {
                 payloads: [
                   {
@@ -820,6 +981,10 @@ export async function runEmbeddedPiAgent(
               const maxMbLabel =
                 typeof maxMb === "number" && Number.isFinite(maxMb) ? `${maxMb}` : null;
               const maxBytesHint = maxMbLabel ? ` (max ${maxMbLabel}MB)` : "";
+              await recordAssistantTaskTurn({
+                status: "error",
+                errorText,
+              });
               return {
                 payloads: [
                   {
@@ -1035,6 +1200,10 @@ export async function runEmbeddedPiAgent(
           // Emit an explicit timeout error instead of silently completing, so
           // callers do not lose the turn as an orphaned user message.
           if (timedOut && !timedOutDuringCompaction && payloads.length === 0) {
+            await recordAssistantTaskTurn({
+              status: "error",
+              errorText: "Request timed out before a response was generated. Please try again.",
+            });
             return {
               payloads: [
                 {
@@ -1074,6 +1243,10 @@ export async function runEmbeddedPiAgent(
               agentDir: params.agentDir,
             });
           }
+          await recordAssistantTaskTurn({
+            status: "ok",
+            assistantTexts: attempt.assistantTexts,
+          });
           return {
             payloads: payloads.length ? payloads : undefined,
             meta: {

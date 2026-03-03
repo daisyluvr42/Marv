@@ -26,6 +26,7 @@ import {
 import type { CronServiceState } from "./state.js";
 
 const STUCK_RUN_MS = 2 * 60 * 60 * 1000;
+const SUPPORTED_SYSTEM_TASKS = new Set(["soulMemoryMaintenance", "soulMemoryNightlyMaintenance"]);
 
 function resolveStableCronOffsetMs(jobId: string, staggerMs: number) {
   if (staggerMs <= 1) {
@@ -547,7 +548,7 @@ function buildPayloadFromPatch(patch: CronPayloadPatch): CronPayload {
   }
 
   if (patch.kind === "systemTask") {
-    if (patch.task !== "soulMemoryMaintenance") {
+    if (!patch.task || !SUPPORTED_SYSTEM_TASKS.has(patch.task)) {
       throw new Error('cron.update payload.kind="systemTask" requires a supported task');
     }
     return { kind: "systemTask", task: patch.task };

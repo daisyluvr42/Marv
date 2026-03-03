@@ -86,7 +86,10 @@ export const CronPayloadSchema = Type.Union([
   Type.Object(
     {
       kind: Type.Literal("systemTask"),
-      task: Type.Literal("soulMemoryMaintenance"),
+      task: Type.Union([
+        Type.Literal("soulMemoryMaintenance"),
+        Type.Literal("soulMemoryNightlyMaintenance"),
+      ]),
     },
     { additionalProperties: false },
   ),
@@ -104,7 +107,12 @@ export const CronPayloadPatchSchema = Type.Union([
   Type.Object(
     {
       kind: Type.Literal("systemTask"),
-      task: Type.Optional(Type.Literal("soulMemoryMaintenance")),
+      task: Type.Optional(
+        Type.Union([
+          Type.Literal("soulMemoryMaintenance"),
+          Type.Literal("soulMemoryNightlyMaintenance"),
+        ]),
+      ),
     },
     { additionalProperties: false },
   ),

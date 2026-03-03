@@ -1,6 +1,9 @@
 import { listAgentIds } from "../../agents/agent-scope.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
+import { detectSoulMemoryConflicts, type SoulMemoryConflict } from "./soul-memory-conflict.js";
+import { consolidateSoulMemories } from "./soul-memory-consolidation.js";
+import { dedupeSoulMemories } from "./soul-memory-dedupe.js";
 import {
   applySoulMemoryConfidenceDecay,
   promoteSoulMemories,
@@ -14,6 +17,10 @@ export type SoulMemoryMaintenancePerAgent = {
   promotedToP1: number;
   promotedToP0: number;
   pendingP0Approvals: number;
+  deduplicationMergedPairs: number;
+  deduplicationRemoved: number;
+  consolidationGeneralized: number;
+  conflictsDetected: number;
   error?: string;
 };
 
@@ -25,7 +32,20 @@ export type SoulMemoryMaintenanceReport = {
     promotedToP1: number;
     promotedToP0: number;
     pendingP0Approvals: number;
+    deduplicationMergedPairs: number;
+    deduplicationRemoved: number;
+    consolidationGeneralized: number;
+    conflictsDetected: number;
   };
+  deduplication: {
+    mergedPairs: number;
+    removedIds: string[];
+  };
+  consolidation: {
+    generalizedCount: number;
+    consolidatedIds: string[];
+  };
+  conflicts: SoulMemoryConflict[];
   failedAgents: number;
 };
 
@@ -72,6 +92,13 @@ export function runSoulMemoryMaintenance(params: {
   let promotedToP1 = 0;
   let promotedToP0 = 0;
   let pendingP0Approvals = 0;
+  let deduplicationMergedPairs = 0;
+  let deduplicationRemoved = 0;
+  let consolidationGeneralized = 0;
+  let conflictsDetected = 0;
+  const dedupRemovedIds: string[] = [];
+  const consolidatedIds: string[] = [];
+  const conflicts: SoulMemoryConflict[] = [];
   let failedAgents = 0;
 
   for (const agentId of agentIds) {
@@ -86,6 +113,17 @@ export function runSoulMemoryMaintenance(params: {
         nowMs,
         soulConfig,
       });
+      const dedupe = dedupeSoulMemories({
+        agentId,
+      });
+      const consolidation = consolidateSoulMemories({
+        agentId,
+        nowMs,
+      });
+      const conflictResult = detectSoulMemoryConflicts({
+        agentId,
+        nowMs,
+      });
       const entry: SoulMemoryMaintenancePerAgent = {
         agentId,
         decayUpdated: decay.updated,
@@ -93,6 +131,10 @@ export function runSoulMemoryMaintenance(params: {
         promotedToP1: promotion.promotedToP1,
         promotedToP0: promotion.promotedToP0,
         pendingP0Approvals: promotion.p0ApprovalCandidates.length,
+        deduplicationMergedPairs: dedupe.mergedPairs,
+        deduplicationRemoved: dedupe.removedIds.length,
+        consolidationGeneralized: consolidation.generalizedCount,
+        conflictsDetected: conflictResult.inserted,
       };
       agents.push(entry);
 
@@ -101,6 +143,13 @@ export function runSoulMemoryMaintenance(params: {
       promotedToP1 += entry.promotedToP1;
       promotedToP0 += entry.promotedToP0;
       pendingP0Approvals += entry.pendingP0Approvals;
+      deduplicationMergedPairs += entry.deduplicationMergedPairs;
+      deduplicationRemoved += entry.deduplicationRemoved;
+      consolidationGeneralized += entry.consolidationGeneralized;
+      conflictsDetected += entry.conflictsDetected;
+      dedupRemovedIds.push(...dedupe.removedIds);
+      consolidatedIds.push(...consolidation.consolidatedIds);
+      conflicts.push(...conflictResult.conflicts);
     } catch (err) {
       failedAgents += 1;
       agents.push({
@@ -110,6 +159,10 @@ export function runSoulMemoryMaintenance(params: {
         promotedToP1: 0,
         promotedToP0: 0,
         pendingP0Approvals: 0,
+        deduplicationMergedPairs: 0,
+        deduplicationRemoved: 0,
+        consolidationGeneralized: 0,
+        conflictsDetected: 0,
         error: err instanceof Error ? err.message : String(err),
       });
     }
@@ -123,7 +176,20 @@ export function runSoulMemoryMaintenance(params: {
       promotedToP1,
       promotedToP0,
       pendingP0Approvals,
+      deduplicationMergedPairs,
+      deduplicationRemoved,
+      consolidationGeneralized,
+      conflictsDetected,
     },
+    deduplication: {
+      mergedPairs: deduplicationMergedPairs,
+      removedIds: dedupRemovedIds,
+    },
+    consolidation: {
+      generalizedCount: consolidationGeneralized,
+      consolidatedIds,
+    },
+    conflicts,
     failedAgents,
   };
 }
@@ -137,6 +203,9 @@ export function formatSoulMemoryMaintenanceSummary(report: SoulMemoryMaintenance
     `pruned=${report.totals.decayDeleted}, ` +
     `p2->p1=${report.totals.promotedToP1}, ` +
     `p1->p0=${report.totals.promotedToP0}, ` +
-    `pendingP0=${report.totals.pendingP0Approvals}`
+    `pendingP0=${report.totals.pendingP0Approvals}, ` +
+    `deduped=${report.totals.deduplicationMergedPairs}, ` +
+    `generalized=${report.totals.consolidationGeneralized}, ` +
+    `conflicts=${report.totals.conflictsDetected}`
   );
 }

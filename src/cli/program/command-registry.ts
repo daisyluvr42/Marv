@@ -148,6 +148,19 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
+        name: "task",
+        description: "Manage task-context windows, archives, and distillation",
+        hasSubcommands: true,
+      },
+    ],
+    register: async ({ program }) => {
+      const mod = await import("../task-cli.js");
+      mod.registerTaskCli(program);
+    },
+  },
+  {
+    commands: [
+      {
         name: "agent",
         description: "Run one agent turn via the Gateway",
         hasSubcommands: false,

@@ -62,6 +62,12 @@ export type RunEmbeddedPiAgentParams = {
   config?: MarvConfig;
   skillsSnapshot?: SkillSnapshot;
   prompt: string;
+  /** Optional task context id; defaults to session key/id when omitted. */
+  taskId?: string;
+  /** Optional task title used when initializing task context. */
+  taskTitle?: string;
+  /** Disable task-context reconstruction/persistence for this run. */
+  taskContextEnabled?: boolean;
   images?: ImageContent[];
   /** Optional client-provided tools (OpenResponses hosted tools). */
   clientTools?: ClientToolDefinition[];

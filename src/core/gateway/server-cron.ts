@@ -36,8 +36,13 @@ export type GatewayCronState = {
 const CRON_WEBHOOK_TIMEOUT_MS = 10_000;
 const SOUL_MAINTENANCE_JOB_NAME = "Soul Memory Maintenance";
 const SOUL_MAINTENANCE_JOB_DESCRIPTION =
-  "Daily deterministic maintenance for soul memory (decay, prune, promotion).";
+  "Daily deterministic maintenance for soul memory (decay, promotion, dedupe, consolidation, conflict detection).";
 const SOUL_MAINTENANCE_CRON_EXPR = "20 3 * * *";
+const SOUL_MAINTENANCE_TASK = "soulMemoryNightlyMaintenance";
+const SUPPORTED_SOUL_MAINTENANCE_TASKS = new Set([
+  "soulMemoryMaintenance",
+  "soulMemoryNightlyMaintenance",
+]);
 
 function redactWebhookUrl(url: string): string {
   try {
@@ -207,7 +212,7 @@ export function buildGatewayCronService(params: {
       });
     },
     runSystemTask: async ({ job, task }) => {
-      if (task !== "soulMemoryMaintenance") {
+      if (!SUPPORTED_SOUL_MAINTENANCE_TASKS.has(task)) {
         return { status: "skipped", error: "unsupported system task" };
       }
       const runtimeConfig = loadConfig();
@@ -356,7 +361,8 @@ export async function ensureSoulMemoryMaintenanceCronJob(params: {
 
   const existingJobs = await params.cron.list({ includeDisabled: true });
   const managed = existingJobs.find(
-    (job) => job.payload.kind === "systemTask" && job.payload.task === "soulMemoryMaintenance",
+    (job) =>
+      job.payload.kind === "systemTask" && SUPPORTED_SOUL_MAINTENANCE_TASKS.has(job.payload.task),
   );
 
   if (!managed) {
@@ -374,7 +380,7 @@ export async function ensureSoulMemoryMaintenanceCronJob(params: {
       wakeMode: "next-heartbeat",
       payload: {
         kind: "systemTask",
-        task: "soulMemoryMaintenance",
+        task: SOUL_MAINTENANCE_TASK,
       },
     };
     const created = await params.cron.add(desired);
@@ -395,7 +401,7 @@ export async function ensureSoulMemoryMaintenanceCronJob(params: {
     managed.sessionTarget !== "main" ||
     managed.wakeMode !== "next-heartbeat" ||
     managed.payload.kind !== "systemTask" ||
-    managed.payload.task !== "soulMemoryMaintenance" ||
+    managed.payload.task !== SOUL_MAINTENANCE_TASK ||
     managed.delivery !== undefined;
   const needsMetadataUpdate =
     managed.name !== SOUL_MAINTENANCE_JOB_NAME ||
@@ -424,7 +430,7 @@ export async function ensureSoulMemoryMaintenanceCronJob(params: {
     patch.wakeMode = "next-heartbeat";
     patch.payload = {
       kind: "systemTask",
-      task: "soulMemoryMaintenance",
+      task: SOUL_MAINTENANCE_TASK,
     };
     patch.delivery = { mode: "none" };
   }

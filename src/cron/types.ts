@@ -51,7 +51,7 @@ export type CronRunOutcome = {
   sessionKey?: string;
 };
 
-export type CronSystemTask = "soulMemoryMaintenance";
+export type CronSystemTask = "soulMemoryMaintenance" | "soulMemoryNightlyMaintenance";
 
 export type CronPayload =
   | { kind: "systemEvent"; text: string }

@@ -21,6 +21,8 @@ const DEFAULT_OPTIONS: NormalizeOptions = {
   applyDefaults: false,
 };
 
+const SUPPORTED_SYSTEM_TASKS = new Set(["soulMemoryMaintenance", "soulMemoryNightlyMaintenance"]);
+
 function coerceSchedule(schedule: UnknownRecord) {
   const next: UnknownRecord = { ...schedule };
   const rawKind = typeof schedule.kind === "string" ? schedule.kind.trim().toLowerCase() : "";
@@ -98,7 +100,7 @@ function coercePayload(payload: UnknownRecord) {
       next.kind = "agentTurn";
     } else if (hasText) {
       next.kind = "systemEvent";
-    } else if (next.task === "soulMemoryMaintenance") {
+    } else if (typeof next.task === "string" && SUPPORTED_SYSTEM_TASKS.has(next.task)) {
       next.kind = "systemTask";
     } else if (hasAgentTurnHint) {
       // Accept partial agentTurn payload patches that only tweak agent-turn-only fields.
@@ -106,7 +108,7 @@ function coercePayload(payload: UnknownRecord) {
     }
   }
   if ("task" in next) {
-    if (next.task !== "soulMemoryMaintenance") {
+    if (typeof next.task !== "string" || !SUPPORTED_SYSTEM_TASKS.has(next.task)) {
       delete next.task;
     }
   }
@@ -378,7 +380,7 @@ export function normalizeCronJobInput(
       next.payload = { kind: "agentTurn", message };
     } else if (text) {
       next.payload = { kind: "systemEvent", text };
-    } else if (task === "soulMemoryMaintenance") {
+    } else if (SUPPORTED_SYSTEM_TASKS.has(task)) {
       next.payload = { kind: "systemTask", task };
     }
   }

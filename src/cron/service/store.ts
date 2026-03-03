@@ -13,6 +13,8 @@ import { recomputeNextRuns } from "./jobs.js";
 import { inferLegacyName, normalizeOptionalText } from "./normalize.js";
 import type { CronServiceState } from "./state.js";
 
+const SUPPORTED_SYSTEM_TASKS = new Set(["soulMemoryMaintenance", "soulMemoryNightlyMaintenance"]);
+
 function buildDeliveryPatchFromLegacyPayload(payload: Record<string, unknown>) {
   const deliver = payload.deliver;
   const channelRaw =
@@ -105,7 +107,7 @@ function inferPayloadIfMissing(raw: Record<string, unknown>) {
     raw.payload = { kind: "systemEvent", text };
     return true;
   }
-  if (task === "soulMemoryMaintenance") {
+  if (SUPPORTED_SYSTEM_TASKS.has(task)) {
     raw.payload = { kind: "systemTask", task };
     return true;
   }
@@ -315,7 +317,10 @@ export async function ensureLoaded(
         } else if (typeof payloadRecord.text === "string" && payloadRecord.text.trim()) {
           payloadRecord.kind = "systemEvent";
           mutated = true;
-        } else if (payloadRecord.task === "soulMemoryMaintenance") {
+        } else if (
+          typeof payloadRecord.task === "string" &&
+          SUPPORTED_SYSTEM_TASKS.has(payloadRecord.task)
+        ) {
           payloadRecord.kind = "systemTask";
           mutated = true;
         }

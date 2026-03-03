@@ -27,6 +27,12 @@ describe("cron protocol validators", () => {
         payload: { kind: "systemTask", task: "soulMemoryMaintenance" },
       }),
     ).toBe(true);
+    expect(
+      validateCronAddParams({
+        ...minimalAddParams,
+        payload: { kind: "systemTask", task: "soulMemoryNightlyMaintenance" },
+      }),
+    ).toBe(true);
   });
 
   it("rejects add params when required scheduling fields are missing", () => {
