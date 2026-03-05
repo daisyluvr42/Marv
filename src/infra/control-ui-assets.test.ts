@@ -116,9 +116,9 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const { resolveControlUiDistIndexPath } = await import("./control-ui-assets.js");
 
     const pkgRoot = abs("fixtures/marv");
-    (
-      marvRoot.resolveMarvPackageRoot as unknown as ReturnType<typeof vi.fn>
-    ).mockResolvedValueOnce(pkgRoot);
+    (marvRoot.resolveMarvPackageRoot as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      pkgRoot,
+    );
 
     await expect(resolveControlUiDistIndexPath(abs("fixtures/bin/marv"))).resolves.toBe(
       path.join(pkgRoot, "dist", "control-ui", "index.html"),

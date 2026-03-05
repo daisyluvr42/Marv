@@ -141,7 +141,7 @@ function buildSimilarityClusters(
   }
 
   const visited = new Set<number>();
-  const clusters: SoulMemoryItem[][] = [];
+  const clusters: ConsolidationItem[][] = [];
   for (let i = 0; i < n; i += 1) {
     if (visited.has(i)) {
       continue;

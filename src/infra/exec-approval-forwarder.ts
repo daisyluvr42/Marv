@@ -125,6 +125,10 @@ function buildRequestMessage(request: ExecApprovalRequest, nowMs: number) {
     lines.push("Command:");
     lines.push(command.text);
   }
+  const kind = request.request.kind?.trim();
+  if (kind) {
+    lines.push(`Kind: ${kind}`);
+  }
   if (request.request.cwd) {
     lines.push(`CWD: ${request.request.cwd}`);
   }

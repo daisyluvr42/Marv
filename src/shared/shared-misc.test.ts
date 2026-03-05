@@ -75,9 +75,7 @@ describe("shared/frontmatter", () => {
 
   test("resolveMarvManifestBlock returns undefined for invalid input", () => {
     expect(resolveMarvManifestBlock({ frontmatter: {} })).toBeUndefined();
-    expect(
-      resolveMarvManifestBlock({ frontmatter: { metadata: "not-json5" } }),
-    ).toBeUndefined();
+    expect(resolveMarvManifestBlock({ frontmatter: { metadata: "not-json5" } })).toBeUndefined();
     expect(
       resolveMarvManifestBlock({ frontmatter: { metadata: "{ nope: { a: 1 } }" } }),
     ).toBeUndefined();
