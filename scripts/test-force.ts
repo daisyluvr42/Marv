@@ -27,8 +27,7 @@ function killGatewayListeners(port: number): PortProcess[] {
 
 function runTests() {
   const isolatedLock =
-    process.env.MARV_GATEWAY_LOCK ??
-    path.join(os.tmpdir(), `marv-gateway.lock.test.${Date.now()}`);
+    process.env.MARV_GATEWAY_LOCK ?? path.join(os.tmpdir(), `marv-gateway.lock.test.${Date.now()}`);
   const result = spawnSync("pnpm", ["vitest", "run"], {
     stdio: "inherit",
     env: {

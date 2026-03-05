@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-- Repo: 
+- Repo:
 - GitHub issues/comments/PR comments: use literal multiline strings or `-F - <<'EOF'` (or $'...') for real newlines; never embed "\\n".
 
 ## Project Structure & Module Organization
