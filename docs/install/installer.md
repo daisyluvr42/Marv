@@ -146,8 +146,8 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 
   <Accordion title="Environment variables reference">
 
-| Variable                                    | Description                                   |
-| ------------------------------------------- | --------------------------------------------- |
+| Variable                                | Description                                   |
+| --------------------------------------- | --------------------------------------------- |
 | `MARV_INSTALL_METHOD=git\|npm`          | Install method                                |
 | `MARV_VERSION=latest\|next\|<semver>`   | npm version or dist-tag                       |
 | `MARV_BETA=0\|1`                        | Use beta if available                         |
@@ -158,7 +158,7 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 | `MARV_DRY_RUN=1`                        | Dry run mode                                  |
 | `MARV_VERBOSE=1`                        | Debug mode                                    |
 | `MARV_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                 |
-| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`          | Control sharp/libvips behavior (default: `1`) |
+| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`      | Control sharp/libvips behavior (default: `1`) |
 
   </Accordion>
 </AccordionGroup>
@@ -228,15 +228,15 @@ Designed for environments where you want everything under a local prefix (defaul
 
   <Accordion title="Environment variables reference">
 
-| Variable                                    | Description                                                                       |
-| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| Variable                                | Description                                                                       |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
 | `MARV_PREFIX=<path>`                    | Install prefix                                                                    |
 | `MARV_VERSION=<ver>`                    | Marv version or dist-tag                                                          |
 | `MARV_NODE_VERSION=<ver>`               | Node version                                                                      |
 | `MARV_NO_ONBOARD=1`                     | Skip onboarding                                                                   |
 | `MARV_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                                                     |
 | `MARV_GIT_DIR=<path>`                   | Legacy cleanup lookup path (used when removing old `Peekaboo` submodule checkout) |
-| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`          | Control sharp/libvips behavior (default: `1`)                                     |
+| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`      | Control sharp/libvips behavior (default: `1`)                                     |
 
   </Accordion>
 </AccordionGroup>
@@ -312,8 +312,8 @@ Designed for environments where you want everything under a local prefix (defaul
 
   <Accordion title="Environment variables reference">
 
-| Variable                           | Description        |
-| ---------------------------------- | ------------------ |
+| Variable                       | Description        |
+| ------------------------------ | ------------------ |
 | `MARV_INSTALL_METHOD=git\|npm` | Install method     |
 | `MARV_GIT_DIR=<path>`          | Checkout directory |
 | `MARV_NO_ONBOARD=1`            | Skip onboarding    |

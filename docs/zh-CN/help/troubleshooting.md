@@ -69,8 +69,8 @@ curl -fsSL https://marv.ai/install.sh | bash -s -- --beta --verbose
 
 ### `` 显示 SSL 错误（Comcast/Xfinity）
 
-一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 阻止 ``。
-禁用 Advanced Security 或将 `` 添加到允许列表，然后重试。
+一些 Comcast/Xfinity 连接通过 Xfinity Advanced Security 阻止 `。
+禁用 Advanced Security 或将 ` 添加到允许列表，然后重试。
 
 - Xfinity Advanced Security 帮助：https://www.xfinity.com/support/articles/using-xfinity-xfi-advanced-security
 - 快速检查：尝试移动热点或 VPN 以确认这是 ISP 级别的过滤

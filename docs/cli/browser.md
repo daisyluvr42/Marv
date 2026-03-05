@@ -56,7 +56,7 @@ marv browser --browser-profile work tabs
 
 ```bash
 marv browser tabs
-marv browser open 
+marv browser open
 marv browser focus <targetId>
 marv browser close <targetId>
 ```

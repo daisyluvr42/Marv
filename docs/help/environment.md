@@ -76,10 +76,10 @@ See [Configuration: Env var substitution](/gateway/configuration#env-var-substit
 
 ## Path-related env vars
 
-| Variable               | Purpose                                                                                                                                                                      |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable           | Purpose                                                                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `MARV_HOME`        | Override the home directory used for all internal path resolution (`~/.marv/`, agent dirs, sessions, credentials). Useful when running Marv as a dedicated service user. |
-| `MARV_STATE_DIR`   | Override the state directory (default `~/.marv`).                                                                                                                            |
+| `MARV_STATE_DIR`   | Override the state directory (default `~/.marv`).                                                                                                                        |
 | `MARV_CONFIG_PATH` | Override the config file path (default `~/.marv/marv.json`).                                                                                                             |
 
 ### `MARV_HOME`

@@ -20,7 +20,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [It is stuck on "wake up my friend" / onboarding will not hatch. What now?](#it-is-stuck-on-wake-up-my-friend-onboarding-will-not-hatch-what-now)
   - [Can I migrate my setup to a new machine (Mac mini) without redoing onboarding?](#can-i-migrate-my-setup-to-a-new-machine-mac-mini-without-redoing-onboarding)
   - [Where do I see what is new in the latest version?](#where-do-i-see-what-is-new-in-the-latest-version)
-  - [I can't access  (SSL error). What now?](#i-cant-access-docsmarvai-ssl-error-what-now)
+  - [I can't access (SSL error). What now?](#i-cant-access-docsmarvai-ssl-error-what-now)
   - [What's the difference between stable and beta?](#whats-the-difference-between-stable-and-beta)
   - [How do I install the beta version, and what's the difference between beta and dev?](#how-do-i-install-the-beta-version-and-whats-the-difference-between-beta-and-dev)
   - [How do I try the latest bits?](#how-do-i-try-the-latest-bits)
@@ -440,10 +440,10 @@ Newest entries are at the top. If the top section is marked **Unreleased**, the 
 section is the latest shipped version. Entries are grouped by **Highlights**, **Changes**, and
 **Fixes** (plus docs/other sections when needed).
 
-### I cant access  SSL error What now
+### I cant access SSL error What now
 
-Some Comcast/Xfinity connections incorrectly block `` via Xfinity
-Advanced Security. Disable it or allowlist ``, then retry. More
+Some Comcast/Xfinity connections incorrectly block `via Xfinity
+Advanced Security. Disable it or allowlist`, then retry. More
 detail: [Troubleshooting](/help/troubleshooting#docsmarvai-shows-an-ssl-error-comcastxfinity).
 Please help us unblock it by reporting here: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
@@ -1267,8 +1267,8 @@ Related: [Agent workspace](/concepts/agent-workspace), [Memory](/concepts/memory
 
 Everything lives under `$MARV_STATE_DIR` (default: `~/.marv`):
 
-| Path                                                            | Purpose                                                      |
-| --------------------------------------------------------------- | ------------------------------------------------------------ |
+| Path                                                        | Purpose                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------ |
 | `$MARV_STATE_DIR/marv.json`                                 | Main config (JSON5)                                          |
 | `$MARV_STATE_DIR/credentials/oauth.json`                    | Legacy OAuth import (copied into auth profiles on first use) |
 | `$MARV_STATE_DIR/agents/<agentId>/agent/auth-profiles.json` | Auth profiles (OAuth + API keys)                             |
