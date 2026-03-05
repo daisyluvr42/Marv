@@ -1121,6 +1121,7 @@
                       "gateway/configuration-examples",
                       "gateway/authentication",
                       "gateway/trusted-proxy-auth",
+                      "gateway/proxy",
                       "gateway/health",
                       "gateway/heartbeat",
                       "gateway/doctor",

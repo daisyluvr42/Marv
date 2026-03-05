@@ -46,6 +46,10 @@ Local trust:
 - [Node runbook: iOS](/platforms/ios)
 - [Node runbook: Android](/platforms/android)
 
+## Outbound proxies
+
+- [Proxy configuration](/gateway/proxy)
+
 ## Security
 
 - [Security overview](/gateway/security)

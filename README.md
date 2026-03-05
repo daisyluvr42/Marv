@@ -197,6 +197,18 @@ pnpm marv health
 pnpm marv doctor
 ```
 
+## 网络代理配置
+
+Marv 支持按通道独立配置出站代理（HTTP/HTTPS/SOCKS5），每个通道和账号可以走不同代理。
+详见 [Proxy Configuration](/gateway/proxy)。
+
+快速示例：
+
+```bash
+marv config set channels.telegram.proxy "http://127.0.0.1:7890"
+marv config set channels.discord.proxy "socks5://127.0.0.1:1080"
+```
+
 ## 开发工作流
 
 ### 常用脚本
