@@ -480,9 +480,7 @@ export default function register(api: MarvPluginApi) {
             if (send) {
               await send(
                 target,
-                ["Scan this QR code with the Marv iOS app:", "", "```", qrAscii, "```"].join(
-                  "\n",
-                ),
+                ["Scan this QR code with the Marv iOS app:", "", "```", qrAscii, "```"].join("\n"),
                 {
                   ...(ctx.messageThreadId != null ? { messageThreadId: ctx.messageThreadId } : {}),
                   ...(ctx.accountId ? { accountId: ctx.accountId } : {}),

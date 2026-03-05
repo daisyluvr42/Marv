@@ -196,19 +196,13 @@ describe("diagnostics-otel service", () => {
     });
 
     expect(telemetryState.counters.get("marv.webhook.received")?.add).toHaveBeenCalled();
-    expect(
-      telemetryState.histograms.get("marv.webhook.duration_ms")?.record,
-    ).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("marv.webhook.duration_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.counters.get("marv.message.queued")?.add).toHaveBeenCalled();
     expect(telemetryState.counters.get("marv.message.processed")?.add).toHaveBeenCalled();
-    expect(
-      telemetryState.histograms.get("marv.message.duration_ms")?.record,
-    ).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("marv.message.duration_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.histograms.get("marv.queue.wait_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.counters.get("marv.session.stuck")?.add).toHaveBeenCalled();
-    expect(
-      telemetryState.histograms.get("marv.session.stuck_age_ms")?.record,
-    ).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("marv.session.stuck_age_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.counters.get("marv.run.attempt")?.add).toHaveBeenCalled();
 
     const spanNames = telemetryState.tracer.startSpan.mock.calls.map((call) => call[0]);

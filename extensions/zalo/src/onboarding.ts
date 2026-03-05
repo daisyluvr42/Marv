@@ -17,10 +17,7 @@ const channel = "zalo" as const;
 
 type UpdateMode = "polling" | "webhook";
 
-function setZaloDmPolicy(
-  cfg: MarvConfig,
-  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
-) {
+function setZaloDmPolicy(cfg: MarvConfig, dmPolicy: "pairing" | "allowlist" | "open" | "disabled") {
   const allowFrom =
     dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalo?.allowFrom) : undefined;
   return {

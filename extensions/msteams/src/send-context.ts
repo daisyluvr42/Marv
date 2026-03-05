@@ -1,8 +1,4 @@
-import {
-  resolveChannelMediaMaxBytes,
-  type MarvConfig,
-  type PluginRuntime,
-} from "marv/plugin-sdk";
+import { resolveChannelMediaMaxBytes, type MarvConfig, type PluginRuntime } from "marv/plugin-sdk";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import type {
