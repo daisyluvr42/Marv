@@ -5,13 +5,7 @@ import { applyCliProfileEnv, parseCliProfileArgs } from "./profile.js";
 
 describe("parseCliProfileArgs", () => {
   it("leaves gateway --dev for subcommands", () => {
-    const res = parseCliProfileArgs([
-      "node",
-      "marv",
-      "gateway",
-      "--dev",
-      "--allow-unconfigured",
-    ]);
+    const res = parseCliProfileArgs(["node", "marv", "gateway", "--dev", "--allow-unconfigured"]);
     if (!res.ok) {
       throw new Error(res.error);
     }
@@ -96,9 +90,7 @@ describe("applyCliProfileEnv", () => {
 
     const resolvedHome = path.resolve("/srv/marv-home");
     expect(env.MARV_STATE_DIR).toBe(path.join(resolvedHome, ".marv-work"));
-    expect(env.MARV_CONFIG_PATH).toBe(
-      path.join(resolvedHome, ".marv-work", "marv.json"),
-    );
+    expect(env.MARV_CONFIG_PATH).toBe(path.join(resolvedHome, ".marv-work", "marv.json"));
   });
 });
 
@@ -126,9 +118,9 @@ describe("formatCliCommand", () => {
   });
 
   it("returns command unchanged when --profile is already present", () => {
-    expect(
-      formatCliCommand("marv --profile work doctor --fix", { MARV_PROFILE: "work" }),
-    ).toBe("marv --profile work doctor --fix");
+    expect(formatCliCommand("marv --profile work doctor --fix", { MARV_PROFILE: "work" })).toBe(
+      "marv --profile work doctor --fix",
+    );
   });
 
   it("returns command unchanged when --dev is already present", () => {
@@ -150,9 +142,7 @@ describe("formatCliCommand", () => {
   });
 
   it("handles command with no args after marv", () => {
-    expect(formatCliCommand("marv", { MARV_PROFILE: "test" })).toBe(
-      "marv --profile test",
-    );
+    expect(formatCliCommand("marv", { MARV_PROFILE: "test" })).toBe("marv --profile test");
   });
 
   it("handles pnpm wrapper", () => {

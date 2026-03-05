@@ -15,9 +15,16 @@ import {
   type SessionEntry,
   updateSessionStore,
 } from "../../core/config/sessions.js";
+import type { PrivacyCategory } from "../../core/config/types.autonomy.js";
 import { logVerbose } from "../../globals.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
+import {
+  buildPrivacyContext,
+  requiresPrivacyGuard,
+  type PrivacyContext,
+} from "../../security/privacy-guard.js";
+import { buildPrivacyPromptDirective, filterOutput } from "../../security/privacy-output-filter.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { hasControlCommand } from "../command-detection.js";
 import { buildInboundMediaNote } from "../media-note.js";
@@ -50,6 +57,63 @@ import { appendUntrustedContext } from "./untrusted-context.js";
 
 type AgentDefaults = NonNullable<MarvConfig["agents"]>["defaults"];
 type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
+
+function resolvePrivacyChannelType(chatType: string | undefined): PrivacyContext["channelType"] {
+  const normalized = chatType?.trim().toLowerCase();
+  if (normalized === "direct" || normalized === "dm") {
+    return "dm";
+  }
+  if (normalized === "group") {
+    return "group";
+  }
+  if (normalized === "channel") {
+    return "public";
+  }
+  if (normalized === "thread") {
+    return "thread";
+  }
+  return "unknown";
+}
+
+function parseRecipientCount(raw?: string): number | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const parts = trimmed
+    .split(/[,;\n]/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts.length : undefined;
+}
+
+function applyPrivacyFilter(
+  payload: ReplyPayload | ReplyPayload[] | undefined,
+  ctx: PrivacyContext,
+  categories?: PrivacyCategory[],
+): ReplyPayload | ReplyPayload[] | undefined {
+  if (!payload) {
+    return payload;
+  }
+  const filterOne = (item: ReplyPayload): ReplyPayload => {
+    const text = item.text;
+    if (typeof text !== "string" || !text.trim()) {
+      return item;
+    }
+    const result = filterOutput(text, ctx, categories);
+    if (result.safe) {
+      return item;
+    }
+    if (result.warning) {
+      logVerbose(result.warning);
+    }
+    return {
+      ...item,
+      text: result.filtered,
+    };
+  };
+  return Array.isArray(payload) ? payload.map(filterOne) : filterOne(payload);
+}
 
 type RunPreparedReplyParams = {
   ctx: MsgContext;
@@ -187,7 +251,29 @@ export async function runPreparedReply(
   const inboundMetaPrompt = buildInboundMetaSystemPrompt(
     isNewSession ? sessionCtx : { ...sessionCtx, ThreadStarterBody: undefined },
   );
-  const extraSystemPrompt = [inboundMetaPrompt, groupChatContext, groupIntro, groupSystemPrompt]
+  const privacyChannelType = resolvePrivacyChannelType(sessionCtx.ChatType ?? ctx.ChatType);
+  const recipientCount =
+    parseRecipientCount(sessionCtx.GroupMembers ?? ctx.GroupMembers) ??
+    (privacyChannelType === "group" || privacyChannelType === "public" ? 2 : 1);
+  const privacyContext = buildPrivacyContext({
+    senderIsOwner: command.senderIsOwner,
+    channelType: privacyChannelType,
+    recipientCount,
+    isMultiUserDm: privacyChannelType === "dm" && recipientCount > 1,
+  });
+  const privacyEnabled = cfg.autonomy?.privacy?.enabled !== false;
+  const privacyScanEnabled = cfg.autonomy?.privacy?.outputScan !== false;
+  const privacyGuardActive = privacyEnabled && requiresPrivacyGuard(privacyContext);
+  const privacyPromptDirective = privacyGuardActive
+    ? buildPrivacyPromptDirective(privacyContext)
+    : "";
+  const extraSystemPrompt = [
+    inboundMetaPrompt,
+    groupChatContext,
+    groupIntro,
+    groupSystemPrompt,
+    privacyPromptDirective,
+  ]
     .filter(Boolean)
     .join("\n\n");
   const baseBody = sessionCtx.BodyStripped ?? sessionCtx.Body ?? "";
@@ -435,7 +521,7 @@ export async function runPreparedReply(
     },
   };
 
-  return runReplyAgent({
+  const reply = await runReplyAgent({
     commandBody: prefixedCommandBody,
     followupRun,
     queueKey,
@@ -461,4 +547,8 @@ export async function runPreparedReply(
     shouldInjectGroupIntro,
     typingMode,
   });
+  if (!privacyGuardActive || !privacyScanEnabled) {
+    return reply;
+  }
+  return applyPrivacyFilter(reply, privacyContext, cfg.autonomy?.privacy?.categories);
 }

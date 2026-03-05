@@ -169,6 +169,50 @@ describe("runPreparedReply media-only handling", () => {
     expect(call?.followupRun.prompt).toContain("[User sent media without caption]");
   });
 
+  it("injects privacy guard directive into extra system prompt when context requires protection", async () => {
+    await runPreparedReply(baseParams());
+
+    const call = vi.mocked(runReplyAgent).mock.calls[0]?.[0];
+    expect(call?.followupRun.run.extraSystemPrompt).toContain("PRIVACY GUARD ACTIVE");
+  });
+
+  it("redacts sensitive output before returning replies", async () => {
+    vi.mocked(runReplyAgent).mockResolvedValueOnce({
+      text: "my secret key is sk-abc123def456ghi789jkl012mno345",
+    });
+
+    const result = await runPreparedReply(baseParams());
+
+    expect(result).toEqual({
+      text: "my secret key is [REDACTED:api_keys]",
+    });
+  });
+
+  it("skips output redaction when privacy output scanning is disabled", async () => {
+    vi.mocked(runReplyAgent).mockResolvedValueOnce({
+      text: "my secret key is sk-abc123def456ghi789jkl012mno345",
+    });
+
+    const result = await runPreparedReply(
+      baseParams({
+        cfg: {
+          session: {},
+          channels: {},
+          agents: { defaults: {} },
+          autonomy: {
+            privacy: {
+              outputScan: false,
+            },
+          },
+        },
+      }),
+    );
+
+    expect(result).toEqual({
+      text: "my secret key is sk-abc123def456ghi789jkl012mno345",
+    });
+  });
+
   it("returns the empty-body reply when there is no text and no media", async () => {
     const result = await runPreparedReply(
       baseParams({

@@ -417,27 +417,22 @@ describe("onboard (non-interactive): provider auth", () => {
   }, 60_000);
 
   it("infers custom provider auth choice from custom flags", async () => {
-    await withOnboardEnv(
-      "marv-onboard-custom-provider-infer-",
-      async ({ configPath, runtime }) => {
-        await runNonInteractiveOnboardingWithDefaults(runtime, {
-          customBaseUrl: "https://models.custom.local/v1",
-          customModelId: "local-large",
-          customApiKey: "custom-test-key",
-          skipSkills: true,
-        });
+    await withOnboardEnv("marv-onboard-custom-provider-infer-", async ({ configPath, runtime }) => {
+      await runNonInteractiveOnboardingWithDefaults(runtime, {
+        customBaseUrl: "https://models.custom.local/v1",
+        customModelId: "local-large",
+        customApiKey: "custom-test-key",
+        skipSkills: true,
+      });
 
-        const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
+      const cfg = await readJsonFile<ProviderAuthConfigSnapshot>(configPath);
 
-        expect(cfg.models?.providers?.["custom-models-custom-local"]?.baseUrl).toBe(
-          "https://models.custom.local/v1",
-        );
-        expect(cfg.models?.providers?.["custom-models-custom-local"]?.api).toBe(
-          "openai-completions",
-        );
-        expect(cfg.agents?.defaults?.model?.primary).toBe("custom-models-custom-local/local-large");
-      },
-    );
+      expect(cfg.models?.providers?.["custom-models-custom-local"]?.baseUrl).toBe(
+        "https://models.custom.local/v1",
+      );
+      expect(cfg.models?.providers?.["custom-models-custom-local"]?.api).toBe("openai-completions");
+      expect(cfg.agents?.defaults?.model?.primary).toBe("custom-models-custom-local/local-large");
+    });
   }, 60_000);
 
   it("uses CUSTOM_API_KEY env fallback for non-interactive custom provider auth", async () => {
@@ -471,20 +466,17 @@ describe("onboard (non-interactive): provider auth", () => {
   }, 60_000);
 
   it("fails custom provider auth when compatibility is invalid", async () => {
-    await withOnboardEnv(
-      "marv-onboard-custom-provider-invalid-compat-",
-      async ({ runtime }) => {
-        await expect(
-          runNonInteractiveOnboardingWithDefaults(runtime, {
-            authChoice: "custom-api-key",
-            customBaseUrl: "https://models.custom.local/v1",
-            customModelId: "local-large",
-            customCompatibility: "xmlrpc",
-            skipSkills: true,
-          }),
-        ).rejects.toThrow('Invalid --custom-compatibility (use "openai" or "anthropic").');
-      },
-    );
+    await withOnboardEnv("marv-onboard-custom-provider-invalid-compat-", async ({ runtime }) => {
+      await expect(
+        runNonInteractiveOnboardingWithDefaults(runtime, {
+          authChoice: "custom-api-key",
+          customBaseUrl: "https://models.custom.local/v1",
+          customModelId: "local-large",
+          customCompatibility: "xmlrpc",
+          skipSkills: true,
+        }),
+      ).rejects.toThrow('Invalid --custom-compatibility (use "openai" or "anthropic").');
+    });
   }, 60_000);
 
   it("fails custom provider auth when explicit provider id is invalid", async () => {
@@ -504,16 +496,13 @@ describe("onboard (non-interactive): provider auth", () => {
   }, 60_000);
 
   it("fails inferred custom auth when required flags are incomplete", async () => {
-    await withOnboardEnv(
-      "marv-onboard-custom-provider-missing-required-",
-      async ({ runtime }) => {
-        await expect(
-          runNonInteractiveOnboardingWithDefaults(runtime, {
-            customApiKey: "custom-test-key",
-            skipSkills: true,
-          }),
-        ).rejects.toThrow('Auth choice "custom-api-key" requires a base URL and model ID.');
-      },
-    );
+    await withOnboardEnv("marv-onboard-custom-provider-missing-required-", async ({ runtime }) => {
+      await expect(
+        runNonInteractiveOnboardingWithDefaults(runtime, {
+          customApiKey: "custom-test-key",
+          skipSkills: true,
+        }),
+      ).rejects.toThrow('Auth choice "custom-api-key" requires a base URL and model ID.');
+    });
   }, 60_000);
 });

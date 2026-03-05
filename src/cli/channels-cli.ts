@@ -83,10 +83,7 @@ export function registerChannelsCli(program: Command) {
             "Add or update a channel account non-interactively.",
           ],
           ["marv channels login --channel whatsapp", "Link a WhatsApp Web account."],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
-          "/cli/channels",
-          "docs: /cli/channels",
-        )}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/channels", "docs: /cli/channels")}\n`,
     );
 
   channels

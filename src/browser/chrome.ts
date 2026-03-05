@@ -18,10 +18,7 @@ import {
   isProfileDecorated,
 } from "./chrome.profile-decoration.js";
 import type { ResolvedBrowserConfig, ResolvedBrowserProfile } from "./config.js";
-import {
-  DEFAULT_MARV_BROWSER_COLOR,
-  DEFAULT_MARV_BROWSER_PROFILE_NAME,
-} from "./constants.js";
+import { DEFAULT_MARV_BROWSER_COLOR, DEFAULT_MARV_BROWSER_PROFILE_NAME } from "./constants.js";
 
 const log = createSubsystemLogger("browser").child("chrome");
 

@@ -14,8 +14,7 @@ export function registerMaintenanceCommands(program: Command) {
     .description("Health checks + quick fixes for the gateway and channels")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/doctor", "docs: /cli/doctor")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/doctor", "docs: /cli/doctor")}\n`,
     )
     .option("--no-workspace-suggestions", "Disable workspace memory system suggestions", false)
     .option("--yes", "Accept defaults without prompting", false)

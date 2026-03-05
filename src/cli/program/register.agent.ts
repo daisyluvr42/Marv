@@ -85,8 +85,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs: /cli/agent")}`,
     .description("Manage isolated agents (workspaces + auth + routing)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "docs: /cli/agents")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "docs: /cli/agents")}\n`,
     );
 
   agents

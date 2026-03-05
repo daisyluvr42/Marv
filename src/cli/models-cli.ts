@@ -43,8 +43,7 @@ export function registerModelsCli(program: Command) {
     .option("--agent <id>", "Agent id to inspect (overrides MARV_AGENT_DIR/PI_CODING_AGENT_DIR)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/models", "docs: /cli/models")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/models", "docs: /cli/models")}\n`,
     );
 
   models

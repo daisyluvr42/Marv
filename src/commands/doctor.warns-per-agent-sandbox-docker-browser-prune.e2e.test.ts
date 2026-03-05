@@ -64,11 +64,7 @@ describe("doctor command", () => {
     const legacyPath = path.join("/Users/steipete", "marv");
     const legacyAgentsPath = path.join(legacyPath, "AGENTS.md");
     const existsSpy = vi.spyOn(fs, "existsSync").mockImplementation((value) => {
-      if (
-        value === "/Users/steipete/marv" ||
-        value === legacyPath ||
-        value === legacyAgentsPath
-      ) {
+      if (value === "/Users/steipete/marv" || value === legacyPath || value === legacyAgentsPath) {
         return true;
       }
       return realExists(value as never);
