@@ -52,6 +52,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "sessions_spawn",
     "subagents",
     "session_status",
+    "request_escalation",
+    "request_missing_tools",
     "memory_search",
     "memory_get",
     "memory_write",

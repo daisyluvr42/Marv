@@ -50,6 +50,7 @@ const SUBAGENT_TOOL_DENY_ALWAYS = [
   // Status/scheduling - main agent coordinates
   "session_status",
   "cron",
+  "request_escalation",
   // Memory - pass relevant info in spawn prompt instead
   "memory_search",
   "memory_get",
@@ -198,7 +199,11 @@ export function resolveEffectiveToolPolicy(params: {
   const agentTools = agentConfig?.tools;
   const globalTools = params.config?.tools;
 
-  const profile = agentTools?.profile ?? globalTools?.profile;
+  const profile =
+    agentTools?.profile ??
+    globalTools?.profile ??
+    params.config?.autonomy?.toolProfile ??
+    (params.config?.autonomy?.mode === "full" ? "full" : undefined);
   const providerPolicy = resolveProviderToolPolicy({
     byProvider: globalTools?.byProvider,
     modelProvider: params.modelProvider,

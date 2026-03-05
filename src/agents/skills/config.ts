@@ -75,21 +75,33 @@ export function shouldIncludeSkill(params: {
   const { entry, config, eligibility } = params;
   const skillKey = resolveSkillKey(entry.skill, entry);
   const skillConfig = resolveSkillConfig(config, skillKey);
-  const allowBundled = normalizeAllowlist(config?.skills?.allowBundled);
-  const osList = entry.metadata?.os ?? [];
-  const remotePlatforms = eligibility?.remote?.platforms ?? [];
 
+  // User-disabled skills are always excluded, regardless of autonomy mode.
   if (skillConfig?.enabled === false) {
     return false;
   }
-  if (!isBundledSkillAllowed(entry, allowBundled)) {
-    return false;
-  }
+
+  // OS filtering is always applied (a macOS skill cannot run on Linux).
+  const osList = entry.metadata?.os ?? [];
+  const remotePlatforms = eligibility?.remote?.platforms ?? [];
   if (
     osList.length > 0 &&
     !osList.includes(resolveRuntimePlatform()) &&
     !remotePlatforms.some((platform) => osList.includes(platform))
   ) {
+    return false;
+  }
+
+  // Autonomy "all" mode: skip bundled allowlist and runtime requirement checks.
+  const autonomySkills =
+    config?.autonomy?.skills ?? (config?.autonomy?.mode === "full" ? "all" : undefined);
+  if (autonomySkills === "all") {
+    return true;
+  }
+
+  // Standard filtering: bundled allowlist + runtime requirements.
+  const allowBundled = normalizeAllowlist(config?.skills?.allowBundled);
+  if (!isBundledSkillAllowed(entry, allowBundled)) {
     return false;
   }
   if (entry.metadata?.always === true) {

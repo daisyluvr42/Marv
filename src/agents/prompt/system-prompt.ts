@@ -157,6 +157,27 @@ function buildVoiceSection(params: { isMinimal: boolean; ttsHint?: string }) {
   return ["## Voice (TTS)", hint, ""];
 }
 
+function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools: Set<string> }) {
+  if (params.isMinimal) {
+    return [];
+  }
+  const lines: string[] = [];
+  if (params.availableTools.has("request_missing_tools")) {
+    lines.push(
+      "- If a required capability/tool is unavailable, call `request_missing_tools` with a concrete capability description and likely tool names.",
+    );
+  }
+  if (params.availableTools.has("request_escalation")) {
+    lines.push(
+      "- For risky operations requiring higher privileges, call `request_escalation` with requested level, reason, and scope before retrying.",
+    );
+  }
+  if (lines.length === 0) {
+    return [];
+  }
+  return ["## Autonomy Helpers", ...lines, ""];
+}
+
 function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readToolName: string }) {
   const docsPath = params.docsPath?.trim();
   if (!docsPath || params.isMinimal) {
@@ -258,6 +279,8 @@ export function buildAgentSystemPrompt(params: {
     subagents: "List, steer, or kill sub-agent runs for this requester session",
     session_status:
       "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",
+    request_escalation: "Request task-scoped elevated permissions with user approval",
+    request_missing_tools: "Discover/install skills for missing capabilities (approval required)",
     image: "Analyze an image with the configured image model",
   };
 
@@ -285,6 +308,8 @@ export function buildAgentSystemPrompt(params: {
     "sessions_send",
     "subagents",
     "session_status",
+    "request_escalation",
+    "request_missing_tools",
     "image",
   ];
 
@@ -550,6 +575,7 @@ export function buildAgentSystemPrompt(params: {
       messageToolHints: params.messageToolHints,
     }),
     ...buildVoiceSection({ isMinimal, ttsHint: params.ttsHint }),
+    ...buildAutonomyToolsSection({ isMinimal, availableTools }),
   ];
 
   if (extraSystemPrompt) {

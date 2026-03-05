@@ -33,6 +33,14 @@ export type SkillInstallResult = {
   warnings?: string[];
 };
 
+export type DiscoverySkillInstallRequest = {
+  workspaceDir: string;
+  skillId: string;
+  installId?: string;
+  timeoutMs?: number;
+  config?: MarvConfig;
+};
+
 function withWarnings(result: SkillInstallResult, warnings: string[]): SkillInstallResult {
   if (warnings.length === 0) {
     return result;
@@ -467,4 +475,42 @@ export async function installSkill(params: SkillInstallRequest): Promise<SkillIn
   }
 
   return withWarnings(await executeInstallCommand({ argv, timeoutMs, env }), warnings);
+}
+
+export async function installDiscoveredSkill(
+  params: DiscoverySkillInstallRequest,
+): Promise<SkillInstallResult> {
+  const workspaceDir = resolveUserPath(params.workspaceDir);
+  const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.config });
+  const entry = entries.find((item) => item.skill.name === params.skillId);
+  if (!entry) {
+    return {
+      ok: false,
+      message: `Discovered skill not found: ${params.skillId}`,
+      stdout: "",
+      stderr: "",
+      code: null,
+    };
+  }
+
+  const installSpecs = entry.metadata?.install ?? [];
+  if (installSpecs.length === 0) {
+    return {
+      ok: false,
+      message: `Discovered skill has no install steps: ${params.skillId}`,
+      stdout: "",
+      stderr: "",
+      code: null,
+    };
+  }
+
+  const selectedInstallId = params.installId?.trim() || resolveInstallId(installSpecs[0], 0);
+
+  return installSkill({
+    workspaceDir,
+    skillName: entry.skill.name,
+    installId: selectedInstallId,
+    timeoutMs: params.timeoutMs,
+    config: params.config,
+  });
 }

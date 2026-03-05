@@ -143,6 +143,17 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("sessions_send");
   });
 
+  it("includes autonomy helper guidance when discovery/escalation tools are available", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      toolNames: ["request_missing_tools", "request_escalation"],
+    });
+
+    expect(prompt).toContain("## Autonomy Helpers");
+    expect(prompt).toContain("request_missing_tools");
+    expect(prompt).toContain("request_escalation");
+  });
+
   it("preserves tool casing in the prompt", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/marv",

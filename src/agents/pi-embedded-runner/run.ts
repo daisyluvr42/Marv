@@ -51,6 +51,7 @@ import {
   pickFallbackThinkingLevel,
   type FailoverReason,
 } from "../runner/pi-embedded-helpers.js";
+import { getEscalationManager } from "../tools/permission-escalation.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../usage.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "../workspace-run.js";
 import { compactEmbeddedPiSessionDirect } from "./compact.js";
@@ -1274,6 +1275,13 @@ export async function runEmbeddedPiAgent(
           };
         }
       } finally {
+        if (taskRef) {
+          try {
+            getEscalationManager().revokeTaskPermissions(taskRef.taskId);
+          } catch (err) {
+            log.warn(`task permission cleanup failed: ${describeUnknownError(err)}`);
+          }
+        }
         process.chdir(prevCwd);
       }
     }),

@@ -13,6 +13,8 @@ import { createGatewayTool } from "./gateway-tool.js";
 import { createImageTool } from "./image-tool.js";
 import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
+import { createRequestEscalationTool } from "./request-escalation-tool.js";
+import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
 import { createSessionStatusTool } from "./session-status-tool.js";
 import { createSessionsHistoryTool } from "./sessions-history-tool.js";
 import { createSessionsListTool } from "./sessions-list-tool.js";
@@ -156,6 +158,15 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     createSessionStatusTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
+    }),
+    createRequestEscalationTool({
+      agentSessionKey: options?.agentSessionKey,
+      config: options?.config,
+    }),
+    createRequestMissingToolsTool({
+      workspaceDir,
+      config: options?.config,
+      agentSessionKey: options?.agentSessionKey,
     }),
     ...(webSearchTool ? [webSearchTool] : []),
     ...(webFetchTool ? [webFetchTool] : []),
