@@ -4,6 +4,7 @@ import path from "node:path";
 import { inspect } from "node:util";
 import { cancel, isCancel } from "@clack/prompts";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../agents/workspace.js";
+import { getCliBannerArtLines } from "../cli/banner-art.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { CONFIG_PATH } from "../core/config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../core/config/sessions.js";
@@ -98,15 +99,7 @@ export function validateGatewayPasswordInput(value: unknown): string | undefined
 }
 
 export function printWizardHeader(runtime: RuntimeEnv) {
-  const header = [
-    "▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
-    "██░▄▄▄░██░▄▄░██░▄▄▄██░▀██░██░▄▄▀██░████░▄▄▀██░███░██",
-    "██░███░██░▀▀░██░▄▄▄██░█░█░██░█████░████░▀▀░██░█░█░██",
-    "██░▀▀▀░██░█████░▀▀▀██░██▄░██░▀▀▄██░▀▀░█░██░██▄▀▄▀▄██",
-    "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
-    "                    🤖 MARV 🤖                      ",
-    " ",
-  ].join("\n");
+  const header = getCliBannerArtLines().join("\n");
   runtime.log(header);
 }
 

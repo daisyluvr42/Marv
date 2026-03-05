@@ -1,6 +1,7 @@
 import { resolveCommitHash } from "../infra/git-commit.js";
 import { visibleWidth } from "../terminal/ansi.js";
 import { isRich, theme } from "../terminal/theme.js";
+import { getCliBannerArtLines } from "./banner-art.js";
 import { pickTagline, type TaglineOptions } from "./tagline.js";
 
 type BannerOptions = TaglineOptions & {
@@ -64,20 +65,11 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
   return `${line1}\n${line2}`;
 }
 
-const LOBSTER_ASCII = [
-  "▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
-  "██░▄▄▄░██░▄▄░██░▄▄▄██░▀██░██░▄▄▀██░████░▄▄▀██░███░██",
-  "██░███░██░▀▀░██░▄▄▄██░█░█░██░█████░████░▀▀░██░█░█░██",
-  "██░▀▀▀░██░█████░▀▀▀██░██▄░██░▀▀▄██░▀▀░█░██░██▄▀▄▀▄██",
-  "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
-  "                  🤖 MARV 🤖                    ",
-  " ",
-];
-
 export function formatCliBannerArt(options: BannerOptions = {}): string {
   const rich = options.richTty ?? isRich();
+  const bannerLines = getCliBannerArtLines();
   if (!rich) {
-    return LOBSTER_ASCII.join("\n");
+    return bannerLines.join("\n");
   }
 
   const colorChar = (ch: string) => {
@@ -87,18 +79,18 @@ export function formatCliBannerArt(options: BannerOptions = {}): string {
     if (ch === "░") {
       return theme.accentDim(ch);
     }
-    if (ch === "▀") {
+    if (ch === "▀" || ch === "▄") {
       return theme.accent(ch);
     }
     return theme.muted(ch);
   };
 
-  const colored = LOBSTER_ASCII.map((line) => {
-    if (line.includes("MARV")) {
+  const colored = bannerLines.map((line) => {
+    if (line.includes("M.A.R.V")) {
       return (
         theme.muted("              ") +
         theme.accent("🤖") +
-        theme.info(" MARV ") +
+        theme.info(" M.A.R.V ") +
         theme.accent("🤖")
       );
     }
