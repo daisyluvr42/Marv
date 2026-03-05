@@ -96,3 +96,6 @@ apps/ios/LocalSigning.xcconfig
 
 # External sources
 external source/
+external_source/LobsterAI-main/SKILLs/pptx/scripts/html2pptx.js
+external_source/LobsterAI-main/sandbox/agent-runner/index.js
+external_source/LobsterAI-main/src/main/im/dingtalkMedia.ts
