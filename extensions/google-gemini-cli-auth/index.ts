@@ -3,7 +3,7 @@ import {
   emptyPluginConfigSchema,
   type MarvPluginApi,
   type ProviderAuthContext,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { loginGeminiCliOAuth } from "./oauth.js";
 
 const PROVIDER_ID = "google-gemini-cli";

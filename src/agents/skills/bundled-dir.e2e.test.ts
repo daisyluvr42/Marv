@@ -29,7 +29,7 @@ describe("resolveBundledSkillsDir", () => {
     delete process.env.MARV_BUNDLED_SKILLS_DIR;
 
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "marv-bundled-"));
-    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ name: "marv" }));
+    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ name: "agentmarv" }));
 
     await writeSkill(path.join(root, "skills", "peekaboo"), "peekaboo");
 

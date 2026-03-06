@@ -1,4 +1,4 @@
-import type { MarvConfig, DmPolicy } from "marv/plugin-sdk";
+import type { MarvConfig, DmPolicy } from "agentmarv/plugin-sdk";
 import {
   addWildcardAllowFrom,
   formatDocsLink,
@@ -10,7 +10,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   migrateBaseNameToDefaultAccount,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listGoogleChatAccountIds,
   resolveDefaultGoogleChatAccountId,

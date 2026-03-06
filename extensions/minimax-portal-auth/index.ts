@@ -3,7 +3,7 @@ import {
   type MarvPluginApi,
   type ProviderAuthContext,
   type ProviderAuthResult,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { loginMiniMaxPortalOAuth, type MiniMaxRegion } from "./oauth.js";
 
 const PROVIDER_ID = "minimax-portal";

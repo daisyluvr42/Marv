@@ -2,7 +2,7 @@
 
 Docs: https://marv.ai
 
-## 2026.2.18 (Unreleased)
+## 2026.3.6 (Unreleased)
 
 ### Changes
 

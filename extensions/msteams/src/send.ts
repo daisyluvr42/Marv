@@ -1,5 +1,5 @@
-import type { MarvConfig } from "marv/plugin-sdk";
-import { loadWebMedia, resolveChannelMediaMaxBytes } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
+import { loadWebMedia, resolveChannelMediaMaxBytes } from "agentmarv/plugin-sdk";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import {
   classifyMSTeamsSendError,

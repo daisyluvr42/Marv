@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { MarvConfig } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
 import {
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
@@ -10,7 +10,7 @@ import {
   resolveWebhookTargets,
   requestBodyErrorToText,
   resolveMentionGatingWithBypass,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { type ResolvedGoogleChatAccount } from "./accounts.js";
 import {
   downloadGoogleChatMedia,

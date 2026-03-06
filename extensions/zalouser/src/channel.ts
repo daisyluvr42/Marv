@@ -6,7 +6,7 @@ import type {
   ChannelPlugin,
   MarvConfig,
   GroupToolPolicyConfig,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -19,7 +19,7 @@ import {
   normalizeAccountId,
   resolveChannelAccountConfigBasePath,
   setAccountEnabledInConfigSection,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

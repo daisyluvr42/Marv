@@ -1,5 +1,5 @@
-import type { ChannelOnboardingAdapter, MarvConfig, WizardPrompter } from "marv/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "marv/plugin-sdk/account-id";
+import type { ChannelOnboardingAdapter, MarvConfig, WizardPrompter } from "agentmarv/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "agentmarv/plugin-sdk/account-id";
 import {
   listMattermostAccountIds,
   resolveDefaultMattermostAccountId,

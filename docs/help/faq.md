@@ -863,7 +863,7 @@ marv gateway restart
 From git → npm:
 
 ```bash
-npm install -g marv@latest
+npm install -g agentmarv@latest
 marv doctor
 marv gateway restart
 ```

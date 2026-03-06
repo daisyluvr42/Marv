@@ -1,4 +1,4 @@
-import type { ChannelMessageActionName, ChannelPlugin, MarvConfig } from "marv/plugin-sdk";
+import type { ChannelMessageActionName, ChannelPlugin, MarvConfig } from "agentmarv/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,
   buildChannelConfigSchema,
@@ -6,7 +6,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   MSTeamsConfigSchema,
   PAIRING_APPROVED_MESSAGE,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { listMSTeamsDirectoryGroupsLive, listMSTeamsDirectoryPeersLive } from "./directory-live.js";
 import { msteamsOnboardingAdapter } from "./onboarding.js";
 import { msteamsOutbound } from "./outbound.js";

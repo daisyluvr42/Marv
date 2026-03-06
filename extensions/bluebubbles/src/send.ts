@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type { MarvConfig } from "marv/plugin-sdk";
-import { stripMarkdown } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
+import { stripMarkdown } from "agentmarv/plugin-sdk";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 import { getCachedBlueBubblesPrivateApiStatus } from "./probe.js";
 import { extractBlueBubblesMessageId, resolveBlueBubblesSendTarget } from "./send-helpers.js";

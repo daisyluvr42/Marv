@@ -52,7 +52,7 @@ The macOS app expects a global `marv` CLI install to manage background tasks.
 Alternatively, install it manually:
 
 ```bash
-npm install -g marv@<version>
+npm install -g agentmarv@<version>
 ```
 
 ## Troubleshooting

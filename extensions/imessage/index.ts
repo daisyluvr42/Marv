@@ -1,5 +1,5 @@
-import type { MarvPluginApi } from "marv/plugin-sdk";
-import { emptyPluginConfigSchema } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
+import { emptyPluginConfigSchema } from "agentmarv/plugin-sdk";
 import { imessagePlugin } from "./src/channel.js";
 import { setIMessageRuntime } from "./src/runtime.js";
 

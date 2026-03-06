@@ -9,8 +9,8 @@ import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import type { DiagnosticEventPayload, MarvPluginService } from "marv/plugin-sdk";
-import { onDiagnosticEvent, registerLogTransport } from "marv/plugin-sdk";
+import type { DiagnosticEventPayload, MarvPluginService } from "agentmarv/plugin-sdk";
+import { onDiagnosticEvent, registerLogTransport } from "agentmarv/plugin-sdk";
 
 const DEFAULT_SERVICE_NAME = "marv";
 

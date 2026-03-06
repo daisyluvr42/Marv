@@ -310,7 +310,7 @@ export async function fetchNpmTagVersion(params: {
 }): Promise<NpmTagStatus> {
   const timeoutMs = params?.timeoutMs ?? 3500;
   const tag = params.tag;
-  const packageNames = ["marv", "marv"];
+  const packageNames = ["agentmarv"];
   try {
     let lastError: string | null = null;
     for (const pkg of packageNames) {

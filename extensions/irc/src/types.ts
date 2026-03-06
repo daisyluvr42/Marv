@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "marv/plugin-sdk";
+import type { BaseProbeResult } from "agentmarv/plugin-sdk";
 import type {
   BlockStreamingCoalesceConfig,
   DmConfig,
@@ -8,7 +8,7 @@ import type {
   GroupToolPolicyConfig,
   MarkdownConfig,
   MarvConfig,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 
 export type IrcChannelConfig = {
   requireMention?: boolean;

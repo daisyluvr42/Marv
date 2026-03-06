@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { IncomingMessage } from "node:http";
-import type { MarvConfig, PluginRuntime } from "marv/plugin-sdk";
+import type { MarvConfig, PluginRuntime } from "agentmarv/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { createMockServerResponse } from "../../../src/test-utils/mock-http-response.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";

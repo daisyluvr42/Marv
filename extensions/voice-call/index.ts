@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { GatewayRequestHandlerOptions, MarvPluginApi } from "marv/plugin-sdk";
+import type { GatewayRequestHandlerOptions, MarvPluginApi } from "agentmarv/plugin-sdk";
 import { registerVoiceCallCli } from "./src/cli.js";
 import {
   VoiceCallConfigSchema,

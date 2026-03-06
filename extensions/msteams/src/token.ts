@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "marv/plugin-sdk";
+import type { MSTeamsConfig } from "agentmarv/plugin-sdk";
 
 export type MSTeamsCredentials = {
   appId: string;

@@ -24,7 +24,7 @@ afterEach(() => {
 describe("resolveGatewayProgramArguments", () => {
   it("uses realpath-resolved dist entry when running via npx shim", async () => {
     const argv1 = path.resolve("/tmp/.npm/_npx/63c3/node_modules/.bin/marv");
-    const entryPath = path.resolve("/tmp/.npm/_npx/63c3/node_modules/marv/dist/entry.js");
+    const entryPath = path.resolve("/tmp/.npm/_npx/63c3/node_modules/agentmarv/dist/entry.js");
     process.argv = ["node", argv1];
     fsMocks.realpath.mockResolvedValue(entryPath);
     fsMocks.access.mockImplementation(async (target: string) => {
@@ -46,13 +46,13 @@ describe("resolveGatewayProgramArguments", () => {
   });
 
   it("prefers symlinked path over realpath for stable service config", async () => {
-    // Simulates pnpm global install where node_modules/marv is a symlink
-    // to .pnpm/marv@X.Y.Z/node_modules/marv
+    // Simulates pnpm global install where node_modules/agentmarv is a symlink
+    // to .pnpm/agentmarv@X.Y.Z/node_modules/agentmarv
     const symlinkPath = path.resolve(
-      "/Users/test/Library/pnpm/global/5/node_modules/marv/dist/entry.js",
+      "/Users/test/Library/pnpm/global/5/node_modules/agentmarv/dist/entry.js",
     );
     const realpathResolved = path.resolve(
-      "/Users/test/Library/pnpm/global/5/node_modules/.pnpm/marv@2026.1.21-2/node_modules/marv/dist/entry.js",
+      "/Users/test/Library/pnpm/global/5/node_modules/.pnpm/agentmarv@2026.1.21-2/node_modules/agentmarv/dist/entry.js",
     );
     process.argv = ["node", symlinkPath];
     fsMocks.realpath.mockResolvedValue(realpathResolved);
@@ -67,7 +67,7 @@ describe("resolveGatewayProgramArguments", () => {
 
   it("falls back to node_modules package dist when .bin path is not resolved", async () => {
     const argv1 = path.resolve("/tmp/.npm/_npx/63c3/node_modules/.bin/marv");
-    const indexPath = path.resolve("/tmp/.npm/_npx/63c3/node_modules/marv/dist/index.js");
+    const indexPath = path.resolve("/tmp/.npm/_npx/63c3/node_modules/agentmarv/dist/index.js");
     process.argv = ["node", argv1];
     fsMocks.realpath.mockRejectedValue(new Error("no realpath"));
     fsMocks.access.mockImplementation(async (target: string) => {

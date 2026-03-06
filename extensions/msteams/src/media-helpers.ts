@@ -8,7 +8,7 @@ import {
   extensionForMime,
   extractOriginalFilename,
   getFileExtension,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 
 /**
  * Detect MIME type from URL extension or data URL.

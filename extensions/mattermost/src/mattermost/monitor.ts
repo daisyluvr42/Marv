@@ -4,7 +4,7 @@ import type {
   MarvConfig,
   ReplyPayload,
   RuntimeEnv,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   buildAgentMediaPayload,
   createReplyPrefixOptions,
@@ -18,7 +18,7 @@ import {
   resolveControlCommandGate,
   resolveChannelMediaMaxBytes,
   type HistoryEntry,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {

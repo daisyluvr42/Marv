@@ -3,14 +3,14 @@ import type {
   ChannelOnboardingDmPolicy,
   MarvConfig,
   WizardPrompter,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
   mergeAllowFromEntries,
   normalizeAccountId,
   promptAccountId,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { listZaloAccountIds, resolveDefaultZaloAccountId, resolveZaloAccount } from "./accounts.js";
 
 const channel = "zalo" as const;

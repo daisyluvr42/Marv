@@ -1,4 +1,4 @@
-import type { ClawdbotConfig } from "marv/plugin-sdk";
+import type { ClawdbotConfig } from "agentmarv/plugin-sdk";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 

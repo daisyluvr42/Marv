@@ -4,7 +4,7 @@ import {
   parseChatTargetPrefixesOrThrow,
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedTarget,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 
 export type BlueBubblesService = "imessage" | "sms" | "auto";
 

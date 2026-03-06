@@ -6,7 +6,7 @@ import {
   isWSL2Sync,
   type MarvPluginApi,
   type ProviderAuthContext,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 
 // OAuth constants - decoded from pi-ai's base64 encoded values to stay in sync
 const decode = (s: string) => Buffer.from(s, "base64").toString();

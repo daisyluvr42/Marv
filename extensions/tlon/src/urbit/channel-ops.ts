@@ -1,4 +1,4 @@
-import type { LookupFn, SsrFPolicy } from "marv/plugin-sdk";
+import type { LookupFn, SsrFPolicy } from "agentmarv/plugin-sdk";
 import { UrbitHttpError } from "./errors.js";
 import { urbitFetch } from "./fetch.js";
 

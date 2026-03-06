@@ -1,4 +1,4 @@
-import type { ChannelGroupContext } from "marv/plugin-sdk";
+import type { ChannelGroupContext } from "agentmarv/plugin-sdk";
 import { resolveMattermostAccount } from "./mattermost/accounts.js";
 
 export function resolveMattermostGroupRequireMention(

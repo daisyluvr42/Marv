@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "marv/plugin-sdk";
+import type { MSTeamsConfig } from "agentmarv/plugin-sdk";
 import { GRAPH_ROOT } from "./attachments/shared.js";
 import { loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { resolveMSTeamsCredentials } from "./token.js";

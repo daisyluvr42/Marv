@@ -1,5 +1,5 @@
-import type { MarvConfig } from "marv/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "marv/plugin-sdk/account-id";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "agentmarv/plugin-sdk/account-id";
 import { normalizeBlueBubblesServerUrl, type BlueBubblesAccountConfig } from "./types.js";
 
 export type ResolvedBlueBubblesAccount = {

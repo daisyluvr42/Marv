@@ -1,5 +1,5 @@
-import type { MarvPluginApi } from "marv/plugin-sdk";
-import { emptyPluginConfigSchema } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
+import { emptyPluginConfigSchema } from "agentmarv/plugin-sdk";
 import { signalPlugin } from "./src/channel.js";
 import { setSignalRuntime } from "./src/runtime.js";
 

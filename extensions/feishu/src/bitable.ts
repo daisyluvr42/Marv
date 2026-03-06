@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { MarvPluginApi } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
 import { createFeishuClient } from "./client.js";
 import type { FeishuConfig } from "./types.js";
 

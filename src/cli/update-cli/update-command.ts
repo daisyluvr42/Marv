@@ -644,7 +644,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
       );
       defaultRuntime.log(
         theme.muted(
-          `Examples: \`${replaceCliName("npm i -g marv@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g marv@latest", CLI_NAME)}\``,
+          `Examples: \`${replaceCliName("npm i -g agentmarv@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g agentmarv@latest", CLI_NAME)}\``,
         ),
       );
     }

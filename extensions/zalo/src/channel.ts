@@ -3,7 +3,7 @@ import type {
   ChannelDock,
   ChannelPlugin,
   MarvConfig,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -17,7 +17,7 @@ import {
   PAIRING_APPROVED_MESSAGE,
   resolveChannelAccountConfigBasePath,
   setAccountEnabledInConfigSection,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listZaloAccountIds,
   resolveDefaultZaloAccountId,

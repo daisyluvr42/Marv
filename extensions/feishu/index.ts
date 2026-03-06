@@ -1,5 +1,5 @@
-import type { MarvPluginApi } from "marv/plugin-sdk";
-import { emptyPluginConfigSchema } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
+import { emptyPluginConfigSchema } from "agentmarv/plugin-sdk";
 import { registerFeishuBitableTools } from "./src/bitable.js";
 import { feishuPlugin } from "./src/channel.js";
 import { registerFeishuDocTools } from "./src/docx.js";

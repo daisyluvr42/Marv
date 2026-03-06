@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, ChannelStatusIssue } from "marv/plugin-sdk";
+import type { ChannelAccountSnapshot, ChannelStatusIssue } from "agentmarv/plugin-sdk";
 
 type ZalouserAccountStatus = {
   accountId?: unknown;

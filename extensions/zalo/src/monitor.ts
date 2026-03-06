@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { MarvConfig, MarkdownTableMode } from "marv/plugin-sdk";
+import type { MarvConfig, MarkdownTableMode } from "agentmarv/plugin-sdk";
 import {
   createReplyPrefixOptions,
   readJsonBodyWithLimit,
@@ -10,7 +10,7 @@ import {
   resolveWebhookPath,
   resolveWebhookTargets,
   requestBodyErrorToText,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
   ZaloApiError,

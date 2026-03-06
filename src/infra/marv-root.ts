@@ -3,7 +3,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const CORE_PACKAGE_NAMES = new Set(["marv", "marv"]);
+const CORE_PACKAGE_NAMES = new Set(["agentmarv"]);
+const PRIMARY_PACKAGE_NAME = "agentmarv";
 
 async function readPackageName(dir: string): Promise<string | null> {
   try {
@@ -75,9 +76,8 @@ function candidateDirsFromArgv1(argv1: string): string[] {
   const parts = normalized.split(path.sep);
   const binIndex = parts.lastIndexOf(".bin");
   if (binIndex > 0 && parts[binIndex - 1] === "node_modules") {
-    const binName = path.basename(normalized);
     const nodeModulesDir = parts.slice(0, binIndex).join(path.sep);
-    candidates.push(path.join(nodeModulesDir, binName));
+    candidates.push(path.join(nodeModulesDir, PRIMARY_PACKAGE_NAME));
   }
   return candidates;
 }

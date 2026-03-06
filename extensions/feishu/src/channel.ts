@@ -3,13 +3,13 @@ import type {
   ChannelPlugin,
   ChannelStatusIssue,
   ClawdbotConfig,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,
   createDefaultChannelRuntimeState,
   DEFAULT_ACCOUNT_ID,
   PAIRING_APPROVED_MESSAGE,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   resolveFeishuAccount,
   resolveFeishuCredentials,

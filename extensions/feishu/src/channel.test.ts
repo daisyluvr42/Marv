@@ -1,4 +1,4 @@
-import type { MarvConfig } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 
 const probeFeishuMock = vi.hoisted(() => vi.fn());

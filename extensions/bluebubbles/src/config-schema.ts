@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema, ToolPolicySchema } from "marv/plugin-sdk";
+import { MarkdownConfigSchema, ToolPolicySchema } from "agentmarv/plugin-sdk";
 import { z } from "zod";
 
 const allowFromEntry = z.union([z.string(), z.number()]);

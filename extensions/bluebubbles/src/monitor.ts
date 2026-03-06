@@ -1,12 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { MarvConfig } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
 import {
   registerPluginHttpRoute,
   registerWebhookTarget,
   rejectNonPostWebhookRequest,
   resolveWebhookTargets,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   normalizeWebhookMessage,
   normalizeWebhookReaction,

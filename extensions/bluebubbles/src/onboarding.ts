@@ -4,7 +4,7 @@ import type {
   MarvConfig,
   DmPolicy,
   WizardPrompter,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   addWildcardAllowFrom,
@@ -12,7 +12,7 @@ import {
   mergeAllowFromEntries,
   normalizeAccountId,
   promptAccountId,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listBlueBubblesAccountIds,
   resolveBlueBubblesAccount,

@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "marv/plugin-sdk";
+import type { PluginRuntime } from "agentmarv/plugin-sdk";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { setMatrixRuntime } from "../runtime.js";
 

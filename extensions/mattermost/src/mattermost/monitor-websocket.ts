@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, RuntimeEnv } from "marv/plugin-sdk";
+import type { ChannelAccountSnapshot, RuntimeEnv } from "agentmarv/plugin-sdk";
 import WebSocket from "ws";
 import type { MattermostPost } from "./client.js";
 import { rawDataToString } from "./monitor-helpers.js";

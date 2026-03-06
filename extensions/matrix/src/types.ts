@@ -1,4 +1,4 @@
-import type { DmPolicy, GroupPolicy } from "marv/plugin-sdk";
+import type { DmPolicy, GroupPolicy } from "agentmarv/plugin-sdk";
 export type { DmPolicy, GroupPolicy };
 
 export type ReplyToMode = "off" | "first" | "all";

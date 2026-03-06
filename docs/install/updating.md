@@ -31,7 +31,7 @@ Notes:
 
   The installer will `git pull --rebase` **only** if the repo is clean.
 
-- For **global installs**, the script uses `npm install -g marv@latest` under the hood.
+- For **global installs**, the script uses `npm install -g agentmarv@latest` under the hood.
 - Legacy note: `clawdbot` remains available as a compatibility shim.
 
 ## Before you update
@@ -48,11 +48,11 @@ Notes:
 Global install (pick one):
 
 ```bash
-npm i -g marv@latest
+npm i -g agentmarv@latest
 ```
 
 ```bash
-pnpm add -g marv@latest
+pnpm add -g agentmarv@latest
 ```
 
 We do **not** recommend Bun for the Gateway runtime (WhatsApp/Telegram bugs).
@@ -184,14 +184,14 @@ Runbook + exact service labels: [Gateway runbook](/gateway)
 Install a known-good version (replace `<version>` with the last working one):
 
 ```bash
-npm i -g marv@<version>
+npm i -g agentmarv@<version>
 ```
 
 ```bash
-pnpm add -g marv@<version>
+pnpm add -g agentmarv@<version>
 ```
 
-Tip: to see the current published version, run `npm view marv version`.
+Tip: to see the current published version, run `npm view agentmarv version`.
 
 Then restart + re-run doctor:
 

@@ -5,8 +5,8 @@
  * resolves agent routes, and handles replies.
  */
 
-import type { ReplyPayload, MarvConfig } from "marv/plugin-sdk";
-import { createReplyPrefixOptions } from "marv/plugin-sdk";
+import type { ReplyPayload, MarvConfig } from "agentmarv/plugin-sdk";
+import { createReplyPrefixOptions } from "agentmarv/plugin-sdk";
 import { checkTwitchAccessControl } from "./access-control.js";
 import { getOrCreateClientManager } from "./client-manager-registry.js";
 import { getTwitchRuntime } from "./runtime.js";

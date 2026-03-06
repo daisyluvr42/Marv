@@ -137,7 +137,7 @@ Replace `youruser` with the account you created, and the IP with your VM's IP.
 Inside the VM:
 
 ```bash
-npm install -g marv@latest
+npm install -g agentmarv@latest
 marv onboard --install-daemon
 ```
 

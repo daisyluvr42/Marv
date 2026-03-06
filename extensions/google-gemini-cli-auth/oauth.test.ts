@@ -1,7 +1,7 @@
 import { join, parse } from "node:path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("marv/plugin-sdk", () => ({
+vi.mock("agentmarv/plugin-sdk", () => ({
   isWSL2Sync: () => false,
 }));
 

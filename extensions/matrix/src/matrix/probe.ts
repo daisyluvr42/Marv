@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "marv/plugin-sdk";
+import type { BaseProbeResult } from "agentmarv/plugin-sdk";
 import { createMatrixClient, isBunRuntime } from "./client.js";
 
 export type MatrixProbe = BaseProbeResult & {

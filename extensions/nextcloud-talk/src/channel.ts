@@ -9,7 +9,7 @@ import {
   type ChannelPlugin,
   type MarvConfig,
   type ChannelSetupInput,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,

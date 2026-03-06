@@ -1,6 +1,6 @@
 import os from "node:os";
-import type { MarvPluginApi } from "marv/plugin-sdk";
-import { approveDevicePairing, listDevicePairing } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
+import { approveDevicePairing, listDevicePairing } from "agentmarv/plugin-sdk";
 import qrcode from "qrcode-terminal";
 
 function renderQrAscii(data: string): Promise<string> {

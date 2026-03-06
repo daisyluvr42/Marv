@@ -1,4 +1,4 @@
-import type { ChannelDirectoryEntry } from "marv/plugin-sdk";
+import type { ChannelDirectoryEntry } from "agentmarv/plugin-sdk";
 import {
   escapeOData,
   fetchGraphJson,

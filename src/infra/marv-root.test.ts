@@ -91,8 +91,8 @@ describe("resolveMarvPackageRoot", () => {
 
     const project = fx("bin-scenario");
     const argv1 = path.join(project, "node_modules", ".bin", "marv");
-    const pkgRoot = path.join(project, "node_modules", "marv");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "marv" }));
+    const pkgRoot = path.join(project, "node_modules", "agentmarv");
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "agentmarv" }));
 
     expect(resolveMarvPackageRootSync({ argv1 })).toBe(pkgRoot);
   });
@@ -104,7 +104,7 @@ describe("resolveMarvPackageRoot", () => {
     const bin = path.join(project, "bin", "marv");
     const realPkg = path.join(project, "real-pkg");
     state.realpaths.set(abs(bin), abs(path.join(realPkg, "marv.mjs")));
-    setFile(path.join(realPkg, "package.json"), JSON.stringify({ name: "marv" }));
+    setFile(path.join(realPkg, "package.json"), JSON.stringify({ name: "agentmarv" }));
 
     expect(resolveMarvPackageRootSync({ argv1: bin })).toBe(realPkg);
   });
@@ -113,7 +113,7 @@ describe("resolveMarvPackageRoot", () => {
     const { resolveMarvPackageRootSync } = await import("./marv-root.js");
 
     const pkgRoot = fx("moduleurl");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "marv" }));
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "agentmarv" }));
     const moduleUrl = pathToFileURL(path.join(pkgRoot, "dist", "index.js")).toString();
 
     expect(resolveMarvPackageRootSync({ moduleUrl })).toBe(pkgRoot);
@@ -132,7 +132,7 @@ describe("resolveMarvPackageRoot", () => {
     const { resolveMarvPackageRoot } = await import("./marv-root.js");
 
     const pkgRoot = fx("async");
-    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "marv" }));
+    setFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "agentmarv" }));
 
     await expect(resolveMarvPackageRoot({ cwd: pkgRoot })).resolves.toBe(pkgRoot);
   });

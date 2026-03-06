@@ -3,7 +3,7 @@ import type {
   ChannelOnboardingDmPolicy,
   MarvConfig,
   WizardPrompter,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   addWildcardAllowFrom,
   DEFAULT_ACCOUNT_ID,
@@ -11,7 +11,7 @@ import {
   normalizeAccountId,
   promptAccountId,
   promptChannelAccessConfig,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,

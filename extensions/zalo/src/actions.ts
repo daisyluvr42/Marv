@@ -2,8 +2,8 @@ import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionName,
   MarvConfig,
-} from "marv/plugin-sdk";
-import { jsonResult, readStringParam } from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
+import { jsonResult, readStringParam } from "agentmarv/plugin-sdk";
 import { listEnabledZaloAccounts } from "./accounts.js";
 import { sendMessageZalo } from "./send.js";
 

@@ -1,5 +1,5 @@
-import type { MarvConfig } from "marv/plugin-sdk";
-export { createDedupeCache, rawDataToString } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
+export { createDedupeCache, rawDataToString } from "agentmarv/plugin-sdk";
 
 export type ResponsePrefixContext = {
   model?: string;

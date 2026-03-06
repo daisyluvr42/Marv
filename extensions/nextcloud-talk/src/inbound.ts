@@ -4,7 +4,7 @@ import {
   resolveControlCommandGate,
   type MarvConfig,
   type RuntimeEnv,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import {
   normalizeNextcloudTalkAllowlist,

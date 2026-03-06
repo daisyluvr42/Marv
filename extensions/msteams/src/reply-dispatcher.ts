@@ -6,7 +6,7 @@ import {
   type MarvConfig,
   type MSTeamsReplyStyle,
   type RuntimeEnv,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import type { StoredConversationReference } from "./conversation-store.js";
 import {

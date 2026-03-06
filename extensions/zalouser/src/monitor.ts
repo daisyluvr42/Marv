@@ -1,11 +1,11 @@
 import type { ChildProcess } from "node:child_process";
-import type { MarvConfig, MarkdownTableMode, RuntimeEnv } from "marv/plugin-sdk";
+import type { MarvConfig, MarkdownTableMode, RuntimeEnv } from "agentmarv/plugin-sdk";
 import {
   createReplyPrefixOptions,
   mergeAllowlist,
   resolveSenderCommandAuthorization,
   summarizeMapping,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { getZalouserRuntime } from "./runtime.js";
 import { sendMessageZalouser } from "./send.js";
 import type { ResolvedZalouserAccount, ZcaFriend, ZcaGroup, ZcaMessage } from "./types.js";

@@ -1,5 +1,5 @@
-import type { AnyAgentTool, MarvPluginApi } from "marv/plugin-sdk";
-import { emptyPluginConfigSchema } from "marv/plugin-sdk";
+import type { AnyAgentTool, MarvPluginApi } from "agentmarv/plugin-sdk";
+import { emptyPluginConfigSchema } from "agentmarv/plugin-sdk";
 import { zalouserDock, zalouserPlugin } from "./src/channel.js";
 import { setZalouserRuntime } from "./src/runtime.js";
 import { ZalouserToolSchema, executeZalouserTool } from "./src/tool.js";

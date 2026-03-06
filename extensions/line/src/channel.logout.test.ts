@@ -1,4 +1,9 @@
-import type { MarvConfig, PluginRuntime, ResolvedLineAccount, RuntimeEnv } from "marv/plugin-sdk";
+import type {
+  MarvConfig,
+  PluginRuntime,
+  ResolvedLineAccount,
+  RuntimeEnv,
+} from "agentmarv/plugin-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { linePlugin } from "./channel.js";
 import { setLineRuntime } from "./runtime.js";

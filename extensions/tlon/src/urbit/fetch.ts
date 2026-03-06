@@ -1,5 +1,5 @@
-import type { LookupFn, SsrFPolicy } from "marv/plugin-sdk";
-import { fetchWithSsrFGuard } from "marv/plugin-sdk";
+import type { LookupFn, SsrFPolicy } from "agentmarv/plugin-sdk";
+import { fetchWithSsrFGuard } from "agentmarv/plugin-sdk";
 import { validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 

@@ -1,4 +1,4 @@
-import type { ChannelOutboundAdapter } from "marv/plugin-sdk";
+import type { ChannelOutboundAdapter } from "agentmarv/plugin-sdk";
 import { sendMessageMatrix, sendPollMatrix } from "./matrix/send.js";
 import { getMatrixRuntime } from "./runtime.js";
 

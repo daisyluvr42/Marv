@@ -9,7 +9,7 @@ import {
   type LineConfig,
   type LineChannelData,
   type ResolvedLineAccount,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { getLineRuntime } from "./runtime.js";
 
 // LINE channel metadata

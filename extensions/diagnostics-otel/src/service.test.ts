@@ -96,16 +96,17 @@ vi.mock("@opentelemetry/semantic-conventions", () => ({
   },
 }));
 
-vi.mock("marv/plugin-sdk", async () => {
-  const actual = await vi.importActual<typeof import("marv/plugin-sdk")>("marv/plugin-sdk");
+vi.mock("agentmarv/plugin-sdk", async () => {
+  const actual =
+    await vi.importActual<typeof import("agentmarv/plugin-sdk")>("agentmarv/plugin-sdk");
   return {
     ...actual,
     registerLogTransport: registerLogTransportMock,
   };
 });
 
-import type { MarvPluginServiceContext } from "marv/plugin-sdk";
-import { emitDiagnosticEvent } from "marv/plugin-sdk";
+import type { MarvPluginServiceContext } from "agentmarv/plugin-sdk";
+import { emitDiagnosticEvent } from "agentmarv/plugin-sdk";
 import { createDiagnosticsOtelService } from "./service.js";
 
 describe("diagnostics-otel service", () => {

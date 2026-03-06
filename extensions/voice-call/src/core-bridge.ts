@@ -109,7 +109,7 @@ function resolveMarvRoot(): string {
   }
 
   for (const start of candidates) {
-    for (const name of ["marv"]) {
+    for (const name of ["agentmarv"]) {
       const found = findPackageRoot(start, name);
       if (found) {
         coreRootCache = found;

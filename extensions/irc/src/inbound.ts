@@ -4,7 +4,7 @@ import {
   resolveControlCommandGate,
   type MarvConfig,
   type RuntimeEnv,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import type { ResolvedIrcAccount } from "./accounts.js";
 import { normalizeIrcAllowlist, resolveIrcAllowlistMatch } from "./normalize.js";
 import {

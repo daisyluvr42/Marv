@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { MarvConfig, PluginRuntime } from "marv/plugin-sdk";
+import type { MarvConfig, PluginRuntime } from "agentmarv/plugin-sdk";
 import type { DynamicAgentCreationConfig } from "./types.js";
 
 export type MaybeCreateDynamicAgentResult = {

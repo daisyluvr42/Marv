@@ -1,5 +1,5 @@
-import type { ClawdbotConfig } from "marv/plugin-sdk";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "marv/plugin-sdk/account-id";
+import type { ClawdbotConfig } from "agentmarv/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "agentmarv/plugin-sdk/account-id";
 import type {
   FeishuConfig,
   FeishuAccountConfig,

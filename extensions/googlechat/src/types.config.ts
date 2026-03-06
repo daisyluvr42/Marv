@@ -1,3 +1,3 @@
-import type { GoogleChatAccountConfig, GoogleChatConfig } from "marv/plugin-sdk";
+import type { GoogleChatAccountConfig, GoogleChatConfig } from "agentmarv/plugin-sdk";
 
 export type { GoogleChatAccountConfig, GoogleChatConfig };

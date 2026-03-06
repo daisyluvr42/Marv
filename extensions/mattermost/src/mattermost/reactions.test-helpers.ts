@@ -1,4 +1,4 @@
-import type { MarvConfig } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
 import { expect, vi } from "vitest";
 
 export function createMattermostTestConfig(): MarvConfig {

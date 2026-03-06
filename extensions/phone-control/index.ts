@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { MarvPluginApi, MarvPluginService } from "marv/plugin-sdk";
+import type { MarvPluginApi, MarvPluginService } from "agentmarv/plugin-sdk";
 
 type ArmGroup = "camera" | "screen" | "writes" | "all";
 

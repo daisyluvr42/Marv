@@ -1,6 +1,6 @@
 {
   "name": "@marv/googlechat",
-  "version": "2026.2.18",
+  "version": "2026.3.6",
   "private": true,
   "description": "Marv Google Chat channel plugin",
   "type": "module",
@@ -8,10 +8,10 @@
     "google-auth-library": "^10.5.0"
   },
   "devDependencies": {
-    "marv": "workspace:*"
+    "agentmarv": "workspace:*"
   },
   "peerDependencies": {
-    "marv": ">=2026.1.26"
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

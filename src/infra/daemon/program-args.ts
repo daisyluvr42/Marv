@@ -7,6 +7,7 @@ type GatewayProgramArgs = {
 };
 
 type GatewayRuntimePreference = "auto" | "node" | "bun";
+const PACKAGE_NAME = "agentmarv";
 
 function isNodeRuntime(execPath: string): boolean {
   const base = path.basename(execPath).toLowerCase();
@@ -31,7 +32,7 @@ async function resolveCliEntrypointPathForService(): Promise<string> {
     await fs.access(resolvedPath);
     // Prefer the original (possibly symlinked) path over the resolved realpath.
     // This keeps LaunchAgent/systemd paths stable across package version updates,
-    // since symlinks like node_modules/marv -> .pnpm/marv@X.Y.Z/...
+    // since symlinks like node_modules/agentmarv -> .pnpm/agentmarv@X.Y.Z/...
     // are automatically updated by pnpm, while the resolved path contains
     // version-specific directories that break after updates.
     const normalizedLooksLikeDist = /[/\\]dist[/\\].+\.(cjs|js|mjs)$/.test(normalized);
@@ -117,9 +118,8 @@ function appendNodeModulesBinCandidates(
   if (parts[binIndex - 1] !== "node_modules") {
     return;
   }
-  const binName = path.basename(inputPath);
   const nodeModulesDir = parts.slice(0, binIndex).join(path.sep);
-  const packageRoot = path.join(nodeModulesDir, binName);
+  const packageRoot = path.join(nodeModulesDir, PACKAGE_NAME);
   appendDistCandidates(candidates, seen, packageRoot);
 }
 

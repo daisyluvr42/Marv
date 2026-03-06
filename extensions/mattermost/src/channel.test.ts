@@ -1,5 +1,5 @@
-import type { MarvConfig } from "marv/plugin-sdk";
-import { createReplyPrefixOptions } from "marv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
+import { createReplyPrefixOptions } from "agentmarv/plugin-sdk";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mattermostPlugin } from "./channel.js";
 import { resetMattermostReactionBotUserCacheForTests } from "./mattermost/reactions.js";

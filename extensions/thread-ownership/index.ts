@@ -1,4 +1,4 @@
-import type { MarvConfig, MarvPluginApi } from "marv/plugin-sdk";
+import type { MarvConfig, MarvPluginApi } from "agentmarv/plugin-sdk";
 
 type ThreadOwnershipConfig = {
   forwarderUrl?: string;

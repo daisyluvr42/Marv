@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "marv/plugin-sdk";
+import type { BaseProbeResult } from "agentmarv/plugin-sdk";
 
 export type DingTalkDmPolicy = "open" | "allowlist" | "disabled";
 export type DingTalkGroupPolicy = "open" | "allowlist" | "disabled";

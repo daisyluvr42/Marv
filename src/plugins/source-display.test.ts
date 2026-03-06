@@ -6,10 +6,10 @@ describe("formatPluginSourceForTable", () => {
     const out = formatPluginSourceForTable(
       {
         origin: "bundled",
-        source: "/opt/homebrew/lib/node_modules/marv/extensions/bluebubbles/index.ts",
+        source: "/opt/homebrew/lib/node_modules/agentmarv/extensions/bluebubbles/index.ts",
       },
       {
-        stock: "/opt/homebrew/lib/node_modules/marv/extensions",
+        stock: "/opt/homebrew/lib/node_modules/agentmarv/extensions",
         global: "/Users/x/.marv/extensions",
         workspace: "/Users/x/ws/.marv/extensions",
       },
@@ -25,7 +25,7 @@ describe("formatPluginSourceForTable", () => {
         source: "/Users/x/ws/.marv/extensions/matrix/index.ts",
       },
       {
-        stock: "/opt/homebrew/lib/node_modules/marv/extensions",
+        stock: "/opt/homebrew/lib/node_modules/agentmarv/extensions",
         global: "/Users/x/.marv/extensions",
         workspace: "/Users/x/ws/.marv/extensions",
       },
@@ -41,7 +41,7 @@ describe("formatPluginSourceForTable", () => {
         source: "/Users/x/.marv/extensions/zalo/index.js",
       },
       {
-        stock: "/opt/homebrew/lib/node_modules/marv/extensions",
+        stock: "/opt/homebrew/lib/node_modules/agentmarv/extensions",
         global: "/Users/x/.marv/extensions",
         workspace: "/Users/x/ws/.marv/extensions",
       },

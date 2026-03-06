@@ -1,4 +1,4 @@
-import type { SsrFPolicy } from "marv/plugin-sdk";
+import type { SsrFPolicy } from "agentmarv/plugin-sdk";
 import { validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 

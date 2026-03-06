@@ -82,9 +82,8 @@ const DEFAULT_TIMEOUT_MS = 20 * 60_000;
 const MAX_LOG_CHARS = 8000;
 const PREFLIGHT_MAX_COMMITS = 10;
 const START_DIRS = ["cwd", "argv1", "process"];
-const DEFAULT_PACKAGE_NAME = "marv";
-const LEGACY_PACKAGE_NAME = "marv";
-const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME, LEGACY_PACKAGE_NAME]);
+const DEFAULT_PACKAGE_NAME = "agentmarv";
+const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 
 function normalizeDir(value?: string | null) {
   if (!value) {
@@ -107,9 +106,8 @@ function resolveNodeModulesBinPackageRoot(argv1: string): string | null {
   if (parts[binIndex - 1] !== "node_modules") {
     return null;
   }
-  const binName = path.basename(normalized);
   const nodeModulesDir = parts.slice(0, binIndex).join(path.sep);
-  return path.join(nodeModulesDir, binName);
+  return path.join(nodeModulesDir, DEFAULT_PACKAGE_NAME);
 }
 
 function buildStartDirs(opts: UpdateRunnerOptions): string[] {
@@ -315,9 +313,6 @@ function normalizeTag(tag?: string) {
   const trimmed = tag?.trim();
   if (!trimmed) {
     return "latest";
-  }
-  if (trimmed.startsWith(`${LEGACY_PACKAGE_NAME}@`)) {
-    return trimmed.slice(`${LEGACY_PACKAGE_NAME}@`.length);
   }
   if (trimmed.startsWith(`${DEFAULT_PACKAGE_NAME}@`)) {
     return trimmed.slice(`${DEFAULT_PACKAGE_NAME}@`.length);

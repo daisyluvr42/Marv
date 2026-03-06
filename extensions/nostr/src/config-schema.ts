@@ -1,4 +1,4 @@
-import { MarkdownConfigSchema, buildChannelConfigSchema } from "marv/plugin-sdk";
+import { MarkdownConfigSchema, buildChannelConfigSchema } from "agentmarv/plugin-sdk";
 import { z } from "zod";
 
 const allowFromEntry = z.union([z.string(), z.number()]);

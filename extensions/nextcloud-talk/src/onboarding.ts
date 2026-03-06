@@ -9,7 +9,7 @@ import {
   type ChannelOnboardingDmPolicy,
   type MarvConfig,
   type WizardPrompter,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listNextcloudTalkAccountIds,
   resolveDefaultNextcloudTalkAccountId,

@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { MarvConfig, PluginRuntime } from "marv/plugin-sdk";
-import { removeAckReactionAfterReply, shouldAckReaction } from "marv/plugin-sdk";
+import type { MarvConfig, PluginRuntime } from "agentmarv/plugin-sdk";
+import { removeAckReactionAfterReply, shouldAckReaction } from "agentmarv/plugin-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedBlueBubblesAccount } from "./accounts.js";
 import {

@@ -1,4 +1,4 @@
-import { createReplyPrefixOptions, type MarvConfig, type RuntimeEnv } from "marv/plugin-sdk";
+import { createReplyPrefixOptions, type MarvConfig, type RuntimeEnv } from "agentmarv/plugin-sdk";
 import { resolveDingTalkAccount } from "./accounts.js";
 import { sendDingTalkReply } from "./api.js";
 import { getDingTalkRuntime } from "./runtime.js";

@@ -2,7 +2,7 @@ import {
   emptyPluginConfigSchema,
   type MarvPluginApi,
   type ProviderAuthContext,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { loginQwenPortalOAuth } from "./oauth.js";
 
 const PROVIDER_ID = "qwen-portal";

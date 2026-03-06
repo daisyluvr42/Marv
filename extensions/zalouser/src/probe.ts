@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "marv/plugin-sdk";
+import type { BaseProbeResult } from "agentmarv/plugin-sdk";
 import type { ZcaUserInfo } from "./types.js";
 import { runZca, parseJsonOutput } from "./zca.js";
 

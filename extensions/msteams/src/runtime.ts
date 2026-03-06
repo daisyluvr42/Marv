@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "marv/plugin-sdk";
+import type { PluginRuntime } from "agentmarv/plugin-sdk";
 
 let runtime: PluginRuntime | null = null;
 

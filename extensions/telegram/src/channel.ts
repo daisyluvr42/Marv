@@ -28,7 +28,7 @@ import {
   type MarvConfig,
   type ResolvedTelegramAccount,
   type TelegramProbe,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { getTelegramRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("telegram");

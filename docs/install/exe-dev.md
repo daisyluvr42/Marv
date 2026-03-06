@@ -117,7 +117,7 @@ with email auth.
 ## Updating
 
 ```bash
-npm i -g marv@latest
+npm i -g agentmarv@latest
 marv doctor
 marv gateway restart
 marv health

@@ -1,4 +1,4 @@
-import type { RuntimeEnv } from "marv/plugin-sdk";
+import type { RuntimeEnv } from "agentmarv/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import {
   createMattermostConnectOnce,

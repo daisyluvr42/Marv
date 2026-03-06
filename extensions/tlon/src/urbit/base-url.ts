@@ -1,4 +1,4 @@
-import { isBlockedHostname, isPrivateIpAddress } from "marv/plugin-sdk";
+import { isBlockedHostname, isPrivateIpAddress } from "agentmarv/plugin-sdk";
 
 export type UrbitBaseUrlValidation =
   | { ok: true; baseUrl: string; hostname: string }

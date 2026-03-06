@@ -1,4 +1,4 @@
-import { buildChannelConfigSchema } from "marv/plugin-sdk";
+import { buildChannelConfigSchema } from "agentmarv/plugin-sdk";
 import { z } from "zod";
 
 const ShipSchema = z.string().min(1);

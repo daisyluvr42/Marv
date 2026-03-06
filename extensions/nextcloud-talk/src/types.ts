@@ -3,7 +3,7 @@ import type {
   DmConfig,
   DmPolicy,
   GroupPolicy,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 
 export type { DmPolicy, GroupPolicy };
 

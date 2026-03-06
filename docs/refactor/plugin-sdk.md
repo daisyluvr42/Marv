@@ -34,7 +34,7 @@ Contents (examples):
 
 Delivery:
 
-- Publish as `marv/plugin-sdk` (or export from core under `marv/plugin-sdk`).
+- Publish as `agentmarv/plugin-sdk` (or export from core under `agentmarv/plugin-sdk`).
 - Semver with explicit stability guarantees.
 
 ### 2) Plugin Runtime (execution surface, injected)
@@ -154,7 +154,7 @@ Notes:
 
 ### Phase 0: scaffolding
 
-- Introduce `marv/plugin-sdk`.
+- Introduce `agentmarv/plugin-sdk`.
 - Add `api.runtime` to `MarvPluginApi` with the surface above.
 - Maintain existing imports during a transition window (deprecation warnings).
 

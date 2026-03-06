@@ -129,7 +129,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const { resolveControlUiDistIndexPath } = await import("./control-ui-assets.js");
 
     const root = abs("fixtures/fallback");
-    setFile(path.join(root, "package.json"), JSON.stringify({ name: "marv" }));
+    setFile(path.join(root, "package.json"), JSON.stringify({ name: "agentmarv" }));
     setFile(path.join(root, "dist", "control-ui", "index.html"), "<html></html>\n");
 
     await expect(resolveControlUiDistIndexPath(path.join(root, "marv.mjs"))).resolves.toBe(

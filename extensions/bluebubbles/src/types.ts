@@ -1,6 +1,6 @@
-import type { DmPolicy, GroupPolicy } from "marv/plugin-sdk";
+import type { DmPolicy, GroupPolicy } from "agentmarv/plugin-sdk";
 
-export type { DmPolicy, GroupPolicy } from "marv/plugin-sdk";
+export type { DmPolicy, GroupPolicy } from "agentmarv/plugin-sdk";
 
 export type BlueBubblesGroupConfig = {
   /** If true, only respond in this group when mentioned. */

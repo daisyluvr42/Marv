@@ -1,5 +1,5 @@
-import { DEFAULT_ACCOUNT_ID } from "marv/plugin-sdk";
-import type { MarvConfig } from "marv/plugin-sdk";
+import { DEFAULT_ACCOUNT_ID } from "agentmarv/plugin-sdk";
+import type { MarvConfig } from "agentmarv/plugin-sdk";
 import type { DingTalkAccountConfig, DingTalkConfig, ResolvedDingTalkAccount } from "./types.js";
 
 function readDingTalkConfig(cfg: MarvConfig): DingTalkConfig | undefined {

@@ -1,6 +1,6 @@
 import os from "node:os";
 import path from "node:path";
-import type { PluginRuntime } from "marv/plugin-sdk";
+import type { PluginRuntime } from "agentmarv/plugin-sdk";
 
 export const msteamsRuntimeStub = {
   state: {

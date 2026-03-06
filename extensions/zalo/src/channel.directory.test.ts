@@ -1,4 +1,4 @@
-import type { MarvConfig, RuntimeEnv } from "marv/plugin-sdk";
+import type { MarvConfig, RuntimeEnv } from "agentmarv/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import { zaloPlugin } from "./channel.js";
 

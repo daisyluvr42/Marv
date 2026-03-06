@@ -9,7 +9,7 @@
 import { randomUUID } from "node:crypto";
 import type * as LanceDB from "@lancedb/lancedb";
 import { Type } from "@sinclair/typebox";
-import type { MarvPluginApi } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
 import OpenAI from "openai";
 import {
   DEFAULT_CAPTURE_MAX_CHARS,

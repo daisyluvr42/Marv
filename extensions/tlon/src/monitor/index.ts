@@ -1,6 +1,6 @@
 import { format } from "node:util";
-import type { RuntimeEnv, ReplyPayload, MarvConfig } from "marv/plugin-sdk";
-import { createReplyPrefixOptions } from "marv/plugin-sdk";
+import type { RuntimeEnv, ReplyPayload, MarvConfig } from "agentmarv/plugin-sdk";
+import { createReplyPrefixOptions } from "agentmarv/plugin-sdk";
 import { getTlonRuntime } from "../runtime.js";
 import { normalizeShip, parseChannelNest } from "../targets.js";
 import { resolveTlonAccount } from "../types.js";

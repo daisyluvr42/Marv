@@ -10,9 +10,8 @@ export type CommandRunner = (
   options: { timeoutMs: number; cwd?: string; env?: NodeJS.ProcessEnv },
 ) => Promise<{ stdout: string; stderr: string; code: number | null }>;
 
-const PRIMARY_PACKAGE_NAME = "marv";
-const LEGACY_PACKAGE_NAME = "marv";
-const ALL_PACKAGE_NAMES = [PRIMARY_PACKAGE_NAME, LEGACY_PACKAGE_NAME] as const;
+const PRIMARY_PACKAGE_NAME = "agentmarv";
+const ALL_PACKAGE_NAMES = [PRIMARY_PACKAGE_NAME] as const;
 const GLOBAL_RENAME_PREFIX = ".";
 
 async function tryRealpath(targetPath: string): Promise<string> {

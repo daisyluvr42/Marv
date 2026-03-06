@@ -1,4 +1,4 @@
-import type { MarvPluginApi } from "marv/plugin-sdk";
+import type { MarvPluginApi } from "agentmarv/plugin-sdk";
 
 type ElevenLabsVoice = {
   voice_id: string;

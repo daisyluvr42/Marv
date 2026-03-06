@@ -6,7 +6,7 @@ import {
   MarkdownConfigSchema,
   ToolPolicySchema,
   requireOpenAllowFrom,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { z } from "zod";
 
 export const NextcloudTalkRoomSchema = z

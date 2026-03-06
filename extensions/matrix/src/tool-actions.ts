@@ -5,7 +5,7 @@ import {
   readNumberParam,
   readReactionParams,
   readStringParam,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   deleteMatrixMessage,
   editMatrixMessage,

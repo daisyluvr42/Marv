@@ -1,1 +1,1 @@
-export { withFileLock } from "marv/plugin-sdk";
+export { withFileLock } from "agentmarv/plugin-sdk";

@@ -75,7 +75,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
     <Tabs>
       <Tab title="npm">
         ```bash
-        npm install -g marv@latest
+        npm install -g agentmarv@latest
         marv onboard --install-daemon
         ```
 
@@ -83,7 +83,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
           If you have libvips installed globally (common on macOS via Homebrew) and `sharp` fails, force prebuilt binaries:
 
           ```bash
-          SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g marv@latest
+          SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g agentmarv@latest
           ```
 
           If you see `sharp: Please add node-gyp to your dependencies`, either install build tooling (macOS: Xcode CLT + `npm install -g node-gyp`) or use the env var above.
@@ -91,7 +91,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
       </Tab>
       <Tab title="pnpm">
         ```bash
-        pnpm add -g marv@latest
+        pnpm add -g agentmarv@latest
         pnpm approve-builds -g        # approve marv, node-llama-cpp, sharp, etc.
         marv onboard --install-daemon
         ```

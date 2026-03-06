@@ -29,7 +29,7 @@ describe("version resolution", () => {
       await fs.mkdir(path.join(root, "dist", "plugin-sdk"), { recursive: true });
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "marv", version: "1.2.3" }),
+        JSON.stringify({ name: "agentmarv", version: "1.2.3" }),
         "utf-8",
       );
 
@@ -44,7 +44,7 @@ describe("version resolution", () => {
       await fs.mkdir(path.join(root, "dist", "plugin-sdk"), { recursive: true });
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "marv", version: "2.3.4" }),
+        JSON.stringify({ name: "agentmarv", version: "2.3.4" }),
         "utf-8",
       );
       await fs.writeFile(

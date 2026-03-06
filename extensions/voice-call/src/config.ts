@@ -1,4 +1,9 @@
-import { TtsAutoSchema, TtsConfigSchema, TtsModeSchema, TtsProviderSchema } from "marv/plugin-sdk";
+import {
+  TtsAutoSchema,
+  TtsConfigSchema,
+  TtsModeSchema,
+  TtsProviderSchema,
+} from "agentmarv/plugin-sdk";
 import { z } from "zod";
 
 // -----------------------------------------------------------------------------

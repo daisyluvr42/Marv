@@ -1,6 +1,6 @@
 {
   "name": "@marv/feishu",
-  "version": "2026.2.18",
+  "version": "2026.3.6",
   "description": "Marv Feishu/Lark channel plugin (community maintained by @m1heng)",
   "type": "module",
   "dependencies": {
@@ -9,7 +9,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "marv": "workspace:*"
+    "agentmarv": "workspace:*"
   },
   "marv": {
     "extensions": [

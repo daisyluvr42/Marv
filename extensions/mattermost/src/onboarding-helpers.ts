@@ -1,1 +1,1 @@
-export { promptAccountId } from "marv/plugin-sdk";
+export { promptAccountId } from "agentmarv/plugin-sdk";

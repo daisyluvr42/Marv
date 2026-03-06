@@ -108,7 +108,7 @@ describe("runGatewayUpdate", () => {
 
   async function setupGitCheckout(options?: { packageManager?: string }) {
     await fs.mkdir(path.join(tempDir, ".git"));
-    const pkg: Record<string, string> = { name: "marv", version: "1.0.0" };
+    const pkg: Record<string, string> = { name: "agentmarv", version: "1.0.0" };
     if (options?.packageManager) {
       pkg.packageManager = options.packageManager;
     }
@@ -167,7 +167,7 @@ describe("runGatewayUpdate", () => {
     await fs.mkdir(pkgRoot, { recursive: true });
     await fs.writeFile(
       path.join(pkgRoot, "package.json"),
-      JSON.stringify({ name: "marv", version }),
+      JSON.stringify({ name: "agentmarv", version }),
       "utf-8",
     );
   }
@@ -277,7 +277,7 @@ describe("runGatewayUpdate", () => {
   it("skips update when no git root", async () => {
     await fs.writeFile(
       path.join(tempDir, "package.json"),
-      JSON.stringify({ name: "marv", packageManager: "pnpm@8.0.0" }),
+      JSON.stringify({ name: "agentmarv", packageManager: "pnpm@8.0.0" }),
       "utf-8",
     );
     await fs.writeFile(path.join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
@@ -301,7 +301,7 @@ describe("runGatewayUpdate", () => {
     tag?: string;
   }): Promise<{ calls: string[]; result: Awaited<ReturnType<typeof runGatewayUpdate>> }> {
     const nodeModules = path.join(tempDir, "node_modules");
-    const pkgRoot = path.join(nodeModules, "marv");
+    const pkgRoot = path.join(nodeModules, "agentmarv");
     await seedGlobalPackageRoot(pkgRoot);
 
     const { calls, runCommand } = createGlobalInstallHarness({
@@ -311,7 +311,7 @@ describe("runGatewayUpdate", () => {
       onInstall: async () => {
         await fs.writeFile(
           path.join(pkgRoot, "package.json"),
-          JSON.stringify({ name: "marv", version: "2.0.0" }),
+          JSON.stringify({ name: "agentmarv", version: "2.0.0" }),
           "utf-8",
         );
       },
@@ -360,16 +360,16 @@ describe("runGatewayUpdate", () => {
   it.each([
     {
       title: "updates global npm installs when detected",
-      expectedInstallCommand: "npm i -g marv@latest",
+      expectedInstallCommand: "npm i -g agentmarv@latest",
     },
     {
       title: "uses update channel for global npm installs when tag is omitted",
-      expectedInstallCommand: "npm i -g marv@beta",
+      expectedInstallCommand: "npm i -g agentmarv@beta",
       channel: "beta" as const,
     },
     {
       title: "updates global npm installs with tag override",
-      expectedInstallCommand: "npm i -g marv@beta",
+      expectedInstallCommand: "npm i -g agentmarv@beta",
       tag: "beta",
     },
   ])("$title", async ({ expectedInstallCommand, channel, tag }) => {
@@ -388,8 +388,8 @@ describe("runGatewayUpdate", () => {
 
   it("cleans stale npm rename dirs before global update", async () => {
     const nodeModules = path.join(tempDir, "node_modules");
-    const pkgRoot = path.join(nodeModules, "marv");
-    const staleDir = path.join(nodeModules, ".marv-stale");
+    const pkgRoot = path.join(nodeModules, "agentmarv");
+    const staleDir = path.join(nodeModules, ".agentmarv-stale");
     await fs.mkdir(staleDir, { recursive: true });
     await seedGlobalPackageRoot(pkgRoot);
 
@@ -405,7 +405,7 @@ describe("runGatewayUpdate", () => {
       if (key === "pnpm root -g") {
         return { stdout: "", stderr: "", code: 1 };
       }
-      if (key === "npm i -g marv@latest") {
+      if (key === "npm i -g agentmarv@latest") {
         stalePresentAtInstall = await pathExists(staleDir);
         return { stdout: "ok", stderr: "", code: 0 };
       }
@@ -426,16 +426,16 @@ describe("runGatewayUpdate", () => {
 
     try {
       const bunGlobalRoot = path.join(bunInstall, "install", "global", "node_modules");
-      const pkgRoot = path.join(bunGlobalRoot, "marv");
+      const pkgRoot = path.join(bunGlobalRoot, "agentmarv");
       await seedGlobalPackageRoot(pkgRoot);
 
       const { calls, runCommand } = createGlobalInstallHarness({
         pkgRoot,
-        installCommand: "bun add -g marv@latest",
+        installCommand: "bun add -g agentmarv@latest",
         onInstall: async () => {
           await fs.writeFile(
             path.join(pkgRoot, "package.json"),
-            JSON.stringify({ name: "marv", version: "2.0.0" }),
+            JSON.stringify({ name: "agentmarv", version: "2.0.0" }),
             "utf-8",
           );
         },
@@ -447,7 +447,7 @@ describe("runGatewayUpdate", () => {
       expect(result.mode).toBe("bun");
       expect(result.before?.version).toBe("1.0.0");
       expect(result.after?.version).toBe("2.0.0");
-      expect(calls.some((call) => call === "bun add -g marv@latest")).toBe(true);
+      expect(calls.some((call) => call === "bun add -g agentmarv@latest")).toBe(true);
     } finally {
       if (oldBunInstall === undefined) {
         delete process.env.BUN_INSTALL;

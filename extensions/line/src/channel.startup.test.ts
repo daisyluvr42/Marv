@@ -5,7 +5,7 @@ import type {
   PluginRuntime,
   ResolvedLineAccount,
   RuntimeEnv,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { linePlugin } from "./channel.js";
 import { setLineRuntime } from "./runtime.js";

@@ -8,7 +8,7 @@ import {
   type ChannelMeta,
   type ChannelPlugin,
   type ChannelStatusIssue,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   resolveDingTalkAccount,
   listDingTalkAccountIds,

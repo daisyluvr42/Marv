@@ -1,5 +1,9 @@
-import type { AllowlistMatch, ChannelGroupContext, GroupToolPolicyConfig } from "marv/plugin-sdk";
-import { resolveAllowlistMatchSimple } from "marv/plugin-sdk";
+import type {
+  AllowlistMatch,
+  ChannelGroupContext,
+  GroupToolPolicyConfig,
+} from "agentmarv/plugin-sdk";
+import { resolveAllowlistMatchSimple } from "agentmarv/plugin-sdk";
 import type { FeishuConfig, FeishuGroupConfig } from "./types.js";
 
 export type FeishuAllowlistMatch = AllowlistMatch<"wildcard" | "id" | "name">;

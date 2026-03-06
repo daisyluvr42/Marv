@@ -1,4 +1,4 @@
-import { normalizeAccountId } from "marv/plugin-sdk/account-id";
+import { normalizeAccountId } from "agentmarv/plugin-sdk/account-id";
 import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig } from "../../types.js";
 import { getActiveMatrixClient } from "../active-client.js";

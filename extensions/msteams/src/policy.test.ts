@@ -1,4 +1,4 @@
-import type { MSTeamsConfig } from "marv/plugin-sdk";
+import type { MSTeamsConfig } from "agentmarv/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import {
   isMSTeamsGroupAllowed,

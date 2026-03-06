@@ -17,8 +17,8 @@ import {
   type ChannelPlugin,
   type ChannelStatusIssue,
   type MarvConfig,
-} from "marv/plugin-sdk";
-import { GoogleChatConfigSchema } from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
+import { GoogleChatConfigSchema } from "agentmarv/plugin-sdk";
 import {
   listGoogleChatAccountIds,
   resolveDefaultGoogleChatAccountId,

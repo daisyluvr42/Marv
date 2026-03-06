@@ -1,14 +1,14 @@
 {
   "name": "@marv/memory-core",
-  "version": "2026.2.18",
+  "version": "2026.3.6",
   "private": true,
   "description": "Marv core memory search plugin",
   "type": "module",
   "devDependencies": {
-    "marv": "workspace:*"
+    "agentmarv": "workspace:*"
   },
   "peerDependencies": {
-    "marv": ">=2026.1.26"
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

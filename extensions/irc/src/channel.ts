@@ -7,7 +7,7 @@ import {
   setAccountEnabledInConfigSection,
   deleteAccountFromConfigSection,
   type ChannelPlugin,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listIrcAccountIds,
   resolveDefaultIrcAccountId,

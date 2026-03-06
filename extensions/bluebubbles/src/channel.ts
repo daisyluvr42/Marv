@@ -1,4 +1,4 @@
-import type { ChannelAccountSnapshot, ChannelPlugin, MarvConfig } from "marv/plugin-sdk";
+import type { ChannelAccountSnapshot, ChannelPlugin, MarvConfig } from "agentmarv/plugin-sdk";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,
@@ -12,7 +12,7 @@ import {
   resolveBlueBubblesGroupRequireMention,
   resolveBlueBubblesGroupToolPolicy,
   setAccountEnabledInConfigSection,
-} from "marv/plugin-sdk";
+} from "agentmarv/plugin-sdk";
 import {
   listBlueBubblesAccountIds,
   type ResolvedBlueBubblesAccount,
