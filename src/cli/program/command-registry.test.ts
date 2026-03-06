@@ -20,6 +20,12 @@ vi.mock("./register.maintenance.js", () => ({
   },
 }));
 
+vi.mock("./register.migrate.js", () => ({
+  registerMigrateCommands: (program: Command) => {
+    program.command("migrate");
+  },
+}));
+
 const { getCoreCliCommandNames, registerCoreCliByName, registerCoreCliCommands } =
   await import("./command-registry.js");
 
@@ -80,6 +86,14 @@ describe("command-registry", () => {
     expect(names).toContain("reset");
     expect(names).toContain("uninstall");
     expect(names).not.toContain("maintenance");
+  });
+
+  it("registers migrate as a top-level builtin", async () => {
+    const program = new Command();
+
+    expect(await registerCoreCliByName(program, testProgramContext, "migrate")).toBe(true);
+    expect(getCoreCliCommandNames()).toContain("migrate");
+    expect(program.commands.find((command) => command.name() === "migrate")).toBeDefined();
   });
 
   it("registers grouped core entry placeholders without duplicate command errors", async () => {

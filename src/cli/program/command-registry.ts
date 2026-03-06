@@ -161,6 +161,19 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
+        name: "migrate",
+        description: "Export or import local data for device migration",
+        hasSubcommands: true,
+      },
+    ],
+    register: async ({ program }) => {
+      const mod = await import("./register.migrate.js");
+      mod.registerMigrateCommands(program);
+    },
+  },
+  {
+    commands: [
+      {
         name: "agent",
         description: "Run one agent turn via the Gateway",
         hasSubcommands: false,
