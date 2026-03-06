@@ -15,6 +15,7 @@ import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
 import { createRequestEscalationTool } from "./request-escalation-tool.js";
 import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
+import { createSelfSettingsTool } from "./self-settings-tool.js";
 import { createSessionStatusTool } from "./session-status-tool.js";
 import { createSessionsHistoryTool } from "./sessions-history-tool.js";
 import { createSessionsListTool } from "./sessions-list-tool.js";
@@ -63,6 +64,12 @@ export type CreateMarvToolsOptions = {
   requireExplicitMessageTarget?: boolean;
   /** If true, omit the message tool from the tool list. */
   disableMessageTool?: boolean;
+  senderId?: string;
+  senderName?: string;
+  senderUsername?: string;
+  senderE164?: string;
+  /** True when the current request is not a forwarded or quoted third-party instruction. */
+  directUserInstruction?: boolean;
 };
 
 export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[] {
@@ -158,6 +165,18 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     createSessionStatusTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
+    }),
+    createSelfSettingsTool({
+      agentSessionKey: options?.agentSessionKey,
+      config: options?.config,
+      agentChannel: options?.agentChannel,
+      agentAccountId: options?.agentAccountId,
+      agentTo: options?.agentTo,
+      senderId: options?.senderId,
+      senderName: options?.senderName,
+      senderUsername: options?.senderUsername,
+      senderE164: options?.senderE164,
+      directUserInstruction: options?.directUserInstruction,
     }),
     createRequestEscalationTool({
       agentSessionKey: options?.agentSessionKey,

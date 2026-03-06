@@ -8,6 +8,10 @@ import {
 } from "../../agents/model/model-selection.js";
 import { normalizeGroupActivation } from "../../auto-reply/group-activation.js";
 import {
+  normalizeQueueDropPolicy,
+  normalizeQueueMode,
+} from "../../auto-reply/reply/queue/normalize.js";
+import {
   formatThinkingLevels,
   formatXHighModelHint,
   normalizeElevatedLevel,
@@ -274,6 +278,60 @@ export async function applySessionsPatchToStore(params: {
         return invalid("invalid execNode: empty");
       }
       next.execNode = trimmed;
+    }
+  }
+
+  if ("queueMode" in patch) {
+    const raw = patch.queueMode;
+    if (raw === null) {
+      delete next.queueMode;
+    } else if (raw !== undefined) {
+      const normalized = normalizeQueueMode(String(raw));
+      if (!normalized) {
+        return invalid(
+          'invalid queueMode (use "steer"|"followup"|"collect"|"steer-backlog"|"interrupt")',
+        );
+      }
+      next.queueMode = normalized;
+    }
+  }
+
+  if ("queueDebounceMs" in patch) {
+    const raw = patch.queueDebounceMs;
+    if (raw === null) {
+      delete next.queueDebounceMs;
+    } else if (raw !== undefined) {
+      const numeric = Number(raw);
+      if (!Number.isFinite(numeric) || numeric < 0) {
+        return invalid("invalid queueDebounceMs (use a number >= 0)");
+      }
+      next.queueDebounceMs = Math.floor(numeric);
+    }
+  }
+
+  if ("queueCap" in patch) {
+    const raw = patch.queueCap;
+    if (raw === null) {
+      delete next.queueCap;
+    } else if (raw !== undefined) {
+      const numeric = Number(raw);
+      if (!Number.isFinite(numeric) || numeric < 1) {
+        return invalid("invalid queueCap (use an integer >= 1)");
+      }
+      next.queueCap = Math.floor(numeric);
+    }
+  }
+
+  if ("queueDrop" in patch) {
+    const raw = patch.queueDrop;
+    if (raw === null) {
+      delete next.queueDrop;
+    } else if (raw !== undefined) {
+      const normalized = normalizeQueueDropPolicy(String(raw));
+      if (!normalized) {
+        return invalid('invalid queueDrop (use "old"|"new"|"summarize")');
+      }
+      next.queueDrop = normalized;
     }
   }
 

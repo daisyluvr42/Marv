@@ -237,6 +237,45 @@ describe("gateway sessions patch", () => {
     expect(res.entry.groupActivation).toBe("always");
   });
 
+  test("normalizes queue patches", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:main",
+      patch: {
+        key: "agent:main:main",
+        queueMode: " queued ",
+        queueDebounceMs: 2500,
+        queueCap: 4,
+        queueDrop: " oldest ",
+      },
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+    expect(res.entry.queueMode).toBe("steer");
+    expect(res.entry.queueDebounceMs).toBe(2500);
+    expect(res.entry.queueCap).toBe(4);
+    expect(res.entry.queueDrop).toBe("old");
+  });
+
+  test("rejects invalid queue drop policy", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:main",
+      patch: { key: "agent:main:main", queueDrop: "later" },
+    });
+    expect(res.ok).toBe(false);
+    if (res.ok) {
+      return;
+    }
+    expect(res.error.message).toContain("invalid queueDrop");
+  });
+
   test("rejects invalid execHost values", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({

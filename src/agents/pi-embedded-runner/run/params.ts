@@ -44,6 +44,8 @@ export type RunEmbeddedPiAgentParams = {
   senderE164?: string | null;
   /** Whether the sender is an owner (required for owner-only tools). */
   senderIsOwner?: boolean;
+  /** True when the current request is not a quoted or forwarded third-party instruction. */
+  directUserInstruction?: boolean;
   /** Current channel ID for auto-threading (Slack). */
   currentChannelId?: string;
   /** Current thread timestamp for auto-threading (Slack). */

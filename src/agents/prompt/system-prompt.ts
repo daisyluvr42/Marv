@@ -279,6 +279,8 @@ export function buildAgentSystemPrompt(params: {
     subagents: "List, steer, or kill sub-agent runs for this requester session",
     session_status:
       "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",
+    self_settings:
+      "Apply current-session self-settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new) for a direct user request",
     request_escalation: "Request task-scoped elevated permissions with user approval",
     request_missing_tools: "Discover/install skills for missing capabilities (approval required)",
     image: "Analyze an image with the configured image model",
@@ -308,6 +310,7 @@ export function buildAgentSystemPrompt(params: {
     "sessions_send",
     "subagents",
     "session_status",
+    "self_settings",
     "request_escalation",
     "request_missing_tools",
     "image",
@@ -457,6 +460,7 @@ export function buildAgentSystemPrompt(params: {
           "- sessions_send: send to another session",
           "- subagents: list/steer/kill sub-agent runs",
           '- session_status: show usage/time/model state and answer "what model are we using?"',
+          "- self_settings: change current session model/thinking/verbose/reasoning/usage/elevated/exec/queue/reset when the user directly asks",
         ].join("\n"),
     "TOOLS.md does not control tool availability; it is user guidance for how to use external tools.",
     `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,

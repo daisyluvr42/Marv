@@ -215,6 +215,8 @@ export function createMarvCodingTools(options?: {
   disableMessageTool?: boolean;
   /** Whether the sender is an owner (required for owner-only tools). */
   senderIsOwner?: boolean;
+  /** True when the current request is not a forwarded or quoted third-party instruction. */
+  directUserInstruction?: boolean;
 }): AnyAgentTool[] {
   const execToolName = "exec";
   const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
@@ -457,6 +459,11 @@ export function createMarvCodingTools(options?: {
       requireExplicitMessageTarget: options?.requireExplicitMessageTarget,
       disableMessageTool: options?.disableMessageTool,
       requesterAgentIdOverride: agentId,
+      senderId: options?.senderId ?? undefined,
+      senderName: options?.senderName ?? undefined,
+      senderUsername: options?.senderUsername ?? undefined,
+      senderE164: options?.senderE164 ?? undefined,
+      directUserInstruction: options?.directUserInstruction,
     }),
   ];
   // Security: treat unknown/undefined as unauthorized (opt-in, not opt-out)

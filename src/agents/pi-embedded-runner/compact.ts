@@ -106,6 +106,8 @@ export type CompactEmbeddedPiSessionParams = {
   spawnedBy?: string | null;
   /** Whether the sender is an owner (required for owner-only tools). */
   senderIsOwner?: boolean;
+  /** True when the current request is not a quoted or forwarded third-party instruction. */
+  directUserInstruction?: boolean;
   sessionFile: string;
   workspaceDir: string;
   agentDir?: string;
@@ -378,6 +380,7 @@ export async function compactEmbeddedPiSessionDirect(
       groupSpace: params.groupSpace,
       spawnedBy: params.spawnedBy,
       senderIsOwner: params.senderIsOwner,
+      directUserInstruction: params.directUserInstruction,
       agentDir,
       workspaceDir: effectiveWorkspace,
       config: params.config,

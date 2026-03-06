@@ -191,6 +191,9 @@ export function buildEmbeddedContextFromTemplate(params: {
     agentAccountId: params.sessionCtx.AccountId,
     messageTo: params.sessionCtx.OriginatingTo ?? params.sessionCtx.To,
     messageThreadId: params.sessionCtx.MessageThreadId ?? undefined,
+    directUserInstruction: !(
+      params.sessionCtx.ReplyToIsQuote === true || Boolean(params.sessionCtx.ForwardedFrom)
+    ),
     // Provider threading context for tool auto-injection
     ...buildThreadingToolContext({
       sessionCtx: params.sessionCtx,
