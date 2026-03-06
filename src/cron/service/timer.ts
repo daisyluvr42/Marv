@@ -66,6 +66,12 @@ function applyJobResult(
   result: {
     status: CronRunStatus;
     error?: string;
+    summary?: string;
+    sessionId?: string;
+    sessionKey?: string;
+    model?: string;
+    provider?: string;
+    usage?: CronRunTelemetry["usage"];
     startedAt: number;
     endedAt: number;
   },
@@ -75,6 +81,12 @@ function applyJobResult(
   job.state.lastStatus = result.status;
   job.state.lastDurationMs = Math.max(0, result.endedAt - result.startedAt);
   job.state.lastError = result.error;
+  job.state.lastSummary = result.summary;
+  job.state.lastSessionId = result.sessionId;
+  job.state.lastSessionKey = result.sessionKey;
+  job.state.lastModel = result.model;
+  job.state.lastProvider = result.provider;
+  job.state.lastUsage = result.usage;
   job.updatedAtMs = result.endedAt;
 
   // Track consecutive errors for backoff / auto-disable.
@@ -305,6 +317,12 @@ export async function onTimer(state: CronServiceState) {
           const shouldDelete = applyJobResult(state, job, {
             status: result.status,
             error: result.error,
+            summary: result.summary,
+            sessionId: result.sessionId,
+            sessionKey: result.sessionKey,
+            model: result.model,
+            provider: result.provider,
+            usage: result.usage,
             startedAt: result.startedAt,
             endedAt: result.endedAt,
           });
@@ -610,6 +628,12 @@ export async function executeJob(
   const shouldDelete = applyJobResult(state, job, {
     status: coreResult.status,
     error: coreResult.error,
+    summary: coreResult.summary,
+    sessionId: coreResult.sessionId,
+    sessionKey: coreResult.sessionKey,
+    model: coreResult.model,
+    provider: coreResult.provider,
+    usage: coreResult.usage,
     startedAt,
     endedAt,
   });

@@ -755,4 +755,73 @@ describe("Cron issue regressions", () => {
     expect(secondDone?.state.lastDurationMs).toBe(20);
     expect(startedAtEvents).toEqual([dueAt, dueAt + 50]);
   });
+
+  it("surfaces cron health and last-run session metadata in list/status", async () => {
+    const store = await makeStorePath();
+    const cron = await startCronForStore({
+      storePath: store.storePath,
+      runIsolatedAgentJob: vi.fn().mockResolvedValue({
+        status: "error",
+        error: "upstream timeout",
+        summary: "sync failed",
+        sessionId: "sess_1",
+        sessionKey: "agent:main:cron:job-health:run:sess_1",
+        model: "gpt-5",
+        provider: "openai",
+        usage: {
+          input_tokens: 10,
+          output_tokens: 4,
+          total_tokens: 14,
+        },
+      }) as CronServiceOptions["runIsolatedAgentJob"],
+    });
+
+    const job = await cron.add({
+      name: "health-check",
+      enabled: true,
+      schedule: { kind: "every", everyMs: 60_000, anchorMs: Date.now() },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: { kind: "agentTurn", message: "run health check" },
+    });
+
+    await cron.run(job.id, "force");
+
+    const status = await cron.status();
+    expect(status).toMatchObject({
+      jobs: 1,
+      activeJobs: 1,
+      degradedJobs: 1,
+      runningJobs: 0,
+      autoDisabledJobs: 0,
+    });
+
+    const listed = await cron.list({ includeDisabled: true });
+    const listedJob = listed.find((entry) => entry.id === job.id);
+    expect(listedJob?.health).toEqual({
+      severity: "degraded",
+      running: false,
+      autoDisabled: false,
+      disabledReason: undefined,
+      consecutiveErrors: 1,
+      scheduleErrorCount: 0,
+      lastStatus: "error",
+    });
+    expect(listedJob?.lastRun).toMatchObject({
+      status: "error",
+      error: "upstream timeout",
+      summary: "sync failed",
+      sessionId: "sess_1",
+      sessionKey: "agent:main:cron:job-health:run:sess_1",
+      model: "gpt-5",
+      provider: "openai",
+      usage: {
+        input_tokens: 10,
+        output_tokens: 4,
+        total_tokens: 14,
+      },
+    });
+
+    cron.stop();
+  });
 });

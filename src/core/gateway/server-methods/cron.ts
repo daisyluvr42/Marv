@@ -1,3 +1,4 @@
+import { enrichCronJob } from "../../../cron/health.js";
 import { normalizeCronJobCreate, normalizeCronJobPatch } from "../../../cron/normalize.js";
 import { readCronRunLogEntries, resolveCronRunLogPath } from "../../../cron/run-log.js";
 import type { CronJobCreate, CronJobPatch } from "../../../cron/types.js";
@@ -222,6 +223,7 @@ export const cronHandlers: GatewayRequestHandlers = {
       limit: p.limit,
       jobId,
     });
-    respond(true, { entries }, undefined);
+    const job = context.cron.getJob(jobId);
+    respond(true, { entries, job: job ? enrichCronJob(job) : null }, undefined);
   },
 };

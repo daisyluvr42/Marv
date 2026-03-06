@@ -1,3 +1,4 @@
+import { enrichCronJob, summarizeCronJobs } from "../health.js";
 import type { CronJobCreate, CronJobPatch } from "../types.js";
 import {
   applyJobPatch,
@@ -68,11 +69,14 @@ export function stop(state: CronServiceState) {
 export async function status(state: CronServiceState) {
   return await locked(state, async () => {
     await ensureLoadedForRead(state);
+    const jobs = state.store?.jobs ?? [];
+    const summary = summarizeCronJobs(jobs);
     return {
       enabled: state.deps.cronEnabled,
       storePath: state.deps.storePath,
-      jobs: state.store?.jobs.length ?? 0,
+      jobs: jobs.length,
       nextWakeAtMs: state.deps.cronEnabled ? (nextWakeAtMs(state) ?? null) : null,
+      ...summary,
     };
   });
 }
@@ -82,7 +86,9 @@ export async function list(state: CronServiceState, opts?: { includeDisabled?: b
     await ensureLoadedForRead(state);
     const includeDisabled = opts?.includeDisabled === true;
     const jobs = (state.store?.jobs ?? []).filter((j) => includeDisabled || j.enabled);
-    return jobs.toSorted((a, b) => (a.state.nextRunAtMs ?? 0) - (b.state.nextRunAtMs ?? 0));
+    return jobs
+      .toSorted((a, b) => (a.state.nextRunAtMs ?? 0) - (b.state.nextRunAtMs ?? 0))
+      .map((job) => enrichCronJob(job));
   });
 }
 

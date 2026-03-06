@@ -1,5 +1,6 @@
 import type { CronConfig } from "../../core/config/types.cron.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat/heartbeat-wake.js";
+import type { CronJobListEntry } from "../health.js";
 import type {
   CronJob,
   CronJobCreate,
@@ -119,6 +120,11 @@ export type CronStatusSummary = {
   storePath: string;
   jobs: number;
   nextWakeAtMs: number | null;
+  activeJobs: number;
+  disabledJobs: number;
+  degradedJobs: number;
+  runningJobs: number;
+  autoDisabledJobs: number;
 };
 
 export type CronRunResult =
@@ -132,6 +138,6 @@ export type CronRemoveResult = { ok: true; removed: boolean } | { ok: false; rem
 export type CronAddResult = CronJob;
 export type CronUpdateResult = CronJob;
 
-export type CronListResult = CronJob[];
+export type CronListResult = CronJobListEntry[];
 export type CronAddInput = CronJobCreate;
 export type CronUpdateInput = CronJobPatch;

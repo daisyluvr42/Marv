@@ -375,6 +375,21 @@ describe("OpenResponses HTTP API (e2e)", () => {
       ).toBe(123);
       await ensureResponseConsumed(resMaxTokens);
 
+      mockAgentOnce([{ text: "ok" }]);
+      const resReasoning = await postResponses(port, {
+        model: "marv",
+        input: "hi",
+        reasoning: { effort: "high", summary: "concise" },
+      });
+      expect(resReasoning.status).toBe(200);
+      const optsReasoning = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0];
+      const reasoningPrompt =
+        (optsReasoning as { extraSystemPrompt?: string } | undefined)?.extraSystemPrompt ?? "";
+      expect(reasoningPrompt).toContain(
+        "OpenResponses reasoning preference: effort=high, summary=concise.",
+      );
+      await ensureResponseConsumed(resReasoning);
+
       mockAgentOnce([{ text: "ok" }], {
         agentMeta: {
           usage: { input: 3, output: 5, cacheRead: 1, cacheWrite: 1 },
@@ -424,6 +439,33 @@ describe("OpenResponses HTTP API (e2e)", () => {
         "invalid_request_error",
       );
       await ensureResponseConsumed(resNoUser);
+
+      agentCommand.mockReset();
+      agentCommand.mockResolvedValueOnce({
+        payloads: [],
+        meta: {
+          stopReason: "tool_calls",
+          pendingToolCalls: [
+            { id: "call_a", name: "get_weather", arguments: '{"location":"SF"}' },
+            { id: "call_b", name: "get_time", arguments: '{"zone":"PST"}' },
+          ],
+        },
+      } as never);
+      const resMultiToolCalls = await postResponses(port, {
+        stream: false,
+        model: "marv",
+        input: "hi",
+      });
+      expect(resMultiToolCalls.status).toBe(200);
+      const multiToolJson = (await resMultiToolCalls.json()) as {
+        status?: string;
+        output?: Array<{ type?: string; call_id?: string; name?: string }>;
+      };
+      expect(multiToolJson.status).toBe("incomplete");
+      expect(multiToolJson.output).toEqual([
+        expect.objectContaining({ type: "function_call", call_id: "call_a", name: "get_weather" }),
+        expect.objectContaining({ type: "function_call", call_id: "call_b", name: "get_time" }),
+      ]);
     } finally {
       // shared server
     }
@@ -507,6 +549,40 @@ describe("OpenResponses HTTP API (e2e)", () => {
         const parsed = JSON.parse(event.data) as { type?: string };
         expect(event.event).toBe(parsed.type);
       }
+
+      agentCommand.mockReset();
+      agentCommand.mockResolvedValueOnce({
+        payloads: [],
+        meta: {
+          stopReason: "tool_calls",
+          pendingToolCalls: [
+            { id: "call_a", name: "get_weather", arguments: '{"location":"SF"}' },
+            { id: "call_b", name: "get_time", arguments: '{"zone":"PST"}' },
+          ],
+        },
+      } as never);
+
+      const resMultiCall = await postResponses(port, {
+        stream: true,
+        model: "marv",
+        input: "hi",
+      });
+      expect(resMultiCall.status).toBe(200);
+      const multiCallText = await resMultiCall.text();
+      const multiCallEvents = parseSseEvents(multiCallText);
+      const doneItems = multiCallEvents
+        .filter((event) => event.event === "response.output_item.done")
+        .map((event) => JSON.parse(event.data) as { item?: { type?: string; call_id?: string } });
+      expect(doneItems).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            item: expect.objectContaining({ type: "function_call", call_id: "call_a" }),
+          }),
+          expect.objectContaining({
+            item: expect.objectContaining({ type: "function_call", call_id: "call_b" }),
+          }),
+        ]),
+      );
     } finally {
       // shared server
     }

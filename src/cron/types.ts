@@ -43,6 +43,17 @@ export type CronRunTelemetry = {
   usage?: CronUsageSummary;
 };
 
+export type CronLastRunSnapshot = {
+  status?: CronRunStatus;
+  error?: string;
+  summary?: string;
+  sessionId?: string;
+  sessionKey?: string;
+  runAtMs?: number;
+  durationMs?: number;
+  nextRunAtMs?: number;
+} & CronRunTelemetry;
+
 export type CronRunOutcome = {
   status: CronRunStatus;
   error?: string;
@@ -93,6 +104,12 @@ export type CronJobState = {
   lastStatus?: "ok" | "error" | "skipped";
   lastError?: string;
   lastDurationMs?: number;
+  lastSummary?: string;
+  lastSessionId?: string;
+  lastSessionKey?: string;
+  lastModel?: string;
+  lastProvider?: string;
+  lastUsage?: CronUsageSummary;
   /** Number of consecutive execution errors (reset on success). Used for backoff. */
   consecutiveErrors?: number;
   /** Number of consecutive schedule computation errors. Auto-disables job after threshold. */

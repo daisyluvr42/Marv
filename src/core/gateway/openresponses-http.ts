@@ -181,6 +181,7 @@ export function buildAgentPrompt(input: string | ItemParam[]): {
 
   const systemParts: string[] = [];
   const conversationEntries: ConversationEntry[] = [];
+  const reasoningSummaries: string[] = [];
 
   for (const item of input) {
     if (item.type === "message") {
@@ -201,16 +202,36 @@ export function buildAgentPrompt(input: string | ItemParam[]): {
         role: normalizedRole,
         entry: { sender, body: content },
       });
+    } else if (item.type === "function_call") {
+      const callId = item.call_id?.trim() || item.id?.trim() || item.name.trim();
+      const argumentsText = item.arguments.trim();
+      conversationEntries.push({
+        role: "assistant",
+        entry: {
+          sender: "Assistant",
+          body: `[function_call:${callId}] ${item.name}(${argumentsText || "{}"})`,
+        },
+      });
     } else if (item.type === "function_call_output") {
       conversationEntries.push({
         role: "tool",
         entry: { sender: `Tool:${item.call_id}`, body: item.output },
       });
+    } else if (item.type === "reasoning") {
+      const summary = item.summary?.trim() || item.content?.trim();
+      if (summary) {
+        reasoningSummaries.push(summary);
+      }
     }
-    // Skip reasoning and item_reference for prompt building (Phase 1)
+    // Skip item_reference for prompt building.
   }
 
   const message = buildAgentMessageFromConversationEntries(conversationEntries);
+  if (reasoningSummaries.length > 0) {
+    systemParts.push(
+      `Previous reasoning summary:\n${reasoningSummaries.map((entry) => `- ${entry}`).join("\n")}`,
+    );
+  }
 
   return {
     message,
@@ -298,6 +319,72 @@ function createAssistantOutputItem(params: {
     content: [{ type: "output_text", text: params.text }],
     status: params.status,
   };
+}
+
+type PendingToolCall = {
+  id: string;
+  name: string;
+  arguments: string;
+};
+
+function extractPendingToolCalls(meta: unknown): PendingToolCall[] {
+  if (!meta || typeof meta !== "object") {
+    return [];
+  }
+  const pending = (meta as { pendingToolCalls?: unknown }).pendingToolCalls;
+  if (!Array.isArray(pending)) {
+    return [];
+  }
+  return pending
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      const id =
+        typeof (entry as { id?: unknown }).id === "string" ? (entry as { id: string }).id : "";
+      const name =
+        typeof (entry as { name?: unknown }).name === "string"
+          ? (entry as { name: string }).name
+          : "";
+      const argumentsText =
+        typeof (entry as { arguments?: unknown }).arguments === "string"
+          ? (entry as { arguments: string }).arguments
+          : "";
+      if (!id || !name) {
+        return null;
+      }
+      return { id, name, arguments: argumentsText };
+    })
+    .filter((entry): entry is PendingToolCall => Boolean(entry));
+}
+
+function createFunctionCallOutputItem(
+  call: PendingToolCall,
+): Extract<OutputItem, { type: "function_call" }> {
+  return {
+    type: "function_call",
+    id: `call_${randomUUID()}`,
+    call_id: call.id,
+    name: call.name,
+    arguments: call.arguments,
+  };
+}
+
+function buildReasoningInstruction(reasoning: CreateResponseBody["reasoning"]): string | undefined {
+  if (!reasoning) {
+    return undefined;
+  }
+  const parts: string[] = [];
+  if (reasoning.effort) {
+    parts.push(`effort=${reasoning.effort}`);
+  }
+  if (reasoning.summary) {
+    parts.push(`summary=${reasoning.summary}`);
+  }
+  if (parts.length === 0) {
+    return undefined;
+  }
+  return `OpenResponses reasoning preference: ${parts.join(", ")}.`;
 }
 
 async function runResponsesAgentCommand(params: {
@@ -486,11 +573,13 @@ export async function handleOpenResponsesHttpRequest(
 
   const fileContext = fileContexts.length > 0 ? fileContexts.join("\n\n") : undefined;
   const toolChoiceContext = toolChoicePrompt?.trim();
+  const reasoningInstruction = buildReasoningInstruction(payload.reasoning);
 
   // Handle instructions + file context as extra system prompt
   const extraSystemPrompt = [
     payload.instructions,
     prompt.extraSystemPrompt,
+    reasoningInstruction,
     toolChoiceContext,
     fileContext,
   ]
@@ -533,29 +622,15 @@ export async function handleOpenResponsesHttpRequest(
       const meta = (result as { meta?: unknown } | null)?.meta;
       const stopReason =
         meta && typeof meta === "object" ? (meta as { stopReason?: string }).stopReason : undefined;
-      const pendingToolCalls =
-        meta && typeof meta === "object"
-          ? (meta as { pendingToolCalls?: Array<{ id: string; name: string; arguments: string }> })
-              .pendingToolCalls
-          : undefined;
+      const pendingToolCalls = extractPendingToolCalls(meta);
 
       // If agent called a client tool, return function_call instead of text
       if (stopReason === "tool_calls" && pendingToolCalls && pendingToolCalls.length > 0) {
-        const functionCall = pendingToolCalls[0];
-        const functionCallItemId = `call_${randomUUID()}`;
         const response = createResponseResource({
           id: responseId,
           model,
           status: "incomplete",
-          output: [
-            {
-              type: "function_call",
-              id: functionCallItemId,
-              call_id: functionCall.id,
-              name: functionCall.name,
-              arguments: functionCall.arguments,
-            },
-          ],
+          output: pendingToolCalls.map((call) => createFunctionCallOutputItem(call)),
           usage,
         });
         sendJson(res, 200, response);
@@ -776,18 +851,10 @@ export async function handleOpenResponsesHttpRequest(
           meta && typeof meta === "object"
             ? (meta as { stopReason?: string }).stopReason
             : undefined;
-        const pendingToolCalls =
-          meta && typeof meta === "object"
-            ? (
-                meta as {
-                  pendingToolCalls?: Array<{ id: string; name: string; arguments: string }>;
-                }
-              ).pendingToolCalls
-            : undefined;
+        const pendingToolCalls = extractPendingToolCalls(meta);
 
         // If agent called a client tool, emit function_call instead of text
         if (stopReason === "tool_calls" && pendingToolCalls && pendingToolCalls.length > 0) {
-          const functionCall = pendingToolCalls[0];
           const usage = finalUsage ?? createEmptyUsage();
 
           writeSseEvent(res, {
@@ -816,30 +883,31 @@ export async function handleOpenResponsesHttpRequest(
             item: completedItem,
           });
 
-          const functionCallItemId = `call_${randomUUID()}`;
-          const functionCallItem = {
-            type: "function_call" as const,
-            id: functionCallItemId,
-            call_id: functionCall.id,
-            name: functionCall.name,
-            arguments: functionCall.arguments,
-          };
-          writeSseEvent(res, {
-            type: "response.output_item.added",
-            output_index: 1,
-            item: functionCallItem,
-          });
-          writeSseEvent(res, {
-            type: "response.output_item.done",
-            output_index: 1,
-            item: { ...functionCallItem, status: "completed" as const },
+          const functionCallItems = pendingToolCalls.map((call) =>
+            createFunctionCallOutputItem(call),
+          );
+          functionCallItems.forEach((functionCallItem, index) => {
+            const completedFunctionCallItem: Extract<OutputItem, { type: "function_call" }> = {
+              ...functionCallItem,
+              status: "completed",
+            };
+            writeSseEvent(res, {
+              type: "response.output_item.added",
+              output_index: index + 1,
+              item: functionCallItem,
+            });
+            writeSseEvent(res, {
+              type: "response.output_item.done",
+              output_index: index + 1,
+              item: completedFunctionCallItem,
+            });
           });
 
           const incompleteResponse = createResponseResource({
             id: responseId,
             model,
             status: "incomplete",
-            output: [completedItem, functionCallItem],
+            output: [completedItem, ...functionCallItems],
             usage,
           });
           closed = true;
