@@ -56,6 +56,70 @@ function applyOpenAICodexSparkFallback(models: ModelCatalogEntry[]): void {
   });
 }
 
+// Forward-compat: inject GPT-5.4 variants when the Pi SDK doesn't include them yet.
+const GPT54_FORWARD_COMPAT_ENTRIES: Array<{
+  provider: string;
+  id: string;
+  templateProvider: string;
+  templateIds: string[];
+}> = [
+  {
+    provider: "openai-codex",
+    id: "gpt-5.4-codex",
+    templateProvider: "openai-codex",
+    templateIds: ["gpt-5.3-codex", "gpt-5.2-codex"],
+  },
+  {
+    provider: "openai",
+    id: "gpt-5.4",
+    templateProvider: "openai",
+    templateIds: ["gpt-5.2"],
+  },
+  {
+    provider: "github-copilot",
+    id: "gpt-5.4-codex",
+    templateProvider: "github-copilot",
+    templateIds: ["gpt-5.3-codex", "gpt-5.2-codex"],
+  },
+  {
+    provider: "github-copilot",
+    id: "gpt-5.4",
+    templateProvider: "github-copilot",
+    templateIds: ["gpt-5.2"],
+  },
+];
+
+function applyGpt54ForwardCompat(models: ModelCatalogEntry[]): void {
+  for (const entry of GPT54_FORWARD_COMPAT_ENTRIES) {
+    const exists = models.some(
+      (m) => m.provider === entry.provider && m.id.toLowerCase() === entry.id,
+    );
+    if (exists) {
+      continue;
+    }
+    // Find a template model from the same provider to clone metadata from.
+    let template: ModelCatalogEntry | undefined;
+    for (const templateId of entry.templateIds) {
+      template = models.find(
+        (m) => m.provider === entry.templateProvider && m.id.toLowerCase() === templateId,
+      );
+      if (template) {
+        break;
+      }
+    }
+    if (!template) {
+      // No template found for this provider (provider not configured); skip.
+      continue;
+    }
+    models.push({
+      ...template,
+      id: entry.id,
+      name: entry.id,
+      reasoning: true,
+    });
+  }
+}
+
 export function resetModelCatalogCacheForTest() {
   modelCatalogPromise = null;
   hasLoggedModelCatalogError = false;
@@ -140,6 +204,7 @@ export async function loadModelCatalog(params?: {
         models.push({ id, name, provider, contextWindow, reasoning, input });
       }
       applyOpenAICodexSparkFallback(models);
+      applyGpt54ForwardCompat(models);
 
       if (models.length === 0) {
         // If we found nothing, don't cache this result so we can try again.
