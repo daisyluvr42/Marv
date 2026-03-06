@@ -39,8 +39,8 @@ type SessionInfoEntry = {
   reasoningLevel?: string;
   model?: string;
   modelProvider?: string;
-  modelOverride?: string;
-  providerOverride?: string;
+  modelOverride?: string | null;
+  providerOverride?: string | null;
   contextTokens?: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;
@@ -49,6 +49,18 @@ type SessionInfoEntry = {
   updatedAt?: number | null;
   displayName?: string;
 };
+
+function hasOwnEntryField<K extends keyof SessionInfoEntry>(
+  entry: SessionInfoEntry | undefined,
+  key: K,
+): entry is SessionInfoEntry & Required<Pick<SessionInfoEntry, K>> {
+  return !!entry && Object.prototype.hasOwnProperty.call(entry, key);
+}
+
+function normalizeSessionValue(value?: string | null): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
 
 export function createSessionActions(context: SessionActionContext) {
   const {
@@ -127,16 +139,36 @@ export function createSessionActions(context: SessionActionContext) {
   };
 
   const resolveModelSelection = (entry?: SessionInfoEntry) => {
+    const overrideModel = normalizeSessionValue(
+      hasOwnEntryField(entry, "modelOverride")
+        ? entry.modelOverride
+        : state.sessionInfo.modelOverride,
+    );
+    if (overrideModel) {
+      if (entry?.modelProvider || entry?.model) {
+        return {
+          modelProvider: entry.modelProvider ?? state.sessionInfo.modelProvider,
+          model: entry.model ?? state.sessionInfo.model,
+        };
+      }
+      const overrideProvider = normalizeSessionValue(
+        hasOwnEntryField(entry, "providerOverride")
+          ? entry.providerOverride
+          : state.sessionInfo.providerOverride,
+      );
+      if (state.sessionInfo.modelProvider || state.sessionInfo.model) {
+        return {
+          modelProvider: state.sessionInfo.modelProvider,
+          model: state.sessionInfo.model,
+        };
+      }
+      return { modelProvider: overrideProvider, model: overrideModel };
+    }
     if (entry?.modelProvider || entry?.model) {
       return {
         modelProvider: entry.modelProvider ?? state.sessionInfo.modelProvider,
         model: entry.model ?? state.sessionInfo.model,
       };
-    }
-    const overrideModel = entry?.modelOverride?.trim();
-    if (overrideModel) {
-      const overrideProvider = entry?.providerOverride?.trim() || state.sessionInfo.modelProvider;
-      return { modelProvider: overrideProvider, model: overrideModel };
     }
     return {
       modelProvider: state.sessionInfo.modelProvider,
@@ -163,7 +195,13 @@ export function createSessionActions(context: SessionActionContext) {
 
     const entryUpdatedAt = entry?.updatedAt ?? null;
     const currentUpdatedAt = state.sessionInfo.updatedAt ?? null;
+    const overrideChanged =
+      (hasOwnEntryField(entry, "modelOverride") &&
+        entry.modelOverride !== state.sessionInfo.modelOverride) ||
+      (hasOwnEntryField(entry, "providerOverride") &&
+        entry.providerOverride !== state.sessionInfo.providerOverride);
     const modelChanged =
+      overrideChanged ||
       (entry?.modelProvider !== undefined &&
         entry.modelProvider !== state.sessionInfo.modelProvider) ||
       (entry?.model !== undefined && entry.model !== state.sessionInfo.model);
@@ -209,6 +247,12 @@ export function createSessionActions(context: SessionActionContext) {
     }
     if (entry?.updatedAt !== undefined) {
       next.updatedAt = entry.updatedAt;
+    }
+    if (hasOwnEntryField(entry, "modelOverride")) {
+      next.modelOverride = entry.modelOverride;
+    }
+    if (hasOwnEntryField(entry, "providerOverride")) {
+      next.providerOverride = entry.providerOverride;
     }
 
     const selection = resolveModelSelection(entry);
@@ -286,10 +330,16 @@ export function createSessionActions(context: SessionActionContext) {
       resolved && (resolved.modelProvider || resolved.model)
         ? {
             ...result.entry,
+            modelOverride: result.entry.modelOverride ?? null,
+            providerOverride: result.entry.providerOverride ?? null,
             modelProvider: resolved.modelProvider ?? result.entry.modelProvider,
             model: resolved.model ?? result.entry.model,
           }
-        : result.entry;
+        : {
+            ...result.entry,
+            modelOverride: result.entry.modelOverride ?? null,
+            providerOverride: result.entry.providerOverride ?? null,
+          };
     applySessionInfo({ entry, force: true });
   };
 

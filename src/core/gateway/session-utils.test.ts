@@ -220,7 +220,7 @@ describe("gateway session utils", () => {
 });
 
 describe("resolveSessionModelRef", () => {
-  test("prefers runtime model/provider from session entry", () => {
+  test("prefers explicit override over the last runtime model/provider", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -238,7 +238,7 @@ describe("resolveSessionModelRef", () => {
       providerOverride: "anthropic",
     });
 
-    expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
+    expect(resolved).toEqual({ provider: "anthropic", model: "claude-opus-4-6" });
   });
 
   test("falls back to override when runtime model is not recorded yet", () => {
@@ -562,5 +562,33 @@ describe("listSessionsFromStore search", () => {
     expect(stale?.totalTokensFresh).toBe(false);
     expect(missing?.totalTokens).toBeUndefined();
     expect(missing?.totalTokensFresh).toBe(false);
+  });
+
+  test("keeps raw override fields alongside the resolved footer model", () => {
+    const store: Record<string, SessionEntry> = {
+      "agent:main:main": {
+        sessionId: "sess-main",
+        updatedAt: Date.now(),
+        modelProvider: "openai-codex",
+        model: "gpt-5.3-codex",
+        providerOverride: "anthropic",
+        modelOverride: "claude-opus-4-6",
+      } as SessionEntry,
+    };
+
+    const result = listSessionsFromStore({
+      cfg: baseCfg,
+      storePath: "/tmp/sessions.json",
+      store,
+      opts: {},
+    });
+
+    expect(result.sessions[0]).toMatchObject({
+      key: "agent:main:main",
+      providerOverride: "anthropic",
+      modelOverride: "claude-opus-4-6",
+      modelProvider: "anthropic",
+      model: "claude-opus-4-6",
+    });
   });
 });

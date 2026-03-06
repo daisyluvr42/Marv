@@ -30,6 +30,8 @@ export type SessionInfo = {
   reasoningLevel?: string;
   model?: string;
   modelProvider?: string;
+  modelOverride?: string | null;
+  providerOverride?: string | null;
   contextTokens?: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;

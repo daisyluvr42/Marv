@@ -61,6 +61,8 @@ export type GatewaySessionList = {
     outputTokens?: number | null;
     totalTokens?: number | null;
     responseUsage?: "on" | "off" | "tokens" | "full";
+    modelOverride?: string | null;
+    providerOverride?: string | null;
     modelProvider?: string;
     label?: string;
     displayName?: string;
