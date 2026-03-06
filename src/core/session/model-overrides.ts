@@ -25,6 +25,12 @@ export function applyModelOverrideToSessionEntry(params: {
       delete entry.modelOverride;
       updated = true;
     }
+    // Clear stale runtime model fields so the display falls back to config defaults.
+    if (entry.model || entry.modelProvider) {
+      delete entry.model;
+      delete entry.modelProvider;
+      updated = true;
+    }
   } else {
     if (entry.providerOverride !== selection.provider) {
       entry.providerOverride = selection.provider;
@@ -32,6 +38,14 @@ export function applyModelOverrideToSessionEntry(params: {
     }
     if (entry.modelOverride !== selection.model) {
       entry.modelOverride = selection.model;
+      updated = true;
+    }
+    // Clear stale runtime model fields so resolveSessionModelRef picks up the
+    // new override instead of the last-run model (runtime fields take priority
+    // over overrides in the resolver).
+    if (entry.model || entry.modelProvider) {
+      delete entry.model;
+      delete entry.modelProvider;
       updated = true;
     }
   }
