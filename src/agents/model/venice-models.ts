@@ -203,6 +203,24 @@ export const VENICE_MODEL_CATALOG = [
 
   // OpenAI (via Venice)
   {
+    id: "openai-gpt-54",
+    name: "GPT-5.4 (via Venice)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 262144,
+    maxTokens: 8192,
+    privacy: "anonymized",
+  },
+  {
+    id: "openai-gpt-54-codex",
+    name: "GPT-5.4 Codex (via Venice)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 262144,
+    maxTokens: 8192,
+    privacy: "anonymized",
+  },
+  {
     id: "openai-gpt-52",
     name: "GPT-5.2 (via Venice)",
     reasoning: true,

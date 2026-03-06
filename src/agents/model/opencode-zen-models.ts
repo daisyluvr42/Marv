@@ -40,8 +40,10 @@ export const OPENCODE_ZEN_MODEL_ALIASES: Record<string, string> = {
   "haiku-3.5": "claude-opus-4-6",
 
   // GPT-5.x family
-  gpt5: "gpt-5.2",
-  "gpt-5": "gpt-5.2",
+  gpt5: "gpt-5.4",
+  "gpt-5": "gpt-5.4",
+  "gpt-5.4": "gpt-5.4",
+  "gpt-5.2": "gpt-5.2",
   "gpt-5.1": "gpt-5.1",
 
   // Legacy GPT aliases (keep old config/docs stable; map to closest current equivalents).
@@ -142,6 +144,7 @@ const MODEL_COSTS: Record<
     cacheWrite: 0,
   },
   "gpt-5.2": { input: 1.75, output: 14, cacheRead: 0.175, cacheWrite: 0 },
+  "gpt-5.4": { input: 2, output: 16, cacheRead: 0.2, cacheWrite: 0 },
 };
 
 const DEFAULT_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
@@ -157,6 +160,7 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "gemini-3-flash": 1048576,
   "gpt-5.1-codex-max": 400000,
   "gpt-5.2": 400000,
+  "gpt-5.4": 400000,
 };
 
 function getDefaultContextWindow(modelId: string): number {
@@ -174,6 +178,7 @@ const MODEL_MAX_TOKENS: Record<string, number> = {
   "gemini-3-flash": 65536,
   "gpt-5.1-codex-max": 128000,
   "gpt-5.2": 128000,
+  "gpt-5.4": 128000,
 };
 
 function getDefaultMaxTokens(modelId: string): number {
@@ -211,6 +216,7 @@ const MODEL_NAMES: Record<string, string> = {
   "gemini-3-flash": "Gemini 3 Flash",
   "gpt-5.1-codex-max": "GPT-5.1 Codex Max",
   "gpt-5.2": "GPT-5.2",
+  "gpt-5.4": "GPT-5.4",
 };
 
 function formatModelName(modelId: string): string {
@@ -239,6 +245,7 @@ export function getOpencodeZenStaticFallbackModels(): ModelDefinitionConfig[] {
     "gemini-3-flash",
     "gpt-5.1-codex-max",
     "gpt-5.2",
+    "gpt-5.4",
   ];
 
   return modelIds.map(buildModelDefinition);
