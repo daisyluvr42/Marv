@@ -29,6 +29,9 @@ export type FeishuClientCredentials = {
   appId?: string;
   appSecret?: string;
   domain?: FeishuDomain;
+  config?: {
+    connectionMode?: "websocket" | "webhook";
+  };
 };
 
 /**

@@ -5,6 +5,7 @@ export async function probeFeishu(creds?: FeishuClientCredentials): Promise<Feis
   if (!creds?.appId || !creds?.appSecret) {
     return {
       ok: false,
+      stage: "credentials",
       error: "missing credentials (appId, appSecret)",
     };
   }
@@ -23,6 +24,8 @@ export async function probeFeishu(creds?: FeishuClientCredentials): Promise<Feis
       return {
         ok: false,
         appId: creds.appId,
+        connectionMode: creds.config?.connectionMode,
+        stage: "bot_info",
         error: `API error: ${response.msg || `code ${response.code}`}`,
       };
     }
@@ -33,11 +36,15 @@ export async function probeFeishu(creds?: FeishuClientCredentials): Promise<Feis
       appId: creds.appId,
       botName: bot?.bot_name,
       botOpenId: bot?.open_id,
+      connectionMode: creds.config?.connectionMode,
+      stage: "bot_info",
     };
   } catch (err) {
     return {
       ok: false,
       appId: creds.appId,
+      connectionMode: creds.config?.connectionMode,
+      stage: "bot_info",
       error: err instanceof Error ? err.message : String(err),
     };
   }

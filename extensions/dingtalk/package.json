@@ -1,0 +1,34 @@
+{
+  "name": "@marv/dingtalk",
+  "version": "2026.2.18",
+  "description": "Marv DingTalk channel plugin",
+  "type": "module",
+  "dependencies": {
+    "@sinclair/typebox": "0.34.48",
+    "dingtalk-stream": "^2.1.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "marv": "workspace:*"
+  },
+  "marv": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "dingtalk",
+      "label": "DingTalk",
+      "selectionLabel": "DingTalk (钉钉)",
+      "docsPath": "/channels/dingtalk",
+      "docsLabel": "dingtalk",
+      "blurb": "DingTalk bot messaging with stream-mode monitoring.",
+      "order": 36,
+      "quickstartAllowFrom": true
+    },
+    "install": {
+      "npmSpec": "@marv/dingtalk",
+      "localPath": "extensions/dingtalk",
+      "defaultChoice": "npm"
+    }
+  }
+}

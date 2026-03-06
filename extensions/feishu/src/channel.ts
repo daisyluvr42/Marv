@@ -1,4 +1,9 @@
-import type { ChannelMeta, ChannelPlugin, ClawdbotConfig } from "marv/plugin-sdk";
+import type {
+  ChannelMeta,
+  ChannelPlugin,
+  ChannelStatusIssue,
+  ClawdbotConfig,
+} from "marv/plugin-sdk";
 import {
   buildBaseChannelStatusSummary,
   createDefaultChannelRuntimeState,
@@ -309,6 +314,43 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
   outbound: feishuOutbound,
   status: {
     defaultRuntime: createDefaultChannelRuntimeState(DEFAULT_ACCOUNT_ID, { port: null }),
+    collectStatusIssues: (accounts) =>
+      accounts.flatMap((entry) => {
+        const accountId = String(entry.accountId ?? DEFAULT_ACCOUNT_ID);
+        const issues: ChannelStatusIssue[] = [];
+        const probe = entry.probe as { ok?: boolean; error?: string; stage?: string } | undefined;
+        const connectionMode =
+          typeof (entry as unknown as { connectionMode?: unknown }).connectionMode === "string"
+            ? ((entry as unknown as { connectionMode: string }).connectionMode as
+                | "webhook"
+                | "websocket")
+            : undefined;
+        if (entry.enabled !== false && entry.configured === true && probe?.ok === false) {
+          issues.push({
+            channel: "feishu",
+            accountId,
+            kind: "runtime",
+            message:
+              probe.stage === "credentials"
+                ? "Feishu probe failed: credentials are incomplete."
+                : `Feishu probe failed during bot info lookup: ${probe.error ?? "unknown error"}`,
+          });
+        }
+        if (
+          entry.enabled !== false &&
+          entry.configured === true &&
+          connectionMode === "webhook" &&
+          !entry.port
+        ) {
+          issues.push({
+            channel: "feishu",
+            accountId,
+            kind: "config",
+            message: "Feishu webhook mode is enabled but webhookPort is not configured.",
+          });
+        }
+        return issues;
+      }),
     buildChannelSummary: ({ snapshot }) => ({
       ...buildBaseChannelStatusSummary(snapshot),
       port: snapshot.port ?? null,
@@ -323,6 +365,7 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
       name: account.name,
       appId: account.appId,
       domain: account.domain,
+      connectionMode: account.config.connectionMode ?? "websocket",
       running: runtime?.running ?? false,
       lastStartAt: runtime?.lastStartAt ?? null,
       lastStopAt: runtime?.lastStopAt ?? null,
