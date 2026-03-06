@@ -26,7 +26,11 @@ import {
 import type { CronServiceState } from "./state.js";
 
 const STUCK_RUN_MS = 2 * 60 * 60 * 1000;
-const SUPPORTED_SYSTEM_TASKS = new Set(["soulMemoryMaintenance", "soulMemoryNightlyMaintenance"]);
+const SUPPORTED_SYSTEM_TASKS = new Set([
+  "soulMemoryMaintenance",
+  "soulMemoryNightlyMaintenance",
+  "updateCheck",
+]);
 
 function resolveStableCronOffsetMs(jobId: string, staggerMs: number) {
   if (staggerMs <= 1) {
@@ -83,8 +87,12 @@ export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "pay
   ) {
     throw new Error('main cron jobs require payload.kind="systemEvent" or "systemTask"');
   }
-  if (job.sessionTarget === "isolated" && job.payload.kind !== "agentTurn") {
-    throw new Error('isolated cron jobs require payload.kind="agentTurn"');
+  if (
+    job.sessionTarget === "isolated" &&
+    job.payload.kind !== "agentTurn" &&
+    job.payload.kind !== "systemTask"
+  ) {
+    throw new Error('isolated cron jobs require payload.kind="agentTurn" or "systemTask"');
   }
 }
 

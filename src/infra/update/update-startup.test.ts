@@ -2,36 +2,25 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { UpdateCheckResult } from "./update-check.js";
 
-vi.mock("../marv-root.js", () => ({
-  resolveMarvPackageRoot: vi.fn(),
-}));
-
-vi.mock("./update-check.js", async () => {
-  const parse = (value: string) => value.split(".").map((part) => Number.parseInt(part, 10));
-  const compareSemverStrings = (a: string, b: string) => {
-    const left = parse(a);
-    const right = parse(b);
-    for (let idx = 0; idx < 3; idx += 1) {
-      const l = left[idx] ?? 0;
-      const r = right[idx] ?? 0;
-      if (l !== r) {
-        return l < r ? -1 : 1;
-      }
-    }
-    return 0;
-  };
-
-  return {
-    checkUpdateStatus: vi.fn(),
-    compareSemverStrings,
-    resolveNpmChannelTag: vi.fn(),
-  };
-});
-
-vi.mock("../../version.js", () => ({
-  VERSION: "1.0.0",
+vi.mock("./update-notify.js", () => ({
+  checkForUpdate: vi.fn(),
+  DEFAULT_UPDATE_CHECK_INTERVAL_MS: 24 * 60 * 60 * 1000,
+  formatAvailableUpdateSummary: vi.fn(
+    (update: { currentVersion: string; latestVersion: string }) =>
+      `Marv v${update.latestVersion} is available (current v${update.currentVersion}). Run marv update.`,
+  ),
+  shouldNotifyForVersion: vi.fn(
+    (params: {
+      update: { available: boolean; latestVersion: string | null; tag: string };
+      lastNotifiedVersion?: string;
+      lastNotifiedTag?: string;
+    }) =>
+      Boolean(params.update.available) &&
+      Boolean(params.update.latestVersion) &&
+      (params.lastNotifiedVersion !== params.update.latestVersion ||
+        params.lastNotifiedTag !== params.update.tag),
+  ),
 }));
 
 describe("update-startup", () => {
@@ -45,9 +34,7 @@ describe("update-startup", () => {
   let hadNodeEnv = false;
   let hadVitest = false;
 
-  let resolveMarvPackageRoot: (typeof import("../marv-root.js"))["resolveMarvPackageRoot"];
-  let checkUpdateStatus: (typeof import("./update-check.js"))["checkUpdateStatus"];
-  let resolveNpmChannelTag: (typeof import("./update-check.js"))["resolveNpmChannelTag"];
+  let checkForUpdate: (typeof import("./update-notify.js"))["checkForUpdate"];
   let runGatewayUpdateCheck: (typeof import("./update-startup.js"))["runGatewayUpdateCheck"];
   let loaded = false;
 
@@ -68,15 +55,12 @@ describe("update-startup", () => {
     prevNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "test";
 
-    // Ensure update checks don't short-circuit in test mode.
     hadVitest = Object.prototype.hasOwnProperty.call(process.env, "VITEST");
     prevVitest = process.env.VITEST;
     delete process.env.VITEST;
 
-    // Perf: load mocked modules once (after timers/env are set up).
     if (!loaded) {
-      ({ resolveMarvPackageRoot } = await import("../marv-root.js"));
-      ({ checkUpdateStatus, resolveNpmChannelTag } = await import("./update-check.js"));
+      ({ checkForUpdate } = await import("./update-notify.js"));
       ({ runGatewayUpdateCheck } = await import("./update-startup.js"));
       loaded = true;
     }
@@ -110,16 +94,14 @@ describe("update-startup", () => {
   });
 
   async function runUpdateCheckAndReadState(channel: "stable" | "beta") {
-    vi.mocked(resolveMarvPackageRoot).mockResolvedValue("/opt/marv");
-    vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/marv",
-      installKind: "package",
-      packageManager: "npm",
-    } satisfies UpdateCheckResult);
-    vi.mocked(resolveNpmChannelTag).mockResolvedValue({
+    vi.mocked(checkForUpdate).mockResolvedValue({
+      available: true,
+      currentVersion: "1.0.0",
+      latestVersion: "2.0.0",
+      channel,
       tag: "latest",
-      version: "2.0.0",
-    });
+      installKind: "package",
+    } as Awaited<ReturnType<typeof checkForUpdate>>);
 
     const log = { info: vi.fn() };
     await runGatewayUpdateCheck({
@@ -140,18 +122,14 @@ describe("update-startup", () => {
   it("logs update hint for npm installs when newer tag exists", async () => {
     const { log, parsed } = await runUpdateCheckAndReadState("stable");
 
-    expect(log.info).toHaveBeenCalledWith(
-      expect.stringContaining("update available (latest): v2.0.0"),
-    );
+    expect(log.info).toHaveBeenCalledWith(expect.stringContaining("Marv v2.0.0 is available"));
     expect(parsed.lastNotifiedVersion).toBe("2.0.0");
   });
 
   it("uses latest when beta tag is older than release", async () => {
     const { log, parsed } = await runUpdateCheckAndReadState("beta");
 
-    expect(log.info).toHaveBeenCalledWith(
-      expect.stringContaining("update available (latest): v2.0.0"),
-    );
+    expect(log.info).toHaveBeenCalledWith(expect.stringContaining("Marv v2.0.0 is available"));
     expect(parsed.lastNotifiedTag).toBe("latest");
   });
 

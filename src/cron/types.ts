@@ -62,7 +62,10 @@ export type CronRunOutcome = {
   sessionKey?: string;
 };
 
-export type CronSystemTask = "soulMemoryMaintenance" | "soulMemoryNightlyMaintenance";
+export type CronSystemTask =
+  | "soulMemoryMaintenance"
+  | "soulMemoryNightlyMaintenance"
+  | "updateCheck";
 
 export type CronPayload =
   | { kind: "systemEvent"; text: string }
@@ -110,6 +113,8 @@ export type CronJobState = {
   lastModel?: string;
   lastProvider?: string;
   lastUsage?: CronUsageSummary;
+  lastNotifiedVersion?: string;
+  lastNotifiedTag?: string;
   /** Number of consecutive execution errors (reset on success). Used for backoff. */
   consecutiveErrors?: number;
   /** Number of consecutive schedule computation errors. Auto-disables job after threshold. */

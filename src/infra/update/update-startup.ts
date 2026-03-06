@@ -1,12 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatCliCommand } from "../../cli/command-format.js";
 import type { loadConfig } from "../../core/config/config.js";
 import { resolveStateDir } from "../../core/config/paths.js";
-import { VERSION } from "../../version.js";
-import { resolveMarvPackageRoot } from "../marv-root.js";
-import { normalizeUpdateChannel, DEFAULT_PACKAGE_CHANNEL } from "./update-channels.js";
-import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from "./update-check.js";
+import {
+  checkForUpdate,
+  DEFAULT_UPDATE_CHECK_INTERVAL_MS,
+  formatAvailableUpdateSummary,
+  shouldNotifyForVersion,
+} from "./update-notify.js";
 
 type UpdateCheckState = {
   lastCheckedAt?: string;
@@ -15,7 +16,6 @@ type UpdateCheckState = {
 };
 
 const UPDATE_CHECK_FILENAME = "update-check.json";
-const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 function shouldSkipCheck(allowInTests: boolean): boolean {
   if (allowInTests) {
@@ -63,21 +63,15 @@ export async function runGatewayUpdateCheck(params: {
   const now = Date.now();
   const lastCheckedAt = state.lastCheckedAt ? Date.parse(state.lastCheckedAt) : null;
   if (lastCheckedAt && Number.isFinite(lastCheckedAt)) {
-    if (now - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS) {
+    if (now - lastCheckedAt < DEFAULT_UPDATE_CHECK_INTERVAL_MS) {
       return;
     }
   }
 
-  const root = await resolveMarvPackageRoot({
-    moduleUrl: import.meta.url,
-    argv1: process.argv[1],
-    cwd: process.cwd(),
-  });
-  const status = await checkUpdateStatus({
-    root,
+  const update = await checkForUpdate({
+    cfg: params.cfg,
     timeoutMs: 2500,
     fetchGit: false,
-    includeRegistry: false,
   });
 
   const nextState: UpdateCheckState = {
@@ -85,30 +79,15 @@ export async function runGatewayUpdateCheck(params: {
     lastCheckedAt: new Date(now).toISOString(),
   };
 
-  if (status.installKind !== "package") {
+  if (update.installKind !== "package") {
     await writeState(statePath, nextState);
     return;
   }
 
-  const channel = normalizeUpdateChannel(params.cfg.update?.channel) ?? DEFAULT_PACKAGE_CHANNEL;
-  const resolved = await resolveNpmChannelTag({ channel, timeoutMs: 2500 });
-  const tag = resolved.tag;
-  if (!resolved.version) {
-    await writeState(statePath, nextState);
-    return;
-  }
-
-  const cmp = compareSemverStrings(VERSION, resolved.version);
-  if (cmp != null && cmp < 0) {
-    const shouldNotify =
-      state.lastNotifiedVersion !== resolved.version || state.lastNotifiedTag !== tag;
-    if (shouldNotify) {
-      params.log.info(
-        `update available (${tag}): v${resolved.version} (current v${VERSION}). Run: ${formatCliCommand("marv update")}`,
-      );
-      nextState.lastNotifiedVersion = resolved.version;
-      nextState.lastNotifiedTag = tag;
-    }
+  if (shouldNotifyForVersion({ update, ...state })) {
+    params.log.info(formatAvailableUpdateSummary(update));
+    nextState.lastNotifiedVersion = update.latestVersion ?? undefined;
+    nextState.lastNotifiedTag = update.tag;
   }
 
   await writeState(statePath, nextState);

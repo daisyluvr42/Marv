@@ -54,14 +54,17 @@ export function inferLegacyName(job: {
   const isSoulMaintenanceTask =
     job?.payload?.task === "soulMemoryMaintenance" ||
     job?.payload?.task === "soulMemoryNightlyMaintenance";
+  const isUpdateCheckTask = job?.payload?.task === "updateCheck";
   const text =
     job?.payload?.kind === "systemEvent" && typeof job.payload.text === "string"
       ? job.payload.text
       : job?.payload?.kind === "systemTask" && isSoulMaintenanceTask
         ? "Soul memory maintenance"
-        : job?.payload?.kind === "agentTurn" && typeof job.payload.message === "string"
-          ? job.payload.message
-          : "";
+        : job?.payload?.kind === "systemTask" && isUpdateCheckTask
+          ? "Update check"
+          : job?.payload?.kind === "agentTurn" && typeof job.payload.message === "string"
+            ? job.payload.message
+            : "";
   const firstLine =
     text
       .split("\n")

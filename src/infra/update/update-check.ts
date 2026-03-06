@@ -14,6 +14,7 @@ export type GitUpdateStatus = {
   tag: string | null;
   branch: string | null;
   upstream: string | null;
+  upstreamSha?: string | null;
   dirty: boolean | null;
   ahead: number | null;
   behind: number | null;
@@ -133,6 +134,14 @@ export async function checkGitUpdateStatus(params: {
     { timeoutMs },
   ).catch(() => null);
   const upstream = upstreamRes && upstreamRes.code === 0 ? upstreamRes.stdout.trim() : null;
+  const upstreamShaRes =
+    upstream && upstream.length > 0
+      ? await runCommandWithTimeout(["git", "-C", root, "rev-parse", upstream], {
+          timeoutMs,
+        }).catch(() => null)
+      : null;
+  const upstreamSha =
+    upstreamShaRes && upstreamShaRes.code === 0 ? upstreamShaRes.stdout.trim() : null;
 
   const dirtyRes = await runCommandWithTimeout(
     ["git", "-C", root, "status", "--porcelain", "--", ":!dist/control-ui/"],
@@ -174,6 +183,7 @@ export async function checkGitUpdateStatus(params: {
     tag,
     branch,
     upstream,
+    upstreamSha,
     dirty,
     ahead: parsed?.ahead ?? null,
     behind: parsed?.behind ?? null,

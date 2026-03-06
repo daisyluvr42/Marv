@@ -13,7 +13,11 @@ import { recomputeNextRuns } from "./jobs.js";
 import { inferLegacyName, normalizeOptionalText } from "./normalize.js";
 import type { CronServiceState } from "./state.js";
 
-const SUPPORTED_SYSTEM_TASKS = new Set(["soulMemoryMaintenance", "soulMemoryNightlyMaintenance"]);
+const SUPPORTED_SYSTEM_TASKS = new Set([
+  "soulMemoryMaintenance",
+  "soulMemoryNightlyMaintenance",
+  "updateCheck",
+]);
 
 function buildDeliveryPatchFromLegacyPayload(payload: Record<string, unknown>) {
   const deliver = payload.deliver;

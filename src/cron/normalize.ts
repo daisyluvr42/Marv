@@ -21,7 +21,11 @@ const DEFAULT_OPTIONS: NormalizeOptions = {
   applyDefaults: false,
 };
 
-const SUPPORTED_SYSTEM_TASKS = new Set(["soulMemoryMaintenance", "soulMemoryNightlyMaintenance"]);
+const SUPPORTED_SYSTEM_TASKS = new Set([
+  "soulMemoryMaintenance",
+  "soulMemoryNightlyMaintenance",
+  "updateCheck",
+]);
 
 function coerceSchedule(schedule: UnknownRecord) {
   const next: UnknownRecord = { ...schedule };

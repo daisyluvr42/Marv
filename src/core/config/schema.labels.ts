@@ -5,6 +5,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "meta.lastTouchedAt": "Config Last Touched At",
   "update.channel": "Update Channel",
   "update.checkOnStart": "Update Check on Start",
+  "update.autoCheckIntervalMs": "Update Check Interval (ms)",
   "diagnostics.enabled": "Diagnostics Enabled",
   "diagnostics.flags": "Diagnostics Flags",
   "diagnostics.otel.enabled": "OpenTelemetry Enabled",

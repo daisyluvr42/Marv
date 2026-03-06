@@ -9,6 +9,8 @@ const enqueueSystemEventMock = vi.fn();
 const requestHeartbeatNowMock = vi.fn();
 const loadConfigMock = vi.fn();
 const fetchWithSsrFGuardMock = vi.fn();
+const runCronIsolatedAgentTurnMock = vi.fn();
+const checkForUpdateMock = vi.fn();
 
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
@@ -30,7 +32,42 @@ vi.mock("../../infra/net/fetch-guard.js", () => ({
   fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
 }));
 
-import { buildGatewayCronService, ensureSoulMemoryMaintenanceCronJob } from "./server-cron.js";
+vi.mock("../../cron/isolated-agent.js", () => ({
+  runCronIsolatedAgentTurn: (...args: unknown[]) => runCronIsolatedAgentTurnMock(...args),
+}));
+
+vi.mock("../../infra/update/update-notify.js", () => ({
+  buildUpdateNotificationPrompt: vi.fn(() => "notify about update"),
+  checkForUpdate: (...args: unknown[]) => checkForUpdateMock(...args),
+  formatAvailableUpdateSummary: vi.fn(
+    (update: { currentVersion: string; latestVersion: string }) =>
+      `Marv v${update.latestVersion} is available (current v${update.currentVersion}). Run marv update.`,
+  ),
+  resolveUpdateCheckEnabled: vi.fn(
+    (cfg: { update?: { checkOnStart?: boolean } }) => cfg.update?.checkOnStart !== false,
+  ),
+  resolveUpdateCheckIntervalMs: vi.fn(
+    (cfg: { update?: { autoCheckIntervalMs?: number } }) =>
+      cfg.update?.autoCheckIntervalMs ?? 24 * 60 * 60 * 1000,
+  ),
+  shouldNotifyForVersion: vi.fn(
+    (params: {
+      update: { available: boolean; latestVersion: string | null; tag: string };
+      lastNotifiedVersion?: string;
+      lastNotifiedTag?: string;
+    }) =>
+      Boolean(params.update.available) &&
+      Boolean(params.update.latestVersion) &&
+      (params.lastNotifiedVersion !== params.update.latestVersion ||
+        params.lastNotifiedTag !== params.update.tag),
+  ),
+}));
+
+import {
+  buildGatewayCronService,
+  ensureSoulMemoryMaintenanceCronJob,
+  ensureUpdateCheckCronJob,
+} from "./server-cron.js";
 
 describe("buildGatewayCronService", () => {
   beforeEach(() => {
@@ -38,6 +75,9 @@ describe("buildGatewayCronService", () => {
     requestHeartbeatNowMock.mockReset();
     loadConfigMock.mockReset();
     fetchWithSsrFGuardMock.mockReset();
+    runCronIsolatedAgentTurnMock.mockReset();
+    checkForUpdateMock.mockReset();
+    runCronIsolatedAgentTurnMock.mockResolvedValue({ status: "ok", summary: "update delivered" });
   });
 
   it("canonicalizes non-agent sessionKey to agent store key for enqueue + wake", async () => {
@@ -234,6 +274,102 @@ describe("buildGatewayCronService", () => {
         expect(maintenance.schedule.expr).toBe("20 3 * * *");
         expect(maintenance.schedule.staggerMs).toBe(0);
       }
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("ensures managed update-check cron job exists", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-update-check-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+      update: {
+        autoCheckIntervalMs: 12_000,
+      },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureUpdateCheckCronJob({ cron: state.cron, cfg });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const updateCheck = jobs.find(
+        (job) => job.payload.kind === "systemTask" && job.payload.task === "updateCheck",
+      );
+      expect(updateCheck).toBeDefined();
+      if (!updateCheck) {
+        throw new Error("update check job missing");
+      }
+      expect(updateCheck.enabled).toBe(true);
+      expect(updateCheck.sessionTarget).toBe("isolated");
+      expect(updateCheck.wakeMode).toBe("next-heartbeat");
+      expect(updateCheck.delivery).toEqual({ mode: "announce", channel: "last" });
+      expect(updateCheck.schedule).toEqual({
+        kind: "every",
+        everyMs: 12_000,
+        anchorMs: expect.any(Number),
+      });
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("notifies only once per available version", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-update-dedupe-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+      update: {
+        autoCheckIntervalMs: 60_000,
+      },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+    checkForUpdateMock.mockResolvedValue({
+      available: true,
+      currentVersion: "1.0.0",
+      latestVersion: "2.0.0",
+      channel: "stable",
+      tag: "latest",
+      installKind: "package",
+    });
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureUpdateCheckCronJob({ cron: state.cron, cfg });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const updateCheck = jobs.find(
+        (job) => job.payload.kind === "systemTask" && job.payload.task === "updateCheck",
+      );
+      if (!updateCheck) {
+        throw new Error("update check job missing");
+      }
+
+      await state.cron.run(updateCheck.id, "force");
+      await state.cron.run(updateCheck.id, "force");
+
+      expect(runCronIsolatedAgentTurnMock).toHaveBeenCalledTimes(1);
+      const refreshed = state.cron.getJob(updateCheck.id);
+      expect(refreshed?.state.lastNotifiedVersion).toBe("2.0.0");
+      expect(refreshed?.state.lastNotifiedTag).toBe("latest");
     } finally {
       state.cron.stop();
     }

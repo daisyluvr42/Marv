@@ -65,6 +65,8 @@ export type MarvConfig = {
     channel?: "stable" | "beta" | "dev";
     /** Check for updates on gateway start (npm installs only). */
     checkOnStart?: boolean;
+    /** Interval for managed update-check cron jobs in milliseconds. */
+    autoCheckIntervalMs?: number;
   };
   browser?: BrowserConfig;
   ui?: {

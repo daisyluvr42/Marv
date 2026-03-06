@@ -12,6 +12,14 @@ import { requestHeartbeatNow } from "../../infra/heartbeat/heartbeat-wake.js";
 import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
 import { SsrFBlockedError } from "../../infra/net/ssrf.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
+import {
+  buildUpdateNotificationPrompt,
+  checkForUpdate,
+  formatAvailableUpdateSummary,
+  resolveUpdateCheckEnabled,
+  resolveUpdateCheckIntervalMs,
+  shouldNotifyForVersion,
+} from "../../infra/update/update-notify.js";
 import { getChildLogger } from "../../logging.js";
 import {
   formatSoulMemoryMaintenanceSummary,
@@ -43,6 +51,10 @@ const SUPPORTED_SOUL_MAINTENANCE_TASKS = new Set([
   "soulMemoryMaintenance",
   "soulMemoryNightlyMaintenance",
 ]);
+const UPDATE_CHECK_JOB_NAME = "Update Check";
+const UPDATE_CHECK_JOB_DESCRIPTION =
+  "Periodically check for new Marv versions and notify the user through the last active channel.";
+const UPDATE_CHECK_TASK = "updateCheck";
 
 function redactWebhookUrl(url: string): string {
   try {
@@ -212,26 +224,75 @@ export function buildGatewayCronService(params: {
       });
     },
     runSystemTask: async ({ job, task }) => {
-      if (!SUPPORTED_SOUL_MAINTENANCE_TASKS.has(task)) {
-        return { status: "skipped", error: "unsupported system task" };
-      }
-      const runtimeConfig = loadConfig();
-      const report = runSoulMemoryMaintenance({
-        cfg: runtimeConfig,
-        nowMs: Date.now(),
-        agentId: job.agentId,
-      });
-      if (report.agents.length > 0 && report.failedAgents >= report.agents.length) {
+      if (SUPPORTED_SOUL_MAINTENANCE_TASKS.has(task)) {
+        const runtimeConfig = loadConfig();
+        const report = runSoulMemoryMaintenance({
+          cfg: runtimeConfig,
+          nowMs: Date.now(),
+          agentId: job.agentId,
+        });
+        if (report.agents.length > 0 && report.failedAgents >= report.agents.length) {
+          return {
+            status: "error",
+            error: "soul maintenance failed for all agents",
+            summary: formatSoulMemoryMaintenanceSummary(report),
+          };
+        }
         return {
-          status: "error",
-          error: "soul maintenance failed for all agents",
+          status: "ok",
           summary: formatSoulMemoryMaintenanceSummary(report),
         };
       }
-      return {
-        status: "ok",
-        summary: formatSoulMemoryMaintenanceSummary(report),
-      };
+
+      if (task === UPDATE_CHECK_TASK) {
+        const runtimeConfig = loadConfig();
+        const update = await checkForUpdate({
+          cfg: runtimeConfig,
+          timeoutMs: 2_500,
+          fetchGit: true,
+        });
+        if (!update.available || !update.latestVersion) {
+          return { status: "skipped", summary: "Marv is up to date." };
+        }
+        if (
+          !shouldNotifyForVersion({
+            update,
+            lastNotifiedVersion: job.state.lastNotifiedVersion,
+            lastNotifiedTag: job.state.lastNotifiedTag,
+          })
+        ) {
+          return {
+            status: "skipped",
+            summary: `Already notified about ${formatAvailableUpdateSummary(update)}`,
+          };
+        }
+
+        const result = await runCronIsolatedAgentTurn({
+          cfg: runtimeConfig,
+          deps: params.deps,
+          job,
+          message: buildUpdateNotificationPrompt(update),
+          agentId: job.agentId,
+          sessionKey: `cron:${job.id}`,
+          lane: "cron",
+        });
+        if (result.status === "ok") {
+          job.state.lastNotifiedVersion = update.latestVersion;
+          job.state.lastNotifiedTag = update.tag;
+        }
+        return {
+          status: result.status,
+          error: result.error,
+          summary: result.summary ?? formatAvailableUpdateSummary(update),
+          sessionId: result.sessionId,
+          sessionKey: result.sessionKey,
+          model: result.model,
+          provider: result.provider,
+          usage: result.usage,
+        };
+      }
+
+      return { status: "skipped", error: "unsupported system task" };
     },
     log: getChildLogger({ module: "cron", storePath }),
     onEvent: (evt) => {
@@ -439,5 +500,105 @@ export async function ensureSoulMemoryMaintenanceCronJob(params: {
   logger.info(
     { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
     "cron: updated managed soul-memory maintenance job",
+  );
+}
+
+export async function ensureUpdateCheckCronJob(params: {
+  cron: CronService;
+  cfg?: ReturnType<typeof loadConfig>;
+  log?: { info: (obj: unknown, msg?: string) => void; warn: (obj: unknown, msg?: string) => void };
+}) {
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  const status = await params.cron.status();
+  if (!status.enabled) {
+    return;
+  }
+
+  const runtimeConfig = params.cfg ?? loadConfig();
+  const desiredIntervalMs = resolveUpdateCheckIntervalMs(runtimeConfig);
+  const desiredEnabled = resolveUpdateCheckEnabled(runtimeConfig);
+  const existingJobs = await params.cron.list({ includeDisabled: true });
+  const managed = existingJobs.find(
+    (job) => job.payload.kind === "systemTask" && job.payload.task === UPDATE_CHECK_TASK,
+  );
+
+  if (!managed) {
+    const created = await params.cron.add({
+      name: UPDATE_CHECK_JOB_NAME,
+      description: UPDATE_CHECK_JOB_DESCRIPTION,
+      enabled: desiredEnabled,
+      deleteAfterRun: false,
+      schedule: {
+        kind: "every",
+        everyMs: desiredIntervalMs,
+      },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "systemTask",
+        task: UPDATE_CHECK_TASK,
+      },
+      delivery: {
+        mode: "announce",
+        channel: "last",
+      },
+    });
+    logger.info(
+      { jobId: created.id, nextRunAtMs: created.state.nextRunAtMs ?? null },
+      "cron: added managed update-check job",
+    );
+    return;
+  }
+
+  const needsScheduleUpdate =
+    managed.schedule.kind !== "every" || managed.schedule.everyMs !== desiredIntervalMs;
+  const needsShapeUpdate =
+    managed.enabled !== desiredEnabled ||
+    managed.deleteAfterRun !== false ||
+    managed.sessionTarget !== "isolated" ||
+    managed.wakeMode !== "next-heartbeat" ||
+    managed.payload.kind !== "systemTask" ||
+    managed.payload.task !== UPDATE_CHECK_TASK ||
+    managed.delivery?.mode !== "announce" ||
+    managed.delivery?.channel !== "last" ||
+    managed.delivery?.to !== undefined;
+  const needsMetadataUpdate =
+    managed.name !== UPDATE_CHECK_JOB_NAME || managed.description !== UPDATE_CHECK_JOB_DESCRIPTION;
+
+  if (!needsScheduleUpdate && !needsShapeUpdate && !needsMetadataUpdate) {
+    return;
+  }
+
+  const patch: Parameters<CronService["update"]>[1] = {};
+  if (needsMetadataUpdate) {
+    patch.name = UPDATE_CHECK_JOB_NAME;
+    patch.description = UPDATE_CHECK_JOB_DESCRIPTION;
+  }
+  if (needsScheduleUpdate) {
+    patch.schedule = {
+      kind: "every",
+      everyMs: desiredIntervalMs,
+    };
+  }
+  if (needsShapeUpdate) {
+    patch.enabled = desiredEnabled;
+    patch.deleteAfterRun = false;
+    patch.sessionTarget = "isolated";
+    patch.wakeMode = "next-heartbeat";
+    patch.payload = {
+      kind: "systemTask",
+      task: UPDATE_CHECK_TASK,
+    };
+    patch.delivery = {
+      mode: "announce",
+      channel: "last",
+      to: "",
+    };
+  }
+
+  const updated = await params.cron.update(managed.id, patch);
+  logger.info(
+    { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
+    "cron: updated managed update-check job",
   );
 }
