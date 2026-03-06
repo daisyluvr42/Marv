@@ -17,6 +17,7 @@ import {
   type SoulMemoryScope,
 } from "../../memory/storage/soul-memory-store.js";
 import type { MemorySearchResult } from "../../memory/types.js";
+import { evaluateMemoryWriteHeuristics } from "../../memory/write-heuristics.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { truncateUtf16Safe } from "../../utils.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
@@ -366,12 +367,25 @@ export function createMemoryWriteTool(options: {
         });
       }
 
+      const heuristics = evaluateMemoryWriteHeuristics({
+        content,
+        kind,
+      });
+      if (!heuristics.shouldWrite) {
+        return jsonResult({
+          ok: false,
+          skipped: true,
+          classification: heuristics.classification,
+          error: "memory write skipped by heuristics",
+        });
+      }
+
       const item = writeSoulMemory({
         agentId,
         scopeType,
         scopeId,
         kind,
-        content,
+        content: heuristics.normalizedContent,
         confidence: confidence ?? undefined,
         source: source ?? undefined,
         soulConfig,
@@ -398,6 +412,7 @@ export function createMemoryWriteTool(options: {
         tier: item.tier,
         source: item.source,
         confidence: item.confidence,
+        classification: heuristics.classification,
         references,
       });
     },

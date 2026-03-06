@@ -16,6 +16,7 @@ let readFileImpl: () => Promise<string> = async () => "";
 let soulSearchImpl: () => unknown[] = () => [];
 let soulReadImpl: (itemId: string) => { id: string; content: string } | null = () => null;
 let soulWriteImpl: (content: string) => { id: string } = () => ({ id: "mem_mock" });
+let lastSoulWriteContent: string | null = null;
 let soulRefsImpl: (itemId: string) => string[] = () => [];
 
 const stubManager = {
@@ -50,7 +51,10 @@ vi.mock("../../memory/storage/soul-memory-store.js", () => {
     querySoulMemoryMulti: (..._args: unknown[]) => soulSearchImpl(),
     getSoulMemoryItem: ({ itemId }: { itemId: string }) => soulReadImpl(itemId),
     listSoulMemoryReferences: ({ itemId }: { itemId: string }) => soulRefsImpl(itemId),
-    writeSoulMemory: ({ content }: { content: string }) => soulWriteImpl(content),
+    writeSoulMemory: ({ content }: { content: string }) => {
+      lastSoulWriteContent = content;
+      return soulWriteImpl(content);
+    },
     buildSoulMemoryPath: (itemId: string) => `soul-memory/${itemId}`,
     parseSoulMemoryPath: (value: string) =>
       value.startsWith("soul-memory/") ? value.slice("soul-memory/".length) : null,
@@ -83,6 +87,7 @@ beforeEach(() => {
   soulSearchImpl = () => [];
   soulReadImpl = () => null;
   soulWriteImpl = () => ({ id: "mem_mock" });
+  lastSoulWriteContent = null;
   soulRefsImpl = () => [];
   vi.clearAllMocks();
 });
@@ -313,13 +318,36 @@ describe("memory tools", () => {
       throw new Error("tool missing");
     }
 
-    const result = await tool.execute("call_3", { content: "remember this decision" });
+    const result = await tool.execute("call_3", {
+      content: "Please remember that I prefer concise replies.",
+    });
     expect(result.details).toMatchObject({
       ok: true,
       id: "mem_written",
       path: "soul-memory/mem_written",
+      classification: "explicit_memory",
       references: ["mem_anchor"],
     });
+    expect(lastSoulWriteContent).toBe("I prefer concise replies.");
+  });
+
+  it("skips transient memory_write requests", async () => {
+    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const tool = createMemoryWriteTool({ config: cfg });
+    if (!tool) {
+      throw new Error("tool missing");
+    }
+
+    const result = await tool.execute("call_4", {
+      content: "We are debugging the flaky deploy right now.",
+    });
+    expect(result.details).toEqual({
+      ok: false,
+      skipped: true,
+      classification: "reject_transient",
+      error: "memory write skipped by heuristics",
+    });
+    expect(lastSoulWriteContent).toBeNull();
   });
 
   it("includes [ref:item_id] chain and salience metadata in soul search results", async () => {
