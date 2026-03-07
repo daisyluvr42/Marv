@@ -1,10 +1,8 @@
-import { resolveAgentModelFallbacksOverride } from "../../agents/agent-scope.js";
 import type { NormalizedUsage } from "../../agents/usage.js";
 import { getChannelDock } from "../../channels/dock.js";
 import type { ChannelId, ChannelThreadingToolContext } from "../../channels/plugins/types.js";
 import { normalizeAnyChannelId, normalizeChannelId } from "../../channels/registry.js";
 import type { MarvConfig } from "../../core/config/config.js";
-import { resolveAgentIdFromSessionKey } from "../../core/config/sessions.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { estimateUsageCost, formatTokenCount, formatUsd } from "../../utils/usage-format.js";
 import type { TemplateContext } from "../templating.js";
@@ -138,21 +136,16 @@ export const resolveEnforceFinalTag = (run: FollowupRun["run"], provider: string
   Boolean(run.enforceFinalTag || isReasoningTagProvider(provider));
 
 export function resolveModelFallbackOptions(run: FollowupRun["run"]) {
-  const globalFallbacks = resolveAgentModelFallbacksOverride(
-    run.config,
-    resolveAgentIdFromSessionKey(run.sessionKey),
-  );
-  // Merge per-tier auto-routing fallbacks (higher priority) with global fallbacks.
-  const mergedFallbacks =
-    run.autoRoutingFallbacks && run.autoRoutingFallbacks.length > 0
-      ? [...run.autoRoutingFallbacks, ...(globalFallbacks ?? [])]
-      : globalFallbacks;
+  const plannedFallbacks =
+    run.modelCandidates && run.modelCandidates.length > 1
+      ? run.modelCandidates.slice(1)
+      : undefined;
   return {
     cfg: run.config,
     provider: run.provider,
     model: run.model,
     agentDir: run.agentDir,
-    fallbacksOverride: mergedFallbacks,
+    fallbacksOverride: plannedFallbacks,
   };
 }
 

@@ -11,6 +11,7 @@ import {
   BlockStreamingCoalesceSchema,
   CliBackendSchema,
   HumanDelaySchema,
+  ModelPoolSchema,
 } from "./zod-schema.core.js";
 
 export { AutoRoutingSchema };
@@ -24,6 +25,8 @@ export const AgentDefaultsSchema = z
       })
       .strict()
       .optional(),
+    modelPool: z.string().optional(),
+    modelPools: z.record(z.string(), ModelPoolSchema).optional(),
     imageModel: z
       .object({
         primary: z.string().optional(),

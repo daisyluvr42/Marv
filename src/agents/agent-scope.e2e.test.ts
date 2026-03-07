@@ -1,14 +1,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../core/config/config.js";
-import {
-  resolveAgentConfig,
-  resolveAgentDir,
-  resolveEffectiveModelFallbacks,
-  resolveAgentModelFallbacksOverride,
-  resolveAgentModelPrimary,
-  resolveAgentWorkspaceDir,
-} from "./agent-scope.js";
+import { resolveAgentConfig, resolveAgentDir, resolveAgentWorkspaceDir } from "./agent-scope.js";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -59,114 +52,22 @@ describe("resolveAgentConfig", () => {
     });
   });
 
-  it("supports per-agent model primary+fallbacks", () => {
+  it("returns per-agent model pool", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
-          model: {
-            primary: "anthropic/claude-sonnet-4",
-            fallbacks: ["openai/gpt-4.1"],
-          },
+          modelPool: "default",
         },
         list: [
           {
             id: "linus",
-            model: {
-              primary: "anthropic/claude-opus-4",
-              fallbacks: ["openai/gpt-5.2"],
-            },
+            modelPool: "coding",
           },
         ],
       },
     };
 
-    expect(resolveAgentModelPrimary(cfg, "linus")).toBe("anthropic/claude-opus-4");
-    expect(resolveAgentModelFallbacksOverride(cfg, "linus")).toEqual(["openai/gpt-5.2"]);
-
-    // If fallbacks isn't present, we don't override the global fallbacks.
-    const cfgNoOverride: MarvConfig = {
-      agents: {
-        list: [
-          {
-            id: "linus",
-            model: {
-              primary: "anthropic/claude-opus-4",
-            },
-          },
-        ],
-      },
-    };
-    expect(resolveAgentModelFallbacksOverride(cfgNoOverride, "linus")).toBe(undefined);
-
-    // Explicit empty list disables global fallbacks for that agent.
-    const cfgDisable: MarvConfig = {
-      agents: {
-        list: [
-          {
-            id: "linus",
-            model: {
-              primary: "anthropic/claude-opus-4",
-              fallbacks: [],
-            },
-          },
-        ],
-      },
-    };
-    expect(resolveAgentModelFallbacksOverride(cfgDisable, "linus")).toEqual([]);
-
-    expect(
-      resolveEffectiveModelFallbacks({
-        cfg,
-        agentId: "linus",
-        hasSessionModelOverride: false,
-      }),
-    ).toEqual(["openai/gpt-5.2"]);
-    expect(
-      resolveEffectiveModelFallbacks({
-        cfg,
-        agentId: "linus",
-        hasSessionModelOverride: true,
-      }),
-    ).toEqual(["openai/gpt-5.2"]);
-    expect(
-      resolveEffectiveModelFallbacks({
-        cfg: cfgNoOverride,
-        agentId: "linus",
-        hasSessionModelOverride: true,
-      }),
-    ).toEqual([]);
-
-    const cfgInheritDefaults: MarvConfig = {
-      agents: {
-        defaults: {
-          model: {
-            fallbacks: ["openai/gpt-4.1"],
-          },
-        },
-        list: [
-          {
-            id: "linus",
-            model: {
-              primary: "anthropic/claude-opus-4",
-            },
-          },
-        ],
-      },
-    };
-    expect(
-      resolveEffectiveModelFallbacks({
-        cfg: cfgInheritDefaults,
-        agentId: "linus",
-        hasSessionModelOverride: true,
-      }),
-    ).toEqual(["openai/gpt-4.1"]);
-    expect(
-      resolveEffectiveModelFallbacks({
-        cfg: cfgDisable,
-        agentId: "linus",
-        hasSessionModelOverride: true,
-      }),
-    ).toEqual([]);
+    expect(resolveAgentConfig(cfg, "linus")?.modelPool).toBe("coding");
   });
 
   it("should return agent-specific sandbox config", () => {

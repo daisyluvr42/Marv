@@ -3,6 +3,11 @@ import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { loadModelCatalog } from "../../agents/model/model-catalog.js";
 import {
+  resolveRuntimeModelPlan,
+  type RuntimeConfiguredModel,
+  type RuntimeModelCapability,
+} from "../../agents/model/model-pool.js";
+import {
   buildAllowedModelSet,
   type ModelAliasIndex,
   modelKey,
@@ -13,6 +18,7 @@ import {
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
+import { resolveSessionModelSelectionState } from "../../core/session/model-selection-state.js";
 import { resolveThreadParentSessionKey } from "../../core/session/session-key-utils.js";
 import type { ThinkLevel } from "./directives.js";
 
@@ -28,6 +34,8 @@ type ModelCatalog = Awaited<ReturnType<typeof loadModelCatalog>>;
 type ModelSelectionState = {
   provider: string;
   model: string;
+  poolName: string;
+  candidates: RuntimeConfiguredModel[];
   allowedModelKeys: Set<string>;
   allowedModelCatalog: ModelCatalog;
   resetModelOverride: boolean;
@@ -103,6 +111,17 @@ function resolveModelOverrideFromEntry(entry?: SessionEntry): {
   provider?: string;
   model: string;
 } | null {
+  const selectionState = resolveSessionModelSelectionState(entry);
+  if (selectionState.mode === "manual" && selectionState.manualModelRef) {
+    const slash = selectionState.manualModelRef.indexOf("/");
+    if (slash > 0) {
+      return {
+        provider: selectionState.manualModelRef.slice(0, slash),
+        model: selectionState.manualModelRef.slice(slash + 1),
+      };
+    }
+    return { model: selectionState.manualModelRef };
+  }
   const model = entry?.modelOverride?.trim();
   if (!model) {
     return null;
@@ -260,6 +279,7 @@ function scoreFuzzyMatch(params: {
 
 export async function createModelSelectionState(params: {
   cfg: MarvConfig;
+  agentId?: string;
   agentCfg: NonNullable<NonNullable<MarvConfig["agents"]>["defaults"]> | undefined;
   sessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
@@ -271,6 +291,7 @@ export async function createModelSelectionState(params: {
   provider: string;
   model: string;
   hasModelDirective: boolean;
+  hasImages?: boolean;
   /** True when heartbeat.model was explicitly resolved for this run.
    *  In that case, skip session-stored overrides so the heartbeat selection wins. */
   hasResolvedHeartbeatModelOverride?: boolean;
@@ -289,6 +310,17 @@ export async function createModelSelectionState(params: {
 
   let provider = params.provider;
   let model = params.model;
+  const requiredCapabilities: RuntimeModelCapability[] = ["text"];
+  if (params.hasImages) {
+    requiredCapabilities.push("vision");
+  }
+  const runtimePlan = resolveRuntimeModelPlan({
+    cfg,
+    agentId: params.agentId,
+    requirements: {
+      requiredCapabilities,
+    },
+  });
 
   const hasAllowlist = agentCfg?.models && Object.keys(agentCfg.models).length > 0;
   const initialStoredOverride = resolveStoredModelOverride({
@@ -315,6 +347,11 @@ export async function createModelSelectionState(params: {
     });
     allowedModelCatalog = allowed.allowedCatalog;
     allowedModelKeys = allowed.allowedKeys;
+  }
+  if (runtimePlan.candidates.length > 0) {
+    allowedModelKeys = new Set(
+      runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
+    );
   }
 
   if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {
@@ -356,6 +393,12 @@ export async function createModelSelectionState(params: {
     if (allowedModelKeys.size === 0 || allowedModelKeys.has(key)) {
       provider = candidateProvider;
       model = storedOverride.model;
+    }
+  } else {
+    const automaticCandidate = runtimePlan.candidates[0];
+    if (automaticCandidate) {
+      provider = automaticCandidate.provider;
+      model = automaticCandidate.model;
     }
   }
 
@@ -400,6 +443,8 @@ export async function createModelSelectionState(params: {
   return {
     provider,
     model,
+    poolName: runtimePlan.poolName,
+    candidates: runtimePlan.candidates,
     allowedModelKeys,
     allowedModelCatalog,
     resetModelOverride,

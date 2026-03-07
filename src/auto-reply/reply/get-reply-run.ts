@@ -168,8 +168,6 @@ type RunPreparedReplyParams = {
   storePath?: string;
   workspaceDir: string;
   abortedLastRun: boolean;
-  /** Per-tier fallback models from auto-routing (merged with global fallbacks). */
-  autoRoutingFallbacks?: string[];
   /** Thinking level override from auto-routing. */
   autoRoutingThinking?: string;
 };
@@ -505,6 +503,7 @@ export async function runPreparedReply(
       skillsSnapshot,
       provider,
       model,
+      modelCandidates: modelState.candidates.map((entry) => entry.ref),
       authProfileId,
       authProfileIdSource,
       thinkLevel: params.autoRoutingThinking
@@ -523,7 +522,6 @@ export async function runPreparedReply(
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,
       extraSystemPrompt: extraSystemPrompt || undefined,
-      autoRoutingFallbacks: params.autoRoutingFallbacks,
       ...(isReasoningTagProvider(provider) ? { enforceFinalTag: true } : {}),
     },
   };

@@ -291,7 +291,7 @@ describe("runWithModelFallback", () => {
     ]);
   });
 
-  it("uses fallbacksOverride instead of agents.defaults.model.fallbacks", async () => {
+  it("uses explicit fallback candidates instead of planner defaults", async () => {
     const cfg = makeFallbacksOnlyCfg();
 
     const calls: Array<{ provider: string; model: string }> = [];

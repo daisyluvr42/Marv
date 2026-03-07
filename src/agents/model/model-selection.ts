@@ -1,5 +1,5 @@
 import type { MarvConfig } from "../../core/config/config.js";
-import { resolveAgentConfig, resolveAgentModelPrimary } from "../agent-scope.js";
+import { resolveAgentConfig } from "../agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
 import { normalizeGoogleModelId } from "./models-config.providers.js";
@@ -245,41 +245,63 @@ export function resolveConfiguredModelRef(params: {
   defaultProvider: string;
   defaultModel: string;
 }): ModelRef {
-  const rawModel = (() => {
-    const raw = params.cfg.agents?.defaults?.model as { primary?: string } | string | undefined;
-    if (typeof raw === "string") {
-      return raw.trim();
-    }
-    return raw?.primary?.trim() ?? "";
-  })();
-  if (rawModel) {
-    const trimmed = rawModel.trim();
-    const aliasIndex = buildModelAliasIndex({
-      cfg: params.cfg,
-      defaultProvider: params.defaultProvider,
-    });
-    if (!trimmed.includes("/")) {
-      const aliasKey = normalizeAliasKey(trimmed);
-      const aliasMatch = aliasIndex.byAlias.get(aliasKey);
-      if (aliasMatch) {
-        return aliasMatch.ref;
+  const catalog = params.cfg.models?.catalog ?? {};
+  const poolName = params.cfg.agents?.defaults?.modelPool?.trim() || "default";
+  const pool =
+    params.cfg.agents?.modelPools?.[poolName] ??
+    params.cfg.agents?.defaults?.modelPools?.[poolName];
+  const refs = Object.keys(catalog)
+    .map((raw) => parseModelRef(raw, params.defaultProvider))
+    .filter((ref): ref is ModelRef => Boolean(ref))
+    .filter((ref) => {
+      const entry = catalog[`${ref.provider}/${ref.model}`] ?? catalog[ref.model];
+      if (!pool) {
+        return true;
       }
-
-      // Default to anthropic if no provider is specified, but warn as this is deprecated.
-      console.warn(
-        `[marv] Model "${trimmed}" specified without provider. Falling back to "anthropic/${trimmed}". Please use "anthropic/${trimmed}" in your config.`,
-      );
-      return { provider: "anthropic", model: trimmed };
-    }
-
-    const resolved = resolveModelRefFromString({
-      raw: trimmed,
-      defaultProvider: params.defaultProvider,
-      aliasIndex,
+      if (pool.include?.length && !pool.include.includes(`${ref.provider}/${ref.model}`)) {
+        return false;
+      }
+      if (pool.exclude?.includes(`${ref.provider}/${ref.model}`)) {
+        return false;
+      }
+      if (pool.locations?.length && entry?.location && !pool.locations.includes(entry.location)) {
+        return false;
+      }
+      if (pool.tiers?.length && entry?.tier && !pool.tiers.includes(entry.tier)) {
+        return false;
+      }
+      if (pool.requireCapabilities?.length) {
+        const capabilities = entry?.capabilities ?? ["text"];
+        for (const capability of pool.requireCapabilities) {
+          if (!capabilities.includes(capability)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    })
+    .toSorted((a, b) => {
+      const entryA = catalog[`${a.provider}/${a.model}`] ?? {};
+      const entryB = catalog[`${b.provider}/${b.model}`] ?? {};
+      const locationWeight = (entry: { location?: string }) => (entry.location === "cloud" ? 1 : 0);
+      const tierWeight = (entry: { tier?: string }) =>
+        entry.tier === "high" ? 2 : entry.tier === "standard" ? 1 : 0;
+      const byLocation = locationWeight(entryA) - locationWeight(entryB);
+      if (byLocation !== 0) {
+        return byLocation;
+      }
+      const byTier = tierWeight(entryA) - tierWeight(entryB);
+      if (byTier !== 0) {
+        return byTier;
+      }
+      const byPriority = (entryA.priority ?? 0) - (entryB.priority ?? 0);
+      if (byPriority !== 0) {
+        return byPriority;
+      }
+      return modelKey(a.provider, a.model).localeCompare(modelKey(b.provider, b.model));
     });
-    if (resolved) {
-      return resolved.ref;
-    }
+  if (refs.length > 0) {
+    return refs[0];
   }
   return { provider: params.defaultProvider, model: params.defaultModel };
 }
@@ -288,23 +310,19 @@ export function resolveDefaultModelForAgent(params: {
   cfg: MarvConfig;
   agentId?: string;
 }): ModelRef {
-  const agentModelOverride = params.agentId
-    ? resolveAgentModelPrimary(params.cfg, params.agentId)
-    : undefined;
+  const poolName =
+    (params.agentId
+      ? resolveAgentConfig(params.cfg, params.agentId)?.modelPool?.trim()
+      : undefined) || params.cfg.agents?.defaults?.modelPool?.trim();
   const cfg =
-    agentModelOverride && agentModelOverride.length > 0
+    poolName && poolName !== params.cfg.agents?.defaults?.modelPool
       ? {
           ...params.cfg,
           agents: {
             ...params.cfg.agents,
             defaults: {
               ...params.cfg.agents?.defaults,
-              model: {
-                ...(typeof params.cfg.agents?.defaults?.model === "object"
-                  ? params.cfg.agents.defaults.model
-                  : undefined),
-                primary: agentModelOverride,
-              },
+              modelPool: poolName,
             },
           },
         }
@@ -343,7 +361,6 @@ export function resolveSubagentSpawnModelSelection(params: {
       cfg: params.cfg,
       agentId: params.agentId,
     }) ??
-    normalizeModelSelection(params.cfg.agents?.defaults?.model?.primary) ??
     `${runtimeDefault.provider}/${runtimeDefault.model}`
   );
 }

@@ -174,8 +174,6 @@ describe("resolveAutoRouting", () => {
     });
     expect(result.routed).toBe(true);
     expect(result.complexity).toBe("simple");
-    expect(result.model).toBe("claude-haiku-4-5");
-    expect(result.provider).toBe("anthropic");
     expect(result.thinking).toBe("off");
   });
 
@@ -199,7 +197,6 @@ ${"x".repeat(1500)}`;
     });
     expect(result.routed).toBe(true);
     expect(result.complexity).toBe("expert");
-    expect(result.model).toBe("claude-opus-4-6");
     expect(result.thinking).toBe("medium");
   });
 
@@ -254,8 +251,7 @@ ${"x".repeat(1500)}`;
       defaultModel: "claude-opus-4-6",
     });
     expect(result.routed).toBe(true);
-    expect(result.provider).toBe("openai");
-    expect(result.model).toBe("gpt-4o-mini");
+    expect(result.thinking).toBeUndefined();
   });
 
   it("uses LLM classifier when configured and classifyFn provided", async () => {
@@ -283,7 +279,7 @@ ${"x".repeat(1500)}`;
     });
     expect(result.routed).toBe(true);
     expect(result.complexity).toBe("expert");
-    expect(result.model).toBe("claude-opus-4-6");
+    expect(result.thinking).toBeUndefined();
   });
 
   it("falls back to rules when LLM classifier throws", async () => {

@@ -5,11 +5,11 @@ import {
 } from "../../agents/agent-scope.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
+import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
 import {
   buildModelAliasIndex,
   type ModelAliasIndex,
   modelKey,
-  resolveDefaultModelForAgent,
   resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../core/config/config.js";
@@ -221,10 +221,14 @@ export function resolveDefaultModel(params: { cfg: MarvConfig; agentId?: string 
   defaultModel: string;
   aliasIndex: ModelAliasIndex;
 } {
-  const mainModel = resolveDefaultModelForAgent({
+  const runtimePlan = resolveRuntimeModelPlan({
     cfg: params.cfg,
     agentId: params.agentId,
   });
+  const mainModel = runtimePlan.candidates[0] ?? {
+    provider: "anthropic",
+    model: "claude-sonnet-4-5",
+  };
   const defaultProvider = mainModel.provider;
   const defaultModel = mainModel.model;
   const aliasIndex = buildModelAliasIndex({

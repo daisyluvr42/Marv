@@ -179,14 +179,19 @@ describe("agentCommand", () => {
     });
   });
 
-  it("uses provider/model from agents.defaults.model.primary", async () => {
+  it("uses provider/model from the active model pool", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
-        model: { primary: "openai/gpt-4.1-mini" },
+        modelPool: "default",
         models: {
           "anthropic/claude-opus-4-5": {},
           "openai/gpt-4.1-mini": {},
+        },
+        modelPools: {
+          default: {
+            include: ["openai/gpt-4.1-mini", "anthropic/claude-opus-4-5"],
+          },
         },
       });
 

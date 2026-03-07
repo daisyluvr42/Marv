@@ -97,7 +97,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["agent", "model"],
     message:
-      "agent.model string was replaced by agents.defaults.model.primary/fallbacks and agents.defaults.models (auto-migrated on load).",
+      "agent.model string was replaced by agent model pools and models.catalog metadata (legacy import only).",
     match: (value) => typeof value === "string",
   },
   {
@@ -118,7 +118,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["agent", "modelFallbacks"],
     message:
-      "agent.modelFallbacks was replaced by agents.defaults.model.fallbacks (auto-migrated on load).",
+      "agent.modelFallbacks was removed; use model pool ordering instead (legacy import only).",
   },
   {
     path: ["agent", "imageModelFallbacks"],

@@ -183,7 +183,7 @@ echo '/swapfile none swap sw 0 0' >> /etc/fstab
 If you're hitting OOMs, consider:
 
 - Using API-based models (Claude, GPT) instead of local models
-- Setting `agents.defaults.model.primary` to a smaller model
+- Putting a smaller model earlier in your default model pool
 
 ### Monitor memory
 

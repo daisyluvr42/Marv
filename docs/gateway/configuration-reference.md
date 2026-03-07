@@ -1305,7 +1305,7 @@ Batches rapid text-only messages from the same sender into a single agent turn. 
 ```
 
 - `auto` controls auto-TTS. `/tts off|always|inbound|tagged` overrides per session.
-- `summaryModel` overrides `agents.defaults.model.primary` for auto-summary.
+- `summaryModel` overrides the first candidate from the active model pool for auto-summary.
 - API keys fall back to `ELEVENLABS_API_KEY`/`XI_API_KEY` and `OPENAI_API_KEY`.
 
 ---

@@ -31,6 +31,7 @@ import {
   resolveAuthProfileOrder,
   type ResolvedProviderAuth,
 } from "../model/model-auth.js";
+import { resolveRuntimeModelPlan } from "../model/model-pool.js";
 import { normalizeProviderId } from "../model/model-selection.js";
 import { ensureMarvModelsJson } from "../model/models-config.js";
 import {
@@ -247,7 +248,13 @@ export async function runEmbeddedPiAgent(
       let modelId = (params.model ?? DEFAULT_MODEL).trim() || DEFAULT_MODEL;
       const agentDir = params.agentDir ?? resolveMarvAgentDir();
       const fallbackConfigured =
-        (params.config?.agents?.defaults?.model?.fallbacks?.length ?? 0) > 0;
+        (params.config
+          ? resolveRuntimeModelPlan({
+              cfg: params.config,
+              agentId: params.agentId,
+              agentDir,
+            }).candidates.length
+          : 0) > 1;
       await ensureMarvModelsJson(params.config, agentDir);
 
       // Run before_model_resolve hooks early so plugins can override the

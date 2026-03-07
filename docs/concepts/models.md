@@ -17,16 +17,17 @@ Quick provider overview + examples: [/concepts/model-providers](/concepts/model-
 
 Marv selects models in this order:
 
-1. **Primary** model (`agents.defaults.model.primary` or `agents.defaults.model`).
-2. **Fallbacks** in `agents.defaults.model.fallbacks` (in order).
-3. **Provider auth failover** happens inside a provider before moving to the
-   next model.
+1. **Manual session selection** if the user pinned a model with `/model <provider/model>`.
+2. **Automatic model pool** for the active agent.
+3. **Provider auth failover** happens inside one selected model before moving to
+   the next candidate in the pool.
 
 Related:
 
-- `agents.defaults.models` is the allowlist/catalog of models Marv can use (plus aliases).
-- `agents.defaults.imageModel` is used **only when** the primary model can’t accept images.
-- Per-agent defaults can override `agents.defaults.model` via `agents.list[].model` plus bindings (see [/concepts/multi-agent](/concepts/multi-agent)).
+- `models.catalog` is the configured inventory of models Marv can use.
+- `agents.modelPools` defines named automatic pools.
+- `agents.defaults.modelPool` picks the default pool.
+- `agents.list[].modelPool` can override the pool for a specific agent.
 
 ## Quick model picks (anecdotal)
 
@@ -47,7 +48,9 @@ setup-token` also supported).
 
 ## Config keys (overview)
 
-- `agents.defaults.model.primary` and `agents.defaults.model.fallbacks`
+- `models.catalog`
+- `agents.defaults.modelPool`
+- `agents.modelPools`
 - `agents.defaults.imageModel.primary` and `agents.defaults.imageModel.fallbacks`
 - `agents.defaults.models` (allowlist + aliases + provider params)
 - `models.providers` (custom providers written into `models.json`)
@@ -178,7 +181,7 @@ Key flags:
 - `--max-age-days <days>`: skip older models
 - `--provider <name>`: provider prefix filter
 - `--max-candidates <n>`: fallback list size
-- `--set-default`: set `agents.defaults.model.primary` to the first selection
+- `--set-default`: put the first selection at the front of the default automatic pool
 - `--set-image`: set `agents.defaults.imageModel.primary` to the first image selection
 
 Probing requires an OpenRouter API key (from auth profiles or

@@ -5,6 +5,7 @@ import type {
   HumanDelayConfig,
   TypingMode,
 } from "./types.base.js";
+import type { ConfiguredModelLocation, ConfiguredModelTier } from "./types.models.js";
 import type {
   SandboxBrowserSettings,
   SandboxDockerSettings,
@@ -58,6 +59,14 @@ export type AgentModelEntryConfig = {
 export type AgentModelListConfig = {
   primary?: string;
   fallbacks?: string[];
+};
+
+export type ModelPoolConfig = {
+  locations?: ConfiguredModelLocation[];
+  tiers?: ConfiguredModelTier[];
+  requireCapabilities?: Array<"text" | "vision" | "coding" | "tools">;
+  include?: string[];
+  exclude?: string[];
 };
 
 export type AgentContextPruningConfig = {
@@ -159,6 +168,10 @@ export type CliBackendConfig = {
 export type AgentDefaultsConfig = {
   /** Primary model and fallbacks (provider/model). */
   model?: AgentModelListConfig;
+  /** Default model pool name used for automatic selection. */
+  modelPool?: string;
+  /** Named model pools available to all agents. */
+  modelPools?: Record<string, ModelPoolConfig>;
   /** Optional image-capable model and fallbacks (provider/model). */
   imageModel?: AgentModelListConfig;
   /** Model catalog with optional aliases (full provider/model keys). */

@@ -1959,10 +1959,10 @@ Docs: [Multi-Agent Routing](/concepts/multi-agent), [Slack](/channels/slack),
 Marv's default model is whatever you set as:
 
 ```
-agents.defaults.model.primary
+agents.defaults.modelPool
 ```
 
-Models are referenced as `provider/model` (example: `anthropic/claude-opus-4-6`). If you omit the provider, Marv currently assumes `anthropic` as a temporary deprecation fallback - but you should still **explicitly** set `provider/model`.
+Models are referenced as `provider/model` (example: `anthropic/claude-opus-4-6`). The planner chooses the first usable candidate from the active pool.
 
 ### What model do you recommend
 
@@ -2004,9 +2004,9 @@ Use **model commands** or edit only the **model** fields. Avoid full config repl
 Safe options:
 
 - `/model` in chat (quick, per-session)
-- `marv models set ...` (updates just model config)
+- `marv models set ...` (updates the front of the pool or model inventory, depending on the command)
 - `marv configure --section model` (interactive)
-- edit `agents.defaults.model` in `~/.marv/marv.json`
+- edit `models.catalog`, `agents.modelPools`, or `agents.defaults.modelPool` in `~/.marv/marv.json`
 
 Avoid `config.apply` with a partial object unless you intend to replace the whole config.
 If you did overwrite config, restore from backup or re-run `marv doctor` to repair.
@@ -2066,7 +2066,7 @@ Use `/model status` to confirm which auth profile is active.
 Yes. Set one as default and switch as needed:
 
 - **Quick switch (per session):** `/model gpt-5.2` for daily tasks, `/model gpt-5.3-codex` for coding.
-- **Default + switch:** set `agents.defaults.model.primary` to `openai/gpt-5.2`, then switch to `openai-codex/gpt-5.3-codex` when coding (or the other way around).
+- **Default + switch:** put `openai/gpt-5.2` first in your default model pool, then switch to `openai-codex/gpt-5.3-codex` when coding (or the other way around).
 - **Sub-agents:** route coding tasks to sub-agents with a different default model.
 
 See [Models](/concepts/models) and [Slash commands](/tools/slash-commands).
@@ -2108,8 +2108,8 @@ See [MiniMax](/providers/minimax) and [Models](/concepts/models).
 
 ### Can I use MiniMax as my default and OpenAI for complex tasks
 
-Yes. Use **MiniMax as the default** and switch models **per session** when needed.
-Fallbacks are for **errors**, not "hard tasks," so use `/model` or a separate agent.
+Yes. Use **MiniMax as the default pool lead** and switch models **per session** when needed.
+Pool fallback is for **errors**, not "hard tasks," so use `/model` or a separate agent.
 
 **Option A: switch per session**
 
@@ -2118,10 +2118,15 @@ Fallbacks are for **errors**, not "hard tasks," so use `/model` or a separate ag
   env: { MINIMAX_API_KEY: "sk-...", OPENAI_API_KEY: "sk-..." },
   agents: {
     defaults: {
-      model: { primary: "minimax/MiniMax-M2.1" },
+      modelPool: "default",
       models: {
         "minimax/MiniMax-M2.1": { alias: "minimax" },
         "openai/gpt-5.2": { alias: "gpt" },
+      },
+    },
+    modelPools: {
+      default: {
+        include: ["minimax/MiniMax-M2.1", "openai/gpt-5.2"],
       },
     },
   },
@@ -2163,11 +2168,20 @@ Aliases come from `agents.defaults.models.<modelId>.alias`. Example:
 {
   agents: {
     defaults: {
-      model: { primary: "anthropic/claude-opus-4-6" },
+      modelPool: "default",
       models: {
         "anthropic/claude-opus-4-6": { alias: "opus" },
         "anthropic/claude-sonnet-4-5": { alias: "sonnet" },
         "anthropic/claude-haiku-4-5": { alias: "haiku" },
+      },
+    },
+    modelPools: {
+      default: {
+        include: [
+          "anthropic/claude-opus-4-6",
+          "anthropic/claude-sonnet-4-5",
+          "anthropic/claude-haiku-4-5",
+        ],
       },
     },
   },
@@ -2184,8 +2198,13 @@ OpenRouter (pay-per-token; many models):
 {
   agents: {
     defaults: {
-      model: { primary: "openrouter/anthropic/claude-sonnet-4-5" },
+      modelPool: "default",
       models: { "openrouter/anthropic/claude-sonnet-4-5": {} },
+    },
+    modelPools: {
+      default: {
+        include: ["openrouter/anthropic/claude-sonnet-4-5"],
+      },
     },
   },
   env: { OPENROUTER_API_KEY: "sk-or-..." },
@@ -2198,8 +2217,13 @@ Z.AI (GLM models):
 {
   agents: {
     defaults: {
-      model: { primary: "zai/glm-4.7" },
+      modelPool: "default",
       models: { "zai/glm-4.7": {} },
+    },
+    modelPools: {
+      default: {
+        include: ["zai/glm-4.7"],
+      },
     },
   },
   env: { ZAI_API_KEY: "..." },
@@ -2231,7 +2255,7 @@ Do **not** reuse `agentDir` across agents; it causes auth/session collisions.
 Failover happens in two stages:
 
 1. **Auth profile rotation** within the same provider.
-2. **Model fallback** to the next model in `agents.defaults.model.fallbacks`.
+2. **Model fallback** to the next candidate in the active model pool.
 
 Cooldowns apply to failing profiles (exponential backoff), so Marv can keep responding even when a provider is rate-limited or temporarily failing.
 
@@ -2276,9 +2300,9 @@ can't find it in its auth store.
 
 ### Why did it also try Google Gemini and fail
 
-If your model config includes Google Gemini as a fallback (or you switched to a Gemini shorthand), Marv will try it during model fallback. If you haven't configured Google credentials, you'll see `No API key found for provider "google"`.
+If your active model pool includes Google Gemini after the current model (or you switched to a Gemini shorthand), Marv will try it during model fallback. If you haven't configured Google credentials, you'll see `No API key found for provider "google"`.
 
-Fix: either provide Google auth, or remove/avoid Google models in `agents.defaults.model.fallbacks` / aliases so fallback doesn't route there.
+Fix: either provide Google auth, or remove/avoid Google models from the active model pool / aliases so fallback doesn't route there.
 
 **LLM request rejected message thinking signature required google antigravity**
 
@@ -2852,7 +2876,7 @@ You can add options like `debounce:2s cap:25 drop:summarize` for followup modes.
 
 **Q: "What's the default model for Anthropic with an API key?"**
 
-**A:** In Marv, credentials and model selection are separate. Setting `ANTHROPIC_API_KEY` (or storing an Anthropic API key in auth profiles) enables authentication, but the actual default model is whatever you configure in `agents.defaults.model.primary` (for example, `anthropic/claude-sonnet-4-5` or `anthropic/claude-opus-4-6`). If you see `No credentials found for profile "anthropic:default"`, it means the Gateway couldn't find Anthropic credentials in the expected `auth-profiles.json` for the agent that's running.
+**A:** In Marv, credentials and model selection are separate. Setting `ANTHROPIC_API_KEY` (or storing an Anthropic API key in auth profiles) enables authentication, but the actual default model is the first usable candidate in the active model pool (for example, `anthropic/claude-sonnet-4-5` or `anthropic/claude-opus-4-6`). If you see `No credentials found for profile "anthropic:default"`, it means the Gateway couldn't find Anthropic credentials in the expected `auth-profiles.json` for the agent that's running.
 
 ---
 

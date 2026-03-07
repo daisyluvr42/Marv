@@ -124,7 +124,7 @@ Current migrations:
 - `identity` → `agents.list[].identity`
 - `agent.*` → `agents.defaults` + `tools.*` (tools/elevated/exec/sandbox/subagents)
 - `agent.model`/`allowedModels`/`modelAliases`/`modelFallbacks`/`imageModelFallbacks`
-  → `agents.defaults.models` + `agents.defaults.model.primary/fallbacks` + `agents.defaults.imageModel.primary/fallbacks`
+  → `models.catalog` + `agents.defaults.modelPool` + `agents.modelPools` + `agents.defaults.imageModel`
 
 ### 2b) OpenCode Zen provider overrides
 

@@ -1,10 +1,6 @@
 import path from "node:path";
 import { resolveMarvAgentDir } from "../../agents/agent-paths.js";
-import {
-  resolveAgentDir,
-  resolveAgentModelFallbacksOverride,
-  resolveAgentModelPrimary,
-} from "../../agents/agent-scope.js";
+import { resolveAgentDir } from "../../agents/agent-scope.js";
 import {
   buildAuthHealthSummary,
   DEFAULT_OAUTH_WARN_MS,
@@ -16,11 +12,10 @@ import {
   resolveProfileUnusableUntilForDisplay,
 } from "../../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../../agents/model/model-auth.js";
+import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
 import {
   buildModelAliasIndex,
   parseModelRef,
-  resolveConfiguredModelRef,
-  resolveDefaultModelForAgent,
   resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
@@ -75,36 +70,14 @@ export async function modelsStatusCommand(
   const cfg = loadConfig();
   const agentId = resolveKnownAgentId({ cfg, rawAgentId: opts.agent });
   const agentDir = agentId ? resolveAgentDir(cfg, agentId) : resolveMarvAgentDir();
-  const agentModelPrimary = agentId ? resolveAgentModelPrimary(cfg, agentId) : undefined;
-  const agentFallbacksOverride = agentId
-    ? resolveAgentModelFallbacksOverride(cfg, agentId)
-    : undefined;
-  const resolved = agentId
-    ? resolveDefaultModelForAgent({ cfg, agentId })
-    : resolveConfiguredModelRef({
-        cfg,
-        defaultProvider: DEFAULT_PROVIDER,
-        defaultModel: DEFAULT_MODEL,
-      });
+  const runtimePlan = resolveRuntimeModelPlan({ cfg, agentId, agentDir });
+  const resolved = runtimePlan.candidates[0] ?? {
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+  };
 
-  const modelConfig = cfg.agents?.defaults?.model as
-    | { primary?: string; fallbacks?: string[] }
-    | string
-    | undefined;
-  const imageConfig = cfg.agents?.defaults?.imageModel as
-    | { primary?: string; fallbacks?: string[] }
-    | string
-    | undefined;
-  const rawDefaultsModel =
-    typeof modelConfig === "string" ? modelConfig.trim() : (modelConfig?.primary?.trim() ?? "");
-  const rawModel = agentModelPrimary ?? rawDefaultsModel;
   const resolvedLabel = `${resolved.provider}/${resolved.model}`;
-  const defaultLabel = rawModel || resolvedLabel;
-  const defaultsFallbacks = typeof modelConfig === "object" ? (modelConfig?.fallbacks ?? []) : [];
-  const fallbacks = agentFallbacksOverride ?? defaultsFallbacks;
-  const imageModel =
-    typeof imageConfig === "string" ? imageConfig.trim() : (imageConfig?.primary?.trim() ?? "");
-  const imageFallbacks = typeof imageConfig === "object" ? (imageConfig?.fallbacks ?? []) : [];
+  const defaultLabel = resolvedLabel;
   const aliases = Object.entries(cfg.agents?.defaults?.models ?? {}).reduce<Record<string, string>>(
     (acc, [key, entry]) => {
       const alias = typeof entry?.alias === "string" ? entry.alias.trim() : undefined;
@@ -132,13 +105,13 @@ export async function modelsStatusCommand(
   );
   const providersFromModels = new Set<string>();
   const providersInUse = new Set<string>();
-  for (const raw of [defaultLabel, ...fallbacks, imageModel, ...imageFallbacks, ...allowed]) {
+  for (const raw of [defaultLabel, ...allowed]) {
     const parsed = parseModelRef(String(raw ?? ""), DEFAULT_PROVIDER);
     if (parsed?.provider) {
       providersFromModels.add(parsed.provider);
     }
   }
-  for (const raw of [defaultLabel, ...fallbacks, imageModel, ...imageFallbacks]) {
+  for (const raw of [defaultLabel, ...runtimePlan.candidates.map((entry) => entry.ref)]) {
     const parsed = parseModelRef(String(raw ?? ""), DEFAULT_PROVIDER);
     if (parsed?.provider) {
       providersInUse.add(parsed.provider);
@@ -219,13 +192,9 @@ export async function modelsStatusCommand(
   }
 
   const aliasIndex = buildModelAliasIndex({ cfg, defaultProvider: DEFAULT_PROVIDER });
-  const rawCandidates = [
-    rawModel || resolvedLabel,
-    ...fallbacks,
-    imageModel,
-    ...imageFallbacks,
-    ...allowed,
-  ].filter(Boolean);
+  const rawCandidates = [...runtimePlan.candidates.map((entry) => entry.ref), ...allowed].filter(
+    Boolean,
+  );
   const resolvedCandidates = rawCandidates
     .map(
       (raw) =>
@@ -236,7 +205,11 @@ export async function modelsStatusCommand(
         })?.ref,
     )
     .filter((ref): ref is { provider: string; model: string } => Boolean(ref));
-  const modelCandidates = resolvedCandidates.map((ref) => `${ref.provider}/${ref.model}`);
+  const legacyModelCandidates = resolvedCandidates.map((ref) => `${ref.provider}/${ref.model}`);
+  const modelCandidates =
+    runtimePlan.candidates.length > 0
+      ? runtimePlan.candidates.map((entry) => entry.ref)
+      : legacyModelCandidates;
 
   let probeSummary: AuthProbeSummary | undefined;
   if (opts.probe) {
@@ -334,16 +307,29 @@ export async function modelsStatusCommand(
           configPath: CONFIG_PATH,
           ...(agentId ? { agentId } : {}),
           agentDir,
+          modelPool: runtimePlan.poolName,
           defaultModel: defaultLabel,
           resolvedDefault: resolvedLabel,
-          fallbacks,
-          imageModel: imageModel || null,
-          imageFallbacks,
+          runtimeCandidates: runtimePlan.candidates.map((entry) => ({
+            ref: entry.ref,
+            location: entry.location,
+            tier: entry.tier,
+            capabilities: entry.capabilities,
+            available: entry.available,
+          })),
+          configuredCatalog: runtimePlan.configured.map((entry) => ({
+            ref: entry.ref,
+            location: entry.location,
+            tier: entry.tier,
+            capabilities: entry.capabilities,
+            enabled: entry.enabled,
+            available: entry.available,
+            availabilityReason: entry.availabilityReason ?? null,
+          })),
           ...(agentId
             ? {
                 modelConfig: {
-                  defaultSource: agentModelPrimary ? "agent" : "defaults",
-                  fallbacksSource: agentFallbacksOverride !== undefined ? "agent" : "defaults",
+                  source: "model-pool",
                 },
               }
             : {}),
@@ -386,12 +372,11 @@ export async function modelsStatusCommand(
   }
 
   const rich = isRich(opts);
-  type ModelConfigSource = "agent" | "defaults";
+  type ModelConfigSource = "model-pool";
   const label = (value: string) => colorize(rich, theme.accent, value.padEnd(14));
   const labelWithSource = (value: string, source?: ModelConfigSource) =>
     label(source ? `${value} (${source})` : value);
-  const displayDefault =
-    rawModel && rawModel !== resolvedLabel ? `${resolvedLabel} (from ${rawModel})` : resolvedLabel;
+  const displayDefault = resolvedLabel;
 
   runtime.log(
     `${label("Config")}${colorize(rich, theme.muted, ":")} ${colorize(rich, theme.info, shortenHomePath(CONFIG_PATH))}`,
@@ -404,37 +389,30 @@ export async function modelsStatusCommand(
     )}`,
   );
   runtime.log(
-    `${labelWithSource("Default", agentId ? (agentModelPrimary ? "agent" : "defaults") : undefined)}${colorize(
+    `${labelWithSource("Default", agentId ? "model-pool" : undefined)}${colorize(
       rich,
       theme.muted,
       ":",
     )} ${colorize(rich, theme.success, displayDefault)}`,
   );
   runtime.log(
-    `${labelWithSource(
-      `Fallbacks (${fallbacks.length || 0})`,
-      agentId ? (agentFallbacksOverride !== undefined ? "agent" : "defaults") : undefined,
-    )}${colorize(rich, theme.muted, ":")} ${colorize(
+    `${label("Pool")}${colorize(rich, theme.muted, ":")} ${colorize(
       rich,
-      fallbacks.length ? theme.warn : theme.muted,
-      fallbacks.length ? fallbacks.join(", ") : "-",
+      theme.info,
+      runtimePlan.poolName,
     )}`,
   );
   runtime.log(
-    `${labelWithSource("Image model", agentId ? "defaults" : undefined)}${colorize(
+    `${label(`Runtime candidates (${runtimePlan.candidates.length || 0})`)}${colorize(
       rich,
       theme.muted,
       ":",
-    )} ${colorize(rich, imageModel ? theme.accentBright : theme.muted, imageModel || "-")}`,
-  );
-  runtime.log(
-    `${labelWithSource(
-      `Image fallbacks (${imageFallbacks.length || 0})`,
-      agentId ? "defaults" : undefined,
-    )}${colorize(rich, theme.muted, ":")} ${colorize(
+    )} ${colorize(
       rich,
-      imageFallbacks.length ? theme.accentBright : theme.muted,
-      imageFallbacks.length ? imageFallbacks.join(", ") : "-",
+      runtimePlan.candidates.length ? theme.success : theme.muted,
+      runtimePlan.candidates.length
+        ? runtimePlan.candidates.map((entry) => entry.ref).join(", ")
+        : "-",
     )}`,
   );
   runtime.log(

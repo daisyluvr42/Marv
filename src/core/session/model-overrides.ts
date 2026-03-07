@@ -1,4 +1,8 @@
 import type { SessionEntry } from "../config/sessions.js";
+import {
+  clearSessionManualModelSelection,
+  setSessionManualModelSelection,
+} from "./model-selection-state.js";
 
 export type ModelOverrideSelection = {
   provider: string;
@@ -17,6 +21,9 @@ export function applyModelOverrideToSessionEntry(params: {
   let updated = false;
 
   if (selection.isDefault) {
+    if (clearSessionManualModelSelection(entry)) {
+      updated = true;
+    }
     if (entry.providerOverride) {
       delete entry.providerOverride;
       updated = true;
@@ -32,6 +39,9 @@ export function applyModelOverrideToSessionEntry(params: {
       updated = true;
     }
   } else {
+    if (setSessionManualModelSelection(entry, `${selection.provider}/${selection.model}`)) {
+      updated = true;
+    }
     if (entry.providerOverride !== selection.provider) {
       entry.providerOverride = selection.provider;
       updated = true;

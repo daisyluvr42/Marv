@@ -1,8 +1,6 @@
 import {
   listAgentIds,
   resolveAgentDir,
-  resolveEffectiveModelFallbacks,
-  resolveAgentModelPrimary,
   resolveAgentSkillsFilter,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
@@ -14,12 +12,11 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import { runWithModelFallback } from "../agents/model/model-fallback.js";
+import { resolveRuntimeModelPlan } from "../agents/model/model-pool.js";
 import {
-  buildAllowedModelSet,
   isCliProvider,
   modelKey,
   normalizeModelRef,
-  resolveConfiguredModelRef,
   resolveThinkingDefault,
 } from "../agents/model/model-selection.js";
 import { runCliAgent } from "../agents/runner/cli-runner.js";
@@ -48,6 +45,7 @@ import {
 } from "../core/config/sessions.js";
 import { applyVerboseOverride } from "../core/session/level-overrides.js";
 import { applyModelOverrideToSessionEntry } from "../core/session/model-overrides.js";
+import { resolveSessionModelSelectionState } from "../core/session/model-selection-state.js";
 import { resolveSendPolicy } from "../core/session/send-policy.js";
 import {
   clearAgentRunContext,
@@ -223,11 +221,11 @@ export async function agentCommand(
     ensureBootstrapFiles: !agentCfg?.skipBootstrap,
   });
   const workspaceDir = workspace.dir;
-  const configuredModel = resolveConfiguredModelRef({
-    cfg,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
-  });
+  const configuredPlan = resolveRuntimeModelPlan({ cfg, agentId: sessionAgentId, agentDir });
+  const configuredModel = configuredPlan.candidates[0] ?? {
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+  };
   const thinkingLevelsHint = formatThinkingLevels(configuredModel.provider, configuredModel.model);
 
   const thinkOverride = normalizeThinkLevel(opts.thinking);
@@ -362,62 +360,44 @@ export async function agentCommand(
       });
     }
 
-    const agentModelPrimary = resolveAgentModelPrimary(cfg, sessionAgentId);
-    const cfgForModelSelection = agentModelPrimary
-      ? {
-          ...cfg,
-          agents: {
-            ...cfg.agents,
-            defaults: {
-              ...cfg.agents?.defaults,
-              model: {
-                ...(typeof cfg.agents?.defaults?.model === "object"
-                  ? cfg.agents.defaults.model
-                  : undefined),
-                primary: agentModelPrimary,
-              },
-            },
-          },
-        }
-      : cfg;
-
-    const configuredDefaultRef = resolveConfiguredModelRef({
-      cfg: cfgForModelSelection,
-      defaultProvider: DEFAULT_PROVIDER,
-      defaultModel: DEFAULT_MODEL,
+    const runtimePlan = resolveRuntimeModelPlan({
+      cfg,
+      agentId: sessionAgentId,
+      agentDir,
+      requirements: {
+        requiredCapabilities: (opts.images?.length ?? 0) > 0 ? ["text", "vision"] : ["text"],
+      },
     });
+    const configuredDefaultRef = runtimePlan.candidates[0] ?? {
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+    };
     const { provider: defaultProvider, model: defaultModel } = normalizeModelRef(
       configuredDefaultRef.provider,
       configuredDefaultRef.model,
     );
     let provider = defaultProvider;
     let model = defaultModel;
-    const hasAllowlist = agentCfg?.models && Object.keys(agentCfg.models).length > 0;
     const hasStoredOverride = Boolean(
       sessionEntry?.modelOverride || sessionEntry?.providerOverride,
     );
-    const needsModelCatalog = hasAllowlist || hasStoredOverride;
-    let allowedModelKeys = new Set<string>();
-    let allowedModelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> = [];
+    let allowedModelKeys = new Set<string>(
+      runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
+    );
     let modelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> | null = null;
-
-    if (needsModelCatalog) {
-      modelCatalog = await loadModelCatalog({ config: cfg });
-      const allowed = buildAllowedModelSet({
-        cfg,
-        catalog: modelCatalog,
-        defaultProvider,
-        defaultModel,
-      });
-      allowedModelKeys = allowed.allowedKeys;
-      allowedModelCatalog = allowed.allowedCatalog;
-    }
 
     if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {
       const entry = sessionEntry;
-      const overrideProvider = sessionEntry.providerOverride?.trim() || defaultProvider;
-      const overrideModel = sessionEntry.modelOverride?.trim();
-      if (overrideModel) {
+      const selectionState = resolveSessionModelSelectionState(entry);
+      const overrideRef =
+        selectionState.mode === "manual" ? selectionState.manualModelRef : undefined;
+      if (overrideRef) {
+        const slash = overrideRef.indexOf("/");
+        const overrideProvider =
+          slash > 0
+            ? overrideRef.slice(0, slash)
+            : sessionEntry.providerOverride?.trim() || defaultProvider;
+        const overrideModel = slash > 0 ? overrideRef.slice(slash + 1) : overrideRef;
         const normalizedOverride = normalizeModelRef(overrideProvider, overrideModel);
         const key = modelKey(normalizedOverride.provider, normalizedOverride.model);
         if (
@@ -441,11 +421,17 @@ export async function agentCommand(
       }
     }
 
-    const storedProviderOverride = sessionEntry?.providerOverride?.trim();
-    const storedModelOverride = sessionEntry?.modelOverride?.trim();
+    const selectionState = resolveSessionModelSelectionState(sessionEntry);
+    const storedModelOverride =
+      selectionState.mode === "manual" ? selectionState.manualModelRef : undefined;
     if (storedModelOverride) {
-      const candidateProvider = storedProviderOverride || defaultProvider;
-      const normalizedStored = normalizeModelRef(candidateProvider, storedModelOverride);
+      const slash = storedModelOverride.indexOf("/");
+      const candidateProvider =
+        slash > 0
+          ? storedModelOverride.slice(0, slash)
+          : sessionEntry?.providerOverride?.trim() || defaultProvider;
+      const candidateModel = slash > 0 ? storedModelOverride.slice(slash + 1) : storedModelOverride;
+      const normalizedStored = normalizeModelRef(candidateProvider, candidateModel);
       const key = modelKey(normalizedStored.provider, normalizedStored.model);
       if (
         isCliProvider(normalizedStored.provider, cfg) ||
@@ -476,7 +462,7 @@ export async function agentCommand(
     }
 
     if (!resolvedThinkLevel) {
-      let catalogForThinking = modelCatalog ?? allowedModelCatalog;
+      let catalogForThinking = modelCatalog;
       if (!catalogForThinking || catalogForThinking.length === 0) {
         modelCatalog = await loadModelCatalog({ config: cfg });
         catalogForThinking = modelCatalog;
@@ -523,17 +509,12 @@ export async function agentCommand(
         opts.replyChannel ?? opts.channel,
       );
       const spawnedBy = opts.spawnedBy ?? sessionEntry?.spawnedBy;
-      // Keep fallback candidate resolution centralized so session model overrides,
-      // per-agent overrides, and default fallbacks stay consistent across callers.
-      const effectiveFallbacksOverride = resolveEffectiveModelFallbacks({
-        cfg,
-        agentId: sessionAgentId,
-        hasSessionModelOverride: Boolean(storedModelOverride),
-      });
-      let activeFallbacks = effectiveFallbacksOverride;
+      const activeFallbacks = runtimePlan.candidates
+        .map((entry) => entry.ref)
+        .filter((ref) => ref !== `${provider}/${model}`);
       let routedThinking: ThinkLevel | undefined = undefined;
 
-      // Auto-routing: classify message complexity and override model + fallbacks if configured.
+      // Auto-routing may still tune policy hints like thinking, but no longer picks models.
       const autoRoutingResult = await resolveAutoRouting({
         prompt: body,
         hasImages: (opts.images?.length ?? 0) > 0,
@@ -544,18 +525,6 @@ export async function agentCommand(
       });
 
       if (autoRoutingResult.routed) {
-        if (autoRoutingResult.provider) {
-          provider = autoRoutingResult.provider;
-        }
-        if (autoRoutingResult.model) {
-          model = autoRoutingResult.model;
-        }
-        if (autoRoutingResult.fallbacks && autoRoutingResult.fallbacks.length > 0) {
-          activeFallbacks = [
-            ...autoRoutingResult.fallbacks,
-            ...(effectiveFallbacksOverride ?? []), // Global fallbacks act as ultimate backstop
-          ];
-        }
         if (autoRoutingResult.thinking) {
           routedThinking = autoRoutingResult.thinking;
         }

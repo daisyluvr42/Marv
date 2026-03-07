@@ -792,7 +792,7 @@ Always includes the auth overview and OAuth expiry status for profiles in the au
 
 ### `models set <model>`
 
-Set `agents.defaults.model.primary`.
+Set the default automatic model pool entry.
 
 ### `models set-image <model>`
 

@@ -1,4 +1,5 @@
 import { resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
+import type { RuntimeConfiguredModel } from "../../agents/model/model-pool.js";
 import {
   type ModelAliasIndex,
   modelKey,
@@ -8,6 +9,8 @@ import {
 } from "../../agents/model/model-selection.js";
 import { buildBrowseProvidersButton } from "../../channels/telegram/model-buttons.js";
 import type { MarvConfig } from "../../core/config/config.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
+import { resolveSessionModelSelectionState } from "../../core/session/model-selection-state.js";
 import { shortenHomePath } from "../../utils.js";
 import type { ReplyPayload } from "../types.js";
 import { resolveModelsCommandReply } from "./commands-models.js";
@@ -55,6 +58,7 @@ function buildModelPickerCatalog(params: {
   defaultModel: string;
   aliasIndex: ModelAliasIndex;
   allowedModelCatalog: Array<{ provider: string; id?: string; name?: string }>;
+  runtimeCandidates: RuntimeConfiguredModel[];
 }): ModelPickerCatalogEntry[] {
   const resolvedDefault = resolveConfiguredModelRef({
     cfg: params.cfg,
@@ -131,6 +135,14 @@ function buildModelPickerCatalog(params: {
     });
   };
 
+  for (const candidate of params.runtimeCandidates) {
+    push({
+      provider: candidate.provider,
+      id: candidate.model,
+      name: candidate.model,
+    });
+  }
+
   const hasAllowlist = Object.keys(params.cfg.agents?.defaults?.models ?? {}).length > 0;
   if (!hasAllowlist) {
     for (const entry of params.allowedModelCatalog) {
@@ -190,10 +202,13 @@ export async function maybeHandleModelDirectiveInfo(params: {
   cfg: MarvConfig;
   agentDir: string;
   activeAgentId: string;
+  sessionEntry?: SessionEntry;
   provider: string;
   model: string;
   defaultProvider: string;
   defaultModel: string;
+  poolName: string;
+  runtimeCandidates: RuntimeConfiguredModel[];
   aliasIndex: ModelAliasIndex;
   allowedModelCatalog: Array<{ provider: string; id?: string; name?: string }>;
   resetModelOverride: boolean;
@@ -222,6 +237,7 @@ export async function maybeHandleModelDirectiveInfo(params: {
     defaultModel: params.defaultModel,
     aliasIndex: params.aliasIndex,
     allowedModelCatalog: params.allowedModelCatalog,
+    runtimeCandidates: params.runtimeCandidates,
   });
 
   if (wantsLegacyList) {
@@ -286,12 +302,19 @@ export async function maybeHandleModelDirectiveInfo(params: {
 
   const current = `${params.provider}/${params.model}`;
   const defaultLabel = `${params.defaultProvider}/${params.defaultModel}`;
+  const selectionState = resolveSessionModelSelectionState(params.sessionEntry);
+  const modeLabel = selectionState.mode === "manual" ? "manual" : "auto";
   const lines = [
     `Current: ${current}`,
+    `Mode: ${modeLabel}`,
+    `Pool: ${params.poolName}`,
     `Default: ${defaultLabel}`,
     `Agent: ${params.activeAgentId}`,
     `Auth file: ${formatPath(resolveAuthStorePathForDisplay(params.agentDir))}`,
   ];
+  if (selectionState.mode === "manual" && selectionState.manualModelRef) {
+    lines.push(`Manual selection: ${selectionState.manualModelRef}`);
+  }
   if (params.resetModelOverride) {
     lines.push(`(previous selection reset to default)`);
   }
@@ -353,6 +376,15 @@ export function resolveModelSelectionFromDirective(params: {
   }
 
   const raw = params.directives.rawModelDirective.trim();
+  if (raw.toLowerCase() === "auto") {
+    return {
+      modelSelection: {
+        provider: params.defaultProvider,
+        model: params.defaultModel,
+        isDefault: true,
+      },
+    };
+  }
   let modelSelection: ModelDirectiveSelection | undefined;
 
   if (/^[0-9]+$/.test(raw)) {

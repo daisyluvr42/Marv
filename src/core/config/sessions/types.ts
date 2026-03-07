@@ -50,6 +50,8 @@ export type SessionEntry = {
   execAsk?: string;
   execNode?: string;
   responseUsage?: "on" | "off" | "tokens" | "full";
+  selectionMode?: "auto" | "manual";
+  manualModelRef?: string;
   providerOverride?: string;
   modelOverride?: string;
   authProfileOverride?: string;

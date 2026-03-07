@@ -78,8 +78,8 @@ export type FollowupRun = {
     ownerNumbers?: string[];
     extraSystemPrompt?: string;
     enforceFinalTag?: boolean;
-    /** Per-tier fallback models from auto-routing. */
-    autoRoutingFallbacks?: string[];
+    /** Ordered model candidates from the pool planner, including the primary at index 0. */
+    modelCandidates?: string[];
   };
 };
 

@@ -1,3 +1,4 @@
+import type { RuntimeConfiguredModel } from "../../agents/model/model-pool.js";
 import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
@@ -23,6 +24,8 @@ export type HandleDirectiveOnlyCoreParams = {
   allowedModelCatalog: Awaited<
     ReturnType<typeof import("../../agents/model/model-catalog.js").loadModelCatalog>
   >;
+  poolName: string;
+  candidates: RuntimeConfiguredModel[];
   resetModelOverride: boolean;
   provider: string;
   model: string;
@@ -45,6 +48,8 @@ export type ApplyInlineDirectivesFastLaneParams = HandleDirectiveOnlyCoreParams 
   isGroup: boolean;
   agentCfg?: NonNullable<MarvConfig["agents"]>["defaults"];
   modelState: {
+    poolName: string;
+    candidates: RuntimeConfiguredModel[];
     resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
     allowedModelKeys: Set<string>;
     allowedModelCatalog: Awaited<

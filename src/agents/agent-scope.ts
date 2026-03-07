@@ -19,6 +19,7 @@ type ResolvedAgentConfig = {
   workspace?: string;
   agentDir?: string;
   model?: AgentEntry["model"];
+  modelPool?: string;
   autoRouting?: AgentEntry["autoRouting"];
   skills?: AgentEntry["skills"];
   memorySearch?: AgentEntry["memorySearch"];
@@ -114,6 +115,7 @@ export function resolveAgentConfig(
       typeof entry.model === "string" || (entry.model && typeof entry.model === "object")
         ? entry.model
         : undefined,
+    modelPool: typeof entry.modelPool === "string" ? entry.modelPool : undefined,
     autoRouting: entry.autoRouting,
     skills: Array.isArray(entry.skills) ? entry.skills : undefined,
     memorySearch: entry.memorySearch,
@@ -129,49 +131,6 @@ export function resolveAgentConfig(
 
 export function resolveAgentSkillsFilter(cfg: MarvConfig, agentId: string): string[] | undefined {
   return normalizeSkillFilter(resolveAgentConfig(cfg, agentId)?.skills);
-}
-
-export function resolveAgentModelPrimary(cfg: MarvConfig, agentId: string): string | undefined {
-  const raw = resolveAgentConfig(cfg, agentId)?.model;
-  if (!raw) {
-    return undefined;
-  }
-  if (typeof raw === "string") {
-    return raw.trim() || undefined;
-  }
-  const primary = raw.primary?.trim();
-  return primary || undefined;
-}
-
-export function resolveAgentModelFallbacksOverride(
-  cfg: MarvConfig,
-  agentId: string,
-): string[] | undefined {
-  const raw = resolveAgentConfig(cfg, agentId)?.model;
-  if (!raw || typeof raw === "string") {
-    return undefined;
-  }
-  // Important: treat an explicitly provided empty array as an override to disable global fallbacks.
-  if (!Object.hasOwn(raw, "fallbacks")) {
-    return undefined;
-  }
-  return Array.isArray(raw.fallbacks) ? raw.fallbacks : undefined;
-}
-
-export function resolveEffectiveModelFallbacks(params: {
-  cfg: MarvConfig;
-  agentId: string;
-  hasSessionModelOverride: boolean;
-}): string[] | undefined {
-  const agentFallbacksOverride = resolveAgentModelFallbacksOverride(params.cfg, params.agentId);
-  if (!params.hasSessionModelOverride) {
-    return agentFallbacksOverride;
-  }
-  const defaultFallbacks =
-    typeof params.cfg.agents?.defaults?.model === "object"
-      ? (params.cfg.agents.defaults.model.fallbacks ?? [])
-      : [];
-  return agentFallbacksOverride ?? defaultFallbacks;
 }
 
 export function resolveAgentWorkspaceDir(cfg: MarvConfig, agentId: string) {

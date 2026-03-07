@@ -14,13 +14,13 @@ import {
 } from "../failover-error.js";
 import type { FailoverReason } from "../runner/pi-embedded-helpers.js";
 import { isLikelyContextOverflowError } from "../runner/pi-embedded-helpers.js";
+import { resolveRuntimeModelPlan } from "./model-pool.js";
 import {
   buildConfiguredAllowlistKeys,
-  buildModelAliasIndex,
   modelKey,
   normalizeModelRef,
+  parseModelRef,
   resolveConfiguredModelRef,
-  resolveModelRefFromString,
 } from "./model-selection.js";
 
 type ModelCandidate = {
@@ -120,57 +120,28 @@ function resolveImageFallbackCandidates(params: {
   cfg: MarvConfig | undefined;
   defaultProvider: string;
   modelOverride?: string;
+  agentDir?: string;
 }): ModelCandidate[] {
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg ?? {},
-    defaultProvider: params.defaultProvider,
-  });
-  const allowlist = buildConfiguredAllowlistKeys({
-    cfg: params.cfg,
-    defaultProvider: params.defaultProvider,
-  });
-  const { candidates, addCandidate } = createModelCandidateCollector(allowlist);
-
-  const addRaw = (raw: string, enforceAllowlist: boolean) => {
-    const resolved = resolveModelRefFromString({
-      raw: String(raw ?? ""),
-      defaultProvider: params.defaultProvider,
-      aliasIndex,
-    });
-    if (!resolved) {
-      return;
+  const plan = params.cfg
+    ? resolveRuntimeModelPlan({
+        cfg: params.cfg,
+        agentDir: params.agentDir,
+        requirements: { requiredCapabilities: ["text", "vision"] },
+      })
+    : null;
+  const candidates: ModelCandidate[] = [];
+  const push = (provider: string, model: string) => {
+    if (!candidates.some((entry) => entry.provider === provider && entry.model === model)) {
+      candidates.push({ provider, model });
     }
-    addCandidate(resolved.ref, enforceAllowlist);
   };
-
   if (params.modelOverride?.trim()) {
-    addRaw(params.modelOverride, false);
-  } else {
-    const imageModel = params.cfg?.agents?.defaults?.imageModel as
-      | { primary?: string }
-      | string
-      | undefined;
-    const primary = typeof imageModel === "string" ? imageModel.trim() : imageModel?.primary;
-    if (primary?.trim()) {
-      addRaw(primary, false);
-    }
+    const override = normalizeModelRef(params.defaultProvider, params.modelOverride);
+    push(override.provider, override.model);
   }
-
-  const imageFallbacks = (() => {
-    const imageModel = params.cfg?.agents?.defaults?.imageModel as
-      | { fallbacks?: string[] }
-      | string
-      | undefined;
-    if (imageModel && typeof imageModel === "object") {
-      return imageModel.fallbacks ?? [];
-    }
-    return [];
-  })();
-
-  for (const raw of imageFallbacks) {
-    addRaw(raw, true);
+  for (const entry of plan?.candidates ?? []) {
+    push(entry.provider, entry.model);
   }
-
   return candidates;
 }
 
@@ -178,7 +149,7 @@ function resolveFallbackCandidates(params: {
   cfg: MarvConfig | undefined;
   provider: string;
   model: string;
-  /** Optional explicit fallbacks list; when provided (even empty), replaces agents.defaults.model.fallbacks. */
+  /** Optional explicit fallback refs; when provided, uses this ordered list after the primary. */
   fallbacksOverride?: string[];
 }): ModelCandidate[] {
   const primary = params.cfg
@@ -193,10 +164,6 @@ function resolveFallbackCandidates(params: {
   const providerRaw = String(params.provider ?? "").trim() || defaultProvider;
   const modelRaw = String(params.model ?? "").trim() || defaultModel;
   const normalizedPrimary = normalizeModelRef(providerRaw, modelRaw);
-  const aliasIndex = buildModelAliasIndex({
-    cfg: params.cfg ?? {},
-    defaultProvider,
-  });
   const allowlist = buildConfiguredAllowlistKeys({
     cfg: params.cfg,
     defaultProvider,
@@ -204,35 +171,25 @@ function resolveFallbackCandidates(params: {
   const { candidates, addCandidate } = createModelCandidateCollector(allowlist);
 
   addCandidate(normalizedPrimary, false);
-
-  const modelFallbacks = (() => {
-    if (params.fallbacksOverride !== undefined) {
-      return params.fallbacksOverride;
+  if (params.fallbacksOverride !== undefined) {
+    for (const raw of params.fallbacksOverride) {
+      const resolved = parseModelRef(String(raw ?? ""), defaultProvider);
+      if (resolved) {
+        addCandidate(resolved, true);
+      }
     }
-    const model = params.cfg?.agents?.defaults?.model as
-      | { fallbacks?: string[] }
-      | string
-      | undefined;
-    if (model && typeof model === "object") {
-      return model.fallbacks ?? [];
-    }
-    return [];
-  })();
-
-  for (const raw of modelFallbacks) {
-    const resolved = resolveModelRefFromString({
-      raw: String(raw ?? ""),
-      defaultProvider,
-      aliasIndex,
-    });
-    if (!resolved) {
-      continue;
-    }
-    addCandidate(resolved.ref, true);
+    return candidates;
   }
 
-  if (params.fallbacksOverride === undefined && primary?.provider && primary.model) {
-    addCandidate({ provider: primary.provider, model: primary.model }, false);
+  const runtimePlan = params.cfg
+    ? resolveRuntimeModelPlan({
+        cfg: params.cfg,
+        agentDir: undefined,
+        requirements: { requiredCapabilities: ["text"] },
+      })
+    : null;
+  for (const entry of runtimePlan?.candidates ?? []) {
+    addCandidate({ provider: entry.provider, model: entry.model }, true);
   }
 
   return candidates;
@@ -287,7 +244,7 @@ export async function runWithModelFallback<T>(params: {
   provider: string;
   model: string;
   agentDir?: string;
-  /** Optional explicit fallbacks list; when provided (even empty), replaces agents.defaults.model.fallbacks. */
+  /** Optional explicit fallback refs; when provided, uses this ordered list after the primary. */
   fallbacksOverride?: string[];
   run: (provider: string, model: string) => Promise<T>;
   onError?: ModelFallbackErrorHandler;
@@ -420,9 +377,7 @@ export async function runWithImageModelFallback<T>(params: {
     modelOverride: params.modelOverride,
   });
   if (candidates.length === 0) {
-    throw new Error(
-      "No image model configured. Set agents.defaults.imageModel.primary or agents.defaults.imageModel.fallbacks.",
-    );
+    throw new Error("No image-capable model is available in the configured model pool.");
   }
 
   const attempts: FallbackAttempt[] = [];

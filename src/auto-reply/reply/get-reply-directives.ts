@@ -373,6 +373,7 @@ export async function resolveReplyDirectives(params: {
 
   const modelState = await createModelSelectionState({
     cfg,
+    agentId,
     agentCfg,
     sessionEntry,
     sessionStore,
@@ -384,6 +385,7 @@ export async function resolveReplyDirectives(params: {
     provider,
     model,
     hasModelDirective: directives.hasModelDirective,
+    hasImages: (ctx.MediaPaths?.length ?? 0) > 0 || (ctx.MediaUrls?.length ?? 0) > 0,
     hasResolvedHeartbeatModelOverride,
   });
   provider = modelState.provider;

@@ -258,6 +258,27 @@ describe("resolveSessionModelRef", () => {
 
     expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
   });
+
+  test("prefers explicit manual selection state over legacy runtime fields", () => {
+    const cfg = {
+      agents: {
+        defaults: {
+          model: { primary: "anthropic/claude-opus-4-6" },
+        },
+      },
+    } as MarvConfig;
+
+    const resolved = resolveSessionModelRef(cfg, {
+      sessionId: "s3",
+      updatedAt: Date.now(),
+      modelProvider: "openai-codex",
+      model: "gpt-5.3-codex",
+      selectionMode: "manual",
+      manualModelRef: "openai/gpt-4o",
+    });
+
+    expect(resolved).toEqual({ provider: "openai", model: "gpt-4o" });
+  });
 });
 
 describe("deriveSessionTitle", () => {

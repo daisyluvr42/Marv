@@ -69,6 +69,36 @@ export const ModelProviderSchema = z
   })
   .strict();
 
+export const ConfiguredModelCatalogEntrySchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    location: z.union([z.literal("local"), z.literal("cloud")]).optional(),
+    tier: z.union([z.literal("low"), z.literal("standard"), z.literal("high")]).optional(),
+    capabilities: z
+      .array(
+        z.union([z.literal("text"), z.literal("vision"), z.literal("coding"), z.literal("tools")]),
+      )
+      .optional(),
+    priority: z.number().int().optional(),
+  })
+  .strict();
+
+export const ModelPoolSchema = z
+  .object({
+    locations: z.array(z.union([z.literal("local"), z.literal("cloud")])).optional(),
+    tiers: z
+      .array(z.union([z.literal("low"), z.literal("standard"), z.literal("high")]))
+      .optional(),
+    requireCapabilities: z
+      .array(
+        z.union([z.literal("text"), z.literal("vision"), z.literal("coding"), z.literal("tools")]),
+      )
+      .optional(),
+    include: z.array(z.string()).optional(),
+    exclude: z.array(z.string()).optional(),
+  })
+  .strict();
+
 export const BedrockDiscoverySchema = z
   .object({
     enabled: z.boolean().optional(),
@@ -84,6 +114,7 @@ export const BedrockDiscoverySchema = z
 export const ModelsConfigSchema = z
   .object({
     mode: z.union([z.literal("merge"), z.literal("replace")]).optional(),
+    catalog: z.record(z.string(), ConfiguredModelCatalogEntrySchema).optional(),
     providers: z.record(z.string(), ModelProviderSchema).optional(),
     bedrockDiscovery: BedrockDiscoverySchema,
   })

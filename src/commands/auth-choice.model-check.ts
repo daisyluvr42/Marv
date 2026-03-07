@@ -1,9 +1,8 @@
-import { resolveAgentModelPrimary } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../agents/auth-profiles.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model/model-auth.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
-import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
+import { resolveRuntimeModelPlan } from "../agents/model/model-pool.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { OPENAI_CODEX_DEFAULT_MODEL } from "./openai-codex-model-default.js";
@@ -13,35 +12,18 @@ export async function warnIfModelConfigLooksOff(
   prompter: WizardPrompter,
   options?: { agentId?: string; agentDir?: string },
 ) {
-  const agentModelOverride = options?.agentId
-    ? resolveAgentModelPrimary(config, options.agentId)
-    : undefined;
-  const configWithModel =
-    agentModelOverride && agentModelOverride.length > 0
-      ? {
-          ...config,
-          agents: {
-            ...config.agents,
-            defaults: {
-              ...config.agents?.defaults,
-              model: {
-                ...(typeof config.agents?.defaults?.model === "object"
-                  ? config.agents.defaults.model
-                  : undefined),
-                primary: agentModelOverride,
-              },
-            },
-          },
-        }
-      : config;
-  const ref = resolveConfiguredModelRef({
-    cfg: configWithModel,
-    defaultProvider: DEFAULT_PROVIDER,
-    defaultModel: DEFAULT_MODEL,
+  const runtimePlan = resolveRuntimeModelPlan({
+    cfg: config,
+    agentId: options?.agentId,
+    agentDir: options?.agentDir,
   });
+  const ref = runtimePlan.candidates[0] ?? {
+    provider: DEFAULT_PROVIDER,
+    model: DEFAULT_MODEL,
+  };
   const warnings: string[] = [];
   const catalog = await loadModelCatalog({
-    config: configWithModel,
+    config,
     useCache: false,
   });
   if (catalog.length > 0) {

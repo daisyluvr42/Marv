@@ -337,9 +337,10 @@ export const FIELD_HELP: Record<string, string> = {
   "plugins.installs.*.installedAt": "ISO timestamp of last install/update.",
   "agents.list.*.identity.avatar":
     "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
-  "agents.defaults.model.primary": "Primary model (provider/model).",
-  "agents.defaults.model.fallbacks":
-    "Ordered fallback models (provider/model). Used when the primary model fails.",
+  "agents.defaults.modelPool":
+    "Default automatic model pool name. The planner picks candidates from this pool.",
+  "agents.modelPools":
+    "Named model pool rules that filter and order configured models by location, tier, and capabilities.",
   "agents.defaults.imageModel.primary":
     "Optional image model (provider/model) used when the primary model lacks image input.",
   "agents.defaults.imageModel.fallbacks": "Ordered fallback image models (provider/model).",

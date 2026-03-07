@@ -150,6 +150,8 @@ export async function applyInlineDirectiveOverrides(params: {
       aliasIndex,
       allowedModelKeys: modelState.allowedModelKeys,
       allowedModelCatalog: modelState.allowedModelCatalog,
+      poolName: modelState.poolName,
+      candidates: modelState.candidates,
       resetModelOverride: modelState.resetModelOverride,
       provider,
       model,
@@ -230,6 +232,8 @@ export async function applyInlineDirectiveOverrides(params: {
       formatModelSwitchEvent,
       agentCfg,
       modelState: {
+        poolName: modelState.poolName,
+        candidates: modelState.candidates,
         resolveDefaultThinkingLevel: modelState.resolveDefaultThinkingLevel,
         allowedModelKeys: modelState.allowedModelKeys,
         allowedModelCatalog: modelState.allowedModelCatalog,

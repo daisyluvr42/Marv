@@ -1,7 +1,6 @@
 import {
   resolveAgentConfig,
   resolveAgentDir,
-  resolveAgentModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
@@ -11,6 +10,7 @@ import { resolveCronStyleNow } from "../../agents/current-time.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { loadModelCatalog } from "../../agents/model/model-catalog.js";
 import { runWithModelFallback } from "../../agents/model/model-fallback.js";
+import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
 import {
   getModelRefStatus,
   isCliProvider,
@@ -447,12 +447,20 @@ export async function runCronIsolatedAgentTurn(params: {
       verboseLevel: resolvedVerboseLevel,
     });
     const messageChannel = resolvedDelivery.channel;
+    const runtimePlan = resolveRuntimeModelPlan({
+      cfg: cfgWithAgentDefaults,
+      agentId,
+      agentDir,
+      requirements: { requiredCapabilities: ["text"] },
+    });
     const fallbackResult = await runWithModelFallback({
       cfg: cfgWithAgentDefaults,
       provider,
       model,
       agentDir,
-      fallbacksOverride: resolveAgentModelFallbacksOverride(params.cfg, agentId),
+      fallbacksOverride: runtimePlan.candidates
+        .map((entry) => entry.ref)
+        .filter((ref) => ref !== `${provider}/${model}`),
       run: (providerOverride, modelOverride) => {
         if (isCliProvider(providerOverride, cfgWithAgentDefaults)) {
           const cliSessionId = getCliSessionId(cronSession.sessionEntry, providerOverride);

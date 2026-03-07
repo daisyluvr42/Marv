@@ -49,10 +49,13 @@ describe("/model chat UX", () => {
       cfg,
       agentDir: "/tmp/agent",
       activeAgentId: "main",
+      sessionEntry: undefined,
       provider: "anthropic",
       model: "claude-opus-4-5",
       defaultProvider: "anthropic",
       defaultModel: "claude-opus-4-5",
+      poolName: "default",
+      runtimeCandidates: [],
       aliasIndex: baseAliasIndex(),
       allowedModelCatalog: [],
       resetModelOverride: false,
@@ -85,6 +88,48 @@ describe("/model chat UX", () => {
       isDefault: true,
     });
     expect(resolved.errorText).toBeUndefined();
+  });
+
+  it("shows mode and pool details for /model status", async () => {
+    const directives = parseInlineDirectives("/model status");
+    const reply = await maybeHandleModelDirectiveInfo({
+      directives,
+      cfg: baseConfig(),
+      agentDir: "/tmp/agent",
+      activeAgentId: "main",
+      sessionEntry: {
+        sessionId: "s1",
+        updatedAt: Date.now(),
+        selectionMode: "manual",
+        manualModelRef: "openai/gpt-4o",
+      },
+      provider: "openai",
+      model: "gpt-4o",
+      defaultProvider: "anthropic",
+      defaultModel: "claude-opus-4-5",
+      poolName: "default",
+      runtimeCandidates: [
+        {
+          ref: "openai/gpt-4o",
+          provider: "openai",
+          model: "gpt-4o",
+          location: "cloud",
+          tier: "standard",
+          capabilities: ["text", "vision"],
+          priority: 0,
+          enabled: true,
+          available: true,
+          aliases: [],
+        },
+      ],
+      aliasIndex: baseAliasIndex(),
+      allowedModelCatalog: [],
+      resetModelOverride: false,
+    });
+
+    expect(reply?.text).toContain("Mode: manual");
+    expect(reply?.text).toContain("Pool: default");
+    expect(reply?.text).toContain("Manual selection: openai/gpt-4o");
   });
 });
 
@@ -126,6 +171,8 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       aliasIndex: baseAliasIndex(),
       allowedModelKeys,
       allowedModelCatalog,
+      poolName: "default",
+      candidates: [],
       resetModelOverride: false,
       provider: "anthropic",
       model: "claude-opus-4-5",

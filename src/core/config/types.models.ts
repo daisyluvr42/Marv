@@ -23,6 +23,17 @@ export type ModelCompatConfig = {
 
 export type ModelProviderAuthMode = "api-key" | "aws-sdk" | "oauth" | "token";
 
+export type ConfiguredModelLocation = "local" | "cloud";
+export type ConfiguredModelTier = "low" | "standard" | "high";
+
+export type ConfiguredModelCatalogEntry = {
+  enabled?: boolean;
+  location?: ConfiguredModelLocation;
+  tier?: ConfiguredModelTier;
+  capabilities?: Array<"text" | "vision" | "coding" | "tools">;
+  priority?: number;
+};
+
 export type ModelDefinitionConfig = {
   id: string;
   name: string;
@@ -62,6 +73,7 @@ export type BedrockDiscoveryConfig = {
 
 export type ModelsConfig = {
   mode?: "merge" | "replace";
+  catalog?: Record<string, ConfiguredModelCatalogEntry>;
   providers?: Record<string, ModelProviderConfig>;
   bedrockDiscovery?: BedrockDiscoveryConfig;
 };

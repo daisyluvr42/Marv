@@ -27,6 +27,7 @@ import {
   type SessionEntry,
   type SessionScope,
 } from "../config/sessions.js";
+import { resolveSessionModelSelectionState } from "../session/model-selection-state.js";
 import { isCronRunSessionKey } from "../session/session-key-utils.js";
 import { readSessionTitleFieldsFromTranscript } from "./session-utils.fs.js";
 import type {
@@ -643,7 +644,15 @@ export function resolveSessionModelRef(
   cfg: MarvConfig,
   entry?:
     | SessionEntry
-    | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
+    | Pick<
+        SessionEntry,
+        | "model"
+        | "modelProvider"
+        | "modelOverride"
+        | "providerOverride"
+        | "selectionMode"
+        | "manualModelRef"
+      >,
   agentId?: string,
 ): { provider: string; model: string } {
   const resolved = agentId
@@ -654,39 +663,20 @@ export function resolveSessionModelRef(
         defaultModel: DEFAULT_MODEL,
       });
 
-  // Prefer explicit per-session override (set via /model or spawn-time patch).
-  // This is the user's deliberate choice and must win over runtime fields and defaults.
+  // Prefer explicit manual selection state.
   let provider = resolved.provider;
   let model = resolved.model;
-  const storedModelOverride = entry?.modelOverride?.trim();
-  if (storedModelOverride) {
-    const overrideProvider = entry?.providerOverride?.trim() || provider || DEFAULT_PROVIDER;
-    const parsedOverride = parseModelRef(storedModelOverride, overrideProvider);
+  const selectionState = resolveSessionModelSelectionState(entry);
+  if (selectionState.mode === "manual" && selectionState.manualModelRef) {
+    const parsedOverride = parseModelRef(
+      selectionState.manualModelRef,
+      provider || DEFAULT_PROVIDER,
+    );
     if (parsedOverride) {
       provider = parsedOverride.provider;
       model = parsedOverride.model;
     } else {
-      provider = overrideProvider;
-      model = storedModelOverride;
-    }
-    return { provider, model };
-  }
-
-  // Fall back to the last runtime model recorded on the session entry.
-  // This is the actual model used by the latest run and wins over config defaults.
-  const runtimeModel = entry?.model?.trim();
-  const runtimeProvider = entry?.modelProvider?.trim();
-  if (runtimeModel) {
-    const parsedRuntime = parseModelRef(
-      runtimeModel,
-      runtimeProvider || provider || DEFAULT_PROVIDER,
-    );
-    if (parsedRuntime) {
-      provider = parsedRuntime.provider;
-      model = parsedRuntime.model;
-    } else {
-      provider = runtimeProvider || provider;
-      model = runtimeModel;
+      model = selectionState.manualModelRef;
     }
   }
   return { provider, model };
