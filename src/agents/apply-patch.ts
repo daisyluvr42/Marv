@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
+import { resolveConfigPath, resolveStateDir } from "../core/config/config.js";
 import { applyUpdateHunk } from "./apply-patch-update.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import { assertSandboxPath, resolveSandboxInputPath } from "./sandbox/sandbox-paths.js";
@@ -68,6 +69,7 @@ type ApplyPatchOptions = {
   sandbox?: SandboxApplyPatchConfig;
   /** Restrict patch paths to the workspace root (cwd). Default: true. Set false to opt out. */
   workspaceOnly?: boolean;
+  protectedPaths?: string[];
   signal?: AbortSignal;
 };
 
@@ -106,6 +108,9 @@ export function createApplyPatchTool(
         cwd,
         sandbox,
         workspaceOnly,
+        protectedPaths: [
+          path.resolve(resolveConfigPath(process.env, resolveStateDir(process.env))),
+        ],
         signal,
       });
 
@@ -147,6 +152,7 @@ export async function applyPatch(
 
     if (hunk.kind === "add") {
       const target = await resolvePatchPath(hunk.path, options);
+      assertProtectedPathAllowed(target.resolved, options.protectedPaths);
       await ensureDir(target.resolved, fileOps);
       await fileOps.writeFile(target.resolved, hunk.contents);
       recordSummary(summary, seen, "added", target.display);
@@ -155,18 +161,21 @@ export async function applyPatch(
 
     if (hunk.kind === "delete") {
       const target = await resolvePatchPath(hunk.path, options, "unlink");
+      assertProtectedPathAllowed(target.resolved, options.protectedPaths);
       await fileOps.remove(target.resolved);
       recordSummary(summary, seen, "deleted", target.display);
       continue;
     }
 
     const target = await resolvePatchPath(hunk.path, options);
+    assertProtectedPathAllowed(target.resolved, options.protectedPaths);
     const applied = await applyUpdateHunk(target.resolved, hunk.chunks, {
       readFile: (path) => fileOps.readFile(path),
     });
 
     if (hunk.movePath) {
       const moveTarget = await resolvePatchPath(hunk.movePath, options);
+      assertProtectedPathAllowed(moveTarget.resolved, options.protectedPaths);
       await ensureDir(moveTarget.resolved, fileOps);
       await fileOps.writeFile(moveTarget.resolved, applied);
       await fileOps.remove(target.resolved);
@@ -181,6 +190,21 @@ export async function applyPatch(
     summary,
     text: formatSummary(summary),
   };
+}
+
+function assertProtectedPathAllowed(filePath: string, protectedPaths: string[] | undefined) {
+  if (!protectedPaths || protectedPaths.length === 0) {
+    return;
+  }
+  const resolved = path.resolve(filePath);
+  if (protectedPaths.some((candidate) => path.resolve(candidate) === resolved)) {
+    throw new Error(
+      [
+        `Refusing to modify the active config file with apply_patch: ${resolved}`,
+        'Call `gateway` with `action: "config.get"` and use `config.patch`, `config.apply`, or `config.patches.propose` instead.',
+      ].join("\n"),
+    );
+  }
 }
 
 function recordSummary(

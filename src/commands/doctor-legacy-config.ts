@@ -9,6 +9,73 @@ export function normalizeLegacyConfigValues(cfg: MarvConfig): {
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
+  const normalizeLegacyWebSearch = (value: unknown): Record<string, unknown> | null => {
+    if (!isRecord(value)) {
+      return null;
+    }
+    const nextSearch = { ...value };
+    const providers = isRecord(nextSearch.providers) ? nextSearch.providers : null;
+    if (!providers) {
+      return nextSearch;
+    }
+
+    const brave = isRecord(providers.brave) ? providers.brave : null;
+    if (nextSearch.apiKey === undefined && typeof brave?.apiKey === "string") {
+      nextSearch.apiKey = brave.apiKey;
+    }
+    if (nextSearch.provider === undefined && brave) {
+      nextSearch.provider = "brave";
+    }
+
+    const perplexity = isRecord(providers.perplexity) ? providers.perplexity : null;
+    if (perplexity) {
+      nextSearch.perplexity = {
+        ...perplexity,
+        ...(isRecord(nextSearch.perplexity) ? nextSearch.perplexity : {}),
+      };
+      if (nextSearch.provider === undefined) {
+        nextSearch.provider = "perplexity";
+      }
+    }
+
+    const grok = isRecord(providers.grok) ? providers.grok : null;
+    if (grok) {
+      nextSearch.grok = {
+        ...grok,
+        ...(isRecord(nextSearch.grok) ? nextSearch.grok : {}),
+      };
+      if (nextSearch.provider === undefined) {
+        nextSearch.provider = "grok";
+      }
+    }
+
+    delete nextSearch.providers;
+    return nextSearch;
+  };
+
+  const mergeLegacyIntoCurrent = (
+    current: Record<string, unknown> | null,
+    legacy: Record<string, unknown>,
+  ): Record<string, unknown> => {
+    const merged: Record<string, unknown> = {
+      ...legacy,
+      ...current,
+    };
+
+    for (const nestedKey of ["perplexity", "grok"] as const) {
+      const legacyNested = isRecord(legacy[nestedKey]) ? legacy[nestedKey] : null;
+      const currentNested = isRecord(current?.[nestedKey]) ? current?.[nestedKey] : null;
+      if (legacyNested || currentNested) {
+        merged[nestedKey] = {
+          ...legacyNested,
+          ...currentNested,
+        };
+      }
+    }
+
+    return merged;
+  };
+
   const normalizeDmAliases = (params: {
     provider: "slack" | "discord";
     entry: Record<string, unknown>;
@@ -142,6 +209,40 @@ export function normalizeLegacyConfigValues(cfg: MarvConfig): {
 
   normalizeProvider("slack");
   normalizeProvider("discord");
+
+  const rootWeb = isRecord(next.web) ? { ...next.web } : null;
+  const legacyWebSearch = normalizeLegacyWebSearch(rootWeb?.search);
+  const legacyWebFetch = isRecord(rootWeb?.fetch) ? { ...rootWeb.fetch } : null;
+  if (rootWeb && (legacyWebSearch || legacyWebFetch)) {
+    const existingTools = isRecord(next.tools) ? { ...next.tools } : {};
+    const existingToolsWeb = isRecord(existingTools.web) ? { ...existingTools.web } : {};
+
+    if (legacyWebSearch) {
+      existingToolsWeb.search = mergeLegacyIntoCurrent(
+        isRecord(existingToolsWeb.search) ? existingToolsWeb.search : null,
+        legacyWebSearch,
+      );
+      delete rootWeb.search;
+      changes.push("Moved web.search → tools.web.search.");
+    }
+
+    if (legacyWebFetch) {
+      existingToolsWeb.fetch = mergeLegacyIntoCurrent(
+        isRecord(existingToolsWeb.fetch) ? existingToolsWeb.fetch : null,
+        legacyWebFetch,
+      );
+      delete rootWeb.fetch;
+      changes.push("Moved web.fetch → tools.web.fetch.");
+    }
+
+    existingTools.web = existingToolsWeb;
+    const { web: _legacyWeb, ...rest } = next as MarvConfig & { web?: unknown };
+    next = {
+      ...rest,
+      ...(Object.keys(rootWeb).length > 0 ? { web: rootWeb as MarvConfig["web"] } : {}),
+      tools: existingTools as MarvConfig["tools"],
+    };
+  }
 
   const legacyAckReaction = cfg.messages?.ackReaction?.trim();
   const hasWhatsAppConfig = cfg.channels?.whatsapp !== undefined;

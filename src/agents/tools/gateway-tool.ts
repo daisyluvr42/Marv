@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveConfigSnapshotHash } from "../../core/config/io.js";
@@ -196,6 +197,22 @@ export function createGatewayTool(opts?: {
 
       if (action === "config.get") {
         const result = await callGatewayTool("config.get", gatewayOpts, {});
+        if (result && typeof result === "object") {
+          const pathValue =
+            (result as { path?: unknown; configPath?: unknown }).path ??
+            (result as { path?: unknown; configPath?: unknown }).configPath;
+          const activeConfigPath =
+            typeof pathValue === "string" && pathValue.trim() ? pathValue.trim() : undefined;
+          const activeStateDir = activeConfigPath ? path.dirname(activeConfigPath) : undefined;
+          return jsonResult({
+            ok: true,
+            result: {
+              ...result,
+              ...(activeConfigPath ? { activeConfigPath } : {}),
+              ...(activeStateDir ? { activeStateDir } : {}),
+            },
+          });
+        }
         return jsonResult({ ok: true, result });
       }
       if (action === "config.schema") {

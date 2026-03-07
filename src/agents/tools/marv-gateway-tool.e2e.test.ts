@@ -9,7 +9,7 @@ import { createMarvTools } from "./marv-tools.js";
 vi.mock("./gateway.js", () => ({
   callGatewayTool: vi.fn(async (method: string) => {
     if (method === "config.get") {
-      return { hash: "hash-1" };
+      return { hash: "hash-1", path: "/tmp/custom/marv.json" };
     }
     return { ok: true };
   }),
@@ -119,6 +119,27 @@ describe("gateway tool", () => {
         sessionKey: "agent:main:whatsapp:dm:+15555550123",
       }),
     );
+  });
+
+  it("surfaces the active config path on config.get", async () => {
+    const tool = createMarvTools().find((candidate) => candidate.name === "gateway");
+    expect(tool).toBeDefined();
+    if (!tool) {
+      throw new Error("missing gateway tool");
+    }
+
+    const result = await tool.execute("call-config-get", {
+      action: "config.get",
+    });
+
+    expect(result.details).toMatchObject({
+      ok: true,
+      result: {
+        path: "/tmp/custom/marv.json",
+        activeConfigPath: "/tmp/custom/marv.json",
+        activeStateDir: "/tmp/custom",
+      },
+    });
   });
 
   it("passes semantic config propose through gateway call", async () => {

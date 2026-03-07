@@ -145,4 +145,51 @@ describe("normalizeLegacyConfigValues", () => {
       "Moved channels.discord.accounts.work.dm.allowFrom → channels.discord.accounts.work.allowFrom.",
     ]);
   });
+
+  it("moves misplaced root web.search into tools.web.search", () => {
+    const res = normalizeLegacyConfigValues({
+      web: {
+        enabled: true,
+        search: {
+          providers: {
+            brave: {
+              apiKey: "brave-key",
+            },
+          },
+        },
+      },
+      tools: {
+        web: {
+          fetch: { enabled: false },
+        },
+      },
+    });
+
+    expect(res.config.web).toEqual({ enabled: true });
+    expect(res.config.tools?.web?.search).toEqual({
+      provider: "brave",
+      apiKey: "brave-key",
+    });
+    expect(res.config.tools?.web?.fetch).toEqual({ enabled: false });
+    expect(res.changes).toEqual(["Moved web.search → tools.web.search."]);
+  });
+
+  it("moves misplaced root web.fetch into tools.web.fetch", () => {
+    const res = normalizeLegacyConfigValues({
+      web: {
+        heartbeatSeconds: 15,
+        fetch: {
+          enabled: true,
+          readability: false,
+        },
+      },
+    });
+
+    expect(res.config.web).toEqual({ heartbeatSeconds: 15 });
+    expect(res.config.tools?.web?.fetch).toEqual({
+      enabled: true,
+      readability: false,
+    });
+    expect(res.changes).toEqual(["Moved web.fetch → tools.web.fetch."]);
+  });
 });

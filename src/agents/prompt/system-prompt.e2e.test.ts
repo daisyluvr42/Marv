@@ -289,6 +289,8 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("## Marv Self-Update");
     expect(prompt).toContain("config.apply");
     expect(prompt).toContain("update.run");
+    expect(prompt).toContain('action: "config.get"');
+    expect(prompt).toContain("Do not hand-edit the active config");
   });
 
   it("includes skills guidance when skills prompt is present", () => {

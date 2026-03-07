@@ -1,3 +1,5 @@
+import path from "node:path";
+import { resolveConfigPath, resolveStateDir } from "../../core/config/config.js";
 import type { ToolLoopDetectionConfig } from "../../core/config/types.tools.js";
 import { ensureWorkspaceSnapshotBeforeMutation } from "../../infra/workspace-rollback.js";
 import type { SessionState } from "../../logging/diagnostic-session-state.js";
@@ -22,6 +24,34 @@ const adjustedParamsByToolCallId = new Map<string, unknown>();
 const MAX_TRACKED_ADJUSTED_PARAMS = 1024;
 const LOOP_WARNING_BUCKET_SIZE = 10;
 const MAX_LOOP_WARNING_KEYS = 256;
+
+function resolveActiveConfigPath(): string {
+  return path.resolve(resolveConfigPath(process.env, resolveStateDir(process.env)));
+}
+
+function resolveMutationPath(params: unknown, workspaceDir?: string): string | undefined {
+  if (!params || typeof params !== "object") {
+    return undefined;
+  }
+  const record = params as Record<string, unknown>;
+  const rawPath =
+    typeof record.path === "string"
+      ? record.path.trim()
+      : typeof record.file_path === "string"
+        ? record.file_path.trim()
+        : "";
+  if (!rawPath) {
+    return undefined;
+  }
+  return path.resolve(workspaceDir ?? process.cwd(), rawPath);
+}
+
+function buildActiveConfigMutationError(toolName: string, activeConfigPath: string): string {
+  return [
+    `Refusing to modify the active config file with ${toolName}: ${activeConfigPath}`,
+    'Call `gateway` with `action: "config.get"` to confirm the active config path, then use `config.patch`, `config.apply`, or `config.patches.propose` instead of direct file edits.',
+  ].join("\n");
+}
 
 function shouldEmitLoopWarning(state: SessionState, warningKey: string, count: number): boolean {
   if (!state.toolLoopWarningBuckets) {
@@ -81,6 +111,18 @@ export async function runBeforeToolCallHook(args: {
 }): Promise<HookOutcome> {
   const toolName = normalizeToolName(args.toolName || "tool");
   const params = args.params;
+  if (toolName === "write" || toolName === "edit") {
+    const mutationPath = resolveMutationPath(params, args.ctx?.workspaceDir);
+    if (mutationPath) {
+      const activeConfigPath = resolveActiveConfigPath();
+      if (mutationPath === activeConfigPath) {
+        return {
+          blocked: true,
+          reason: buildActiveConfigMutationError(toolName, activeConfigPath),
+        };
+      }
+    }
+  }
 
   if (args.ctx?.workspaceDir) {
     try {

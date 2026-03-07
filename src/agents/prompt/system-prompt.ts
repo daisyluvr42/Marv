@@ -491,6 +491,10 @@ export function buildAgentSystemPrompt(params: {
       ? [
           "Get Updates (self-update) is ONLY allowed when the user explicitly asks for it.",
           "Do not run config.apply or update.run unless the user explicitly requests an update or config change; if it's not explicit, ask first.",
+          'Before any config change, call `gateway` with `action: "config.get"` and treat `result.activeConfigPath` (fallback: `result.path`) as the active config file.',
+          "Do not assume `~/.marv/marv.json`; `MARV_CONFIG_PATH` or `MARV_STATE_DIR` may point elsewhere.",
+          "Do not hand-edit the active config with read/write/edit/apply_patch or shell commands; use config.patch, config.apply, or config.patches.propose instead.",
+          "If the config is invalid, stop and report it or run doctor; do not rewrite the file from scratch.",
           "Actions: config.get, config.schema, config.apply (validate + write full config, then restart), update.run (update deps or git, then restart).",
           "After restart, Marv pings the last active session automatically.",
         ].join("\n")

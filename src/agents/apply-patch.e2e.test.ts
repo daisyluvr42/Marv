@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { captureEnv } from "../test-utils/env.js";
 import { applyPatch } from "./apply-patch.js";
 
 async function withTempDir<T>(fn: (dir: string) => Promise<T>) {
@@ -240,5 +241,29 @@ describe("applyPatch", () => {
         await fs.rm(outsideDir, { recursive: true, force: true });
       }
     });
+  });
+
+  it("rejects patches that target the active config file when protectedPaths are provided", async () => {
+    const envSnapshot = captureEnv(["MARV_CONFIG_PATH", "MARV_STATE_DIR"]);
+    const configPath = path.join(os.tmpdir(), `marv-protected-${Date.now()}.json`);
+    process.env.MARV_CONFIG_PATH = configPath;
+    delete process.env.MARV_STATE_DIR;
+
+    try {
+      await fs.writeFile(configPath, "{\n}\n", "utf8");
+      const patch = `*** Begin Patch
+*** Update File: ${configPath}
+@@
+-{
++{"safe":true
+*** End Patch`;
+
+      await expect(
+        applyPatch(patch, { cwd: os.tmpdir(), protectedPaths: [configPath] }),
+      ).rejects.toThrow(/Refusing to modify the active config file/);
+    } finally {
+      envSnapshot.restore();
+      await fs.rm(configPath, { force: true });
+    }
   });
 });

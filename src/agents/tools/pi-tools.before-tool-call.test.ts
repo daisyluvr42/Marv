@@ -6,6 +6,7 @@ import {
 } from "../../infra/diagnostic-events.js";
 import { resetDiagnosticSessionStateForTest } from "../../logging/diagnostic-session-state.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
+import { captureEnv } from "../../test-utils/env.js";
 import type { AnyAgentTool } from "./common.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
 import { CRITICAL_THRESHOLD, GLOBAL_CIRCUIT_BREAKER_THRESHOLD } from "./tool-loop-detection.js";
@@ -156,6 +157,44 @@ describe("before_tool_call loop detection behavior", () => {
       await expect(
         tool.execute(`poll-progress-${i}`, params, undefined, undefined),
       ).resolves.toBeDefined();
+    }
+  });
+
+  it("blocks direct writes to the active config file", async () => {
+    const envSnapshot = captureEnv(["MARV_CONFIG_PATH", "MARV_STATE_DIR"]);
+    process.env.MARV_CONFIG_PATH = "/tmp/test-config.json";
+    delete process.env.MARV_STATE_DIR;
+    try {
+      const execute = vi.fn();
+      const tool = createWrappedTool("write", execute);
+
+      await expect(
+        tool.execute("write-config", { path: "/tmp/test-config.json", content: "{}" }),
+      ).rejects.toThrow(/Refusing to modify the active config file/);
+      expect(execute).not.toHaveBeenCalled();
+    } finally {
+      envSnapshot.restore();
+    }
+  });
+
+  it("blocks direct edits to the active config file", async () => {
+    const envSnapshot = captureEnv(["MARV_CONFIG_PATH", "MARV_STATE_DIR"]);
+    process.env.MARV_CONFIG_PATH = "/tmp/test-config.json";
+    delete process.env.MARV_STATE_DIR;
+    try {
+      const execute = vi.fn();
+      const tool = createWrappedTool("edit", execute);
+
+      await expect(
+        tool.execute("edit-config", {
+          file_path: "/tmp/test-config.json",
+          old_string: "{}",
+          new_string: '{"safe":true}',
+        }),
+      ).rejects.toThrow(/Refusing to modify the active config file/);
+      expect(execute).not.toHaveBeenCalled();
+    } finally {
+      envSnapshot.restore();
     }
   });
 
