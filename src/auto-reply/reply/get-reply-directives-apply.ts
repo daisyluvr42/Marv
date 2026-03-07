@@ -223,6 +223,8 @@ export async function applyInlineDirectiveOverrides(params: {
       defaultProvider,
       defaultModel,
       aliasIndex,
+      poolName: modelState.poolName,
+      candidates: modelState.candidates,
       allowedModelKeys: modelState.allowedModelKeys,
       allowedModelCatalog: modelState.allowedModelCatalog,
       resetModelOverride: modelState.resetModelOverride,

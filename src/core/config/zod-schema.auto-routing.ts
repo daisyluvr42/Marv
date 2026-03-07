@@ -27,7 +27,7 @@ export const AutoRoutingSchema = z
         z
           .object({
             complexity: AutoRoutingComplexitySchema,
-            model: AgentModelSchema,
+            model: AgentModelSchema.optional(),
             thinking: ThinkLevelSchema.optional(),
           })
           .strict(),
