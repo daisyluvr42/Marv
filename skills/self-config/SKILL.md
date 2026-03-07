@@ -20,6 +20,8 @@ marv configure                     # interactive wizard
 
 Diagnostics: when something is broken, run `marv doctor` first, then `marv channels status --probe`.
 
+Before any config write through the gateway tool or RPC (`config.get`, `config.patch`, `config.apply`, `config.patches.*`), read [references/config-writes.md](references/config-writes.md). This is required when the agent is modifying Marv's own config.
+
 ## Reference guides
 
 Read the relevant file based on the topic:
@@ -27,6 +29,7 @@ Read the relevant file based on the topic:
 ### Configuration
 
 - **Config CLI** (get/set/unset/validate): [references/cli-config.md](references/cli-config.md)
+- **Gateway config writes** (`config.get`, `config.patch`, `config.apply`, `baseHash`, redaction): [references/config-writes.md](references/config-writes.md)
 - **Proxy / network routing**: [references/proxy.md](references/proxy.md)
 - **Channel config** (allowlists, DM policy, multi-account): [references/channels.md](references/channels.md)
 - **Gateway config** (bind, auth, Tailscale): [references/gateway.md](references/gateway.md)
@@ -51,3 +54,4 @@ Read the relevant file based on the topic:
 - Use `marv health` and `marv doctor` to check overall system health
 - Prefer `marv config set` over manual JSON editing to avoid syntax errors
 - Do not guess config keys; check the configuration reference docs
+- For gateway config writes, do not rely on repo docs being present in the runtime workspace; use the bundled `references/config-writes.md` manual
