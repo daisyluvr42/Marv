@@ -342,6 +342,14 @@ export type AgentsListResult = {
   agents: GatewayAgentRow[];
 };
 
+export type GatewayModelChoice = {
+  id: string;
+  name: string;
+  provider: string;
+  contextWindow?: number;
+  reasoning?: boolean;
+};
+
 export type AgentIdentityResult = {
   agentId: string;
   name: string;

@@ -126,6 +126,8 @@ export type AppViewState = {
   agentsLoading: boolean;
   agentsList: AgentsListResult | null;
   agentsError: string | null;
+  agentModelsLoading: boolean;
+  agentModels: import("./types.js").GatewayModelChoice[];
   agentsSelectedId: string | null;
   agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron";
   agentFilesLoading: boolean;

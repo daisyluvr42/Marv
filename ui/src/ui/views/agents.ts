@@ -6,6 +6,7 @@ import type {
   ChannelsStatusSnapshot,
   CronJob,
   CronStatus,
+  GatewayModelChoice,
   SkillStatusReport,
 } from "../types.js";
 import {
@@ -40,6 +41,8 @@ export type AgentsProps = {
   configLoading: boolean;
   configSaving: boolean;
   configDirty: boolean;
+  availableModels: GatewayModelChoice[];
+  availableModelsLoading: boolean;
   channelsLoading: boolean;
   channelsError: string | null;
   channelsSnapshot: ChannelsStatusSnapshot | null;
@@ -176,6 +179,8 @@ export function renderAgents(props: AgentsProps) {
                         configLoading: props.configLoading,
                         configSaving: props.configSaving,
                         configDirty: props.configDirty,
+                        availableModels: props.availableModels,
+                        availableModelsLoading: props.availableModelsLoading,
                         onConfigReload: props.onConfigReload,
                         onConfigSave: props.onConfigSave,
                         onModelChange: props.onModelChange,
@@ -348,6 +353,8 @@ function renderAgentOverview(params: {
   configLoading: boolean;
   configSaving: boolean;
   configDirty: boolean;
+  availableModels: GatewayModelChoice[];
+  availableModelsLoading: boolean;
   onConfigReload: () => void;
   onConfigSave: () => void;
   onModelChange: (agentId: string, modelId: string | null) => void;
@@ -454,7 +461,12 @@ function renderAgentOverview(params: {
                       </option>
                     `
               }
-              ${buildModelOptions(configForm, effectivePrimary ?? undefined)}
+              ${buildModelOptions(
+                configForm,
+                params.availableModels,
+                effectivePrimary ?? undefined,
+                params.availableModelsLoading,
+              )}
             </select>
           </label>
           <label class="field" style="min-width: 260px; flex: 1;">

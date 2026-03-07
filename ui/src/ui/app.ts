@@ -78,6 +78,7 @@ import type {
   SkillStatusReport,
   StatusSummary,
   NostrProfile,
+  GatewayModelChoice,
 } from "./types.js";
 import { type ChatAttachment, type ChatQueueItem, type CronFormState } from "./ui-types.js";
 import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.js";
@@ -210,6 +211,8 @@ export class MarvApp extends LitElement {
   @state() agentsLoading = false;
   @state() agentsList: AgentsListResult | null = null;
   @state() agentsError: string | null = null;
+  @state() agentModelsLoading = false;
+  @state() agentModels: GatewayModelChoice[] = [];
   @state() agentsSelectedId: string | null = null;
   @state() agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron" =
     "overview";

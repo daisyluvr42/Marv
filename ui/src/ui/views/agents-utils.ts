@@ -4,7 +4,12 @@ import {
   normalizeToolName,
   resolveToolProfilePolicy,
 } from "../../../../src/agents/tools/tool-policy.js";
-import type { AgentIdentityResult, AgentsFilesListResult, AgentsListResult } from "../types.js";
+import type {
+  AgentIdentityResult,
+  AgentsFilesListResult,
+  AgentsListResult,
+  GatewayModelChoice,
+} from "../types.js";
 
 export const TOOL_SECTIONS = [
   {
@@ -339,15 +344,17 @@ type ConfiguredModelOption = {
   label: string;
 };
 
-function resolveConfiguredModels(
-  configForm: Record<string, unknown> | null,
-): ConfiguredModelOption[] {
+function resolveConfiguredModels(configForm: Record<string, unknown> | null): {
+  options: ConfiguredModelOption[];
+  aliasByValue: Map<string, string>;
+} {
   const cfg = configForm as ConfigSnapshot | null;
   const models = cfg?.agents?.defaults?.models;
   if (!models || typeof models !== "object") {
-    return [];
+    return { options: [], aliasByValue: new Map() };
   }
   const options: ConfiguredModelOption[] = [];
+  const aliasByValue = new Map<string, string>();
   for (const [modelId, modelRaw] of Object.entries(models)) {
     const trimmed = modelId.trim();
     if (!trimmed) {
@@ -359,24 +366,62 @@ function resolveConfiguredModels(
           ? (modelRaw as { alias?: string }).alias?.trim()
           : undefined
         : undefined;
+    if (alias) {
+      aliasByValue.set(trimmed, alias);
+    }
     const label = alias && alias !== trimmed ? `${alias} (${trimmed})` : trimmed;
     options.push({ value: trimmed, label });
   }
-  return options;
+  return { options, aliasByValue };
 }
 
 export function buildModelOptions(
   configForm: Record<string, unknown> | null,
+  availableModels: GatewayModelChoice[] | null,
   current?: string | null,
+  loading = false,
 ) {
-  const options = resolveConfiguredModels(configForm);
-  const hasCurrent = current ? options.some((option) => option.value === current) : false;
+  const configured = resolveConfiguredModels(configForm);
+  const seen = new Set<string>();
+  const options: ConfiguredModelOption[] = [];
+
+  const pushOption = (option: ConfiguredModelOption) => {
+    if (!option.value || seen.has(option.value)) {
+      return;
+    }
+    seen.add(option.value);
+    options.push(option);
+  };
+
+  for (const model of availableModels ?? []) {
+    const value = `${model.provider}/${model.id}`.trim();
+    if (!value) {
+      continue;
+    }
+    const alias = configured.aliasByValue.get(value);
+    const displayName = model.name?.trim();
+    const label = alias?.trim()
+      ? alias !== value
+        ? `${alias} (${value})`
+        : alias
+      : displayName && displayName !== model.id
+        ? `${displayName} (${value})`
+        : value;
+    pushOption({ value, label });
+  }
+
+  for (const option of configured.options) {
+    pushOption(option);
+  }
+
+  const hasCurrent = current ? seen.has(current) : false;
   if (current && !hasCurrent) {
-    options.unshift({ value: current, label: `Current (${current})` });
+    pushOption({ value: current, label: `Current (${current})` });
+    options.sort((a, b) => (a.value === current ? -1 : b.value === current ? 1 : 0));
   }
   if (options.length === 0) {
     return html`
-      <option value="" disabled>No configured models</option>
+      <option value="" disabled>${loading ? "Loading models…" : "No models available"}</option>
     `;
   }
   return options.map((option) => html`<option value=${option.value}>${option.label}</option>`);

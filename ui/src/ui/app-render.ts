@@ -349,6 +349,8 @@ export function renderApp(state: AppViewState) {
                 configLoading: state.configLoading,
                 configSaving: state.configSaving,
                 configDirty: state.configFormDirty,
+                availableModels: state.agentModels,
+                availableModelsLoading: state.agentModelsLoading,
                 channelsLoading: state.channelsLoading,
                 channelsError: state.channelsError,
                 channelsSnapshot: state.channelsSnapshot,
