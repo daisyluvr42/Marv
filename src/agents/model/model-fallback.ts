@@ -14,6 +14,7 @@ import {
 } from "../failover-error.js";
 import type { FailoverReason } from "../runner/pi-embedded-helpers.js";
 import { isLikelyContextOverflowError } from "../runner/pi-embedded-helpers.js";
+import { markRuntimeModelFailure, markRuntimeModelReady } from "./model-availability-state.js";
 import { resolveRuntimeModelPlan } from "./model-pool.js";
 import {
   buildConfiguredAllowlistKeys,
@@ -306,6 +307,7 @@ export async function runWithModelFallback<T>(params: {
     }
     try {
       const result = await params.run(candidate.provider, candidate.model);
+      markRuntimeModelReady(modelKey(candidate.provider, candidate.model));
       return {
         result,
         provider: candidate.provider,
@@ -342,6 +344,10 @@ export async function runWithModelFallback<T>(params: {
         reason: described.reason,
         status: described.status,
         code: described.code,
+      });
+      markRuntimeModelFailure({
+        ref: modelKey(candidate.provider, candidate.model),
+        error: normalized,
       });
       await params.onError?.({
         provider: candidate.provider,
@@ -387,6 +393,7 @@ export async function runWithImageModelFallback<T>(params: {
     const candidate = candidates[i];
     try {
       const result = await params.run(candidate.provider, candidate.model);
+      markRuntimeModelReady(modelKey(candidate.provider, candidate.model));
       return {
         result,
         provider: candidate.provider,
@@ -402,6 +409,10 @@ export async function runWithImageModelFallback<T>(params: {
         provider: candidate.provider,
         model: candidate.model,
         error: err instanceof Error ? err.message : String(err),
+      });
+      markRuntimeModelFailure({
+        ref: modelKey(candidate.provider, candidate.model),
+        error: err,
       });
       await params.onError?.({
         provider: candidate.provider,

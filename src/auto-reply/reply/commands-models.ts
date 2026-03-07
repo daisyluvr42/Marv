@@ -7,6 +7,7 @@ import {
   resolveConfiguredModelRef,
   resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
+import { resolveSelectedModelRefs } from "../../agents/model/model-selections.js";
 import {
   buildModelsKeyboard,
   buildProviderKeyboard,
@@ -99,6 +100,13 @@ export async function buildModelsProviderData(cfg: MarvConfig): Promise<ModelsPr
 
   for (const entry of allowed.allowedCatalog) {
     add(entry.provider, entry.id);
+  }
+
+  for (const ref of resolveSelectedModelRefs({
+    cfg,
+    defaultProvider: resolvedDefault.provider,
+  })) {
+    addRawModelRef(ref);
   }
 
   // Include config-only allowlist keys that aren't in the curated catalog.

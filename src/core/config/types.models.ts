@@ -74,6 +74,7 @@ export type BedrockDiscoveryConfig = {
 export type ModelsConfig = {
   mode?: "merge" | "replace";
   catalog?: Record<string, ConfiguredModelCatalogEntry>;
+  selections?: Record<string, string[]>;
   providers?: Record<string, ModelProviderConfig>;
   bedrockDiscovery?: BedrockDiscoveryConfig;
 };

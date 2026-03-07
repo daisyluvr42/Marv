@@ -821,6 +821,35 @@ describe("/models command", () => {
     expect(result.reply?.text).toContain("All: /models anthropic all");
   });
 
+  it("lists models enabled through models.selections", async () => {
+    const selectedCfg = {
+      commands: { text: true },
+      auth: {
+        profiles: {
+          "google:default": {
+            provider: "google",
+            mode: "api_key",
+          },
+        },
+      },
+      models: {
+        selections: {
+          "google:default": ["google-gemini-cli/gemini-2.5-flash"],
+        },
+      },
+      agents: { defaults: { modelPool: "default" } },
+    } as unknown as MarvConfig;
+
+    const params = buildPolicyParams("/models google-gemini-cli", selectedCfg, {
+      Surface: "discord",
+    });
+    const result = await handleCommands(params);
+
+    expect(result.shouldContinue).toBe(false);
+    expect(result.reply?.text).toContain("Models (google-gemini-cli)");
+    expect(result.reply?.text).toContain("google-gemini-cli/gemini-2.5-flash");
+  });
+
   it("ignores page argument when all flag is present", async () => {
     // Use discord surface for text-based output tests
     const params = buildPolicyParams("/models anthropic 3 all", cfg, { Surface: "discord" });

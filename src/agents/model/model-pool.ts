@@ -8,7 +8,9 @@ import type {
 import { resolveAgentConfig, resolveDefaultAgentId } from "../agent-scope.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
+import { getRuntimeModelAvailability } from "./model-availability-state.js";
 import { buildModelAliasIndex, normalizeProviderId, parseModelRef } from "./model-selection.js";
+import { resolveProviderFamilyProviders, resolveSelectedModelRefs } from "./model-selections.js";
 
 const LOCAL_PROVIDERS = new Set(["ollama", "vllm", "lmstudio", "localai", "llamacpp"]);
 
@@ -94,11 +96,14 @@ function isModelAvailable(params: { cfg: MarvConfig; provider: string; agentDir?
     return { available: true };
   }
   const store = ensureAuthProfileStore(params.agentDir, { allowKeychainPrompt: false });
-  if (listProfilesForProvider(store, provider).length > 0) {
-    return { available: true };
-  }
-  if (resolveEnvApiKey(provider) || getCustomProviderApiKey(params.cfg, provider)) {
-    return { available: true };
+  const providerFamily = [...resolveProviderFamilyProviders(provider)];
+  for (const familyProvider of providerFamily) {
+    if (listProfilesForProvider(store, familyProvider).length > 0) {
+      return { available: true };
+    }
+    if (resolveEnvApiKey(familyProvider) || getCustomProviderApiKey(params.cfg, familyProvider)) {
+      return { available: true };
+    }
   }
   return { available: false, reason: "missing_auth" };
 }
@@ -119,11 +124,26 @@ function resolvePoolConfig(
 function buildConfiguredModelList(params: {
   cfg: MarvConfig;
   agentDir?: string;
+  pool?: ModelPoolConfig;
 }): RuntimeConfiguredModel[] {
   const refs = new Set<string>();
   const explicitCatalog = params.cfg.models?.catalog ?? {};
-  for (const raw of Object.keys(explicitCatalog)) {
-    refs.add(raw);
+  const selectedRefs = resolveSelectedModelRefs({
+    cfg: params.cfg,
+    defaultProvider: "anthropic",
+  });
+
+  if (selectedRefs.size > 0) {
+    for (const ref of selectedRefs) {
+      refs.add(ref);
+    }
+  } else {
+    for (const raw of Object.keys(explicitCatalog)) {
+      refs.add(raw);
+    }
+    for (const raw of params.pool?.include ?? []) {
+      refs.add(raw);
+    }
   }
 
   const defaultProvider = "anthropic";
@@ -139,11 +159,14 @@ function buildConfiguredModelList(params: {
     }
     const ref = `${parsed.provider}/${parsed.model}`;
     const catalogEntry = explicitCatalog[ref] ?? explicitCatalog[rawRef];
+    const runtimeAvailability = getRuntimeModelAvailability(ref);
     const availability = isModelAvailable({
       cfg: params.cfg,
       provider: parsed.provider,
       agentDir: params.agentDir,
     });
+    const enabledBySelection = selectedRefs.size === 0 || selectedRefs.has(ref);
+    const blockedByUnsupportedState = runtimeAvailability?.status === "unsupported";
     configuredModels.push({
       ref,
       provider: parsed.provider,
@@ -152,9 +175,21 @@ function buildConfiguredModelList(params: {
       tier: inferTier(catalogEntry),
       capabilities: inferCapabilities(catalogEntry, parsed.model),
       priority: catalogEntry?.priority ?? 0,
-      enabled: catalogEntry?.enabled !== false,
-      available: catalogEntry?.enabled === false ? false : availability.available,
-      availabilityReason: catalogEntry?.enabled === false ? "disabled" : availability.reason,
+      enabled: catalogEntry?.enabled !== false && enabledBySelection,
+      available:
+        catalogEntry?.enabled === false
+          ? false
+          : blockedByUnsupportedState
+            ? false
+            : availability.available,
+      availabilityReason:
+        catalogEntry?.enabled === false
+          ? "disabled"
+          : blockedByUnsupportedState
+            ? "unsupported"
+            : runtimeAvailability?.status === "auth_invalid"
+              ? "auth_invalid"
+              : availability.reason,
       aliases: aliasIndex.byKey.get(ref) ?? [],
     });
   }
@@ -227,6 +262,7 @@ export function resolveRuntimeModelPlan(params: {
   const configured = buildConfiguredModelList({
     cfg: params.cfg,
     agentDir: params.agentDir,
+    pool: poolConfig.pool,
   });
   const candidates = configured
     .filter((entry) => entry.enabled && entry.available)

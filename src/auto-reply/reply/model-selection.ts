@@ -15,6 +15,7 @@ import {
   resolveModelRefFromString,
   resolveThinkingDefault,
 } from "../../agents/model/model-selection.js";
+import { hasConfiguredModelSelections } from "../../agents/model/model-selections.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
@@ -352,6 +353,8 @@ export async function createModelSelectionState(params: {
     allowedModelKeys = new Set(
       runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
     );
+  } else if (hasConfiguredModelSelections(cfg)) {
+    allowedModelKeys = new Set();
   }
 
   if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {

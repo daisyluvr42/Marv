@@ -2,6 +2,7 @@ import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
+import { resolveSelectedModelRefs } from "./model-selections.js";
 import { normalizeGoogleModelId } from "./models-config.providers.js";
 
 export type ModelRef = {
@@ -245,12 +246,17 @@ export function resolveConfiguredModelRef(params: {
   defaultProvider: string;
   defaultModel: string;
 }): ModelRef {
+  const selectedRefs = resolveSelectedModelRefs({
+    cfg: params.cfg,
+    defaultProvider: params.defaultProvider,
+  });
   const catalog = params.cfg.models?.catalog ?? {};
   const poolName = params.cfg.agents?.defaults?.modelPool?.trim() || "default";
   const pool =
     params.cfg.agents?.modelPools?.[poolName] ??
     params.cfg.agents?.defaults?.modelPools?.[poolName];
-  const refs = Object.keys(catalog)
+  const candidateRawRefs = selectedRefs.size > 0 ? [...selectedRefs] : Object.keys(catalog);
+  const refs = candidateRawRefs
     .map((raw) => parseModelRef(raw, params.defaultProvider))
     .filter((ref): ref is ModelRef => Boolean(ref))
     .filter((ref) => {
@@ -379,6 +385,27 @@ export function buildAllowedModelSet(params: {
     const modelMap = params.cfg.agents?.defaults?.models ?? {};
     return Object.keys(modelMap);
   })();
+  const selectedRefs = resolveSelectedModelRefs({
+    cfg: params.cfg,
+    defaultProvider: params.defaultProvider,
+  });
+  if (selectedRefs.size > 0) {
+    const selectedKeys = new Set(selectedRefs);
+    const allowedCatalog = params.catalog.filter((entry) =>
+      selectedKeys.has(modelKey(entry.provider, entry.id)),
+    );
+    if (params.defaultModel?.trim()) {
+      const defaultRef = parseModelRef(params.defaultModel, params.defaultProvider);
+      if (defaultRef) {
+        selectedKeys.add(modelKey(defaultRef.provider, defaultRef.model));
+      }
+    }
+    return {
+      allowAny: false,
+      allowedCatalog,
+      allowedKeys: selectedKeys,
+    };
+  }
   const allowAny = rawAllowlist.length === 0;
   const defaultModel = params.defaultModel?.trim();
   const defaultRef =
