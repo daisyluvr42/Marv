@@ -459,6 +459,86 @@ describe("exec approval handlers", () => {
     );
     expect(resolveRespond).toHaveBeenCalledWith(true, { ok: true }, undefined);
   });
+
+  it("resolves approvals by task id when the pending request is unique", async () => {
+    const { handlers, broadcasts, respond, context } = createExecApprovalFixture();
+
+    const requestPromise = requestExecApproval({
+      handlers,
+      respond,
+      context,
+      params: {
+        id: "approval-escalation-1",
+        kind: "permission-escalation",
+        taskId: "task-escalation-1",
+        sessionKey: "agent:main:discord:channel:ops",
+      },
+    });
+
+    const requested = broadcasts.find((entry) => entry.event === "exec.approval.requested");
+    expect((requested?.payload as { request?: { taskId?: string } })?.request?.taskId).toBe(
+      "task-escalation-1",
+    );
+
+    const resolveRespond = vi.fn();
+    await resolveExecApproval({
+      handlers,
+      id: "task-escalation-1",
+      respond: resolveRespond,
+      context,
+    });
+
+    await requestPromise;
+    expect(resolveRespond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ id: "approval-escalation-1", decision: "allow-once" }),
+      undefined,
+    );
+  });
+
+  it("rejects ambiguous task id aliases", async () => {
+    const { handlers, respond, context } = createExecApprovalFixture();
+
+    void requestExecApproval({
+      handlers,
+      respond,
+      context,
+      params: {
+        id: "approval-a",
+        kind: "permission-escalation",
+        taskId: "task-shared",
+      },
+    });
+    void requestExecApproval({
+      handlers,
+      respond,
+      context,
+      params: {
+        id: "approval-b",
+        kind: "permission-escalation",
+        taskId: "task-shared",
+      },
+    });
+
+    await Promise.resolve();
+
+    const resolveRespond = vi.fn();
+    await resolveExecApproval({
+      handlers,
+      id: "task-shared",
+      respond: resolveRespond,
+      context,
+    });
+
+    expect(resolveRespond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        message: expect.stringContaining('approval identifier "task-shared" is ambiguous'),
+      }),
+    );
+  });
 });
 
 describe("gateway healthHandlers.status scope handling", () => {

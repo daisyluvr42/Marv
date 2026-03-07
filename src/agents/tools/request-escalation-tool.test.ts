@@ -35,7 +35,17 @@ describe("request_escalation tool", () => {
 
     expect(details.taskId).toBe("task-1");
     expect(details.granted).toBe(true);
+    expect((result.details as { approvalId?: string }).approvalId).toMatch(/^esc-/);
     expect(getEscalationManager().checkPermission("task-1", "execute")).toBe(true);
+    expect(callGatewayToolMock).toHaveBeenCalledWith(
+      "exec.approval.request",
+      {},
+      expect.objectContaining({
+        taskId: "task-1",
+        agentId: "main",
+      }),
+      { expectFinal: true },
+    );
   });
 
   it("denies escalation when approval is rejected", async () => {

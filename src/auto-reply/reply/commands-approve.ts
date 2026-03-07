@@ -8,6 +8,7 @@ import {
 import type { CommandHandler } from "./commands-types.js";
 
 const COMMAND = "/approve";
+const USAGE = "Usage: /approve <requestId> allow-once|allow-always|deny";
 
 const DECISION_ALIASES: Record<string, "allow-once" | "allow-always" | "deny"> = {
   allow: "allow-once",
@@ -33,11 +34,11 @@ function parseApproveCommand(raw: string): ParsedApproveCommand | null {
   }
   const rest = trimmed.slice(COMMAND.length).trim();
   if (!rest) {
-    return { ok: false, error: "Usage: /approve <id> allow-once|allow-always|deny" };
+    return { ok: false, error: USAGE };
   }
   const tokens = rest.split(/\s+/).filter(Boolean);
   if (tokens.length < 2) {
-    return { ok: false, error: "Usage: /approve <id> allow-once|allow-always|deny" };
+    return { ok: false, error: USAGE };
   }
 
   const first = tokens[0].toLowerCase();
@@ -57,7 +58,7 @@ function parseApproveCommand(raw: string): ParsedApproveCommand | null {
       id: tokens[0],
     };
   }
-  return { ok: false, error: "Usage: /approve <id> allow-once|allow-always|deny" };
+  return { ok: false, error: USAGE };
 }
 
 function buildResolvedByLabel(params: Parameters<CommandHandler>[0]): string {

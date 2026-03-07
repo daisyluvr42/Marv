@@ -22,7 +22,11 @@ import type {
   ExecApprovalResolved,
 } from "../../../infra/exec-approvals.js";
 import { logDebug, logError } from "../../../logger.js";
-import { normalizeAccountId, resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
+import {
+  normalizeAccountId,
+  parseAgentSessionKey,
+  resolveAgentIdFromSessionKey,
+} from "../../../routing/session-key.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import {
   GATEWAY_CLIENT_MODES,
@@ -206,6 +210,12 @@ function resolveExecApprovalAccountId(params: {
 
 function buildExecApprovalMetadataLines(request: ExecApprovalRequest): string[] {
   const lines: string[] = [];
+  if (request.request.kind) {
+    lines.push(`- Kind: ${request.request.kind}`);
+  }
+  if (request.request.taskId) {
+    lines.push(`- Task: ${request.request.taskId}`);
+  }
   if (request.request.cwd) {
     lines.push(`- Working Directory: ${request.request.cwd}`);
   }
@@ -344,10 +354,14 @@ export class DiscordExecApprovalHandler {
 
     // Check agent filter
     if (config.agentFilter?.length) {
-      if (!request.request.agentId) {
+      const requestAgentId =
+        request.request.agentId?.trim() ||
+        parseAgentSessionKey(request.request.sessionKey ?? null)?.agentId ||
+        "";
+      if (!requestAgentId) {
         return false;
       }
-      if (!config.agentFilter.includes(request.request.agentId)) {
+      if (!config.agentFilter.includes(requestAgentId)) {
         return false;
       }
     }

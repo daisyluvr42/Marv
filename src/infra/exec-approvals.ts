@@ -16,6 +16,7 @@ export type ExecApprovalRequest = {
   request: {
     command: string;
     kind?: string | null;
+    taskId?: string | null;
     cwd?: string | null;
     host?: string | null;
     security?: string | null;

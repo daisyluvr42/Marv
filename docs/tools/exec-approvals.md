@@ -158,9 +158,17 @@ When a prompt is required, the gateway broadcasts `exec.approval.requested` to o
 The Control UI and macOS app resolve it via `exec.approval.resolve`, then the gateway forwards the
 approved request to the node host.
 
-When approvals are required, the exec tool returns immediately with an approval id. Use that id to
-correlate later system events (`Exec finished` / `Exec denied`). If no decision arrives before the
-timeout, the request is treated as an approval timeout and surfaced as a denial reason.
+When approvals are required, the exec tool returns immediately with an approval id (`requestId` /
+`approvalId`). Treat that value as the canonical handle for every approval surface: Control UI,
+Discord buttons, and chat `/approve`.
+
+Some agent flows also include a `taskId` because the granted permission is scoped to a task. That
+`taskId` is not the primary approval handle. Marv accepts it only as a compatibility alias when it
+maps to exactly one pending approval request. If it matches multiple pending approvals, Marv rejects
+the approval and asks you to use the canonical `requestId`.
+
+If no decision arrives before the timeout, the request is treated as an approval timeout and
+surfaced as a denial reason.
 
 The confirmation dialog includes:
 
@@ -203,10 +211,16 @@ Config:
 Reply in chat:
 
 ```
-/approve <id> allow-once
-/approve <id> allow-always
-/approve <id> deny
+/approve <requestId> allow-once
+/approve <requestId> allow-always
+/approve <requestId> deny
 ```
+
+Compatibility notes:
+
+- `/approve` also accepts a unique `taskId` for permission-escalation and skill-install approvals.
+- Unique short id prefixes continue to work when they match exactly one pending approval.
+- When in doubt, use the full `requestId`.
 
 ### macOS IPC flow
 

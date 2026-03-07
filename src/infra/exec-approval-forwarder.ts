@@ -118,6 +118,9 @@ function formatApprovalCommand(command: string): { inline: boolean; text: string
 
 function buildRequestMessage(request: ExecApprovalRequest, nowMs: number) {
   const lines: string[] = ["🔒 Exec approval required", `ID: ${request.id}`];
+  if (request.request.taskId) {
+    lines.push(`Task: ${request.request.taskId}`);
+  }
   const command = formatApprovalCommand(request.request.command);
   if (command.inline) {
     lines.push(`Command: ${command.text}`);
@@ -146,7 +149,7 @@ function buildRequestMessage(request: ExecApprovalRequest, nowMs: number) {
   }
   const expiresIn = Math.max(0, Math.round((request.expiresAtMs - nowMs) / 1000));
   lines.push(`Expires in: ${expiresIn}s`);
-  lines.push("Reply with: /approve <id> allow-once|allow-always|deny");
+  lines.push("Reply with: /approve <requestId> allow-once|allow-always|deny");
   return lines.join("\n");
 }
 

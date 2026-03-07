@@ -4,8 +4,27 @@ import type { ExecApprovalDecision } from "../../infra/exec-approvals.js";
 // Grace period to keep resolved entries for late awaitDecision calls
 const RESOLVED_ENTRY_GRACE_MS = 15_000;
 
+export type ExecApprovalIdentifierKind = "id" | "taskId" | "slug";
+
+export type ExecApprovalIdentifierResolution =
+  | {
+      status: "resolved";
+      kind: ExecApprovalIdentifierKind;
+      record: ExecApprovalRecord;
+    }
+  | {
+      status: "ambiguous";
+      kind: Exclude<ExecApprovalIdentifierKind, "id">;
+      matches: ExecApprovalRecord[];
+    }
+  | {
+      status: "missing";
+    };
+
 export type ExecApprovalRequestPayload = {
   command: string;
+  kind?: string | null;
+  taskId?: string | null;
   cwd?: string | null;
   host?: string | null;
   security?: string | null;
@@ -92,13 +111,15 @@ export class ExecApprovalManager {
       record.resolvedBy = null;
       resolvePromise(null);
       // Keep entry briefly for in-flight awaitDecision calls
-      setTimeout(() => {
+      const cleanupTimer = setTimeout(() => {
         // Compare against captured entry instance, not re-fetched from map
         if (this.pending.get(record.id) === entry) {
           this.pending.delete(record.id);
         }
       }, RESOLVED_ENTRY_GRACE_MS);
+      cleanupTimer.unref?.();
     }, timeoutMs);
+    entry.timer.unref?.();
     this.pending.set(record.id, entry);
     return promise;
   }
@@ -129,18 +150,60 @@ export class ExecApprovalManager {
     // Resolve the promise first, then delete after a grace period.
     // This allows in-flight awaitDecision calls to find the resolved entry.
     pending.resolve(decision);
-    setTimeout(() => {
+    const cleanupTimer = setTimeout(() => {
       // Only delete if the entry hasn't been replaced
       if (this.pending.get(recordId) === pending) {
         this.pending.delete(recordId);
       }
     }, RESOLVED_ENTRY_GRACE_MS);
+    cleanupTimer.unref?.();
     return true;
   }
 
   getSnapshot(recordId: string): ExecApprovalRecord | null {
     const entry = this.pending.get(recordId);
     return entry?.record ?? null;
+  }
+
+  listSnapshots(): ExecApprovalRecord[] {
+    return Array.from(this.pending.values(), (entry) => entry.record);
+  }
+
+  resolveIdentifier(rawIdentifier: string): ExecApprovalIdentifierResolution {
+    const identifier = rawIdentifier.trim();
+    if (!identifier) {
+      return { status: "missing" };
+    }
+
+    const exact = this.getSnapshot(identifier);
+    if (exact) {
+      return { status: "resolved", kind: "id", record: exact };
+    }
+
+    const taskMatches = this.listSnapshots().filter(
+      (record) => record.request.taskId === identifier,
+    );
+    if (taskMatches.length === 1) {
+      return { status: "resolved", kind: "taskId", record: taskMatches[0] };
+    }
+    if (taskMatches.length > 1) {
+      return { status: "ambiguous", kind: "taskId", matches: taskMatches };
+    }
+
+    const slug = identifier.toLowerCase();
+    if (slug.length >= 6) {
+      const slugMatches = this.listSnapshots().filter((record) =>
+        record.id.toLowerCase().startsWith(slug),
+      );
+      if (slugMatches.length === 1) {
+        return { status: "resolved", kind: "slug", record: slugMatches[0] };
+      }
+      if (slugMatches.length > 1) {
+        return { status: "ambiguous", kind: "slug", matches: slugMatches };
+      }
+    }
+
+    return { status: "missing" };
   }
 
   /**

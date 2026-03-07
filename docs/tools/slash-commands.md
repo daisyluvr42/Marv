@@ -74,7 +74,7 @@ Text + native (when enabled):
 - `/skill <name> [input]` (run a skill by name)
 - `/status` (show current status; includes provider usage/quota for the current model provider when available)
 - `/allowlist` (list/add/remove allowlist entries)
-- `/approve <id> allow-once|allow-always|deny` (resolve exec approval prompts)
+- `/approve <requestId> allow-once|allow-always|deny` (resolve exec approval prompts; `taskId` also works when unique)
 - `/context [list|detail|json]` (explain “context”; `detail` shows per-file + per-tool + per-skill + system prompt size)
 - `/export-session [path]` (alias: `/export`) (export current session to HTML with full system prompt)
 - `/whoami` (show your sender id; alias: `/id`)

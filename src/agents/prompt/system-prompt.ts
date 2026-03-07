@@ -171,6 +171,9 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
     lines.push(
       "- For risky operations requiring higher privileges, call `request_escalation` with requested level, reason, and scope before retrying.",
     );
+    lines.push(
+      "- When `request_escalation` returns `approvalId`/`requestId` plus `taskId`, treat `approvalId` as the canonical approval handle. `taskId` is scope metadata and only a compatibility alias.",
+    );
   }
   if (lines.length === 0) {
     return [];

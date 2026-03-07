@@ -16,7 +16,10 @@ import {
   type ExecApprovalButtonContext,
 } from "./exec-approvals.js";
 
-const STORE_PATH = path.join(os.tmpdir(), "marv-exec-approvals-test.json");
+const STORE_PATH = path.join(
+  os.tmpdir(),
+  `marv-exec-approvals-test-${process.pid}-${Math.random().toString(36).slice(2)}.json`,
+);
 
 const writeStore = (store: Record<string, unknown>) => {
   fs.writeFileSync(STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
@@ -270,6 +273,22 @@ describe("DiscordExecApprovalHandler.shouldHandle", () => {
     expect(handler.shouldHandle(createRequest({ agentId: "allowed-agent" }))).toBe(true);
     expect(handler.shouldHandle(createRequest({ agentId: "other-agent" }))).toBe(false);
     expect(handler.shouldHandle(createRequest({ agentId: null }))).toBe(false);
+  });
+
+  it("derives agent ID from session key when request omits it", () => {
+    const handler = createHandler({
+      enabled: true,
+      approvers: ["123"],
+      agentFilter: ["test-agent"],
+    });
+    expect(
+      handler.shouldHandle(
+        createRequest({
+          agentId: null,
+          sessionKey: "agent:test-agent:discord:channel:999888777",
+        }),
+      ),
+    ).toBe(true);
   });
 
   it("filters by session key substring", () => {

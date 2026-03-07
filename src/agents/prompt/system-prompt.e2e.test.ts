@@ -152,6 +152,7 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("## Autonomy Helpers");
     expect(prompt).toContain("request_missing_tools");
     expect(prompt).toContain("request_escalation");
+    expect(prompt).toContain("approvalId");
   });
 
   it("preserves tool casing in the prompt", () => {

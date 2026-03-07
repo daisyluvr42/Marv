@@ -3,6 +3,7 @@ import {
   DEFAULT_EXEC_APPROVAL_TIMEOUT_MS,
   type ExecApprovalDecision,
 } from "../../../infra/exec-approvals.js";
+import { parseAgentSessionKey } from "../../../routing/session-key.js";
 import type { ExecApprovalManager } from "../exec-approval-manager.js";
 import {
   ErrorCodes,
@@ -12,6 +13,19 @@ import {
   validateExecApprovalResolveParams,
 } from "../protocol/index.js";
 import type { GatewayRequestHandlers } from "./types.js";
+
+function formatApprovalIdentifierError(params: {
+  identifier: string;
+  kind: "taskId" | "slug";
+  matches: Array<{ id: string }>;
+}): string {
+  const shown = params.matches
+    .slice(0, 5)
+    .map((match) => match.id)
+    .join(", ");
+  const suffix = params.matches.length > 5 ? ", ..." : "";
+  return `approval identifier "${params.identifier}" is ambiguous by ${params.kind}; use requestId instead (${shown}${suffix})`;
+}
 
 export function createExecApprovalHandlers(
   manager: ExecApprovalManager,
@@ -36,6 +50,7 @@ export function createExecApprovalHandlers(
         id?: string;
         command: string;
         kind?: string | null;
+        taskId?: string | null;
         cwd?: string;
         host?: string;
         security?: string;
@@ -58,14 +73,21 @@ export function createExecApprovalHandlers(
         );
         return;
       }
+      const normalizedTaskId =
+        typeof p.taskId === "string" && p.taskId.trim().length > 0 ? p.taskId.trim() : null;
+      const inferredAgentId =
+        (typeof p.agentId === "string" && p.agentId.trim().length > 0 ? p.agentId.trim() : null) ??
+        parseAgentSessionKey(p.sessionKey ?? null)?.agentId ??
+        null;
       const request = {
         command: p.command,
         kind: p.kind ?? null,
+        taskId: normalizedTaskId,
         cwd: p.cwd ?? null,
         host: p.host ?? null,
         security: p.security ?? null,
         ask: p.ask ?? null,
-        agentId: p.agentId ?? null,
+        agentId: inferredAgentId,
         resolvedPath: p.resolvedPath ?? null,
         sessionKey: p.sessionKey ?? null,
       };
@@ -139,12 +161,36 @@ export function createExecApprovalHandlers(
     },
     "exec.approval.waitDecision": async ({ params, respond }) => {
       const p = params as { id?: string };
-      const id = typeof p.id === "string" ? p.id.trim() : "";
-      if (!id) {
+      const requestedId = typeof p.id === "string" ? p.id.trim() : "";
+      if (!requestedId) {
         respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "id is required"));
         return;
       }
-      const decisionPromise = manager.awaitDecision(id);
+      const resolved = manager.resolveIdentifier(requestedId);
+      if (resolved.status === "missing") {
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, "approval expired or not found"),
+        );
+        return;
+      }
+      if (resolved.status === "ambiguous") {
+        respond(
+          false,
+          undefined,
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            formatApprovalIdentifierError({
+              identifier: requestedId,
+              kind: resolved.kind,
+              matches: resolved.matches,
+            }),
+          ),
+        );
+        return;
+      }
+      const decisionPromise = manager.awaitDecision(resolved.record.id);
       if (!decisionPromise) {
         respond(
           false,
@@ -154,13 +200,13 @@ export function createExecApprovalHandlers(
         return;
       }
       // Capture snapshot before await (entry may be deleted after grace period)
-      const snapshot = manager.getSnapshot(id);
+      const snapshot = manager.getSnapshot(resolved.record.id);
       const decision = await decisionPromise;
       // Return decision (can be null on timeout) - let clients handle via askFallback
       respond(
         true,
         {
-          id,
+          id: resolved.record.id,
           decision,
           createdAtMs: snapshot?.createdAtMs,
           expiresAtMs: snapshot?.expiresAtMs,
@@ -188,19 +234,39 @@ export function createExecApprovalHandlers(
         respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "invalid decision"));
         return;
       }
+      const resolved = manager.resolveIdentifier(p.id);
+      if (resolved.status === "missing") {
+        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown approval id"));
+        return;
+      }
+      if (resolved.status === "ambiguous") {
+        respond(
+          false,
+          undefined,
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            formatApprovalIdentifierError({
+              identifier: p.id,
+              kind: resolved.kind,
+              matches: resolved.matches,
+            }),
+          ),
+        );
+        return;
+      }
       const resolvedBy = client?.connect?.client?.displayName ?? client?.connect?.client?.id;
-      const ok = manager.resolve(p.id, decision, resolvedBy ?? null);
+      const ok = manager.resolve(resolved.record.id, decision, resolvedBy ?? null);
       if (!ok) {
         respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown approval id"));
         return;
       }
       context.broadcast(
         "exec.approval.resolved",
-        { id: p.id, decision, resolvedBy, ts: Date.now() },
+        { id: resolved.record.id, decision, resolvedBy, ts: Date.now() },
         { dropIfSlow: true },
       );
       void opts?.forwarder
-        ?.handleResolved({ id: p.id, decision, resolvedBy, ts: Date.now() })
+        ?.handleResolved({ id: resolved.record.id, decision, resolvedBy, ts: Date.now() })
         .catch((err) => {
           context.logGateway?.error?.(`exec approvals: forward resolve failed: ${String(err)}`);
         });

@@ -36,6 +36,7 @@ async function requestEscalationApproval(params: {
   reason: string;
   scope?: string;
   taskId: string;
+  agentId: string;
   agentSessionKey?: string;
   config?: MarvConfig;
   gatewayOptions: ReturnType<typeof readGatewayCallOptions>;
@@ -48,7 +49,9 @@ async function requestEscalationApproval(params: {
         id: params.requestId,
         command: `request_escalation ${params.requestedLevel}: ${params.reason}`,
         kind: "permission-escalation",
+        taskId: params.taskId,
         ask: "always",
+        agentId: params.agentId,
         sessionKey: params.agentSessionKey ?? null,
         resolvedPath: params.scope ?? null,
         timeoutMs: resolveApprovalTimeoutMs(params.config),
@@ -111,6 +114,7 @@ export function createRequestEscalationTool(opts?: {
         reason,
         scope: scope ?? undefined,
         taskId,
+        agentId,
         agentSessionKey: opts?.agentSessionKey,
         config: opts?.config,
         gatewayOptions,
@@ -125,6 +129,7 @@ export function createRequestEscalationTool(opts?: {
       }
 
       return jsonResult({
+        approvalId: request.requestId,
         requestId: request.requestId,
         taskId,
         requestedLevel,

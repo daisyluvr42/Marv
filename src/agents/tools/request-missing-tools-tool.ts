@@ -1,5 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
+import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { installDiscoveredSkill } from "../skills-install.js";
 import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import type { AnyAgentTool } from "./common.js";
@@ -38,6 +39,7 @@ function resolveApprovalTimeoutMs(config?: MarvConfig): number {
 
 async function requestInstallApproval(params: {
   skillId: string;
+  contextTaskId?: string;
   config?: MarvConfig;
   agentSessionKey?: string;
   gatewayOptions: ReturnType<typeof readGatewayCallOptions>;
@@ -49,7 +51,11 @@ async function requestInstallApproval(params: {
       {
         command: `skills install ${params.skillId}`,
         kind: "skill-install",
+        taskId: params.contextTaskId ?? null,
         ask: "always",
+        agentId: params.agentSessionKey
+          ? resolveAgentIdFromSessionKey(params.agentSessionKey)
+          : null,
         sessionKey: params.agentSessionKey ?? null,
         timeoutMs: resolveApprovalTimeoutMs(params.config),
       },
@@ -134,6 +140,7 @@ export function createRequestMissingToolsTool(opts?: {
       for (const candidate of installCandidates) {
         const approved = await requestInstallApproval({
           skillId: candidate.skillId,
+          contextTaskId,
           config: opts?.config,
           agentSessionKey: opts?.agentSessionKey,
           gatewayOptions,

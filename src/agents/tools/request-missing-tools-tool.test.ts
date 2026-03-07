@@ -63,6 +63,48 @@ describe("request_missing_tools tool", () => {
     expect(details.discovered[0]?.skillId).toBe("github-repos");
     expect(details.installed[0]?.skillId).toBe("github-repos");
     expect(details.installed[0]?.ok).toBe(true);
+    expect(callGatewayToolMock).toHaveBeenCalledWith(
+      "exec.approval.request",
+      {},
+      expect.objectContaining({
+        command: "skills install github-repos",
+        agentId: "main",
+      }),
+      { expectFinal: true },
+    );
+  });
+
+  it("forwards context task id as the approval task id", async () => {
+    discoverMock.mockReturnValue([
+      {
+        skillId: "github-repos",
+        source: "managed",
+        metadata: {},
+        confidenceScore: 0.92,
+      },
+    ]);
+    callGatewayToolMock.mockResolvedValue({ decision: "deny" });
+
+    const tool = createRequestMissingToolsTool({
+      workspaceDir: "/tmp/workspace",
+      config: { autonomy: { autoInstallSkills: true } },
+      agentSessionKey: "agent:ops:main",
+    });
+
+    await tool.execute("call-task", {
+      description: "search github repos",
+      contextTaskId: "task-99",
+    });
+
+    expect(callGatewayToolMock).toHaveBeenCalledWith(
+      "exec.approval.request",
+      {},
+      expect.objectContaining({
+        taskId: "task-99",
+        agentId: "ops",
+      }),
+      { expectFinal: true },
+    );
   });
 
   it("returns discovery results without install when autoInstall is disabled in request", async () => {
