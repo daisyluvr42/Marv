@@ -138,15 +138,21 @@ export const resolveEnforceFinalTag = (run: FollowupRun["run"], provider: string
   Boolean(run.enforceFinalTag || isReasoningTagProvider(provider));
 
 export function resolveModelFallbackOptions(run: FollowupRun["run"]) {
+  const globalFallbacks = resolveAgentModelFallbacksOverride(
+    run.config,
+    resolveAgentIdFromSessionKey(run.sessionKey),
+  );
+  // Merge per-tier auto-routing fallbacks (higher priority) with global fallbacks.
+  const mergedFallbacks =
+    run.autoRoutingFallbacks && run.autoRoutingFallbacks.length > 0
+      ? [...run.autoRoutingFallbacks, ...(globalFallbacks ?? [])]
+      : globalFallbacks;
   return {
     cfg: run.config,
     provider: run.provider,
     model: run.model,
     agentDir: run.agentDir,
-    fallbacksOverride: resolveAgentModelFallbacksOverride(
-      run.config,
-      resolveAgentIdFromSessionKey(run.sessionKey),
-    ),
+    fallbacksOverride: mergedFallbacks,
   };
 }
 

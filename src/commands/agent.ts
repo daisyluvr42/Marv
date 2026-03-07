@@ -8,6 +8,7 @@ import {
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
+import { resolveAutoRouting } from "../agents/auto-routing.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
@@ -529,6 +530,36 @@ export async function agentCommand(
         agentId: sessionAgentId,
         hasSessionModelOverride: Boolean(storedModelOverride),
       });
+      let activeFallbacks = effectiveFallbacksOverride;
+      let routedThinking: ThinkLevel | undefined = undefined;
+
+      // Auto-routing: classify message complexity and override model + fallbacks if configured.
+      const autoRoutingResult = await resolveAutoRouting({
+        prompt: body,
+        hasImages: (opts.images?.length ?? 0) > 0,
+        config: cfg,
+        agentId: sessionAgentId,
+        defaultProvider: provider,
+        defaultModel: model,
+      });
+
+      if (autoRoutingResult.routed) {
+        if (autoRoutingResult.provider) {
+          provider = autoRoutingResult.provider;
+        }
+        if (autoRoutingResult.model) {
+          model = autoRoutingResult.model;
+        }
+        if (autoRoutingResult.fallbacks && autoRoutingResult.fallbacks.length > 0) {
+          activeFallbacks = [
+            ...autoRoutingResult.fallbacks,
+            ...(effectiveFallbacksOverride ?? []), // Global fallbacks act as ultimate backstop
+          ];
+        }
+        if (autoRoutingResult.thinking) {
+          routedThinking = autoRoutingResult.thinking;
+        }
+      }
 
       // Track model fallback attempts so retries on an existing session don't
       // re-inject the original prompt as a duplicate user message.
@@ -538,7 +569,7 @@ export async function agentCommand(
         provider,
         model,
         agentDir,
-        fallbacksOverride: effectiveFallbacksOverride,
+        fallbacksOverride: activeFallbacks,
         run: (providerOverride, modelOverride) => {
           const isFallbackRetry = fallbackAttemptIndex > 0;
           fallbackAttemptIndex += 1;
@@ -554,7 +585,7 @@ export async function agentCommand(
             workspaceDir,
             body,
             isFallbackRetry,
-            resolvedThinkLevel,
+            resolvedThinkLevel: routedThinking ?? resolvedThinkLevel,
             timeoutMs,
             runId,
             opts,

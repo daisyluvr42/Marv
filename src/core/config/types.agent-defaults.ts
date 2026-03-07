@@ -17,8 +17,8 @@ export type AutoRoutingComplexity = "simple" | "moderate" | "complex" | "expert"
 export type AutoRoutingRule = {
   /** Complexity tier this rule matches. */
   complexity: AutoRoutingComplexity;
-  /** Model to use (provider/model string). */
-  model: string;
+  /** Model to use (provider/model string or object config). */
+  model: string | { primary?: string; fallbacks?: string[] };
   /** Optional thinking level override for this tier. */
   thinking?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 };

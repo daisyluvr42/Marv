@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AgentModelSchema } from "./zod-schema.agent-model.js";
 
 const ThinkLevelSchema = z.union([
   z.literal("off"),
@@ -26,7 +27,7 @@ export const AutoRoutingSchema = z
         z
           .object({
             complexity: AutoRoutingComplexitySchema,
-            model: z.string().min(1),
+            model: AgentModelSchema,
             thinking: ThinkLevelSchema.optional(),
           })
           .strict(),

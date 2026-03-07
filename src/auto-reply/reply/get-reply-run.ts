@@ -168,6 +168,10 @@ type RunPreparedReplyParams = {
   storePath?: string;
   workspaceDir: string;
   abortedLastRun: boolean;
+  /** Per-tier fallback models from auto-routing (merged with global fallbacks). */
+  autoRoutingFallbacks?: string[];
+  /** Thinking level override from auto-routing. */
+  autoRoutingThinking?: string;
 };
 
 export async function runPreparedReply(
@@ -503,7 +507,9 @@ export async function runPreparedReply(
       model,
       authProfileId,
       authProfileIdSource,
-      thinkLevel: resolvedThinkLevel,
+      thinkLevel: params.autoRoutingThinking
+        ? ((params.autoRoutingThinking as ThinkLevel) ?? resolvedThinkLevel)
+        : resolvedThinkLevel,
       verboseLevel: resolvedVerboseLevel,
       reasoningLevel: resolvedReasoningLevel,
       elevatedLevel: resolvedElevatedLevel,
@@ -517,6 +523,7 @@ export async function runPreparedReply(
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,
       extraSystemPrompt: extraSystemPrompt || undefined,
+      autoRoutingFallbacks: params.autoRoutingFallbacks,
       ...(isReasoningTagProvider(provider) ? { enforceFinalTag: true } : {}),
     },
   };

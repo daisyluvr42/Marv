@@ -13,6 +13,7 @@ export type AutoRoutingResult = {
   complexity: AutoRoutingComplexity;
   provider?: string;
   model?: string;
+  fallbacks?: string[];
   thinking?: ThinkLevel;
   /** True when auto-routing was active and matched a rule. */
   routed: boolean;
@@ -283,15 +284,23 @@ export async function resolveAutoRouting(params: {
     return { complexity, routed: false };
   }
 
-  const parsed = parseModelRef(rule.model, params.defaultProvider);
+  const rawModel = typeof rule.model === "string" ? rule.model : rule.model.primary;
+  if (!rawModel) {
+    return { complexity, routed: false };
+  }
+
+  const parsed = parseModelRef(rawModel, params.defaultProvider);
   if (!parsed) {
     return { complexity, routed: false };
   }
+
+  const fallbacks = typeof rule.model === "object" ? rule.model.fallbacks : undefined;
 
   return {
     complexity,
     provider: parsed.provider,
     model: parsed.model,
+    fallbacks,
     thinking: rule.thinking as ThinkLevel | undefined,
     routed: true,
   };

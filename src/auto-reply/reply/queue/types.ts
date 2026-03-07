@@ -78,6 +78,8 @@ export type FollowupRun = {
     ownerNumbers?: string[];
     extraSystemPrompt?: string;
     enforceFinalTag?: boolean;
+    /** Per-tier fallback models from auto-routing. */
+    autoRoutingFallbacks?: string[];
   };
 };
 

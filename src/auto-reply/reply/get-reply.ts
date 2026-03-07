@@ -100,6 +100,8 @@ export async function getReplyFromConfig(
   }
 
   // Auto-routing: classify message complexity and override model (skip for heartbeats).
+  let autoRoutingFallbacks: string[] | undefined;
+  let autoRoutingThinking: string | undefined;
   if (!opts?.isHeartbeat) {
     const autoRoutingResult = await resolveAutoRouting({
       prompt: ctx.Body ?? "",
@@ -112,6 +114,8 @@ export async function getReplyFromConfig(
     if (autoRoutingResult.routed) {
       provider = autoRoutingResult.provider ?? provider;
       model = autoRoutingResult.model ?? model;
+      autoRoutingFallbacks = autoRoutingResult.fallbacks;
+      autoRoutingThinking = autoRoutingResult.thinking;
     }
   }
 
@@ -354,5 +358,7 @@ export async function getReplyFromConfig(
     storePath,
     workspaceDir,
     abortedLastRun,
+    autoRoutingFallbacks,
+    autoRoutingThinking,
   });
 }
