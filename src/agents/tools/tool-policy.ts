@@ -72,7 +72,7 @@ const TOOL_PROFILES: Record<ToolProfileId, ToolProfilePolicy> = {
     allow: ["session_status", "self_settings"],
   },
   coding: {
-    allow: ["group:fs", "group:runtime", "group:sessions", "group:memory", "image"],
+    allow: ["group:fs", "group:runtime", "group:sessions", "group:memory", "gateway", "image"],
   },
   messaging: {
     allow: [

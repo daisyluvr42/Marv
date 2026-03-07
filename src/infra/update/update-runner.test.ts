@@ -295,6 +295,70 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call.startsWith("npm i -g"))).toBe(false);
   });
 
+  it("prefers a git checkout when both git and global npm installs are present", async () => {
+    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
+    await setupUiIndex();
+
+    const nodeModules = path.join(tempDir, "global-node_modules");
+    const pkgRoot = path.join(nodeModules, "agentmarv");
+    await seedGlobalPackageRoot(pkgRoot);
+    const argv1 = path.join(tempDir, "bin", "marv");
+
+    const stableTag = "v1.0.1-1";
+    const doctorKey = `${process.execPath} ${path.join(tempDir, "marv.mjs")} doctor --non-interactive --fix`;
+    const calls: string[] = [];
+    const runCommand = async (argv: string[]) => {
+      const key = argv.join(" ");
+      calls.push(key);
+
+      if (key === `git -C ${pkgRoot} rev-parse --show-toplevel`) {
+        return { stdout: "", stderr: "not a git repository", code: 128 };
+      }
+      if (key === `git -C ${path.dirname(argv1)} rev-parse --show-toplevel`) {
+        return { stdout: tempDir, stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse HEAD`) {
+        return { stdout: "abc123", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} status --porcelain -- :!dist/control-ui/`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} fetch --all --prune --tags`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} tag --list v* --sort=-v:refname`) {
+        return { stdout: `${stableTag}\n`, stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} checkout --detach ${stableTag}`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "pnpm install" || key === "pnpm build" || key === "pnpm ui:build") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === doctorKey) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "npm root -g" || key === "pnpm root -g" || key.startsWith("npm i -g ")) {
+        return { stdout: nodeModules, stderr: "", code: 0 };
+      }
+      return { stdout: "", stderr: "", code: 0 };
+    };
+
+    const result = await runGatewayUpdate({
+      cwd: pkgRoot,
+      argv1,
+      runCommand: async (argv, _runOptions) => await runCommand(argv),
+      timeoutMs: 5000,
+      channel: "stable",
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.mode).toBe("git");
+    expect(calls).toContain(`git -C ${tempDir} checkout --detach ${stableTag}`);
+    expect(calls.some((call) => call === "npm root -g")).toBe(false);
+    expect(calls.some((call) => call.startsWith("npm i -g "))).toBe(false);
+  });
+
   async function runNpmGlobalUpdateCase(params: {
     expectedInstallCommand: string;
     channel?: "stable" | "beta";

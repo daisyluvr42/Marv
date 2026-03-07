@@ -237,6 +237,11 @@ async function detectPackageManager(root: string) {
   return (await detectPackageManagerImpl(root)) ?? "npm";
 }
 
+async function isCorePackageRoot(root: string): Promise<boolean> {
+  const packageName = await readPackageName(root);
+  return Boolean(packageName && CORE_PACKAGE_NAMES.has(packageName));
+}
+
 type RunStepOptions = {
   runCommand: CommandRunner;
   name: string;
@@ -359,23 +364,22 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
 
   const pkgRoot = await findPackageRoot(candidates);
 
-  let gitRoot = await resolveGitRoot(runCommand, candidates, timeoutMs);
-  if (gitRoot && pkgRoot && path.resolve(gitRoot) !== path.resolve(pkgRoot)) {
-    gitRoot = null;
-  }
+  const detectedGitRoot = await resolveGitRoot(runCommand, candidates, timeoutMs);
+  const gitRoot =
+    detectedGitRoot && (await isCorePackageRoot(detectedGitRoot)) ? detectedGitRoot : null;
 
-  if (gitRoot && !pkgRoot) {
+  if (detectedGitRoot && !gitRoot && !pkgRoot) {
     return {
       status: "error",
       mode: "unknown",
-      root: gitRoot,
+      root: detectedGitRoot,
       reason: "not-marv-root",
       steps: [],
       durationMs: Date.now() - startedAt,
     };
   }
 
-  if (gitRoot && pkgRoot && path.resolve(gitRoot) === path.resolve(pkgRoot)) {
+  if (gitRoot) {
     // Get current SHA (not a visible step, no progress)
     const beforeShaResult = await runCommand(["git", "-C", gitRoot, "rev-parse", "HEAD"], {
       cwd: gitRoot,

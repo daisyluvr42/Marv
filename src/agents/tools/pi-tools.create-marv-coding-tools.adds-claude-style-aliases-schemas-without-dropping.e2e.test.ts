@@ -405,6 +405,16 @@ describe("createMarvCodingTools", () => {
     expect(names.has("exec")).toBe(false);
     expect(names.has("browser")).toBe(false);
   });
+  it("includes gateway in the coding tool profile", () => {
+    const tools = createMarvCodingTools({
+      config: { tools: { profile: "coding" } },
+    });
+    const names = new Set(tools.map((tool) => tool.name));
+    expect(names.has("read")).toBe(true);
+    expect(names.has("exec")).toBe(true);
+    expect(names.has("gateway")).toBe(true);
+    expect(names.has("message")).toBe(false);
+  });
   it("expands group shorthands in global tool policy", () => {
     const tools = createMarvCodingTools({
       config: { tools: { allow: ["group:fs"] } },
