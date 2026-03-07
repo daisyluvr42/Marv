@@ -8,6 +8,7 @@ import {
 } from "@mariozechner/pi-tui";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { loadConfig } from "../core/config/config.js";
+import type { ExecApprovalRequest } from "../infra/exec-approvals.js";
 import {
   buildAgentMainSessionKey,
   normalizeAgentId,
@@ -17,6 +18,7 @@ import {
 import { getSlashCommands } from "./commands.js";
 import { ChatLog } from "./components/chat-log.js";
 import { CustomEditor } from "./components/custom-editor.js";
+import { createSelectList } from "./components/selectors.js";
 import { GatewayChatClient } from "./gateway-chat.js";
 import { editorTheme, theme } from "./theme/theme.js";
 import { createCommandHandlers } from "./tui-command-handlers.js";
@@ -767,6 +769,52 @@ export async function runTui(opts: TuiOptions) {
     }
     if (evt.event === "agent") {
       handleAgentEvent(evt.payload);
+    }
+    if (evt.event === "exec.approval.requested") {
+      const payload = evt.payload as ExecApprovalRequest;
+      const items = [
+        {
+          value: "allow-once",
+          label: "Allow Once",
+          description: "Allow this command to run one time.",
+        },
+        {
+          value: "allow-always",
+          label: "Allow Always",
+          description: "Allow this command automatically next time.",
+        },
+        { value: "deny", label: "Deny", description: "Block this command from running." },
+      ];
+      chatLog.addSystem(
+        theme.error(
+          `[approval required]\nCommand: ${payload.request.command}\nCwd: ${payload.request.cwd || "unknown"}`,
+        ),
+      );
+      const selector = createSelectList(items, 4);
+      selector.onSelect = (item) => {
+        client
+          .resolveExecApproval({
+            approvalId: payload.id,
+            action: item.value as "allow-once" | "allow-always" | "deny",
+          })
+          .catch((err) => {
+            chatLog.addSystem(`approval resolution failed: ${String(err)}`);
+          });
+        closeOverlay();
+        tui.requestRender();
+      };
+      selector.onCancel = () => {
+        client
+          .resolveExecApproval({
+            approvalId: payload.id,
+            action: "deny",
+          })
+          .catch(() => {});
+        closeOverlay();
+        tui.requestRender();
+      };
+      openOverlay(selector);
+      tui.requestRender();
     }
   };
 

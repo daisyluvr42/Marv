@@ -38,6 +38,7 @@ const AutonomyDiscoverySchema = z
 export const AutonomySchema = z
   .object({
     mode: z.union([z.literal("full"), z.literal("supervised"), z.literal("minimal")]).optional(),
+    approvalMode: z.union([z.literal("strict"), z.literal("relaxed")]).optional(),
     skills: z.union([z.literal("all"), z.literal("eligible"), z.literal("manual")]).optional(),
     toolProfile: z
       .union([z.literal("minimal"), z.literal("coding"), z.literal("messaging"), z.literal("full")])

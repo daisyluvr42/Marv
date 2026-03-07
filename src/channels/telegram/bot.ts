@@ -40,6 +40,7 @@ import {
   resolveTelegramStreamMode,
 } from "./bot/helpers.js";
 import { resolveTelegramFetch } from "./fetch.js";
+import { TelegramExecApprovalHandler } from "./monitor/exec-approvals.js";
 
 export type TelegramBotOptions = {
   token: string;
@@ -373,6 +374,17 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     processMessage,
     logger,
   });
+
+  const execApprovalHandler = new TelegramExecApprovalHandler({
+    bot,
+    accountId: account.accountId,
+    config: telegramCfg.execApprovals,
+    cfg,
+    runtime,
+  });
+
+  // Attach to the bot object so other parts can use it or shut it down.
+  (bot as unknown as { execApprovalHandler: unknown }).execApprovalHandler = execApprovalHandler;
 
   return bot;
 }

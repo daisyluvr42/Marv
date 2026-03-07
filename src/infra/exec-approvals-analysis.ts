@@ -893,3 +893,142 @@ export function analyzeArgvCommand(params: {
     ],
   };
 }
+
+export function isCatastrophicCommand(command: string): boolean {
+  const norm = command.trim().toLowerCase();
+
+  // Catch explicit destructive commands targeting root/system
+  if (norm.includes("rm -rf /") || norm.includes("rm -fr /")) {
+    return true;
+  }
+  if (norm.includes("rm -rf /*") || norm.includes("rm -fr /*")) {
+    return true;
+  }
+  // Disk formatting / destructive raw writes
+  if (
+    norm.startsWith("mkfs") ||
+    norm.includes("> /dev/sd") ||
+    norm.includes("> /dev/nvme") ||
+    norm.includes("> /dev/disk")
+  ) {
+    return true;
+  }
+  if (norm.includes("dd if=") && norm.includes("of=/dev/")) {
+    return true;
+  }
+
+  return false;
+}
+
+const STATICALLY_SAFE_COMMANDS = new Set([
+  "ls",
+  "cat",
+  "echo",
+  "pwd",
+  "whoami",
+  "date",
+  "uptime",
+  "uname",
+  "git",
+  "grep",
+  "find",
+  "head",
+  "tail",
+  "wc",
+  "sort",
+  "uniq",
+  "node",
+  "npm",
+  "yarn",
+  "pnpm",
+  "npx",
+  "tsc",
+  "vitest",
+  "jest",
+  "python",
+  "python3",
+  "pip",
+  "pip3",
+  "ruby",
+  "gem",
+  "bundle",
+  "cargo",
+  "rustc",
+  "go",
+  "java",
+  "javac",
+  "mvn",
+  "gradle",
+  "docker",
+  "docker-compose",
+  "kubectl",
+  "helm",
+  "ps",
+  "top",
+  "htop",
+  "free",
+  "df",
+  "du",
+  "stat",
+  "file",
+  "curl",
+  "wget",
+  "ping",
+  "netstat",
+  "lsof",
+  "ifconfig",
+  "ip",
+  "which",
+  "whereis",
+  "type",
+  "history",
+  "man",
+  "info",
+  "help",
+  "clear",
+  "reset",
+  "env",
+  "printenv",
+  "export",
+  "set",
+  "cd",
+  "pushd",
+  "popd",
+  "dirs",
+  "jobs",
+  "fg",
+  "bg",
+  "wait",
+  "sleep",
+]);
+
+export function isStaticallySafeCommand(command: string): boolean {
+  const norm = command.trim();
+  if (!norm) {
+    return true;
+  }
+
+  // Redirection writes to files, mutating state.
+  if (norm.includes(">") || norm.includes(">>")) {
+    return false;
+  }
+
+  const analysis = analyzeShellCommand({ command: norm });
+  if (!analysis.ok || analysis.segments.length === 0) {
+    return false;
+  }
+
+  for (const seg of analysis.segments) {
+    const rawExe = seg.resolution?.executableName ?? seg.resolution?.rawExecutable;
+    if (!rawExe) {
+      return false;
+    }
+
+    // We only statically trust tools from our safe set
+    if (!STATICALLY_SAFE_COMMANDS.has(rawExe.toLowerCase())) {
+      return false;
+    }
+  }
+
+  return true;
+}

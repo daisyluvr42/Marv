@@ -55,6 +55,7 @@ import {
   parseModelCallbackData,
   type ProviderInfo,
 } from "./model-buttons.js";
+import { parseExecApprovalData } from "./monitor/exec-approvals.js";
 import { buildInlineKeyboard } from "./send.js";
 import { wasSentByBot } from "./sent-message-cache.js";
 
@@ -829,6 +830,23 @@ export const registerTelegramHandlers = ({
             return;
           }
         }
+      }
+
+      const execApprovalData = parseExecApprovalData(data);
+      if (execApprovalData) {
+        const handler = (bot as unknown as Record<string, unknown>)
+          .execApprovalHandler as import("./monitor/exec-approvals.js").TelegramExecApprovalHandler;
+        if (handler) {
+          try {
+            await handler.resolveApproval(execApprovalData.approvalId, execApprovalData.action);
+            // On success, the gateway broadcasts the result, and our handler updates the UI.
+          } catch {
+            await replyToCallbackChat(
+              "⚠️ Failed to resolve approval request. It may have expired.",
+            );
+          }
+        }
+        return;
       }
 
       const paginationMatch = data.match(/^commands_page_(\d+|noop)(?::(.+))?$/);

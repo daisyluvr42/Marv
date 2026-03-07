@@ -438,13 +438,38 @@ export function requiresExecApproval(params: {
   security: ExecSecurity;
   analysisOk: boolean;
   allowlistSatisfied: boolean;
+  isCatastrophic?: boolean;
+  isStaticallySafe?: boolean;
 }): boolean {
-  return (
-    params.ask === "always" ||
-    (params.ask === "on-miss" &&
-      params.security === "allowlist" &&
-      (!params.analysisOk || !params.allowlistSatisfied))
-  );
+  if (params.isCatastrophic) {
+    return true; // Hard safety net always blocks catastrophic commands
+  }
+
+  if (params.ask === "off") {
+    return false; // Relaxed mode or explicitly off
+  }
+
+  if (params.ask === "always") {
+    return true;
+  }
+
+  if (params.ask === "on-miss") {
+    if (params.security === "allowlist") {
+      if (!params.analysisOk) {
+        return true;
+      }
+      if (params.isStaticallySafe) {
+        return false; // Heuristic override for strict mode
+      }
+      if (!params.allowlistSatisfied) {
+        return true;
+      }
+    }
+    // Note: if security === 'deny', it doesn't even get executed or reaches here
+    // depending on the caller, but typical strict is 'allowlist'.
+  }
+
+  return false;
 }
 
 export function recordAllowlistUse(

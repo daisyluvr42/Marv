@@ -150,6 +150,16 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
         onUpdateId: persistUpdateId,
       },
     });
+    const execApprovalHandler = (bot as unknown as Record<string, unknown>)
+      .execApprovalHandler as import("./monitor/exec-approvals.js").TelegramExecApprovalHandler;
+    if (execApprovalHandler) {
+      opts.abortSignal?.addEventListener("abort", () => void execApprovalHandler.stop(), {
+        once: true,
+      });
+      Promise.resolve(execApprovalHandler.start()).catch((err) => {
+        log(`[telegram] Failed to start exec approval handler: ${String(err)}`);
+      });
+    }
 
     if (opts.useWebhook) {
       await startTelegramWebhook({

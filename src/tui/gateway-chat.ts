@@ -225,6 +225,13 @@ export class GatewayChatClient {
     const res = await this.client.request<{ models?: GatewayModelChoice[] }>("models.list");
     return Array.isArray(res?.models) ? res.models : [];
   }
+
+  async resolveExecApproval(opts: {
+    approvalId: string;
+    action: "allow-once" | "allow-always" | "deny";
+  }) {
+    return await this.client.request("exec.approval.resolve", opts);
+  }
 }
 
 export function resolveGatewayConnection(opts: GatewayConnectionOptions) {

@@ -75,6 +75,12 @@ export type AutonomyDiscoveryConfig = {
 export type AutonomyConfig = {
   /** Autonomy level. Default: "full". */
   mode?: AutonomyMode;
+  /**
+   * Execution approval strictness.
+   * - "relaxed" (default for personal assistant): allows most commands implicitly.
+   * - "strict": intercepts unknown mutating commands but heuristically allows safe commands.
+   */
+  approvalMode?: "relaxed" | "strict";
   /** Skills loading strategy. Default: "all". */
   skills?: AutonomySkillsMode;
   /** Override the tool profile when autonomy is active. */

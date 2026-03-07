@@ -18,6 +18,8 @@ import {
   resolveExecApprovalsFromFile,
   buildSafeShellCommand,
   buildSafeBinsShellCommand,
+  isCatastrophicCommand,
+  isStaticallySafeCommand,
 } from "../../infra/exec-approvals.js";
 import { buildNodeShellCommand } from "../../infra/node-shell.js";
 import {
@@ -509,11 +511,15 @@ export function createExecTool(
             // Fall back to requiring approval if node approvals cannot be fetched.
           }
         }
+        const isCatastrophic = isCatastrophicCommand(params.command);
+        const isStaticallySafe = isStaticallySafeCommand(params.command);
         const requiresAsk = requiresExecApproval({
           ask: hostAsk,
           security: hostSecurity,
           analysisOk,
           allowlistSatisfied,
+          isCatastrophic,
+          isStaticallySafe,
         });
         const commandText = params.command;
         const invokeTimeoutMs = Math.max(
@@ -716,11 +722,15 @@ export function createExecTool(
         const analysisOk = allowlistEval.analysisOk;
         const allowlistSatisfied =
           hostSecurity === "allowlist" && analysisOk ? allowlistEval.allowlistSatisfied : false;
+        const isCatastrophic = isCatastrophicCommand(params.command);
+        const isStaticallySafe = isStaticallySafeCommand(params.command);
         const requiresAsk = requiresExecApproval({
           ask: hostAsk,
           security: hostSecurity,
           analysisOk,
           allowlistSatisfied,
+          isCatastrophic,
+          isStaticallySafe,
         });
 
         if (requiresAsk) {

@@ -11,6 +11,17 @@ import type { ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
 import type { DmConfig, ProviderCommandsConfig } from "./types.messages.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 
+export type TelegramExecApprovalConfig = {
+  /** Enable exec approval forwarding to Telegram chats. Default: false. */
+  enabled?: boolean;
+  /** Telegram chat IDs (user or group) to receive approval prompts. Required if enabled. */
+  approvers?: string[];
+  /** Only forward approvals for these agent IDs. Omit = all agents. */
+  agentFilter?: string[];
+  /** Only forward approvals matching these session key patterns (substring or regex). */
+  sessionFilter?: string[];
+};
+
 export type TelegramActionConfig = {
   reactions?: boolean;
   sendMessage?: boolean;
@@ -148,6 +159,8 @@ export type TelegramAccountConfig = {
    * Telegram expects unicode emoji (e.g., "👀") rather than shortcodes.
    */
   ackReaction?: string;
+  /** Exec approval forwarding configuration. */
+  execApprovals?: TelegramExecApprovalConfig;
 };
 
 export type TelegramTopicConfig = {

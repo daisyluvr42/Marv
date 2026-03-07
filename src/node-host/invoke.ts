@@ -11,6 +11,8 @@ import {
   evaluateExecAllowlist,
   evaluateShellAllowlist,
   requiresExecApproval,
+  isCatastrophicCommand,
+  isStaticallySafeCommand,
   normalizeExecApprovals,
   mergeExecApprovalsSocketDefaults,
   recordAllowlistUse,
@@ -532,8 +534,15 @@ export async function handleInvoke(
   const agentId = params.agentId?.trim() || undefined;
   const cfg = loadConfig();
   const agentExec = agentId ? resolveAgentConfig(cfg, agentId)?.tools?.exec : undefined;
-  const configuredSecurity = resolveExecSecurity(agentExec?.security ?? cfg.tools?.exec?.security);
-  const configuredAsk = resolveExecAsk(agentExec?.ask ?? cfg.tools?.exec?.ask);
+  let configuredSecurity = resolveExecSecurity(agentExec?.security ?? cfg.tools?.exec?.security);
+  let configuredAsk = resolveExecAsk(agentExec?.ask ?? cfg.tools?.exec?.ask);
+
+  const approvalMode = cfg.autonomy?.approvalMode ?? "relaxed";
+  if (approvalMode === "relaxed") {
+    configuredSecurity = "full";
+    configuredAsk = "off";
+  }
+
   const approvals = resolveExecApprovals(agentId, {
     security: configuredSecurity,
     ask: configuredAsk,
@@ -679,11 +688,16 @@ export async function handleInvoke(
     return;
   }
 
+  const isCatastrophic = isCatastrophicCommand(cmdText);
+  const isStaticallySafe = isStaticallySafeCommand(cmdText);
+
   const requiresAsk = requiresExecApproval({
     ask,
     security,
     analysisOk,
     allowlistSatisfied,
+    isCatastrophic,
+    isStaticallySafe,
   });
 
   const approvalDecision =
