@@ -3,8 +3,9 @@ import path from "node:path";
 import type { MarvConfig } from "../core/config/config.js";
 import { resolveBrewExecutable } from "../infra/brew.js";
 import { runCommandWithTimeout, type CommandOptions } from "../process/exec.js";
-import { scanDirectoryWithSummary } from "../security/skill-scanner.js";
+import { scanDirectoryWithSummary, type SkillScanFinding } from "../security/skill-scanner.js";
 import { resolveUserPath } from "../utils.js";
+import { markInstalledSkillUsageRecord } from "./skill-usage-records.js";
 import { installDownloadSpec } from "./skills-install-download.js";
 import { formatInstallFailureMessage } from "./skills-install-output.js";
 import {
@@ -31,6 +32,7 @@ export type SkillInstallResult = {
   stderr: string;
   code: number | null;
   warnings?: string[];
+  scan?: SkillInstallSafetyReport;
 };
 
 export type DiscoverySkillInstallRequest = {
@@ -39,6 +41,15 @@ export type DiscoverySkillInstallRequest = {
   installId?: string;
   timeoutMs?: number;
   config?: MarvConfig;
+};
+
+export type SkillInstallSafetyLevel = "clean" | "warn" | "critical";
+
+export type SkillInstallSafetyReport = {
+  level: SkillInstallSafetyLevel;
+  warnings: string[];
+  findings: SkillScanFinding[];
+  blocked: boolean;
 };
 
 function withWarnings(result: SkillInstallResult, warnings: string[]): SkillInstallResult {
@@ -63,33 +74,77 @@ function formatScanFindingDetail(
   return `${finding.message} (${filePath}:${finding.line})`;
 }
 
-async function collectSkillInstallScanWarnings(entry: SkillEntry): Promise<string[]> {
-  const warnings: string[] = [];
+function withScan(
+  result: SkillInstallResult,
+  scan: SkillInstallSafetyReport | undefined,
+): SkillInstallResult {
+  if (!scan) {
+    return result;
+  }
+  return {
+    ...result,
+    scan,
+  };
+}
+
+function buildCriticalWarnings(
+  skillName: string,
+  skillDir: string,
+  findings: SkillScanFinding[],
+): string[] {
+  const criticalDetails = findings
+    .filter((finding) => finding.severity === "critical")
+    .map((finding) => formatScanFindingDetail(skillDir, finding))
+    .join("; ");
+  return [`WARNING: Skill "${skillName}" contains dangerous code patterns: ${criticalDetails}`];
+}
+
+function buildWarnWarnings(skillName: string, warnCount: number): string[] {
+  return [
+    `Skill "${skillName}" has ${warnCount} suspicious code pattern(s). Run "marv security audit --deep" for details.`,
+  ];
+}
+
+export async function inspectSkillInstallSafety(
+  entry: SkillEntry,
+): Promise<SkillInstallSafetyReport> {
   const skillName = entry.skill.name;
   const skillDir = path.resolve(entry.skill.baseDir);
 
   try {
     const summary = await scanDirectoryWithSummary(skillDir);
     if (summary.critical > 0) {
-      const criticalDetails = summary.findings
-        .filter((finding) => finding.severity === "critical")
-        .map((finding) => formatScanFindingDetail(skillDir, finding))
-        .join("; ");
-      warnings.push(
-        `WARNING: Skill "${skillName}" contains dangerous code patterns: ${criticalDetails}`,
-      );
-    } else if (summary.warn > 0) {
-      warnings.push(
-        `Skill "${skillName}" has ${summary.warn} suspicious code pattern(s). Run "marv security audit --deep" for details.`,
-      );
+      return {
+        level: "critical",
+        warnings: buildCriticalWarnings(skillName, skillDir, summary.findings),
+        findings: summary.findings,
+        blocked: true,
+      };
     }
+    if (summary.warn > 0) {
+      return {
+        level: "warn",
+        warnings: buildWarnWarnings(skillName, summary.warn),
+        findings: summary.findings,
+        blocked: false,
+      };
+    }
+    return {
+      level: "clean",
+      warnings: [],
+      findings: summary.findings,
+      blocked: false,
+    };
   } catch (err) {
-    warnings.push(
-      `Skill "${skillName}" code safety scan failed (${String(err)}). Installation continues; run "marv security audit --deep" after install.`,
-    );
+    return {
+      level: "warn",
+      warnings: [
+        `Skill "${skillName}" code safety scan failed (${String(err)}). Review before install or run "marv security audit --deep".`,
+      ],
+      findings: [],
+      blocked: false,
+    };
   }
-
-  return warnings;
 }
 
 function resolveInstallId(spec: SkillInstallSpec, index: number): string {
@@ -413,52 +468,74 @@ export async function installSkill(params: SkillInstallRequest): Promise<SkillIn
   }
 
   const spec = findInstallSpec(entry, params.installId);
-  const warnings = await collectSkillInstallScanWarnings(entry);
+  const scan = await inspectSkillInstallSafety(entry);
+  const warnings = scan.warnings;
+  if (scan.blocked) {
+    return withScan(
+      withWarnings(
+        {
+          ok: false,
+          message: `Installation blocked: skill "${entry.skill.name}" failed the safety scan.`,
+          stdout: "",
+          stderr: "",
+          code: null,
+        },
+        warnings,
+      ),
+      scan,
+    );
+  }
   if (!spec) {
-    return withWarnings(
-      {
-        ok: false,
-        message: `Installer not found: ${params.installId}`,
-        stdout: "",
-        stderr: "",
-        code: null,
-      },
-      warnings,
+    return withScan(
+      withWarnings(
+        {
+          ok: false,
+          message: `Installer not found: ${params.installId}`,
+          stdout: "",
+          stderr: "",
+          code: null,
+        },
+        warnings,
+      ),
+      scan,
     );
   }
   if (spec.kind === "download") {
     const downloadResult = await installDownloadSpec({ entry, spec, timeoutMs });
-    return withWarnings(downloadResult, warnings);
+    return withScan(withWarnings(downloadResult, warnings), scan);
   }
 
   const prefs = resolveSkillsInstallPreferences(params.config);
   const command = buildInstallCommand(spec, prefs);
   if (command.error) {
-    return withWarnings(
-      {
-        ok: false,
-        message: command.error,
-        stdout: "",
-        stderr: "",
-        code: null,
-      },
-      warnings,
+    return withScan(
+      withWarnings(
+        {
+          ok: false,
+          message: command.error,
+          stdout: "",
+          stderr: "",
+          code: null,
+        },
+        warnings,
+      ),
+      scan,
     );
   }
 
   const brewExe = hasBinary("brew") ? "brew" : resolveBrewExecutable();
   if (spec.kind === "brew" && !brewExe) {
-    return withWarnings(resolveBrewMissingFailure(spec), warnings);
+    return withScan(withWarnings(resolveBrewMissingFailure(spec), warnings), scan);
   }
 
   const uvInstallFailure = await ensureUvInstalled({ spec, brewExe, timeoutMs });
   if (uvInstallFailure) {
-    return withWarnings(uvInstallFailure, warnings);
+    return withScan(withWarnings(uvInstallFailure, warnings), scan);
   }
 
   const goInstallFailure = await ensureGoInstalled({ spec, brewExe, timeoutMs });
   if (goInstallFailure) {
-    return withWarnings(goInstallFailure, warnings);
+    return withScan(withWarnings(goInstallFailure, warnings), scan);
   }
 
   const argv = command.argv ? [...command.argv] : null;
@@ -474,7 +551,16 @@ export async function installSkill(params: SkillInstallRequest): Promise<SkillIn
     }
   }
 
-  return withWarnings(await executeInstallCommand({ argv, timeoutMs, env }), warnings);
+  const result = withScan(
+    withWarnings(await executeInstallCommand({ argv, timeoutMs, env }), warnings),
+    scan,
+  );
+  if (result.ok) {
+    await markInstalledSkillUsageRecord({
+      skillId: entry.skill.name,
+    }).catch(() => undefined);
+  }
+  return result;
 }
 
 export async function installDiscoveredSkill(
@@ -513,4 +599,16 @@ export async function installDiscoveredSkill(
     timeoutMs: params.timeoutMs,
     config: params.config,
   });
+}
+
+export async function inspectDiscoveredSkillSafety(
+  params: DiscoverySkillInstallRequest,
+): Promise<SkillInstallSafetyReport | null> {
+  const workspaceDir = resolveUserPath(params.workspaceDir);
+  const entries = loadWorkspaceSkillEntries(workspaceDir, { config: params.config });
+  const entry = entries.find((item) => item.skill.name === params.skillId);
+  if (!entry) {
+    return null;
+  }
+  return await inspectSkillInstallSafety(entry);
 }

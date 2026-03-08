@@ -1,7 +1,12 @@
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
-import { installDiscoveredSkill } from "../skills-install.js";
+import { readSkillUsageRecords } from "../skill-usage-records.js";
+import {
+  inspectDiscoveredSkillSafety,
+  installDiscoveredSkill,
+  type SkillInstallSafetyLevel,
+} from "../skills-install.js";
 import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringArrayParam, readStringParam } from "./common.js";
@@ -22,7 +27,21 @@ const RequestMissingToolsSchema = Type.Object(
   { additionalProperties: false },
 );
 
-type ApprovalDecision = "allow-once" | "allow-always" | "deny" | "unavailable";
+type ApprovalDecision =
+  | "allow-once"
+  | "allow-always"
+  | "deny"
+  | "unavailable"
+  | "not-needed"
+  | "blocked";
+
+const seenCapabilitySearches = new Map<string, Set<string>>();
+
+export const __testing = {
+  resetSeenCapabilitySearches() {
+    seenCapabilitySearches.clear();
+  },
+} as const;
 
 function normalizeApprovalDecision(raw: unknown): ApprovalDecision {
   if (raw === "allow-once" || raw === "allow-always" || raw === "deny") {
@@ -94,13 +113,30 @@ export function createRequestMissingToolsTool(opts?: {
         ...(suggestedTools && suggestedTools.length > 0 ? { suggestedTools } : {}),
         ...(contextTaskId ? { contextTaskId } : {}),
       };
+      const dedupeScope = contextTaskId?.trim() || opts?.agentSessionKey?.trim();
+      const dedupeKey = description.trim().toLowerCase();
+      if (dedupeScope && dedupeKey) {
+        const seen = seenCapabilitySearches.get(dedupeScope) ?? new Set<string>();
+        if (seen.has(dedupeKey)) {
+          return jsonResult({
+            ok: false,
+            discovered: [],
+            installed: [],
+            message: "Discovery already attempted for this capability in the current task.",
+          });
+        }
+        seen.add(dedupeKey);
+        seenCapabilitySearches.set(dedupeScope, seen);
+      }
 
       const discovery = new ToolDiscoveryService();
       const workspaceDir = resolveWorkspaceRoot(opts?.workspaceDir);
+      const usageRecords = await readSkillUsageRecords();
       const discovered = discovery.discover({
         workspaceDir,
         capability,
         config: opts?.config,
+        usageRecords,
         limit:
           typeof params.installLimit === "number" && Number.isFinite(params.installLimit)
             ? params.installLimit
@@ -117,12 +153,12 @@ export function createRequestMissingToolsTool(opts?: {
 
       const autoInstallRequested = params.autoInstall !== false;
       const autoInstallEnabled = opts?.config?.autonomy?.autoInstallSkills !== false;
-      if (!autoInstallRequested || !autoInstallEnabled) {
+      if (!autoInstallEnabled) {
         return jsonResult({
           ok: true,
           discovered,
           installed: [],
-          message: "Discovery completed. Auto-install disabled.",
+          message: "Discovery completed. Auto-install is disabled by configuration.",
         });
       }
 
@@ -136,29 +172,58 @@ export function createRequestMissingToolsTool(opts?: {
         approved: ApprovalDecision;
         ok: boolean;
         message: string;
+        scanLevel?: SkillInstallSafetyLevel;
+        warnings?: string[];
       }> = [];
       for (const candidate of installCandidates) {
-        const approved = await requestInstallApproval({
+        const scan = await inspectDiscoveredSkillSafety({
+          workspaceDir,
           skillId: candidate.skillId,
-          contextTaskId,
           config: opts?.config,
-          agentSessionKey: opts?.agentSessionKey,
-          gatewayOptions,
         });
-        if (approved !== "allow-once" && approved !== "allow-always") {
+        const scanLevel = scan?.level ?? "warn";
+        const scanWarnings = scan?.warnings ?? [];
+        if (scan?.blocked) {
           installed.push({
             skillId: candidate.skillId,
-            approved,
+            approved: "blocked",
             ok: false,
-            message:
-              approved === "deny"
-                ? "User denied installation request."
-                : "Approval unavailable or timed out; installation skipped.",
+            message: scanWarnings[0] ?? "Installation blocked by the safety scan.",
+            scanLevel,
+            warnings: scanWarnings,
           });
           if (installApprovalMode !== "batch") {
             break;
           }
           continue;
+        }
+
+        let approved: ApprovalDecision = "not-needed";
+        if (!autoInstallRequested || scanLevel === "warn") {
+          approved = await requestInstallApproval({
+            skillId: candidate.skillId,
+            contextTaskId,
+            config: opts?.config,
+            agentSessionKey: opts?.agentSessionKey,
+            gatewayOptions,
+          });
+          if (approved !== "allow-once" && approved !== "allow-always") {
+            installed.push({
+              skillId: candidate.skillId,
+              approved,
+              ok: false,
+              message:
+                approved === "deny"
+                  ? "User denied installation request."
+                  : "Approval unavailable or timed out; installation skipped.",
+              scanLevel,
+              warnings: scanWarnings,
+            });
+            if (installApprovalMode !== "batch") {
+              break;
+            }
+            continue;
+          }
         }
 
         const result = await installDiscoveredSkill({
@@ -171,6 +236,8 @@ export function createRequestMissingToolsTool(opts?: {
           approved,
           ok: result.ok,
           message: result.message,
+          scanLevel: result.scan?.level ?? scanLevel,
+          warnings: result.warnings,
         });
         if (installApprovalMode !== "batch") {
           break;

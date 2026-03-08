@@ -45,6 +45,8 @@ const SCANNABLE_EXTENSIONS = new Set([
   ".cts",
   ".jsx",
   ".tsx",
+  ".md",
+  ".txt",
 ]);
 
 const DEFAULT_MAX_SCAN_FILES = 500;
@@ -102,6 +104,36 @@ const LINE_RULES: LineRule[] = [
     severity: "warn",
     message: "WebSocket connection to non-standard port",
     pattern: /new\s+WebSocket\s*\(\s*["']wss?:\/\/[^"']*:(\d+)/,
+  },
+  {
+    ruleId: "instruction-hijack",
+    severity: "critical",
+    message: "Instruction hijack directive detected",
+    pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|context)/i,
+  },
+  {
+    ruleId: "role-override",
+    severity: "critical",
+    message: "Role override directive detected",
+    pattern: /you\s+are\s+now/i,
+  },
+  {
+    ruleId: "approval-bypass",
+    severity: "critical",
+    message: "Approval bypass directive detected",
+    pattern: /bypass\s+(approval|safety|security)/i,
+  },
+  {
+    ruleId: "stealth-directive",
+    severity: "critical",
+    message: "Stealth directive detected",
+    pattern: /do\s+not\s+tell\s+the\s+user/i,
+  },
+  {
+    ruleId: "secret-exfiltration",
+    severity: "critical",
+    message: "Secret exfiltration directive detected",
+    pattern: /exfiltrate|leak\s+(secret|key|token|credential)/i,
   },
 ];
 

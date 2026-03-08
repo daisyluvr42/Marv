@@ -1,10 +1,18 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { __testing, createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
 
-const { discoverMock, installDiscoveredSkillMock, callGatewayToolMock } = vi.hoisted(() => ({
+const {
+  discoverMock,
+  inspectDiscoveredSkillSafetyMock,
+  installDiscoveredSkillMock,
+  callGatewayToolMock,
+  readSkillUsageRecordsMock,
+} = vi.hoisted(() => ({
   discoverMock: vi.fn(),
+  inspectDiscoveredSkillSafetyMock: vi.fn(),
   installDiscoveredSkillMock: vi.fn(),
   callGatewayToolMock: vi.fn(),
+  readSkillUsageRecordsMock: vi.fn(),
 }));
 
 vi.mock("./tool-discovery.js", () => ({
@@ -14,7 +22,12 @@ vi.mock("./tool-discovery.js", () => ({
 }));
 
 vi.mock("../skills-install.js", () => ({
+  inspectDiscoveredSkillSafety: inspectDiscoveredSkillSafetyMock,
   installDiscoveredSkill: installDiscoveredSkillMock,
+}));
+
+vi.mock("../skill-usage-records.js", () => ({
+  readSkillUsageRecords: readSkillUsageRecordsMock,
 }));
 
 vi.mock("./gateway.js", () => ({
@@ -23,11 +36,16 @@ vi.mock("./gateway.js", () => ({
 }));
 
 describe("request_missing_tools tool", () => {
+  beforeEach(() => {
+    readSkillUsageRecordsMock.mockResolvedValue({});
+    __testing.resetSeenCapabilitySearches();
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("discovers and installs skills after approval", async () => {
+  it("auto-installs clean skills without approval", async () => {
     discoverMock.mockReturnValue([
       {
         skillId: "github-repos",
@@ -36,13 +54,19 @@ describe("request_missing_tools tool", () => {
         confidenceScore: 0.92,
       },
     ]);
-    callGatewayToolMock.mockResolvedValue({ decision: "allow-once" });
+    inspectDiscoveredSkillSafetyMock.mockResolvedValue({
+      level: "clean",
+      warnings: [],
+      findings: [],
+      blocked: false,
+    });
     installDiscoveredSkillMock.mockResolvedValue({
       ok: true,
       message: "Installed",
       stdout: "",
       stderr: "",
       code: 0,
+      scan: { level: "clean" },
     });
 
     const tool = createRequestMissingToolsTool({
@@ -57,24 +81,17 @@ describe("request_missing_tools tool", () => {
     });
     const details = result.details as {
       discovered: Array<{ skillId: string }>;
-      installed: Array<{ skillId: string; ok: boolean }>;
+      installed: Array<{ skillId: string; ok: boolean; approved: string }>;
     };
 
     expect(details.discovered[0]?.skillId).toBe("github-repos");
     expect(details.installed[0]?.skillId).toBe("github-repos");
     expect(details.installed[0]?.ok).toBe(true);
-    expect(callGatewayToolMock).toHaveBeenCalledWith(
-      "exec.approval.request",
-      {},
-      expect.objectContaining({
-        command: "skills install github-repos",
-        agentId: "main",
-      }),
-      { expectFinal: true },
-    );
+    expect(details.installed[0]?.approved).toBe("not-needed");
+    expect(callGatewayToolMock).not.toHaveBeenCalled();
   });
 
-  it("forwards context task id as the approval task id", async () => {
+  it("forwards context task id as the approval task id when warnings require approval", async () => {
     discoverMock.mockReturnValue([
       {
         skillId: "github-repos",
@@ -83,6 +100,12 @@ describe("request_missing_tools tool", () => {
         confidenceScore: 0.92,
       },
     ]);
+    inspectDiscoveredSkillSafetyMock.mockResolvedValue({
+      level: "warn",
+      warnings: ["warn"],
+      findings: [],
+      blocked: false,
+    });
     callGatewayToolMock.mockResolvedValue({ decision: "deny" });
 
     const tool = createRequestMissingToolsTool({
@@ -107,7 +130,7 @@ describe("request_missing_tools tool", () => {
     );
   });
 
-  it("returns discovery results without install when autoInstall is disabled in request", async () => {
+  it("blocks installation when scan is critical", async () => {
     discoverMock.mockReturnValue([
       {
         skillId: "github-repos",
@@ -116,6 +139,12 @@ describe("request_missing_tools tool", () => {
         confidenceScore: 0.92,
       },
     ]);
+    inspectDiscoveredSkillSafetyMock.mockResolvedValue({
+      level: "critical",
+      warnings: ["danger"],
+      findings: [],
+      blocked: true,
+    });
 
     const tool = createRequestMissingToolsTool({
       workspaceDir: "/tmp/workspace",
@@ -124,13 +153,59 @@ describe("request_missing_tools tool", () => {
 
     const result = await tool.execute("call2", {
       description: "search github repos",
-      autoInstall: false,
     });
-    const details = result.details as { installed: unknown[]; message: string };
+    const details = result.details as {
+      installed: Array<{ ok: boolean; approved: string; scanLevel: string }>;
+    };
 
-    expect(details.installed).toEqual([]);
-    expect(details.message).toContain("Auto-install disabled");
+    expect(details.installed[0]?.ok).toBe(false);
+    expect(details.installed[0]?.approved).toBe("blocked");
+    expect(details.installed[0]?.scanLevel).toBe("critical");
     expect(callGatewayToolMock).not.toHaveBeenCalled();
     expect(installDiscoveredSkillMock).not.toHaveBeenCalled();
+  });
+
+  it("requests approval when autoInstall is disabled in the request", async () => {
+    discoverMock.mockReturnValue([
+      {
+        skillId: "github-repos",
+        source: "managed",
+        metadata: {},
+        confidenceScore: 0.92,
+      },
+    ]);
+    inspectDiscoveredSkillSafetyMock.mockResolvedValue({
+      level: "clean",
+      warnings: [],
+      findings: [],
+      blocked: false,
+    });
+    callGatewayToolMock.mockResolvedValue({ decision: "allow-once" });
+    installDiscoveredSkillMock.mockResolvedValue({
+      ok: true,
+      message: "Installed",
+      stdout: "",
+      stderr: "",
+      code: 0,
+      scan: { level: "clean" },
+    });
+
+    const tool = createRequestMissingToolsTool({
+      workspaceDir: "/tmp/workspace",
+      config: { autonomy: { autoInstallSkills: true } },
+      agentSessionKey: "agent:main:main",
+    });
+
+    const result = await tool.execute("call3", {
+      description: "search github repos",
+      autoInstall: false,
+    });
+    const details = result.details as {
+      installed: Array<{ ok: boolean; approved: string }>;
+    };
+
+    expect(details.installed[0]?.ok).toBe(true);
+    expect(details.installed[0]?.approved).toBe("allow-once");
+    expect(callGatewayToolMock).toHaveBeenCalledTimes(1);
   });
 });
