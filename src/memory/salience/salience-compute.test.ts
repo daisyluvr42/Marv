@@ -5,6 +5,7 @@ import {
   P0_CLARITY_HALF_LIFE_DAYS,
   P1_CLARITY_HALF_LIFE_DAYS,
   P2_CLARITY_HALF_LIFE_DAYS,
+  P3_CLARITY_HALF_LIFE_DAYS,
   clarityDecayFactor,
   computeCurrentClarity,
   computeFusionSemanticMatch,
@@ -55,6 +56,7 @@ describe("salience-compute", () => {
       p0ClarityHalfLifeDays: P0_CLARITY_HALF_LIFE_DAYS,
       p1ClarityHalfLifeDays: P1_CLARITY_HALF_LIFE_DAYS,
       p2ClarityHalfLifeDays: P2_CLARITY_HALF_LIFE_DAYS,
+      p3ClarityHalfLifeDays: P3_CLARITY_HALF_LIFE_DAYS,
       forgetConfidenceThreshold: FORGET_CONFIDENCE_THRESHOLD,
       forgetStreakHalfLives: FORGET_STREAK_HALF_LIVES,
     };

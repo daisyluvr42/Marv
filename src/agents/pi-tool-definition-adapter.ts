@@ -5,13 +5,11 @@ import type {
 } from "@mariozechner/pi-agent-core";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import { logDebug, logError } from "../logger.js";
-import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import { isPlainObject } from "../utils.js";
 import type { ClientToolDefinition } from "./pi-embedded-runner/run/params.js";
 import { jsonResult } from "./tools/common.js";
 import type { HookContext } from "./tools/pi-tools.before-tool-call.js";
 import {
-  consumeAdjustedParamsForToolCall,
   isToolWrappedWithBeforeToolCallHook,
   runBeforeToolCallHook,
 } from "./tools/pi-tools.before-tool-call.js";
@@ -111,31 +109,7 @@ export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
             }
             executeParams = hookOutcome.params;
           }
-          const result = await tool.execute(toolCallId, executeParams, signal, onUpdate);
-          const afterParams = beforeHookWrapped
-            ? (consumeAdjustedParamsForToolCall(toolCallId) ?? executeParams)
-            : executeParams;
-
-          // Call after_tool_call hook
-          const hookRunner = getGlobalHookRunner();
-          if (hookRunner?.hasHooks("after_tool_call")) {
-            try {
-              await hookRunner.runAfterToolCall(
-                {
-                  toolName: name,
-                  params: isPlainObject(afterParams) ? afterParams : {},
-                  result,
-                },
-                { toolName: name },
-              );
-            } catch (hookErr) {
-              logDebug(
-                `after_tool_call hook failed: tool=${normalizedName} error=${String(hookErr)}`,
-              );
-            }
-          }
-
-          return result;
+          return await tool.execute(toolCallId, executeParams, signal, onUpdate);
         } catch (err) {
           if (signal?.aborted) {
             throw err;
@@ -146,9 +120,6 @@ export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
               : "";
           if (name === "AbortError") {
             throw err;
-          }
-          if (beforeHookWrapped) {
-            consumeAdjustedParamsForToolCall(toolCallId);
           }
           const described = describeToolExecutionError(err);
           if (described.stack && described.stack !== described.message) {
@@ -161,26 +132,6 @@ export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
             tool: normalizedName,
             error: described.message,
           });
-
-          // Call after_tool_call hook for errors too
-          const hookRunner = getGlobalHookRunner();
-          if (hookRunner?.hasHooks("after_tool_call")) {
-            try {
-              await hookRunner.runAfterToolCall(
-                {
-                  toolName: normalizedName,
-                  params: isPlainObject(params) ? params : {},
-                  error: described.message,
-                },
-                { toolName: normalizedName },
-              );
-            } catch (hookErr) {
-              logDebug(
-                `after_tool_call hook failed: tool=${normalizedName} error=${String(hookErr)}`,
-              );
-            }
-          }
-
           return errorResult;
         }
       },

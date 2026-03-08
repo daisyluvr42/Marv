@@ -14,8 +14,7 @@ import { hasInterSessionUserProvenance } from "../../../core/session/input-prove
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import {
   buildSoulMemoryPath,
-  type SoulMemoryConfig,
-  writeSoulMemory,
+  ingestSoulMemoryEvent,
 } from "../../../memory/storage/soul-memory-store.js";
 import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
 import { resolveHookConfig } from "../../config.js";
@@ -23,26 +22,6 @@ import type { HookHandler } from "../../hooks.js";
 import { generateSlugViaLLM } from "../../llm-slug-generator.js";
 
 const log = createSubsystemLogger("hooks/session-memory");
-
-function resolveMemorySoulConfig(cfg?: MarvConfig): SoulMemoryConfig | undefined {
-  const memoryConfig = cfg?.memory;
-  if (!memoryConfig) {
-    return undefined;
-  }
-  const legacyP0AllowedKinds = Array.isArray(memoryConfig.p0AllowedKinds)
-    ? memoryConfig.p0AllowedKinds
-    : undefined;
-  if (!memoryConfig.soul) {
-    return legacyP0AllowedKinds ? { p0AllowedKinds: legacyP0AllowedKinds } : undefined;
-  }
-  if (memoryConfig.soul.p0AllowedKinds || !legacyP0AllowedKinds) {
-    return memoryConfig.soul;
-  }
-  return {
-    ...memoryConfig.soul,
-    p0AllowedKinds: legacyP0AllowedKinds,
-  };
-}
 
 /**
  * Read recent messages from session file for slug generation
@@ -316,22 +295,24 @@ const saveSessionToMemory: HookHandler = async (event) => {
     }
 
     const entry = entryParts.join("\n");
-    const soulConfig = resolveMemorySoulConfig(cfg);
-    const memoryItem = writeSoulMemory({
+    const memoryItem = ingestSoulMemoryEvent({
       agentId,
       scopeType: "agent",
       scopeId: agentId,
+      archiveScopeType: "agent",
+      archiveScopeId: agentId,
       kind: "session_summary",
       content: entry,
-      confidence: 0.78,
-      source: "manual_log",
-      soulConfig,
+      summary: `Session summary for ${dateStr} ${slug}`,
+      source: "runtime_event",
+      recordKind: "fact",
+      nowMs: event.timestamp.getTime(),
     });
-    if (!memoryItem) {
+    if (!memoryItem?.activeItem) {
       log.warn("Session summary was empty; skipped soul-memory write.");
       return;
     }
-    log.info(`Session context saved to ${buildSoulMemoryPath(memoryItem.id)}`);
+    log.info(`Session context saved to ${buildSoulMemoryPath(memoryItem.activeItem.id)}`);
   } catch (err) {
     if (err instanceof Error) {
       log.error("Failed to save session memory", {

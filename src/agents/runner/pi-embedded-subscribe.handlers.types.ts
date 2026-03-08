@@ -30,10 +30,16 @@ export type ToolCallSummary = {
   actionFingerprint?: string;
 };
 
+export type ToolExecutionStartData = {
+  startTime: number;
+  args: unknown;
+};
+
 export type EmbeddedPiSubscribeState = {
   assistantTexts: string[];
   toolMetas: Array<{ toolName?: string; meta?: string }>;
   toolMetaById: Map<string, ToolCallSummary>;
+  toolExecutionStartById: Map<string, ToolExecutionStartData>;
   toolSummaryById: Set<string>;
   lastToolError?: ToolErrorSummary;
 
@@ -131,12 +137,13 @@ export type EmbeddedPiSubscribeContext = {
  */
 export type ToolHandlerParams = Pick<
   SubscribeEmbeddedPiSessionParams,
-  "runId" | "onBlockReplyFlush" | "onAgentEvent" | "onToolResult"
+  "runId" | "agentId" | "sessionKey" | "onBlockReplyFlush" | "onAgentEvent" | "onToolResult"
 >;
 
 export type ToolHandlerState = Pick<
   EmbeddedPiSubscribeState,
   | "toolMetaById"
+  | "toolExecutionStartById"
   | "toolMetas"
   | "toolSummaryById"
   | "lastToolError"

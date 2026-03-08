@@ -23,6 +23,8 @@ function createTestContext(): {
   const ctx: ToolHandlerContext = {
     params: {
       runId: "run-test",
+      agentId: "agent-test",
+      sessionKey: "session-test",
       onBlockReplyFlush,
       onAgentEvent: undefined,
       onToolResult: undefined,
@@ -35,6 +37,7 @@ function createTestContext(): {
     },
     state: {
       toolMetaById: new Map<string, ToolCallSummary>(),
+      toolExecutionStartById: new Map(),
       toolMetas: [],
       toolSummaryById: new Set<string>(),
       pendingMessagingTargets: new Map<string, MessagingToolSend>(),
@@ -299,5 +302,49 @@ describe("messaging tool media URL tracking", () => {
 
     expect(ctx.state.messagingToolSentMediaUrls).toHaveLength(0);
     expect(ctx.state.pendingMessagingMediaUrls.has("tool-m3")).toBe(false);
+  });
+});
+
+describe("tool execution state isolation", () => {
+  it("keeps start metadata scoped to each subscription context", async () => {
+    const ctxA = createTestContext().ctx;
+    const ctxB = createTestContext().ctx;
+
+    await handleToolExecutionStart(ctxA, {
+      type: "tool_execution_start",
+      toolName: "message",
+      toolCallId: "shared-call",
+      args: { action: "send", to: "channel:a", content: "from-a" },
+    });
+    await handleToolExecutionStart(ctxB, {
+      type: "tool_execution_start",
+      toolName: "message",
+      toolCallId: "shared-call",
+      args: { action: "send", to: "channel:b", content: "from-b" },
+    });
+
+    await handleToolExecutionEnd(ctxA, {
+      type: "tool_execution_end",
+      toolName: "message",
+      toolCallId: "shared-call",
+      isError: false,
+      result: { ok: true },
+    });
+    await handleToolExecutionEnd(ctxB, {
+      type: "tool_execution_end",
+      toolName: "message",
+      toolCallId: "shared-call",
+      isError: false,
+      result: { ok: true },
+    });
+
+    expect(ctxA.state.pendingMessagingTargets.size).toBe(0);
+    expect(ctxB.state.pendingMessagingTargets.size).toBe(0);
+    expect(ctxA.state.messagingToolSentTargets).toEqual([
+      { tool: "message", provider: "message", to: "channel:a" },
+    ]);
+    expect(ctxB.state.messagingToolSentTargets).toEqual([
+      { tool: "message", provider: "message", to: "channel:b" },
+    ]);
   });
 });

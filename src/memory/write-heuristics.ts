@@ -27,8 +27,7 @@ export type MemoryWriteHeuristicDecision =
       normalizedContent: string;
     };
 
-const SMALL_TALK_RE =
-  /^(hi|hello|hey|yo|thanks|thank you|ok|okay|cool|nice|great|sounds good|good morning|good night|bye|goodbye|你好|嗨|谢谢|好的|再见)[.!? ]*$/i;
+import { isSmallTalk } from "./small-talk.js";
 const EXPLICIT_MEMORY_PREFIX_RE =
   /^(?:please\s+)?(?:remember|note|keep in mind|save)\s+(?:that\s+|this\s+|for later:\s*)?/i;
 const EXPLICIT_MEMORY_PREFIX_ZH_RE = /^(?:请)?(?:记住|记一下|记下来|记着|保存到记忆里?)[:：,\s]*/i;
@@ -64,10 +63,6 @@ function stripExplicitMemoryPrefixes(input: string): string {
 
 function isQuestionLike(input: string): boolean {
   return QUESTION_RE.test(input);
-}
-
-function isSmallTalk(input: string): boolean {
-  return SMALL_TALK_RE.test(input);
 }
 
 function isTransient(input: string): boolean {

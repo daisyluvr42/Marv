@@ -4,12 +4,18 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   applySoulMemoryConfidenceDecay,
+  buildSoulArchivePath,
   buildSoulMemoryPath,
+  countSoulArchiveEvents,
+  getSoulArchiveEvent,
   getSoulMemoryItem,
+  ingestSoulMemoryEvent,
   listSoulMemoryItems,
   listSoulMemoryReferences,
+  parseSoulArchivePath,
   parseSoulMemoryPath,
   promoteSoulMemories,
+  querySoulArchive,
   querySoulMemoryMulti,
   writeSoulMemory,
 } from "./soul-memory-store.js";
@@ -785,5 +791,47 @@ describe("soul-memory-store", () => {
     expect(parseSoulMemoryPath(memoryPath)).toBe(item.id);
     const loaded = getSoulMemoryItem({ agentId: "main", itemId: item.id });
     expect(loaded?.content).toBe("remember this");
+  });
+
+  it("ingests recent facts into P3 and archive together", () => {
+    const ingested = ingestSoulMemoryEvent({
+      agentId: "main",
+      scopeType: "session",
+      scopeId: "agent:main:telegram:dm:user1",
+      archiveScopeType: "agent",
+      archiveScopeId: "main",
+      kind: "user_turn",
+      content: "We finished the release rollback and verified health checks.",
+      summary: "User reported the release rollback was completed successfully.",
+      recordKind: "fact",
+      source: "runtime_event",
+    });
+    expect(ingested).not.toBeNull();
+    if (!ingested) {
+      throw new Error("ingested event missing");
+    }
+
+    expect(ingested.activeItem.tier).toBe("P3");
+    expect(ingested.archiveEvent).toBeDefined();
+    expect(countSoulArchiveEvents({ agentId: "main" })).toBe(1);
+
+    const archiveEvent = ingested.archiveEvent!;
+    const archive = getSoulArchiveEvent({
+      agentId: "main",
+      eventId: archiveEvent.id,
+    });
+    expect(archive?.summary).toContain("rollback");
+
+    const archiveResults = querySoulArchive({
+      agentId: "main",
+      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
+      query: "rollback completed successfully",
+      topK: 3,
+      minScore: 0,
+    });
+    expect(archiveResults[0]?.id).toBe(archiveEvent.id);
+
+    const archivePath = buildSoulArchivePath(archiveEvent.id);
+    expect(parseSoulArchivePath(archivePath)).toBe(archiveEvent.id);
   });
 });

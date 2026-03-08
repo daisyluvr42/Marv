@@ -3,13 +3,22 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { loadConfig } from "../core/config/config.js";
 import { resolveStateDir } from "../core/config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../core/config/sessions/paths.js";
 import { setVerbose } from "../globals.js";
 import { getMemorySearchManager, type MemorySearchManagerResult } from "../memory/index.js";
 import { listMemoryFiles, normalizeExtraMemoryPaths } from "../memory/internal.js";
+import {
+  exportSoulMemoryMirror,
+  importSoulMemoryMirror,
+} from "../memory/storage/soul-memory-mirror.js";
+import {
+  countSoulArchiveEvents,
+  countSoulMemoryItemsByRecordKind,
+  countSoulMemoryItemsByTier,
+} from "../memory/storage/soul-memory-store.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
@@ -530,6 +539,19 @@ export async function runMemoryStatus(opts: MemoryCommandOptions) {
         lines.push(`  ${warn(issue)}`);
       }
     }
+    const tierCounts = countSoulMemoryItemsByTier({ agentId });
+    const recordCounts = countSoulMemoryItemsByRecordKind({ agentId });
+    const archiveCount = countSoulArchiveEvents({ agentId });
+    lines.push(
+      `${label("Structured")} ${info(
+        `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3} · Archive ${archiveCount}`,
+      )}`,
+    );
+    lines.push(
+      `${label("Kinds")} ${info(
+        `fact ${recordCounts.fact} · relationship ${recordCounts.relationship} · experience ${recordCounts.experience} · soul ${recordCounts.soul}`,
+      )}`,
+    );
     defaultRuntime.log(lines.join("\n"));
     defaultRuntime.log("");
   }
@@ -759,4 +781,58 @@ export function registerMemoryCli(program: Command) {
         });
       },
     );
+
+  const mirror = memory.command("mirror").description("Export/import Markdown memory mirror");
+
+  mirror
+    .command("export")
+    .description("Export P0 and selected stable P1 memory into MEMORY.md")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .option("--force", "Overwrite even if MEMORY.md has unsynced edits", false)
+    .action(async (opts: { agent?: string; force?: boolean }) => {
+      const cfg = loadConfig();
+      const agentId = resolveAgent(cfg, opts.agent);
+      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+      const result = await exportSoulMemoryMirror({
+        agentId,
+        workspaceDir,
+        force: Boolean(opts.force),
+      });
+      if (result.requiresConfirmation) {
+        defaultRuntime.log(
+          `Mirror export paused: ${shortenHomePath(result.path)} has Markdown edits that are not synced back to structured memory.`,
+        );
+        defaultRuntime.log(
+          "Review these entries and decide whether to import them into P0/P1 first:",
+        );
+        for (const entry of result.conflicts.slice(0, 12)) {
+          defaultRuntime.log(`- ${entry.tier} [${entry.kind}] ${entry.content}`);
+        }
+        if (result.conflicts.length > 12) {
+          defaultRuntime.log(`- ... +${result.conflicts.length - 12} more`);
+        }
+        defaultRuntime.log(
+          "Run `marv memory mirror import` to sync Markdown changes first, or rerun with `--force` to overwrite the file.",
+        );
+        return;
+      }
+      defaultRuntime.log(`Mirror exported to ${shortenHomePath(result.path)}.`);
+    });
+
+  mirror
+    .command("import")
+    .description("Import explicit MEMORY.md mirror edits back into structured memory")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .action(async (opts: { agent?: string }) => {
+      const cfg = loadConfig();
+      const agentId = resolveAgent(cfg, opts.agent);
+      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+      const result = await importSoulMemoryMirror({
+        agentId,
+        workspaceDir,
+      });
+      defaultRuntime.log(
+        `Mirror imported from ${shortenHomePath(result.path)} (${result.imported} entries synced).`,
+      );
+    });
 }

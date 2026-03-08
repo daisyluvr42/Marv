@@ -9,6 +9,7 @@ import {
   logMessageQueued,
   logSessionStateChange,
 } from "../../logging/diagnostic.js";
+import { ingestInboundMessageToSoulMemory } from "../../memory/storage/soul-memory-runtime-ingest.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { maybeApplyTtsToPayload, normalizeTtsAutoMode, resolveTtsConfig } from "../../tts/tts.js";
 import { getReplyFromConfig } from "../reply.js";
@@ -198,6 +199,16 @@ export async function dispatchReplyFromConfig(params: {
 
   // Bridge to internal hooks (HOOK.md discovery system) - refs #8807
   if (sessionKey) {
+    ingestInboundMessageToSoulMemory({
+      cfg,
+      sessionKey,
+      content,
+      channelId,
+      accountId: ctx.AccountId,
+      conversationId,
+      messageId: messageIdForHook,
+      nowMs: timestamp,
+    });
     void triggerInternalHook(
       createInternalHookEvent("message", "received", sessionKey, {
         from: ctx.From ?? "",

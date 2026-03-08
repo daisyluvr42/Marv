@@ -94,6 +94,7 @@ const MemorySoulSchema = z
     p0ClarityHalfLifeDays: z.number().positive().optional(),
     p1ClarityHalfLifeDays: z.number().positive().optional(),
     p2ClarityHalfLifeDays: z.number().positive().optional(),
+    p3ClarityHalfLifeDays: z.number().positive().optional(),
     p0RecallRelevanceThreshold: z.number().min(0).max(1).optional(),
     p2ToP1MinClarity: z.number().min(0).max(1).optional(),
     p2ToP1MinAgeDays: z.number().nonnegative().optional(),
@@ -106,6 +107,7 @@ const MemorySoulSchema = z
     p0TierMultiplier: z.number().min(0).optional(),
     p1TierMultiplier: z.number().min(0).optional(),
     p2TierMultiplier: z.number().min(0).optional(),
+    p3TierMultiplier: z.number().min(0).optional(),
     scoreSimilarityWeight: z.number().min(0).optional(),
     scoreDecayWeight: z.number().min(0).optional(),
     reinforcementLogWeight: z.number().min(0).optional(),
@@ -122,6 +124,7 @@ const MemorySchema = z
   .object({
     backend: z.union([z.literal("builtin"), z.literal("qmd")]).optional(),
     citations: z.union([z.literal("auto"), z.literal("on"), z.literal("off")]).optional(),
+    runtimeIngest: z.boolean().optional(),
     p0AllowedKinds: z.array(z.string()).optional(),
     soul: MemorySoulSchema.optional(),
     qmd: MemoryQmdSchema.optional(),

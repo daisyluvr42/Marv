@@ -29,13 +29,14 @@ function createToolHandlerCtx(params: {
   return {
     params: {
       runId: params.runId,
-      session: { messages: [] },
       agentId: params.agentId,
+      session: { messages: [] },
       sessionKey: params.sessionKey,
       onBlockReplyFlush: params.onBlockReplyFlush,
     },
     state: {
       toolMetaById: new Map<string, string | undefined>(),
+      toolExecutionStartById: new Map(),
       toolMetas: [] as Array<{ toolName?: string; meta?: string }>,
       toolSummaryById: new Set<string>(),
       lastToolError: undefined,
@@ -120,6 +121,8 @@ describe("after_tool_call hook wiring", () => {
     expect(event.error).toBeUndefined();
     expect(typeof event.durationMs).toBe("number");
     expect(context.toolName).toBe("read");
+    expect(context.agentId).toBe("main");
+    expect(context.sessionKey).toBe("test-session");
   });
 
   it("includes error in after_tool_call event on tool failure", async () => {

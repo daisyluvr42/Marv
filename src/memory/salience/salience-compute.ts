@@ -13,6 +13,7 @@ export const MATCH_SCOPE_PENALTY = 1;
 export const P0_TIER_MULTIPLIER = 1.2;
 export const P1_TIER_MULTIPLIER = 1;
 export const P2_TIER_MULTIPLIER = 0.75;
+export const P3_TIER_MULTIPLIER = 0.3;
 
 export const SCORE_SIMILARITY_WEIGHT = 1;
 export const SCORE_DECAY_WEIGHT = 1;
@@ -22,6 +23,7 @@ export const FORGET_STREAK_HALF_LIVES = 3;
 export const P0_CLARITY_HALF_LIFE_DAYS = 365;
 export const P1_CLARITY_HALF_LIFE_DAYS = 45;
 export const P2_CLARITY_HALF_LIFE_DAYS = 10;
+export const P3_CLARITY_HALF_LIFE_DAYS = 3;
 
 export const FUSION_VECTOR_WEIGHT = 0.32;
 export const FUSION_LEXICAL_WEIGHT = 0.15;
@@ -53,6 +55,9 @@ function resolveTierHalfLifeDays(
   }
   if (tier === "P2") {
     return config.p2ClarityHalfLifeDays;
+  }
+  if (tier === "P3") {
+    return config.p3ClarityHalfLifeDays;
   }
   return null;
 }
@@ -115,6 +120,9 @@ export function tierPriorityFactor(tier: SoulMemoryTierValue, config: TierPriori
   if (tier === "P2") {
     return config.p2TierMultiplier;
   }
+  if (tier === "P3") {
+    return config.p3TierMultiplier;
+  }
   return config.p1TierMultiplier;
 }
 
@@ -145,7 +153,9 @@ export function clarityDecayFactor(
       ? config.p0ClarityHalfLifeDays
       : tier === "P2"
         ? config.p2ClarityHalfLifeDays
-        : config.p1ClarityHalfLifeDays;
+        : tier === "P3"
+          ? config.p3ClarityHalfLifeDays
+          : config.p1ClarityHalfLifeDays;
   const factor = 0.5 ** (normalizedAgeDays / halfLifeDays);
   return clamp(factor, 0, 1);
 }

@@ -4,16 +4,22 @@ import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
 import { appendLedgerEvent } from "../../ledger/event-store.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
 import { getMemorySearchManager } from "../../memory/index.js";
+import { SMALL_TALK_RE } from "../../memory/small-talk.js";
 import {
   buildSoulMemoryPath,
+  buildSoulArchivePath,
   getSoulMemoryItem,
+  getSoulArchiveEvent,
   listSoulMemoryReferences,
+  parseSoulArchivePath,
   parseSoulMemoryPath,
+  querySoulArchive,
   querySoulMemoryMulti,
   type SoulMemoryConfig,
   writeSoulMemory,
   type SoulMemoryItem,
   type SoulMemoryQueryResult,
+  type SoulArchiveQueryResult,
   type SoulMemoryScope,
 } from "../../memory/storage/soul-memory-store.js";
 import type { MemorySearchResult } from "../../memory/types.js";
@@ -99,7 +105,7 @@ export function createMemorySearchTool(options: {
     label: "Memory Search",
     name: "memory_search",
     description:
-      "Mandatory recall step: search structured soul memory first (with scope/tier/confidence), then merge legacy memory files when needed. Use before answering questions about prior work, decisions, dates, people, preferences, or todos.",
+      "Mandatory recall step: search structured memory first across active tiers and archived history, then use legacy Markdown search only as compatibility fallback. Use before answering questions about prior work, decisions, dates, people, preferences, or todos.",
     parameters: MemorySearchSchema,
     execute: async (_toolCallId, params) => {
       const query = readStringParam(params, "query", { required: true });
@@ -133,6 +139,13 @@ export function createMemorySearchTool(options: {
         minScore: minScore ?? undefined,
         soulConfig,
       }).map((entry) => toSoulSearchResult(entry));
+      const archiveResults = querySoulArchive({
+        agentId,
+        scopes: resolveSoulScopes({ agentId, sessionKey: options.agentSessionKey }),
+        query: effectiveQuery,
+        topK: maxResults,
+        minScore: Math.max(0.12, minScore ?? 0.12),
+      }).map((entry) => toSoulArchiveSearchResult(entry));
 
       const managerResult = await getMemorySearchManager({
         cfg,
@@ -142,7 +155,7 @@ export function createMemorySearchTool(options: {
 
       let managerResults: MemorySearchResult[] = [];
       let managerStatus: ReturnType<NonNullable<typeof manager>["status"]> | undefined;
-      if (manager && soulResults.length < maxResults) {
+      if (manager && soulResults.length + archiveResults.length < maxResults) {
         try {
           managerResults = await manager.search(effectiveQuery, {
             maxResults,
@@ -161,7 +174,7 @@ export function createMemorySearchTool(options: {
       }
 
       const merged = mergeMemoryResults({
-        primary: soulResults,
+        primary: [...soulResults, ...archiveResults],
         secondary: managerResults,
         maxResults,
       });
@@ -181,8 +194,12 @@ export function createMemorySearchTool(options: {
           : decorated;
       const managerMode = (managerStatus?.custom as { searchMode?: string } | undefined)
         ?.searchMode;
-      const usedSoul = merged.some((entry) => isSoulMemoryPath(entry.path));
-      const mode = usedSoul ? (managerMode ? `soul+${managerMode}` : "soul") : managerMode;
+      const usedStructured = merged.some((entry) => isStructuredMemoryPath(entry.path));
+      const mode = usedStructured
+        ? managerMode
+          ? `structured+${managerMode}`
+          : "structured"
+        : managerMode;
       return jsonResult({
         results: finalResults,
         provider: managerStatus?.provider ?? "soul-memory",
@@ -244,8 +261,8 @@ function evaluateMemorySearchPrecheck(params: {
   };
 }
 
-const SMALL_TALK_QUERY_RE =
-  /^(hi|hello|hey|yo|thanks|thank you|ok|okay|cool|nice|great|sounds good|good morning|good night|bye|goodbye)[.!? ]*$/i;
+// Imported via shared small-talk module; kept as alias for search precheck.
+const SMALL_TALK_QUERY_RE = SMALL_TALK_RE;
 const MEMORY_CUE_RE =
   /\b(remember|recall|previous|earlier|history|past|before|last time|last week|last month|what did we|we discussed|my preference|my preferences|todo|decision|decisions|profile|habit|habits|identity|policy|guardrail)\b/i;
 
@@ -282,7 +299,7 @@ export function createMemoryGetTool(options: {
     label: "Memory Get",
     name: "memory_get",
     description:
-      "Safe snippet read by memory path. Works for structured soul-memory entries and legacy MEMORY.md/memory/*.md paths. Use after memory_search to fetch only the minimum needed context.",
+      "Safe snippet read by memory path. Works for structured active/archive memory entries and legacy MEMORY.md/memory/*.md paths. Use after memory_search to fetch only the minimum needed context.",
     parameters: MemoryGetSchema,
     execute: async (_toolCallId, params) => {
       const relPath = readStringParam(params, "path", { required: true });
@@ -304,6 +321,23 @@ export function createMemoryGetTool(options: {
           path: relPath,
           text: sliceTextByLines(item.content, from ?? undefined, lines ?? undefined),
           references,
+        });
+      }
+      const archiveId = parseSoulArchivePath(relPath);
+      if (archiveId) {
+        const item = getSoulArchiveEvent({ agentId, eventId: archiveId });
+        if (!item) {
+          return jsonResult({
+            path: relPath,
+            text: "",
+            disabled: true,
+            error: "path required",
+          });
+        }
+        return jsonResult({
+          path: relPath,
+          text: sliceTextByLines(item.content, from ?? undefined, lines ?? undefined),
+          summary: item.summary,
         });
       }
 
@@ -343,7 +377,7 @@ export function createMemoryWriteTool(options: {
     label: "Memory Write",
     name: "memory_write",
     description:
-      "Write a durable structured memory entry (scope/kind/source/confidence) into soul memory. Prefer this over editing MEMORY.md or memory/*.md.",
+      "Write a durable structured memory entry (scope/kind/source/confidence) into structured memory. Prefer this over editing MEMORY.md or memory/*.md.",
     parameters: MemoryWriteSchema,
     execute: async (_toolCallId, params) => {
       const content = readStringParam(params, "content", { required: true });
@@ -507,8 +541,29 @@ function toSoulSearchResult(entry: SoulMemoryQueryResult): MemorySearchResult {
   };
 }
 
+function toSoulArchiveSearchResult(entry: SoulArchiveQueryResult): MemorySearchResult {
+  const path = buildSoulArchivePath(entry.id);
+  const snippet = truncateUtf16Safe(`${entry.summary}\n\n${entry.content.trim()}`, 700);
+  return {
+    path,
+    startLine: 1,
+    endLine: Math.max(1, entry.content.split("\n").length),
+    score: entry.score,
+    snippet,
+    source: "memory",
+  };
+}
+
 function isSoulMemoryPath(pathname: string): boolean {
   return pathname.trim().toLowerCase().startsWith("soul-memory/");
+}
+
+function isSoulArchivePath(pathname: string): boolean {
+  return pathname.trim().toLowerCase().startsWith("soul-archive/");
+}
+
+function isStructuredMemoryPath(pathname: string): boolean {
+  return isSoulMemoryPath(pathname) || isSoulArchivePath(pathname);
 }
 
 function mergeMemoryResults(params: {
@@ -521,10 +576,10 @@ function mergeMemoryResults(params: {
     if (Math.abs(scoreDelta) > 1e-9) {
       return scoreDelta;
     }
-    if (isSoulMemoryPath(a.path) && !isSoulMemoryPath(b.path)) {
+    if (isStructuredMemoryPath(a.path) && !isStructuredMemoryPath(b.path)) {
       return -1;
     }
-    if (!isSoulMemoryPath(a.path) && isSoulMemoryPath(b.path)) {
+    if (!isStructuredMemoryPath(a.path) && isStructuredMemoryPath(b.path)) {
       return 1;
     }
     return a.path.localeCompare(b.path);

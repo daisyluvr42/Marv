@@ -15,6 +15,10 @@ let searchImpl: () => Promise<unknown[]> = async () => [
 let readFileImpl: () => Promise<string> = async () => "";
 let soulSearchImpl: () => unknown[] = () => [];
 let soulReadImpl: (itemId: string) => { id: string; content: string } | null = () => null;
+let archiveSearchImpl: () => unknown[] = () => [];
+let archiveReadImpl: (
+  eventId: string,
+) => { id: string; content: string; summary: string } | null = () => null;
 let soulWriteImpl: (content: string) => { id: string } = () => ({ id: "mem_mock" });
 let lastSoulWriteContent: string | null = null;
 let soulRefsImpl: (itemId: string) => string[] = () => [];
@@ -49,15 +53,20 @@ vi.mock("../../memory/index.js", () => {
 vi.mock("../../memory/storage/soul-memory-store.js", () => {
   return {
     querySoulMemoryMulti: (..._args: unknown[]) => soulSearchImpl(),
+    querySoulArchive: (..._args: unknown[]) => archiveSearchImpl(),
     getSoulMemoryItem: ({ itemId }: { itemId: string }) => soulReadImpl(itemId),
+    getSoulArchiveEvent: ({ eventId }: { eventId: string }) => archiveReadImpl(eventId),
     listSoulMemoryReferences: ({ itemId }: { itemId: string }) => soulRefsImpl(itemId),
     writeSoulMemory: ({ content }: { content: string }) => {
       lastSoulWriteContent = content;
       return soulWriteImpl(content);
     },
     buildSoulMemoryPath: (itemId: string) => `soul-memory/${itemId}`,
+    buildSoulArchivePath: (eventId: string) => `soul-archive/${eventId}`,
     parseSoulMemoryPath: (value: string) =>
       value.startsWith("soul-memory/") ? value.slice("soul-memory/".length) : null,
+    parseSoulArchivePath: (value: string) =>
+      value.startsWith("soul-archive/") ? value.slice("soul-archive/".length) : null,
   };
 });
 
@@ -86,6 +95,8 @@ beforeEach(() => {
   readFileImpl = async () => "";
   soulSearchImpl = () => [];
   soulReadImpl = () => null;
+  archiveSearchImpl = () => [];
+  archiveReadImpl = () => null;
   soulWriteImpl = () => ({ id: "mem_mock" });
   lastSoulWriteContent = null;
   soulRefsImpl = () => [];

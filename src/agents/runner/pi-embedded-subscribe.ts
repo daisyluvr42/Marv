@@ -38,6 +38,7 @@ export function subscribeEmbeddedPiSession(params: SubscribeEmbeddedPiSessionPar
     assistantTexts: [],
     toolMetas: [],
     toolMetaById: new Map(),
+    toolExecutionStartById: new Map(),
     toolSummaryById: new Set(),
     lastToolError: undefined,
     blockReplyBreak: params.blockReplyBreak ?? "text_end",

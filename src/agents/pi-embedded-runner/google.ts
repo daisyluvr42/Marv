@@ -272,13 +272,12 @@ export function logToolSchemasForGoogle(params: { tools: AgentTool[]; provider: 
     return;
   }
   const toolNames = params.tools.map((tool, index) => `${index}:${tool.name}`);
-  const tools = sanitizeToolsForGoogle(params);
   log.info("google tool schema snapshot", {
     provider: params.provider,
-    toolCount: tools.length,
+    toolCount: params.tools.length,
     tools: toolNames,
   });
-  for (const [index, tool] of tools.entries()) {
+  for (const [index, tool] of params.tools.entries()) {
     const violations = findUnsupportedSchemaKeywords(tool.parameters, `${tool.name}.parameters`);
     if (violations.length > 0) {
       log.warn("google tool schema has unsupported keywords", {

@@ -20,9 +20,6 @@ import {
 } from "./pi-embedded-subscribe.tools.js";
 import { inferToolMetaFromArgs } from "./pi-embedded-utils.js";
 
-/** Track tool execution start times and args for after_tool_call hook */
-const toolStartData = new Map<string, { startTime: number; args: unknown }>();
-
 function isCronAddAction(args: unknown): boolean {
   if (!args || typeof args !== "object") {
     return false;
@@ -143,8 +140,8 @@ export async function handleToolExecutionStart(
   const toolCallId = String(evt.toolCallId);
   const args = evt.args;
 
-  // Track start time and args for after_tool_call hook
-  toolStartData.set(toolCallId, { startTime: Date.now(), args });
+  // Track start metadata per subscription so concurrent runs cannot collide.
+  ctx.state.toolExecutionStartById.set(toolCallId, { startTime: Date.now(), args });
 
   if (toolName === "read") {
     const record = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
@@ -266,8 +263,8 @@ export async function handleToolExecutionEnd(
   const result = evt.result;
   const isToolError = isError || isToolResultError(result);
   const sanitizedResult = sanitizeToolResult(result);
-  const startData = toolStartData.get(toolCallId);
-  toolStartData.delete(toolCallId);
+  const startData = ctx.state.toolExecutionStartById.get(toolCallId);
+  ctx.state.toolExecutionStartById.delete(toolCallId);
   const callSummary = ctx.state.toolMetaById.get(toolCallId);
   const meta = callSummary?.meta;
   ctx.state.toolMetas.push({ toolName, meta });
@@ -406,8 +403,8 @@ export async function handleToolExecutionEnd(
     void hookRunnerAfter
       .runAfterToolCall(hookEvent, {
         toolName,
-        agentId: undefined,
-        sessionKey: undefined,
+        agentId: ctx.params.agentId,
+        sessionKey: ctx.params.sessionKey,
       })
       .catch((err) => {
         ctx.log.warn(`after_tool_call hook failed: tool=${toolName} error=${String(err)}`);

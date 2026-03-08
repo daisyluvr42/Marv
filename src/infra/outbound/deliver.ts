@@ -29,6 +29,7 @@ import {
 } from "../../core/config/sessions.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
+import { ingestOutboundMessageToSoulMemory } from "../../memory/storage/soul-memory-runtime-ingest.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
@@ -479,6 +480,17 @@ async function deliverOutboundPayloadsCore(
       }
       if (!sessionKeyForInternalHooks) {
         return;
+      }
+      if (params.success) {
+        ingestOutboundMessageToSoulMemory({
+          cfg,
+          sessionKey: sessionKeyForInternalHooks,
+          content: params.content,
+          channelId: channel,
+          accountId: accountId ?? undefined,
+          conversationId: to,
+          messageId: params.messageId,
+        });
       }
       void triggerInternalHook(
         createInternalHookEvent("message", "sent", sessionKeyForInternalHooks, {

@@ -239,6 +239,8 @@ export const FIELD_HELP: Record<string, string> = {
   "memory.soul.p0ClarityHalfLifeDays": "P0 clarity half-life in days (default: 365).",
   "memory.soul.p1ClarityHalfLifeDays": "P1 clarity half-life in days (default: 45).",
   "memory.soul.p2ClarityHalfLifeDays": "P2 clarity half-life in days (default: 10).",
+  "memory.soul.p3ClarityHalfLifeDays":
+    "P3 clarity half-life in days (default: 5). Use for recent active memory before it falls back to archive-only recall.",
   "memory.soul.p0RecallRelevanceThreshold":
     "Minimum relevance needed to trigger P0 recall boost (default: 0.7).",
   "memory.soul.p2ToP1MinClarity":
@@ -257,6 +259,8 @@ export const FIELD_HELP: Record<string, string> = {
   "memory.soul.p0TierMultiplier": "Ranking multiplier for P0 tier (default: 1.2).",
   "memory.soul.p1TierMultiplier": "Ranking multiplier for P1 tier (default: 1.0).",
   "memory.soul.p2TierMultiplier": "Ranking multiplier for P2 tier (default: 0.75).",
+  "memory.soul.p3TierMultiplier":
+    "Ranking multiplier for P3 tier (default: 0.9). P3 stays highly recallable while recent, but below P0/P1 durable memory.",
   "memory.soul.scoreSimilarityWeight":
     "Exponent for similarity contribution in final score (default: 1.0).",
   "memory.soul.scoreDecayWeight": "Exponent for decay contribution in final score (default: 1.0).",

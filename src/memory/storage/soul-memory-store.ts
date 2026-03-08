@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { resolveStateDir } from "../../core/config/paths.js";
+import { truncateUtf16Safe } from "../../utils.js";
 import {
   REFERENCE_BOOST_WEIGHT,
   REFERENCE_EDGE_DECAY,
@@ -36,6 +37,8 @@ import {
   P1_TIER_MULTIPLIER,
   P2_CLARITY_HALF_LIFE_DAYS,
   P2_TIER_MULTIPLIER,
+  P3_CLARITY_HALF_LIFE_DAYS,
+  P3_TIER_MULTIPLIER,
   SCORE_DECAY_WEIGHT,
   SCORE_SIMILARITY_WEIGHT,
   clarityDecayFactor,
@@ -53,10 +56,17 @@ const SOURCE_CORE_PREFERENCE = "core_preference";
 const SOURCE_MANUAL_LOG = "manual_log";
 const SOURCE_MIGRATION = "migration";
 const SOURCE_AUTO_EXTRACTION = "auto_extraction";
+const SOURCE_RUNTIME_EVENT = "runtime_event";
 
 const TIER_P0 = "P0";
 const TIER_P1 = "P1";
 const TIER_P2 = "P2";
+const TIER_P3 = "P3";
+
+const RECORD_KIND_FACT = "fact";
+const RECORD_KIND_RELATIONSHIP = "relationship";
+const RECORD_KIND_EXPERIENCE = "experience";
+const RECORD_KIND_SOUL = "soul";
 
 const DEFAULT_INJECT_THRESHOLD = 0.65;
 const P0_RECALL_RELEVANCE_THRESHOLD = 0.7;
@@ -67,12 +77,15 @@ const P1_TO_P0_MIN_CLARITY = 0.75;
 const P1_TO_P0_MIN_AGE_DAYS = 150;
 const EMBEDDING_DIMS = 128;
 const SOUL_MEMORY_PATH_PREFIX = "soul-memory/";
+const SOUL_ARCHIVE_PATH_PREFIX = "soul-archive/";
 const SOUL_MEMORY_FTS_TABLE = "memory_items_fts";
 const SOUL_MEMORY_VEC_TABLE = "memory_items_vec";
 const SOUL_MEMORY_ENTITY_TABLE = "memory_item_entities";
 const MEMORY_ITEM_SELECT_COLUMNS =
   "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
-  "created_at, last_accessed_at, reinforcement_count, last_reinforced_at";
+  "record_kind, summary, metadata_json, created_at, last_accessed_at, reinforcement_count, last_reinforced_at";
+const SOUL_ARCHIVE_TABLE = "memory_archive";
+const SOUL_ARCHIVE_FTS_TABLE = "memory_archive_fts";
 const RRF_RANK_CONSTANT = 40;
 const VECTOR_RRF_WEIGHT = 0.6;
 const BM25_RRF_WEIGHT = 0.4;
@@ -104,6 +117,7 @@ const SOURCE_PROFILE: Record<SoulMemorySource, SourceProfile> = {
   [SOURCE_MANUAL_LOG]: { confidence: 0.85, tier: TIER_P1 },
   [SOURCE_MIGRATION]: { confidence: 0.85, tier: TIER_P1 },
   [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5, tier: TIER_P2 },
+  [SOURCE_RUNTIME_EVENT]: { confidence: 0.5, tier: TIER_P3 },
 };
 
 // P0 is reserved for durable soul-level facts/policies only.
@@ -166,19 +180,44 @@ type MemoryItemRow = {
   confidence: number;
   tier: string;
   source: string;
+  record_kind: string;
+  summary: string | null;
+  metadata_json: string | null;
   created_at: number;
   last_accessed_at: number | null;
   reinforcement_count: number;
   last_reinforced_at: number | null;
 };
 
+type ArchiveRow = {
+  id: string;
+  scope_type: string;
+  scope_id: string;
+  kind: string;
+  record_kind: string;
+  content: string;
+  summary: string;
+  embedding_json: string;
+  source: string;
+  created_at: number;
+  active_memory_id: string | null;
+  metadata_json: string | null;
+};
+
 export type SoulMemorySource =
   | typeof SOURCE_CORE_PREFERENCE
   | typeof SOURCE_MANUAL_LOG
   | typeof SOURCE_MIGRATION
-  | typeof SOURCE_AUTO_EXTRACTION;
+  | typeof SOURCE_AUTO_EXTRACTION
+  | typeof SOURCE_RUNTIME_EVENT;
 
-export type SoulMemoryTier = typeof TIER_P0 | typeof TIER_P1 | typeof TIER_P2;
+export type SoulMemoryTier = typeof TIER_P0 | typeof TIER_P1 | typeof TIER_P2 | typeof TIER_P3;
+
+export type SoulMemoryRecordKind =
+  | typeof RECORD_KIND_FACT
+  | typeof RECORD_KIND_RELATIONSHIP
+  | typeof RECORD_KIND_EXPERIENCE
+  | typeof RECORD_KIND_SOUL;
 
 export type SoulMemoryScope = {
   scopeType: string;
@@ -192,13 +231,37 @@ export type SoulMemoryItem = {
   scopeId: string;
   kind: string;
   content: string;
+  summary?: string;
   confidence: number;
   tier: SoulMemoryTier;
   source: SoulMemorySource;
+  recordKind: SoulMemoryRecordKind;
+  metadata?: Record<string, unknown>;
   createdAt: number;
   lastAccessedAt: number | null;
   reinforcementCount: number;
   lastReinforcedAt: number | null;
+};
+
+export type SoulArchiveEvent = {
+  id: string;
+  scopeType: string;
+  scopeId: string;
+  kind: string;
+  recordKind: SoulMemoryRecordKind;
+  content: string;
+  summary: string;
+  source: SoulMemorySource;
+  createdAt: number;
+  activeMemoryId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type SoulArchiveQueryResult = SoulArchiveEvent & {
+  score: number;
+  vectorScore: number;
+  lexicalScore: number;
+  ageDays: number;
 };
 
 export type SoulMemoryQueryResult = SoulMemoryItem & {
@@ -246,6 +309,7 @@ export type SoulMemoryConfig = {
   p0ClarityHalfLifeDays?: number;
   p1ClarityHalfLifeDays?: number;
   p2ClarityHalfLifeDays?: number;
+  p3ClarityHalfLifeDays?: number;
   p0RecallRelevanceThreshold?: number;
   p2ToP1MinClarity?: number;
   p2ToP1MinAgeDays?: number;
@@ -258,6 +322,7 @@ export type SoulMemoryConfig = {
   p0TierMultiplier?: number;
   p1TierMultiplier?: number;
   p2TierMultiplier?: number;
+  p3TierMultiplier?: number;
   scoreSimilarityWeight?: number;
   scoreDecayWeight?: number;
   reinforcementLogWeight?: number;
@@ -276,6 +341,7 @@ type ResolvedSoulMemoryConfig = {
   p0ClarityHalfLifeDays: number;
   p1ClarityHalfLifeDays: number;
   p2ClarityHalfLifeDays: number;
+  p3ClarityHalfLifeDays: number;
   p0RecallRelevanceThreshold: number;
   p2ToP1MinClarity: number;
   p2ToP1MinAgeDays: number;
@@ -288,6 +354,7 @@ type ResolvedSoulMemoryConfig = {
   p0TierMultiplier: number;
   p1TierMultiplier: number;
   p2TierMultiplier: number;
+  p3TierMultiplier: number;
   scoreSimilarityWeight: number;
   scoreDecayWeight: number;
   reinforcementLogWeight: number;
@@ -303,6 +370,10 @@ export function buildSoulMemoryPath(itemId: string): string {
   return `${SOUL_MEMORY_PATH_PREFIX}${itemId}`;
 }
 
+export function buildSoulArchivePath(eventId: string): string {
+  return `${SOUL_ARCHIVE_PATH_PREFIX}${eventId}`;
+}
+
 export function parseSoulMemoryPath(input: string): string | null {
   const normalized = input.trim().replace(/^\/+/, "");
   if (!normalized.toLowerCase().startsWith(SOUL_MEMORY_PATH_PREFIX)) {
@@ -313,6 +384,18 @@ export function parseSoulMemoryPath(input: string): string | null {
     return null;
   }
   return itemId;
+}
+
+export function parseSoulArchivePath(input: string): string | null {
+  const normalized = input.trim().replace(/^\/+/, "");
+  if (!normalized.toLowerCase().startsWith(SOUL_ARCHIVE_PATH_PREFIX)) {
+    return null;
+  }
+  const eventId = normalized.slice(SOUL_ARCHIVE_PATH_PREFIX.length).trim();
+  if (!/^arch_[a-z0-9]+$/i.test(eventId)) {
+    return null;
+  }
+  return eventId;
 }
 
 export function resolveSoulMemoryDbPath(agentId: string): string {
@@ -326,8 +409,12 @@ export function writeSoulMemory(params: {
   scopeId: string;
   kind: string;
   content: string;
+  summary?: string;
   confidence?: number;
   source?: string;
+  tier?: SoulMemoryTier;
+  recordKind?: SoulMemoryRecordKind;
+  metadata?: Record<string, unknown>;
   nowMs?: number;
   soulConfig?: SoulMemoryConfig;
   // Deprecated alias; prefer soulConfig.p0AllowedKinds.
@@ -345,12 +432,21 @@ export function writeSoulMemory(params: {
   const scopeType = normalizeScopeValue(params.scopeType);
   const scopeId = normalizeScopeValue(params.scopeId);
   const kind = normalizeScopeValue(params.kind);
+  const summary = normalizeOptionalSummary(params.summary, content);
+  const recordKind = resolveRecordKind(params.recordKind, kind, source);
+  const metadataJson = stringifyMetadata(params.metadata);
   const soulConfig = resolveSoulMemoryConfig({
     ...params.soulConfig,
     p0AllowedKinds: params.soulConfig?.p0AllowedKinds ?? params.p0AllowedKinds,
   });
   const normalizedSource = normalizeSourceForKind(source, kind, soulConfig.p0AllowedKinds);
   const sourceProfile = SOURCE_PROFILE[normalizedSource];
+  const explicitTier = params.tier ? normalizeTier(params.tier) : null;
+  const resolvedTier = explicitTier ?? sourceProfile.tier;
+  const resolvedConfidence = Math.max(
+    sourceProfile.confidence,
+    clamp(params.confidence ?? sourceProfile.confidence, 0, 1),
+  );
   const normalizedContent = normalizeText(content);
 
   const db = openSoulMemoryDb(params.agentId);
@@ -363,14 +459,23 @@ export function writeSoulMemory(params: {
       normalizedContent,
     });
     if (existing) {
-      const nextConfidence = Math.max(existing.confidence, sourceProfile.confidence);
-      const nextTier = sourceProfile.tier;
+      const nextConfidence = Math.max(existing.confidence, resolvedConfidence);
+      const nextTier = resolvedTier;
       const nextSource = normalizedSource;
       db.prepare(
-        "UPDATE memory_items SET confidence = ?, tier = ?, source = ?, " +
+        "UPDATE memory_items SET confidence = ?, tier = ?, source = ?, record_kind = ?, summary = ?, metadata_json = ?, " +
           "reinforcement_count = COALESCE(reinforcement_count, 1) + 1, last_reinforced_at = ? " +
           "WHERE id = ?",
-      ).run(nextConfidence, nextTier, nextSource, nowMs, existing.id);
+      ).run(
+        nextConfidence,
+        nextTier,
+        nextSource,
+        recordKind,
+        summary,
+        metadataJson,
+        nowMs,
+        existing.id,
+      );
       return getSoulMemoryItemInternal(db, existing.id);
     }
 
@@ -379,9 +484,9 @@ export function writeSoulMemory(params: {
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
     db.prepare(
       "INSERT INTO memory_items (" +
-        "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
+        "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, record_kind, summary, metadata_json, " +
         "created_at, last_accessed_at, reinforcement_count, last_reinforced_at" +
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?)",
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?)",
     ).run(
       id,
       scopeType,
@@ -389,9 +494,12 @@ export function writeSoulMemory(params: {
       kind,
       content,
       embedding,
-      sourceProfile.confidence,
-      sourceProfile.tier,
+      resolvedConfidence,
+      resolvedTier,
       normalizedSource,
+      recordKind,
+      summary,
+      metadataJson,
       nowMs,
       nowMs,
     );
@@ -416,11 +524,31 @@ export function getSoulMemoryItem(params: {
   }
 }
 
+export function getSoulArchiveEvent(params: {
+  agentId: string;
+  eventId: string;
+}): SoulArchiveEvent | null {
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    const row = db
+      .prepare(
+        `SELECT id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json ` +
+          `FROM ${SOUL_ARCHIVE_TABLE} WHERE id = ?`,
+      )
+      .get(params.eventId) as ArchiveRow | undefined;
+    return row ? rowToArchiveEvent(row) : null;
+  } finally {
+    db.close();
+  }
+}
+
 export function listSoulMemoryItems(params: {
   agentId: string;
   scopeType?: string;
   scopeId?: string;
   kind?: string;
+  tier?: SoulMemoryTier;
+  recordKind?: SoulMemoryRecordKind;
   limit?: number;
 }): SoulMemoryItem[] {
   const db = openSoulMemoryDb(params.agentId);
@@ -439,6 +567,14 @@ export function listSoulMemoryItems(params: {
       clauses.push("kind = ?");
       values.push(normalizeScopeValue(params.kind));
     }
+    if (params.tier?.trim()) {
+      clauses.push("tier = ?");
+      values.push(normalizeTier(params.tier));
+    }
+    if (params.recordKind?.trim()) {
+      clauses.push("record_kind = ?");
+      values.push(normalizeRecordKind(params.recordKind));
+    }
     const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
     const limit = Math.max(1, Math.min(500, Math.floor(params.limit ?? 200)));
     const rows = db
@@ -448,6 +584,68 @@ export function listSoulMemoryItems(params: {
       )
       .all(...values, limit) as MemoryItemRow[];
     return rows.map((row) => rowToMemoryItem(row));
+  } finally {
+    db.close();
+  }
+}
+
+export function countSoulMemoryItemsByTier(params: {
+  agentId: string;
+}): Record<SoulMemoryTier, number> {
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    type Row = { tier?: string; count?: number };
+    const rows = db
+      .prepare("SELECT tier, COUNT(*) as count FROM memory_items GROUP BY tier")
+      .all() as Row[];
+    const counts: Record<SoulMemoryTier, number> = {
+      P0: 0,
+      P1: 0,
+      P2: 0,
+      P3: 0,
+    };
+    for (const row of rows) {
+      counts[normalizeTier(String(row.tier ?? "P1"))] = Number(row.count ?? 0);
+    }
+    return counts;
+  } finally {
+    db.close();
+  }
+}
+
+export function countSoulMemoryItemsByRecordKind(params: {
+  agentId: string;
+}): Record<SoulMemoryRecordKind, number> {
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    type Row = { record_kind?: string; count?: number };
+    const rows = db
+      .prepare("SELECT record_kind, COUNT(*) as count FROM memory_items GROUP BY record_kind")
+      .all() as Row[];
+    const counts: Record<SoulMemoryRecordKind, number> = {
+      fact: 0,
+      relationship: 0,
+      experience: 0,
+      soul: 0,
+    };
+    for (const row of rows) {
+      counts[normalizeRecordKind(String(row.record_kind ?? RECORD_KIND_EXPERIENCE))] = Number(
+        row.count ?? 0,
+      );
+    }
+    return counts;
+  } finally {
+    db.close();
+  }
+}
+
+export function countSoulArchiveEvents(params: { agentId: string }): number {
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    const row = db.prepare(`SELECT COUNT(*) as c FROM ${SOUL_ARCHIVE_TABLE}`).get() as
+      | { c?: number }
+      | undefined;
+    return Number(row?.c ?? 0);
   } finally {
     db.close();
   }
@@ -469,6 +667,59 @@ export function listSoulMemoryReferences(params: { agentId: string; itemId: stri
   } finally {
     db.close();
   }
+}
+
+export function ingestSoulMemoryEvent(params: {
+  agentId: string;
+  scopeType: string;
+  scopeId: string;
+  archiveScopeType?: string;
+  archiveScopeId?: string;
+  kind: string;
+  content: string;
+  summary?: string;
+  source?: string;
+  metadata?: Record<string, unknown>;
+  nowMs?: number;
+  recordKind?: SoulMemoryRecordKind;
+  /** When true, skip the immediate archive write. P3 items will be archived
+   *  later when they are pruned from active memory. */
+  skipArchive?: boolean;
+}): { activeItem: SoulMemoryItem; archiveEvent?: SoulArchiveEvent } | null {
+  const activeItem = writeSoulMemory({
+    agentId: params.agentId,
+    scopeType: params.scopeType,
+    scopeId: params.scopeId,
+    kind: params.kind,
+    content: params.content,
+    summary: params.summary,
+    source: params.source ?? SOURCE_RUNTIME_EVENT,
+    tier: TIER_P3,
+    recordKind: params.recordKind,
+    metadata: params.metadata,
+    confidence: SOURCE_PROFILE[SOURCE_RUNTIME_EVENT].confidence,
+    nowMs: params.nowMs,
+  });
+  if (!activeItem) {
+    return null;
+  }
+  if (params.skipArchive) {
+    return { activeItem };
+  }
+  const archiveEvent = writeSoulArchiveEvent({
+    agentId: params.agentId,
+    scopeType: params.archiveScopeType ?? params.scopeType,
+    scopeId: params.archiveScopeId ?? params.scopeId,
+    kind: params.kind,
+    content: params.content,
+    summary: params.summary,
+    source: normalizeSource(params.source ?? SOURCE_RUNTIME_EVENT),
+    recordKind: params.recordKind ?? activeItem.recordKind,
+    metadata: params.metadata,
+    activeMemoryId: activeItem.id,
+    nowMs: params.nowMs,
+  });
+  return { activeItem, archiveEvent };
 }
 
 export function querySoulMemoryMulti(params: {
@@ -713,6 +964,58 @@ export function querySoulMemoryMulti(params: {
   }
 }
 
+export function querySoulArchive(params: {
+  agentId: string;
+  scopes: SoulMemoryScope[];
+  query: string;
+  topK: number;
+  minScore?: number;
+  nowMs?: number;
+}): SoulArchiveQueryResult[] {
+  const topK = Math.max(0, Math.floor(params.topK));
+  if (topK <= 0) {
+    return [];
+  }
+  const cleanedQuery = params.query.trim();
+  if (!cleanedQuery) {
+    return [];
+  }
+  const uniqueScopes = dedupeScopes(params.scopes);
+  const queryVec = embedText(cleanedQuery);
+  const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
+  const minScore = clamp(params.minScore ?? 0.15, 0, 1.5);
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    const rows = loadArchiveRowsByScope(db, uniqueScopes, Math.max(topK * 10, 80));
+    const results: SoulArchiveQueryResult[] = [];
+    for (const row of rows) {
+      const content = row.content;
+      const summary = row.summary || summarizeArchiveContent(content);
+      const vectorScore = cosineSimilarity(queryVec, parseEmbedding(row.embedding_json));
+      const lexicalScore = Math.max(
+        lexicalOverlap(cleanedQuery, content),
+        lexicalOverlap(cleanedQuery, summary),
+      );
+      const score = clamp(vectorScore * 0.55 + lexicalScore * 0.45, 0, 1.5);
+      if (score < minScore) {
+        continue;
+      }
+      const createdAt = Number(row.created_at ?? 0);
+      const ageDays = Math.max(0, (nowMs - createdAt) / MILLIS_PER_DAY);
+      results.push({
+        ...rowToArchiveEvent(row),
+        score,
+        vectorScore,
+        lexicalScore,
+        ageDays,
+      });
+    }
+    return results.toSorted((a, b) => b.score - a.score).slice(0, topK);
+  } finally {
+    db.close();
+  }
+}
+
 function countMemoryItemsInternal(db: DatabaseSync): number {
   const row = db.prepare("SELECT COUNT(*) as c FROM memory_items").get() as
     | { c?: number }
@@ -788,6 +1091,90 @@ function loadMemoryRowsByIds(db: DatabaseSync, memoryIds: string[]): MemoryItemR
   return db
     .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id IN (${placeholders})`)
     .all(...memoryIds) as MemoryItemRow[];
+}
+
+function writeSoulArchiveEvent(params: {
+  agentId: string;
+  scopeType: string;
+  scopeId: string;
+  kind: string;
+  content: string;
+  summary?: string;
+  source: SoulMemorySource;
+  recordKind: SoulMemoryRecordKind;
+  metadata?: Record<string, unknown>;
+  activeMemoryId?: string;
+  nowMs?: number;
+}): SoulArchiveEvent {
+  const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    const id = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
+    const normalizedSummary = normalizeOptionalSummary(params.summary, params.content) ?? "";
+    const embedding = JSON.stringify(embedText(`${normalizedSummary}\n${params.content}`));
+    db.prepare(
+      `INSERT INTO ${SOUL_ARCHIVE_TABLE} (` +
+        "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json" +
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      id,
+      normalizeScopeValue(params.scopeType),
+      normalizeScopeValue(params.scopeId),
+      normalizeScopeValue(params.kind),
+      normalizeRecordKind(params.recordKind),
+      params.content.trim(),
+      normalizedSummary,
+      embedding,
+      normalizeSource(params.source),
+      nowMs,
+      params.activeMemoryId?.trim() || null,
+      stringifyMetadata(params.metadata),
+    );
+    const row = db
+      .prepare(
+        `SELECT id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json ` +
+          `FROM ${SOUL_ARCHIVE_TABLE} WHERE id = ?`,
+      )
+      .get(id) as ArchiveRow | undefined;
+    return rowToArchiveEvent(
+      row ?? {
+        id,
+        scope_type: normalizeScopeValue(params.scopeType),
+        scope_id: normalizeScopeValue(params.scopeId),
+        kind: normalizeScopeValue(params.kind),
+        record_kind: params.recordKind,
+        content: params.content.trim(),
+        summary: normalizedSummary,
+        embedding_json: embedding,
+        source: params.source,
+        created_at: nowMs,
+        active_memory_id: params.activeMemoryId ?? null,
+        metadata_json: stringifyMetadata(params.metadata),
+      },
+    );
+  } finally {
+    db.close();
+  }
+}
+
+function loadArchiveRowsByScope(
+  db: DatabaseSync,
+  scopes: SoulMemoryScope[],
+  limit: number,
+): ArchiveRow[] {
+  const columns =
+    "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json";
+  if (scopes.length === 0) {
+    return db
+      .prepare(`SELECT ${columns} FROM ${SOUL_ARCHIVE_TABLE} ORDER BY created_at DESC LIMIT ?`)
+      .all(limit) as ArchiveRow[];
+  }
+  const scoped = buildScopedAliasClause({ scopes, alias: "" });
+  return db
+    .prepare(
+      `SELECT ${columns} FROM ${SOUL_ARCHIVE_TABLE} WHERE ${scoped.clause} ORDER BY created_at DESC LIMIT ?`,
+    )
+    .all(...scoped.values, limit) as ArchiveRow[];
 }
 
 function listRecentMemoryIds(params: {
@@ -873,6 +1260,9 @@ function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
       "confidence REAL NOT NULL, " +
       "tier TEXT NOT NULL DEFAULT 'P1', " +
       "source TEXT NOT NULL DEFAULT 'manual_log', " +
+      "record_kind TEXT NOT NULL DEFAULT 'experience', " +
+      "summary TEXT, " +
+      "metadata_json TEXT, " +
       "created_at INTEGER NOT NULL, " +
       "last_accessed_at INTEGER, " +
       "reinforcement_count INTEGER NOT NULL DEFAULT 1, " +
@@ -881,15 +1271,23 @@ function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
   );
   ensureMemoryItemsColumn(db, "reinforcement_count", "INTEGER NOT NULL DEFAULT 1");
   ensureMemoryItemsColumn(db, "last_reinforced_at", "INTEGER");
+  ensureMemoryItemsColumn(db, "record_kind", "TEXT NOT NULL DEFAULT 'experience'");
+  ensureMemoryItemsColumn(db, "summary", "TEXT");
+  ensureMemoryItemsColumn(db, "metadata_json", "TEXT");
   db.exec(
     "UPDATE memory_items SET reinforcement_count = 1 " +
       "WHERE reinforcement_count IS NULL OR reinforcement_count < 1",
+  );
+  db.exec(
+    "UPDATE memory_items SET record_kind = 'experience' " +
+      "WHERE record_kind IS NULL OR TRIM(record_kind) = ''",
   );
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_soul_memory_scope ON memory_items (scope_type, scope_id);",
   );
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_tier ON memory_items (tier);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_source ON memory_items (source);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_record_kind ON memory_items (record_kind);");
   db.exec(
     `CREATE TABLE IF NOT EXISTS ${SOUL_MEMORY_SCOPE_HITS_TABLE} (` +
       "memory_id TEXT NOT NULL, " +
@@ -930,7 +1328,35 @@ function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
   db.exec(
     `CREATE INDEX IF NOT EXISTS idx_soul_memory_refs_target ON ${SOUL_MEMORY_REF_TABLE} (target_memory_id);`,
   );
+  db.exec(
+    `CREATE TABLE IF NOT EXISTS ${SOUL_ARCHIVE_TABLE} (` +
+      "id TEXT PRIMARY KEY, " +
+      "scope_type TEXT NOT NULL, " +
+      "scope_id TEXT NOT NULL, " +
+      "kind TEXT NOT NULL, " +
+      "record_kind TEXT NOT NULL DEFAULT 'fact', " +
+      "content TEXT NOT NULL, " +
+      "summary TEXT NOT NULL, " +
+      "embedding_json TEXT NOT NULL, " +
+      "source TEXT NOT NULL DEFAULT 'runtime_event', " +
+      "created_at INTEGER NOT NULL, " +
+      "active_memory_id TEXT, " +
+      "metadata_json TEXT, " +
+      "FOREIGN KEY (active_memory_id) REFERENCES memory_items(id) ON DELETE SET NULL" +
+      ");",
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_soul_archive_scope ON ${SOUL_ARCHIVE_TABLE} (scope_type, scope_id);`,
+  );
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_soul_archive_kind ON ${SOUL_ARCHIVE_TABLE} (kind);`);
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_soul_archive_record_kind ON ${SOUL_ARCHIVE_TABLE} (record_kind);`,
+  );
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_soul_archive_created ON ${SOUL_ARCHIVE_TABLE} (created_at DESC);`,
+  );
   ensureSoulMemoryFts(db);
+  ensureSoulArchiveFts(db);
   ensureSoulMemoryVec(db, dbPath);
 }
 
@@ -980,6 +1406,50 @@ function ensureSoulMemoryFts(db: DatabaseSync): void {
     }
   } catch {
     // Some Node runtimes can ship SQLite without FTS5; keep vector-only retrieval in that case.
+  }
+}
+
+function ensureSoulArchiveFts(db: DatabaseSync): void {
+  try {
+    const tableExists = hasTable(db, SOUL_ARCHIVE_FTS_TABLE);
+    if (!tableExists) {
+      db.exec(
+        `CREATE VIRTUAL TABLE ${SOUL_ARCHIVE_FTS_TABLE} USING fts5(` +
+          "id UNINDEXED, " +
+          "summary, " +
+          "content, " +
+          `content='${SOUL_ARCHIVE_TABLE}', ` +
+          "content_rowid='rowid', " +
+          "tokenize='unicode61'" +
+          ");",
+      );
+    }
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS trg_${SOUL_ARCHIVE_TABLE}_ai ` +
+        `AFTER INSERT ON ${SOUL_ARCHIVE_TABLE} BEGIN ` +
+        `INSERT INTO ${SOUL_ARCHIVE_FTS_TABLE}(rowid, id, summary, content) VALUES (new.rowid, new.id, new.summary, new.content); ` +
+        "END;",
+    );
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS trg_${SOUL_ARCHIVE_TABLE}_ad ` +
+        `AFTER DELETE ON ${SOUL_ARCHIVE_TABLE} BEGIN ` +
+        `INSERT INTO ${SOUL_ARCHIVE_FTS_TABLE}(${SOUL_ARCHIVE_FTS_TABLE}, rowid, id, summary, content) VALUES ('delete', old.rowid, old.id, old.summary, old.content); ` +
+        "END;",
+    );
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS trg_${SOUL_ARCHIVE_TABLE}_au ` +
+        `AFTER UPDATE OF id, summary, content ON ${SOUL_ARCHIVE_TABLE} BEGIN ` +
+        `INSERT INTO ${SOUL_ARCHIVE_FTS_TABLE}(${SOUL_ARCHIVE_FTS_TABLE}, rowid, id, summary, content) VALUES ('delete', old.rowid, old.id, old.summary, old.content); ` +
+        `INSERT INTO ${SOUL_ARCHIVE_FTS_TABLE}(rowid, id, summary, content) VALUES (new.rowid, new.id, new.summary, new.content); ` +
+        "END;",
+    );
+    if (!tableExists) {
+      db.exec(
+        `INSERT INTO ${SOUL_ARCHIVE_FTS_TABLE}(${SOUL_ARCHIVE_FTS_TABLE}) VALUES ('rebuild');`,
+      );
+    }
+  } catch {
+    // Keep archive retrieval available via structural scan when FTS is unavailable.
   }
 }
 
@@ -1081,17 +1551,18 @@ function rebuildSoulMemoryVectors(db: DatabaseSync): void {
 }
 
 function hasSoulMemoryFtsTable(db: DatabaseSync): boolean {
-  const row = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-    .get(SOUL_MEMORY_FTS_TABLE) as { name?: string } | undefined;
-  return row?.name === SOUL_MEMORY_FTS_TABLE;
+  return hasTable(db, SOUL_MEMORY_FTS_TABLE);
 }
 
 function hasSoulMemoryVecTable(db: DatabaseSync): boolean {
+  return hasTable(db, SOUL_MEMORY_VEC_TABLE);
+}
+
+function hasTable(db: DatabaseSync, tableName: string): boolean {
   const row = db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-    .get(SOUL_MEMORY_VEC_TABLE) as { name?: string } | undefined;
-  return row?.name === SOUL_MEMORY_VEC_TABLE;
+    .get(tableName) as { name?: string } | undefined;
+  return row?.name === tableName;
 }
 
 function upsertItemEntities(db: DatabaseSync, memoryId: string, content: string): void {
@@ -1188,6 +1659,8 @@ function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): number {
   if (unique.length === 0) {
     return 0;
   }
+  // Archive P3 items before deletion so they remain recallable.
+  archiveP3BeforeDelete(db, unique);
   deleteSoulMemoryVectorRows(db, unique);
   const deleteStmt = db.prepare("DELETE FROM memory_items WHERE id = ?");
   let deleted = 0;
@@ -1198,6 +1671,40 @@ function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): number {
   return deleted;
 }
 
+/** Migrate P3 items from active memory into the archive table before pruning. */
+function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): void {
+  const selectStmt = db.prepare(
+    `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id = ? AND tier = 'P3'`,
+  );
+  const insertStmt = db.prepare(
+    `INSERT OR IGNORE INTO ${SOUL_ARCHIVE_TABLE} (` +
+      "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json" +
+      ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  );
+  for (const memoryId of memoryIds) {
+    const row = selectStmt.get(memoryId) as MemoryItemRow | undefined;
+    if (!row) {
+      continue;
+    }
+    const archiveId = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
+    const summary = normalizeOptionalSummary(row.summary ?? undefined, String(row.content)) ?? "";
+    insertStmt.run(
+      archiveId,
+      String(row.scope_type),
+      String(row.scope_id),
+      String(row.kind),
+      String(row.record_kind ?? RECORD_KIND_EXPERIENCE),
+      String(row.content).trim(),
+      summary,
+      String(row.embedding_json),
+      String(row.source),
+      Number(row.created_at),
+      memoryId,
+      row.metadata_json ?? null,
+    );
+  }
+}
+
 function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
   const reinforcementCount = Math.max(1, Math.floor(Number(row.reinforcement_count ?? 1)));
   return {
@@ -1206,9 +1713,12 @@ function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
     scopeId: String(row.scope_id),
     kind: String(row.kind),
     content: String(row.content),
+    summary: row.summary == null ? undefined : String(row.summary),
     confidence: Number(row.confidence ?? 0),
     tier: normalizeTier(String(row.tier)),
     source: normalizeSource(String(row.source)),
+    recordKind: normalizeRecordKind(String(row.record_kind ?? RECORD_KIND_EXPERIENCE)),
+    metadata: parseMetadataJson(row.metadata_json),
     createdAt: Number(row.created_at ?? 0),
     lastAccessedAt: row.last_accessed_at == null ? null : Number(row.last_accessed_at),
     reinforcementCount,
@@ -1216,9 +1726,30 @@ function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
   };
 }
 
+function rowToArchiveEvent(row: ArchiveRow): SoulArchiveEvent {
+  return {
+    id: String(row.id),
+    scopeType: String(row.scope_type),
+    scopeId: String(row.scope_id),
+    kind: String(row.kind),
+    recordKind: normalizeRecordKind(String(row.record_kind ?? RECORD_KIND_FACT)),
+    content: String(row.content),
+    summary: String(row.summary ?? ""),
+    source: normalizeSource(String(row.source)),
+    createdAt: Number(row.created_at ?? 0),
+    activeMemoryId: row.active_memory_id == null ? undefined : String(row.active_memory_id),
+    metadata: parseMetadataJson(row.metadata_json),
+  };
+}
+
 function normalizeTier(value: string): SoulMemoryTier {
   const normalized = value.trim().toUpperCase();
-  if (normalized === TIER_P0 || normalized === TIER_P1 || normalized === TIER_P2) {
+  if (
+    normalized === TIER_P0 ||
+    normalized === TIER_P1 ||
+    normalized === TIER_P2 ||
+    normalized === TIER_P3
+  ) {
     return normalized;
   }
   return TIER_P1;
@@ -1230,11 +1761,25 @@ function normalizeSource(value: string): SoulMemorySource {
     normalized === SOURCE_CORE_PREFERENCE ||
     normalized === SOURCE_MANUAL_LOG ||
     normalized === SOURCE_MIGRATION ||
-    normalized === SOURCE_AUTO_EXTRACTION
+    normalized === SOURCE_AUTO_EXTRACTION ||
+    normalized === SOURCE_RUNTIME_EVENT
   ) {
     return normalized;
   }
   return SOURCE_MANUAL_LOG;
+}
+
+function normalizeRecordKind(value: string): SoulMemoryRecordKind {
+  const normalized = value.trim().toLowerCase();
+  if (
+    normalized === RECORD_KIND_FACT ||
+    normalized === RECORD_KIND_RELATIONSHIP ||
+    normalized === RECORD_KIND_EXPERIENCE ||
+    normalized === RECORD_KIND_SOUL
+  ) {
+    return normalized;
+  }
+  return RECORD_KIND_EXPERIENCE;
 }
 
 function normalizeSourceForKind(
@@ -1289,6 +1834,11 @@ function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConf
       P2_CLARITY_HALF_LIFE_DAYS,
       1,
     ),
+    p3ClarityHalfLifeDays: resolveBoundedNumber(
+      config.p3ClarityHalfLifeDays,
+      P3_CLARITY_HALF_LIFE_DAYS,
+      1,
+    ),
     p0RecallRelevanceThreshold: resolveBoundedNumber(
       config.p0RecallRelevanceThreshold,
       P0_RECALL_RELEVANCE_THRESHOLD,
@@ -1310,6 +1860,7 @@ function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConf
     p0TierMultiplier: resolveBoundedNumber(config.p0TierMultiplier, P0_TIER_MULTIPLIER, 0),
     p1TierMultiplier: resolveBoundedNumber(config.p1TierMultiplier, P1_TIER_MULTIPLIER, 0),
     p2TierMultiplier: resolveBoundedNumber(config.p2TierMultiplier, P2_TIER_MULTIPLIER, 0),
+    p3TierMultiplier: resolveBoundedNumber(config.p3TierMultiplier, P3_TIER_MULTIPLIER, 0),
     scoreSimilarityWeight: resolveBoundedNumber(
       config.scoreSimilarityWeight,
       SCORE_SIMILARITY_WEIGHT,
@@ -1395,6 +1946,9 @@ function resolveMemorySource(params: {
   inputConfidence: number;
 }): SoulMemorySource {
   const normalized = (params.source ?? "").trim().toLowerCase();
+  if (normalized === SOURCE_RUNTIME_EVENT || normalized === "runtime" || normalized === "event") {
+    return SOURCE_RUNTIME_EVENT;
+  }
   if (normalized === "p0" || normalized === SOURCE_CORE_PREFERENCE || normalized === "explicit") {
     return SOURCE_CORE_PREFERENCE;
   }
@@ -1417,6 +1971,82 @@ function resolveMemorySource(params: {
     return SOURCE_AUTO_EXTRACTION;
   }
   return SOURCE_MANUAL_LOG;
+}
+
+function resolveRecordKind(
+  recordKind: SoulMemoryRecordKind | undefined,
+  kind: string,
+  source: SoulMemorySource,
+): SoulMemoryRecordKind {
+  if (recordKind) {
+    return normalizeRecordKind(recordKind);
+  }
+  if (source === SOURCE_CORE_PREFERENCE) {
+    return RECORD_KIND_SOUL;
+  }
+  if (
+    kind.includes("chat") ||
+    kind.includes("relationship") ||
+    kind.includes("greeting") ||
+    kind.includes("small_talk")
+  ) {
+    return RECORD_KIND_RELATIONSHIP;
+  }
+  if (
+    source === SOURCE_RUNTIME_EVENT ||
+    kind.includes("event") ||
+    kind.includes("message") ||
+    kind.includes("task") ||
+    kind.includes("result") ||
+    kind.includes("decision") ||
+    kind.includes("session")
+  ) {
+    return RECORD_KIND_FACT;
+  }
+  return RECORD_KIND_EXPERIENCE;
+}
+
+function normalizeOptionalSummary(summary: string | undefined, content: string): string | null {
+  const normalized = summary?.trim();
+  if (normalized) {
+    return truncateUtf16Safe(normalized, 280);
+  }
+  const compact = summarizeArchiveContent(content);
+  return compact || null;
+}
+
+function summarizeArchiveContent(content: string): string {
+  const normalized = content.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "";
+  }
+  return truncateUtf16Safe(normalized, 280);
+}
+
+function stringifyMetadata(metadata: Record<string, unknown> | undefined): string | null {
+  if (!metadata || Object.keys(metadata).length === 0) {
+    return null;
+  }
+  try {
+    return JSON.stringify(metadata);
+  } catch {
+    return null;
+  }
+}
+
+function parseMetadataJson(raw: string | null | undefined): Record<string, unknown> | undefined {
+  if (!raw?.trim()) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return undefined;
+    }
+    return parsed as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
 }
 
 function scopeKey(scopeType: string, scopeId: string): string {

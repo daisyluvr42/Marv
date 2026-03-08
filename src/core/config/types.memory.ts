@@ -7,6 +7,8 @@ export type MemoryQmdSearchMode = "query" | "search" | "vsearch";
 export type MemoryConfig = {
   backend?: MemoryBackend;
   citations?: MemoryCitationsMode;
+  /** Enable automatic runtime message ingestion into P3. Default: true. */
+  runtimeIngest?: boolean;
   p0AllowedKinds?: string[];
   soul?: MemorySoulConfig;
   qmd?: MemoryQmdConfig;
@@ -19,6 +21,7 @@ export type MemorySoulConfig = {
   p0ClarityHalfLifeDays?: number;
   p1ClarityHalfLifeDays?: number;
   p2ClarityHalfLifeDays?: number;
+  p3ClarityHalfLifeDays?: number;
   p0RecallRelevanceThreshold?: number;
   p2ToP1MinClarity?: number;
   p2ToP1MinAgeDays?: number;
@@ -31,6 +34,7 @@ export type MemorySoulConfig = {
   p0TierMultiplier?: number;
   p1TierMultiplier?: number;
   p2TierMultiplier?: number;
+  p3TierMultiplier?: number;
   scoreSimilarityWeight?: number;
   scoreDecayWeight?: number;
   reinforcementLogWeight?: number;

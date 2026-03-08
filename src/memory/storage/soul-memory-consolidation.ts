@@ -10,6 +10,8 @@ type MemoryRow = {
   scope_id: string;
   kind: string;
   content: string;
+  tier?: string;
+  record_kind?: string;
 };
 
 type ConsolidationItem = {
@@ -255,8 +257,9 @@ function normalizeText(value: string): string {
 function loadMemoryItems(db: DatabaseSync, limit: number): ConsolidationItem[] {
   const rows = db
     .prepare(
-      "SELECT id, scope_type, scope_id, kind, content " +
-        "FROM memory_items ORDER BY created_at DESC LIMIT ?",
+      "SELECT id, scope_type, scope_id, kind, content, tier, record_kind " +
+        "FROM memory_items WHERE tier IN ('P1', 'P2') AND record_kind IN ('experience', 'soul') " +
+        "ORDER BY created_at DESC LIMIT ?",
     )
     .all(limit) as MemoryRow[];
   return rows.map((row) => ({

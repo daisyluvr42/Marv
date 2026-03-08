@@ -1,4 +1,4 @@
-export type SoulMemoryTierValue = "P0" | "P1" | "P2";
+export type SoulMemoryTierValue = "P0" | "P1" | "P2" | "P3";
 
 export type FusionWeights = {
   vector: number;
@@ -35,12 +35,14 @@ export type TierPriorityConfig = {
   p0TierMultiplier: number;
   p1TierMultiplier: number;
   p2TierMultiplier: number;
+  p3TierMultiplier: number;
 };
 
 export type ClarityDecayConfig = {
   p0ClarityHalfLifeDays: number;
   p1ClarityHalfLifeDays: number;
   p2ClarityHalfLifeDays: number;
+  p3ClarityHalfLifeDays: number;
   forgetConfidenceThreshold: number;
   forgetStreakHalfLives: number;
 };
