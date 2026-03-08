@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import type { ThinkLevel } from "../../auto-reply/thinking.js";
 import {
+  getDiagnosticSessionState,
+  type ToolCallRecord,
+} from "../../logging/diagnostic-session-state.js";
+import {
   TaskContextManager,
   addTaskDecisionBookmark,
   buildTaskContextPrelude,
@@ -55,6 +59,14 @@ import { getEscalationManager } from "../tools/permission-escalation.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../usage.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "../workspace-run.js";
 import { compactEmbeddedPiSessionDirect } from "./compact.js";
+import { loadGoalStrategyHints, persistGoalStrategyMemory } from "./goal-loop-memory.js";
+import {
+  buildGoalSteeringContext,
+  createGoalLoopState,
+  isGoalLoopSuccessful,
+  reviewGoalProgress,
+  type GoalLoopState,
+} from "./goal-loop.js";
 import { resolveGlobalLane, resolveSessionLane } from "./lanes.js";
 import { log } from "./logger.js";
 import { resolveModel } from "./model.js";
@@ -203,6 +215,44 @@ function mergeExtraSystemPrompt(base: string | undefined, taskPrelude: string): 
     return preludeTrimmed;
   }
   return `${baseTrimmed}\n\n${preludeTrimmed}`.trim();
+}
+
+function snapshotResultHashes(history: ToolCallRecord[]): Set<string> {
+  return new Set(
+    history
+      .map((record) => record.resultHash)
+      .filter((value): value is string => typeof value === "string" && value.length > 0),
+  );
+}
+
+function buildGoalLoopStopResult(args: {
+  started: number;
+  provider: string;
+  model: string;
+  sessionId: string;
+  systemPromptReport: EmbeddedPiRunResult["meta"]["systemPromptReport"];
+  reason: string;
+}): EmbeddedPiRunResult {
+  return {
+    payloads: [
+      {
+        text:
+          "I tried several safe paths and stopped because I no longer had a credible new move " +
+          "without crossing a boundary or repeating the same approach.",
+        isError: true,
+      },
+    ],
+    meta: {
+      durationMs: Date.now() - args.started,
+      agentMeta: {
+        sessionId: args.sessionId,
+        provider: args.provider,
+        model: args.model,
+      },
+      systemPromptReport: args.systemPromptReport,
+      error: { kind: "goal_loop_stop", message: args.reason },
+    },
+  };
 }
 
 export async function runEmbeddedPiAgent(
@@ -584,6 +634,30 @@ export async function runEmbeddedPiAgent(
         }
       }
       const extraSystemPrompt = mergeExtraSystemPrompt(params.extraSystemPrompt, taskPrelude);
+      const priorStrategyHints = loadGoalStrategyHints({
+        agentId: workspaceResolution.agentId,
+        sessionKey: params.sessionKey,
+        objective: params.prompt,
+      });
+      let goalLoopState: GoalLoopState | null = createGoalLoopState({
+        prompt: params.prompt,
+        priorStrategyHints,
+      });
+      let goalSteeringContext = goalLoopState
+        ? buildGoalSteeringContext(goalLoopState, { includeAnchor: true })
+        : null;
+      if (goalLoopState) {
+        void params.onAgentEvent?.({
+          stream: "goal",
+          data: {
+            phase: "planned",
+            objective: goalLoopState.goalFrame.objective,
+            goalType: goalLoopState.goalFrame.goalType,
+            currentNode: goalLoopState.directionNodes[goalLoopState.currentNodeIndex] ?? null,
+            visibility: "checking current state",
+          },
+        });
+      }
 
       const recordAssistantTaskTurn = async (input: {
         assistantTexts?: string[];
@@ -645,6 +719,13 @@ export async function runEmbeddedPiAgent(
 
           const prompt =
             provider === "anthropic" ? scrubAnthropicRefusalMagic(params.prompt) : params.prompt;
+          const diagnosticState = getDiagnosticSessionState({
+            sessionKey: params.sessionKey ?? params.sessionId,
+            sessionId: params.sessionId,
+          });
+          const toolHistoryBeforeAttempt = [...(diagnosticState.toolCallHistory ?? [])];
+          const resultHashesBeforeAttempt = snapshotResultHashes(toolHistoryBeforeAttempt);
+          const loopEventCountBeforeAttempt = diagnosticState.toolLoopEvents?.length ?? 0;
 
           const attempt = await runEmbeddedAttempt({
             sessionId: params.sessionId,
@@ -699,6 +780,7 @@ export async function runEmbeddedPiAgent(
             onToolResult: params.onToolResult,
             onAgentEvent: params.onAgentEvent,
             extraSystemPrompt,
+            goalSteeringContext,
             inputProvenance: params.inputProvenance,
             streamParams: params.streamParams,
             ownerNumbers: params.ownerNumbers,
@@ -739,6 +821,55 @@ export async function runEmbeddedPiAgent(
             lastAssistant?.stopReason === "error"
               ? lastAssistant.errorMessage?.trim() || formattedAssistantErrorText
               : undefined;
+          if (goalLoopState) {
+            const recentToolCalls = (diagnosticState.toolCallHistory ?? []).slice(
+              toolHistoryBeforeAttempt.length,
+            );
+            const recentLoopEvents = (diagnosticState.toolLoopEvents ?? []).slice(
+              loopEventCountBeforeAttempt,
+            );
+            const review = reviewGoalProgress({
+              state: goalLoopState,
+              attempt,
+              recentToolCalls,
+              priorResultHashes: resultHashesBeforeAttempt,
+              recentLoopEvents,
+              promptErrorText:
+                typeof promptError === "object" || typeof promptError === "string"
+                  ? describeUnknownError(promptError)
+                  : assistantErrorText,
+            });
+            goalLoopState = review.state;
+            goalSteeringContext =
+              goalLoopState.loopGuardLevel === "stop" ? null : review.steeringContext;
+            void params.onAgentEvent?.({
+              stream: "goal",
+              data: {
+                phase: "progress",
+                objective: goalLoopState.goalFrame.objective,
+                classification: review.classification,
+                strategyFamily: review.strategyFamily,
+                problemShape: review.problemShape ?? null,
+                loopGuardLevel: goalLoopState.loopGuardLevel,
+                visibility: review.visibility,
+              },
+            });
+            if (goalLoopState.loopGuardLevel === "stop") {
+              await recordAssistantTaskTurn({
+                status: "error",
+                errorText:
+                  "Goal loop stopped after repeated low-progress retries with no credible new strategy.",
+              });
+              return buildGoalLoopStopResult({
+                started,
+                provider,
+                model: model.id,
+                sessionId: sessionIdUsed,
+                systemPromptReport: attempt.systemPromptReport,
+                reason: goalLoopState.convergeReason ?? "no_progress_no_new_strategy",
+              });
+            }
+          }
 
           const contextOverflowError = !aborted
             ? (() => {
@@ -1228,6 +1359,17 @@ export async function runEmbeddedPiAgent(
             status: "ok",
             assistantTexts: attempt.assistantTexts,
           });
+          if (goalLoopState && isGoalLoopSuccessful(goalLoopState, attempt)) {
+            goalLoopState = {
+              ...goalLoopState,
+              convergeReason: goalLoopState.convergeReason ?? "sufficient_completion",
+            };
+            persistGoalStrategyMemory({
+              agentId: workspaceResolution.agentId,
+              sessionKey: params.sessionKey,
+              state: goalLoopState,
+            });
+          }
           return {
             payloads: payloads.length ? payloads : undefined,
             meta: {

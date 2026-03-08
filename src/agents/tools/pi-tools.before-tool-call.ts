@@ -20,8 +20,6 @@ type HookOutcome = { blocked: true; reason: string } | { blocked: false; params:
 
 const log = createSubsystemLogger("agents/tools");
 const BEFORE_TOOL_CALL_WRAPPED = Symbol("beforeToolCallWrapped");
-const adjustedParamsByToolCallId = new Map<string, unknown>();
-const MAX_TRACKED_ADJUSTED_PARAMS = 1024;
 const LOOP_WARNING_BUCKET_SIZE = 10;
 const MAX_LOOP_WARNING_KEYS = 256;
 
@@ -137,7 +135,8 @@ export async function runBeforeToolCallHook(args: {
   }
 
   if (args.ctx?.sessionKey) {
-    const { getDiagnosticSessionState } = await import("../../logging/diagnostic-session-state.js");
+    const { appendDiagnosticToolLoopEvent, getDiagnosticSessionState } =
+      await import("../../logging/diagnostic-session-state.js");
     const { logToolLoopAction } = await import("../../logging/diagnostic.js");
     const { detectToolCallLoop, recordToolCall } = await import("./tool-loop-detection.js");
 
@@ -149,6 +148,12 @@ export async function runBeforeToolCallHook(args: {
     const loopResult = detectToolCallLoop(sessionState, toolName, params, args.ctx.loopDetection);
 
     if (loopResult.stuck) {
+      appendDiagnosticToolLoopEvent(sessionState, {
+        level: loopResult.level,
+        detector: loopResult.detector,
+        count: loopResult.count,
+        message: loopResult.message,
+      });
       if (loopResult.level === "critical") {
         log.error(`Blocking ${toolName} due to critical loop: ${loopResult.message}`);
         logToolLoopAction({
@@ -249,15 +254,6 @@ export function wrapToolWithBeforeToolCallHook(
       if (outcome.blocked) {
         throw new Error(outcome.reason);
       }
-      if (toolCallId) {
-        adjustedParamsByToolCallId.set(toolCallId, outcome.params);
-        if (adjustedParamsByToolCallId.size > MAX_TRACKED_ADJUSTED_PARAMS) {
-          const oldest = adjustedParamsByToolCallId.keys().next().value;
-          if (oldest) {
-            adjustedParamsByToolCallId.delete(oldest);
-          }
-        }
-      }
       const normalizedToolName = normalizeToolName(toolName || "tool");
       try {
         const result = await execute(toolCallId, outcome.params, signal, onUpdate);
@@ -293,15 +289,8 @@ export function isToolWrappedWithBeforeToolCallHook(tool: AnyAgentTool): boolean
   return taggedTool[BEFORE_TOOL_CALL_WRAPPED] === true;
 }
 
-export function consumeAdjustedParamsForToolCall(toolCallId: string): unknown {
-  const params = adjustedParamsByToolCallId.get(toolCallId);
-  adjustedParamsByToolCallId.delete(toolCallId);
-  return params;
-}
-
 export const __testing = {
   BEFORE_TOOL_CALL_WRAPPED,
-  adjustedParamsByToolCallId,
   runBeforeToolCallHook,
   isPlainObject,
 };

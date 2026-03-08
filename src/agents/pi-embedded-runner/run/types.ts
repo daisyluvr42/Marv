@@ -19,6 +19,7 @@ export type EmbeddedRunAttemptParams = EmbeddedRunAttemptBase & {
   authStorage: AuthStorage;
   modelRegistry: ModelRegistry;
   thinkLevel: ThinkLevel;
+  goalSteeringContext?: string | null;
 };
 
 export type EmbeddedRunAttemptResult = {

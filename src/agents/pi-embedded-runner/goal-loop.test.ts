@@ -1,0 +1,169 @@
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { loadGoalStrategyHints, persistGoalStrategyMemory } from "./goal-loop-memory.js";
+import {
+  buildGoalSteeringContext,
+  createGoalLoopState,
+  reviewGoalProgress,
+  shouldSkipGoalFrame,
+  type GoalLoopState,
+} from "./goal-loop.js";
+import type { EmbeddedRunAttemptResult } from "./run/types.js";
+
+const ORIGINAL_STATE_DIR = process.env.MARV_STATE_DIR;
+
+let stateDir = "";
+
+function createAttemptResult(
+  overrides: Partial<EmbeddedRunAttemptResult> = {},
+): EmbeddedRunAttemptResult {
+  return {
+    aborted: false,
+    timedOut: false,
+    timedOutDuringCompaction: false,
+    promptError: null,
+    sessionIdUsed: "session-1",
+    messagesSnapshot: [],
+    assistantTexts: ["done"],
+    toolMetas: [],
+    lastAssistant: {
+      role: "assistant",
+      content: "done",
+      stopReason: "end_turn",
+    } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
+    didSendViaMessagingTool: false,
+    messagingToolSentTexts: [],
+    messagingToolSentMediaUrls: [],
+    messagingToolSentTargets: [],
+    cloudCodeAssistFormatError: false,
+    ...overrides,
+  };
+}
+
+beforeEach(async () => {
+  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-goal-loop-"));
+  process.env.MARV_STATE_DIR = stateDir;
+});
+
+afterEach(async () => {
+  if (ORIGINAL_STATE_DIR === undefined) {
+    delete process.env.MARV_STATE_DIR;
+  } else {
+    process.env.MARV_STATE_DIR = ORIGINAL_STATE_DIR;
+  }
+  if (stateDir) {
+    await fs.rm(stateDir, { recursive: true, force: true });
+  }
+});
+
+describe("goal-loop", () => {
+  it("skips trivial greetings but keeps implementation prompts", () => {
+    expect(shouldSkipGoalFrame("hi")).toBe(true);
+    expect(shouldSkipGoalFrame("hello")).toBe(true);
+    expect(shouldSkipGoalFrame("读取文档，完成这个计划，不需要brainstorm")).toBe(false);
+  });
+
+  it("creates a directional plan and initial steering context", () => {
+    const state = createGoalLoopState({
+      prompt: "Read the plan, implement the change, and keep user interruptions minimal.",
+      priorStrategyHints: [
+        {
+          memoryId: "mem1",
+          summary: "Smallest-change-first worked well for similar runtime edits.",
+          strategyFamily: "try_alternative",
+          problemShape: "implementation_blocked",
+          score: 0.8,
+        },
+      ],
+    });
+    expect(state).not.toBeNull();
+    if (!state) {
+      throw new Error("goal loop state missing");
+    }
+    expect(state.directionNodes.length).toBeGreaterThanOrEqual(3);
+    expect(state.directionNodes.length).toBeLessThanOrEqual(5);
+    const steering = buildGoalSteeringContext(state, { includeAnchor: true });
+    expect(steering).toContain("Objective:");
+    expect(steering).toContain("Relevant prior strategy hints:");
+  });
+
+  it("escalates to force_shift on critical loop signals", () => {
+    const initial = createGoalLoopState({
+      prompt: "Fix the failing validation and keep going without asking me.",
+    }) as GoalLoopState;
+    const review = reviewGoalProgress({
+      state: {
+        ...initial,
+        stuckCounter: 3,
+        strategyFamily: "try_alternative",
+      },
+      attempt: createAttemptResult({
+        assistantTexts: [],
+        lastAssistant: {
+          role: "assistant",
+          content: "still failing",
+          stopReason: "error",
+          errorMessage: "validation failed again",
+        } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
+      }),
+      recentToolCalls: [
+        {
+          toolName: "test",
+          argsHash: "a",
+          resultHash: "same",
+          timestamp: Date.now(),
+        },
+        {
+          toolName: "test",
+          argsHash: "a",
+          resultHash: "same",
+          timestamp: Date.now(),
+        },
+      ],
+      priorResultHashes: new Set(["same"]),
+      recentLoopEvents: [
+        {
+          level: "critical",
+          detector: "known_poll_no_progress",
+          count: 20,
+          message: "loop",
+          timestamp: Date.now(),
+        },
+      ],
+      promptErrorText: "validation failed again",
+    });
+    expect(review.classification).toBe("stalled");
+    expect(review.state.loopGuardLevel).toBe("force_shift");
+    expect(review.state.shiftCount).toBeGreaterThan(0);
+    expect(review.steeringContext).toContain("fundamentally different strategy");
+  });
+
+  it("persists and reloads strategy hints through soul memory", () => {
+    const state = createGoalLoopState({
+      prompt: "Implement the smallest safe fix and validate it.",
+    }) as GoalLoopState;
+    const successfulState: GoalLoopState = {
+      ...state,
+      problemShape: "implementation_blocked",
+      strategyFamily: "try_alternative",
+      currentNodeIndex: 3,
+      convergeReason: "sufficient_completion",
+    };
+    persistGoalStrategyMemory({
+      agentId: "main",
+      sessionKey: "agent:main:telegram:direct:u123",
+      state: successfulState,
+    });
+    const hints = loadGoalStrategyHints({
+      agentId: "main",
+      sessionKey: "agent:main:telegram:direct:u123",
+      objective: successfulState.goalFrame.objective,
+      problemShape: "implementation_blocked",
+    });
+    expect(hints.length).toBeGreaterThan(0);
+    expect(hints[0]?.strategyFamily).toBe("try_alternative");
+    expect(hints[0]?.problemShape).toBe("implementation_blocked");
+  });
+});

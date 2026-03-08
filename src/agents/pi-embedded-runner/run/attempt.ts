@@ -219,6 +219,21 @@ function summarizeSessionContext(messages: AgentMessage[]): {
   };
 }
 
+function mergePromptFragments(
+  base: string | undefined,
+  fragment: string | null | undefined,
+): string | undefined {
+  const baseTrimmed = base?.trim();
+  const fragmentTrimmed = fragment?.trim();
+  if (!fragmentTrimmed) {
+    return baseTrimmed || undefined;
+  }
+  if (!baseTrimmed) {
+    return fragmentTrimmed;
+  }
+  return `${baseTrimmed}\n\n${fragmentTrimmed}`.trim();
+}
+
 export async function runEmbeddedAttempt(
   params: EmbeddedRunAttemptParams,
 ): Promise<EmbeddedRunAttemptResult> {
@@ -439,7 +454,7 @@ export async function runEmbeddedAttempt(
       workspaceDir: effectiveWorkspace,
       defaultThinkLevel: params.thinkLevel,
       reasoningLevel: params.reasoningLevel ?? "off",
-      extraSystemPrompt: params.extraSystemPrompt,
+      extraSystemPrompt: mergePromptFragments(params.extraSystemPrompt, params.goalSteeringContext),
       ownerNumbers: params.ownerNumbers,
       reasoningTagHint,
       heartbeatPrompt: isDefaultAgent
@@ -758,6 +773,7 @@ export async function runEmbeddedAttempt(
       const subscription = subscribeEmbeddedPiSession({
         session: activeSession,
         runId: params.runId,
+        agentId: sessionAgentId,
         hookRunner: getGlobalHookRunner() ?? undefined,
         verboseLevel: params.verboseLevel,
         reasoningMode: params.reasoningLevel ?? "off",

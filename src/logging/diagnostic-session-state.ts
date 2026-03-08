@@ -1,5 +1,13 @@
 export type SessionStateValue = "idle" | "processing" | "waiting";
 
+export type ToolLoopEventRecord = {
+  level: "warning" | "critical";
+  detector: string;
+  count: number;
+  message: string;
+  timestamp: number;
+};
+
 export type SessionState = {
   sessionId?: string;
   sessionKey?: string;
@@ -9,6 +17,7 @@ export type SessionState = {
   toolCallHistory?: ToolCallRecord[];
   toolLoopWarningBuckets?: Map<string, number>;
   commandPollCounts?: Map<string, { count: number; lastPollAt: number }>;
+  toolLoopEvents?: ToolLoopEventRecord[];
 };
 
 export type ToolCallRecord = {
@@ -29,6 +38,7 @@ export const diagnosticSessionStates = new Map<string, SessionState>();
 const SESSION_STATE_TTL_MS = 30 * 60 * 1000;
 const SESSION_STATE_PRUNE_INTERVAL_MS = 60 * 1000;
 const SESSION_STATE_MAX_ENTRIES = 2000;
+const MAX_TOOL_LOOP_EVENTS = 32;
 
 let lastSessionPruneAt = 0;
 
@@ -104,6 +114,22 @@ export function getDiagnosticSessionState(ref: SessionRef): SessionState {
 
 export function getDiagnosticSessionStateCountForTest(): number {
   return diagnosticSessionStates.size;
+}
+
+export function appendDiagnosticToolLoopEvent(
+  state: SessionState,
+  event: Omit<ToolLoopEventRecord, "timestamp"> & { timestamp?: number },
+): void {
+  if (!state.toolLoopEvents) {
+    state.toolLoopEvents = [];
+  }
+  state.toolLoopEvents.push({
+    ...event,
+    timestamp: event.timestamp ?? Date.now(),
+  });
+  if (state.toolLoopEvents.length > MAX_TOOL_LOOP_EVENTS) {
+    state.toolLoopEvents.splice(0, state.toolLoopEvents.length - MAX_TOOL_LOOP_EVENTS);
+  }
 }
 
 export function resetDiagnosticSessionStateForTest(): void {
