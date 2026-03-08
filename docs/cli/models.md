@@ -65,15 +65,27 @@ marv models fallbacks list
 
 ```bash
 marv models auth add
+marv models auth add --provider google --set-default
+marv models auth set --provider google --method gemini-api-key --api-key "$GEMINI_API_KEY"
 marv models auth login --provider <id>
 marv models auth setup-token
 marv models auth paste-token
 ```
+
+`models auth add` is the general interactive setup entrypoint for model providers.
+Use it to configure API key providers and provider-specific settings without
+re-running full onboarding.
+
+`models auth set` is the non-interactive version for scripts and targeted updates.
+Use it when you want to set API keys or provider-specific fields directly from the
+CLI without prompts.
 
 `models auth login` runs a provider plugin’s auth flow (OAuth/API key). Use
 `marv plugins list` to see which providers are installed.
 
 Notes:
 
+- `add` accepts `--provider`, `--method`, and `--set-default`.
+- `set` accepts `--provider`, optional `--method`, and provider-specific flags such as `--api-key`, `--token`, `--base-url`, `--model`, `--provider-id`, `--account-id`, `--gateway-id`, and `--set-default`.
 - `setup-token` prompts for a setup-token value (generate it with `claude setup-token` on any machine).
 - `paste-token` accepts a token string generated elsewhere or from automation.

@@ -11,7 +11,6 @@ import {
   promptDefaultModel,
   promptModelAllowlist,
 } from "./model-picker.js";
-import { promptCustomApiConfig } from "./onboard-custom.js";
 import { randomToken } from "./onboard-helpers.js";
 
 type GatewayAuthChoice = "token" | "password" | "trusted-proxy";
@@ -85,10 +84,7 @@ export async function promptAuthConfig(
   });
 
   let next = cfg;
-  if (authChoice === "custom-api-key") {
-    const customResult = await promptCustomApiConfig({ prompter, runtime, config: next });
-    next = customResult.config;
-  } else if (authChoice !== "skip") {
+  if (authChoice !== "skip") {
     const applied = await applyAuthChoice({
       authChoice,
       config: next,

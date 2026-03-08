@@ -10,6 +10,7 @@ import {
   modelsAuthOrderGetCommand,
   modelsAuthOrderSetCommand,
   modelsAuthPasteTokenCommand,
+  modelsAuthSetCommand,
   modelsAuthSetupTokenCommand,
   modelsFallbacksAddCommand,
   modelsFallbacksClearCommand,
@@ -289,10 +290,23 @@ export function registerModelsCli(program: Command) {
 
   auth
     .command("add")
-    .description("Interactive auth helper (setup-token or paste token)")
-    .action(async () => {
+    .description("Interactive provider auth/config setup")
+    .option("--provider <id>", "Provider id or auth family (for example google or openai)")
+    .option("--method <id>", "Auth method id within the provider family")
+    .option("--set-default", "Apply the provider's default model recommendation", false)
+    .action(async (opts, command) => {
+      const agent =
+        resolveOptionFromCommand<string>(command, "agent") ?? (opts.agent as string | undefined);
       await runModelsCommand(async () => {
-        await modelsAuthAddCommand({}, defaultRuntime);
+        await modelsAuthAddCommand(
+          {
+            provider: opts.provider as string | undefined,
+            method: opts.method as string | undefined,
+            setDefault: Boolean(opts.setDefault),
+            agent,
+          },
+          defaultRuntime,
+        );
       });
     });
 
@@ -309,6 +323,48 @@ export function registerModelsCli(program: Command) {
             provider: opts.provider as string | undefined,
             method: opts.method as string | undefined,
             setDefault: Boolean(opts.setDefault),
+          },
+          defaultRuntime,
+        );
+      });
+    });
+
+  auth
+    .command("set")
+    .description("Non-interactive provider auth/config setup")
+    .requiredOption("--provider <id>", "Provider id or auth family")
+    .option("--method <id>", "Auth method id within the provider family")
+    .option("--api-key <key>", "API key for API-key providers")
+    .option("--token <token>", "Token value for token-based providers")
+    .option("--profile-id <id>", "Profile id for token-based providers")
+    .option("--expires-in <duration>", "Token expiry duration (for example 365d)")
+    .option("--base-url <url>", "Provider base URL")
+    .option("--model <id>", "Model id for providers that require one")
+    .option("--compatibility <mode>", "Custom provider compatibility (openai or anthropic)")
+    .option("--provider-id <id>", "Custom provider id")
+    .option("--account-id <id>", "Provider account id when required")
+    .option("--gateway-id <id>", "Provider gateway id when required")
+    .option("--set-default", "Apply the provider's default model recommendation", false)
+    .action(async (opts, command) => {
+      const agent =
+        resolveOptionFromCommand<string>(command, "agent") ?? (opts.agent as string | undefined);
+      await runModelsCommand(async () => {
+        await modelsAuthSetCommand(
+          {
+            provider: opts.provider as string,
+            method: opts.method as string | undefined,
+            apiKey: opts.apiKey as string | undefined,
+            token: opts.token as string | undefined,
+            profileId: opts.profileId as string | undefined,
+            expiresIn: opts.expiresIn as string | undefined,
+            baseUrl: opts.baseUrl as string | undefined,
+            model: opts.model as string | undefined,
+            compatibility: opts.compatibility as "openai" | "anthropic" | undefined,
+            providerId: opts.providerId as string | undefined,
+            accountId: opts.accountId as string | undefined,
+            gatewayId: opts.gatewayId as string | undefined,
+            setDefault: Boolean(opts.setDefault),
+            agent,
           },
           defaultRuntime,
         );

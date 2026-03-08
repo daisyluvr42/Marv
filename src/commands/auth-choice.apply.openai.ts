@@ -9,7 +9,7 @@ import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js"
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import { isRemoteEnvironment } from "./oauth-env.js";
-import { applyAuthProfileConfig, writeOAuthCredentials } from "./onboard-auth.js";
+import { applyAuthProfileConfig, setOpenAiApiKey, writeOAuthCredentials } from "./onboard-auth.js";
 import { openUrl } from "./onboard-helpers.js";
 import {
   applyOpenAICodexModelDefault,
@@ -69,6 +69,12 @@ export async function applyAuthChoiceOpenAI(
           `Copied OPENAI_API_KEY to ${result.path} for launchd compatibility.`,
           "OpenAI API key",
         );
+        await setOpenAiApiKey(envKey.apiKey, params.agentDir);
+        nextConfig = applyAuthProfileConfig(nextConfig, {
+          profileId: "openai:default",
+          provider: "openai",
+          mode: "api_key",
+        });
         return await applyOpenAiDefaultModelChoice();
       }
     }
@@ -89,6 +95,12 @@ export async function applyAuthChoiceOpenAI(
       value: trimmed,
     });
     process.env.OPENAI_API_KEY = trimmed;
+    await setOpenAiApiKey(trimmed, params.agentDir);
+    nextConfig = applyAuthProfileConfig(nextConfig, {
+      profileId: "openai:default",
+      provider: "openai",
+      mode: "api_key",
+    });
     await params.prompter.note(
       `Saved OPENAI_API_KEY to ${result.path} for launchd compatibility.`,
       "OpenAI API key",

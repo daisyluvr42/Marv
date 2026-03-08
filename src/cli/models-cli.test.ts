@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const githubCopilotLoginCommand = vi.fn();
+const modelsAuthSetCommand = vi.fn().mockResolvedValue(undefined);
 const modelsStatusCommand = vi.fn().mockResolvedValue(undefined);
 const noopAsync = vi.fn(async () => undefined);
 
@@ -16,6 +17,7 @@ vi.mock("../commands/models.js", () => ({
   modelsAuthOrderGetCommand: noopAsync,
   modelsAuthOrderSetCommand: noopAsync,
   modelsAuthPasteTokenCommand: noopAsync,
+  modelsAuthSetCommand,
   modelsAuthSetupTokenCommand: noopAsync,
   modelsFallbacksAddCommand: noopAsync,
   modelsFallbacksClearCommand: noopAsync,
@@ -43,6 +45,7 @@ describe("models cli", () => {
 
   beforeEach(() => {
     githubCopilotLoginCommand.mockClear();
+    modelsAuthSetCommand.mockClear();
     modelsStatusCommand.mockClear();
   });
 
@@ -112,5 +115,35 @@ describe("models cli", () => {
       const error = err as { exitCode?: number };
       expect(error.exitCode).toBe(0);
     }
+  });
+
+  it("passes provider setup options to models auth set", async () => {
+    const program = createProgram();
+
+    await program.parseAsync(
+      [
+        "models",
+        "auth",
+        "set",
+        "--provider",
+        "google",
+        "--method",
+        "gemini-api-key",
+        "--api-key",
+        "sk-test",
+        "--set-default",
+      ],
+      { from: "user" },
+    );
+
+    expect(modelsAuthSetCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "google",
+        method: "gemini-api-key",
+        apiKey: "sk-test",
+        setDefault: true,
+      }),
+      expect.any(Object),
+    );
   });
 });

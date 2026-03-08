@@ -1,33 +1,40 @@
-import { confirm as clackConfirm, select as clackSelect, text as clackText } from "@clack/prompts";
+import { confirm as clackConfirm, text as clackText } from "@clack/prompts";
 import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
+import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
 import { upsertAuthProfile } from "../../agents/auth-profiles.js";
 import type { AuthProfileCredential } from "../../agents/auth-profiles/types.js";
 import { normalizeProviderId } from "../../agents/model/model-selection.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import { logConfigUpdated } from "../../core/config/logging.js";
 import { resolvePluginProviders } from "../../plugins/providers.js";
 import type { ProviderAuthResult, ProviderPlugin } from "../../plugins/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
-import { stylePromptHint, stylePromptMessage } from "../../terminal/prompt-style.js";
+import { stylePromptMessage } from "../../terminal/prompt-style.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
+import { promptAuthChoiceGrouped } from "../auth-choice-prompt.js";
+import { applyAuthChoice } from "../auth-choice.js";
 import { validateAnthropicSetupToken } from "../auth-token.js";
 import { isRemoteEnvironment } from "../oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "../oauth-flow.js";
 import { applyAuthProfileConfig } from "../onboard-auth.js";
 import { openUrl } from "../onboard-helpers.js";
+import { applyNonInteractiveAuthChoice } from "../onboard-non-interactive/local/auth-choice.js";
+import { type OnboardOptions } from "../onboard-types.js";
 import {
   applyDefaultModel,
   mergeConfigPatch,
   pickAuthMethod,
   resolveProviderMatch,
 } from "../provider-auth-helpers.js";
-import { loadValidConfigOrThrow, updateConfig } from "./shared.js";
+import { resolveModelsAuthChoice } from "./auth-choice.js";
+import { loadValidConfigOrThrow, resolveKnownAgentId, updateConfig } from "./shared.js";
 
 const confirm = (params: Parameters<typeof clackConfirm>[0]) =>
   clackConfirm({
@@ -39,15 +46,6 @@ const text = (params: Parameters<typeof clackText>[0]) =>
     ...params,
     message: stylePromptMessage(params.message),
   });
-const select = <T>(params: Parameters<typeof clackSelect<T>>[0]) =>
-  clackSelect({
-    ...params,
-    message: stylePromptMessage(params.message),
-    options: params.options.map((opt) =>
-      opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) },
-    ),
-  });
-
 type TokenProvider = "anthropic";
 
 function resolveTokenProvider(raw?: string): TokenProvider | "custom" | null {
@@ -159,79 +157,234 @@ export async function modelsAuthPasteTokenCommand(
   runtime.log(`Auth profile: ${profileId} (${provider}/token)`);
 }
 
-export async function modelsAuthAddCommand(_opts: Record<string, never>, runtime: RuntimeEnv) {
-  const provider = (await select({
-    message: "Token provider",
-    options: [
-      { value: "anthropic", label: "anthropic" },
-      { value: "custom", label: "custom (type provider id)" },
-    ],
-  })) as TokenProvider | "custom";
+type AddOptions = {
+  provider?: string;
+  method?: string;
+  setDefault?: boolean;
+  agent?: string;
+};
 
-  const providerId =
-    provider === "custom"
-      ? normalizeProviderId(
-          String(
-            await text({
-              message: "Provider id",
-              validate: (value) => (value?.trim() ? undefined : "Required"),
-            }),
-          ),
-        )
-      : provider;
+type SetOptions = {
+  provider: string;
+  method?: string;
+  apiKey?: string;
+  token?: string;
+  profileId?: string;
+  expiresIn?: string;
+  baseUrl?: string;
+  model?: string;
+  compatibility?: "openai" | "anthropic";
+  providerId?: string;
+  accountId?: string;
+  gatewayId?: string;
+  setDefault?: boolean;
+  agent?: string;
+};
 
-  const method = (await select({
-    message: "Token method",
-    options: [
-      ...(providerId === "anthropic"
-        ? [
-            {
-              value: "setup-token",
-              label: "setup-token (claude)",
-              hint: "Paste a setup-token from `claude setup-token`",
-            },
-          ]
-        : []),
-      { value: "paste", label: "paste token" },
-    ],
-  })) as "setup-token" | "paste";
+function preserveDefaultModelSelection(original: MarvConfig, next: MarvConfig): MarvConfig {
+  const originalModel = original.agents?.defaults?.model;
+  const nextDefaults = {
+    ...next.agents?.defaults,
+  };
+  if (originalModel === undefined) {
+    delete nextDefaults.model;
+  } else {
+    nextDefaults.model = originalModel;
+  }
+  return {
+    ...next,
+    agents: {
+      ...next.agents,
+      defaults: nextDefaults,
+    },
+  };
+}
 
-  if (method === "setup-token") {
-    await modelsAuthSetupTokenCommand({ provider: providerId }, runtime);
+function buildModelsAuthSetOnboardOptions(params: {
+  authChoice: string;
+  opts: SetOptions;
+}): OnboardOptions {
+  const { authChoice, opts } = params;
+  const apiKey = opts.apiKey;
+  const token = opts.token;
+  const baseUrl = opts.baseUrl;
+  const model = opts.model;
+  const compatibility = opts.compatibility;
+  const providerId = opts.providerId;
+  const accountId = opts.accountId;
+  const gatewayId = opts.gatewayId;
+
+  switch (authChoice) {
+    case "apiKey":
+      return { authChoice: "apiKey", anthropicApiKey: apiKey };
+    case "token":
+      return {
+        authChoice: "token",
+        tokenProvider: "anthropic",
+        token,
+        tokenProfileId: opts.profileId,
+        tokenExpiresIn: opts.expiresIn,
+      };
+    case "openai-api-key":
+      return { authChoice: "openai-api-key", openaiApiKey: apiKey };
+    case "gemini-api-key":
+      return { authChoice: "gemini-api-key", geminiApiKey: apiKey };
+    case "openrouter-api-key":
+      return { authChoice: "openrouter-api-key", openrouterApiKey: apiKey };
+    case "litellm-api-key":
+      return { authChoice: "litellm-api-key", litellmApiKey: apiKey };
+    case "ai-gateway-api-key":
+      return { authChoice: "ai-gateway-api-key", aiGatewayApiKey: apiKey };
+    case "cloudflare-ai-gateway-api-key":
+      return {
+        authChoice: "cloudflare-ai-gateway-api-key",
+        cloudflareAiGatewayApiKey: apiKey,
+        cloudflareAiGatewayAccountId: accountId,
+        cloudflareAiGatewayGatewayId: gatewayId,
+      };
+    case "moonshot-api-key":
+      return { authChoice: "moonshot-api-key", moonshotApiKey: apiKey };
+    case "moonshot-api-key-cn":
+      return { authChoice: "moonshot-api-key-cn", moonshotApiKey: apiKey };
+    case "kimi-code-api-key":
+      return { authChoice: "kimi-code-api-key", kimiCodeApiKey: apiKey };
+    case "synthetic-api-key":
+      return { authChoice: "synthetic-api-key", syntheticApiKey: apiKey };
+    case "venice-api-key":
+      return { authChoice: "venice-api-key", veniceApiKey: apiKey };
+    case "together-api-key":
+      return { authChoice: "together-api-key", togetherApiKey: apiKey };
+    case "huggingface-api-key":
+      return { authChoice: "huggingface-api-key", huggingfaceApiKey: apiKey };
+    case "zai-api-key":
+    case "zai-coding-global":
+    case "zai-coding-cn":
+    case "zai-global":
+    case "zai-cn":
+      return { authChoice: authChoice as OnboardOptions["authChoice"], zaiApiKey: apiKey };
+    case "xiaomi-api-key":
+      return { authChoice: "xiaomi-api-key", xiaomiApiKey: apiKey };
+    case "xai-api-key":
+      return { authChoice: "xai-api-key", xaiApiKey: apiKey };
+    case "qianfan-api-key":
+      return { authChoice: "qianfan-api-key", qianfanApiKey: apiKey };
+    case "minimax-cloud":
+    case "minimax-api":
+    case "minimax-api-key-cn":
+    case "minimax-api-lightning":
+      return { authChoice: authChoice as OnboardOptions["authChoice"], minimaxApiKey: apiKey };
+    case "opencode-zen":
+      return { authChoice: "opencode-zen", opencodeZenApiKey: apiKey };
+    case "custom-api-key":
+      return {
+        authChoice: "custom-api-key",
+        customBaseUrl: baseUrl,
+        customApiKey: apiKey,
+        customModelId: model,
+        customProviderId: providerId,
+        customCompatibility: compatibility,
+      };
+    default:
+      return { authChoice: authChoice as OnboardOptions["authChoice"] };
+  }
+}
+
+export async function modelsAuthAddCommand(opts: AddOptions, runtime: RuntimeEnv) {
+  const config = await loadValidConfigOrThrow();
+  const agentId = resolveKnownAgentId({ cfg: config, rawAgentId: opts.agent });
+  const agentDir = agentId ? resolveAgentDir(config, agentId) : undefined;
+  const prompter = createClackPrompter();
+
+  const resolvedChoice = resolveModelsAuthChoice({
+    provider: opts.provider,
+    method: opts.method,
+  });
+  let authChoice = resolvedChoice.choice;
+
+  if (opts.provider?.trim() && opts.method?.trim() && !authChoice) {
+    throw new Error(`Unknown auth method "${opts.method}" for provider "${opts.provider}".`);
+  }
+
+  if (!authChoice && opts.provider?.trim()) {
+    const { options } = resolvedChoice;
+    if (options.length === 0) {
+      throw new Error(`Unknown provider "${opts.provider}".`);
+    }
+    authChoice =
+      options.length === 1
+        ? options[0].value
+        : await prompter.select({
+            message: `${opts.provider.trim()} auth method`,
+            options: options.map((option) => ({
+              value: option.value,
+              label: option.label,
+              hint: option.hint,
+            })),
+          });
+  }
+
+  if (!authChoice) {
+    authChoice = await promptAuthChoiceGrouped({
+      prompter,
+      store: ensureAuthProfileStore(agentDir, {
+        allowKeychainPrompt: false,
+      }),
+      includeSkip: false,
+    });
+  }
+
+  const result = await applyAuthChoice({
+    authChoice,
+    config,
+    prompter,
+    runtime,
+    agentDir,
+    agentId,
+    setDefaultModel: Boolean(opts.setDefault),
+  });
+
+  await updateConfig(() => result.config);
+  logConfigUpdated(runtime);
+}
+
+export async function modelsAuthSetCommand(opts: SetOptions, runtime: RuntimeEnv) {
+  const config = await loadValidConfigOrThrow();
+  const agentId = resolveKnownAgentId({ cfg: config, rawAgentId: opts.agent });
+  const agentDir = agentId ? resolveAgentDir(config, agentId) : undefined;
+  const resolvedChoice = resolveModelsAuthChoice({
+    provider: opts.provider,
+    method: opts.method,
+  });
+  const authChoice = resolvedChoice.choice;
+
+  if (!authChoice) {
+    if (resolvedChoice.options.length === 0) {
+      throw new Error(`Unknown provider "${opts.provider}".`);
+    }
+    throw new Error(`Provider "${opts.provider}" has multiple auth methods. Use --method <id>.`);
+  }
+
+  const onboardOpts = buildModelsAuthSetOnboardOptions({
+    authChoice,
+    opts,
+  });
+  const nextConfig = await applyNonInteractiveAuthChoice({
+    nextConfig: config,
+    authChoice,
+    opts: onboardOpts,
+    runtime,
+    baseConfig: config,
+    agentDir,
+  });
+  if (!nextConfig) {
     return;
   }
 
-  const profileIdDefault = resolveDefaultTokenProfileId(providerId);
-  const profileId = String(
-    await text({
-      message: "Profile id",
-      initialValue: profileIdDefault,
-      validate: (value) => (value?.trim() ? undefined : "Required"),
-    }),
-  ).trim();
-
-  const wantsExpiry = await confirm({
-    message: "Does this token expire?",
-    initialValue: false,
-  });
-  const expiresIn = wantsExpiry
-    ? String(
-        await text({
-          message: "Expires in (duration)",
-          initialValue: "365d",
-          validate: (value) => {
-            try {
-              parseDurationMs(String(value ?? ""), { defaultUnit: "d" });
-              return undefined;
-            } catch {
-              return "Invalid duration (e.g. 365d, 12h, 30m)";
-            }
-          },
-        }),
-      ).trim()
-    : undefined;
-
-  await modelsAuthPasteTokenCommand({ provider: providerId, profileId, expiresIn }, runtime);
+  const finalConfig = opts.setDefault
+    ? nextConfig
+    : preserveDefaultModelSelection(config, nextConfig);
+  await updateConfig(() => finalConfig);
+  logConfigUpdated(runtime);
 }
 
 type LoginOptions = {

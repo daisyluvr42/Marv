@@ -841,11 +841,28 @@ Options:
 - `--set-image`
 - `--json`
 
-### `models auth add|setup-token|paste-token`
+### `models auth add|set|setup-token|paste-token`
 
 Options:
 
-- `add`: interactive auth helper
+- `add`: interactive provider auth/config setup
+  - `--provider <id>`
+  - `--method <id>`
+  - `--set-default`
+- `set`: non-interactive provider auth/config setup
+  - `--provider <id>`
+  - `--method <id>`
+  - `--api-key <key>`
+  - `--token <token>`
+  - `--profile-id <id>`
+  - `--expires-in <duration>`
+  - `--base-url <url>`
+  - `--model <id>`
+  - `--compatibility <openai|anthropic>`
+  - `--provider-id <id>`
+  - `--account-id <id>`
+  - `--gateway-id <id>`
+  - `--set-default`
 - `setup-token`: `--provider <name>` (default `anthropic`), `--yes`
 - `paste-token`: `--provider <name>`, `--profile-id <id>`, `--expires-in <duration>`
 

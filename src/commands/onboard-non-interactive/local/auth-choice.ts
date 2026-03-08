@@ -31,6 +31,7 @@ import {
   applyZaiConfig,
   setAnthropicApiKey,
   setCloudflareAiGatewayConfig,
+  setOpenAiApiKey,
   setQianfanApiKey,
   setGeminiApiKey,
   setKimiCodingApiKey,
@@ -65,8 +66,9 @@ export async function applyNonInteractiveAuthChoice(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
   baseConfig: MarvConfig;
+  agentDir?: string;
 }): Promise<MarvConfig | null> {
-  const { authChoice, opts, runtime, baseConfig } = params;
+  const { authChoice, opts, runtime, baseConfig, agentDir } = params;
   let nextConfig = params.nextConfig;
 
   if (authChoice === "claude-cli" || authChoice === "codex-cli") {
@@ -115,7 +117,7 @@ export async function applyNonInteractiveAuthChoice(params: {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setAnthropicApiKey(resolved.key);
+      await setAnthropicApiKey(resolved.key, agentDir);
     }
     return applyAuthProfileConfig(nextConfig, {
       profileId: "anthropic:default",
@@ -165,6 +167,7 @@ export async function applyNonInteractiveAuthChoice(params: {
     const profileId = opts.tokenProfileId?.trim() || buildTokenProfileId({ provider, name: "" });
     upsertAuthProfile({
       profileId,
+      agentDir,
       credential: {
         type: "token",
         provider,
@@ -187,12 +190,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--gemini-api-key",
       envVar: "GEMINI_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setGeminiApiKey(resolved.key);
+      await setGeminiApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "google:default",
@@ -216,12 +220,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--zai-api-key",
       envVar: "ZAI_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setZaiApiKey(resolved.key);
+      await setZaiApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "zai:default",
@@ -265,12 +270,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--xiaomi-api-key",
       envVar: "XIAOMI_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setXiaomiApiKey(resolved.key);
+      await setXiaomiApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "xiaomi:default",
@@ -288,12 +294,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--xai-api-key",
       envVar: "XAI_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      setXaiApiKey(resolved.key);
+      setXaiApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "xai:default",
@@ -311,12 +318,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--qianfan-api-key",
       envVar: "QIANFAN_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      setQianfanApiKey(resolved.key);
+      setQianfanApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "qianfan:default",
@@ -334,6 +342,7 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--openai-api-key",
       envVar: "OPENAI_API_KEY",
       runtime,
+      agentDir,
       allowProfile: false,
     });
     if (!resolved) {
@@ -342,6 +351,12 @@ export async function applyNonInteractiveAuthChoice(params: {
     const key = resolved.key;
     const result = upsertSharedEnvVar({ key: "OPENAI_API_KEY", value: key });
     process.env.OPENAI_API_KEY = key;
+    await setOpenAiApiKey(key, agentDir);
+    nextConfig = applyAuthProfileConfig(nextConfig, {
+      profileId: "openai:default",
+      provider: "openai",
+      mode: "api_key",
+    });
     runtime.log(`Saved OPENAI_API_KEY to ${shortenHomePath(result.path)}`);
     return applyOpenAIConfig(nextConfig);
   }
@@ -354,12 +369,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--openrouter-api-key",
       envVar: "OPENROUTER_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setOpenrouterApiKey(resolved.key);
+      await setOpenrouterApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "openrouter:default",
@@ -377,12 +393,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--litellm-api-key",
       envVar: "LITELLM_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setLitellmApiKey(resolved.key);
+      await setLitellmApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "litellm:default",
@@ -400,12 +417,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--ai-gateway-api-key",
       envVar: "AI_GATEWAY_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setVercelAiGatewayApiKey(resolved.key);
+      await setVercelAiGatewayApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "vercel-ai-gateway:default",
@@ -435,12 +453,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--cloudflare-ai-gateway-api-key",
       envVar: "CLOUDFLARE_AI_GATEWAY_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setCloudflareAiGatewayConfig(accountId, gatewayId, resolved.key);
+      await setCloudflareAiGatewayConfig(accountId, gatewayId, resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "cloudflare-ai-gateway:default",
@@ -463,12 +482,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--moonshot-api-key",
       envVar: "MOONSHOT_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setMoonshotApiKey(resolved.key);
+      await setMoonshotApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "moonshot:default",
@@ -494,12 +514,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--kimi-code-api-key",
       envVar: "KIMI_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setKimiCodingApiKey(resolved.key);
+      await setKimiCodingApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "kimi-coding:default",
@@ -517,12 +538,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--synthetic-api-key",
       envVar: "SYNTHETIC_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setSyntheticApiKey(resolved.key);
+      await setSyntheticApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "synthetic:default",
@@ -540,12 +562,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--venice-api-key",
       envVar: "VENICE_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setVeniceApiKey(resolved.key);
+      await setVeniceApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "venice:default",
@@ -571,12 +594,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--minimax-api-key",
       envVar: "MINIMAX_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setMinimaxApiKey(resolved.key, undefined, profileId);
+      await setMinimaxApiKey(resolved.key, agentDir, profileId);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId,
@@ -602,12 +626,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--opencode-zen-api-key",
       envVar: "OPENCODE_API_KEY (or OPENCODE_ZEN_API_KEY)",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setOpencodeZenApiKey(resolved.key);
+      await setOpencodeZenApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "opencode:default",
@@ -625,12 +650,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--together-api-key",
       envVar: "TOGETHER_API_KEY",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setTogetherApiKey(resolved.key);
+      await setTogetherApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "together:default",
@@ -648,12 +674,13 @@ export async function applyNonInteractiveAuthChoice(params: {
       flagName: "--huggingface-api-key",
       envVar: "HF_TOKEN",
       runtime,
+      agentDir,
     });
     if (!resolved) {
       return null;
     }
     if (resolved.source !== "profile") {
-      await setHuggingfaceApiKey(resolved.key);
+      await setHuggingfaceApiKey(resolved.key, agentDir);
     }
     nextConfig = applyAuthProfileConfig(nextConfig, {
       profileId: "huggingface:default",
@@ -685,6 +712,7 @@ export async function applyNonInteractiveAuthChoice(params: {
         envVar: "CUSTOM_API_KEY",
         envVarName: "CUSTOM_API_KEY",
         runtime,
+        agentDir,
         required: false,
       });
       const result = applyCustomApiConfig({
