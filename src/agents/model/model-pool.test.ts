@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveRuntimeModelPlan } from "./model-pool.js";
+import { resolveSelectedModelRefs } from "./model-selections.js";
 
 vi.mock("../agent-scope.js", () => ({
   resolveAgentConfig: vi.fn((cfg: MarvConfig, agentId?: string) => {
@@ -152,12 +153,34 @@ describe("resolveRuntimeModelPlan", () => {
     const plan = resolveRuntimeModelPlan({ cfg, agentId: "main" });
 
     expect(plan.configured.map((entry) => entry.ref)).toEqual([
-      "google-gemini-cli/gemini-2.0-flash",
-      "google-gemini-cli/gemini-2.5-flash",
+      "google/gemini-2.0-flash",
+      "google/gemini-2.5-flash",
     ]);
     expect(plan.candidates.map((entry) => entry.ref)).toEqual([
-      "google-gemini-cli/gemini-2.0-flash",
-      "google-gemini-cli/gemini-2.5-flash",
+      "google/gemini-2.0-flash",
+      "google/gemini-2.5-flash",
+    ]);
+  });
+
+  it("remaps google-gemini-cli model refs to google when source profile is api_key", () => {
+    const cfg = {
+      auth: {
+        profiles: {
+          "google:default": {
+            provider: "google",
+            mode: "api_key",
+          },
+        },
+      },
+      models: {
+        selections: {
+          "google:default": ["google-gemini-cli/gemini-2.5-flash"],
+        },
+      },
+    } as MarvConfig;
+
+    expect(Array.from(resolveSelectedModelRefs({ cfg, defaultProvider: "anthropic" }))).toEqual([
+      "google/gemini-2.5-flash",
     ]);
   });
 

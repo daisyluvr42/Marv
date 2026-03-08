@@ -259,7 +259,7 @@ describe("resolveSessionModelRef", () => {
     expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
   });
 
-  test("prefers explicit manual selection state over legacy runtime fields", () => {
+  test("uses the last runtime model in auto mode when available", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -270,6 +270,26 @@ describe("resolveSessionModelRef", () => {
 
     const resolved = resolveSessionModelRef(cfg, {
       sessionId: "s3",
+      updatedAt: Date.now(),
+      selectionMode: "auto",
+      modelProvider: "openai-codex",
+      model: "gpt-5.3-codex",
+    });
+
+    expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
+  });
+
+  test("prefers explicit manual selection state over legacy runtime fields", () => {
+    const cfg = {
+      agents: {
+        defaults: {
+          model: { primary: "anthropic/claude-opus-4-6" },
+        },
+      },
+    } as MarvConfig;
+
+    const resolved = resolveSessionModelRef(cfg, {
+      sessionId: "s4",
       updatedAt: Date.now(),
       modelProvider: "openai-codex",
       model: "gpt-5.3-codex",

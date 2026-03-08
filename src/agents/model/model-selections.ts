@@ -46,6 +46,8 @@ export function resolveSelectedModelRefs(params: {
 
   for (const [sourceKey, sourceRefs] of Object.entries(selections)) {
     const providerFamily = resolveSelectionSourceProviders(params.cfg, sourceKey);
+    const profileProvider = params.cfg.auth?.profiles?.[sourceKey]?.provider;
+    const preferredProvider = profileProvider ? normalizeProvider(profileProvider) : null;
     if (providerFamily.size === 0 || !Array.isArray(sourceRefs)) {
       continue;
     }
@@ -54,10 +56,17 @@ export function resolveSelectedModelRefs(params: {
       if (!parsed) {
         continue;
       }
-      if (!providerFamily.has(normalizeProvider(parsed.provider))) {
+      const modelProvider = normalizeProvider(parsed.provider);
+      if (!providerFamily.has(modelProvider)) {
         continue;
       }
-      refs.add(`${parsed.provider}/${parsed.model}`);
+      const effectiveProvider =
+        preferredProvider &&
+        providerFamily.has(preferredProvider) &&
+        modelProvider !== preferredProvider
+          ? preferredProvider
+          : parsed.provider;
+      refs.add(`${effectiveProvider}/${parsed.model}`);
     }
   }
 

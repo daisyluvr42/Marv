@@ -679,6 +679,15 @@ export function resolveSessionModelRef(
       model = selectionState.manualModelRef;
     }
   }
+
+  if (selectionState.mode !== "manual") {
+    const entryModel = entry?.model?.trim();
+    const entryProvider = entry?.modelProvider?.trim();
+    if (entryModel) {
+      provider = entryProvider || provider;
+      model = entryModel;
+    }
+  }
   return { provider, model };
 }
 
