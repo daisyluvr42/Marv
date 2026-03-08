@@ -26,6 +26,7 @@ export type StrategyFamily =
   | "try_alternative"
   | "validate_result"
   | "request_capability"
+  | "synthesize_tool"
   | "recenter_goal"
   | "split_subproblems"
   | "wrap_up";
@@ -95,6 +96,7 @@ const CONSTRAINT_RE =
   /\b(do not|don't|without|avoid|must|need to|should|keep|preserve|no brainstorm|不要|必须|保留)\b/i;
 const PERMISSION_RE =
   /\b(permission|permissions|sandbox|approval|allow|forbidden|denied|escalat|missing tool|not allowed)\b/i;
+const BINARY_FILE_RE = /detectedMimeType|binary content|cannot display binary/i;
 
 function clampRatio(value: number): number {
   if (!Number.isFinite(value) || value <= 0) {
@@ -316,6 +318,9 @@ export function buildStrategyPromptFragment(
   if (state.strategyFamily === "request_capability") {
     return "You are near a capability boundary. First exhaust safe local alternatives, then request missing tools or escalation only if the path is still blocked.";
   }
+  if (state.strategyFamily === "synthesize_tool") {
+    return "No existing tool covers this capability. Write a targeted script (Python or Bash) to solve the immediate problem, test it, then persist it as a managed skill at ~/.marv/skills/ for future reuse.";
+  }
   if (state.strategyFamily === "recenter_goal") {
     return `You appear to be exploring too broadly. Return to the core objective: "${state.goalFrame.objective}" and act on the most relevant blocker only.`;
   }
@@ -446,6 +451,9 @@ export function classifyProblemShape(args: {
   promptErrorText?: string;
 }): ProblemShape | null {
   const errorText = collectAttemptErrorText(args.attempt, args.promptErrorText);
+  if (BINARY_FILE_RE.test(errorText)) {
+    return "tool_or_permission_limit";
+  }
   if (PERMISSION_RE.test(errorText)) {
     return "tool_or_permission_limit";
   }
@@ -480,6 +488,7 @@ export function classifyProblemShape(args: {
 function nextStrategyFamily(
   shape: ProblemShape | null,
   classification: ProgressClassification,
+  attemptIndex = 0,
 ): StrategyFamily {
   if (classification === "completed") {
     return "wrap_up";
@@ -492,7 +501,7 @@ function nextStrategyFamily(
     case "validation_failure":
       return "inspect_failure";
     case "tool_or_permission_limit":
-      return "request_capability";
+      return attemptIndex >= 2 ? "synthesize_tool" : "request_capability";
     case "search_drift":
       return "recenter_goal";
     case "parallelizable_subproblems":
@@ -523,6 +532,9 @@ function buildVisibilityLabel(
   }
   if (strategyFamily === "request_capability") {
     return "checking the boundary";
+  }
+  if (strategyFamily === "synthesize_tool") {
+    return "building the missing tool";
   }
   if (strategyFamily === "recenter_goal") {
     return "re-centering on the goal";
@@ -565,7 +577,7 @@ export function reviewGoalProgress(args: {
     signal,
     promptErrorText: args.promptErrorText,
   });
-  let strategyFamily = nextStrategyFamily(problemShape, classification);
+  let strategyFamily = nextStrategyFamily(problemShape, classification, args.state.attemptCount);
   let stuckCounter =
     classification === "completed" || classification === "advancing"
       ? 0

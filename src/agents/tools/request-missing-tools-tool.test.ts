@@ -208,4 +208,51 @@ describe("request_missing_tools tool", () => {
     expect(details.installed[0]?.approved).toBe("allow-once");
     expect(callGatewayToolMock).toHaveBeenCalledTimes(1);
   });
+
+  it("returns a synthesis hint when discovery finds no matching skill", async () => {
+    discoverMock.mockReturnValue([]);
+
+    const tool = createRequestMissingToolsTool({
+      workspaceDir: "/tmp/workspace",
+      config: { autonomy: { autoInstallSkills: true } },
+    });
+
+    const result = await tool.execute("call4", {
+      description: "inspect parquet files",
+    });
+    const details = result.details as {
+      discovered: unknown[];
+      synthesisHint?: { guidance?: string } | null;
+      message: string;
+    };
+
+    expect(details.discovered).toEqual([]);
+    expect(details.synthesisHint?.guidance).toContain("Create an ad-hoc solution");
+    expect(details.message).toContain("Consider creating an ad-hoc solution");
+  });
+
+  it("suppresses synthesis hint when tool synthesis is disabled", async () => {
+    discoverMock.mockReturnValue([]);
+
+    const tool = createRequestMissingToolsTool({
+      workspaceDir: "/tmp/workspace",
+      config: {
+        autonomy: {
+          autoInstallSkills: true,
+          toolSynthesis: { enabled: false },
+        },
+      },
+    });
+
+    const result = await tool.execute("call5", {
+      description: "inspect parquet files",
+    });
+    const details = result.details as {
+      synthesisHint?: unknown;
+      message: string;
+    };
+
+    expect(details.synthesisHint).toBeNull();
+    expect(details.message).toBe("No matching skills found for the requested capability.");
+  });
 });

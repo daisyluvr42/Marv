@@ -144,10 +144,24 @@ export function createRequestMissingToolsTool(opts?: {
       });
 
       if (discovered.length === 0) {
+        const synthesisEnabled = opts?.config?.autonomy?.toolSynthesis?.enabled !== false;
         return jsonResult({
           ok: true,
           discovered: [],
-          message: "No matching skills found for the requested capability.",
+          synthesisHint: synthesisEnabled
+            ? {
+                guidance:
+                  "No existing skill matches. Create an ad-hoc solution: " +
+                  "(1) Identify needed capability and required binaries/libraries. " +
+                  "(2) Write a script via `write` (prefer Python/Bash). " +
+                  "(3) Execute with `exec` to verify. " +
+                  "(4) If successful, persist as a managed skill via " +
+                  "`bun src/agents/tools/tool-synthesis.ts persist --name <name> --description <desc> --script <path>`.",
+              }
+            : null,
+          message: synthesisEnabled
+            ? "No matching skills found. Consider creating an ad-hoc solution (see synthesisHint)."
+            : "No matching skills found for the requested capability.",
         });
       }
 

@@ -166,6 +166,12 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
     lines.push(
       "- If a required capability/tool is unavailable, call `request_missing_tools` with a concrete capability description and likely tool names.",
     );
+    lines.push(
+      "- If `request_missing_tools` returns no matches, create an ad-hoc solution: identify the needed capability, write a script (Python/Bash preferred), test it via `exec`, and save successful scripts as managed skills at ~/.marv/skills/ using `bun src/agents/tools/tool-synthesis.ts persist ...`.",
+    );
+    lines.push(
+      "- When reading a file returns a MIME type hint (binary/unknown format), follow this chain: (1) call `request_missing_tools` with the MIME type as the capability description, (2) if no skill is found, write an ad-hoc script using the suggested approach, (3) test it, then persist it.",
+    );
   }
   if (params.availableTools.has("request_escalation")) {
     lines.push(

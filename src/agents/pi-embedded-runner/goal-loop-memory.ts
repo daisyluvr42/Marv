@@ -78,6 +78,7 @@ function asStrategyFamily(value: unknown): StrategyFamily | null {
     value === "try_alternative" ||
     value === "validate_result" ||
     value === "request_capability" ||
+    value === "synthesize_tool" ||
     value === "recenter_goal" ||
     value === "split_subproblems" ||
     value === "wrap_up"

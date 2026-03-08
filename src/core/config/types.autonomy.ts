@@ -65,6 +65,16 @@ export type AutonomyDiscoveryConfig = {
   installApproval?: AutonomyInstallApproval;
 };
 
+/** Ad-hoc tool synthesis configuration. */
+export type AutonomyToolSynthesisConfig = {
+  /** Allow the agent to synthesize scripts when discovery finds no skill. Default: true. */
+  enabled?: boolean;
+  /** Persist successful synthesized scripts as managed skills. Default: true. */
+  autoSave?: boolean;
+  /** Preferred implementation languages. Default: ["python", "bash"]. */
+  languages?: string[];
+};
+
 /**
  * Top-level autonomy configuration.
  *
@@ -91,6 +101,8 @@ export type AutonomyConfig = {
   escalation?: AutonomyEscalationConfig;
   /** Proactive tool/skill discovery. */
   discovery?: AutonomyDiscoveryConfig;
+  /** Ad-hoc script synthesis and persistence. */
+  toolSynthesis?: AutonomyToolSynthesisConfig;
   /** Privacy guard for non-owner / group chat contexts. */
   privacy?: AutonomyPrivacyConfig;
 };

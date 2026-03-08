@@ -1,10 +1,13 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { createEditTool, createReadTool, createWriteTool } from "@mariozechner/pi-coding-agent";
-import { detectMime } from "../../media/mime.js";
+import { detectMime, extensionForMime } from "../../media/mime.js";
 import { sniffMimeFromBase64 } from "../../media/sniff-mime-from-base64.js";
 import type { ImageSanitizationLimits } from "../image-sanitization.js";
 import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
 import { assertSandboxPath } from "../sandbox/sandbox-paths.js";
+import { jsonResult } from "./common.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
 import { sanitizeToolResultImages } from "./tool-images.js";
 
@@ -262,6 +265,87 @@ function rewriteReadImageHeader(text: string, mimeType: string): string {
     return `Read image file [${mimeType}]`;
   }
   return text;
+}
+
+function looksLikeBinaryContent(text: string): boolean {
+  if (!text) {
+    return false;
+  }
+  let nullByteCount = 0;
+  let replacementCount = 0;
+  for (const char of text) {
+    if (char === "\u0000") {
+      nullByteCount += 1;
+      continue;
+    }
+    if (char === "\uFFFD") {
+      replacementCount += 1;
+    }
+  }
+  return nullByteCount > 0 || replacementCount / Math.max(text.length, 1) >= 0.02;
+}
+
+function suggestApproachForMime(mime: string): string {
+  if (mime === "application/pdf") {
+    return "use `pdftotext` or Python pdfplumber";
+  }
+  if (mime === "application/zip" || mime === "application/gzip" || mime === "application/x-tar") {
+    return "use `unzip` or `tar` via exec";
+  }
+  if (mime.startsWith("audio/")) {
+    return "use ffprobe/ffmpeg for metadata or Whisper for transcription";
+  }
+  if (mime.startsWith("video/")) {
+    return "use ffprobe for metadata or ffmpeg for frame extraction";
+  }
+  if (mime.startsWith("application/vnd.openxml")) {
+    return "use Python libraries like python-docx or openpyxl";
+  }
+  return "identify a CLI tool or Python library for this format";
+}
+
+function resolveReadResultPath(
+  requestedPath: string | undefined,
+  result: AgentToolResult<unknown>,
+): string | undefined {
+  const detailsPath = (result as { details?: { path?: unknown } }).details?.path;
+  const candidate =
+    typeof detailsPath === "string" && detailsPath.trim() ? detailsPath : requestedPath;
+  if (!candidate?.trim()) {
+    return undefined;
+  }
+  return path.isAbsolute(candidate) ? candidate : path.resolve(candidate);
+}
+
+async function maybeReturnBinaryReadHint(params: {
+  filePath?: string;
+  result: AgentToolResult<unknown>;
+}): Promise<AgentToolResult<unknown> | null> {
+  const resultText = getToolResultText(params.result);
+  if (!resultText || !looksLikeBinaryContent(resultText)) {
+    return null;
+  }
+  const resolvedPath = resolveReadResultPath(params.filePath, params.result);
+  if (!resolvedPath) {
+    return null;
+  }
+  try {
+    const buffer = await fs.readFile(resolvedPath);
+    const detectedMimeType =
+      (await detectMime({ buffer, filePath: resolvedPath })) ?? "application/octet-stream";
+    return jsonResult({
+      ok: false,
+      detectedMimeType,
+      detectedExtension: extensionForMime(detectedMimeType),
+      message:
+        `This is a ${detectedMimeType} file. The read tool cannot display binary content. ` +
+        `Use \`request_missing_tools\` to find a skill for "${detectedMimeType}" files, ` +
+        "or write an ad-hoc script to process it.",
+      synthesisHint: `To handle ${detectedMimeType} files, consider: ${suggestApproachForMime(detectedMimeType)}.`,
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function normalizeReadImageResult(
@@ -617,6 +701,13 @@ export function createMarvReadTool(
       });
       const filePath = typeof record?.path === "string" ? String(record.path) : "<unknown>";
       const strippedDetailsResult = stripReadTruncationContentDetails(result);
+      const binaryHintResult = await maybeReturnBinaryReadHint({
+        filePath: typeof record?.path === "string" ? String(record.path) : undefined,
+        result: strippedDetailsResult,
+      });
+      if (binaryHintResult) {
+        return binaryHintResult;
+      }
       const normalizedResult = await normalizeReadImageResult(strippedDetailsResult, filePath);
       return sanitizeToolResultImages(
         normalizedResult,

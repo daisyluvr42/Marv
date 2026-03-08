@@ -166,4 +166,42 @@ describe("goal-loop", () => {
     expect(hints[0]?.strategyFamily).toBe("try_alternative");
     expect(hints[0]?.problemShape).toBe("implementation_blocked");
   });
+
+  it("switches from requesting capability to synthesizing a tool after repeated boundary failures", () => {
+    const initial = createGoalLoopState({
+      prompt: "Read an unknown binary file, figure out the format, and keep going.",
+    }) as GoalLoopState;
+    const review = reviewGoalProgress({
+      state: {
+        ...initial,
+        attemptCount: 2,
+        strategyFamily: "request_capability",
+      },
+      attempt: createAttemptResult({
+        assistantTexts: [],
+        lastAssistant: {
+          role: "assistant",
+          content: "still blocked",
+          stopReason: "error",
+          errorMessage: "This is binary content and cannot display binary.",
+        } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
+      }),
+      recentToolCalls: [
+        {
+          toolName: "read",
+          argsHash: "a",
+          resultHash: "same",
+          timestamp: Date.now(),
+        },
+      ],
+      priorResultHashes: new Set(["same"]),
+      recentLoopEvents: [],
+      promptErrorText: "detectedMimeType application/zip",
+    });
+
+    expect(review.problemShape).toBe("tool_or_permission_limit");
+    expect(review.strategyFamily).toBe("synthesize_tool");
+    expect(review.visibility).toBe("building the missing tool");
+    expect(review.steeringContext).toContain("Write a targeted script");
+  });
 });
