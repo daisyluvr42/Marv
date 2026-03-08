@@ -40,6 +40,8 @@ export function ingestInboundMessageToSoulMemory(params: {
   accountId?: string;
   messageId?: string;
   nowMs?: number;
+  /** Whether this message was a retry after a previous failure. */
+  isRetry?: boolean;
 }): void {
   const content = params.content.trim();
   if (!isEnabled(params.cfg) || !content) {
@@ -67,6 +69,8 @@ export function ingestInboundMessageToSoulMemory(params: {
         accountId: params.accountId,
         messageId: params.messageId,
         role: "user",
+        contentLength: content.length,
+        ...(params.isRetry ? { isRetry: true } : {}),
       },
     });
   } catch (err) {
@@ -83,6 +87,10 @@ export function ingestOutboundMessageToSoulMemory(params: {
   accountId?: string;
   messageId?: string;
   nowMs?: number;
+  /** Whether the agent's task succeeded or failed. */
+  taskOutcome?: "success" | "failure";
+  /** Number of tool call retries during this turn. */
+  toolRetries?: number;
 }): void {
   const content = params.content.trim();
   if (!isEnabled(params.cfg) || !content) {
@@ -110,6 +118,9 @@ export function ingestOutboundMessageToSoulMemory(params: {
         accountId: params.accountId,
         messageId: params.messageId,
         role: "assistant",
+        contentLength: content.length,
+        ...(params.taskOutcome ? { taskOutcome: params.taskOutcome } : {}),
+        ...(params.toolRetries ? { toolRetries: params.toolRetries } : {}),
       },
     });
   } catch (err) {

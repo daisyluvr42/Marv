@@ -1671,21 +1671,71 @@ function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): number {
   return deleted;
 }
 
-/** Migrate P3 items from active memory into the archive table before pruning. */
+/** Migrate P3 items from active memory into the archive table before pruning.
+ *  Items sharing the same sessionKey are grouped into a single episode-level
+ *  archive event instead of being archived one-by-one. */
 function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): void {
   const selectStmt = db.prepare(
     `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id = ? AND tier = 'P3'`,
   );
-  const insertStmt = db.prepare(
-    `INSERT OR IGNORE INTO ${SOUL_ARCHIVE_TABLE} (` +
-      "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json" +
-      ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  );
+
+  // Collect P3 rows and group by sessionKey.
+  type P3Row = MemoryItemRow & { _memoryId: string };
+  const sessionGroups = new Map<string, P3Row[]>();
+  const ungrouped: P3Row[] = [];
   for (const memoryId of memoryIds) {
     const row = selectStmt.get(memoryId) as MemoryItemRow | undefined;
     if (!row) {
       continue;
     }
+    const meta = parseMetadataJson(row.metadata_json);
+    const sessionKey = typeof meta?.sessionKey === "string" ? meta.sessionKey.trim() : "";
+    const tagged: P3Row = { ...row, _memoryId: memoryId };
+    if (sessionKey) {
+      const group = sessionGroups.get(sessionKey) ?? [];
+      group.push(tagged);
+      sessionGroups.set(sessionKey, group);
+    } else {
+      ungrouped.push(tagged);
+    }
+  }
+
+  const insertStmt = db.prepare(
+    `INSERT OR IGNORE INTO ${SOUL_ARCHIVE_TABLE} (` +
+      "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json" +
+      ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  );
+
+  // Archive each session group as a single episode event.
+  for (const [sessionKey, rows] of sessionGroups) {
+    if (rows.length === 0) {
+      continue;
+    }
+    const sorted = rows.toSorted((a, b) => Number(a.created_at) - Number(b.created_at));
+    const episode = buildEpisodeContent(sorted);
+    const head = sorted[0];
+    const archiveId = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
+    const memberIds = sorted.map((r) => r._memoryId);
+    const episodeMeta = buildEpisodeMetadata(sorted, sessionKey);
+    const embedding = JSON.stringify(embedText(episode.content));
+    insertStmt.run(
+      archiveId,
+      String(head.scope_type),
+      String(head.scope_id),
+      "episode",
+      RECORD_KIND_EXPERIENCE,
+      episode.content,
+      episode.summary,
+      embedding,
+      SOURCE_RUNTIME_EVENT,
+      Number(head.created_at),
+      memberIds[0] ?? null,
+      stringifyMetadata(episodeMeta),
+    );
+  }
+
+  // Archive ungrouped P3 items individually (fallback for items without sessionKey).
+  for (const row of ungrouped) {
     const archiveId = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
     const summary = normalizeOptionalSummary(row.summary ?? undefined, String(row.content)) ?? "";
     insertStmt.run(
@@ -1699,10 +1749,57 @@ function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): void {
       String(row.embedding_json),
       String(row.source),
       Number(row.created_at),
-      memoryId,
+      row._memoryId,
       row.metadata_json ?? null,
     );
   }
+}
+
+function buildEpisodeContent(rows: MemoryItemRow[]): { content: string; summary: string } {
+  const lines: string[] = [];
+  for (const row of rows) {
+    const meta = parseMetadataJson(row.metadata_json);
+    const role = typeof meta?.role === "string" ? meta.role : String(row.kind);
+    lines.push(`[${role}] ${String(row.content).trim()}`);
+  }
+  const content = lines.join("\n");
+  const firstLine = lines[0] ?? "";
+  const preview = firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
+  const summary = `Episode (${rows.length} turns): ${preview}`;
+  return { content, summary };
+}
+
+function buildEpisodeMetadata(rows: MemoryItemRow[], sessionKey: string): Record<string, unknown> {
+  let userTurns = 0;
+  let assistantTurns = 0;
+  let totalContentLength = 0;
+  let hasSmallTalk = false;
+  for (const row of rows) {
+    const meta = parseMetadataJson(row.metadata_json);
+    const role = typeof meta?.role === "string" ? meta.role : "";
+    if (role === "user") {
+      userTurns += 1;
+    }
+    if (role === "assistant") {
+      assistantTurns += 1;
+    }
+    const contentLen = String(row.content).trim().length;
+    totalContentLength += contentLen;
+    if (String(row.kind).includes("relationship")) {
+      hasSmallTalk = true;
+    }
+  }
+  return {
+    sessionKey,
+    turnCount: rows.length,
+    userTurns,
+    assistantTurns,
+    totalContentLength,
+    avgContentLength: rows.length > 0 ? Math.round(totalContentLength / rows.length) : 0,
+    hasSmallTalk,
+    episodeStart: Number(rows[0]?.created_at ?? 0),
+    episodeEnd: Number(rows[rows.length - 1]?.created_at ?? 0),
+  };
 }
 
 function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
