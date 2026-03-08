@@ -2,10 +2,11 @@
 
 Docs: https://marv.ai
 
-## 2026.3.6 (Unreleased)
+## 2026.3.8
 
 ### Changes
 
+- CLI/Models: unify provider auth/config setup under `marv models auth`, including interactive `models auth add --provider ...` flows, non-interactive `models auth set`, and shared onboarding/configure delegation for provider setup.
 - iOS/Gateway: wake disconnected iOS nodes via APNs before `nodes.invoke` and auto-reconnect gateway sessions on silent push wake to reduce invoke failures while the app is backgrounded. (#20332) Thanks @mbelinky.
 - iOS/APNs: add push registration and notification-signing configuration for node delivery. (#20308) Thanks @mbelinky.
 - Gateway/APNs: add a push-test pipeline for APNs delivery validation in gateway flows. (#20307) Thanks @mbelinky.
