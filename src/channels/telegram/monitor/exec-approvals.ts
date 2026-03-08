@@ -18,6 +18,11 @@ const EXEC_APPROVAL_KEY = "execapprv"; // Shortened to fit Telegram's 64-byte ca
 
 export type { ExecApprovalRequest, ExecApprovalResolved };
 
+/** Escape HTML special chars for Telegram HTML parse mode. */
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export function extractTelegramChatId(sessionKey?: string | null): string | null {
   if (!sessionKey) {
     return null;
@@ -196,8 +201,9 @@ export class TelegramExecApprovalHandler {
     const commandPreview =
       commandText.length > 500 ? `${commandText.slice(0, 500)}...` : commandText;
 
-    // Formatting the message
-    const msgText = `⚠️ **Exec Approval Required**\n\nThe agent is attempting to run a potentially dangerous command.\n\n\`\`\`bash\n${commandPreview}\n\`\`\`\n\nID: \`${approvalId}\``;
+    // Formatting the message (HTML parse mode avoids MarkdownV2 escaping pitfalls)
+    const escapedPreview = escapeHtml(commandPreview);
+    const msgText = `⚠️ <b>Exec Approval Required</b>\n\nThe agent is attempting to run a potentially dangerous command.\n\n<pre>${escapedPreview}</pre>\n\nID: <code>${approvalId}</code>`;
 
     const inlineKeyboard = new InlineKeyboard()
       .text("✅ Allow Once", buildExecApprovalCallbackData(approvalId, "allow-once"))
@@ -207,7 +213,7 @@ export class TelegramExecApprovalHandler {
 
     try {
       const message = await this.opts.bot.api.sendMessage(targetChatId, msgText, {
-        parse_mode: "MarkdownV2",
+        parse_mode: "HTML",
         reply_markup: inlineKeyboard,
       });
 
@@ -249,10 +255,10 @@ export class TelegramExecApprovalHandler {
         icon = "🛑";
       }
 
-      const newText = `*Exec Approval Resolved* ${icon}\n\nDecision: \`${resolved.decision}\`\n\nID: \`${approvalId}\``;
+      const newText = `<b>Exec Approval Resolved</b> ${icon}\n\nDecision: <code>${resolved.decision}</code>\n\nID: <code>${approvalId}</code>`;
 
       await this.opts.bot.api.editMessageText(pending.chatId, pending.messageId, newText, {
-        parse_mode: "MarkdownV2",
+        parse_mode: "HTML",
         reply_markup: { inline_keyboard: [] }, // Remove buttons
       });
     } catch (err) {
@@ -270,9 +276,9 @@ export class TelegramExecApprovalHandler {
     this.pending.delete(approvalId);
 
     try {
-      const newText = `⏳ *Exec Approval Expired*\n\nThis approval request has timed out.\n\nID: \`${approvalId}\``;
+      const newText = `⏳ <b>Exec Approval Expired</b>\n\nThis approval request has timed out.\n\nID: <code>${approvalId}</code>`;
       await this.opts.bot.api.editMessageText(pending.chatId, pending.messageId, newText, {
-        parse_mode: "MarkdownV2",
+        parse_mode: "HTML",
         reply_markup: { inline_keyboard: [] },
       });
     } catch (err) {
