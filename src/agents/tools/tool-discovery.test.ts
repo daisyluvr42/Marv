@@ -127,4 +127,36 @@ describe("ToolDiscoveryService", () => {
 
     expect(discovered).toEqual([]);
   });
+
+  it("skips quarantined skills", () => {
+    const service = new ToolDiscoveryService();
+    const entries = [
+      makeEntry({
+        name: "github-repos",
+        description: "Search GitHub repositories",
+        source: "marv-managed",
+      }),
+      makeEntry({
+        name: "pdf-reader",
+        description: "Read PDF files",
+        source: "marv-bundled",
+      }),
+    ];
+
+    const discovered = service.discover({
+      workspaceDir: "/tmp/workspace",
+      capability: { description: "github" },
+      entries,
+      usageRecords: {
+        "github-repos": {
+          skillId: "github-repos",
+          installedAt: Date.now(),
+          ok: false,
+          quarantined: true,
+        },
+      },
+    });
+
+    expect(discovered).toHaveLength(0);
+  });
 });

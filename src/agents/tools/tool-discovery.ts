@@ -1,4 +1,5 @@
 import type { MarvConfig } from "../../core/config/config.js";
+import { isSkillQuarantined, type SkillUsageRecord } from "../skill-usage-records.js";
 import { loadWorkspaceSkillEntries, type SkillEntry } from "../skills.js";
 import type { ParsedSkillFrontmatter } from "../skills/types.js";
 
@@ -112,6 +113,7 @@ export class ToolDiscoveryService {
     config?: MarvConfig;
     limit?: number;
     entries?: SkillEntry[];
+    usageRecords?: Record<string, SkillUsageRecord>;
   }): DiscoveredSkill[] {
     if (!isDiscoveryEnabled(params.config)) {
       return [];
@@ -123,9 +125,13 @@ export class ToolDiscoveryService {
       loadWorkspaceSkillEntries(params.workspaceDir, {
         config: params.config,
       });
+    const usageRecords = params.usageRecords;
 
     const discovered: DiscoveredSkill[] = [];
     for (const entry of entries) {
+      if (isSkillQuarantined(entry.skill.name, usageRecords)) {
+        continue;
+      }
       const source = normalizeSource(entry.skill.source);
       if (!source) {
         continue;
