@@ -970,6 +970,9 @@
                   "tools/lobster",
                   "tools/llm-task",
                   "tools/exec",
+                  "tools/self-inspecting",
+                  "tools/self-settings",
+                  "tools/permission-escalation",
                   "tools/web",
                   "tools/apply-patch",
                   "tools/elevated",
@@ -1037,7 +1040,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": ["providers/index", "providers/models"]
+                "pages": ["providers/index", "providers/directory", "providers/models"]
               },
               {
                 "group": "Model concepts",
@@ -1119,6 +1122,7 @@
                       "gateway/configuration",
                       "gateway/configuration-reference",
                       "gateway/configuration-examples",
+                      "gateway/deploy-recovery",
                       "gateway/authentication",
                       "gateway/trusted-proxy-auth",
                       "gateway/proxy",

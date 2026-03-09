@@ -27,7 +27,7 @@ Auth is supplied during the WebSocket handshake via:
 
 - `connect.params.auth.token`
 - `connect.params.auth.password`
-  The dashboard settings panel lets you store a token; passwords are not persisted.
+  The dashboard settings panel may use a bootstrap token for first connect; passwords are not persisted.
   The onboarding wizard generates a gateway token by default, so paste it here on first connect.
 
 ## Device pairing (first connection)
@@ -53,12 +53,19 @@ Once approved, the device is remembered and won't require re-approval unless
 you revoke it with `marv devices revoke --device <id> --role <role>`. See
 [Devices CLI](/cli/devices) for token rotation and revocation.
 
+For fixed personal devices, treat the shared token as a bootstrap credential and
+the remembered device as the long-lived operator identity. After a successful
+pairing flow, prefer the trusted device path instead of keeping a shared token
+around in the browser.
+
 **Notes:**
 
 - Local connections (`127.0.0.1`) are auto-approved.
 - Remote connections (LAN, Tailnet, etc.) require explicit approval.
 - Each browser profile generates a unique device ID, so switching browsers or
   clearing browser data will require re-pairing.
+- The UI can forget the local trusted device state. Use that when removing a
+  laptop or phone from your operator set.
 
 ## What it can do (today)
 

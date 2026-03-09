@@ -64,7 +64,14 @@ Gateway HTTP also applies a hard deny list by default (even if session policy al
 - `sessions_spawn`
 - `sessions_send`
 - `gateway`
+- `exec`
+- `cron`
+- `browser`
 - `whatsapp_login`
+
+Those defaults intentionally keep the HTTP surface narrower than the
+device-bound operator surfaces such as the Control UI. If you need one of these
+over HTTP, re-allow it explicitly and treat that token like operator access.
 
 You can customize this deny list via `gateway.tools`:
 
@@ -85,6 +92,12 @@ To help group policies resolve context, you can optionally set:
 
 - `x-marv-message-channel: <channel>` (example: `slack`, `telegram`)
 - `x-marv-account-id: <accountId>` (when multiple accounts exist)
+
+## Operator guidance
+
+For fixed personal devices, prefer the Control UI and device-bound operator
+sessions for high-risk actions. Keep `/tools/invoke` for narrower automation and
+integration flows.
 
 ## Responses
 

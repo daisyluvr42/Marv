@@ -1,0 +1,116 @@
+{
+  "title": "Marv agent first reference",
+  "description": "Primary JSON index for agents and operators. Links only to formal docs pages.",
+  "version": 1,
+  "audience": ["agent", "human-operator"],
+  "preferredOrder": [
+    "control-ui",
+    "self-inspecting",
+    "self-settings",
+    "permission-escalation",
+    "exec-approvals",
+    "deploy-recovery",
+    "update-cli",
+    "tools-invoke",
+    "security",
+    "provider-directory"
+  ],
+  "categories": [
+    {
+      "id": "operator-surfaces",
+      "title": "Operator surfaces",
+      "items": [
+        {
+          "id": "control-ui",
+          "title": "Control UI",
+          "url": "/web/control-ui",
+          "summary": "Browser control surface, trusted-device flow, pairing, and operator capabilities."
+        },
+        {
+          "id": "tools-invoke",
+          "title": "Tools Invoke API",
+          "url": "/gateway/tools-invoke-http-api",
+          "summary": "Shared-secret HTTP tool invocation surface with a narrower default deny list."
+        }
+      ]
+    },
+    {
+      "id": "self-state",
+      "title": "Self state and self modification",
+      "items": [
+        {
+          "id": "self-inspecting",
+          "title": "Self inspecting",
+          "url": "/tools/self-inspecting",
+          "summary": "Inspect runtime, settings, models, tasks, tools, and context state."
+        },
+        {
+          "id": "self-settings",
+          "title": "Self settings",
+          "url": "/tools/self-settings",
+          "summary": "Modify current-session agent behavior only for direct user requests."
+        }
+      ]
+    },
+    {
+      "id": "approvals-and-guardrails",
+      "title": "Approvals and guardrails",
+      "items": [
+        {
+          "id": "permission-escalation",
+          "title": "Permission escalation",
+          "url": "/tools/permission-escalation",
+          "summary": "Task-scoped escalation for high-risk exec, admin, and resource-transfer actions."
+        },
+        {
+          "id": "exec-approvals",
+          "title": "Exec approvals",
+          "url": "/tools/exec-approvals",
+          "summary": "Approval handles, UI flows, allowlists, and resolution paths."
+        },
+        {
+          "id": "security",
+          "title": "Gateway security",
+          "url": "/gateway/security",
+          "summary": "Security audit, threat model, and hardening guidance for exposed surfaces."
+        }
+      ]
+    },
+    {
+      "id": "deployment-and-recovery",
+      "title": "Deployment and recovery",
+      "items": [
+        {
+          "id": "deploy-recovery",
+          "title": "Deploy recovery",
+          "url": "/gateway/deploy-recovery",
+          "summary": "Tracked git deployment state, last-known-good, status, and rollback."
+        },
+        {
+          "id": "update-cli",
+          "title": "Update CLI",
+          "url": "/cli/update",
+          "summary": "Local update, status, wizard, and rollback commands."
+        }
+      ]
+    },
+    {
+      "id": "providers",
+      "title": "Providers",
+      "items": [
+        {
+          "id": "provider-directory",
+          "title": "Provider directory",
+          "url": "/providers/directory",
+          "summary": "Supported providers, official websites, and matching Marv docs pages."
+        },
+        {
+          "id": "provider-overview",
+          "title": "Model providers overview",
+          "url": "/providers",
+          "summary": "Overview of supported model providers and setup entry points."
+        }
+      ]
+    }
+  ]
+}
