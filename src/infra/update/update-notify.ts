@@ -26,6 +26,7 @@ export type UpdateCheckNotification = {
     upstream: string | null;
     upstreamSha: string | null;
     behind: number | null;
+    approval?: GitUpdateStatus["approval"];
   };
 };
 
@@ -39,6 +40,9 @@ function formatCurrentGitVersion(git?: GitUpdateStatus): string {
 }
 
 function formatLatestGitVersion(git?: GitUpdateStatus): string | null {
+  if (git?.approval?.approvedSha) {
+    return shortSha(git.approval.approvedSha) ?? git.approval.approvedTag ?? null;
+  }
   return (
     shortSha(git?.upstreamSha) ??
     git?.upstream?.trim() ??
@@ -66,6 +70,7 @@ export async function checkForUpdate(params: {
     timeoutMs,
     fetchGit: params.fetchGit ?? true,
     includeRegistry: false,
+    approval: params.cfg?.update?.approval,
   });
 
   const configuredChannel = params.channel ?? params.cfg?.update?.channel ?? null;
@@ -76,13 +81,18 @@ export async function checkForUpdate(params: {
   });
 
   if (status.installKind === "git") {
+    const approvedSha = status.git?.approval?.approvedSha ?? null;
+    const approvalRequired = status.git?.approval?.required === true;
     const behind = typeof status.git?.behind === "number" ? status.git.behind : null;
+    const available = approvalRequired
+      ? Boolean(approvedSha && status.git?.sha && approvedSha !== status.git.sha)
+      : behind != null && behind > 0;
     return {
-      available: behind != null && behind > 0,
+      available,
       currentVersion: formatCurrentGitVersion(status.git),
       latestVersion: formatLatestGitVersion(status.git),
       channel: channelInfo.channel,
-      tag: channelInfo.channel,
+      tag: status.git?.approval?.approvedTag ?? channelInfo.channel,
       installKind: "git",
       git: {
         branch: status.git?.branch ?? null,
@@ -91,6 +101,7 @@ export async function checkForUpdate(params: {
         upstream: status.git?.upstream ?? null,
         upstreamSha: status.git?.upstreamSha ?? null,
         behind,
+        approval: status.git?.approval ?? null,
       },
     };
   }
@@ -116,7 +127,12 @@ export function formatAvailableUpdateSummary(update: UpdateCheckNotification): s
   if (update.installKind === "git") {
     const channelLabel = `${update.channel} channel`;
     const latest = update.latestVersion ?? "upstream";
-    return `Marv update available (${channelLabel}): ${update.currentVersion} -> ${latest}. Run ${formatCliCommand("marv update")}.`;
+    const approvalLabel = update.git?.approval?.approvedTag
+      ? ` approved by ${update.git.approval.approvedTag}`
+      : update.git?.approval?.required
+        ? " approved deploy"
+        : "";
+    return `Marv update available (${channelLabel}${approvalLabel}): ${update.currentVersion} -> ${latest}. Run ${formatCliCommand("marv update")}.`;
   }
   return `Marv v${update.latestVersion ?? "unknown"} is available (current v${update.currentVersion}). Run ${formatCliCommand("marv update")}.`;
 }
@@ -128,12 +144,23 @@ export function buildUpdateNotificationPrompt(update: UpdateCheckNotification): 
       typeof update.git?.behind === "number" && update.git.behind > 0
         ? ` The checkout is ${update.git.behind} commit${update.git.behind === 1 ? "" : "s"} behind.`
         : "";
-    const latest = update.latestVersion ? `Latest upstream commit: ${update.latestVersion}.` : "";
+    const approval =
+      update.git?.approval?.required === true
+        ? update.git.approval.approvedTag
+          ? ` Approved deploy tag: ${update.git.approval.approvedTag}.`
+          : " Deploy approval is required before git updates can move this checkout."
+        : "";
+    const latest = update.latestVersion
+      ? update.git?.approval?.required
+        ? `Latest approved target: ${update.latestVersion}.`
+        : `Latest upstream commit: ${update.latestVersion}.`
+      : "";
     return [
       "Notify the user that a Marv update is available.",
       `Install type: git${branch}.`,
       `Current commit: ${update.currentVersion}.`,
       latest,
+      approval,
       `Channel: ${update.channel}.`,
       `${behind} Tell them they can run ${formatCliCommand("marv update")} or ask you to update it for them.`,
     ]

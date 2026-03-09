@@ -137,4 +137,60 @@ describe("update-notify", () => {
       },
     });
   });
+
+  it("uses the latest approved deploy tag when approval is required", async () => {
+    vi.mocked(checkUpdateStatus).mockResolvedValue({
+      root: "/opt/marv",
+      installKind: "git",
+      packageManager: "pnpm",
+      git: {
+        root: "/opt/marv",
+        sha: "abc123456789",
+        tag: null,
+        branch: "main",
+        upstream: "origin/main",
+        upstreamSha: "def987654321",
+        dirty: false,
+        ahead: 0,
+        behind: 4,
+        fetchOk: true,
+        approval: {
+          required: true,
+          mode: "signed-tag",
+          tagPattern: "deploy/*",
+          branch: "main",
+          branchRef: "origin/main",
+          branchSha: "def987654321",
+          approvedTag: "deploy/2026-03-09-1",
+          approvedSha: "fedcba987654",
+          pendingCommits: 2,
+          reason: null,
+        },
+      },
+    } satisfies UpdateCheckResult);
+
+    const update = await checkForUpdate({
+      cfg: {
+        update: {
+          channel: "dev",
+          approval: { required: true, mode: "signed-tag" },
+        },
+      },
+      fetchGit: true,
+    });
+
+    expect(update).toMatchObject({
+      available: true,
+      currentVersion: "abc12345",
+      latestVersion: "fedcba98",
+      tag: "deploy/2026-03-09-1",
+      installKind: "git",
+      git: {
+        approval: {
+          approvedTag: "deploy/2026-03-09-1",
+          approvedSha: "fedcba987654",
+        },
+      },
+    });
+  });
 });

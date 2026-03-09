@@ -37,11 +37,18 @@ export function resolveUpdateAvailability(update: UpdateCheckResult): UpdateAvai
   const latestVersion = update.registry?.latestVersion ?? null;
   const registryCmp = latestVersion ? compareSemverStrings(VERSION, latestVersion) : null;
   const hasRegistryUpdate = registryCmp != null && registryCmp < 0;
+  const approvalRequired = update.git?.approval?.required === true;
+  const approvedSha = update.git?.approval?.approvedSha ?? null;
   const gitBehind =
     update.installKind === "git" && typeof update.git?.behind === "number"
       ? update.git.behind
       : null;
-  const hasGitUpdate = gitBehind != null && gitBehind > 0;
+  const hasGitUpdate =
+    update.installKind === "git"
+      ? approvalRequired
+        ? Boolean(approvedSha && update.git?.sha && approvedSha !== update.git.sha)
+        : gitBehind != null && gitBehind > 0
+      : false;
 
   return {
     available: hasGitUpdate || hasRegistryUpdate,
@@ -59,7 +66,9 @@ export function formatUpdateAvailableHint(update: UpdateCheckResult): string | n
   }
 
   const details: string[] = [];
-  if (availability.hasGitUpdate && availability.gitBehind != null) {
+  if (availability.hasGitUpdate && update.git?.approval?.approvedTag) {
+    details.push(`deploy ${update.git.approval.approvedTag}`);
+  } else if (availability.hasGitUpdate && availability.gitBehind != null) {
     details.push(`git behind ${availability.gitBehind}`);
   }
   if (availability.hasRegistryUpdate && availability.latestVersion) {
@@ -97,6 +106,19 @@ export function formatUpdateOneLiner(update: UpdateCheckResult): string {
     }
     if (update.git.dirty === true) {
       parts.push("dirty");
+    }
+    if (update.git.approval?.required) {
+      if (update.git.approval.approvedTag) {
+        parts.push(`approved ${update.git.approval.approvedTag}`);
+      } else {
+        parts.push("approval required");
+      }
+      if (
+        typeof update.git.approval.pendingCommits === "number" &&
+        update.git.approval.pendingCommits > 0
+      ) {
+        parts.push(`unapproved ${update.git.approval.pendingCommits}`);
+      }
     }
     if (update.git.behind != null && update.git.ahead != null) {
       if (update.git.behind === 0 && update.git.ahead === 0) {

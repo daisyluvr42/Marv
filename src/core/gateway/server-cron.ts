@@ -270,6 +270,7 @@ export function buildGatewayCronService(params: {
             cwd: root,
             argv1: process.argv[1],
             channel: normalizeUpdateChannel(runtimeConfig.update?.channel) ?? undefined,
+            approval: runtimeConfig.update?.approval,
           });
           if (updateResult.status === "ok") {
             job.state.lastNotifiedVersion = update.latestVersion;

@@ -1,4 +1,5 @@
 import { formatCliCommand } from "../cli/command-format.js";
+import { loadConfig } from "../core/config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { runGatewayUpdate } from "../infra/update/update-runner.js";
 import { runCommandWithTimeout } from "../process/exec.js";
@@ -54,9 +55,11 @@ export async function maybeOfferUpdateBeforeDoctor(params: {
       return { updated: false };
     }
     note("Running update (fetch/rebase/build/ui:build/doctor)…", "Update");
+    const config = loadConfig();
     const result = await runGatewayUpdate({
       cwd: params.root,
       argv1: process.argv[1],
+      approval: config.update?.approval,
     });
     note(
       [

@@ -4,6 +4,12 @@ import { runCommandWithTimeout } from "../../process/exec.js";
 import { fetchWithTimeout } from "../../utils/fetch-timeout.js";
 import { detectPackageManager as detectPackageManagerImpl } from "../detect-package-manager.js";
 import { parseSemver } from "../runtime-guard.js";
+import {
+  normalizeUpdateApprovalConfig,
+  resolveDeployApproval,
+  type DeployApprovalStatus,
+  type UpdateApprovalConfig,
+} from "./deploy-approval.js";
 import { channelToNpmTag, type UpdateChannel } from "./update-channels.js";
 
 export type PackageManager = "pnpm" | "bun" | "npm" | "unknown";
@@ -19,6 +25,7 @@ export type GitUpdateStatus = {
   ahead: number | null;
   behind: number | null;
   fetchOk: boolean | null;
+  approval?: DeployApprovalStatus | null;
   error?: string;
 };
 
@@ -93,9 +100,11 @@ export async function checkGitUpdateStatus(params: {
   root: string;
   timeoutMs?: number;
   fetch?: boolean;
+  approval?: UpdateApprovalConfig | null;
 }): Promise<GitUpdateStatus> {
   const timeoutMs = params.timeoutMs ?? 6000;
   const root = path.resolve(params.root);
+  const approvalConfig = normalizeUpdateApprovalConfig(params.approval);
 
   const base: GitUpdateStatus = {
     root,
@@ -107,6 +116,7 @@ export async function checkGitUpdateStatus(params: {
     ahead: null,
     behind: null,
     fetchOk: null,
+    approval: null,
   };
 
   const branchRes = await runCommandWithTimeout(
@@ -134,6 +144,20 @@ export async function checkGitUpdateStatus(params: {
     { timeoutMs },
   ).catch(() => null);
   const upstream = upstreamRes && upstreamRes.code === 0 ? upstreamRes.stdout.trim() : null;
+  const dirtyRes = await runCommandWithTimeout(
+    ["git", "-C", root, "status", "--porcelain", "--", ":!dist/control-ui/"],
+    { timeoutMs },
+  ).catch(() => null);
+  const dirty = dirtyRes && dirtyRes.code === 0 ? dirtyRes.stdout.trim().length > 0 : null;
+
+  const fetchOk = params.fetch
+    ? await runCommandWithTimeout(["git", "-C", root, "fetch", "--quiet", "--prune", "--tags"], {
+        timeoutMs,
+      })
+        .then((r) => r.code === 0)
+        .catch(() => false)
+    : null;
+
   const upstreamShaRes =
     upstream && upstream.length > 0
       ? await runCommandWithTimeout(["git", "-C", root, "rev-parse", upstream], {
@@ -142,18 +166,6 @@ export async function checkGitUpdateStatus(params: {
       : null;
   const upstreamSha =
     upstreamShaRes && upstreamShaRes.code === 0 ? upstreamShaRes.stdout.trim() : null;
-
-  const dirtyRes = await runCommandWithTimeout(
-    ["git", "-C", root, "status", "--porcelain", "--", ":!dist/control-ui/"],
-    { timeoutMs },
-  ).catch(() => null);
-  const dirty = dirtyRes && dirtyRes.code === 0 ? dirtyRes.stdout.trim().length > 0 : null;
-
-  const fetchOk = params.fetch
-    ? await runCommandWithTimeout(["git", "-C", root, "fetch", "--quiet", "--prune"], { timeoutMs })
-        .then((r) => r.code === 0)
-        .catch(() => false)
-    : null;
 
   const counts =
     upstream && upstream.length > 0
@@ -176,6 +188,29 @@ export async function checkGitUpdateStatus(params: {
     return { ahead, behind };
   };
   const parsed = counts && counts.code === 0 ? parseCounts(counts.stdout) : null;
+  const approval =
+    approvalConfig == null
+      ? null
+      : await resolveDeployApproval({
+          runCommand: async (argv, options) => {
+            const res = await runCommandWithTimeout(argv, options);
+            return { stdout: res.stdout, stderr: res.stderr, code: res.code };
+          },
+          root,
+          timeoutMs,
+          config: approvalConfig,
+        }).catch(() => ({
+          required: true,
+          mode: "signed-tag" as const,
+          tagPattern: approvalConfig.tagPattern,
+          branch: approvalConfig.branch,
+          branchRef: null,
+          branchSha: null,
+          approvedTag: null,
+          approvedSha: null,
+          pendingCommits: null,
+          reason: "approval-check-failed",
+        }));
 
   return {
     root,
@@ -188,6 +223,7 @@ export async function checkGitUpdateStatus(params: {
     ahead: parsed?.ahead ?? null,
     behind: parsed?.behind ?? null,
     fetchOk,
+    approval,
   };
 }
 
@@ -383,6 +419,7 @@ export async function checkUpdateStatus(params: {
   timeoutMs?: number;
   fetchGit?: boolean;
   includeRegistry?: boolean;
+  approval?: UpdateApprovalConfig | null;
 }): Promise<UpdateCheckResult> {
   const timeoutMs = params.timeoutMs ?? 6000;
   const root = params.root ? path.resolve(params.root) : null;
@@ -405,6 +442,7 @@ export async function checkUpdateStatus(params: {
         root,
         timeoutMs,
         fetch: Boolean(params.fetchGit),
+        approval: params.approval,
       })
     : undefined;
   const deps = await checkDepsStatus({ root, manager: pm });

@@ -50,6 +50,43 @@ describe("resolveUpdateAvailability", () => {
     });
   });
 
+  it("flags git update when a newer deploy approval exists", () => {
+    const update = buildUpdate({
+      installKind: "git",
+      git: {
+        root: "/tmp/repo",
+        sha: "old123",
+        tag: null,
+        branch: "main",
+        upstream: "origin/main",
+        dirty: false,
+        ahead: 0,
+        behind: 5,
+        fetchOk: true,
+        approval: {
+          required: true,
+          mode: "signed-tag",
+          tagPattern: "deploy/*",
+          branch: "main",
+          branchRef: "origin/main",
+          branchSha: "branch123",
+          approvedTag: "deploy/2026-03-09-1",
+          approvedSha: "new456",
+          pendingCommits: 2,
+          reason: null,
+        },
+      },
+    });
+
+    expect(resolveUpdateAvailability(update)).toEqual({
+      available: true,
+      hasGitUpdate: true,
+      hasRegistryUpdate: false,
+      latestVersion: null,
+      gitBehind: 5,
+    });
+  });
+
   it("flags registry update when latest version is newer", () => {
     const latestVersion = nextMajorVersion(VERSION);
     const update = buildUpdate({
@@ -109,6 +146,39 @@ describe("formatUpdateOneLiner", () => {
 
     expect(formatUpdateOneLiner(update)).toBe("Update: npm · npm latest unknown · deps missing");
   });
+
+  it("renders deploy approval status for git installs", () => {
+    const update = buildUpdate({
+      installKind: "git",
+      git: {
+        root: "/tmp/repo",
+        sha: "abc123456789",
+        tag: null,
+        branch: "main",
+        upstream: "origin/main",
+        dirty: false,
+        ahead: 0,
+        behind: 4,
+        fetchOk: true,
+        approval: {
+          required: true,
+          mode: "signed-tag",
+          tagPattern: "deploy/*",
+          branch: "main",
+          branchRef: "origin/main",
+          branchSha: "branch123",
+          approvedTag: "deploy/2026-03-09-1",
+          approvedSha: "fedcba987654",
+          pendingCommits: 2,
+          reason: null,
+        },
+      },
+    });
+
+    expect(formatUpdateOneLiner(update)).toBe(
+      "Update: git main · ↔ origin/main · approved deploy/2026-03-09-1 · unapproved 2 · behind 4",
+    );
+  });
 });
 
 describe("formatUpdateAvailableHint", () => {
@@ -142,6 +212,39 @@ describe("formatUpdateAvailableHint", () => {
 
     expect(formatUpdateAvailableHint(update)).toBe(
       `Update available (git behind 2 · npm ${latestVersion}). Run: marv update`,
+    );
+  });
+
+  it("renders deploy approval details when present", () => {
+    const update = buildUpdate({
+      installKind: "git",
+      git: {
+        root: "/tmp/repo",
+        sha: "old123",
+        tag: null,
+        branch: "main",
+        upstream: "origin/main",
+        dirty: false,
+        ahead: 0,
+        behind: 4,
+        fetchOk: true,
+        approval: {
+          required: true,
+          mode: "signed-tag",
+          tagPattern: "deploy/*",
+          branch: "main",
+          branchRef: "origin/main",
+          branchSha: "branch123",
+          approvedTag: "deploy/2026-03-09-1",
+          approvedSha: "new456",
+          pendingCommits: 2,
+          reason: null,
+        },
+      },
+    });
+
+    expect(formatUpdateAvailableHint(update)).toBe(
+      "Update available (deploy deploy/2026-03-09-1). Run: marv update",
     );
   });
 });

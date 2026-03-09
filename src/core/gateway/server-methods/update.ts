@@ -92,6 +92,7 @@ export const updateHandlers: GatewayRequestHandlers = {
         cwd: root,
         argv1: process.argv[1],
         channel: configChannel ?? undefined,
+        approval: config.update?.approval,
       });
     } catch (err) {
       result = {
@@ -157,8 +158,9 @@ export const updateHandlers: GatewayRequestHandlers = {
       ok: true,
       root,
       statePath: resolveDeployStatePath(root),
-      trackedBranch: "main",
+      trackedBranch: cfg.update?.approval?.branch?.trim() || "main",
       autoApplyCron: cfg.update?.autoApplyCron === true,
+      deployApprovalRequired: cfg.update?.approval?.required === true,
       state,
       update,
     });

@@ -9,6 +9,14 @@ export const FIELD_HELP: Record<string, string> = {
     "Interval in milliseconds for the managed update-check cron job (default: 86400000).",
   "update.autoApplyCron":
     "For git deployment checkouts, auto-apply updates during the managed update-check cron job instead of only notifying.",
+  "update.approval.required":
+    "Require a verified deploy approval before git updates can move the checkout.",
+  "update.approval.mode": 'Deploy approval mode (currently only "signed-tag").',
+  "update.approval.tagPattern":
+    'Git tag glob used to discover deployment approvals (default: "deploy/*").',
+  "update.approval.branch": 'Branch that approved deploy tags must belong to (default: "main").',
+  "update.approval.requireReachableFromBranch":
+    "Require approved deploy tags to point at commits reachable from the tracked branch (default: true).",
   "gateway.remote.url": "Remote Gateway WebSocket URL (ws:// or wss://).",
   "gateway.remote.tlsFingerprint":
     "Expected sha256 TLS fingerprint for the remote gateway (pin to avoid MITM).",

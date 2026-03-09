@@ -47,6 +47,7 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
     timeoutMs: timeoutMs ?? 3500,
     fetchGit: true,
     includeRegistry: true,
+    approval: configSnapshot.valid ? configSnapshot.config.update?.approval : undefined,
   });
 
   const channelInfo = resolveUpdateChannelDisplay({
@@ -101,6 +102,21 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
     { Item: "Install", Value: installLabel },
     { Item: "Channel", Value: channelLabel },
     ...(gitLabel ? [{ Item: "Git", Value: gitLabel }] : []),
+    ...(update.git?.approval?.required
+      ? [
+          {
+            Item: "Deploy Approval",
+            Value: update.git.approval.approvedTag
+              ? [
+                  update.git.approval.approvedTag,
+                  update.git.approval.pendingCommits && update.git.approval.pendingCommits > 0
+                    ? `${update.git.approval.pendingCommits} unapproved commit${update.git.approval.pendingCommits === 1 ? "" : "s"}`
+                    : "active",
+                ].join(" · ")
+              : `required${update.git.approval.reason ? ` · ${update.git.approval.reason}` : ""}`,
+          },
+        ]
+      : []),
     {
       Item: "Update",
       Value: updateAvailability.available ? theme.warn(`available · ${updateLine}`) : updateLine,

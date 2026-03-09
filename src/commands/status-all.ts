@@ -92,6 +92,7 @@ export async function statusAllCommand(
       timeoutMs: 6500,
       fetchGit: true,
       includeRegistry: true,
+      approval: cfg.update?.approval,
     });
     const configChannel = normalizeUpdateChannel(cfg.update?.channel);
     const channelInfo = resolveUpdateChannelDisplay({

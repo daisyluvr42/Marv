@@ -7,6 +7,7 @@ import {
 import { doctorCommand } from "../../commands/doctor.js";
 import { readConfigFileSnapshot, writeConfigFile } from "../../core/config/config.js";
 import { resolveGatewayService } from "../../infra/daemon/service.js";
+import type { UpdateApprovalConfig } from "../../infra/update/deploy-approval.js";
 import {
   channelToNpmTag,
   DEFAULT_GIT_CHANNEL,
@@ -215,6 +216,7 @@ async function runGitUpdate(params: {
   progress: ReturnType<typeof createUpdateProgress>["progress"];
   channel: "stable" | "beta" | "dev";
   tag: string;
+  approval?: UpdateApprovalConfig;
   showProgress: boolean;
   opts: UpdateCommandOptions;
   stop: () => void;
@@ -252,6 +254,7 @@ async function runGitUpdate(params: {
     progress: params.progress,
     channel: params.channel,
     tag: params.tag,
+    approval: params.approval,
   });
   const steps = [...(cloneStep ? [cloneStep] : []), ...updateResult.steps];
 
@@ -487,6 +490,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   const storedChannel = configSnapshot.valid
     ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
     : null;
+  const storedApproval = configSnapshot.valid ? configSnapshot.config.update?.approval : undefined;
 
   const requestedChannel = normalizeUpdateChannel(opts.channel);
   if (opts.channel && !requestedChannel) {
@@ -615,6 +619,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         progress,
         channel,
         tag,
+        approval: storedApproval,
         showProgress,
         opts,
         stop,

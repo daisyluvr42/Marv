@@ -244,6 +244,16 @@ export const MarvSchema = z
         checkOnStart: z.boolean().optional(),
         autoCheckIntervalMs: z.number().int().positive().optional(),
         autoApplyCron: z.boolean().optional(),
+        approval: z
+          .object({
+            required: z.boolean().optional(),
+            mode: z.literal("signed-tag").optional(),
+            tagPattern: z.string().optional(),
+            branch: z.string().optional(),
+            requireReachableFromBranch: z.boolean().optional(),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),

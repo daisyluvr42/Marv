@@ -214,6 +214,112 @@ describe("runGatewayUpdate", () => {
     expect(calls.some((call) => call.includes("rebase --abort"))).toBe(true);
   });
 
+  it("updates dev checkouts to the latest approved deploy tag", async () => {
+    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
+    await setupUiIndex();
+
+    let headReadCount = 0;
+    const runCommand = async (argv: string[]) => {
+      const key = argv.join(" ");
+      if (key === `git -C ${tempDir} rev-parse --show-toplevel`) {
+        return { stdout: tempDir, stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse HEAD`) {
+        headReadCount += 1;
+        return {
+          stdout: `${headReadCount === 1 ? "old123" : "approved999"}\n`,
+          stderr: "",
+          code: 0,
+        };
+      }
+      if (key === `git -C ${tempDir} rev-parse --abbrev-ref HEAD`) {
+        return { stdout: "main\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} status --porcelain -- :!dist/control-ui/`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} fetch --all --prune --tags`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse --abbrev-ref --symbolic-full-name @{upstream}`) {
+        return { stdout: "origin/main\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse --verify origin/main^{commit}`) {
+        return { stdout: "branch999\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse origin/main`) {
+        return { stdout: "branch999\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} tag --list deploy/* --sort=-creatordate`) {
+        return { stdout: "deploy/2026-03-09-1\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} verify-tag deploy/2026-03-09-1`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse deploy/2026-03-09-1^{commit}`) {
+        return { stdout: "approved999\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} merge-base --is-ancestor approved999 origin/main`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-list --count approved999..origin/main`) {
+        return { stdout: "2\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rebase approved999`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "pnpm install" || key === "pnpm build" || key === "pnpm ui:build") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (
+        key ===
+        `${process.execPath} ${path.join(tempDir, "marv.mjs")} doctor --non-interactive --fix`
+      ) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (
+        key.startsWith(`git -C ${tempDir} worktree add --detach `) &&
+        key.endsWith(" approved999")
+      ) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key.includes("preflight-") && key.endsWith(" checkout --detach approved999")) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key.includes("preflight-") && key === "pnpm install") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key.includes("preflight-") && key === "pnpm build") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key.includes("preflight-") && key === "pnpm lint") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key.startsWith(`git -C ${tempDir} worktree remove --force `)) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} worktree prune`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      return { stdout: "", stderr: "", code: 0 };
+    };
+
+    const result = await runGatewayUpdate({
+      cwd: tempDir,
+      channel: "dev",
+      timeoutMs: 5_000,
+      approval: {
+        required: true,
+        mode: "signed-tag",
+      },
+      runCommand: async (argv) => runCommand(argv),
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.after?.sha).toBe("approved999");
+    expect(result.deploy?.targetSha).toBe("approved999");
+  });
+
   it("returns error and stops early when deps install fails", async () => {
     await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
     const stableTag = "v1.0.1-1";

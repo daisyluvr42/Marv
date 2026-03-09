@@ -69,6 +69,19 @@ export type MarvConfig = {
     autoCheckIntervalMs?: number;
     /** Auto-apply git deployment updates from the tracked upstream branch during cron checks. */
     autoApplyCron?: boolean;
+    /** Optional deploy approval gate for git deployments. */
+    approval?: {
+      /** Require an approved deploy tag before git updates can move the checkout. */
+      required?: boolean;
+      /** Approval mode. */
+      mode?: "signed-tag";
+      /** Git tag glob used to discover deployment approvals. */
+      tagPattern?: string;
+      /** Branch that approved deploy tags must belong to. */
+      branch?: string;
+      /** Require approved tags to point at commits reachable from the tracked branch. */
+      requireReachableFromBranch?: boolean;
+    };
   };
   browser?: BrowserConfig;
   ui?: {
