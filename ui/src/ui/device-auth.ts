@@ -93,3 +93,11 @@ export function clearDeviceAuthToken(params: { deviceId: string; role: string })
   delete next.tokens[role];
   writeStore(next);
 }
+
+export function clearStoredDeviceAuth() {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // best-effort
+  }
+}

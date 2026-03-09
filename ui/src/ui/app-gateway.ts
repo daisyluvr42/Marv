@@ -137,6 +137,12 @@ export function connectGateway(host: GatewayHost) {
       host.connected = true;
       host.lastError = null;
       host.hello = hello;
+      if (hello.auth?.deviceToken && host.settings.token) {
+        applySettings(host as unknown as Parameters<typeof applySettings>[0], {
+          ...host.settings,
+          token: "",
+        });
+      }
       applySnapshot(host, hello);
       // Reset orphaned chat run state from before disconnect.
       // Any in-flight run's final event was lost during the disconnect window.

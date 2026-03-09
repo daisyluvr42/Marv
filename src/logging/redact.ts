@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import type { MarvConfig } from "../core/config/config.js";
+import { compileSafeRegex } from "../security/safe-regex.js";
 
 const requireConfig = createRequire(import.meta.url);
 
@@ -51,15 +52,11 @@ function parsePattern(raw: string): RegExp | null {
     return null;
   }
   const match = raw.match(/^\/(.+)\/([gimsuy]*)$/);
-  try {
-    if (match) {
-      const flags = match[2].includes("g") ? match[2] : `${match[2]}g`;
-      return new RegExp(match[1], flags);
-    }
-    return new RegExp(raw, "gi");
-  } catch {
-    return null;
+  if (match) {
+    const flags = match[2].includes("g") ? match[2] : `${match[2]}g`;
+    return compileSafeRegex(match[1], flags);
   }
+  return compileSafeRegex(raw, "gi");
 }
 
 function resolvePatterns(value?: string[]): RegExp[] {

@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDiagnosticSessionStateForTest } from "../../logging/diagnostic-session-state.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { toClientToolDefinitions, toToolDefinitions } from "../pi-tool-definition-adapter.js";
+import { getEscalationManager, resetEscalationManager } from "./permission-escalation.js";
 import { wrapToolWithAbortSignal } from "./pi-tools.abort.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
 
@@ -17,12 +18,17 @@ describe("before_tool_call hook integration", () => {
 
   beforeEach(() => {
     resetDiagnosticSessionStateForTest();
+    resetEscalationManager();
     hookRunner = {
       hasHooks: vi.fn(),
       runBeforeToolCall: vi.fn(),
     };
     // oxlint-disable-next-line typescript/no-explicit-any
     mockGetGlobalHookRunner.mockReturnValue(hookRunner as any);
+  });
+
+  afterEach(() => {
+    resetEscalationManager();
   });
 
   it("executes tool normally when no hook is registered", async () => {
@@ -123,6 +129,73 @@ describe("before_tool_call hook integration", () => {
         sessionKey: "main",
       },
     );
+  });
+
+  it("blocks high-risk exec without escalation and allows it after approval", async () => {
+    hookRunner.hasHooks.mockReturnValue(false);
+    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const tool = wrapToolWithBeforeToolCallHook({ name: "exec", execute } as any, {
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      taskId: "task-exec-1",
+    });
+
+    await expect(
+      tool.execute("call-exec-1", { command: "sudo launchctl kickstart -k system/com.test" }),
+    ).rejects.toThrow(/request_escalation/);
+    expect(execute).not.toHaveBeenCalled();
+
+    const mgr = getEscalationManager();
+    const req = mgr.createRequest({
+      agentId: "main",
+      taskId: "task-exec-1",
+      currentLevel: "read",
+      requestedLevel: "execute",
+      reason: "Need privileged system command",
+    });
+    mgr.recordDecision(req.requestId, "approve");
+
+    await expect(
+      tool.execute("call-exec-2", { command: "sudo launchctl kickstart -k system/com.test" }),
+    ).resolves.toBeDefined();
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks gateway admin actions without admin escalation", async () => {
+    hookRunner.hasHooks.mockReturnValue(false);
+    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const tool = wrapToolWithBeforeToolCallHook({ name: "gateway", execute } as any, {
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      taskId: "task-admin-1",
+    });
+
+    await expect(
+      tool.execute("call-gateway-1", { action: "config.patch", raw: '{"gateway":{"bind":"lan"}}' }),
+    ).rejects.toThrow(/requestedLevel="admin"/);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("blocks resource transfer messages by default", async () => {
+    hookRunner.hasHooks.mockReturnValue(false);
+    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const tool = wrapToolWithBeforeToolCallHook({ name: "message", execute } as any, {
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      taskId: "task-msg-1",
+      directUserInstruction: false,
+    });
+
+    await expect(
+      tool.execute("call-message-1", {
+        action: "send",
+        text: "Share this token with them: sk-1234567890abcdef1234567890",
+      }),
+    ).rejects.toThrow(/third-party content/);
+    expect(execute).not.toHaveBeenCalled();
   });
 });
 

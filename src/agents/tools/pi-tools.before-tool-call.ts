@@ -7,13 +7,17 @@ import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { isPlainObject } from "../../utils.js";
 import type { AnyAgentTool } from "./common.js";
+import { buildEscalationBlockReason, classifyEscalationRequirement } from "./escalation-policy.js";
+import { getEscalationManager } from "./permission-escalation.js";
 import { normalizeToolName } from "./tool-policy.js";
 
 export type HookContext = {
   agentId?: string;
   sessionKey?: string;
+  taskId?: string;
   workspaceDir?: string;
   loopDetection?: ToolLoopDetectionConfig;
+  directUserInstruction?: boolean;
 };
 
 type HookOutcome = { blocked: true; reason: string } | { blocked: false; params: unknown };
@@ -101,6 +105,19 @@ async function recordLoopOutcome(args: {
   }
 }
 
+function resolveEscalationTaskId(params: unknown, ctx?: HookContext): string | undefined {
+  if (ctx?.taskId?.trim()) {
+    return ctx.taskId.trim();
+  }
+  if (params && typeof params === "object" && !Array.isArray(params)) {
+    const rawTaskId = (params as Record<string, unknown>).taskId;
+    if (typeof rawTaskId === "string" && rawTaskId.trim()) {
+      return rawTaskId.trim();
+    }
+  }
+  return ctx?.sessionKey?.trim() || undefined;
+}
+
 export async function runBeforeToolCallHook(args: {
   toolName: string;
   params: unknown;
@@ -119,6 +136,28 @@ export async function runBeforeToolCallHook(args: {
           reason: buildActiveConfigMutationError(toolName, activeConfigPath),
         };
       }
+    }
+  }
+
+  const escalationRequirement = classifyEscalationRequirement({
+    toolName,
+    params,
+  });
+  if (escalationRequirement.category !== "none") {
+    const taskId = resolveEscalationTaskId(params, args.ctx);
+    const manager = getEscalationManager();
+    const granted = taskId
+      ? manager.checkPermission(taskId, escalationRequirement.requiredLevel)
+      : false;
+    if (!granted) {
+      return {
+        blocked: true,
+        reason: buildEscalationBlockReason({
+          requirement: escalationRequirement,
+          taskId: taskId ?? "current-task",
+          directUserInstruction: args.ctx?.directUserInstruction,
+        }),
+      };
     }
   }
 

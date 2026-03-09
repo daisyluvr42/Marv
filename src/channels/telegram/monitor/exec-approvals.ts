@@ -1,6 +1,7 @@
 import type { Bot } from "grammy";
 import { InlineKeyboard } from "grammy";
 import type { MarvConfig } from "../../../core/config/config.js";
+import { loadSessionStore, resolveStorePath } from "../../../core/config/sessions.js";
 import { buildGatewayConnectionDetails } from "../../../core/gateway/call.js";
 import { GatewayClient } from "../../../core/gateway/client.js";
 import type { EventFrame } from "../../../core/gateway/protocol/index.js";
@@ -10,9 +11,15 @@ import type {
   ExecApprovalResolved,
 } from "../../../infra/exec-approvals.js";
 import { logDebug, logError } from "../../../logger.js";
-import { normalizeAccountId } from "../../../routing/session-key.js";
+import {
+  normalizeAccountId,
+  parseAgentSessionKey,
+  resolveAgentIdFromSessionKey,
+} from "../../../routing/session-key.js";
 import type { RuntimeEnv } from "../../../runtime.js";
+import { compileSafeRegex } from "../../../security/safe-regex.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../../utils/message-channel.js";
+import { normalizeMessageChannel } from "../../../utils/message-channel.js";
 
 const EXEC_APPROVAL_KEY = "execapprv"; // Shortened to fit Telegram's 64-byte callback_data limit
 
@@ -84,6 +91,66 @@ export type TelegramExecApprovalHandlerOpts = {
   runtime?: RuntimeEnv;
 };
 
+function resolveExecApprovalAccountId(params: {
+  cfg: MarvConfig;
+  request: ExecApprovalRequest;
+}): string | null {
+  const sessionKey = params.request.request.sessionKey?.trim();
+  if (!sessionKey) {
+    return null;
+  }
+  try {
+    const agentId = resolveAgentIdFromSessionKey(sessionKey);
+    const storePath = resolveStorePath(params.cfg.session?.store, { agentId });
+    const store = loadSessionStore(storePath);
+    const entry = store[sessionKey];
+    const channel = normalizeMessageChannel(entry?.origin?.provider ?? entry?.lastChannel);
+    if (channel && channel !== "telegram") {
+      return null;
+    }
+    const accountId = entry?.origin?.accountId ?? entry?.lastAccountId;
+    return accountId?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function getApprovalPresentation(request: ExecApprovalRequest): {
+  title: string;
+  summary: string;
+} {
+  if (request.request.kind === "permission-escalation") {
+    return {
+      title: "Permission Escalation Required",
+      summary: "The agent is asking to unlock stronger capabilities for this task.",
+    };
+  }
+  return {
+    title: "Exec Approval Required",
+    summary: "The agent is attempting to run a potentially dangerous command.",
+  };
+}
+
+function buildMetadataLines(request: ExecApprovalRequest): string[] {
+  const lines: string[] = [];
+  if (request.request.kind) {
+    lines.push(`Kind: ${request.request.kind}`);
+  }
+  if (request.request.taskId) {
+    lines.push(`Task: ${request.request.taskId}`);
+  }
+  if (request.request.agentId) {
+    lines.push(`Agent: ${request.request.agentId}`);
+  }
+  if (request.request.cwd) {
+    lines.push(`CWD: ${request.request.cwd}`);
+  }
+  if (request.request.host) {
+    lines.push(`Host: ${request.request.host}`);
+  }
+  return lines;
+}
+
 export class TelegramExecApprovalHandler {
   private gatewayClient: GatewayClient | null = null;
   private pending = new Map<string, PendingApproval>();
@@ -95,18 +162,53 @@ export class TelegramExecApprovalHandler {
     this.opts = opts;
   }
 
-  shouldHandle(_request: ExecApprovalRequest): boolean {
+  shouldHandle(request: ExecApprovalRequest): boolean {
     const config = this.opts.config;
     if (!config?.enabled) {
       return false;
     }
-    // We assume if telegram approvals are enabled in config, we process it locally.
-    // However, we should check if the sessionKey belongs to this account.
-    const requestAccountId = "default"; // Simplified for now
-    if (normalizeAccountId(requestAccountId) !== normalizeAccountId(this.opts.accountId)) {
-      // return false;
+    const requestAccountId = resolveExecApprovalAccountId({
+      cfg: this.opts.cfg,
+      request,
+    });
+    if (requestAccountId) {
+      const handlerAccountId = normalizeAccountId(this.opts.accountId);
+      if (normalizeAccountId(requestAccountId) !== handlerAccountId) {
+        return false;
+      }
     }
-    return true; // Expand logic as needed later, matching discord.
+
+    if (config.agentFilter?.length) {
+      const requestAgentId =
+        request.request.agentId?.trim() ||
+        parseAgentSessionKey(request.request.sessionKey ?? null)?.agentId ||
+        "";
+      if (!requestAgentId) {
+        return false;
+      }
+      if (!config.agentFilter.includes(requestAgentId)) {
+        return false;
+      }
+    }
+
+    if (config.sessionFilter?.length) {
+      const session = request.request.sessionKey;
+      if (!session) {
+        return false;
+      }
+      const matches = config.sessionFilter.some((pattern) => {
+        const compiled = compileSafeRegex(pattern);
+        if (!compiled) {
+          return session.includes(pattern);
+        }
+        return session.includes(pattern) || compiled.test(session);
+      });
+      if (!matches) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   async start(): Promise<void> {
@@ -200,10 +302,15 @@ export class TelegramExecApprovalHandler {
     const commandText = request.request.command;
     const commandPreview =
       commandText.length > 500 ? `${commandText.slice(0, 500)}...` : commandText;
+    const presentation = getApprovalPresentation(request);
+    const metadataLines = buildMetadataLines(request)
+      .map((line) => escapeHtml(line))
+      .join("\n");
 
     // Formatting the message (HTML parse mode avoids MarkdownV2 escaping pitfalls)
     const escapedPreview = escapeHtml(commandPreview);
-    const msgText = `⚠️ <b>Exec Approval Required</b>\n\nThe agent is attempting to run a potentially dangerous command.\n\n<pre>${escapedPreview}</pre>\n\nID: <code>${approvalId}</code>`;
+    const metadataBlock = metadataLines ? `\n\n${metadataLines}` : "";
+    const msgText = `⚠️ <b>${presentation.title}</b>\n\n${presentation.summary}\n\n<pre>${escapedPreview}</pre>${metadataBlock}\n\nID: <code>${approvalId}</code>`;
 
     const inlineKeyboard = new InlineKeyboard()
       .text("✅ Allow Once", buildExecApprovalCallbackData(approvalId, "allow-once"))
@@ -239,6 +346,7 @@ export class TelegramExecApprovalHandler {
 
   private async handleApprovalResolved(resolved: ExecApprovalResolved): Promise<void> {
     const approvalId = resolved.id;
+    const request = this.requestCache.get(approvalId);
     this.requestCache.delete(approvalId);
     const pending = this.pending.get(approvalId);
     if (!pending) {
@@ -255,7 +363,10 @@ export class TelegramExecApprovalHandler {
         icon = "🛑";
       }
 
-      const newText = `<b>Exec Approval Resolved</b> ${icon}\n\nDecision: <code>${resolved.decision}</code>\n\nID: <code>${approvalId}</code>`;
+      const title = request
+        ? getApprovalPresentation(request).title.replace("Required", "Resolved")
+        : "Exec Approval Resolved";
+      const newText = `<b>${title}</b> ${icon}\n\nDecision: <code>${resolved.decision}</code>\n\nID: <code>${approvalId}</code>`;
 
       await this.opts.bot.api.editMessageText(pending.chatId, pending.messageId, newText, {
         parse_mode: "HTML",
@@ -267,6 +378,7 @@ export class TelegramExecApprovalHandler {
   }
 
   private async handleApprovalTimeout(approvalId: string): Promise<void> {
+    const request = this.requestCache.get(approvalId);
     this.requestCache.delete(approvalId);
     const pending = this.pending.get(approvalId);
     if (!pending) {
@@ -276,7 +388,10 @@ export class TelegramExecApprovalHandler {
     this.pending.delete(approvalId);
 
     try {
-      const newText = `⏳ <b>Exec Approval Expired</b>\n\nThis approval request has timed out.\n\nID: <code>${approvalId}</code>`;
+      const title = request
+        ? getApprovalPresentation(request).title.replace("Required", "Expired")
+        : "Exec Approval Expired";
+      const newText = `⏳ <b>${title}</b>\n\nThis approval request has timed out.\n\nID: <code>${approvalId}</code>`;
       await this.opts.bot.api.editMessageText(pending.chatId, pending.messageId, newText, {
         parse_mode: "HTML",
         reply_markup: { inline_keyboard: [] },

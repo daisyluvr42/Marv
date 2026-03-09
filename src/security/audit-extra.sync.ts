@@ -106,6 +106,10 @@ function collectModels(cfg: MarvConfig): ModelRef[] {
   for (const raw of Object.keys(cfg.models?.catalog ?? {})) {
     addModel(out, raw, "models.catalog");
   }
+  addModel(out, cfg.agents?.defaults?.model?.primary, "agents.defaults.model.primary");
+  for (const fallback of cfg.agents?.defaults?.model?.fallbacks ?? []) {
+    addModel(out, fallback, "agents.defaults.model.fallbacks");
+  }
   addModel(out, cfg.agents?.defaults?.imageModel?.primary, "agents.defaults.imageModel.primary");
   for (const f of cfg.agents?.defaults?.imageModel?.fallbacks ?? []) {
     addModel(out, f, "agents.defaults.imageModel.fallbacks");

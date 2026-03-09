@@ -62,6 +62,10 @@ export const pt_BR: TranslationMap = {
       language: "Idioma",
       connectHint: "Clique em Conectar para aplicar as alterações de conexão.",
       trustedProxy: "Autenticado por proxy confiável.",
+      trustedDevice:
+        "O login de dispositivo confiável está ativo. O token compartilhado não está sendo mantido no armazenamento do navegador.",
+      bootstrapOnly: "Este navegador está usando credenciais de bootstrap apenas para esta página.",
+      forgetDevice: "Esquecer Este Dispositivo",
     },
     snapshot: {
       title: "Snapshot",

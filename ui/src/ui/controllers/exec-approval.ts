@@ -1,5 +1,7 @@
 export type ExecApprovalRequestPayload = {
   command: string;
+  kind?: string | null;
+  taskId?: string | null;
   cwd?: string | null;
   host?: string | null;
   security?: string | null;
@@ -49,6 +51,8 @@ export function parseExecApprovalRequested(payload: unknown): ExecApprovalReques
     id,
     request: {
       command,
+      kind: typeof request.kind === "string" ? request.kind : null,
+      taskId: typeof request.taskId === "string" ? request.taskId : null,
       cwd: typeof request.cwd === "string" ? request.cwd : null,
       host: typeof request.host === "string" ? request.host : null,
       security: typeof request.security === "string" ? request.security : null,

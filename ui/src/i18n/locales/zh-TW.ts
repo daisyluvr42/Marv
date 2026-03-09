@@ -62,6 +62,9 @@ export const zh_TW: TranslationMap = {
       language: "語言",
       connectHint: "點擊連接以應用連接更改。",
       trustedProxy: "通過受信任代理身份驗證。",
+      trustedDevice: "目前已使用受信任裝置登入。共享 token 不會長期保存在瀏覽器儲存中。",
+      bootstrapOnly: "目前瀏覽器僅在此頁面使用引導憑證。",
+      forgetDevice: "忘記這台裝置",
     },
     snapshot: {
       title: "快照",

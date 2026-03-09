@@ -1,9 +1,43 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { connectGateway } from "./app-gateway.js";
+
+const storage = new Map<string, string>();
+const localStorage = {
+  getItem: (key: string) => storage.get(key) ?? null,
+  setItem: (key: string, value: string) => {
+    storage.set(key, value);
+  },
+  removeItem: (key: string) => {
+    storage.delete(key);
+  },
+  clear: () => {
+    storage.clear();
+  },
+};
+
+Object.defineProperty(globalThis, "localStorage", {
+  value: localStorage,
+  configurable: true,
+});
+Object.defineProperty(globalThis, "window", {
+  value: {
+    setTimeout,
+    clearTimeout,
+    localStorage,
+  },
+  configurable: true,
+});
+Object.defineProperty(globalThis, "location", {
+  value: { protocol: "http:", host: "127.0.0.1:18789" },
+  configurable: true,
+});
+
+const { connectGateway } = await import("./app-gateway.js");
 
 type GatewayClientMock = {
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
+  request: ReturnType<typeof vi.fn>;
+  emitHello: (hello: unknown) => void;
   emitClose: (code: number, reason?: string) => void;
   emitGap: (expected: number, received: number) => void;
   emitEvent: (evt: { event: string; payload?: unknown; seq?: number }) => void;
@@ -11,13 +45,31 @@ type GatewayClientMock = {
 
 const gatewayClientInstances: GatewayClientMock[] = [];
 
+vi.mock("./controllers/agents.js", () => ({
+  loadAgents: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./controllers/assistant-identity.js", () => ({
+  loadAssistantIdentity: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./controllers/devices.js", () => ({
+  loadDevices: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./controllers/nodes.js", () => ({
+  loadNodes: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("./gateway.js", () => {
   class GatewayBrowserClient {
     readonly start = vi.fn();
     readonly stop = vi.fn();
+    readonly request = vi.fn().mockResolvedValue({});
 
     constructor(
       private opts: {
+        onHello?: (hello: unknown) => void;
         onClose?: (info: { code: number; reason: string }) => void;
         onGap?: (info: { expected: number; received: number }) => void;
         onEvent?: (evt: { event: string; payload?: unknown; seq?: number }) => void;
@@ -26,6 +78,10 @@ vi.mock("./gateway.js", () => {
       gatewayClientInstances.push({
         start: this.start,
         stop: this.stop,
+        request: this.request,
+        emitHello: (hello) => {
+          this.opts.onHello?.(hello);
+        },
         emitClose: (code, reason) => {
           this.opts.onClose?.({ code, reason: reason ?? "" });
         },
@@ -76,6 +132,14 @@ function createHost() {
     assistantAgentId: null,
     sessionKey: "main",
     chatRunId: null,
+    chatStream: null,
+    chatStreamStartedAt: null,
+    chatToolMessages: [],
+    toolStreamById: new Map(),
+    toolStreamOrder: [],
+    toolStreamSyncTimer: null,
+    compactionStatus: null,
+    compactionClearTimer: null,
     refreshSessionsAfterChat: new Set<string>(),
     execApprovalQueue: [],
     execApprovalError: null,
@@ -85,6 +149,7 @@ function createHost() {
 describe("connectGateway", () => {
   beforeEach(() => {
     gatewayClientInstances.length = 0;
+    localStorage.clear();
   });
 
   it("ignores stale client onGap callbacks after reconnect", () => {
@@ -142,5 +207,26 @@ describe("connectGateway", () => {
 
     secondClient.emitClose(1005);
     expect(host.lastError).toBe("disconnected (1005): no reason");
+  });
+
+  it("clears the runtime shared token once device auth is established", () => {
+    const host = createHost();
+    host.settings.token = "bootstrap-token";
+
+    connectGateway(host);
+    const client = gatewayClientInstances[0];
+    expect(client).toBeDefined();
+
+    client.emitHello({
+      type: "hello-ok",
+      protocol: 3,
+      auth: {
+        deviceToken: "device-token",
+        role: "operator",
+        scopes: ["operator.admin"],
+      },
+    });
+
+    expect(host.settings.token).toBe("");
   });
 });

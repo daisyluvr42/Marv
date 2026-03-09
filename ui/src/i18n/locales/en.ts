@@ -62,6 +62,10 @@ export const en: TranslationMap = {
       language: "Language",
       connectHint: "Click Connect to apply connection changes.",
       trustedProxy: "Authenticated via trusted proxy.",
+      trustedDevice:
+        "Trusted device login is active. Shared token is not being kept in browser storage.",
+      bootstrapOnly: "This browser is using bootstrap credentials for this page only.",
+      forgetDevice: "Forget This Device",
     },
     snapshot: {
       title: "Snapshot",

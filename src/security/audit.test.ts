@@ -220,6 +220,163 @@ describe("security audit", () => {
     ).toBe(true);
   });
 
+  it("requires explicit allowed origins for non-loopback Control UI", async () => {
+    const cfg: MarvConfig = {
+      gateway: {
+        bind: "lan",
+        auth: { token: "secret" },
+        controlUi: { enabled: true },
+      },
+    };
+
+    const res = await runSecurityAudit({
+      config: cfg,
+      env: {},
+      includeFilesystem: false,
+      includeChannelSecurity: false,
+    });
+
+    expect(
+      res.findings.some(
+        (f) =>
+          f.checkId === "gateway.control_ui.allowed_origins_required" && f.severity === "critical",
+      ),
+    ).toBe(true);
+  });
+
+  it("warns when Host-header origin fallback is enabled", async () => {
+    const cfg = {
+      gateway: {
+        bind: "loopback",
+        auth: { token: "secret" },
+        controlUi: {
+          enabled: true,
+          dangerouslyAllowHostHeaderOriginFallback: true,
+        },
+      },
+    } as unknown as MarvConfig;
+
+    const res = await runSecurityAudit({
+      config: cfg,
+      env: {},
+      includeFilesystem: false,
+      includeChannelSecurity: false,
+    });
+
+    expect(
+      res.findings.some(
+        (f) =>
+          f.checkId === "gateway.control_ui.host_header_origin_fallback" && f.severity === "warn",
+      ),
+    ).toBe(true);
+  });
+
+  it("flags X-Real-IP fallback when exposed beyond strict loopback", async () => {
+    const cfg = {
+      gateway: {
+        bind: "lan",
+        auth: { token: "secret" },
+        trustedProxies: ["10.0.0.5"],
+        allowRealIpFallback: true,
+      },
+    } as unknown as MarvConfig;
+
+    const res = await runSecurityAudit({
+      config: cfg,
+      env: {},
+      includeFilesystem: false,
+      includeChannelSecurity: false,
+    });
+
+    expect(
+      res.findings.some(
+        (f) => f.checkId === "gateway.real_ip_fallback_enabled" && f.severity === "critical",
+      ),
+    ).toBe(true);
+  });
+
+  it("warns when mDNS full mode is enabled on loopback deployments", async () => {
+    const cfg: MarvConfig = {
+      gateway: {
+        bind: "loopback",
+        auth: { token: "secret" },
+      },
+      discovery: {
+        mdns: { mode: "full" },
+      },
+    };
+
+    const res = await runSecurityAudit({
+      config: cfg,
+      env: {},
+      includeFilesystem: false,
+      includeChannelSecurity: false,
+    });
+
+    expect(
+      res.findings.some((f) => f.checkId === "discovery.mdns_full_mode" && f.severity === "warn"),
+    ).toBe(true);
+  });
+
+  it("collects insecure or dangerous config flags", async () => {
+    const cfg: MarvConfig = {
+      gateway: {
+        controlUi: {
+          allowInsecureAuth: true,
+        },
+      },
+      hooks: {
+        gmail: {
+          allowUnsafeExternalContent: true,
+        },
+      },
+      tools: {
+        exec: {
+          applyPatch: {
+            workspaceOnly: false,
+          },
+        },
+      },
+    };
+
+    const res = await runSecurityAudit({
+      config: cfg,
+      includeFilesystem: false,
+      includeChannelSecurity: false,
+    });
+
+    const finding = res.findings.find((f) => f.checkId === "config.insecure_or_dangerous_flags");
+    expect(finding?.detail).toContain("gateway.controlUi.allowInsecureAuth=true");
+    expect(finding?.detail).toContain("hooks.gmail.allowUnsafeExternalContent=true");
+    expect(finding?.detail).toContain("tools.exec.applyPatch.workspaceOnly=false");
+  });
+
+  it("warns when elevated exec allowlists use mutable identities", async () => {
+    const cfg: MarvConfig = {
+      tools: {
+        elevated: {
+          enabled: true,
+          allowFrom: {
+            discord: ["NickDisplayName"],
+          },
+        },
+      },
+    };
+
+    const res = await runSecurityAudit({
+      config: cfg,
+      includeFilesystem: false,
+      includeChannelSecurity: false,
+    });
+
+    expect(
+      res.findings.some(
+        (f) =>
+          f.checkId === "tools.elevated.allowFrom.discord.mutable_entries" && f.severity === "warn",
+      ),
+    ).toBe(true);
+  });
+
   it("does not warn for auth rate limiting when configured", async () => {
     const cfg: MarvConfig = {
       gateway: {

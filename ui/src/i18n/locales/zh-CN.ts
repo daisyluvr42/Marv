@@ -62,6 +62,9 @@ export const zh_CN: TranslationMap = {
       language: "语言",
       connectHint: "点击连接以应用连接更改。",
       trustedProxy: "通过受信任代理认证。",
+      trustedDevice: "当前已使用受信任设备登录。共享 token 不会长期保存在浏览器存储中。",
+      bootstrapOnly: "当前浏览器仅在本页面使用引导凭证。",
+      forgetDevice: "忘记这台设备",
     },
     snapshot: {
       title: "快照",

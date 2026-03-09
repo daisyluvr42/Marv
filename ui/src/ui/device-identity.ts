@@ -110,3 +110,11 @@ export async function signDevicePayload(privateKeyBase64Url: string, payload: st
   const sig = await signAsync(data, key);
   return base64UrlEncode(sig);
 }
+
+export function clearStoredDeviceIdentity() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // best-effort
+  }
+}

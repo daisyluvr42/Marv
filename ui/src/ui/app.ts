@@ -60,6 +60,7 @@ import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.js";
 import type { Tab } from "./navigation.js";
 import { loadSettings, type UiSettings } from "./storage.js";
 import type { ResolvedTheme, ThemeMode } from "./theme.js";
+import { forgetTrustedDevice as forgetTrustedDeviceInternal } from "./trusted-device.js";
 import type {
   AgentsListResult,
   AgentsFilesListResult,
@@ -381,6 +382,10 @@ export class MarvApp extends LitElement {
 
   connect() {
     connectGatewayInternal(this as unknown as Parameters<typeof connectGatewayInternal>[0]);
+  }
+
+  forgetTrustedDevice() {
+    forgetTrustedDeviceInternal(this);
   }
 
   handleChatScroll(event: Event) {

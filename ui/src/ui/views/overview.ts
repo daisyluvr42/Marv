@@ -11,6 +11,7 @@ export type OverviewProps = {
   settings: UiSettings;
   password: string;
   lastError: string | null;
+  trustedDeviceActive: boolean;
   presenceCount: number;
   sessionsCount: number | null;
   cronEnabled: boolean | null;
@@ -20,6 +21,7 @@ export type OverviewProps = {
   onPasswordChange: (next: string) => void;
   onSessionKeyChange: (next: string) => void;
   onConnect: () => void;
+  onForgetDevice: () => void;
   onRefresh: () => void;
 };
 
@@ -37,6 +39,9 @@ export function renderOverview(props: OverviewProps) {
     : t("common.na");
   const authMode = snapshot?.authMode;
   const isTrustedProxy = authMode === "trusted-proxy";
+  const deviceStatus = props.trustedDeviceActive
+    ? t("overview.access.trustedDevice")
+    : t("overview.access.bootstrapOnly");
 
   const authHint = (() => {
     if (props.connected || !props.lastError) {
@@ -206,10 +211,14 @@ export function renderOverview(props: OverviewProps) {
         <div class="row" style="margin-top: 14px;">
           <button class="btn" @click=${() => props.onConnect()}>${t("common.connect")}</button>
           <button class="btn" @click=${() => props.onRefresh()}>${t("common.refresh")}</button>
+          <button class="btn" @click=${() => props.onForgetDevice()}>
+            ${t("overview.access.forgetDevice")}
+          </button>
           <span class="muted">${
             isTrustedProxy ? t("overview.access.trustedProxy") : t("overview.access.connectHint")
           }</span>
         </div>
+        <div class="muted" style="margin-top: 10px">${deviceStatus}</div>
       </div>
 
       <div class="card">

@@ -22,12 +22,26 @@ function renderMetaRow(label: string, value?: string | null) {
   return html`<div class="exec-approval-meta-row"><span>${label}</span><span>${value}</span></div>`;
 }
 
+function getExecApprovalHeading(kind?: string | null): { title: string; sub: string } {
+  if (kind === "permission-escalation") {
+    return {
+      title: "Permission escalation needed",
+      sub: "The agent wants stronger capabilities for this task.",
+    };
+  }
+  return {
+    title: "Exec approval needed",
+    sub: "The agent wants to run a higher-risk command.",
+  };
+}
+
 export function renderExecApprovalPrompt(state: AppViewState) {
   const active = state.execApprovalQueue[0];
   if (!active) {
     return nothing;
   }
   const request = active.request;
+  const heading = getExecApprovalHeading(request.kind);
   const remainingMs = active.expiresAtMs - Date.now();
   const remaining = remainingMs > 0 ? `expires in ${formatRemaining(remainingMs)}` : "expired";
   const queueCount = state.execApprovalQueue.length;
@@ -36,8 +50,8 @@ export function renderExecApprovalPrompt(state: AppViewState) {
       <div class="exec-approval-card">
         <div class="exec-approval-header">
           <div>
-            <div class="exec-approval-title">Exec approval needed</div>
-            <div class="exec-approval-sub">${remaining}</div>
+            <div class="exec-approval-title">${heading.title}</div>
+            <div class="exec-approval-sub">${heading.sub} · ${remaining}</div>
           </div>
           ${
             queueCount > 1
@@ -47,6 +61,8 @@ export function renderExecApprovalPrompt(state: AppViewState) {
         </div>
         <div class="exec-approval-command mono">${request.command}</div>
         <div class="exec-approval-meta">
+          ${renderMetaRow("Kind", request.kind)}
+          ${renderMetaRow("Task", request.taskId)}
           ${renderMetaRow("Host", request.host)}
           ${renderMetaRow("Agent", request.agentId)}
           ${renderMetaRow("Session", request.sessionKey)}

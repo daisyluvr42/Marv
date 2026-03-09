@@ -228,6 +228,28 @@ function buildExecApprovalMetadataLines(request: ExecApprovalRequest): string[] 
   return lines;
 }
 
+function getExecApprovalPresentation(request: ExecApprovalRequest): {
+  title: string;
+  description: string;
+  resolvedPrefix: string;
+  expiredTitle: string;
+} {
+  if (request.request.kind === "permission-escalation") {
+    return {
+      title: "Permission Escalation Required",
+      description: "The agent wants stronger capabilities for this task.",
+      resolvedPrefix: "Permission Escalation",
+      expiredTitle: "Permission Escalation: Expired",
+    };
+  }
+  return {
+    title: "Exec Approval Required",
+    description: "A command needs your approval.",
+    resolvedPrefix: "Exec Approval",
+    expiredTitle: "Exec Approval: Expired",
+  };
+}
+
 function buildExecApprovalPayload(container: DiscordUiContainer): MessagePayloadObject {
   const components: TopLevelComponents[] = [container];
   return { components };
@@ -243,12 +265,13 @@ function createExecApprovalRequestContainer(params: {
   const commandPreview =
     commandText.length > 1000 ? `${commandText.slice(0, 1000)}...` : commandText;
   const expiresAtSeconds = Math.max(0, Math.floor(params.request.expiresAtMs / 1000));
+  const presentation = getExecApprovalPresentation(params.request);
 
   return new ExecApprovalContainer({
     cfg: params.cfg,
     accountId: params.accountId,
-    title: "Exec Approval Required",
-    description: "A command needs your approval.",
+    title: presentation.title,
+    description: presentation.description,
     commandPreview,
     metadataLines: buildExecApprovalMetadataLines(params.request),
     actionRow: params.actionRow,
@@ -266,6 +289,7 @@ function createResolvedContainer(params: {
 }): ExecApprovalContainer {
   const commandText = params.request.request.command;
   const commandPreview = commandText.length > 500 ? `${commandText.slice(0, 500)}...` : commandText;
+  const presentation = getExecApprovalPresentation(params.request);
 
   const decisionLabel =
     params.decision === "allow-once"
@@ -284,7 +308,7 @@ function createResolvedContainer(params: {
   return new ExecApprovalContainer({
     cfg: params.cfg,
     accountId: params.accountId,
-    title: `Exec Approval: ${decisionLabel}`,
+    title: `${presentation.resolvedPrefix}: ${decisionLabel}`,
     description: params.resolvedBy ? `Resolved by ${params.resolvedBy}` : "Resolved",
     commandPreview,
     footer: `ID: ${params.request.id}`,
@@ -299,11 +323,12 @@ function createExpiredContainer(params: {
 }): ExecApprovalContainer {
   const commandText = params.request.request.command;
   const commandPreview = commandText.length > 500 ? `${commandText.slice(0, 500)}...` : commandText;
+  const presentation = getExecApprovalPresentation(params.request);
 
   return new ExecApprovalContainer({
     cfg: params.cfg,
     accountId: params.accountId,
-    title: "Exec Approval: Expired",
+    title: presentation.expiredTitle,
     description: "This approval request has expired.",
     commandPreview,
     footer: `ID: ${params.request.id}`,

@@ -129,6 +129,48 @@ describe("exec approval forwarder", () => {
     expect(deliver).not.toHaveBeenCalled();
   });
 
+  it("skips telegram forwarding targets when native Telegram approvals are enabled", async () => {
+    vi.useFakeTimers();
+    const cfg = {
+      approvals: { exec: { enabled: true, mode: "session" } },
+      channels: {
+        telegram: {
+          execApprovals: { enabled: true, approvers: ["123"] },
+        },
+      },
+    } as MarvConfig;
+
+    const { deliver, forwarder } = createForwarder({
+      cfg,
+      resolveSessionTarget: () => ({ channel: "telegram", to: "123" }),
+    });
+
+    await forwarder.handleRequested(baseRequest);
+
+    expect(deliver).not.toHaveBeenCalled();
+  });
+
+  it("still forwards to telegram when the native Telegram handler is disabled", async () => {
+    vi.useFakeTimers();
+    const cfg = {
+      approvals: { exec: { enabled: true, mode: "session" } },
+      channels: {
+        telegram: {
+          execApprovals: { enabled: false, approvers: ["123"] },
+        },
+      },
+    } as MarvConfig;
+
+    const { deliver, forwarder } = createForwarder({
+      cfg,
+      resolveSessionTarget: () => ({ channel: "telegram", to: "123" }),
+    });
+
+    await forwarder.handleRequested(baseRequest);
+
+    expect(deliver).toHaveBeenCalledTimes(1);
+  });
+
   it("uses a longer fence when command already contains triple backticks", async () => {
     vi.useFakeTimers();
     const { deliver, forwarder } = createForwarder({ cfg: TARGETS_CFG });
@@ -142,5 +184,31 @@ describe("exec approval forwarder", () => {
     });
 
     expect(getFirstDeliveryText(deliver)).toContain("Command:\n````\necho ```danger```\n````");
+  });
+
+  it("falls back to literal includes when sessionFilter regex is invalid", async () => {
+    vi.useFakeTimers();
+    const cfg = {
+      approvals: {
+        exec: {
+          enabled: true,
+          mode: "targets",
+          sessionFilter: ["agent:main:main["],
+          targets: [{ channel: "telegram", to: "123" }],
+        },
+      },
+    } as MarvConfig;
+
+    const { deliver, forwarder } = createForwarder({ cfg });
+
+    await forwarder.handleRequested({
+      ...baseRequest,
+      request: {
+        ...baseRequest.request,
+        sessionKey: "agent:main:main[",
+      },
+    });
+
+    expect(deliver).toHaveBeenCalledTimes(1);
   });
 });

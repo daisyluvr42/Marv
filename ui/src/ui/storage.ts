@@ -47,7 +47,9 @@ export function loadSettings(): UiSettings {
         typeof parsed.gatewayUrl === "string" && parsed.gatewayUrl.trim()
           ? parsed.gatewayUrl.trim()
           : defaults.gatewayUrl,
-      token: typeof parsed.token === "string" ? parsed.token : defaults.token,
+      // Shared gateway tokens are treated as bootstrap credentials and should
+      // not be rehydrated from durable browser storage by default.
+      token: defaults.token,
       sessionKey:
         typeof parsed.sessionKey === "string" && parsed.sessionKey.trim()
           ? parsed.sessionKey.trim()
@@ -87,5 +89,17 @@ export function loadSettings(): UiSettings {
 }
 
 export function saveSettings(next: UiSettings) {
-  localStorage.setItem(KEY, JSON.stringify(next));
+  const persisted: Omit<UiSettings, "token"> = {
+    gatewayUrl: next.gatewayUrl,
+    sessionKey: next.sessionKey,
+    lastActiveSessionKey: next.lastActiveSessionKey,
+    theme: next.theme,
+    chatFocusMode: next.chatFocusMode,
+    chatShowThinking: next.chatShowThinking,
+    splitRatio: next.splitRatio,
+    navCollapsed: next.navCollapsed,
+    navGroupsCollapsed: next.navGroupsCollapsed,
+    locale: next.locale,
+  };
+  localStorage.setItem(KEY, JSON.stringify(persisted));
 }

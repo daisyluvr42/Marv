@@ -772,6 +772,18 @@ export async function runTui(opts: TuiOptions) {
     }
     if (evt.event === "exec.approval.requested") {
       const payload = evt.payload as ExecApprovalRequest;
+      const approvalTitle =
+        payload.request.kind === "permission-escalation"
+          ? "permission escalation required"
+          : "approval required";
+      const details = [
+        `Command: ${payload.request.command}`,
+        payload.request.taskId ? `Task: ${payload.request.taskId}` : null,
+        payload.request.kind ? `Kind: ${payload.request.kind}` : null,
+        `Cwd: ${payload.request.cwd || "unknown"}`,
+      ]
+        .filter((line): line is string => Boolean(line))
+        .join("\n");
       const items = [
         {
           value: "allow-once",
@@ -785,11 +797,7 @@ export async function runTui(opts: TuiOptions) {
         },
         { value: "deny", label: "Deny", description: "Block this command from running." },
       ];
-      chatLog.addSystem(
-        theme.error(
-          `[approval required]\nCommand: ${payload.request.command}\nCwd: ${payload.request.cwd || "unknown"}`,
-        ),
-      );
+      chatLog.addSystem(theme.error(`[${approvalTitle}]\n${details}`));
       const selector = createSelectList(items, 4);
       selector.onSelect = (item) => {
         client

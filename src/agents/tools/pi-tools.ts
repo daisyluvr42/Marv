@@ -169,6 +169,7 @@ export function createMarvCodingTools(options?: {
   messageThreadId?: string | number;
   sandbox?: SandboxContext | null;
   sessionKey?: string;
+  taskId?: string;
   agentDir?: string;
   workspaceDir?: string;
   config?: MarvConfig;
@@ -500,8 +501,10 @@ export function createMarvCodingTools(options?: {
     wrapToolWithBeforeToolCallHook(tool, {
       agentId,
       sessionKey: options?.sessionKey,
+      taskId: options?.taskId,
       workspaceDir: sandboxRoot ?? workspaceRoot,
       loopDetection: resolveToolLoopDetectionConfig({ cfg: options?.config, agentId }),
+      directUserInstruction: options?.directUserInstruction,
     }),
   );
   const withAbort = options?.abortSignal

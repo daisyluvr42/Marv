@@ -87,6 +87,21 @@ vi.mock("../../agents/tools/marv-tools.js", () => {
       },
     },
     {
+      name: "exec",
+      parameters: { type: "object", properties: {} },
+      execute: async () => ({ ok: true }),
+    },
+    {
+      name: "cron",
+      parameters: { type: "object", properties: {} },
+      execute: async () => ({ ok: true }),
+    },
+    {
+      name: "browser",
+      parameters: { type: "object", properties: {} },
+      execute: async () => ({ ok: true }),
+    },
+    {
       name: "tools_invoke_test",
       parameters: {
         type: "object",
@@ -404,6 +419,48 @@ describe("POST /tools/invoke", () => {
     const body = await res.json();
     expect(body.ok).toBe(false);
     expect(body.error?.type).toBe("tool_error");
+  });
+
+  it("denies exec, cron, and browser via HTTP by default", async () => {
+    cfg = {
+      ...cfg,
+      agents: {
+        list: [
+          {
+            id: "main",
+            default: true,
+            tools: { allow: ["exec", "cron", "browser"] },
+          },
+        ],
+      },
+    };
+
+    for (const tool of ["exec", "cron", "browser"]) {
+      const res = await invokeToolAuthed({
+        tool,
+        sessionKey: "main",
+      });
+      expect(res.status).toBe(404);
+    }
+  });
+
+  it("allows exec via HTTP when explicitly enabled in gateway.tools.allow", async () => {
+    cfg = {
+      ...cfg,
+      agents: {
+        list: [{ id: "main", default: true, tools: { allow: ["exec"] } }],
+      },
+      gateway: { tools: { allow: ["exec"] } },
+    };
+
+    const res = await invokeToolAuthed({
+      tool: "exec",
+      sessionKey: "main",
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
   });
 
   it("treats gateway.tools.deny as higher priority than gateway.tools.allow", async () => {

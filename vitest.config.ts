@@ -96,6 +96,10 @@ export default defineConfig({
           include: [
             "src/**/*.test.ts",
             "test/**/*.test.ts",
+            "ui/src/ui/app-gateway.node.test.ts",
+            "ui/src/ui/controllers/exec-approval.test.ts",
+            "ui/src/ui/storage.test.ts",
+            "ui/src/ui/trusted-device.test.ts",
             "ui/src/ui/views/usage-render-details.test.ts",
           ],
           exclude: [
@@ -115,6 +119,10 @@ export default defineConfig({
           include: [
             "src/**/*.test.ts",
             "test/**/*.test.ts",
+            "ui/src/ui/app-gateway.node.test.ts",
+            "ui/src/ui/controllers/exec-approval.test.ts",
+            "ui/src/ui/storage.test.ts",
+            "ui/src/ui/trusted-device.test.ts",
             "ui/src/ui/views/usage-render-details.test.ts",
           ],
           exclude: [...baseExclude, "**/*.live.test.ts", "src/core/gateway/**"],

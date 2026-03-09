@@ -207,6 +207,9 @@ export function renderApp(state: AppViewState) {
                 settings: state.settings,
                 password: state.password,
                 lastError: state.lastError,
+                trustedDeviceActive: Boolean(
+                  state.hello?.auth?.deviceToken && !state.settings.token,
+                ),
                 presenceCount,
                 sessionsCount,
                 cronEnabled: state.cronStatus?.enabled ?? null,
@@ -226,6 +229,7 @@ export function renderApp(state: AppViewState) {
                   void state.loadAssistantIdentity();
                 },
                 onConnect: () => state.connect(),
+                onForgetDevice: () => state.forgetTrustedDevice(),
                 onRefresh: () => state.loadOverview(),
               })
             : nothing

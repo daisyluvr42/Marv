@@ -13,6 +13,12 @@ export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
   "sessions_send",
   // Gateway control plane — prevents gateway reconfiguration via HTTP
   "gateway",
+  // Direct command execution should stay on operator/device-bound surfaces
+  "exec",
+  // Scheduled persistence should not be reachable through a shared-secret HTTP surface
+  "cron",
+  // Browser automation is too powerful to expose broadly over generic HTTP invoke
+  "browser",
   // Interactive setup — requires terminal QR scan, hangs on HTTP
   "whatsapp_login",
 ] as const;

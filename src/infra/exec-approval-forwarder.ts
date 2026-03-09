@@ -6,7 +6,9 @@ import type {
   ExecApprovalForwardTarget,
 } from "../core/config/types.approvals.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { normalizeAccountId } from "../routing/session-key.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
+import { compileSafeRegex } from "../security/safe-regex.js";
 import { isDeliverableMessageChannel, normalizeMessageChannel } from "../utils/message-channel.js";
 import type {
   ExecApprovalDecision,
@@ -52,11 +54,11 @@ function normalizeMode(mode?: ExecApprovalForwardingConfig["mode"]) {
 
 function matchSessionFilter(sessionKey: string, patterns: string[]): boolean {
   return patterns.some((pattern) => {
-    try {
-      return sessionKey.includes(pattern) || new RegExp(pattern).test(sessionKey);
-    } catch {
+    const compiled = compileSafeRegex(pattern);
+    if (!compiled) {
       return sessionKey.includes(pattern);
     }
+    return sessionKey.includes(pattern) || compiled.test(sessionKey);
   });
 }
 
@@ -102,6 +104,35 @@ function buildTargetKey(target: ExecApprovalForwardTarget): string {
 function shouldSkipDiscordForwarding(target: ExecApprovalForwardTarget): boolean {
   const channel = normalizeMessageChannel(target.channel) ?? target.channel;
   return channel === "discord";
+}
+
+function resolveTelegramExecApprovalsEnabled(cfg: MarvConfig, accountId?: string | null): boolean {
+  const telegram = cfg.channels?.telegram;
+  if (!telegram || telegram.enabled === false) {
+    return false;
+  }
+  const accounts = telegram.accounts;
+  const normalizedAccountId = normalizeAccountId(accountId);
+  const accountKey = Object.keys(accounts ?? {}).find(
+    (key) => normalizeAccountId(key) === normalizedAccountId,
+  );
+  const accountCfg = accountKey && accounts ? (accounts[accountKey] as typeof telegram) : undefined;
+  if (accountCfg?.enabled === false) {
+    return false;
+  }
+  const mergedExecApprovals = {
+    ...telegram.execApprovals,
+    ...accountCfg?.execApprovals,
+  };
+  return mergedExecApprovals.enabled === true;
+}
+
+function shouldSkipTelegramForwarding(target: ExecApprovalForwardTarget, cfg: MarvConfig): boolean {
+  const channel = normalizeMessageChannel(target.channel) ?? target.channel;
+  if (channel !== "telegram") {
+    return false;
+  }
+  return resolveTelegramExecApprovalsEnabled(cfg, target.accountId);
 }
 
 function formatApprovalCommand(command: string): { inline: boolean; text: string } {
@@ -278,7 +309,15 @@ export function createExecApprovalForwarder(
       }
     }
 
-    const filteredTargets = targets.filter((target) => !shouldSkipDiscordForwarding(target));
+    const filteredTargets = targets.filter((target) => {
+      if (shouldSkipDiscordForwarding(target)) {
+        return false;
+      }
+      if (shouldSkipTelegramForwarding(target, cfg)) {
+        return false;
+      }
+      return true;
+    });
 
     if (filteredTargets.length === 0) {
       return;

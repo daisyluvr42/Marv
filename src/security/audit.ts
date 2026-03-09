@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
 import { resolveBrowserControlAuth } from "../browser/control-auth.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
@@ -34,7 +35,16 @@ import {
   formatPermissionRemediation,
   inspectPathPermissions,
 } from "./audit-fs.js";
+import { collectEnabledInsecureOrDangerousFlags } from "./dangerous-config-flags.js";
 import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "./dangerous-tools.js";
+import {
+  isDiscordMutableAllowEntry,
+  isGoogleChatMutableAllowEntry,
+  isIrcMutableAllowEntry,
+  isMSTeamsMutableAllowEntry,
+  isMattermostMutableAllowEntry,
+  isSlackMutableAllowEntry,
+} from "./mutable-allowlist-detectors.js";
 import type { ExecFn } from "./windows-acl.js";
 
 export type SecurityAuditSeverity = "info" | "warn" | "critical";
@@ -110,6 +120,13 @@ function normalizeAllowFromList(list: Array<string | number> | undefined | null)
     return [];
   }
   return list.map((v) => String(v).trim()).filter(Boolean);
+}
+
+function readBooleanFlag(source: unknown, key: string): boolean {
+  if (!source || typeof source !== "object") {
+    return false;
+  }
+  return (source as Record<string, unknown>)[key] === true;
 }
 
 async function collectFilesystemFindings(params: {
@@ -253,9 +270,18 @@ function collectGatewayConfigFindings(
   const tailscaleMode = cfg.gateway?.tailscale?.mode ?? "off";
   const auth = resolveGatewayAuth({ authConfig: cfg.gateway?.auth, tailscaleMode, env });
   const controlUiEnabled = cfg.gateway?.controlUi?.enabled !== false;
+  const controlUiAllowedOrigins = Array.isArray(cfg.gateway?.controlUi?.allowedOrigins)
+    ? cfg.gateway.controlUi.allowedOrigins.map((value) => value.trim()).filter(Boolean)
+    : [];
+  const dangerouslyAllowHostHeaderOriginFallback = readBooleanFlag(
+    cfg.gateway?.controlUi,
+    "dangerouslyAllowHostHeaderOriginFallback",
+  );
+  const allowRealIpFallback = readBooleanFlag(cfg.gateway, "allowRealIpFallback");
   const trustedProxies = Array.isArray(cfg.gateway?.trustedProxies)
     ? cfg.gateway.trustedProxies
     : [];
+  const mdnsMode = cfg.discovery?.mdns?.mode ?? "minimal";
   const hasToken = typeof auth.token === "string" && auth.token.trim().length > 0;
   const hasPassword = typeof auth.password === "string" && auth.password.trim().length > 0;
   const hasSharedSecret =
@@ -326,6 +352,70 @@ function collectGatewayConfigFindings(
     });
   }
 
+  if (
+    bind !== "loopback" &&
+    controlUiEnabled &&
+    controlUiAllowedOrigins.length === 0 &&
+    !dangerouslyAllowHostHeaderOriginFallback
+  ) {
+    findings.push({
+      checkId: "gateway.control_ui.allowed_origins_required",
+      severity: "critical",
+      title: "Non-loopback Control UI missing explicit allowed origins",
+      detail:
+        "Control UI is enabled on a non-loopback bind but gateway.controlUi.allowedOrigins is empty. " +
+        "Explicit trusted origins are required to reduce cross-origin websocket abuse and DNS rebinding risk.",
+      remediation:
+        "Set gateway.controlUi.allowedOrigins to explicit trusted origins such as https://control.example.com. " +
+        "Avoid relying on Host-header fallback for non-loopback deployments.",
+    });
+  }
+
+  if (dangerouslyAllowHostHeaderOriginFallback) {
+    const exposed = bind !== "loopback";
+    findings.push({
+      checkId: "gateway.control_ui.host_header_origin_fallback",
+      severity: exposed ? "critical" : "warn",
+      title: "DANGEROUS: Host-header origin fallback enabled",
+      detail:
+        "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true weakens Control UI origin validation " +
+        "and increases DNS rebinding and proxy-misrouting risk.",
+      remediation:
+        "Disable gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback and configure explicit gateway.controlUi.allowedOrigins.",
+    });
+  }
+
+  if (allowRealIpFallback) {
+    const hasNonLoopbackTrustedProxy = trustedProxies.some(
+      (proxy) => !isStrictLoopbackTrustedProxyEntry(proxy),
+    );
+    const exposed =
+      bind !== "loopback" || (auth.mode === "trusted-proxy" && hasNonLoopbackTrustedProxy);
+    findings.push({
+      checkId: "gateway.real_ip_fallback_enabled",
+      severity: exposed ? "critical" : "warn",
+      title: "X-Real-IP fallback is enabled",
+      detail:
+        "gateway.allowRealIpFallback=true trusts X-Real-IP when proxies omit X-Forwarded-For. " +
+        "Misconfigured proxies can allow spoofed source IPs and weaken local-client checks.",
+      remediation:
+        "Keep gateway.allowRealIpFallback=false unless your trusted proxy always overwrites X-Real-IP and cannot provide X-Forwarded-For.",
+    });
+  }
+
+  if (mdnsMode === "full") {
+    const exposed = bind !== "loopback";
+    findings.push({
+      checkId: "discovery.mdns_full_mode",
+      severity: exposed ? "critical" : "warn",
+      title: "mDNS full mode can leak host metadata",
+      detail:
+        'discovery.mdns.mode="full" can publish cliPath and sshPort in local-network TXT records, revealing filesystem and management details.',
+      remediation:
+        'Prefer discovery.mdns.mode="minimal" or "off", especially when gateway.bind is not loopback.',
+    });
+  }
+
   if (tailscaleMode === "funnel") {
     findings.push({
       checkId: "gateway.tailscale_funnel",
@@ -362,6 +452,18 @@ function collectGatewayConfigFindings(
       detail:
         "gateway.controlUi.dangerouslyDisableDeviceAuth=true disables device identity checks for the Control UI.",
       remediation: "Disable it unless you are in a short-lived break-glass scenario.",
+    });
+  }
+
+  const enabledDangerousFlags = collectEnabledInsecureOrDangerousFlags(cfg);
+  if (enabledDangerousFlags.length > 0) {
+    findings.push({
+      checkId: "config.insecure_or_dangerous_flags",
+      severity: "warn",
+      title: "Insecure or dangerous config flags enabled",
+      detail: `Detected ${enabledDangerousFlags.length} enabled flag(s): ${enabledDangerousFlags.join(", ")}.`,
+      remediation:
+        "Disable these flags outside short-lived debugging scenarios, or keep the deployment scoped to trusted local-only networks.",
     });
   }
 
@@ -560,9 +662,73 @@ function collectElevatedFindings(cfg: MarvConfig): SecurityAuditFinding[] {
         detail: `tools.elevated.allowFrom.${provider} has ${normalized.length} entries; consider tightening elevated access.`,
       });
     }
+
+    const mutableEntries = normalized.filter((entry) => isMutableAllowEntry(provider, entry));
+    if (mutableEntries.length > 0) {
+      findings.push({
+        checkId: `tools.elevated.allowFrom.${provider}.mutable_entries`,
+        severity: "warn",
+        title: "Elevated exec allowlist uses mutable identities",
+        detail:
+          `tools.elevated.allowFrom.${provider} includes display-name style entries (${mutableEntries.join(", ")}). ` +
+          "Prefer stable IDs to reduce spoofing and rename risk.",
+      });
+    }
   }
 
   return findings;
+}
+
+function isMutableAllowEntry(provider: string, entry: string): boolean {
+  const normalizedProvider = provider.trim().toLowerCase();
+  if (normalizedProvider === "discord") {
+    return isDiscordMutableAllowEntry(entry);
+  }
+  if (normalizedProvider === "slack") {
+    return isSlackMutableAllowEntry(entry);
+  }
+  if (normalizedProvider === "googlechat" || normalizedProvider === "google-chat") {
+    return isGoogleChatMutableAllowEntry(entry);
+  }
+  if (normalizedProvider === "msteams" || normalizedProvider === "ms-teams") {
+    return isMSTeamsMutableAllowEntry(entry);
+  }
+  if (normalizedProvider === "mattermost") {
+    return isMattermostMutableAllowEntry(entry);
+  }
+  if (normalizedProvider === "irc") {
+    return isIrcMutableAllowEntry(entry);
+  }
+  return false;
+}
+
+// Keep this stricter than general loopback checks: this is for trust boundaries,
+// so only explicit localhost proxy hops count as local.
+function isStrictLoopbackTrustedProxyEntry(entry: string): boolean {
+  const candidate = entry.trim();
+  if (!candidate) {
+    return false;
+  }
+  if (!candidate.includes("/")) {
+    return candidate === "127.0.0.1" || candidate.toLowerCase() === "::1";
+  }
+
+  const [rawIp, rawPrefix] = candidate.split("/", 2);
+  if (!rawIp || !rawPrefix) {
+    return false;
+  }
+  const ipVersion = isIP(rawIp.trim());
+  const prefix = Number.parseInt(rawPrefix.trim(), 10);
+  if (!Number.isInteger(prefix)) {
+    return false;
+  }
+  if (ipVersion === 4) {
+    return rawIp.trim() === "127.0.0.1" && prefix === 32;
+  }
+  if (ipVersion === 6) {
+    return rawIp.trim().toLowerCase() === "::1" && prefix === 128;
+  }
+  return false;
 }
 
 async function maybeProbeGateway(params: {

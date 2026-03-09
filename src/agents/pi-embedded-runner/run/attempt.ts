@@ -326,6 +326,7 @@ export async function runEmbeddedAttempt(
           senderIsOwner: params.senderIsOwner,
           directUserInstruction: params.directUserInstruction,
           sessionKey: params.sessionKey ?? params.sessionId,
+          taskId: params.taskId,
           agentDir,
           workspaceDir: effectiveWorkspace,
           config: params.config,
@@ -584,7 +585,9 @@ export async function runEmbeddedAttempt(
             {
               agentId: sessionAgentId,
               sessionKey: params.sessionKey,
+              taskId: params.taskId,
               loopDetection: clientToolLoopDetection,
+              directUserInstruction: params.directUserInstruction,
             },
           )
         : [];
