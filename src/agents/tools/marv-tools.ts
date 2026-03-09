@@ -15,6 +15,7 @@ import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
 import { createRequestEscalationTool } from "./request-escalation-tool.js";
 import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
+import { createSelfInspectingTool } from "./self-inspecting-tool.js";
 import { createSelfSettingsTool } from "./self-settings-tool.js";
 import { createSessionStatusTool } from "./session-status-tool.js";
 import { createSessionsHistoryTool } from "./sessions-history-tool.js";
@@ -210,5 +211,17 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     toolAllowlist: options?.pluginToolAllowlist,
   });
 
-  return [...tools, ...pluginTools];
+  const availableToolNames = [
+    ...tools.map((tool) => tool.name),
+    ...pluginTools.map((tool) => tool.name),
+    "self_inspecting",
+  ];
+  const selfInspectingTool = createSelfInspectingTool({
+    agentSessionKey: options?.agentSessionKey,
+    config: options?.config,
+    availableToolNames,
+    directUserInstruction: options?.directUserInstruction,
+  });
+
+  return [...tools, selfInspectingTool, ...pluginTools];
 }

@@ -255,6 +255,23 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("response_language");
   });
 
+  it("teaches self inspection vs self settings tool boundaries", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      toolNames: ["session_status", "self_inspecting", "self_settings"],
+    });
+
+    expect(prompt).toContain("self_inspecting");
+    expect(prompt).toContain(
+      "available models, tool limits, or why you are behaving a certain way",
+    );
+    expect(prompt).toContain("self_settings");
+    expect(prompt).toContain(
+      "When the user asks you to inspect or explain your own current state, use self_inspecting.",
+    );
+    expect(prompt).toContain("change your own settings or behavior, use self_settings");
+  });
+
   // The system prompt intentionally does NOT include the current date/time.
   // Only the timezone is included, to keep the prompt stable for caching.
   // See: https://github.com/moltbot/moltbot/commit/66eec295b894bce8333886cfbca3b960c57c4946

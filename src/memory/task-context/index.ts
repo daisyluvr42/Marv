@@ -7,6 +7,7 @@ export {
   listTaskContextEntries,
   listTaskContextsForAgent,
   normalizeTaskId,
+  removeTaskContextEntries,
   resolveTaskContextAgentDir,
   resolveTaskContextDbPath,
   resolveTaskContextRootDir,

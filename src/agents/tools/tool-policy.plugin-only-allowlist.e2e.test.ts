@@ -5,7 +5,7 @@ const pluginGroups: PluginToolGroups = {
   all: ["lobster", "workflow_tool"],
   byPlugin: new Map([["lobster", ["lobster", "workflow_tool"]]]),
 };
-const coreTools = new Set(["read", "write", "exec", "session_status"]);
+const coreTools = new Set(["read", "write", "exec", "session_status", "self_inspecting"]);
 
 describe("stripPluginOnlyAllowlist", () => {
   it("strips allowlist when it only targets plugin tools", () => {

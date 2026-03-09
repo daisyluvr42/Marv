@@ -284,6 +284,11 @@
       "title": "Session Status",
       "detailKeys": ["sessionKey", "model"]
     },
+    "self_inspecting": {
+      "emoji": "🪞",
+      "title": "Self Inspecting",
+      "detailKeys": ["query", "cleanupContextPollution"]
+    },
     "memory_search": {
       "emoji": "🧠",
       "title": "Memory Search",

@@ -18,6 +18,11 @@ describe("tool mutation helpers", () => {
     ).toBe(true);
   });
 
+  it("treats self_inspecting as mutating only when cleanup is requested", () => {
+    expect(isMutatingToolCall("self_inspecting", { query: "context" })).toBe(false);
+    expect(isMutatingToolCall("self_inspecting", { cleanupContextPollution: true })).toBe(true);
+  });
+
   it("builds stable fingerprints for mutating calls and omits read-only calls", () => {
     const writeFingerprint = buildToolActionFingerprint(
       "write",

@@ -8,6 +8,7 @@ import {
   normalizeInputProvenance,
 } from "../../core/session/input-provenance.js";
 import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
+import { filterTranscriptMessagesForReplyPreferences } from "../context-pollution.js";
 import { resolveImageSanitizationLimits } from "../image-sanitization.js";
 import {
   downgradeOpenAIReasoningBlocks,
@@ -467,6 +468,8 @@ export async function sanitizeSessionHistory(params: {
   const sanitizedOpenAI = isOpenAIResponsesApi
     ? downgradeOpenAIReasoningBlocks(sanitizedToolResults)
     : sanitizedToolResults;
+  const sanitizedPreferences =
+    filterTranscriptMessagesForReplyPreferences(sanitizedOpenAI).messages;
 
   if (hasSnapshot && (!priorSnapshot || modelChanged)) {
     appendModelSnapshot(params.sessionManager, {
@@ -478,11 +481,11 @@ export async function sanitizeSessionHistory(params: {
   }
 
   if (!policy.applyGoogleTurnOrdering) {
-    return sanitizedOpenAI;
+    return sanitizedPreferences;
   }
 
   return applyGoogleTurnOrderingFix({
-    messages: sanitizedOpenAI,
+    messages: sanitizedPreferences,
     modelApi: params.modelApi,
     sessionManager: params.sessionManager,
     sessionId: params.sessionId,

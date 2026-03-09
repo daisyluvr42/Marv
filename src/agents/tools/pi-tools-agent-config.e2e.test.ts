@@ -280,7 +280,7 @@ describe("Agent-specific tool filtering", () => {
     });
 
     const toolNames = tools.map((t) => t.name);
-    expect(toolNames).toEqual(["session_status"]);
+    expect(toolNames).toEqual(["session_status", "self_settings", "self_inspecting"]);
   });
 
   it("should allow different tool policies for different agents", () => {

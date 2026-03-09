@@ -1,3 +1,4 @@
+import { filterTaskContextEntriesForReplyPreferences } from "../../agents/context-pollution.js";
 import { querySoulMemoryMulti } from "../storage/soul-memory-store.js";
 import { listTaskDecisionBookmarks } from "./bookmark.js";
 import { estimateTextTokens } from "./compressor.js";
@@ -127,7 +128,8 @@ export function buildTaskContextWindow(params: {
     limit: 5000,
     env: params.env,
   });
-  const recentEntries = selectRecentEntriesByTokenBudget(allEntries, budgets.recentEntries);
+  const sanitizedEntries = filterTaskContextEntriesForReplyPreferences(allEntries).entries;
+  const recentEntries = selectRecentEntriesByTokenBudget(sanitizedEntries, budgets.recentEntries);
 
   const currentAndTools = [currentQuery, toolContext].filter(Boolean).join("\n\n").trim();
   const currentAndToolsClamped = clampTextByTokens(currentAndTools, budgets.currentAndTools);

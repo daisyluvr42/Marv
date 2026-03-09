@@ -389,6 +389,64 @@ export function listTaskContextEntries(params: ListTaskContextEntriesParams): Ta
   }
 }
 
+export function removeTaskContextEntries(params: {
+  agentId: string;
+  taskId: string;
+  entryIds: string[];
+  env?: NodeJS.ProcessEnv;
+}): {
+  removedIds: string[];
+  removedCount: number;
+  removedTokens: number;
+} {
+  const entryIds = [...new Set(params.entryIds.map((value) => value.trim()).filter(Boolean))];
+  if (entryIds.length === 0) {
+    return { removedIds: [], removedCount: 0, removedTokens: 0 };
+  }
+  const opened = openTaskContextDb({
+    agentId: params.agentId,
+    taskId: params.taskId,
+    createIfMissing: false,
+    env: params.env,
+  });
+  if (!opened) {
+    return { removedIds: [], removedCount: 0, removedTokens: 0 };
+  }
+  const { db, taskId } = opened;
+  try {
+    const placeholders = entryIds.map(() => "?").join(", ");
+    const rows = db
+      .prepare(
+        `SELECT ${TASK_CONTEXT_ENTRY_SELECT_COLUMNS} FROM task_context_entries ` +
+          `WHERE task_id = ? AND id IN (${placeholders})`,
+      )
+      .all(taskId, ...entryIds) as TaskContextEntryRow[];
+    if (rows.length === 0) {
+      return { removedIds: [], removedCount: 0, removedTokens: 0 };
+    }
+
+    const removedIds = rows.map((row) => row.id);
+    const removedTokens = rows.reduce((sum, row) => sum + Math.max(0, row.token_count ?? 0), 0);
+    db.prepare(
+      `DELETE FROM task_context_entries WHERE task_id = ? AND id IN (${placeholders})`,
+    ).run(taskId, ...removedIds);
+    db.prepare(
+      "UPDATE task_context " +
+        "SET total_entries = MAX(0, total_entries - ?), " +
+        "total_tokens = MAX(0, total_tokens - ?), updated_at = ? " +
+        "WHERE task_id = ?",
+    ).run(removedIds.length, removedTokens, Date.now(), taskId);
+
+    return {
+      removedIds,
+      removedCount: removedIds.length,
+      removedTokens,
+    };
+  } finally {
+    db.close();
+  }
+}
+
 export function updateTaskContextStatus(params: UpdateTaskContextStatusParams): TaskContext | null {
   const opened = openTaskContextDb({
     agentId: params.agentId,

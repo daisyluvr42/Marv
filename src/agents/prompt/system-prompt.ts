@@ -309,6 +309,8 @@ export function buildAgentSystemPrompt(params: {
     subagents: "List, steer, or kill sub-agent runs for this requester session",
     session_status:
       "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",
+    self_inspecting:
+      "Inspect your own runtime/models/context/tools state; use for questions about your current status, available models, tool limits, or why you are behaving a certain way",
     self_settings:
       "Apply current-session self-settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new) for a direct user request",
     request_escalation: "Request task-scoped elevated permissions with user approval",
@@ -340,6 +342,7 @@ export function buildAgentSystemPrompt(params: {
     "sessions_send",
     "subagents",
     "session_status",
+    "self_inspecting",
     "self_settings",
     "request_escalation",
     "request_missing_tools",
@@ -490,8 +493,10 @@ export function buildAgentSystemPrompt(params: {
           "- sessions_send: send to another session",
           "- subagents: list/steer/kill sub-agent runs",
           '- session_status: show usage/time/model state and answer "what model are we using?"',
+          "- self_inspecting: inspect your own models/context/tools state when the user asks about your status, available models, limits, or current behavior",
           "- self_settings: change current session model/thinking/verbose/reasoning/usage/elevated/exec/queue/reset when the user directly asks",
         ].join("\n"),
+    "When the user asks you to inspect or explain your own current state, use self_inspecting. When the user asks you to change your own settings or behavior, use self_settings.",
     "TOOLS.md does not control tool availability; it is user guidance for how to use external tools.",
     `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,
     "If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.",
