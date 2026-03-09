@@ -310,9 +310,9 @@ export function buildAgentSystemPrompt(params: {
     session_status:
       "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",
     self_inspecting:
-      "Inspect your own runtime/models/context/tools state; use for questions about your current status, available models, tool limits, or why you are behaving a certain way",
+      "Inspect your own runtime/settings/models/scheduled-tasks/context/tools state; use for questions about your current status, settings, available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     self_settings:
-      "Apply current-session self-settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new) for a direct user request",
+      "Apply current-session self-settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new, runtime model-registry refresh) for a direct user request",
     request_escalation: "Request task-scoped elevated permissions with user approval",
     request_missing_tools: "Discover/install skills for missing capabilities (approval required)",
     image: "Analyze an image with the configured image model",
@@ -493,10 +493,10 @@ export function buildAgentSystemPrompt(params: {
           "- sessions_send: send to another session",
           "- subagents: list/steer/kill sub-agent runs",
           '- session_status: show usage/time/model state and answer "what model are we using?"',
-          "- self_inspecting: inspect your own models/context/tools state when the user asks about your status, available models, limits, or current behavior",
-          "- self_settings: change current session model/thinking/verbose/reasoning/usage/elevated/exec/queue/reset when the user directly asks",
+          "- self_inspecting: inspect your own runtime/settings/models/scheduled tasks/context/tools state when the user asks about your status, settings, available models, scheduled tasks, limits, or current behavior",
+          "- self_settings: change current session model/thinking/verbose/reasoning/usage/elevated/exec/queue/reset or refresh the runtime model registry when the user directly asks",
         ].join("\n"),
-    "When the user asks you to inspect or explain your own current state, use self_inspecting. When the user asks you to change your own settings or behavior, use self_settings.",
+    "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first. Do not guess or switch models before checking. When the user asks you to change your own settings or behavior, use self_settings.",
     "TOOLS.md does not control tool availability; it is user guidance for how to use external tools.",
     `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,
     "If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.",

@@ -263,12 +263,13 @@ describe("buildAgentSystemPrompt", () => {
 
     expect(prompt).toContain("self_inspecting");
     expect(prompt).toContain(
-      "available models, tool limits, or why you are behaving a certain way",
+      "available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     );
     expect(prompt).toContain("self_settings");
     expect(prompt).toContain(
-      "When the user asks you to inspect or explain your own current state, use self_inspecting.",
+      "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
     );
+    expect(prompt).toContain("Do not guess or switch models before checking.");
     expect(prompt).toContain("change your own settings or behavior, use self_settings");
   });
 
