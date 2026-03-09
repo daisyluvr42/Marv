@@ -75,6 +75,27 @@ function buildMemorySection(params: {
   return lines;
 }
 
+function buildLanguageSection(params: { isMinimal: boolean; availableTools: Set<string> }) {
+  if (params.isMinimal) {
+    return [];
+  }
+  const hasMemory =
+    params.availableTools.has("memory_search") || params.availableTools.has("memory_write");
+  const lines = [
+    "## Response Language",
+    "Match the user's language: detect from their messages and reply in the same language.",
+    'If the user explicitly requests a language (e.g., "speak English", "用中文回复"), switch immediately and persist that preference.',
+    "Chinese-specific: never add pinyin romanization unless the user explicitly asks for it. Reply in plain Chinese characters only.",
+  ];
+  if (hasMemory) {
+    lines.push(
+      "Persistence: when the user explicitly changes language preference, store it via memory_write (key: `response_language`). On session start, check memory for a stored language preference before defaulting to auto-detection.",
+    );
+  }
+  lines.push("");
+  return lines;
+}
+
 function buildUserIdentitySection(ownerLine: string | undefined, isMinimal: boolean) {
   if (!ownerLine || isMinimal) {
     return [];
@@ -576,6 +597,7 @@ export function buildAgentSystemPrompt(params: {
       : "",
     params.sandboxInfo?.enabled ? "" : "",
     ...buildUserIdentitySection(ownerLine, isMinimal),
+    ...buildLanguageSection({ isMinimal, availableTools }),
     ...buildTimeSection({
       userTimezone,
     }),
