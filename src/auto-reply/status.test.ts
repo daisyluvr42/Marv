@@ -214,6 +214,30 @@ describe("buildStatusMessage", () => {
     expect(normalizeTestText(text)).toContain("Model: openai/gpt-4.1-mini");
   });
 
+  it("prefers the session's current runtime model over the configured default", () => {
+    const text = buildStatusMessage({
+      agent: {
+        model: "anthropic/claude-opus-4-6",
+        contextTokens: 32_000,
+      },
+      sessionEntry: {
+        sessionId: "runtime-1",
+        updatedAt: 0,
+        modelProvider: "google",
+        model: "gemini-2.0-flash",
+        contextTokens: 1_048_576,
+      },
+      sessionKey: "agent:main:main",
+      sessionScope: "per-sender",
+      queue: { mode: "collect", depth: 0 },
+      modelAuth: "api-key",
+    });
+
+    const normalized = normalizeTestText(text);
+    expect(normalized).toContain("Model: google/gemini-2.0-flash");
+    expect(normalized).toContain("Context:");
+  });
+
   it("keeps provider prefix from configured model", () => {
     const text = buildStatusMessage({
       agent: {

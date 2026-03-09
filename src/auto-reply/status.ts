@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { resolveModelAuthMode } from "../agents/model/model-auth.js";
-import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
+import { parseModelRef, resolveConfiguredModelRef } from "../agents/model/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../agents/sandbox/sandbox.js";
 import type { SkillCommandSpec } from "../agents/skills.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../agents/usage.js";
@@ -336,8 +336,28 @@ export function buildStatusMessage(args: StatusArgs): string {
     defaultProvider: DEFAULT_PROVIDER,
     defaultModel: DEFAULT_MODEL,
   });
-  const provider = entry?.providerOverride ?? resolved.provider ?? DEFAULT_PROVIDER;
-  let model = entry?.modelOverride ?? resolved.model ?? DEFAULT_MODEL;
+  const configuredModelRaw =
+    typeof args.agent?.model === "string"
+      ? args.agent.model
+      : typeof args.agent?.model === "object"
+        ? args.agent.model?.primary
+        : undefined;
+  const configuredModelRef = configuredModelRaw
+    ? parseModelRef(configuredModelRaw, resolved.provider ?? DEFAULT_PROVIDER)
+    : null;
+  const configuredProvider = configuredModelRef?.provider ?? resolved.provider ?? DEFAULT_PROVIDER;
+  const configuredModel = configuredModelRef?.model ?? resolved.model ?? DEFAULT_MODEL;
+  const overrideProvider = entry?.providerOverride?.trim();
+  const overrideModel = entry?.modelOverride?.trim();
+  const runtimeProvider = entry?.modelProvider?.trim();
+  const runtimeModel = entry?.model?.trim();
+  const provider =
+    overrideProvider ||
+    (overrideModel ? configuredProvider : undefined) ||
+    runtimeProvider ||
+    configuredProvider ||
+    DEFAULT_PROVIDER;
+  let model = overrideModel || runtimeModel || configuredModel || DEFAULT_MODEL;
   let contextTokens =
     entry?.contextTokens ??
     args.agent?.contextTokens ??

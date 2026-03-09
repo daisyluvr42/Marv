@@ -242,6 +242,19 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("current date");
   });
 
+  it("forbids automatic pinyin in Chinese replies", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      toolNames: ["memory_search", "memory_write"],
+    });
+
+    expect(prompt).toContain(
+      "Chinese-specific: never add pinyin romanization unless the user explicitly asks for it.",
+    );
+    expect(prompt).toContain("Reply in plain Chinese characters only.");
+    expect(prompt).toContain("response_language");
+  });
+
   // The system prompt intentionally does NOT include the current date/time.
   // Only the timezone is included, to keep the prompt stable for caching.
   // See: https://github.com/moltbot/moltbot/commit/66eec295b894bce8333886cfbca3b960c57c4946
