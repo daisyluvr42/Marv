@@ -7,6 +7,8 @@ export const FIELD_HELP: Record<string, string> = {
   "update.checkOnStart": "Check for npm updates when the gateway starts (default: true).",
   "update.autoCheckIntervalMs":
     "Interval in milliseconds for the managed update-check cron job (default: 86400000).",
+  "update.autoApplyCron":
+    "For git deployment checkouts, auto-apply updates during the managed update-check cron job instead of only notifying.",
   "gateway.remote.url": "Remote Gateway WebSocket URL (ws:// or wss://).",
   "gateway.remote.tlsFingerprint":
     "Expected sha256 TLS fingerprint for the remote gateway (pin to avoid MITM).",

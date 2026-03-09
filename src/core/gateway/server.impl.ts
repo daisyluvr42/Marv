@@ -23,6 +23,7 @@ import {
   type HeartbeatRunner,
 } from "../../infra/heartbeat/heartbeat-runner.js";
 import { getMachineDisplayName } from "../../infra/machine-name.js";
+import { resolveMarvPackageRoot } from "../../infra/marv-root.js";
 import { ensureMarvCliOnPath } from "../../infra/path-env.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../../infra/restart.js";
 import {
@@ -30,6 +31,7 @@ import {
   refreshRemoteBinsForConnectedNodes,
   setSkillsRemoteRegistry,
 } from "../../infra/skills-remote.js";
+import { markDeployHealthy } from "../../infra/update/deploy-state.js";
 import { scheduleGatewayUpdateCheck } from "../../infra/update/update-startup.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../../logging/diagnostic.js";
 import { createSubsystemLogger, runtimeForLogger } from "../../logging/subsystem.js";
@@ -652,6 +654,18 @@ export async function startGatewayServer(
     isNixMode,
   });
   if (!minimalTestGateway) {
+    void resolveMarvPackageRoot({
+      moduleUrl: import.meta.url,
+      argv1: process.argv[1],
+      cwd: process.cwd(),
+    })
+      .then((root) => {
+        if (!root) {
+          return;
+        }
+        return markDeployHealthy({ root });
+      })
+      .catch(() => undefined);
     scheduleGatewayUpdateCheck({ cfg: cfgAtStart, log, isNixMode });
   }
   const tailscaleCleanup = minimalTestGateway

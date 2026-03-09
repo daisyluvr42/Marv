@@ -3,7 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { pathExists } from "../../utils.js";
-import { runGatewayUpdate } from "./update-runner.js";
+import { updateDeployState } from "./deploy-state.js";
+import { runGatewayRollback, runGatewayUpdate } from "./update-runner.js";
 
 type CommandResponse = { stdout?: string; stderr?: string; code?: number | null };
 type CommandResult = { stdout: string; stderr: string; code: number | null };
@@ -45,6 +46,7 @@ describe("runGatewayUpdate", () => {
   });
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     // Shared fixtureRoot cleaned up in afterAll.
   });
 
@@ -243,6 +245,132 @@ describe("runGatewayUpdate", () => {
     expect(result.reason).toBe("build-failed");
     expect(calls.some((call) => call === "pnpm install")).toBe(true);
     expect(calls.some((call) => call === "pnpm ui:build")).toBe(false);
+  });
+
+  it("rolls back to the last known good sha when a deploy step fails after checkout moved", async () => {
+    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
+    const stateDir = await fs.mkdtemp(path.join(fixtureRoot, `state-${caseId++}`));
+    vi.stubEnv("MARV_STATE_DIR", stateDir);
+    await updateDeployState({ root: tempDir }, (state) => {
+      state.lastKnownGood = {
+        root: tempDir,
+        sha: "good123",
+        branch: "main",
+        upstream: "origin/main",
+        version: "1.0.0",
+        recordedAt: new Date().toISOString(),
+      };
+    });
+
+    let headReadCount = 0;
+    let buildCount = 0;
+    const runCommand = async (argv: string[]) => {
+      const key = argv.join(" ");
+      if (key === `git -C ${tempDir} rev-parse --show-toplevel`) {
+        return { stdout: tempDir, stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse HEAD`) {
+        headReadCount += 1;
+        const value = headReadCount === 1 ? "old123" : "new456";
+        return { stdout: `${value}\n`, stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} status --porcelain -- :!dist/control-ui/`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} tag --list v* --sort=-v:refname`) {
+        return { stdout: "v1.0.1\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} fetch --all --prune --tags`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} checkout --detach v1.0.1`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "pnpm install") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "pnpm build") {
+        buildCount += 1;
+        return buildCount === 1
+          ? { stdout: "", stderr: "boom", code: 1 }
+          : { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} reset --hard good123`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "pnpm ui:build") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (
+        key ===
+        `${process.execPath} ${path.join(tempDir, "marv.mjs")} doctor --non-interactive --fix`
+      ) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      return { stdout: "", stderr: "", code: 0 };
+    };
+
+    const result = await runGatewayUpdate({
+      cwd: tempDir,
+      channel: "stable",
+      timeoutMs: 5_000,
+      runCommand: async (argv) => runCommand(argv),
+    });
+
+    expect(result.status).toBe("error");
+    expect(result.reason).toBe("build-failed");
+    expect(result.deploy?.rolledBackToSha).toBe("good123");
+  });
+
+  it("rolls back to last known good through the standalone rollback flow", async () => {
+    await setupGitCheckout({ packageManager: "pnpm@8.0.0" });
+    const stateDir = await fs.mkdtemp(path.join(fixtureRoot, `state-${caseId++}`));
+    vi.stubEnv("MARV_STATE_DIR", stateDir);
+    await updateDeployState({ root: tempDir }, (state) => {
+      state.lastKnownGood = {
+        root: tempDir,
+        sha: "good123",
+        branch: "main",
+        upstream: "origin/main",
+        version: "1.0.0",
+        recordedAt: new Date().toISOString(),
+      };
+    });
+
+    const calls: string[] = [];
+    const runCommand = async (argv: string[]) => {
+      const key = argv.join(" ");
+      calls.push(key);
+      if (key === `git -C ${tempDir} rev-parse --show-toplevel`) {
+        return { stdout: tempDir, stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} rev-parse HEAD`) {
+        return { stdout: "bad999\n", stderr: "", code: 0 };
+      }
+      if (key === `git -C ${tempDir} reset --hard good123`) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (key === "pnpm install" || key === "pnpm build" || key === "pnpm ui:build") {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      if (
+        key ===
+        `${process.execPath} ${path.join(tempDir, "marv.mjs")} doctor --non-interactive --fix`
+      ) {
+        return { stdout: "", stderr: "", code: 0 };
+      }
+      return { stdout: "", stderr: "", code: 0 };
+    };
+
+    const result = await runGatewayRollback({
+      cwd: tempDir,
+      timeoutMs: 5_000,
+      runCommand: async (argv) => runCommand(argv),
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.deploy?.rolledBackToSha).toBe("good123");
+    expect(calls).toContain(`git -C ${tempDir} reset --hard good123`);
   });
 
   it("uses stable tag when beta tag is older than release", async () => {

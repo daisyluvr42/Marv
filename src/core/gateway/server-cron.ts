@@ -9,9 +9,12 @@ import { normalizeHttpWebhookUrl } from "../../cron/webhook-url.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { runHeartbeatOnce } from "../../infra/heartbeat/heartbeat-runner.js";
 import { requestHeartbeatNow } from "../../infra/heartbeat/heartbeat-wake.js";
+import { resolveMarvPackageRoot } from "../../infra/marv-root.js";
 import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
 import { SsrFBlockedError } from "../../infra/net/ssrf.js";
+import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
+import { normalizeUpdateChannel } from "../../infra/update/update-channels.js";
 import {
   buildUpdateNotificationPrompt,
   checkForUpdate,
@@ -20,6 +23,7 @@ import {
   resolveUpdateCheckIntervalMs,
   shouldNotifyForVersion,
 } from "../../infra/update/update-notify.js";
+import { runGatewayUpdate } from "../../infra/update/update-runner.js";
 import { getChildLogger } from "../../logging.js";
 import {
   formatSoulMemoryMaintenanceSummary,
@@ -253,6 +257,40 @@ export function buildGatewayCronService(params: {
         });
         if (!update.available || !update.latestVersion) {
           return { status: "skipped", summary: "Marv is up to date." };
+        }
+        if (update.installKind === "git" && runtimeConfig.update?.autoApplyCron === true) {
+          const root =
+            (await resolveMarvPackageRoot({
+              moduleUrl: import.meta.url,
+              argv1: process.argv[1],
+              cwd: process.cwd(),
+            })) ?? process.cwd();
+          const updateResult = await runGatewayUpdate({
+            timeoutMs: 20 * 60_000,
+            cwd: root,
+            argv1: process.argv[1],
+            channel: normalizeUpdateChannel(runtimeConfig.update?.channel) ?? undefined,
+          });
+          if (updateResult.status === "ok") {
+            job.state.lastNotifiedVersion = update.latestVersion;
+            job.state.lastNotifiedTag = update.tag;
+            scheduleGatewaySigusr1Restart({
+              reason: "cron.updateCheck",
+            });
+          }
+          return {
+            status:
+              updateResult.status === "ok"
+                ? "ok"
+                : updateResult.status === "skipped"
+                  ? "skipped"
+                  : "error",
+            error: updateResult.status === "error" ? updateResult.reason : undefined,
+            summary:
+              updateResult.status === "ok"
+                ? `Applied git update ${update.currentVersion} -> ${update.latestVersion}.`
+                : (updateResult.reason ?? formatAvailableUpdateSummary(update)),
+          };
         }
         if (
           !shouldNotifyForVersion({

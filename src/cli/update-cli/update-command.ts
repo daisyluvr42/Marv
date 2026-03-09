@@ -387,7 +387,7 @@ async function updatePluginsAfterCoreUpdate(params: {
   }
 }
 
-async function maybeRestartService(params: {
+export async function maybeRestartService(params: {
   shouldRestart: boolean;
   result: UpdateRunResult;
   opts: UpdateCommandOptions;

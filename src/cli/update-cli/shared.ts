@@ -33,6 +33,12 @@ export type UpdateStatusOptions = {
   timeout?: string;
 };
 
+export type UpdateRollbackOptions = {
+  json?: boolean;
+  restart?: boolean;
+  timeout?: string;
+};
+
 export type UpdateWizardOptions = {
   timeout?: string;
 };

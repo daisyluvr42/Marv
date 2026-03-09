@@ -6,6 +6,9 @@ import type { UpdateRunResult } from "../../../infra/update/update-runner.js";
 let capturedPayload: RestartSentinelPayload | undefined;
 
 const runGatewayUpdateMock = vi.fn<() => Promise<UpdateRunResult>>();
+const runGatewayRollbackMock = vi.fn<() => Promise<UpdateRunResult>>();
+const checkForUpdateMock = vi.fn();
+const readDeployStateMock = vi.fn();
 
 const scheduleGatewaySigusr1RestartMock = vi.fn(() => ({ scheduled: true }));
 
@@ -51,16 +54,28 @@ vi.mock("../../../infra/restart.js", () => ({
   scheduleGatewaySigusr1Restart: scheduleGatewaySigusr1RestartMock,
 }));
 
+vi.mock("../../../infra/update/deploy-state.js", () => ({
+  readDeployState: (...args: unknown[]) => readDeployStateMock(...args),
+  resolveDeployStatePath: () => "/tmp/deploy-state.json",
+}));
+
 vi.mock("../../../infra/update/update-channels.js", () => ({
   normalizeUpdateChannel: () => undefined,
 }));
 
+vi.mock("../../../infra/update/update-notify.js", () => ({
+  checkForUpdate: (...args: unknown[]) => checkForUpdateMock(...args),
+}));
+
 vi.mock("../../../infra/update/update-runner.js", () => ({
   runGatewayUpdate: runGatewayUpdateMock,
+  runGatewayRollback: runGatewayRollbackMock,
 }));
 
 vi.mock("../protocol/index.js", () => ({
   validateUpdateRunParams: () => true,
+  validateUpdateStatusParams: () => true,
+  validateUpdateRollbackParams: () => true,
 }));
 
 vi.mock("./restart-request.js", () => ({
@@ -84,6 +99,28 @@ beforeEach(() => {
     steps: [],
     durationMs: 100,
   });
+  runGatewayRollbackMock.mockReset();
+  runGatewayRollbackMock.mockResolvedValue({
+    status: "ok",
+    mode: "git",
+    steps: [],
+    durationMs: 100,
+  });
+  checkForUpdateMock.mockReset();
+  checkForUpdateMock.mockResolvedValue({
+    available: true,
+    currentVersion: "abc123",
+    latestVersion: "def456",
+    channel: "dev",
+    tag: "dev",
+    installKind: "git",
+  });
+  readDeployStateMock.mockReset();
+  readDeployStateMock.mockResolvedValue({
+    version: 1,
+    root: "/tmp/marv",
+    lastKnownGood: { sha: "abc123" },
+  });
   scheduleGatewaySigusr1RestartMock.mockReset();
   scheduleGatewaySigusr1RestartMock.mockReturnValue({ scheduled: true });
 });
@@ -95,6 +132,19 @@ async function invokeUpdateRun(
   const { updateHandlers } = await import("./update.js");
   const onRespond = respond ?? (() => {});
   await updateHandlers["update.run"]({
+    params,
+    respond: onRespond as never,
+  } as never);
+}
+
+async function invokeHandler(
+  method: "update.status" | "update.rollback",
+  params: Record<string, unknown>,
+  respond: ((ok: boolean, response?: unknown) => void) | undefined = undefined,
+) {
+  const { updateHandlers } = await import("./update.js");
+  const onRespond = respond ?? (() => {});
+  await updateHandlers[method]({
     params,
     respond: onRespond as never,
   } as never);
@@ -188,5 +238,38 @@ describe("update.run restart scheduling", () => {
     expect(scheduleGatewaySigusr1RestartMock).not.toHaveBeenCalled();
     expect(payload?.ok).toBe(false);
     expect(payload?.restart).toBeNull();
+  });
+});
+
+describe("update.status", () => {
+  it("returns deploy state and update availability", async () => {
+    let payload: Record<string, unknown> | undefined;
+
+    await invokeHandler("update.status", {}, (_ok, response) => {
+      payload = response as Record<string, unknown>;
+    });
+
+    expect(payload?.ok).toBe(true);
+    expect(payload?.statePath).toBe("/tmp/deploy-state.json");
+    expect(payload?.trackedBranch).toBe("main");
+    expect(readDeployStateMock).toHaveBeenCalled();
+    expect(checkForUpdateMock).toHaveBeenCalled();
+  });
+});
+
+describe("update.rollback", () => {
+  it("runs rollback and schedules restart on success", async () => {
+    let payload: { ok?: boolean; restart?: unknown } | undefined;
+
+    await invokeHandler("update.rollback", { note: "rollback now" }, (_ok, response) => {
+      payload = response as { ok?: boolean; restart?: unknown };
+    });
+
+    expect(runGatewayRollbackMock).toHaveBeenCalledTimes(1);
+    expect(scheduleGatewaySigusr1RestartMock).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "update.rollback" }),
+    );
+    expect(payload?.ok).toBe(true);
+    expect(payload?.restart).toEqual({ scheduled: true });
   });
 });

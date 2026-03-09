@@ -19,6 +19,7 @@ const GATEWAY_ADMIN_ACTIONS = new Set([
   "config.patches.commit",
   "config.revisions.rollback",
   "update.run",
+  "update.rollback",
 ]);
 
 const CRON_ADMIN_ACTIONS = new Set(["add", "update", "remove"]);

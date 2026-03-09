@@ -28,6 +28,7 @@ vi.mock("@clack/prompts", () => ({
 // Mock the update-runner module
 vi.mock("../infra/update/update-runner.js", () => ({
   runGatewayUpdate: vi.fn(),
+  runGatewayRollback: vi.fn(),
 }));
 
 vi.mock("../infra/marv-root.js", () => ({
@@ -107,7 +108,7 @@ vi.mock("../runtime.js", () => ({
   },
 }));
 
-const { runGatewayUpdate } = await import("../infra/update/update-runner.js");
+const { runGatewayRollback, runGatewayUpdate } = await import("../infra/update/update-runner.js");
 const { resolveMarvPackageRoot } = await import("../infra/marv-root.js");
 const { readConfigFileSnapshot, writeConfigFile } = await import("../core/config/config.js");
 const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
@@ -116,8 +117,13 @@ const { runCommandWithTimeout } = await import("../process/exec.js");
 const { runDaemonRestart } = await import("./daemon-cli.js");
 const { doctorCommand } = await import("../commands/doctor.js");
 const { defaultRuntime } = await import("../runtime.js");
-const { updateCommand, registerUpdateCli, updateStatusCommand, updateWizardCommand } =
-  await import("./update-cli.js");
+const {
+  updateCommand,
+  updateRollbackCommand,
+  registerUpdateCli,
+  updateStatusCommand,
+  updateWizardCommand,
+} = await import("./update-cli.js");
 
 describe("update-cli", () => {
   let fixtureRoot = "";
@@ -212,6 +218,7 @@ describe("update-cli", () => {
     confirm.mockReset();
     select.mockReset();
     vi.mocked(runGatewayUpdate).mockReset();
+    vi.mocked(runGatewayRollback).mockReset();
     vi.mocked(resolveMarvPackageRoot).mockReset();
     vi.mocked(readConfigFileSnapshot).mockReset();
     vi.mocked(writeConfigFile).mockReset();
@@ -285,6 +292,7 @@ describe("update-cli", () => {
 
   it("exports updateCommand and registerUpdateCli", async () => {
     expect(typeof updateCommand).toBe("function");
+    expect(typeof updateRollbackCommand).toBe("function");
     expect(typeof registerUpdateCli).toBe("function");
     expect(typeof updateWizardCommand).toBe("function");
   }, 20_000);
@@ -313,6 +321,39 @@ describe("update-cli", () => {
     await updateCommand({ json: false });
 
     expect(runGatewayUpdate).toHaveBeenCalled();
+    expect(defaultRuntime.log).toHaveBeenCalled();
+  });
+
+  it("updateRollbackCommand runs rollback and outputs result", async () => {
+    const mockResult: UpdateRunResult = {
+      status: "ok",
+      mode: "git",
+      root: "/test/path",
+      before: { sha: "bad999", version: "1.0.2" },
+      after: { sha: "good123", version: "1.0.1" },
+      deploy: {
+        statePath: "/tmp/deploy-state.json",
+        lastKnownGoodSha: "good123",
+        targetSha: "good123",
+        rolledBackToSha: "good123",
+      },
+      steps: [
+        {
+          name: "git reset --hard",
+          command: "git reset --hard good123",
+          cwd: "/test/path",
+          durationMs: 100,
+          exitCode: 0,
+        },
+      ],
+      durationMs: 500,
+    };
+
+    vi.mocked(runGatewayRollback).mockResolvedValue(mockResult);
+
+    await updateRollbackCommand({ json: false });
+
+    expect(runGatewayRollback).toHaveBeenCalled();
     expect(defaultRuntime.log).toHaveBeenCalled();
   });
 
@@ -463,6 +504,23 @@ describe("update-cli", () => {
     expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
   });
 
+  it("updateRollbackCommand exits with error on failure", async () => {
+    const mockResult: UpdateRunResult = {
+      status: "error",
+      mode: "git",
+      reason: "rollback-failed",
+      steps: [],
+      durationMs: 100,
+    };
+
+    vi.mocked(runGatewayRollback).mockResolvedValue(mockResult);
+    vi.mocked(defaultRuntime.exit).mockClear();
+
+    await updateRollbackCommand({});
+
+    expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
+  });
+
   it("updateCommand restarts daemon by default", async () => {
     const mockResult: UpdateRunResult = {
       status: "ok",
@@ -475,6 +533,22 @@ describe("update-cli", () => {
     vi.mocked(runDaemonRestart).mockResolvedValue(true);
 
     await updateCommand({});
+
+    expect(runDaemonRestart).toHaveBeenCalled();
+  });
+
+  it("updateRollbackCommand restarts daemon by default", async () => {
+    const mockResult: UpdateRunResult = {
+      status: "ok",
+      mode: "git",
+      steps: [],
+      durationMs: 100,
+    };
+
+    vi.mocked(runGatewayRollback).mockResolvedValue(mockResult);
+    vi.mocked(runDaemonRestart).mockResolvedValue(true);
+
+    await updateRollbackCommand({});
 
     expect(runDaemonRestart).toHaveBeenCalled();
   });
@@ -529,6 +603,21 @@ describe("update-cli", () => {
     expect(runDaemonRestart).not.toHaveBeenCalled();
   });
 
+  it("updateRollbackCommand skips restart when --no-restart is set", async () => {
+    const mockResult: UpdateRunResult = {
+      status: "ok",
+      mode: "git",
+      steps: [],
+      durationMs: 100,
+    };
+
+    vi.mocked(runGatewayRollback).mockResolvedValue(mockResult);
+
+    await updateRollbackCommand({ restart: false });
+
+    expect(runDaemonRestart).not.toHaveBeenCalled();
+  });
+
   it("updateCommand skips success message when restart does not run", async () => {
     const mockResult: UpdateRunResult = {
       status: "ok",
@@ -557,6 +646,16 @@ describe("update-cli", () => {
     expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
   });
 
+  it("updateRollbackCommand validates timeout option", async () => {
+    vi.mocked(defaultRuntime.error).mockClear();
+    vi.mocked(defaultRuntime.exit).mockClear();
+
+    await updateRollbackCommand({ timeout: "invalid" });
+
+    expect(defaultRuntime.error).toHaveBeenCalledWith(expect.stringContaining("timeout"));
+    expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
+  });
+
   it("updateStatusCommand validates timeout option", async () => {
     vi.mocked(defaultRuntime.error).mockClear();
     vi.mocked(defaultRuntime.exit).mockClear();
@@ -565,6 +664,24 @@ describe("update-cli", () => {
 
     expect(defaultRuntime.error).toHaveBeenCalledWith(expect.stringContaining("timeout"));
     expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
+  });
+
+  it("updateRollbackCommand reports when no last known good deployment exists", async () => {
+    const mockResult: UpdateRunResult = {
+      status: "skipped",
+      mode: "git",
+      reason: "no-last-known-good",
+      steps: [],
+      durationMs: 100,
+    };
+
+    vi.mocked(runGatewayRollback).mockResolvedValue(mockResult);
+
+    await updateRollbackCommand({});
+
+    const logLines = vi.mocked(defaultRuntime.log).mock.calls.map((call) => String(call[0]));
+    expect(logLines.some((line) => line.includes("last-known-good deployment"))).toBe(true);
+    expect(defaultRuntime.exit).toHaveBeenCalledWith(0);
   });
 
   it("persists update channel when --channel is set", async () => {

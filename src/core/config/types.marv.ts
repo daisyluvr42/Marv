@@ -67,6 +67,8 @@ export type MarvConfig = {
     checkOnStart?: boolean;
     /** Interval for managed update-check cron jobs in milliseconds. */
     autoCheckIntervalMs?: number;
+    /** Auto-apply git deployment updates from the tracked upstream branch during cron checks. */
+    autoApplyCron?: boolean;
   };
   browser?: BrowserConfig;
   ui?: {

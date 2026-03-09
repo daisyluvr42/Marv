@@ -54,6 +54,8 @@ import type {
   ConfigSchemaParamsSchema,
   ConfigSchemaResponseSchema,
   ConfigSetParamsSchema,
+  UpdateRollbackParamsSchema,
+  UpdateStatusParamsSchema,
   UpdateRunParamsSchema,
 } from "./config.js";
 import type {
@@ -255,5 +257,7 @@ export type ChatInjectParams = Static<typeof ChatInjectParamsSchema>;
 export type ChatEvent = Static<typeof ChatEventSchema>;
 export type LedgerEventsQueryParams = Static<typeof LedgerEventsQueryParamsSchema>;
 export type UpdateRunParams = Static<typeof UpdateRunParamsSchema>;
+export type UpdateStatusParams = Static<typeof UpdateStatusParamsSchema>;
+export type UpdateRollbackParams = Static<typeof UpdateRollbackParamsSchema>;
 export type TickEvent = Static<typeof TickEventSchema>;
 export type ShutdownEvent = Static<typeof ShutdownEventSchema>;

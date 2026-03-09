@@ -206,4 +206,38 @@ describe("gateway tool", () => {
       expect(params).toMatchObject({ timeoutMs: 20 * 60_000 });
     }
   });
+
+  it("passes update.status and update.rollback through gateway call", async () => {
+    const { callGatewayTool } = await import("./gateway.js");
+    const tool = createMarvTools({
+      agentSessionKey: "agent:main:whatsapp:dm:+15555550123",
+    }).find((candidate) => candidate.name === "gateway");
+    expect(tool).toBeDefined();
+    if (!tool) {
+      throw new Error("missing gateway tool");
+    }
+
+    await tool.execute("call_status", {
+      action: "update.status",
+      timeoutMs: 1234,
+    });
+    await tool.execute("call_rollback", {
+      action: "update.rollback",
+      note: "rollback",
+    });
+
+    expect(callGatewayTool).toHaveBeenCalledWith(
+      "update.status",
+      expect.any(Object),
+      expect.objectContaining({ timeoutMs: 1234 }),
+    );
+    expect(callGatewayTool).toHaveBeenCalledWith(
+      "update.rollback",
+      expect.any(Object),
+      expect.objectContaining({
+        note: "rollback",
+        sessionKey: "agent:main:whatsapp:dm:+15555550123",
+      }),
+    );
+  });
 });

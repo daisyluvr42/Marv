@@ -39,7 +39,9 @@ const GATEWAY_ACTIONS = [
   "config.revisions.rollback",
   "config.revisions.list",
   "ledger.events.query",
+  "update.status",
   "update.run",
+  "update.rollback",
 ] as const;
 
 // NOTE: Using a flattened object schema instead of Type.Union([Type.Object(...), ...])
@@ -50,7 +52,7 @@ const GatewayToolSchema = Type.Object({
   // restart
   delayMs: Type.Optional(Type.Number()),
   reason: Type.Optional(Type.String()),
-  // config.get, config.schema, config.apply, update.run
+  // config.get, config.schema, config.apply, update.run, update.status, update.rollback
   gatewayUrl: Type.Optional(Type.String()),
   gatewayToken: Type.Optional(Type.String()),
   timeoutMs: Type.Optional(Type.Number()),
@@ -89,7 +91,7 @@ export function createGatewayTool(opts?: {
     label: "Gateway",
     name: "gateway",
     description:
-      "Restart/update the gateway, apply config changes, and run semantic config patch lifecycle (propose/commit/rollback). Use config.patch for direct partial updates, config.apply for full replacement, and ledger.events.query for config audit trails.",
+      "Restart/update the gateway, inspect deploy status, roll back to the last known good deploy, apply config changes, and run semantic config patch lifecycle (propose/commit/rollback). Use config.patch for direct partial updates, config.apply for full replacement, and ledger.events.query for config audit trails.",
     parameters: GatewayToolSchema,
     execute: async (_toolCallId, args) => {
       const params = args as Record<string, unknown>;
@@ -219,6 +221,14 @@ export function createGatewayTool(opts?: {
         const result = await callGatewayTool("config.schema", gatewayOpts, {});
         return jsonResult({ ok: true, result });
       }
+      if (action === "update.status") {
+        const result = await callGatewayTool(
+          "update.status",
+          gatewayOpts,
+          timeoutMs ? { timeoutMs } : {},
+        );
+        return jsonResult({ ok: true, result });
+      }
       if (action === "config.apply") {
         const { raw, baseHash, sessionKey, note, restartDelayMs } =
           await resolveConfigWriteParams();
@@ -333,6 +343,16 @@ export function createGatewayTool(opts?: {
           note,
           restartDelayMs,
           timeoutMs: timeoutMs ?? DEFAULT_UPDATE_TIMEOUT_MS,
+        });
+        return jsonResult({ ok: true, result });
+      }
+      if (action === "update.rollback") {
+        const { sessionKey, note, restartDelayMs } = resolveGatewayWriteMeta();
+        const result = await callGatewayTool("update.rollback", gatewayOpts, {
+          ...(timeoutMs ? { timeoutMs } : {}),
+          ...(sessionKey ? { sessionKey } : {}),
+          ...(note ? { note } : {}),
+          ...(restartDelayMs !== undefined ? { restartDelayMs } : {}),
         });
         return jsonResult({ ok: true, result });
       }

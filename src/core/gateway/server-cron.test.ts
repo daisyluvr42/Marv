@@ -11,6 +11,8 @@ const loadConfigMock = vi.fn();
 const fetchWithSsrFGuardMock = vi.fn();
 const runCronIsolatedAgentTurnMock = vi.fn();
 const checkForUpdateMock = vi.fn();
+const runGatewayUpdateMock = vi.fn();
+const scheduleGatewaySigusr1RestartMock = vi.fn();
 
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
@@ -63,6 +65,22 @@ vi.mock("../../infra/update/update-notify.js", () => ({
   ),
 }));
 
+vi.mock("../../infra/update/update-runner.js", () => ({
+  runGatewayUpdate: (...args: unknown[]) => runGatewayUpdateMock(...args),
+}));
+
+vi.mock("../../infra/restart.js", () => ({
+  scheduleGatewaySigusr1Restart: (...args: unknown[]) => scheduleGatewaySigusr1RestartMock(...args),
+}));
+
+vi.mock("../../infra/update/update-channels.js", () => ({
+  normalizeUpdateChannel: vi.fn(() => undefined),
+}));
+
+vi.mock("../../infra/marv-root.js", () => ({
+  resolveMarvPackageRoot: vi.fn(async () => "/tmp/marv"),
+}));
+
 import {
   buildGatewayCronService,
   ensureSoulMemoryMaintenanceCronJob,
@@ -77,7 +95,16 @@ describe("buildGatewayCronService", () => {
     fetchWithSsrFGuardMock.mockReset();
     runCronIsolatedAgentTurnMock.mockReset();
     checkForUpdateMock.mockReset();
+    runGatewayUpdateMock.mockReset();
+    scheduleGatewaySigusr1RestartMock.mockReset();
     runCronIsolatedAgentTurnMock.mockResolvedValue({ status: "ok", summary: "update delivered" });
+    runGatewayUpdateMock.mockResolvedValue({
+      status: "ok",
+      mode: "git",
+      steps: [],
+      durationMs: 100,
+    });
+    scheduleGatewaySigusr1RestartMock.mockReturnValue({ scheduled: true });
   });
 
   it("canonicalizes non-agent sessionKey to agent store key for enqueue + wake", async () => {
@@ -370,6 +397,57 @@ describe("buildGatewayCronService", () => {
       const refreshed = state.cron.getJob(updateCheck.id);
       expect(refreshed?.state.lastNotifiedVersion).toBe("2.0.0");
       expect(refreshed?.state.lastNotifiedTag).toBe("latest");
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("auto-applies git updates when update.autoApplyCron is enabled", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-update-apply-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+      update: {
+        autoApplyCron: true,
+      },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+    checkForUpdateMock.mockResolvedValue({
+      available: true,
+      currentVersion: "abc123",
+      latestVersion: "def456",
+      channel: "dev",
+      tag: "dev",
+      installKind: "git",
+    });
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureUpdateCheckCronJob({ cron: state.cron, cfg });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const updateCheck = jobs.find(
+        (job) => job.payload.kind === "systemTask" && job.payload.task === "updateCheck",
+      );
+      if (!updateCheck) {
+        throw new Error("update check job missing");
+      }
+
+      await state.cron.run(updateCheck.id, "force");
+
+      expect(runGatewayUpdateMock).toHaveBeenCalledTimes(1);
+      expect(runCronIsolatedAgentTurnMock).not.toHaveBeenCalled();
+      expect(scheduleGatewaySigusr1RestartMock).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: "cron.updateCheck" }),
+      );
     } finally {
       state.cron.stop();
     }

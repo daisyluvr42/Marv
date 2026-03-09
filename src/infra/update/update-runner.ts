@@ -10,6 +10,13 @@ import { detectPackageManager as detectPackageManagerImpl } from "../detect-pack
 import { readPackageName, readPackageVersion } from "../package-json.js";
 import { trimLogTail } from "../restart-sentinel.js";
 import {
+  beginDeployAttempt,
+  finishDeployAttempt,
+  readDeployState,
+  recordDeployRollback,
+  resolveDeployStatePath,
+} from "./deploy-state.js";
+import {
   channelToNpmTag,
   DEFAULT_PACKAGE_CHANNEL,
   DEV_BRANCH,
@@ -41,6 +48,12 @@ export type UpdateRunResult = {
   reason?: string;
   before?: { sha?: string | null; version?: string | null };
   after?: { sha?: string | null; version?: string | null };
+  deploy?: {
+    statePath?: string;
+    lastKnownGoodSha?: string | null;
+    targetSha?: string | null;
+    rolledBackToSha?: string | null;
+  };
   steps: UpdateStepResult[];
   durationMs: number;
 };
@@ -325,6 +338,102 @@ function normalizeTag(tag?: string) {
   return trimmed;
 }
 
+async function getGitHeadSha(
+  runCommand: CommandRunner,
+  root: string,
+  timeoutMs: number,
+): Promise<string | null> {
+  const res = await runCommand(["git", "-C", root, "rev-parse", "HEAD"], {
+    cwd: root,
+    timeoutMs,
+  }).catch(() => null);
+  if (!res || res.code !== 0) {
+    return null;
+  }
+  const sha = res.stdout.trim();
+  return sha || null;
+}
+
+async function rollbackGitCheckout(params: {
+  runCommand: CommandRunner;
+  root: string;
+  timeoutMs: number;
+  manager: "pnpm" | "bun" | "npm";
+  progress?: UpdateStepProgress;
+  steps: UpdateStepResult[];
+  targetSha: string;
+  totalSteps: number;
+  startIndex: number;
+}): Promise<{ ok: boolean; rolledBackToSha: string | null }> {
+  let stepIndex = params.startIndex;
+  const nextStep = (name: string, argv: string[]) => ({
+    runCommand: params.runCommand,
+    name,
+    argv,
+    cwd: params.root,
+    timeoutMs: params.timeoutMs,
+    progress: params.progress,
+    stepIndex: stepIndex++,
+    totalSteps: params.totalSteps,
+  });
+
+  const resetStep = await runStep(
+    nextStep("rollback git reset --hard", [
+      "git",
+      "-C",
+      params.root,
+      "reset",
+      "--hard",
+      params.targetSha,
+    ]),
+  );
+  params.steps.push(resetStep);
+  if (resetStep.exitCode !== 0) {
+    return { ok: false, rolledBackToSha: null };
+  }
+
+  const depsStep = await runStep(
+    nextStep("rollback deps install", managerInstallArgs(params.manager)),
+  );
+  params.steps.push(depsStep);
+  if (depsStep.exitCode !== 0) {
+    return { ok: false, rolledBackToSha: params.targetSha };
+  }
+
+  const buildStep = await runStep(
+    nextStep("rollback build", managerScriptArgs(params.manager, "build")),
+  );
+  params.steps.push(buildStep);
+  if (buildStep.exitCode !== 0) {
+    return { ok: false, rolledBackToSha: params.targetSha };
+  }
+
+  const uiBuildStep = await runStep(
+    nextStep("rollback ui:build", managerScriptArgs(params.manager, "ui:build")),
+  );
+  params.steps.push(uiBuildStep);
+  if (uiBuildStep.exitCode !== 0) {
+    return { ok: false, rolledBackToSha: params.targetSha };
+  }
+
+  const doctorEntry = path.join(params.root, "marv.mjs");
+  const doctorStep = await runStep(
+    nextStep("rollback marv doctor", [
+      process.execPath,
+      doctorEntry,
+      "doctor",
+      "--non-interactive",
+      "--fix",
+    ]),
+  );
+  params.steps.push(doctorStep);
+  if (doctorStep.exitCode !== 0) {
+    return { ok: false, rolledBackToSha: params.targetSha };
+  }
+
+  return { ok: true, rolledBackToSha: params.targetSha };
+}
+
 export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<UpdateRunResult> {
   const startedAt = Date.now();
   const runCommand =
@@ -381,22 +490,31 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
 
   if (gitRoot) {
     // Get current SHA (not a visible step, no progress)
-    const beforeShaResult = await runCommand(["git", "-C", gitRoot, "rev-parse", "HEAD"], {
-      cwd: gitRoot,
-      timeoutMs,
-    });
-    const beforeSha = beforeShaResult.stdout.trim() || null;
+    const beforeSha = await getGitHeadSha(runCommand, gitRoot, timeoutMs);
     const beforeVersion = await readPackageVersion(gitRoot);
+    const deployStatePath = resolveDeployStatePath(gitRoot);
+    const deployState = await readDeployState({ root: gitRoot });
+    const lastKnownGoodSha = deployState?.lastKnownGood?.sha ?? null;
     const channel: UpdateChannel = opts.channel ?? "dev";
     const branch = channel === "dev" ? await readBranchName(runCommand, gitRoot, timeoutMs) : null;
     const needsCheckoutMain = channel === "dev" && branch !== DEV_BRANCH;
-    gitTotalSteps = channel === "dev" ? (needsCheckoutMain ? 11 : 10) : 9;
-    const buildGitErrorResult = (reason: string): UpdateRunResult => ({
+    gitTotalSteps = channel === "dev" ? (needsCheckoutMain ? 16 : 15) : 14;
+    let deployTargetSha: string | null = null;
+    const buildGitErrorResult = (
+      reason: string,
+      extra?: { rolledBackToSha?: string | null },
+    ): UpdateRunResult => ({
       status: "error",
       mode: "git",
       root: gitRoot,
       reason,
       before: { sha: beforeSha, version: beforeVersion },
+      deploy: {
+        statePath: deployStatePath,
+        lastKnownGoodSha,
+        targetSha: deployTargetSha,
+        rolledBackToSha: extra?.rolledBackToSha ?? null,
+      },
       steps,
       durationMs: Date.now() - startedAt,
     });
@@ -630,6 +748,14 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         };
       }
 
+      deployTargetSha = selectedSha;
+      await beginDeployAttempt({
+        root: gitRoot,
+        trigger: "manual",
+        fromSha: beforeSha,
+        targetSha: selectedSha,
+      });
+
       const rebaseStep = await runStep(
         step("git rebase", ["git", "-C", gitRoot, "rebase", selectedSha], gitRoot),
       );
@@ -648,6 +774,11 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           stdoutTail: trimLogTail(abortResult.stdout, MAX_LOG_CHARS),
           stderrTail: trimLogTail(abortResult.stderr, MAX_LOG_CHARS),
         });
+        await finishDeployAttempt({
+          root: gitRoot,
+          status: "error",
+          reason: "rebase-failed",
+        }).catch(() => undefined);
         return {
           status: "error",
           mode: "git",
@@ -699,36 +830,67 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       if (failure) {
         return failure;
       }
+      deployTargetSha = await getGitHeadSha(runCommand, gitRoot, timeoutMs);
+      await beginDeployAttempt({
+        root: gitRoot,
+        trigger: "manual",
+        fromSha: beforeSha,
+        targetSha: deployTargetSha,
+      });
     }
 
     const manager = await detectPackageManager(gitRoot);
+    const rollbackTargetSha = lastKnownGoodSha ?? beforeSha;
+    const rollbackIfNeeded = async (reason: string): Promise<UpdateRunResult> => {
+      const currentSha = await getGitHeadSha(runCommand, gitRoot, timeoutMs);
+      if (!rollbackTargetSha || !currentSha || currentSha === rollbackTargetSha) {
+        await finishDeployAttempt({
+          root: gitRoot,
+          status: "error",
+          reason,
+        }).catch(() => undefined);
+        return buildGitErrorResult(reason);
+      }
+      const rollback = await rollbackGitCheckout({
+        runCommand,
+        root: gitRoot,
+        timeoutMs,
+        manager,
+        progress,
+        steps,
+        targetSha: rollbackTargetSha,
+        totalSteps: gitTotalSteps,
+        startIndex: stepIndex,
+      });
+      stepIndex += 5;
+      await recordDeployRollback({
+        root: gitRoot,
+        status: rollback.ok ? "ok" : "error",
+        fromSha: currentSha,
+        toSha: rollback.rolledBackToSha,
+        reason,
+      }).catch(() => undefined);
+      await finishDeployAttempt({
+        root: gitRoot,
+        status: "error",
+        reason,
+        rolledBackToSha: rollback.rolledBackToSha,
+      }).catch(() => undefined);
+      return buildGitErrorResult(reason, {
+        rolledBackToSha: rollback.rolledBackToSha,
+      });
+    };
 
     const depsStep = await runStep(step("deps install", managerInstallArgs(manager), gitRoot));
     steps.push(depsStep);
     if (depsStep.exitCode !== 0) {
-      return {
-        status: "error",
-        mode: "git",
-        root: gitRoot,
-        reason: "deps-install-failed",
-        before: { sha: beforeSha, version: beforeVersion },
-        steps,
-        durationMs: Date.now() - startedAt,
-      };
+      return await rollbackIfNeeded("deps-install-failed");
     }
 
     const buildStep = await runStep(step("build", managerScriptArgs(manager, "build"), gitRoot));
     steps.push(buildStep);
     if (buildStep.exitCode !== 0) {
-      return {
-        status: "error",
-        mode: "git",
-        root: gitRoot,
-        reason: "build-failed",
-        before: { sha: beforeSha, version: beforeVersion },
-        steps,
-        durationMs: Date.now() - startedAt,
-      };
+      return await rollbackIfNeeded("build-failed");
     }
 
     const uiBuildStep = await runStep(
@@ -736,15 +898,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     );
     steps.push(uiBuildStep);
     if (uiBuildStep.exitCode !== 0) {
-      return {
-        status: "error",
-        mode: "git",
-        root: gitRoot,
-        reason: "ui-build-failed",
-        before: { sha: beforeSha, version: beforeVersion },
-        steps,
-        durationMs: Date.now() - startedAt,
-      };
+      return await rollbackIfNeeded("ui-build-failed");
     }
 
     const doctorEntryCandidates = [path.join(gitRoot, "marv.mjs"), path.join(gitRoot, "marv.mjs")];
@@ -770,15 +924,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         exitCode: 1,
         stderrTail: `missing ${doctorEntryCandidates.join(" and ")}`,
       });
-      return {
-        status: "error",
-        mode: "git",
-        root: gitRoot,
-        reason: "doctor-entry-missing",
-        before: { sha: beforeSha, version: beforeVersion },
-        steps,
-        durationMs: Date.now() - startedAt,
-      };
+      return await rollbackIfNeeded("doctor-entry-missing");
     }
 
     // Use --fix so that doctor auto-strips unknown config keys introduced by
@@ -808,15 +954,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       steps.push(repairStep);
 
       if (repairResult.code !== 0) {
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: repairStep.name,
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await rollbackIfNeeded(repairStep.name);
       }
 
       const repairedUiIndexHealth = await resolveControlUiDistIndexHealth({ root: gitRoot });
@@ -831,15 +969,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           exitCode: 1,
           stderrTail: `missing ${uiIndexPath}`,
         });
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "ui-assets-missing",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await rollbackIfNeeded("ui-assets-missing");
       }
     }
 
@@ -850,15 +980,30 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     steps.push(afterShaStep);
     const afterVersion = await readPackageVersion(gitRoot);
 
+    if (failedStep) {
+      return await rollbackIfNeeded(failedStep.name);
+    }
+
+    await finishDeployAttempt({
+      root: gitRoot,
+      status: "ok",
+    }).catch(() => undefined);
+
     return {
-      status: failedStep ? "error" : "ok",
+      status: "ok",
       mode: "git",
       root: gitRoot,
-      reason: failedStep ? failedStep.name : undefined,
+      reason: undefined,
       before: { sha: beforeSha, version: beforeVersion },
       after: {
         sha: afterShaStep.stdoutTail?.trim() ?? null,
         version: afterVersion,
+      },
+      deploy: {
+        statePath: deployStatePath,
+        lastKnownGoodSha,
+        targetSha: deployTargetSha,
+        rolledBackToSha: null,
       },
       steps,
       durationMs: Date.now() - startedAt,
@@ -917,6 +1062,99 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     reason: "not-git-install",
     before: { version: beforeVersion },
     steps: [],
+    durationMs: Date.now() - startedAt,
+  };
+}
+
+export async function runGatewayRollback(opts: UpdateRunnerOptions = {}): Promise<UpdateRunResult> {
+  const startedAt = Date.now();
+  const runCommand =
+    opts.runCommand ??
+    (async (argv, options) => {
+      const res = await runCommandWithTimeout(argv, options);
+      return { stdout: res.stdout, stderr: res.stderr, code: res.code };
+    });
+  const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const progress = opts.progress;
+  const steps: UpdateStepResult[] = [];
+  const candidates = buildStartDirs(opts);
+  const gitRoot = await resolveGitRoot(runCommand, candidates, timeoutMs);
+  if (!gitRoot || !(await isCorePackageRoot(gitRoot))) {
+    return {
+      status: "error",
+      mode: "unknown",
+      reason: "not-git-install",
+      steps,
+      durationMs: Date.now() - startedAt,
+    };
+  }
+
+  const beforeSha = await getGitHeadSha(runCommand, gitRoot, timeoutMs);
+  const beforeVersion = await readPackageVersion(gitRoot);
+  const deployStatePath = resolveDeployStatePath(gitRoot);
+  const deployState = await readDeployState({ root: gitRoot });
+  const rollbackTargetSha = deployState?.lastKnownGood?.sha ?? null;
+  if (!rollbackTargetSha) {
+    return {
+      status: "skipped",
+      mode: "git",
+      root: gitRoot,
+      reason: "no-last-known-good",
+      before: { sha: beforeSha, version: beforeVersion },
+      deploy: {
+        statePath: deployStatePath,
+        lastKnownGoodSha: null,
+        targetSha: null,
+        rolledBackToSha: null,
+      },
+      steps,
+      durationMs: Date.now() - startedAt,
+    };
+  }
+
+  const manager = await detectPackageManager(gitRoot);
+  const rollback = await rollbackGitCheckout({
+    runCommand,
+    root: gitRoot,
+    timeoutMs,
+    manager,
+    progress,
+    steps,
+    targetSha: rollbackTargetSha,
+    totalSteps: 5,
+    startIndex: 0,
+  });
+  const afterSha = await getGitHeadSha(runCommand, gitRoot, timeoutMs);
+  const afterVersion = await readPackageVersion(gitRoot);
+
+  await recordDeployRollback({
+    root: gitRoot,
+    status: rollback.ok ? "ok" : "error",
+    fromSha: beforeSha,
+    toSha: rollback.rolledBackToSha,
+    reason: rollback.ok ? undefined : "rollback-failed",
+  }).catch(() => undefined);
+  await finishDeployAttempt({
+    root: gitRoot,
+    status: rollback.ok ? "ok" : "error",
+    reason: rollback.ok ? "manual-rollback" : "rollback-failed",
+    rolledBackToSha: rollback.rolledBackToSha,
+  }).catch(() => undefined);
+
+  return {
+    status: rollback.ok ? "ok" : "error",
+    mode: "git",
+    root: gitRoot,
+    reason: rollback.ok ? undefined : "rollback-failed",
+    before: { sha: beforeSha, version: beforeVersion },
+    after: { sha: afterSha, version: afterVersion },
+    deploy: {
+      statePath: deployStatePath,
+      lastKnownGoodSha: rollbackTargetSha,
+      targetSha: rollbackTargetSha,
+      rolledBackToSha: rollback.rolledBackToSha,
+    },
+    steps,
     durationMs: Date.now() - startedAt,
   };
 }

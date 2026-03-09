@@ -243,6 +243,7 @@ export const MarvSchema = z
         channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("dev")]).optional(),
         checkOnStart: z.boolean().optional(),
         autoCheckIntervalMs: z.number().int().positive().optional(),
+        autoApplyCron: z.boolean().optional(),
       })
       .strict()
       .optional(),
