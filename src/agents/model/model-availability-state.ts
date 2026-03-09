@@ -21,6 +21,11 @@ type RuntimeModelAvailabilityStore = {
 };
 
 const AVAILABILITY_FILENAME = "model-availability.json";
+const TEMPORARY_UNAVAILABLE_RETRY_MS = {
+  rate_limit: 15 * 60 * 1000,
+  timeout: 5 * 60 * 1000,
+  billing: 60 * 60 * 1000,
+} as const;
 
 function resolveAvailabilityPath(): string {
   return path.join(resolveStateDir(), AVAILABILITY_FILENAME);
@@ -47,16 +52,41 @@ function isUnsupportedMessage(message: string): boolean {
   const lower = message.toLowerCase();
   return (
     lower.includes("unknown model") ||
+    lower.includes("model does not exist") ||
     lower.includes("model not found") ||
     lower.includes("invalid model") ||
     lower.includes("not supported") ||
     lower.includes("unsupported model") ||
     lower.includes("model has been deprecated") ||
+    lower.includes("deprecated and will be removed") ||
     lower.includes("no access to model") ||
+    lower.includes("do not have access to model") ||
+    lower.includes("not authorized to access this model") ||
     lower.includes("not available for your account") ||
     lower.includes("does not have access to model") ||
+    lower.includes("access to the requested model is denied") ||
     lower.includes("context window too small")
   );
+}
+
+function resolveRetryAfter(params: {
+  status: RuntimeModelAvailabilityStatus;
+  reason?: ReturnType<typeof describeFailoverError>["reason"];
+  now: number;
+}): number | undefined {
+  if (params.status !== "temporary_unavailable" || !params.reason) {
+    return undefined;
+  }
+  switch (params.reason) {
+    case "rate_limit":
+      return params.now + TEMPORARY_UNAVAILABLE_RETRY_MS.rate_limit;
+    case "timeout":
+      return params.now + TEMPORARY_UNAVAILABLE_RETRY_MS.timeout;
+    case "billing":
+      return params.now + TEMPORARY_UNAVAILABLE_RETRY_MS.billing;
+    default:
+      return undefined;
+  }
 }
 
 export function readRuntimeModelAvailability(): RuntimeModelAvailabilityStore {
@@ -66,7 +96,21 @@ export function readRuntimeModelAvailability(): RuntimeModelAvailabilityStore {
 export function getRuntimeModelAvailability(
   ref: string,
 ): RuntimeModelAvailabilityEntry | undefined {
-  return readStore().models[ref];
+  const store = readStore();
+  const entry = store.models[ref];
+  if (!entry) {
+    return undefined;
+  }
+  if (
+    entry.status === "temporary_unavailable" &&
+    typeof entry.retryAfter === "number" &&
+    entry.retryAfter <= Date.now()
+  ) {
+    delete store.models[ref];
+    writeStore(store);
+    return undefined;
+  }
+  return entry;
 }
 
 export function markRuntimeModelReady(ref: string): void {
@@ -84,21 +128,22 @@ export function markRuntimeModelFailure(params: {
 }): RuntimeModelAvailabilityStatus {
   const described = describeFailoverError(params.error);
   const message = described.message.trim();
+  const now = Date.now();
   let status: RuntimeModelAvailabilityStatus = "temporary_unavailable";
 
-  if (described.reason === "auth") {
-    status = "auth_invalid";
-  } else if (described.reason === "rate_limit" || described.reason === "timeout") {
-    status = "temporary_unavailable";
-  } else if (isUnsupportedMessage(message) || described.status === 404) {
+  if (isUnsupportedMessage(message) || described.status === 404 || described.status === 410) {
     status = "unsupported";
+  } else if (described.reason === "auth") {
+    status = "auth_invalid";
   }
+  const retryAfter = resolveRetryAfter({ status, reason: described.reason, now });
 
   const store = readStore();
   store.models[params.ref] = {
     status,
-    lastCheckedAt: Date.now(),
+    lastCheckedAt: now,
     ...(message ? { lastError: message } : {}),
+    ...(retryAfter ? { retryAfter } : {}),
   };
   writeStore(store);
   return status;

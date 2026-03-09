@@ -2,7 +2,11 @@ import { Type } from "@sinclair/typebox";
 import { resolveElevatedPermissions } from "../../auto-reply/reply/reply-elevated.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { type MarvConfig, loadConfig } from "../../core/config/config.js";
-import { updateSessionStore, type SessionEntry } from "../../core/config/sessions.js";
+import {
+  loadSessionStore,
+  updateSessionStore,
+  type SessionEntry,
+} from "../../core/config/sessions.js";
 import type { SessionsPatchParams } from "../../core/gateway/protocol/index.js";
 import { sessionsHandlers } from "../../core/gateway/server-methods/sessions.js";
 import {
@@ -17,6 +21,10 @@ import { resolveAgentDir } from "../agent-scope.js";
 import { ensureAuthProfileStore } from "../auth-profiles.js";
 import { loadModelCatalog } from "../model/model-catalog.js";
 import { normalizeProviderId, resolveDefaultModelForAgent } from "../model/model-selection.js";
+import {
+  refreshRuntimeModelRegistry,
+  resolveRuntimeRegistryPathForDisplay,
+} from "../model/runtime-model-registry.js";
 import type { AnyAgentTool } from "./common.js";
 import { readNumberParam, readStringParam, ToolInputError } from "./common.js";
 
@@ -37,6 +45,7 @@ const SelfSettingsToolSchema = Type.Object(
     queueDebounceMs: Type.Optional(Type.Number({ minimum: 0 })),
     queueCap: Type.Optional(Type.Number({ minimum: 1 })),
     queueDrop: Type.Optional(Type.String()),
+    modelRegistryAction: Type.Optional(Type.String()),
     sessionAction: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
@@ -65,6 +74,14 @@ function normalizeSessionAction(raw?: string): "new" | "reset" | undefined {
   const normalized = raw?.trim().toLowerCase();
   if (normalized === "new" || normalized === "reset") {
     return normalized;
+  }
+  return undefined;
+}
+
+function normalizeModelRegistryAction(raw?: string): "refresh" | undefined {
+  const normalized = raw?.trim().toLowerCase();
+  if (normalized === "refresh" || normalized === "update" || normalized === "sync") {
+    return "refresh";
   }
   return undefined;
 }
@@ -155,6 +172,19 @@ async function invokeSessionReset(params: {
   return { ok: true, entry: response.result?.entry };
 }
 
+function resolveCurrentSessionEntry(params: {
+  store: Record<string, SessionEntry>;
+  sessionKeys: string[];
+}): SessionEntry | undefined {
+  for (const key of params.sessionKeys) {
+    const entry = params.store[key];
+    if (entry) {
+      return entry;
+    }
+  }
+  return undefined;
+}
+
 export function createSelfSettingsTool(opts?: {
   agentSessionKey?: string;
   config?: MarvConfig;
@@ -171,7 +201,7 @@ export function createSelfSettingsTool(opts?: {
     label: "Self Settings",
     name: "self_settings",
     description:
-      "Apply current-session self-settings for a direct user request: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, or session reset/new.",
+      "Apply current-session self-settings for a direct user request: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, or runtime model-registry refresh.",
     parameters: SelfSettingsToolSchema,
     execute: async (_toolCallId, args) => {
       if (!opts?.agentSessionKey?.trim()) {
@@ -184,7 +214,11 @@ export function createSelfSettingsTool(opts?: {
       const params = args as SelfSettingsArgs;
       const cfg = opts.config ?? loadConfig();
       const sessionKey = opts.agentSessionKey.trim();
+      const agentId = resolveAgentIdFromSessionKey(sessionKey);
       const sessionAction = normalizeSessionAction(readStringParam(params, "sessionAction"));
+      const modelRegistryAction = normalizeModelRegistryAction(
+        readStringParam(params, "modelRegistryAction"),
+      );
       const model = normalizePatchString(readStringParam(params, "model"));
       const authProfile = normalizeAuthProfile(readStringParam(params, "authProfile"));
       const thinkingLevel = normalizePatchString(readStringParam(params, "thinkingLevel"));
@@ -217,12 +251,20 @@ export function createSelfSettingsTool(opts?: {
         queueMode === undefined &&
         queueDebounceMs === undefined &&
         queueCap === undefined &&
-        queueDrop === undefined
+        queueDrop === undefined &&
+        modelRegistryAction === undefined
       ) {
         throw new ToolInputError("at least one setting change is required");
       }
 
-      const agentId = resolveAgentIdFromSessionKey(sessionKey);
+      let refreshedRegistry: Awaited<ReturnType<typeof refreshRuntimeModelRegistry>> | null = null;
+      if (modelRegistryAction === "refresh") {
+        refreshedRegistry = await refreshRuntimeModelRegistry({
+          cfg,
+          agentDir: resolveAgentDir(cfg, agentId),
+          force: true,
+        });
+      }
       if (elevatedLevel !== undefined) {
         const elevated = resolveElevatedPermissions({
           cfg,
@@ -243,14 +285,18 @@ export function createSelfSettingsTool(opts?: {
         }
       }
 
+      let resetEntry: SessionEntry | undefined;
       if (sessionAction) {
         const resetResult = await invokeSessionReset({ key: sessionKey, reason: sessionAction });
         if (!resetResult.ok) {
           return buildGenericDeniedResult();
         }
+        resetEntry = resetResult.entry;
       }
 
       const target = resolveGatewaySessionStoreTarget({ cfg, key: sessionKey });
+      const storePath = target.storePath;
+      const storeBeforeUpdate = loadSessionStore(storePath);
       const patch: SessionsPatchParams = {
         key: target.canonicalKey,
         ...(model !== undefined ? { model } : {}),
@@ -270,34 +316,66 @@ export function createSelfSettingsTool(opts?: {
         ...(queueCap !== undefined ? { queueCap } : {}),
         ...(queueDrop !== undefined ? { queueDrop } : {}),
       };
+      const hasSessionPatch =
+        model !== undefined ||
+        thinkingLevel !== undefined ||
+        verboseLevel !== undefined ||
+        reasoningLevel !== undefined ||
+        responseUsage !== undefined ||
+        elevatedLevel !== undefined ||
+        execHost !== undefined ||
+        execSecurity !== undefined ||
+        execAsk !== undefined ||
+        execNode !== undefined ||
+        queueMode !== undefined ||
+        queueDebounceMs !== undefined ||
+        queueCap !== undefined ||
+        queueDrop !== undefined;
 
-      const storePath = target.storePath;
-      const applied = await updateSessionStore(storePath, async (store) => {
-        const primaryKey = target.canonicalKey;
-        if (!store[primaryKey]) {
-          const existingKey = target.storeKeys.find((candidate) => Boolean(store[candidate]));
-          if (existingKey) {
-            store[primaryKey] = store[existingKey];
-          }
-        }
-        pruneLegacyStoreKeys({
-          store,
-          canonicalKey: primaryKey,
-          candidates: target.storeKeys,
-        });
-        return await applySessionsPatchToStore({
-          cfg,
-          store,
-          storeKey: primaryKey,
-          patch,
-          loadGatewayModelCatalog: async () => await loadModelCatalog({ config: cfg }),
-        });
-      });
+      const applied = hasSessionPatch
+        ? await updateSessionStore(storePath, async (store) => {
+            const primaryKey = target.canonicalKey;
+            if (!store[primaryKey]) {
+              const existingKey = target.storeKeys.find((candidate) => Boolean(store[candidate]));
+              if (existingKey) {
+                store[primaryKey] = store[existingKey];
+              }
+            }
+            pruneLegacyStoreKeys({
+              store,
+              canonicalKey: primaryKey,
+              candidates: target.storeKeys,
+            });
+            return await applySessionsPatchToStore({
+              cfg,
+              store,
+              storeKey: primaryKey,
+              patch,
+              loadGatewayModelCatalog: async () => await loadModelCatalog({ config: cfg }),
+            });
+          })
+        : {
+            ok: true as const,
+            entry: resolveCurrentSessionEntry({
+              store: storeBeforeUpdate,
+              sessionKeys: [target.canonicalKey, ...target.storeKeys],
+            }),
+          };
       if (!applied.ok) {
         return buildInvalidResult();
       }
 
-      let nextEntry = applied.entry;
+      let nextEntry =
+        applied.entry ??
+        resetEntry ??
+        resolveCurrentSessionEntry({
+          store: loadSessionStore(storePath),
+          sessionKeys: [target.canonicalKey, ...target.storeKeys],
+        }) ??
+        ({
+          sessionId: "",
+          updatedAt: Date.now(),
+        } satisfies SessionEntry);
       if (authProfile !== undefined) {
         if (authProfile === null) {
           delete nextEntry.authProfileOverride;
@@ -358,6 +436,9 @@ export function createSelfSettingsTool(opts?: {
           : null,
         queueCap !== undefined ? `queue cap ${nextEntry.queueCap ?? "default"}` : null,
         queueDrop !== undefined ? `queue drop ${nextEntry.queueDrop ?? "default"}` : null,
+        modelRegistryAction === "refresh"
+          ? `model registry refreshed (${refreshedRegistry?.models.length ?? 0} models)`
+          : null,
       ].filter((value): value is string => Boolean(value));
 
       return {
@@ -391,6 +472,8 @@ export function createSelfSettingsTool(opts?: {
             queueCap: nextEntry.queueCap,
             queueDrop: nextEntry.queueDrop,
             authProfileOverride: nextEntry.authProfileOverride,
+            modelRegistryPath: resolveRuntimeRegistryPathForDisplay(),
+            modelRegistryRefreshedAt: refreshedRegistry?.lastSuccessfulRefreshAt,
           },
         },
       };

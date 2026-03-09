@@ -5,6 +5,10 @@ import {
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
 } from "../../agents/model/model-selection.js";
+import {
+  ensureRuntimeModelRegistry,
+  startRuntimeModelRegistryRefreshLoop,
+} from "../../agents/model/runtime-model-registry.js";
 import { resolveAgentSessionDirs } from "../../agents/session-dirs.js";
 import { cleanStaleLockFiles } from "../../agents/session-write-lock.js";
 import type { CliDeps } from "../../cli/deps.js";
@@ -57,6 +61,16 @@ export async function startGatewaySidecars(params: {
     }
   } catch (err) {
     params.log.warn(`session lock cleanup failed on startup: ${String(err)}`);
+  }
+
+  try {
+    await ensureRuntimeModelRegistry({ cfg: params.cfg });
+    startRuntimeModelRegistryRefreshLoop({
+      cfg: params.cfg,
+      log: { warn: (message) => params.log.warn(message) },
+    });
+  } catch (err) {
+    params.log.warn(`model registry startup refresh failed: ${String(err)}`);
   }
 
   // Start Marv browser control server (unless disabled via config).

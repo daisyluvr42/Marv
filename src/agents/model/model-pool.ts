@@ -11,6 +11,11 @@ import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
 import { getRuntimeModelAvailability } from "./model-availability-state.js";
 import { buildModelAliasIndex, normalizeProviderId, parseModelRef } from "./model-selection.js";
 import { resolveProviderFamilyProviders, resolveSelectedModelRefs } from "./model-selections.js";
+import {
+  listConfiguredProviders,
+  readRuntimeModelRegistry,
+  type RuntimeRegistryModel,
+} from "./runtime-model-registry.js";
 
 const LOCAL_PROVIDERS = new Set(["ollama", "vllm", "lmstudio", "localai", "llamacpp"]);
 
@@ -126,31 +131,64 @@ function buildConfiguredModelList(params: {
   agentDir?: string;
   pool?: ModelPoolConfig;
 }): RuntimeConfiguredModel[] {
-  const refs = new Set<string>();
   const explicitCatalog = params.cfg.models?.catalog ?? {};
-  const selectedRefs = resolveSelectedModelRefs({
-    cfg: params.cfg,
-    defaultProvider: "anthropic",
-  });
-
-  if (selectedRefs.size > 0) {
-    for (const ref of selectedRefs) {
-      refs.add(ref);
-    }
-  } else {
-    for (const raw of Object.keys(explicitCatalog)) {
-      refs.add(raw);
-    }
-    for (const raw of params.pool?.include ?? []) {
-      refs.add(raw);
-    }
-  }
-
   const defaultProvider = "anthropic";
   const aliasIndex = buildModelAliasIndex({
     cfg: params.cfg,
     defaultProvider,
   });
+  const runtimeRegistry = readRuntimeModelRegistry();
+  const configuredProviders = listConfiguredProviders(params.cfg, params.agentDir);
+  const selectedRefs = resolveSelectedModelRefs({
+    cfg: params.cfg,
+    defaultProvider,
+  });
+  const refs = new Set<string>();
+  let registryEntries: RuntimeRegistryModel[] = [];
+  const addParsedRef = (rawRef: string) => {
+    const parsed = parseModelRef(rawRef, defaultProvider);
+    if (!parsed) {
+      return;
+    }
+    refs.add(`${parsed.provider}/${parsed.model}`);
+  };
+
+  if (runtimeRegistry?.models?.length) {
+    registryEntries = runtimeRegistry.models.filter((entry) =>
+      configuredProviders.has(normalizeProviderId(entry.provider)),
+    );
+    for (const entry of registryEntries) {
+      refs.add(entry.ref);
+    }
+    for (const raw of Object.keys(explicitCatalog)) {
+      const parsed = parseModelRef(raw, defaultProvider);
+      if (parsed && configuredProviders.has(normalizeProviderId(parsed.provider))) {
+        addParsedRef(raw);
+      }
+    }
+    for (const raw of params.pool?.include ?? []) {
+      const parsed = parseModelRef(raw, defaultProvider);
+      if (parsed && configuredProviders.has(normalizeProviderId(parsed.provider))) {
+        addParsedRef(raw);
+      }
+    }
+    for (const ref of selectedRefs) {
+      addParsedRef(ref);
+    }
+  } else if (selectedRefs.size > 0) {
+    for (const ref of selectedRefs) {
+      addParsedRef(ref);
+    }
+  } else {
+    for (const raw of Object.keys(explicitCatalog)) {
+      addParsedRef(raw);
+    }
+    for (const raw of params.pool?.include ?? []) {
+      addParsedRef(raw);
+    }
+  }
+
+  const registryByRef = new Map(registryEntries.map((entry) => [entry.ref, entry] as const));
   const configuredModels: RuntimeConfiguredModel[] = [];
   for (const rawRef of refs) {
     const parsed = parseModelRef(rawRef, defaultProvider);
@@ -159,27 +197,33 @@ function buildConfiguredModelList(params: {
     }
     const ref = `${parsed.provider}/${parsed.model}`;
     const catalogEntry = explicitCatalog[ref] ?? explicitCatalog[rawRef];
+    const registryEntry = registryByRef.get(ref) ?? registryByRef.get(rawRef);
     const runtimeAvailability = getRuntimeModelAvailability(ref);
     const availability = isModelAvailable({
       cfg: params.cfg,
       provider: parsed.provider,
       agentDir: params.agentDir,
     });
-    const enabledBySelection = selectedRefs.size === 0 || selectedRefs.has(ref);
+    const enabledBySelection =
+      registryEntries.length > 0
+        ? configuredProviders.has(normalizeProviderId(parsed.provider))
+        : selectedRefs.size === 0 || selectedRefs.has(ref);
     const blockedByUnsupportedState = runtimeAvailability?.status === "unsupported";
+    const blockedByTemporaryState = runtimeAvailability?.status === "temporary_unavailable";
+    const blockedByAuthState = runtimeAvailability?.status === "auth_invalid";
     configuredModels.push({
       ref,
       provider: parsed.provider,
       model: parsed.model,
-      location: inferLocation(parsed.provider, catalogEntry),
-      tier: inferTier(catalogEntry),
-      capabilities: inferCapabilities(catalogEntry, parsed.model),
+      location: registryEntry?.location ?? inferLocation(parsed.provider, catalogEntry),
+      tier: registryEntry?.tier ?? inferTier(catalogEntry),
+      capabilities: registryEntry?.capabilities ?? inferCapabilities(catalogEntry, parsed.model),
       priority: catalogEntry?.priority ?? 0,
       enabled: catalogEntry?.enabled !== false && enabledBySelection,
       available:
         catalogEntry?.enabled === false
           ? false
-          : blockedByUnsupportedState
+          : blockedByUnsupportedState || blockedByTemporaryState || blockedByAuthState
             ? false
             : availability.available,
       availabilityReason:
@@ -187,9 +231,11 @@ function buildConfiguredModelList(params: {
           ? "disabled"
           : blockedByUnsupportedState
             ? "unsupported"
-            : runtimeAvailability?.status === "auth_invalid"
-              ? "auth_invalid"
-              : availability.reason,
+            : blockedByTemporaryState
+              ? "temporary_unavailable"
+              : blockedByAuthState
+                ? "auth_invalid"
+                : availability.reason,
       aliases: aliasIndex.byKey.get(ref) ?? [],
     });
   }

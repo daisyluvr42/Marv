@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 const loadSessionStoreMock = vi.fn();
 const updateSessionStoreMock = vi.fn();
+const refreshRuntimeModelRegistryMock = vi.fn(async () => ({
+  models: [{ ref: "google/gemini-2.5-flash" }],
+  lastSuccessfulRefreshAt: 123,
+}));
 
 vi.mock("../../core/config/sessions.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../core/config/sessions.js")>();
@@ -83,16 +87,49 @@ vi.mock("../../core/gateway/server-methods/sessions.js", () => ({
   },
 }));
 
+vi.mock("../model/runtime-model-registry.js", () => ({
+  refreshRuntimeModelRegistry: (...args: unknown[]) => refreshRuntimeModelRegistryMock(...args),
+  resolveRuntimeRegistryPathForDisplay: () => "/tmp/main/runtime/model-registry.json",
+}));
+
 import "../test-helpers/fast-core-tools.js";
 import { createSelfSettingsTool } from "./self-settings-tool.js";
 
 function resetSessionStore(store: Record<string, unknown>) {
   loadSessionStoreMock.mockReset();
   updateSessionStoreMock.mockReset();
+  refreshRuntimeModelRegistryMock.mockClear();
   loadSessionStoreMock.mockReturnValue(store);
 }
 
 describe("self_settings tool", () => {
+  it("refreshes the runtime model registry without mutating the session", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({ agentSessionKey: "main" });
+    const result = await tool.execute("call0", { modelRegistryAction: "refresh" });
+    const text = result.content[0]?.text ?? "";
+    const details = result.details as {
+      ok?: boolean;
+      settings?: {
+        modelRegistryPath?: string;
+        modelRegistryRefreshedAt?: number;
+      };
+    };
+
+    expect(details.ok).toBe(true);
+    expect(text).toContain("model registry refreshed (1 models)");
+    expect(refreshRuntimeModelRegistryMock).toHaveBeenCalledTimes(1);
+    expect(updateSessionStoreMock).not.toHaveBeenCalled();
+    expect(details.settings?.modelRegistryPath).toBe("/tmp/main/runtime/model-registry.json");
+    expect(details.settings?.modelRegistryRefreshedAt).toBe(123);
+  });
+
   it("applies current-session model, auth profile, and queue settings", async () => {
     resetSessionStore({
       main: {
