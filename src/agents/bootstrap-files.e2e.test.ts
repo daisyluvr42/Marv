@@ -6,6 +6,7 @@ import {
   type AgentBootstrapHookContext,
 } from "../hooks/internal-hooks.js";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
+import { writeWorkspaceFile } from "../test-helpers/workspace.js";
 import { resolveBootstrapContextForRun, resolveBootstrapFilesForRun } from "./bootstrap-files.js";
 import type { WorkspaceBootstrapFile } from "./workspace.js";
 
@@ -52,5 +53,43 @@ describe("resolveBootstrapContextForRun", () => {
     );
 
     expect(extra?.content).toBe("extra");
+  });
+
+  it("keeps only SOUL and TOOLS in injected context when auto recall is enabled", async () => {
+    const workspaceDir = await makeTempWorkspace("marv-bootstrap-");
+    await writeWorkspaceFile({
+      dir: workspaceDir,
+      name: "SOUL.md",
+      content: "# Soul\n\ncore anchor\n\n## Long Memory\n\nhidden section",
+    });
+    await writeWorkspaceFile({
+      dir: workspaceDir,
+      name: "TOOLS.md",
+      content: "tooling",
+    });
+    await writeWorkspaceFile({
+      dir: workspaceDir,
+      name: "USER.md",
+      content: "should not inject",
+    });
+
+    const result = await resolveBootstrapContextForRun({
+      workspaceDir,
+      config: {
+        memory: {
+          autoRecall: {
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const basenames = result.contextFiles.map((file) => path.basename(file.path));
+    expect(basenames).toContain("SOUL.md");
+    expect(basenames).toContain("TOOLS.md");
+    expect(basenames).not.toContain("USER.md");
+    expect(
+      result.contextFiles.find((file) => path.basename(file.path) === "SOUL.md")?.content,
+    ).not.toContain("hidden section");
   });
 });

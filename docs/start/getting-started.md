@@ -120,6 +120,9 @@ Full environment variable reference: [Environment vars](/help/environment).
   <Card title="macOS app onboarding" href="/start/onboarding">
     First run flow for the macOS app.
   </Card>
+  <Card title="Personal assistant setup" href="/start/marv">
+    Local-first memory, dashboard, multimodal input, and companion-device setup.
+  </Card>
 </Columns>
 
 ## What you will have

@@ -12,6 +12,7 @@ import { resolveChannelCapabilities } from "../../../core/config/channel-capabil
 import { getMachineDisplayName } from "../../../infra/machine-name.js";
 import { MAX_IMAGE_BYTES } from "../../../media/constants.js";
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
+import { isProactiveBufferPrompt } from "../../../proactive/constants.js";
 import {
   isCronSessionKey,
   isSubagentSessionKey,
@@ -24,6 +25,7 @@ import { isReasoningTagProvider } from "../../../utils/provider-utils.js";
 import { resolveMarvAgentDir } from "../../agent-paths.js";
 import { resolveSessionAgentIds } from "../../agent-scope.js";
 import { createAnthropicPayloadLogger } from "../../anthropic-payload-log.js";
+import { autoRecallFromSoulMemory, resolveAutoRecallConfig } from "../../auto-recall.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "../../bootstrap-files.js";
 import { createCacheTrace } from "../../cache-trace.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../defaults.js";
@@ -293,6 +295,28 @@ export async function runEmbeddedAttempt(
         sessionId: params.sessionId,
         warn: makeBootstrapWarn({ sessionLabel, warn: (message) => log.warn(message) }),
       });
+    const { sessionAgentId } = resolveSessionAgentIds({
+      sessionKey: params.sessionKey,
+      config: params.config,
+    });
+    const autoRecallConfig = resolveAutoRecallConfig(params.config);
+    let finalContextFiles = contextFiles;
+    if (autoRecallConfig.enabled && params.prompt.trim()) {
+      try {
+        const recalled = await autoRecallFromSoulMemory({
+          agentId: sessionAgentId,
+          sessionKey: params.sessionKey,
+          incomingMessage: params.prompt,
+          config: autoRecallConfig,
+          marvConfig: params.config,
+        });
+        if (recalled.contextFile) {
+          finalContextFiles = [...contextFiles, recalled.contextFile];
+        }
+      } catch (error) {
+        log.warn(`auto recall failed: ${String(error)}`);
+      }
+    }
     const workspaceNotes = hookAdjustedBootstrapFiles.some(
       (file) => file.name === DEFAULT_BOOTSTRAP_FILENAME && !file.missing,
     )
@@ -343,6 +367,8 @@ export async function runEmbeddedAttempt(
           requireExplicitMessageTarget:
             params.requireExplicitMessageTarget ?? isSubagentSessionKey(params.sessionKey),
           disableMessageTool: params.disableMessageTool,
+          enableProactiveBuffer:
+            isCronSessionKey(params.sessionKey) && isProactiveBufferPrompt(params.prompt),
         });
     const tools = sanitizeToolsForGoogle({ tools: toolsRaw, provider: params.provider });
     logToolSchemasForGoogle({ tools, provider: params.provider });
@@ -394,7 +420,7 @@ export async function runEmbeddedAttempt(
             return undefined;
           })()
         : undefined;
-    const { defaultAgentId, sessionAgentId } = resolveSessionAgentIds({
+    const { defaultAgentId } = resolveSessionAgentIds({
       sessionKey: params.sessionKey,
       config: params.config,
     });
@@ -475,7 +501,7 @@ export async function runEmbeddedAttempt(
       userTimezone,
       userTime,
       userTimeFormat,
-      contextFiles,
+      contextFiles: finalContextFiles,
       memoryCitationsMode: params.config?.memory?.citations,
     });
     const systemPromptReport = buildSystemPromptReport({
@@ -497,7 +523,7 @@ export async function runEmbeddedAttempt(
       })(),
       systemPrompt: appendPrompt,
       bootstrapFiles: hookAdjustedBootstrapFiles,
-      injectedFiles: contextFiles,
+      injectedFiles: finalContextFiles,
       skillsPrompt,
       tools,
     });

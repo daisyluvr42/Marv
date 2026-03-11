@@ -75,6 +75,24 @@ export type AutonomyToolSynthesisConfig = {
   languages?: string[];
 };
 
+export type AutonomyProactiveDeliveryConfig = {
+  /** Delivery channel for managed proactive digests. Special value: "last". */
+  channel?: string;
+  /** Explicit delivery target for the selected channel. */
+  to?: string;
+};
+
+export type AutonomyProactiveConfig = {
+  /** Enable managed proactive check + digest cron jobs. Default: false. */
+  enabled?: boolean;
+  /** Interval between proactive checks in minutes. Default: 30. */
+  checkEveryMinutes?: number;
+  /** Daily digest times in HH:MM 24-hour format. Default: ["08:00","13:00","20:00"]. */
+  digestTimes?: string[];
+  /** Digest delivery target. */
+  delivery?: AutonomyProactiveDeliveryConfig;
+};
+
 /**
  * Top-level autonomy configuration.
  *
@@ -103,6 +121,8 @@ export type AutonomyConfig = {
   discovery?: AutonomyDiscoveryConfig;
   /** Ad-hoc script synthesis and persistence. */
   toolSynthesis?: AutonomyToolSynthesisConfig;
+  /** Proactive checking + digest delivery. */
+  proactive?: AutonomyProactiveConfig;
   /** Privacy guard for non-owner / group chat contexts. */
   privacy?: AutonomyPrivacyConfig;
 };

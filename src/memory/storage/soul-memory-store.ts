@@ -524,6 +524,27 @@ export function getSoulMemoryItem(params: {
   }
 }
 
+export function deleteSoulMemoryScopeItems(params: {
+  agentId: string;
+  scopeType: string;
+  scopeId: string;
+}): number {
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    const rows = db
+      .prepare("SELECT id FROM memory_items WHERE scope_type = ? AND scope_id = ?")
+      .all(normalizeScopeValue(params.scopeType), normalizeScopeValue(params.scopeId)) as Array<{
+      id?: string;
+    }>;
+    const ids = rows
+      .map((row) => (typeof row.id === "string" ? row.id.trim() : ""))
+      .filter(Boolean);
+    return pruneSoulMemoryItems(db, ids);
+  } finally {
+    db.close();
+  }
+}
+
 export function getSoulArchiveEvent(params: {
   agentId: string;
   eventId: string;

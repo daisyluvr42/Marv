@@ -6,6 +6,7 @@ export {
   resolveBootstrapMaxChars,
   resolveBootstrapTotalMaxChars,
   stripThoughtSignatures,
+  trimToAnchor,
 } from "../pi-embedded-helpers/bootstrap.js";
 export {
   BILLING_ERROR_USER_MESSAGE,

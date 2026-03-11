@@ -2,6 +2,7 @@ import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { resolveApiKeyForProvider } from "../agents/model/model-auth.js";
 import {
   findModelInCatalog,
@@ -75,6 +76,9 @@ export function createMediaAttachmentCache(attachments: MediaAttachment[]): Medi
 
 const binaryCache = new Map<string, Promise<string | null>>();
 const geminiProbeCache = new Map<string, Promise<boolean>>();
+const localOcrScriptPath = fileURLToPath(
+  new URL("../local-models/ocr/marv-ocr.swift", import.meta.url),
+);
 
 export function clearMediaUnderstandingBinaryCacheForTests(): void {
   binaryCache.clear();
@@ -285,6 +289,30 @@ async function resolveLocalAudioEntry(): Promise<MediaUnderstandingModelConfig |
   return await resolveLocalWhisperEntry();
 }
 
+async function resolveLocalOcrEntry(): Promise<MediaUnderstandingModelConfig | null> {
+  if (process.platform !== "darwin") {
+    return null;
+  }
+  if (!(await fileExists(localOcrScriptPath))) {
+    return null;
+  }
+  if (await hasBinary("xcrun")) {
+    return {
+      type: "cli",
+      command: "xcrun",
+      args: ["swift", localOcrScriptPath, "{{MediaPath}}"],
+    };
+  }
+  if (await hasBinary("swift")) {
+    return {
+      type: "cli",
+      command: "swift",
+      args: [localOcrScriptPath, "{{MediaPath}}"],
+    };
+  }
+  return null;
+}
+
 async function resolveGeminiCliEntry(
   _capability: MediaUnderstandingCapability,
 ): Promise<MediaUnderstandingModelConfig | null> {
@@ -450,6 +478,10 @@ async function resolveAutoEntries(params: {
     const imageModelEntries = resolveImageModelFromAgentDefaults(params.cfg);
     if (imageModelEntries.length > 0) {
       return imageModelEntries;
+    }
+    const localOcr = await resolveLocalOcrEntry();
+    if (localOcr) {
+      return [localOcr];
     }
   }
   const gemini = await resolveGeminiCliEntry(params.capability);

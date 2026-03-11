@@ -155,6 +155,84 @@ Example:
 - `/new` or `/reset` starts a fresh session for that chat (configurable via `resetTriggers`). If sent alone, the agent replies with a short hello to confirm the reset.
 - `/compact [instructions]` compacts the session context and reports the remaining context budget.
 
+## Local-first memory and proactive setup
+
+Today’s local-first assistant stack has three separate pieces:
+
+- `memory.autoRecall`: pulls relevant Soul Memory into the first turn. This is on by default.
+- `memory.knowledge`: indexes local document vaults into memory. This is opt-in.
+- `autonomy.proactive`: creates managed proactive check and digest cron jobs. This is opt-in.
+
+Start with a config like this:
+
+```json5
+{
+  memory: {
+    autoRecall: {
+      enabled: true,
+      maxResults: 8,
+      maxContextChars: 8000,
+    },
+    knowledge: {
+      enabled: true,
+      autoSyncOnSearch: true,
+      autoSyncOnBoot: true,
+      syncIntervalMs: 900000,
+      vaults: [
+        {
+          name: "plans",
+          path: "~/Documents/Marv/Plan",
+          exclude: ["**/.git/**"],
+        },
+        {
+          name: "notes",
+          path: "~/Documents/Notes",
+          exclude: ["**/.obsidian/**", "**/.git/**"],
+        },
+      ],
+    },
+  },
+  autonomy: {
+    proactive: {
+      enabled: true,
+      checkEveryMinutes: 30,
+      digestTimes: ["08:00", "20:00"],
+      delivery: {
+        channel: "last",
+      },
+    },
+  },
+}
+```
+
+Notes:
+
+- `memory.knowledge.autoSyncOnBoot: true` makes the Gateway scan your vaults on startup.
+- `memory.knowledge.autoSyncOnSearch: true` refreshes before memory search runs.
+- `autonomy.proactive.delivery.channel: "last"` sends digests back to the most recent delivery route. Set explicit `channel` + `to` if you want a fixed target instead.
+
+After you save config changes, restart the background Gateway so the first knowledge scan and managed proactive cron jobs are created:
+
+```bash
+marv gateway restart
+```
+
+## Verify in the dashboard
+
+Open the browser UI:
+
+```bash
+marv dashboard
+```
+
+On the **Overview** page you should now see:
+
+- **Memory**: total items, archive events, auto recall, runtime ingest, backend, and citation mode
+- **Knowledge**: vault count, indexed files, total chunks, last scan time, and search/boot sync flags
+- **Proactive**: whether proactive mode is enabled, pending and urgent digest entries, next digest times, and delivery route
+
+If the Knowledge card still shows `0` files and `0` chunks, either wait for the boot scan after restart or trigger a memory search from a normal chat turn.
+
 ## Heartbeats (proactive mode)
 
 By default, Marv runs a heartbeat every 30 minutes with the prompt:
@@ -173,6 +251,22 @@ Set `agents.defaults.heartbeat.every: "0m"` to disable.
   },
 }
 ```
+
+## Local multimodal input
+
+The local input-side multimodal path is meant for understanding what you send to the agent, not for generating media.
+
+- **Audio**: leave `tools.media.audio.enabled` unset or set it to `true` and Marv will auto-detect local transcription tools before falling back to provider APIs. See [Audio and Voice Notes](/nodes/audio).
+- **Images on macOS**: if the Gateway host is a Mac and no explicit image model is taking over, Marv can run bundled local OCR through Apple Vision. This is especially useful for screenshots, receipts, and handwritten notes. See [Media Understanding](/nodes/media-understanding).
+- **Native vision models**: if your primary model already supports vision, Marv skips the extra OCR step and passes the original image through directly.
+
+Optional OCR language hints:
+
+```bash
+export MARV_OCR_LANGUAGES="zh-Hans,en-US"
+```
+
+If you want a dedicated display + input endpoint, deploy the iOS companion app from source on an idle iPhone. It gives you dashboard status, chat, voice input, and optional foreground-only camera snapshots. See [iOS App](/platforms/ios) and [Camera Capture](/nodes/camera).
 
 ## Media in and out
 
@@ -204,9 +298,12 @@ Logs live under `/tmp/marv/` (default: `marv-YYYY-MM-DD.log`).
 
 ## Next steps
 
+- Browser operator surface: [Dashboard](/web/dashboard)
+- Control UI capabilities: [Control UI](/web/control-ui)
 - WebChat: [WebChat](/web/webchat)
 - Gateway ops: [Gateway runbook](/gateway)
 - Cron + wakeups: [Cron jobs](/automation/cron-jobs)
+- Local image/audio preprocessing: [Media Understanding](/nodes/media-understanding)
 - macOS menu bar companion: [Marv macOS app](/platforms/macos)
 - iOS node app: [iOS app](/platforms/ios)
 - Android node app: [Android app](/platforms/android)

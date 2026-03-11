@@ -131,18 +131,33 @@ Rules:
 ### Auto-detect media understanding (default)
 
 If `tools.media.<capability>.enabled` is **not** set to `false` and you haven’t
-configured models, Marv auto-detects in this order and **stops at the first
-working option**:
+configured models, Marv auto-detects per capability and **stops at the first
+working option**.
 
-1. **Local CLIs** (audio only; if installed)
+**Audio**
+
+1. **Local CLIs** (if installed)
    - `sherpa-onnx-offline` (requires `SHERPA_ONNX_MODEL_DIR` with encoder/decoder/joiner/tokens)
    - `whisper-cli` (`whisper-cpp`; uses `WHISPER_CPP_MODEL` or the bundled tiny model)
    - `whisper` (Python CLI; downloads models automatically)
 2. **Gemini CLI** (`gemini`) using `read_many_files`
 3. **Provider keys**
-   - Audio: OpenAI → Groq → Deepgram → Google
-   - Image: OpenAI → Anthropic → Google → MiniMax
-   - Video: Google
+   - OpenAI → Groq → Deepgram → Google
+
+**Image**
+
+1. If the active reply model already supports vision natively, Marv skips the extra image-understanding step and injects the original image into the model context.
+2. If `agents.defaults.imageModel` is configured, Marv tries that first.
+3. On **macOS**, Marv can run bundled local OCR through Apple Vision using `xcrun swift` or `swift`.
+4. **Gemini CLI** (`gemini`) using `read_many_files`
+5. **Provider keys**
+   - OpenAI → Anthropic → Google → MiniMax
+
+**Video**
+
+1. **Gemini CLI** (`gemini`) using `read_many_files`
+2. **Provider keys**
+   - Google
 
 To disable auto-detection, set:
 
@@ -159,6 +174,32 @@ To disable auto-detection, set:
 ```
 
 Note: Binary detection is best-effort across macOS/Linux/Windows; ensure the CLI is on `PATH` (we expand `~`), or set an explicit CLI model with a full command path.
+
+### Local OCR on macOS
+
+The bundled macOS OCR path is **input-side only**. It extracts text from images; it does not try to write a full scene description.
+
+Use it when you mainly send:
+
+- screenshots
+- receipts
+- forms
+- whiteboards
+- notes with readable text
+
+Requirements:
+
+- The Gateway host is running on macOS
+- `xcrun` or `swift` is available on `PATH`
+- You have not forced image understanding to another model for that turn
+
+Optional language hints:
+
+```bash
+export MARV_OCR_LANGUAGES="zh-Hans,en-US"
+```
+
+If your main reply model already supports vision, Marv skips OCR and sends the original image to the model instead. That is the intended behavior.
 
 ## Capabilities (optional)
 

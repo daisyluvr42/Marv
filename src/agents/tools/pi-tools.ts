@@ -218,6 +218,8 @@ export function createMarvCodingTools(options?: {
   senderIsOwner?: boolean;
   /** True when the current request is not a forwarded or quoted third-party instruction. */
   directUserInstruction?: boolean;
+  /** Enable proactive buffer tooling for managed proactive runs only. */
+  enableProactiveBuffer?: boolean;
 }): AnyAgentTool[] {
   const execToolName = "exec";
   const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
@@ -427,6 +429,7 @@ export function createMarvCodingTools(options?: {
     ...createMarvTools({
       sandboxBrowserBridgeUrl: sandbox?.browser?.bridgeUrl,
       allowHostBrowserControl: sandbox ? sandbox.browserAllowHostControl : true,
+      enableProactiveBuffer: options?.enableProactiveBuffer,
       agentSessionKey: options?.sessionKey,
       agentChannel: resolveGatewayMessageChannel(options?.messageProvider),
       agentAccountId: options?.agentAccountId,

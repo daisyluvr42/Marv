@@ -186,6 +186,66 @@ describe("memory search citations", () => {
     const details = result.details as { results: Array<{ snippet: string }> };
     expect(details.results[0]?.snippet).not.toMatch(/Source:/);
   });
+
+  it("formats structured document citations with file path and heading", async () => {
+    soulSearchImpl = () => [
+      {
+        id: "mem_doc",
+        scopeType: "document",
+        scopeId: "obsidian:projects/marv.md",
+        kind: "document_chunk",
+        content: "Install Node 22 and run pnpm install.",
+        confidence: 1,
+        tier: "P1",
+        source: "manual_log",
+        recordKind: "fact",
+        metadata: {
+          relativePath: "Projects/marv.md",
+          heading: "## Setup Guide",
+        },
+        createdAt: Date.now(),
+        lastAccessedAt: null,
+        reinforcementCount: 1,
+        lastReinforcedAt: null,
+        score: 0.91,
+        vectorScore: 0.91,
+        lexicalScore: 0.9,
+        bm25Score: 0.9,
+        rrfScore: 0.9,
+        graphScore: 0,
+        clusterScore: 0,
+        relevanceScore: 0.9,
+        scopePenalty: 1,
+        clarityScore: 1,
+        tierMultiplier: 1,
+        wasRecallBoosted: false,
+        timeDecay: 1,
+        salienceScore: 1,
+        salienceDecay: 1,
+        salienceReinforcement: 1,
+        reinforcementFactor: 1,
+        referenceBoost: 0,
+        references: [],
+        ageDays: 0,
+      },
+    ];
+    const cfg = asMarvConfig({
+      memory: { citations: "on" },
+      agents: { list: [{ id: "main", default: true }] },
+    });
+    const tool = createMemorySearchTool({ config: cfg });
+    if (!tool) {
+      throw new Error("tool missing");
+    }
+
+    const result = await tool.execute("doc_citation", { query: "setup guide" });
+    const details = result.details as {
+      results: Array<{ citation?: string; snippet: string; path: string }>;
+    };
+    expect(details.results[0]?.path).toBe("soul-memory/mem_doc");
+    expect(details.results[0]?.citation).toBe("[doc] Projects/marv.md > ## Setup Guide");
+    expect(details.results[0]?.snippet).toContain("Projects/marv.md");
+  });
 });
 
 describe("memory tools", () => {

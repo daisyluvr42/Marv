@@ -1025,6 +1025,7 @@
                 "pages": [
                   "nodes/index",
                   "nodes/troubleshooting",
+                  "nodes/media-understanding",
                   "nodes/images",
                   "nodes/audio",
                   "nodes/camera",

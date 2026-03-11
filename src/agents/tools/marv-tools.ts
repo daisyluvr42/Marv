@@ -13,6 +13,7 @@ import { createGatewayTool } from "./gateway-tool.js";
 import { createImageTool } from "./image-tool.js";
 import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
+import { createProactiveBufferTool } from "./proactive-buffer-tool.js";
 import { createRequestEscalationTool } from "./request-escalation-tool.js";
 import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
 import { createSelfInspectingTool } from "./self-inspecting-tool.js";
@@ -71,6 +72,8 @@ export type CreateMarvToolsOptions = {
   senderE164?: string;
   /** True when the current request is not a forwarded or quoted third-party instruction. */
   directUserInstruction?: boolean;
+  /** Enable proactive buffer tooling for managed proactive runs only. */
+  enableProactiveBuffer?: boolean;
 };
 
 export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[] {
@@ -109,6 +112,11 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
         sandboxRoot: options?.sandboxRoot,
         requireExplicitTarget: options?.requireExplicitMessageTarget,
       });
+  const proactiveBufferTool = createProactiveBufferTool({
+    config: options?.config,
+    agentSessionKey: options?.agentSessionKey,
+    enabled: options?.enableProactiveBuffer,
+  });
   const tools: AnyAgentTool[] = [
     createBrowserTool({
       sandboxBridgeUrl: options?.sandboxBrowserBridgeUrl,
@@ -122,6 +130,7 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     createCronTool({
       agentSessionKey: options?.agentSessionKey,
     }),
+    ...(proactiveBufferTool ? [proactiveBufferTool] : []),
     ...(messageTool ? [messageTool] : []),
     createTtsTool({
       agentChannel: options?.agentChannel,

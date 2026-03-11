@@ -87,6 +87,7 @@ export const DEFAULT_BOOTSTRAP_TOTAL_MAX_CHARS = 150_000;
 const MIN_BOOTSTRAP_FILE_BUDGET_CHARS = 64;
 const BOOTSTRAP_HEAD_RATIO = 0.7;
 const BOOTSTRAP_TAIL_RATIO = 0.2;
+const DEFAULT_SOUL_ANCHOR_MAX_CHARS = 2_000;
 
 type TrimBootstrapResult = {
   content: string;
@@ -158,6 +159,18 @@ function clampToBudget(content: string, budget: number): string {
   }
   const safe = budget - 1;
   return `${truncateUtf16Safe(content, safe)}…`;
+}
+
+export function trimToAnchor(content: string, maxChars = DEFAULT_SOUL_ANCHOR_MAX_CHARS): string {
+  const trimmed = content.trim();
+  if (trimmed.length <= maxChars) {
+    return trimmed;
+  }
+  const headingIndex = trimmed.indexOf("\n## ");
+  if (headingIndex > 0) {
+    return trimBootstrapContent(trimmed.slice(0, headingIndex), "SOUL.md", maxChars).content;
+  }
+  return trimBootstrapContent(trimmed, "SOUL.md", maxChars).content;
 }
 
 export async function ensureSessionHeader(params: {

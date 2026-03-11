@@ -35,6 +35,22 @@ const AutonomyDiscoverySchema = z
   })
   .strict();
 
+const AutonomyProactiveDeliverySchema = z
+  .object({
+    channel: z.string().optional(),
+    to: z.string().optional(),
+  })
+  .strict();
+
+const AutonomyProactiveSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    checkEveryMinutes: z.number().int().positive().optional(),
+    digestTimes: z.array(z.string()).optional(),
+    delivery: AutonomyProactiveDeliverySchema.optional(),
+  })
+  .strict();
+
 export const AutonomySchema = z
   .object({
     mode: z.union([z.literal("full"), z.literal("supervised"), z.literal("minimal")]).optional(),
@@ -46,6 +62,7 @@ export const AutonomySchema = z
     autoInstallSkills: z.boolean().optional(),
     escalation: AutonomyEscalationSchema.optional(),
     discovery: AutonomyDiscoverySchema.optional(),
+    proactive: AutonomyProactiveSchema.optional(),
     privacy: AutonomyPrivacySchema.optional(),
   })
   .strict()

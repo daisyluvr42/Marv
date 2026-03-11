@@ -45,6 +45,7 @@ For a complete map of the docs, see [Docs hubs](/start/hubs).
 - [WhatsApp group messages](/channels/group-messages)
 - [Media images](/nodes/images)
 - [Media audio](/nodes/audio)
+- [Media understanding](/nodes/media-understanding)
 
 ## Companion apps
 

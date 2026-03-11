@@ -1,6 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
+import { syncConfiguredKnowledgeBases } from "../../knowledge/indexer.js";
 import { appendLedgerEvent } from "../../ledger/event-store.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
 import { getMemorySearchManager } from "../../memory/index.js";
@@ -20,7 +21,6 @@ import {
   type SoulMemoryItem,
   type SoulMemoryQueryResult,
   type SoulArchiveQueryResult,
-  type SoulMemoryScope,
 } from "../../memory/storage/soul-memory-store.js";
 import type { MemorySearchResult } from "../../memory/types.js";
 import { evaluateMemoryWriteHeuristics } from "../../memory/write-heuristics.js";
@@ -28,6 +28,7 @@ import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { truncateUtf16Safe } from "../../utils.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
 import { resolveMemorySearchConfig } from "../memory-search.js";
+import { resolveSoulScopes } from "../memory-soul-scopes.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readNumberParam, readStringParam } from "./common.js";
 
@@ -129,6 +130,10 @@ export function createMemorySearchTool(options: {
       const includeCitations = shouldIncludeCitations({
         mode: citationsMode,
         sessionKey: options.agentSessionKey,
+      });
+      await syncConfiguredKnowledgeBases({
+        agentId,
+        config: cfg,
       });
 
       const soulResults = querySoulMemoryMulti({
@@ -464,58 +469,6 @@ function resolveDefaultWriteScope(params: { agentId: string; sessionKey?: string
   return { scopeType: "agent", scopeId: params.agentId };
 }
 
-function resolveSoulScopes(params: { agentId: string; sessionKey?: string }): SoulMemoryScope[] {
-  const scopes: SoulMemoryScope[] = [{ scopeType: "agent", scopeId: params.agentId, weight: 1 }];
-  const parsed = parseAgentSessionKey(params.sessionKey);
-  if (!parsed?.rest) {
-    return scopes;
-  }
-  scopes.unshift({
-    scopeType: "session",
-    scopeId: parsed.rest,
-    weight: 1.15,
-  });
-
-  const tokens = parsed.rest.toLowerCase().split(":").filter(Boolean);
-  if (tokens.length >= 3) {
-    const channel = tokens[0] ?? "";
-    const kind = tokens[1] ?? "";
-    const peerId = tokens[2] ?? "";
-    if (channel && peerId && kind === "direct") {
-      scopes.push({
-        scopeType: "user",
-        scopeId: `${channel}:${peerId}`,
-        weight: 1.05,
-      });
-    }
-    if (channel && peerId && (kind === "group" || kind === "channel")) {
-      scopes.push({
-        scopeType: "channel",
-        scopeId: `${channel}:${peerId}`,
-        weight: 0.9,
-      });
-    }
-  }
-  return dedupeScopes(scopes);
-}
-
-function dedupeScopes(scopes: SoulMemoryScope[]): SoulMemoryScope[] {
-  const dedup = new Map<string, SoulMemoryScope>();
-  for (const scope of scopes) {
-    const scopeType = scope.scopeType.trim().toLowerCase();
-    const scopeId = scope.scopeId.trim().toLowerCase();
-    if (!scopeType || !scopeId) {
-      continue;
-    }
-    const key = `${scopeType}:${scopeId}`;
-    const existing = dedup.get(key);
-    if (!existing || scope.weight > existing.weight) {
-      dedup.set(key, { scopeType, scopeId, weight: scope.weight });
-    }
-  }
-  return [...dedup.values()];
-}
-
 function toSoulSearchResult(entry: SoulMemoryQueryResult): MemorySearchResult {
   const path = buildSoulMemoryPath(entry.id);
   const lines = entry.content.split("\n");
@@ -529,8 +482,9 @@ function toSoulSearchResult(entry: SoulMemoryQueryResult): MemorySearchResult {
     path,
     startLine: 1,
     endLine,
-    score: entry.score,
-    snippet,
+    score: entry.scopeType === "document" ? entry.score * 0.85 : entry.score,
+    snippet: entry.scopeType === "document" ? formatDocumentSnippet(entry, snippet) : snippet,
+    citation: entry.scopeType === "document" ? formatDocumentCitation(entry) : undefined,
     salienceScore: entry.salienceScore,
     salienceDecay: entry.salienceDecay,
     salienceReinforcement: entry.salienceReinforcement,
@@ -623,10 +577,25 @@ function decorateCitations(results: MemorySearchResult[], include: boolean): Mem
     return results.map((entry) => ({ ...entry, citation: undefined }));
   }
   return results.map((entry) => {
-    const citation = formatCitation(entry);
+    const citation = entry.citation ?? formatCitation(entry);
     const snippet = `${entry.snippet.trim()}\n\nSource: ${citation}`;
     return { ...entry, citation, snippet };
   });
+}
+
+function formatDocumentSnippet(entry: SoulMemoryQueryResult, snippet: string): string {
+  const prefix = formatDocumentCitation(entry);
+  return prefix ? `${prefix}\n${snippet}` : snippet;
+}
+
+function formatDocumentCitation(entry: SoulMemoryQueryResult): string {
+  const relativePath =
+    typeof entry.metadata?.relativePath === "string" ? entry.metadata.relativePath.trim() : "";
+  const heading = typeof entry.metadata?.heading === "string" ? entry.metadata.heading.trim() : "";
+  if (!relativePath) {
+    return "[doc]";
+  }
+  return heading ? `[doc] ${relativePath} > ${heading}` : `[doc] ${relativePath}`;
 }
 
 function formatCitation(entry: MemorySearchResult): string {

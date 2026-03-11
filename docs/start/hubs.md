@@ -126,6 +126,7 @@ Use these hubs to discover every page, including deep dives and reference docs t
 ## Nodes, media, voice
 
 - [Nodes overview](/nodes)
+- [Media understanding](/nodes/media-understanding)
 - [Camera](/nodes/camera)
 - [Images](/nodes/images)
 - [Audio](/nodes/audio)
