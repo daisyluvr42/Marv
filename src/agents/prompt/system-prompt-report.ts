@@ -130,7 +130,7 @@ export function buildSystemPromptReport(params: {
   const projectContext = extractBetween(
     systemPrompt,
     "\n# Project Context\n",
-    "\n## Silent Replies\n",
+    "\n# End\n", // Sentinel: Project Context is now at the end of the prompt; if not found, extractBetween returns to end-of-string
   );
   const projectContextChars = projectContext.text.length;
   const toolListText = extractToolListText(systemPrompt);

@@ -298,7 +298,7 @@ export function buildAgentSystemPrompt(params: {
     browser: "Control web browser",
     canvas: "Present/eval/snapshot the Canvas",
     nodes: "List/describe/notify/camera/screen on paired nodes",
-    cron: "Manage cron jobs and wake events (use for reminders; when scheduling a reminder, write the systemEvent text as something that will read like a reminder when it fires, and mention that it is a reminder depending on the time gap between setting and firing; include recent context in reminder text if appropriate)",
+    cron: "Manage cron jobs and reminders (include recent context in reminder text; write systemEvent as user-facing reminder text)",
     message: "Send messages and channel actions",
     gateway: "Restart, apply config, or run updates on the running Marv process",
     agents_list: "List agent ids allowed for sessions_spawn",
@@ -474,31 +474,7 @@ export function buildAgentSystemPrompt(params: {
     "## Tooling",
     "Tool availability (filtered by policy):",
     "Tool names are case-sensitive. Call tools exactly as listed.",
-    toolLines.length > 0
-      ? toolLines.join("\n")
-      : [
-          "Pi lists the standard tools above. This runtime enables:",
-          "- grep: search file contents for patterns",
-          "- find: find files by glob pattern",
-          "- ls: list directory contents",
-          "- apply_patch: apply multi-file patches",
-          `- ${execToolName}: run shell commands (supports background via yieldMs/background)`,
-          `- ${processToolName}: manage background exec sessions`,
-          "- browser: control Marv's dedicated browser",
-          "- canvas: present/eval/snapshot the Canvas",
-          "- nodes: list/describe/notify/camera/screen on paired nodes",
-          "- cron: manage cron jobs and wake events (use for reminders; when scheduling a reminder, write the systemEvent text as something that will read like a reminder when it fires, and mention that it is a reminder depending on the time gap between setting and firing; include recent context in reminder text if appropriate)",
-          "- sessions_list: list sessions",
-          "- sessions_history: fetch session history",
-          "- sessions_send: send to another session",
-          "- subagents: list/steer/kill sub-agent runs",
-          '- session_status: show usage/time/model state and answer "what model are we using?"',
-          "- self_inspecting: inspect your own runtime/settings/models/scheduled tasks/context/tools state when the user asks about your status, settings, available models, scheduled tasks, limits, or current behavior",
-          "- self_settings: change current session model/thinking/verbose/reasoning/usage/elevated/exec/queue/reset or refresh the runtime model registry when the user directly asks",
-          "- self_settings can also update the restricted shared deep-memory consolidation settings when the user directly asks; treat those as shared config changes, not session-only changes",
-        ].join("\n"),
-    "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first. Do not guess or switch models before checking. When the user asks you to change your own settings or behavior, use self_settings.",
-    "TOOLS.md does not control tool availability; it is user guidance for how to use external tools.",
+    toolLines.length > 0 ? toolLines.join("\n") : "(No tools available)",
     `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,
     "If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.",
     "Do not poll `subagents list` / `sessions_list` in a loop; only check status on-demand (for intervention, debugging, or when explicitly asked).",
@@ -511,12 +487,7 @@ export function buildAgentSystemPrompt(params: {
     "",
     ...safetySection,
     "## Marv CLI Quick Reference",
-    "Marv is controlled via subcommands. Do not invent commands.",
-    "To manage the Gateway daemon service (start/stop/restart):",
-    "- marv gateway status",
-    "- marv gateway start",
-    "- marv gateway stop",
-    "- marv gateway restart",
+    "Marv is controlled via subcommands. Do not invent commands. Gateway: `marv gateway {status|start|stop|restart}`.",
     "If unsure, ask the user to run `marv help` (or `marv gateway --help`) and paste the output.",
     "",
     ...skillsSection,
@@ -538,16 +509,14 @@ export function buildAgentSystemPrompt(params: {
     hasGateway && !isMinimal ? "" : "",
     "",
     // Skip model aliases for subagent/none modes
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? "## Model Aliases"
-      : "",
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? "Prefer aliases when specifying model overrides; full provider/model is also accepted."
-      : "",
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? params.modelAliasLines.join("\n")
-      : "",
-    params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal ? "" : "",
+    ...(params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
+      ? [
+          "## Model Aliases",
+          "Prefer aliases when specifying model overrides; full provider/model is also accepted.",
+          params.modelAliasLines.join("\n"),
+          "",
+        ]
+      : []),
     userTimezone
       ? "If you need the current date, time, or day of week, run session_status (📊 session_status)."
       : "",
@@ -656,6 +625,36 @@ export function buildAgentSystemPrompt(params: {
     lines.push("## Reasoning Format", reasoningHint, "");
   }
 
+  // Skip silent replies for subagent/none modes
+  if (!isMinimal) {
+    lines.push(
+      "## Silent Replies",
+      `When you have nothing to say, respond with ONLY: ${SILENT_REPLY_TOKEN}`,
+      `It must be your ENTIRE message — never append to real replies, never wrap in markdown.`,
+      `❌ "Here's help... ${SILENT_REPLY_TOKEN}" / ✅ ${SILENT_REPLY_TOKEN}`,
+      "",
+    );
+  }
+
+  // Skip heartbeats for subagent/none modes; only inject if heartbeat is configured
+  if (!isMinimal && heartbeatPrompt) {
+    lines.push(
+      "## Heartbeats",
+      heartbeatPromptLine,
+      "On heartbeat poll: reply HEARTBEAT_OK if nothing needs attention; otherwise reply with the alert text (no HEARTBEAT_OK).",
+      "",
+    );
+  }
+
+  lines.push(
+    "## Runtime",
+    buildRuntimeLine(runtimeInfo, runtimeChannel, runtimeCapabilities, params.defaultThinkLevel),
+    `Reasoning: ${reasoningLevel} (hidden unless on/stream). Toggle /reasoning; /status shows Reasoning when enabled.`,
+  );
+
+  // --- Volatile content below: Project Context + Recalled Context ---
+  // Placed AFTER all stable sections to maximize LLM prefix caching.
+  // Any workspace file edit only invalidates cache from this point onward.
   const contextFiles = params.contextFiles ?? [];
   const validContextFiles = contextFiles.filter(
     (file) => typeof file.path === "string" && file.path.trim().length > 0,
@@ -691,43 +690,6 @@ export function buildAgentSystemPrompt(params: {
       }
     }
   }
-
-  // Skip silent replies for subagent/none modes
-  if (!isMinimal) {
-    lines.push(
-      "## Silent Replies",
-      `When you have nothing to say, respond with ONLY: ${SILENT_REPLY_TOKEN}`,
-      "",
-      "⚠️ Rules:",
-      "- It must be your ENTIRE message — nothing else",
-      `- Never append it to an actual response (never include "${SILENT_REPLY_TOKEN}" in real replies)`,
-      "- Never wrap it in markdown or code blocks",
-      "",
-      `❌ Wrong: "Here's help... ${SILENT_REPLY_TOKEN}"`,
-      `❌ Wrong: "${SILENT_REPLY_TOKEN}"`,
-      `✅ Right: ${SILENT_REPLY_TOKEN}`,
-      "",
-    );
-  }
-
-  // Skip heartbeats for subagent/none modes
-  if (!isMinimal) {
-    lines.push(
-      "## Heartbeats",
-      heartbeatPromptLine,
-      "If you receive a heartbeat poll (a user message matching the heartbeat prompt above), and there is nothing that needs attention, reply exactly:",
-      "HEARTBEAT_OK",
-      'Marv treats a leading/trailing "HEARTBEAT_OK" as a heartbeat ack (and may discard it).',
-      'If something needs attention, do NOT include "HEARTBEAT_OK"; reply with the alert text instead.',
-      "",
-    );
-  }
-
-  lines.push(
-    "## Runtime",
-    buildRuntimeLine(runtimeInfo, runtimeChannel, runtimeCapabilities, params.defaultThinkLevel),
-    `Reasoning: ${reasoningLevel} (hidden unless on/stream). Toggle /reasoning; /status shows Reasoning when enabled.`,
-  );
 
   return lines.filter(Boolean).join("\n");
 }
