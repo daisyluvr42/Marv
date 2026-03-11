@@ -11,18 +11,20 @@ vi.mock("../../llm-slug-generator.js", () => ({
   generateSlugViaLLM: vi.fn().mockResolvedValue("simple-math"),
 }));
 
-const writeSoulMemoryMock = vi.hoisted(() =>
+const ingestSoulMemoryEventMock = vi.hoisted(() =>
   vi.fn((params: { content?: string }) => ({
-    id: "mem_mock",
-    scopeType: "agent",
-    scopeId: "main",
-    kind: "session_summary",
-    content: params.content ?? "",
+    activeItem: {
+      id: "mem_mock",
+      scopeType: "agent",
+      scopeId: "main",
+      kind: "session_summary",
+      content: params.content ?? "",
+    },
   })),
 );
 
 vi.mock("../../../memory/storage/soul-memory-store.js", () => ({
-  writeSoulMemory: writeSoulMemoryMock,
+  ingestSoulMemoryEvent: ingestSoulMemoryEventMock,
   buildSoulMemoryPath: (id: string) => `soul-memory/${id}`,
 }));
 
@@ -33,7 +35,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  writeSoulMemoryMock.mockClear();
+  ingestSoulMemoryEventMock.mockClear();
 });
 
 /**
@@ -64,7 +66,7 @@ async function runNewWithPreviousSessionEntry(params: {
   previousSessionEntry: { sessionId: string; sessionFile?: string };
   cfg?: MarvConfig;
 }): Promise<{ files: string[]; memoryContent: string }> {
-  const beforeCount = writeSoulMemoryMock.mock.calls.length;
+  const beforeCount = ingestSoulMemoryEventMock.mock.calls.length;
   const event = createHookEvent("command", "new", "agent:main:main", {
     cfg:
       params.cfg ??
@@ -76,7 +78,7 @@ async function runNewWithPreviousSessionEntry(params: {
 
   await handler(event);
 
-  const writes = writeSoulMemoryMock.mock.calls
+  const writes = ingestSoulMemoryEventMock.mock.calls
     .slice(beforeCount)
     .map((call) => (call[0] ?? {}) as { content?: string });
   const files = writes.map((_, index) => `memory-${index}`);
@@ -142,7 +144,7 @@ describe("session-memory hook", () => {
 
     await handler(event);
 
-    expect(writeSoulMemoryMock).not.toHaveBeenCalled();
+    expect(ingestSoulMemoryEventMock).not.toHaveBeenCalled();
   });
 
   it("skips commands other than new", async () => {
@@ -154,7 +156,7 @@ describe("session-memory hook", () => {
 
     await handler(event);
 
-    expect(writeSoulMemoryMock).not.toHaveBeenCalled();
+    expect(ingestSoulMemoryEventMock).not.toHaveBeenCalled();
   });
 
   it("creates memory file with session content on /new command", async () => {

@@ -33,6 +33,8 @@ const VECTOR_TABLE = "chunks_vec";
 const FTS_TABLE = "chunks_fts";
 const EMBEDDING_CACHE_TABLE = "embedding_cache";
 const BATCH_FAILURE_LIMIT = 2;
+const SESSION_WARM_TTL_MS = 30 * 60_000;
+const SESSION_WARM_MAX_ENTRIES = 256;
 
 const log = createSubsystemLogger("memory");
 
@@ -94,7 +96,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     string,
     { lastSize: number; pendingBytes: number; pendingMessages: number }
   >();
-  private sessionWarm = new Set<string>();
+  private sessionWarm = new Map<string, number>();
   private syncing: Promise<void> | null = null;
 
   static async get(params: {
@@ -189,14 +191,47 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       return;
     }
     const key = sessionKey?.trim() || "";
-    if (key && this.sessionWarm.has(key)) {
+    const nowMs = Date.now();
+    if (key && this.isSessionWarm(key, nowMs)) {
       return;
     }
     void this.sync({ reason: "session-start" }).catch((err) => {
       log.warn(`memory sync failed (session-start): ${String(err)}`);
     });
     if (key) {
-      this.sessionWarm.add(key);
+      this.markSessionWarm(key, nowMs);
+    }
+  }
+
+  private isSessionWarm(sessionKey: string, nowMs: number): boolean {
+    const warmedAt = this.sessionWarm.get(sessionKey);
+    if (warmedAt === undefined) {
+      return false;
+    }
+    if (nowMs - warmedAt > SESSION_WARM_TTL_MS) {
+      this.sessionWarm.delete(sessionKey);
+      return false;
+    }
+    return true;
+  }
+
+  private markSessionWarm(sessionKey: string, nowMs: number): void {
+    this.pruneSessionWarm(nowMs);
+    this.sessionWarm.set(sessionKey, nowMs);
+    while (this.sessionWarm.size > SESSION_WARM_MAX_ENTRIES) {
+      const oldestKey = this.sessionWarm.keys().next().value;
+      if (!oldestKey) {
+        break;
+      }
+      this.sessionWarm.delete(oldestKey);
+    }
+  }
+
+  private pruneSessionWarm(nowMs: number): void {
+    for (const [sessionKey, warmedAt] of this.sessionWarm) {
+      if (nowMs - warmedAt > SESSION_WARM_TTL_MS) {
+        this.sessionWarm.delete(sessionKey);
+      }
     }
   }
 
@@ -613,6 +648,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       this.sessionUnsubscribe();
       this.sessionUnsubscribe = null;
     }
+    this.sessionWarm.clear();
     this.db.close();
     INDEX_CACHE.delete(this.cacheKey);
   }
