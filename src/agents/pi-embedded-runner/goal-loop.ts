@@ -27,9 +27,16 @@ export type StrategyFamily =
   | "validate_result"
   | "request_capability"
   | "synthesize_tool"
+  | "delegated_subagent"
   | "recenter_goal"
   | "split_subproblems"
   | "wrap_up";
+
+export type StrategyTrack =
+  | "local_execution"
+  | "discovery_or_validation"
+  | "delegated_subagent"
+  | "escalate_or_stop";
 
 export type ProgressSignal = {
   attemptIndex: number;
@@ -60,15 +67,19 @@ export type GoalLoopState = {
   directionNodes: string[];
   currentNodeIndex: number;
   strategyFamily: StrategyFamily;
+  strategyTrack: StrategyTrack;
   problemShape: ProblemShape | null;
   progressWindow: ProgressSignal[];
   stuckCounter: number;
   shiftCount: number;
+  delegatedShiftCount: number;
   loopGuardLevel: GoalLoopGuardLevel;
   convergeReason: string | null;
   priorStrategyHints: StrategyHint[];
   attemptCount: number;
   lastErrorFingerprint: string | null;
+  attemptedDelegationKeys: string[];
+  activeDelegation: GoalDelegationPlan | null;
 };
 
 export type GoalProgressReview = {
@@ -76,9 +87,20 @@ export type GoalProgressReview = {
   classification: ProgressClassification;
   problemShape: ProblemShape | null;
   strategyFamily: StrategyFamily;
+  strategyTrack: StrategyTrack;
+  delegation: GoalDelegationPlan | null;
   steeringContext: string | null;
   visibility: string;
   state: GoalLoopState;
+};
+
+export type GoalDelegationPlan = {
+  roles: string[];
+  taskGroup: string;
+  waitForAll: true;
+  announceMode: "aggregate";
+  rationale: string;
+  key: string;
 };
 
 const TRIVIAL_PROMPT_MAX_CHARS = 48;
@@ -97,6 +119,8 @@ const CONSTRAINT_RE =
 const PERMISSION_RE =
   /\b(permission|permissions|sandbox|approval|allow|forbidden|denied|escalat|missing tool|not allowed)\b/i;
 const BINARY_FILE_RE = /detectedMimeType|binary content|cannot display binary/i;
+const MAX_DELEGATED_SHIFTS = 2;
+const MAX_DELEGATED_FANOUT = 3;
 
 function clampRatio(value: number): number {
   if (!Number.isFinite(value) || value <= 0) {
@@ -230,6 +254,27 @@ function resolveInitialStrategyFamily(goalType: GoalFrame["goalType"]): Strategy
   return goalType === "mutation" ? "read_context" : "read_context";
 }
 
+function resolveStrategyTrack(strategyFamily: StrategyFamily): StrategyTrack {
+  if (strategyFamily === "delegated_subagent") {
+    return "delegated_subagent";
+  }
+  if (
+    strategyFamily === "read_context" ||
+    strategyFamily === "validate_result" ||
+    strategyFamily === "inspect_failure"
+  ) {
+    return "discovery_or_validation";
+  }
+  if (
+    strategyFamily === "request_capability" ||
+    strategyFamily === "synthesize_tool" ||
+    strategyFamily === "wrap_up"
+  ) {
+    return "escalate_or_stop";
+  }
+  return "local_execution";
+}
+
 export function createGoalLoopState(args: {
   prompt: string;
   priorStrategyHints?: StrategyHint[];
@@ -243,15 +288,19 @@ export function createGoalLoopState(args: {
     directionNodes,
     currentNodeIndex: 0,
     strategyFamily: resolveInitialStrategyFamily(goalFrame.goalType),
+    strategyTrack: resolveStrategyTrack(resolveInitialStrategyFamily(goalFrame.goalType)),
     problemShape: null,
     progressWindow: [],
     stuckCounter: 0,
     shiftCount: 0,
+    delegatedShiftCount: 0,
     loopGuardLevel: "normal",
     convergeReason: null,
     priorStrategyHints: args.priorStrategyHints ?? [],
     attemptCount: 0,
     lastErrorFingerprint: null,
+    attemptedDelegationKeys: [],
+    activeDelegation: null,
   };
 }
 
@@ -301,8 +350,24 @@ export function buildGoalSteeringContext(
 }
 
 export function buildStrategyPromptFragment(
-  state: Pick<GoalLoopState, "goalFrame" | "strategyFamily" | "problemShape" | "loopGuardLevel">,
+  state: Pick<
+    GoalLoopState,
+    | "goalFrame"
+    | "strategyFamily"
+    | "strategyTrack"
+    | "problemShape"
+    | "loopGuardLevel"
+    | "activeDelegation"
+  >,
 ): string | null {
+  if (state.strategyFamily === "delegated_subagent" && state.activeDelegation) {
+    return (
+      `Local attempts are stalling. Use task_dispatch once with waitForAll=true and announceMode="aggregate". ` +
+      `Dispatch roles: ${state.activeDelegation.roles.join(", ")}. ` +
+      `Task group: ${state.activeDelegation.taskGroup}. ` +
+      state.activeDelegation.rationale
+    );
+  }
   if (state.loopGuardLevel === "force_shift") {
     return `Your current approach is not producing progress toward "${state.goalFrame.objective}". Try a fundamentally different strategy family and do not repeat the same category of actions.`;
   }
@@ -511,6 +576,115 @@ function nextStrategyFamily(
   }
 }
 
+function dedupeRoleList(roles: string[]): string[] {
+  return dedupeStrings(roles).slice(0, MAX_DELEGATED_FANOUT);
+}
+
+function buildDelegationKey(args: {
+  goalType: GoalFrame["goalType"];
+  problemShape: ProblemShape | null;
+  roles: string[];
+}): string {
+  return `${args.goalType}:${args.problemShape ?? "unknown"}:${args.roles.join(",")}`;
+}
+
+function resolveDelegationPlan(args: {
+  state: GoalLoopState;
+  classification: ProgressClassification;
+  problemShape: ProblemShape | null;
+  canDelegate: boolean;
+}): GoalDelegationPlan | null {
+  if (!args.canDelegate) {
+    return null;
+  }
+  if (args.classification === "completed" || args.classification === "advancing") {
+    return null;
+  }
+  if (args.problemShape === "tool_or_permission_limit") {
+    return null;
+  }
+
+  let roles: string[] = [];
+  let rationale = "";
+  if (args.state.goalFrame.goalType === "mutation") {
+    switch (args.problemShape) {
+      case "implementation_blocked":
+        roles =
+          args.state.goalFrame.complexity === "complex" ? ["debugger", "coder"] : ["debugger"];
+        rationale =
+          "Have a fresh worker re-attack the implementation blocker from a clean context.";
+        break;
+      case "validation_failure":
+        roles = ["reviewer", "tester"];
+        rationale = "Separate failure inspection from read-only validation before more edits.";
+        break;
+      case "parallelizable_subproblems":
+        roles = ["architect", "coder", "tester"];
+        rationale =
+          "Split design, implementation, and validation into one coordinated aggregate pass.";
+        break;
+      case "search_drift":
+        roles = ["reviewer"];
+        rationale =
+          "Use a focused reviewer to cut through drift and identify the most credible next move.";
+        break;
+      default:
+        if (
+          args.state.loopGuardLevel === "force_shift" &&
+          args.state.goalFrame.complexity === "complex"
+        ) {
+          roles = ["reviewer"];
+          rationale = "Take one independent review pass before giving up on the task.";
+        }
+        break;
+    }
+  } else {
+    switch (args.problemShape) {
+      case "information_gap":
+        roles = ["researcher"];
+        rationale = "Gather missing evidence in a clean context before continuing locally.";
+        break;
+      case "search_drift":
+        roles = ["researcher", "fact_checker"];
+        rationale =
+          "Split evidence gathering from verification to recover from broad or noisy search.";
+        break;
+      case "parallelizable_subproblems":
+        roles = ["researcher", "fact_checker", "analyst"];
+        rationale =
+          "Parallelize evidence gathering, verification, and synthesis into one aggregate pass.";
+        break;
+      default:
+        if (args.state.loopGuardLevel === "force_shift") {
+          roles = ["analyst"];
+          rationale = "Use one fresh analytical pass before stopping for stagnation.";
+        }
+        break;
+    }
+  }
+
+  const cappedRoles = dedupeRoleList(roles);
+  if (cappedRoles.length === 0) {
+    return null;
+  }
+  const key = buildDelegationKey({
+    goalType: args.state.goalFrame.goalType,
+    problemShape: args.problemShape,
+    roles: cappedRoles,
+  });
+  if (args.state.attemptedDelegationKeys.includes(key)) {
+    return null;
+  }
+  return {
+    roles: cappedRoles,
+    taskGroup: `goal-loop:${args.problemShape ?? "recovery"}`,
+    waitForAll: true,
+    announceMode: "aggregate",
+    rationale,
+    key,
+  };
+}
+
 function buildVisibilityLabel(
   strategyFamily: StrategyFamily,
   classification: ProgressClassification,
@@ -535,6 +709,9 @@ function buildVisibilityLabel(
   }
   if (strategyFamily === "synthesize_tool") {
     return "building the missing tool";
+  }
+  if (strategyFamily === "delegated_subagent") {
+    return "dispatching a focused recovery team";
   }
   if (strategyFamily === "recenter_goal") {
     return "re-centering on the goal";
@@ -568,6 +745,7 @@ export function reviewGoalProgress(args: {
   priorResultHashes: Set<string>;
   recentLoopEvents: ToolLoopEventRecord[];
   promptErrorText?: string;
+  canDelegate?: boolean;
 }): GoalProgressReview {
   const { signal, errorFingerprint } = deriveProgressSignal(args);
   const classification = classifyProgress(signal);
@@ -578,12 +756,26 @@ export function reviewGoalProgress(args: {
     promptErrorText: args.promptErrorText,
   });
   let strategyFamily = nextStrategyFamily(problemShape, classification, args.state.attemptCount);
+  let strategyTrack = resolveStrategyTrack(strategyFamily);
   let stuckCounter =
     classification === "completed" || classification === "advancing"
       ? 0
       : args.state.stuckCounter + (classification === "stalled" ? 2 : 1);
   let shiftCount = args.state.shiftCount;
+  let delegatedShiftCount = args.state.delegatedShiftCount;
   let loopGuardLevel: GoalLoopGuardLevel = "normal";
+  const attemptedDelegationKeys = [...args.state.attemptedDelegationKeys];
+  if (
+    args.state.strategyFamily === "delegated_subagent" &&
+    args.state.activeDelegation &&
+    classification !== "completed" &&
+    classification !== "advancing" &&
+    !attemptedDelegationKeys.includes(args.state.activeDelegation.key)
+  ) {
+    attemptedDelegationKeys.push(args.state.activeDelegation.key);
+  }
+  let delegation: GoalDelegationPlan | null = null;
+  const canDelegate = args.canDelegate !== false;
 
   if (signal.toolLoopEvent === "critical" || stuckCounter >= 4) {
     loopGuardLevel = "force_shift";
@@ -595,8 +787,51 @@ export function reviewGoalProgress(args: {
     loopGuardLevel = "warning";
   }
 
+  const delegatedRecovery =
+    delegatedShiftCount < MAX_DELEGATED_SHIFTS
+      ? resolveDelegationPlan({
+          state: {
+            ...args.state,
+            attemptedDelegationKeys,
+          },
+          classification,
+          problemShape,
+          canDelegate,
+        })
+      : null;
+
+  if (
+    delegatedRecovery &&
+    (loopGuardLevel === "force_shift" || stuckCounter >= 2 || classification === "stalled")
+  ) {
+    strategyFamily = "delegated_subagent";
+    strategyTrack = "delegated_subagent";
+    delegation = delegatedRecovery;
+    if (
+      args.state.strategyFamily !== "delegated_subagent" ||
+      args.state.activeDelegation?.key !== delegatedRecovery.key
+    ) {
+      shiftCount += 1;
+      delegatedShiftCount += 1;
+    }
+  } else {
+    strategyTrack = resolveStrategyTrack(strategyFamily);
+  }
+
   if (shiftCount >= 3 || stuckCounter >= 6) {
     loopGuardLevel = "stop";
+  }
+
+  if (loopGuardLevel === "stop" && delegatedRecovery && delegation === null) {
+    strategyFamily = "delegated_subagent";
+    strategyTrack = "delegated_subagent";
+    delegation = delegatedRecovery;
+    shiftCount += 1;
+    delegatedShiftCount += 1;
+    loopGuardLevel = "force_shift";
+  }
+  if (loopGuardLevel === "stop" && delegation) {
+    loopGuardLevel = "force_shift";
   }
 
   const nextState: GoalLoopState = {
@@ -604,10 +839,12 @@ export function reviewGoalProgress(args: {
     attemptCount: args.state.attemptCount + 1,
     currentNodeIndex: advanceDirectionNode(args.state, classification),
     strategyFamily,
+    strategyTrack,
     problemShape: problemShape ?? args.state.problemShape,
     progressWindow: [...args.state.progressWindow, signal].slice(-6),
     stuckCounter,
     shiftCount,
+    delegatedShiftCount,
     loopGuardLevel,
     convergeReason:
       classification === "completed"
@@ -616,12 +853,16 @@ export function reviewGoalProgress(args: {
           ? "no_progress_no_new_strategy"
           : args.state.convergeReason,
     lastErrorFingerprint: errorFingerprint,
+    attemptedDelegationKeys: attemptedDelegationKeys.slice(-6),
+    activeDelegation: delegation,
   };
   return {
     signal,
     classification,
     problemShape,
     strategyFamily,
+    strategyTrack,
+    delegation,
     steeringContext: buildGoalSteeringContext(nextState),
     visibility: buildVisibilityLabel(strategyFamily, classification),
     state: nextState,

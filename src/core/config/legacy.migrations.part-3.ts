@@ -1,12 +1,8 @@
 import {
-  ensureAgentEntry,
   ensureRecord,
-  getAgentsList,
   getRecord,
-  isRecord,
   type LegacyConfigMigration,
   mergeMissing,
-  resolveDefaultAgentIdFromRaw,
 } from "./legacy.shared.js";
 
 // NOTE: tools.alsoAllow was introduced after legacy migrations; no legacy migration needed.
@@ -192,30 +188,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_3: LegacyConfigMigration[] = [
       raw.agents = agents;
       delete raw.agent;
       changes.push("Moved agent → agents.defaults.");
-    },
-  },
-  {
-    id: "identity->agents.list",
-    describe: "Move identity to agents.list[].identity",
-    apply: (raw, changes) => {
-      const identity = getRecord(raw.identity);
-      if (!identity) {
-        return;
-      }
-
-      const agents = ensureRecord(raw, "agents");
-      const list = getAgentsList(agents);
-      const defaultId = resolveDefaultAgentIdFromRaw(raw);
-      const entry = ensureAgentEntry(list, defaultId);
-      if (entry.identity === undefined) {
-        entry.identity = identity;
-        changes.push(`Moved identity → agents.list (id "${defaultId}").identity.`);
-      } else {
-        changes.push("Removed identity (agents.list identity already set).");
-      }
-      agents.list = list;
-      raw.agents = agents;
-      delete raw.identity;
     },
   },
 ];

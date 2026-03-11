@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { MarvConfig } from "../core/config/config.js";
 import { resolveStateDir } from "../core/config/paths.js";
+import type { AgentDefaultsConfig } from "../core/config/types.agent-defaults.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,
@@ -12,66 +13,42 @@ import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
 
 export { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 
-type AgentEntry = NonNullable<NonNullable<MarvConfig["agents"]>["list"]>[number];
+type AgentDefaults = NonNullable<NonNullable<MarvConfig["agents"]>["defaults"]>;
 
 type ResolvedAgentConfig = {
   name?: string;
   workspace?: string;
   agentDir?: string;
-  model?: AgentEntry["model"];
+  model?: AgentDefaultsConfig["model"];
   modelPool?: string;
-  autoRouting?: AgentEntry["autoRouting"];
-  skills?: AgentEntry["skills"];
-  memorySearch?: AgentEntry["memorySearch"];
-  humanDelay?: AgentEntry["humanDelay"];
-  heartbeat?: AgentEntry["heartbeat"];
-  identity?: AgentEntry["identity"];
-  groupChat?: AgentEntry["groupChat"];
-  subagents?: AgentEntry["subagents"];
-  sandbox?: AgentEntry["sandbox"];
-  tools?: AgentEntry["tools"];
+  autoRouting?: AgentDefaults["autoRouting"];
+  skills?: AgentDefaults["skills"];
+  memorySearch?: AgentDefaults["memorySearch"];
+  humanDelay?: AgentDefaults["humanDelay"];
+  heartbeat?: AgentDefaults["heartbeat"];
+  identity?: AgentDefaults["identity"];
+  groupChat?: AgentDefaults["groupChat"];
+  subagents?: AgentDefaults["subagents"];
+  sandbox?: AgentDefaults["sandbox"];
+  tools?: AgentDefaults["tools"];
 };
 
-let defaultAgentWarned = false;
-
-export function listAgentEntries(cfg: MarvConfig): AgentEntry[] {
-  const list = cfg.agents?.list;
-  if (!Array.isArray(list)) {
-    return [];
+function resolveDefaultsConfig(cfg: MarvConfig): AgentDefaults | undefined {
+  const defaults = cfg.agents?.defaults;
+  if (!defaults || typeof defaults !== "object") {
+    return undefined;
   }
-  return list.filter((entry): entry is AgentEntry => Boolean(entry && typeof entry === "object"));
+  return defaults;
 }
 
 export function listAgentIds(cfg: MarvConfig): string[] {
-  const agents = listAgentEntries(cfg);
-  if (agents.length === 0) {
-    return [DEFAULT_AGENT_ID];
-  }
-  const seen = new Set<string>();
-  const ids: string[] = [];
-  for (const entry of agents) {
-    const id = normalizeAgentId(entry?.id);
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    ids.push(id);
-  }
-  return ids.length > 0 ? ids : [DEFAULT_AGENT_ID];
+  void cfg;
+  return [DEFAULT_AGENT_ID];
 }
 
 export function resolveDefaultAgentId(cfg: MarvConfig): string {
-  const agents = listAgentEntries(cfg);
-  if (agents.length === 0) {
-    return DEFAULT_AGENT_ID;
-  }
-  const defaults = agents.filter((agent) => agent?.default);
-  if (defaults.length > 1 && !defaultAgentWarned) {
-    defaultAgentWarned = true;
-    console.warn("Multiple agents marked default=true; using the first entry as default.");
-  }
-  const chosen = (defaults[0] ?? agents[0])?.id?.trim();
-  return normalizeAgentId(chosen || DEFAULT_AGENT_ID);
+  void cfg;
+  return DEFAULT_AGENT_ID;
 }
 
 export function resolveSessionAgentIds(params: { sessionKey?: string; config?: MarvConfig }): {
@@ -93,40 +70,44 @@ export function resolveSessionAgentId(params: {
   return resolveSessionAgentIds(params).sessionAgentId;
 }
 
-function resolveAgentEntry(cfg: MarvConfig, agentId: string): AgentEntry | undefined {
-  const id = normalizeAgentId(agentId);
-  return listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === id);
+function resolveMainAgentConfig(cfg: MarvConfig): ResolvedAgentConfig | undefined {
+  const defaults = resolveDefaultsConfig(cfg);
+  if (!defaults) {
+    return undefined;
+  }
+  return {
+    name: typeof defaults.name === "string" && defaults.name.trim() ? defaults.name : undefined,
+    workspace:
+      typeof defaults.workspace === "string" && defaults.workspace.trim()
+        ? defaults.workspace
+        : undefined,
+    agentDir:
+      typeof defaults.agentDir === "string" && defaults.agentDir.trim()
+        ? defaults.agentDir
+        : undefined,
+    model: defaults.model,
+    modelPool:
+      typeof defaults.modelPool === "string" && defaults.modelPool.trim()
+        ? defaults.modelPool
+        : undefined,
+    autoRouting: defaults.autoRouting,
+    skills: Array.isArray(defaults.skills) ? defaults.skills : undefined,
+    memorySearch: defaults.memorySearch,
+    humanDelay: defaults.humanDelay,
+    heartbeat: defaults.heartbeat,
+    identity: defaults.identity,
+    groupChat: defaults.groupChat,
+    subagents: defaults.subagents,
+    sandbox: defaults.sandbox,
+    tools: defaults.tools,
+  };
 }
 
 export function resolveAgentConfig(
   cfg: MarvConfig,
   agentId: string,
 ): ResolvedAgentConfig | undefined {
-  const id = normalizeAgentId(agentId);
-  const entry = resolveAgentEntry(cfg, id);
-  if (!entry) {
-    return undefined;
-  }
-  return {
-    name: typeof entry.name === "string" ? entry.name : undefined,
-    workspace: typeof entry.workspace === "string" ? entry.workspace : undefined,
-    agentDir: typeof entry.agentDir === "string" ? entry.agentDir : undefined,
-    model:
-      typeof entry.model === "string" || (entry.model && typeof entry.model === "object")
-        ? entry.model
-        : undefined,
-    modelPool: typeof entry.modelPool === "string" ? entry.modelPool : undefined,
-    autoRouting: entry.autoRouting,
-    skills: Array.isArray(entry.skills) ? entry.skills : undefined,
-    memorySearch: entry.memorySearch,
-    humanDelay: entry.humanDelay,
-    heartbeat: entry.heartbeat,
-    identity: entry.identity,
-    groupChat: entry.groupChat,
-    subagents: typeof entry.subagents === "object" && entry.subagents ? entry.subagents : undefined,
-    sandbox: entry.sandbox,
-    tools: entry.tools,
-  };
+  return normalizeAgentId(agentId) === DEFAULT_AGENT_ID ? resolveMainAgentConfig(cfg) : undefined;
 }
 
 export function resolveAgentSkillsFilter(cfg: MarvConfig, agentId: string): string[] | undefined {
@@ -139,8 +120,7 @@ export function resolveAgentWorkspaceDir(cfg: MarvConfig, agentId: string) {
   if (configured) {
     return resolveUserPath(configured);
   }
-  const defaultAgentId = resolveDefaultAgentId(cfg);
-  if (id === defaultAgentId) {
+  if (id === DEFAULT_AGENT_ID) {
     const fallback = cfg.agents?.defaults?.workspace?.trim();
     if (fallback) {
       return resolveUserPath(fallback);

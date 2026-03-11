@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { identityHasValues, parseIdentityMarkdown } from "../agents/prompt/identity-file.js";
 import { DEFAULT_IDENTITY_FILENAME } from "../agents/workspace.js";
 import { writeConfigFile } from "../core/config/config.js";
@@ -11,12 +11,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { requireValidConfig } from "./agents.command-shared.js";
-import {
-  type AgentIdentity,
-  findAgentEntryIndex,
-  listAgentEntries,
-  loadAgentIdentity,
-} from "./agents.config.js";
+import { type AgentIdentity, loadAgentIdentity } from "./agents.config.js";
 
 type AgentsSetIdentityOptions = {
   agent?: string;
@@ -48,21 +43,6 @@ async function loadIdentityFromFile(filePath: string): Promise<AgentIdentity | n
   } catch {
     return null;
   }
-}
-
-function resolveAgentIdByWorkspace(
-  cfg: Parameters<typeof resolveAgentWorkspaceDir>[0],
-  workspaceDir: string,
-): string[] {
-  const list = listAgentEntries(cfg);
-  const ids =
-    list.length > 0
-      ? list.map((entry) => normalizeAgentId(entry.id))
-      : [resolveDefaultAgentId(cfg)];
-  const normalizedTarget = normalizeWorkspacePath(workspaceDir);
-  return ids.filter(
-    (id) => normalizeWorkspacePath(resolveAgentWorkspaceDir(cfg, id)) === normalizedTarget,
-  );
 }
 
 export async function agentsSetIdentityCommand(
@@ -97,29 +77,15 @@ export async function agentsSetIdentityCommand(
     workspaceDir = path.resolve(process.cwd());
   }
 
-  let agentId = agentRaw ? normalizeAgentId(agentRaw) : undefined;
-  if (!agentId) {
-    if (!workspaceDir) {
-      runtime.error("Select an agent with --agent or provide a workspace via --workspace.");
-      runtime.exit(1);
-      return;
-    }
-    const matches = resolveAgentIdByWorkspace(cfg, workspaceDir);
-    if (matches.length === 0) {
-      runtime.error(
-        `No agent workspace matches ${shortenHomePath(workspaceDir)}. Pass --agent to target a specific agent.`,
-      );
-      runtime.exit(1);
-      return;
-    }
-    if (matches.length > 1) {
-      runtime.error(
-        `Multiple agents match ${shortenHomePath(workspaceDir)}: ${matches.join(", ")}. Pass --agent to choose one.`,
-      );
-      runtime.exit(1);
-      return;
-    }
-    agentId = matches[0];
+  const agentId = agentRaw
+    ? normalizeAgentId(agentRaw)
+    : normalizeAgentId(resolveDefaultAgentId(cfg));
+  if (agentId !== normalizeAgentId(resolveDefaultAgentId(cfg))) {
+    runtime.error(
+      'Only the durable "main" agent can be configured. Use enhanced subagents for delegated roles.',
+    );
+    runtime.exit(1);
+    return;
   }
 
   let identityFromFile: AgentIdentity | null = null;
@@ -163,35 +129,19 @@ export async function agentsSetIdentityCommand(
     return;
   }
 
-  const list = listAgentEntries(cfg);
-  const index = findAgentEntryIndex(list, agentId);
-  const base = index >= 0 ? list[index] : { id: agentId };
   const nextIdentity: IdentityConfig = {
-    ...base.identity,
+    ...cfg.agents?.defaults?.identity,
     ...incomingIdentity,
   };
-
-  const nextEntry = {
-    ...base,
-    identity: nextIdentity,
-  };
-
-  const nextList = [...list];
-  if (index >= 0) {
-    nextList[index] = nextEntry;
-  } else {
-    const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
-    if (nextList.length === 0 && agentId !== defaultId) {
-      nextList.push({ id: defaultId });
-    }
-    nextList.push(nextEntry);
-  }
 
   const nextConfig = {
     ...cfg,
     agents: {
       ...cfg.agents,
-      list: nextList,
+      defaults: {
+        ...cfg.agents?.defaults,
+        identity: nextIdentity,
+      },
     },
   };
 

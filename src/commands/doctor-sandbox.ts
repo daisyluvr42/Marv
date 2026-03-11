@@ -4,7 +4,6 @@ import {
   DEFAULT_SANDBOX_BROWSER_IMAGE,
   DEFAULT_SANDBOX_COMMON_IMAGE,
   DEFAULT_SANDBOX_IMAGE,
-  resolveSandboxScope,
 } from "../agents/sandbox/sandbox.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { runCommandWithTimeout, runExec } from "../process/exec.js";
@@ -239,50 +238,5 @@ export async function maybeRepairSandboxImages(
 }
 
 export function noteSandboxScopeWarnings(cfg: MarvConfig) {
-  const globalSandbox = cfg.agents?.defaults?.sandbox;
-  const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
-  const warnings: string[] = [];
-
-  for (const agent of agents) {
-    const agentId = agent.id;
-    const agentSandbox = agent.sandbox;
-    if (!agentSandbox) {
-      continue;
-    }
-
-    const scope = resolveSandboxScope({
-      scope: agentSandbox.scope ?? globalSandbox?.scope,
-      perSession: agentSandbox.perSession ?? globalSandbox?.perSession,
-    });
-
-    if (scope !== "shared") {
-      continue;
-    }
-
-    const overrides: string[] = [];
-    if (agentSandbox.docker && Object.keys(agentSandbox.docker).length > 0) {
-      overrides.push("docker");
-    }
-    if (agentSandbox.browser && Object.keys(agentSandbox.browser).length > 0) {
-      overrides.push("browser");
-    }
-    if (agentSandbox.prune && Object.keys(agentSandbox.prune).length > 0) {
-      overrides.push("prune");
-    }
-
-    if (overrides.length === 0) {
-      continue;
-    }
-
-    warnings.push(
-      [
-        `- agents.list (id "${agentId}") sandbox ${overrides.join("/")} overrides ignored.`,
-        `  scope resolves to "shared".`,
-      ].join("\n"),
-    );
-  }
-
-  if (warnings.length > 0) {
-    note(warnings.join("\n"), "Sandbox");
-  }
+  void cfg;
 }

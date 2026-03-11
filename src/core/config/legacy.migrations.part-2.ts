@@ -1,12 +1,8 @@
 import {
-  ensureAgentEntry,
   ensureRecord,
-  getAgentsList,
   getRecord,
-  isRecord,
   type LegacyConfigMigration,
   mapLegacyAudioTranscription,
-  mergeMissing,
 } from "./legacy.shared.js";
 
 function applyLegacyAudioTranscriptionModel(params: {
@@ -203,118 +199,12 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
     },
   },
   {
-    id: "routing.agents-v2",
-    describe: "Move routing.agents/defaultAgentId to agents.list",
-    apply: (raw, changes) => {
-      const routing = getRecord(raw.routing);
-      if (!routing) {
-        return;
-      }
-
-      const routingAgents = getRecord(routing.agents);
-      const agents = ensureRecord(raw, "agents");
-      const list = getAgentsList(agents);
-
-      if (routingAgents) {
-        for (const [rawId, entryRaw] of Object.entries(routingAgents)) {
-          const agentId = String(rawId ?? "").trim();
-          const entry = getRecord(entryRaw);
-          if (!agentId || !entry) {
-            continue;
-          }
-
-          const target = ensureAgentEntry(list, agentId);
-          const entryCopy: Record<string, unknown> = { ...entry };
-
-          if ("mentionPatterns" in entryCopy) {
-            const mentionPatterns = entryCopy.mentionPatterns;
-            const groupChat = ensureRecord(target, "groupChat");
-            if (groupChat.mentionPatterns === undefined) {
-              groupChat.mentionPatterns = mentionPatterns;
-              changes.push(
-                `Moved routing.agents.${agentId}.mentionPatterns → agents.list (id "${agentId}").groupChat.mentionPatterns.`,
-              );
-            } else {
-              changes.push(
-                `Removed routing.agents.${agentId}.mentionPatterns (agents.list groupChat mentionPatterns already set).`,
-              );
-            }
-            delete entryCopy.mentionPatterns;
-          }
-
-          const legacyGroupChat = getRecord(entryCopy.groupChat);
-          if (legacyGroupChat) {
-            const groupChat = ensureRecord(target, "groupChat");
-            mergeMissing(groupChat, legacyGroupChat);
-            delete entryCopy.groupChat;
-          }
-
-          const legacySandbox = getRecord(entryCopy.sandbox);
-          if (legacySandbox) {
-            const sandboxTools = getRecord(legacySandbox.tools);
-            if (sandboxTools) {
-              const tools = ensureRecord(target, "tools");
-              const sandbox = ensureRecord(tools, "sandbox");
-              const toolPolicy = ensureRecord(sandbox, "tools");
-              mergeMissing(toolPolicy, sandboxTools);
-              delete legacySandbox.tools;
-              changes.push(
-                `Moved routing.agents.${agentId}.sandbox.tools → agents.list (id "${agentId}").tools.sandbox.tools.`,
-              );
-            }
-            entryCopy.sandbox = legacySandbox;
-          }
-
-          mergeMissing(target, entryCopy);
-        }
-        delete routing.agents;
-        changes.push("Moved routing.agents → agents.list.");
-      }
-
-      const defaultAgentId =
-        typeof routing.defaultAgentId === "string" ? routing.defaultAgentId.trim() : "";
-      if (defaultAgentId) {
-        const hasDefault = list.some(
-          (entry): entry is Record<string, unknown> => isRecord(entry) && entry.default === true,
-        );
-        if (!hasDefault) {
-          const entry = ensureAgentEntry(list, defaultAgentId);
-          entry.default = true;
-          changes.push(
-            `Moved routing.defaultAgentId → agents.list (id "${defaultAgentId}").default.`,
-          );
-        } else {
-          changes.push("Removed routing.defaultAgentId (agents.list default already set).");
-        }
-        delete routing.defaultAgentId;
-      }
-
-      if (list.length > 0) {
-        agents.list = list;
-      }
-
-      if (Object.keys(routing).length === 0) {
-        delete raw.routing;
-      }
-    },
-  },
-  {
     id: "routing.config-v2",
-    describe: "Move routing bindings/groupChat/queue/agentToAgent/transcribeAudio",
+    describe: "Move routing groupChat/queue/agentToAgent/transcribeAudio",
     apply: (raw, changes) => {
       const routing = getRecord(raw.routing);
       if (!routing) {
         return;
-      }
-
-      if (routing.bindings !== undefined) {
-        if (raw.bindings === undefined) {
-          raw.bindings = routing.bindings;
-          changes.push("Moved routing.bindings → bindings.");
-        } else {
-          changes.push("Removed routing.bindings (bindings already set).");
-        }
-        delete routing.bindings;
       }
 
       if (routing.agentToAgent !== undefined) {

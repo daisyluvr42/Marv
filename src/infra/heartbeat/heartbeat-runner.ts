@@ -119,20 +119,8 @@ export type HeartbeatRunner = {
   updateConfig: (cfg: MarvConfig) => void;
 };
 
-function hasExplicitHeartbeatAgents(cfg: MarvConfig) {
-  const list = cfg.agents?.list ?? [];
-  return list.some((entry) => Boolean(entry?.heartbeat));
-}
-
 export function isHeartbeatEnabledForAgent(cfg: MarvConfig, agentId?: string): boolean {
   const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
-  const list = cfg.agents?.list ?? [];
-  const hasExplicit = hasExplicitHeartbeatAgents(cfg);
-  if (hasExplicit) {
-    return list.some(
-      (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId,
-    );
-  }
   return resolvedAgentId === resolveDefaultAgentId(cfg);
 }
 
@@ -197,16 +185,6 @@ export function resolveHeartbeatSummaryForAgent(
 }
 
 function resolveHeartbeatAgents(cfg: MarvConfig): HeartbeatAgent[] {
-  const list = cfg.agents?.list ?? [];
-  if (hasExplicitHeartbeatAgents(cfg)) {
-    return list
-      .filter((entry) => entry?.heartbeat)
-      .map((entry) => {
-        const id = normalizeAgentId(entry.id);
-        return { agentId: id, heartbeat: resolveHeartbeatConfig(cfg, id) };
-      })
-      .filter((entry) => entry.agentId);
-  }
   const fallbackId = resolveDefaultAgentId(cfg);
   return [{ agentId: fallbackId, heartbeat: resolveHeartbeatConfig(cfg, fallbackId) }];
 }
