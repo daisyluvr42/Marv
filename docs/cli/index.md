@@ -525,11 +525,10 @@ List configured agents.
 Options:
 
 - `--json`
-- `--bindings`
 
 #### `agents add [name]`
 
-Add a new isolated agent. Runs the guided wizard unless flags (or `--non-interactive`) are passed; `--workspace` is required in non-interactive mode.
+Legacy command. Top-level agent creation was removed; Marv now keeps a single durable `main` agent and uses enhanced subagents for delegation.
 
 Options:
 
@@ -540,11 +539,9 @@ Options:
 - `--non-interactive`
 - `--json`
 
-Binding specs use `channel[:accountId]`. When `accountId` is omitted for WhatsApp, the default account id is used.
-
 #### `agents delete <id>`
 
-Delete an agent and prune its workspace + state.
+Legacy command. Top-level durable agent deletion was removed.
 
 Options:
 

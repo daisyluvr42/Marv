@@ -23,15 +23,11 @@ export const FIELD_HELP: Record<string, string> = {
   "gateway.remote.sshTarget":
     "Remote gateway over SSH (tunnels the gateway port to localhost). Format: user@host or user@host:port.",
   "gateway.remote.sshIdentity": "Optional SSH identity file path (passed to ssh -i).",
-  "agents.list.*.skills":
-    "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
-  "agents.list[].skills":
-    "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
-  "agents.list[].identity.avatar":
-    "Avatar image path (relative to the agent workspace only) or a remote URL/data URL.",
+  "agents.defaults.skills":
+    "Optional allowlist of skills for the main durable agent (omit = all skills; empty = no skills).",
+  "agents.defaults.identity.avatar":
+    "Avatar image path (relative to the main workspace only) or a remote URL/data URL.",
   "agents.defaults.heartbeat.suppressToolErrorWarnings":
-    "Suppress tool error warning payloads during heartbeat runs.",
-  "agents.list[].heartbeat.suppressToolErrorWarnings":
     "Suppress tool error warning payloads during heartbeat runs.",
   "discovery.mdns.mode":
     'mDNS broadcast mode ("minimal" default, "full" includes cliPath/sshPort, "off" disables mDNS).',
@@ -396,6 +392,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Session/channel scope for QMD recall (same syntax as session.sendPolicy; default: direct-only). Use match.rawKeyPrefix to match full agent-prefixed session keys.",
   "agents.defaults.memorySearch.cache.maxEntries":
     "Optional cap on cached embeddings (best-effort).",
+  "agents.defaults.subagents.roles":
+    "Role definitions for enhanced subagents. Roles can override model selection, thinking, runtime tool policy, and prompt guidance.",
+  "agents.defaults.subagents.presets":
+    "Named bundles of subagent roles used by orchestration tools for grouped delegation.",
+  "agents.defaults.subagents.defaultPreset":
+    "Default subagent preset to apply when a spawn or dispatch request does not pick one explicitly.",
   "agents.defaults.memorySearch.sync.onSearch":
     "Lazy sync: schedule a reindex on search after changes.",
   "agents.defaults.memorySearch.sync.watch": "Watch memory files for changes (chokidar).",
@@ -421,8 +423,6 @@ export const FIELD_HELP: Record<string, string> = {
   "plugins.installs.*.installPath": "Resolved install directory (usually ~/.marv/extensions/<id>).",
   "plugins.installs.*.version": "Version recorded at install time (if available).",
   "plugins.installs.*.installedAt": "ISO timestamp of last install/update.",
-  "agents.list.*.identity.avatar":
-    "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
   "agents.defaults.modelPool":
     "Default automatic model pool name. The planner picks candidates from this pool.",
   "agents.modelPools":

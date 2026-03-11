@@ -137,7 +137,8 @@ describe("goal-loop", () => {
     expect(review.classification).toBe("stalled");
     expect(review.state.loopGuardLevel).toBe("force_shift");
     expect(review.state.shiftCount).toBeGreaterThan(0);
-    expect(review.steeringContext).toContain("fundamentally different strategy");
+    expect(review.strategyFamily).toBe("delegated_subagent");
+    expect(review.steeringContext).toContain("task_dispatch");
   });
 
   it("persists and reloads strategy hints through soul memory", () => {
@@ -179,6 +180,11 @@ describe("goal-loop", () => {
       },
       attempt: createAttemptResult({
         assistantTexts: [],
+        lastToolError: {
+          toolName: "apply_patch",
+          error: "write failed again",
+          mutatingAction: true,
+        },
         lastAssistant: {
           role: "assistant",
           content: "still blocked",
@@ -203,5 +209,128 @@ describe("goal-loop", () => {
     expect(review.strategyFamily).toBe("synthesize_tool");
     expect(review.visibility).toBe("building the missing tool");
     expect(review.steeringContext).toContain("Write a targeted script");
+  });
+
+  it("switches into delegated recovery after repeated stalled validation attempts", () => {
+    const initial = createGoalLoopState({
+      prompt: "Fix the failing tests and keep the scope tight.",
+    }) as GoalLoopState;
+    const review = reviewGoalProgress({
+      state: {
+        ...initial,
+        attemptCount: 2,
+        stuckCounter: 2,
+        strategyFamily: "inspect_failure",
+      },
+      attempt: createAttemptResult({
+        assistantTexts: [],
+        lastAssistant: {
+          role: "assistant",
+          content: "still failing",
+          stopReason: "error",
+          errorMessage: "validation failed again",
+        } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
+      }),
+      recentToolCalls: [
+        {
+          toolName: "test",
+          argsHash: "a",
+          resultHash: "same",
+          timestamp: Date.now(),
+        },
+      ],
+      priorResultHashes: new Set(["same"]),
+      recentLoopEvents: [],
+      promptErrorText: "validation failed again",
+      canDelegate: true,
+    });
+
+    expect(review.problemShape).toBe("validation_failure");
+    expect(review.strategyFamily).toBe("delegated_subagent");
+    expect(review.strategyTrack).toBe("delegated_subagent");
+    expect(review.delegation?.roles).toEqual(["reviewer", "tester"]);
+    expect(review.steeringContext).toContain("task_dispatch");
+  });
+
+  it("uses a final delegated recovery pass before stopping for stagnation", () => {
+    const initial = createGoalLoopState({
+      prompt: "Investigate the blocker and finish the fix without asking me.",
+    }) as GoalLoopState;
+    const review = reviewGoalProgress({
+      state: {
+        ...initial,
+        shiftCount: 2,
+        stuckCounter: 5,
+        strategyFamily: "try_alternative",
+      },
+      attempt: createAttemptResult({
+        assistantTexts: [],
+        lastToolError: {
+          toolName: "apply_patch",
+          error: "write failed again",
+          mutatingAction: true,
+        },
+        lastAssistant: {
+          role: "assistant",
+          content: "still blocked",
+          stopReason: "error",
+          errorMessage: "write failed again",
+        } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
+      }),
+      recentToolCalls: [
+        {
+          toolName: "apply_patch",
+          argsHash: "a",
+          resultHash: "same",
+          timestamp: Date.now(),
+        },
+      ],
+      priorResultHashes: new Set(["same"]),
+      recentLoopEvents: [],
+      promptErrorText: "write failed again",
+      canDelegate: true,
+    });
+
+    expect(review.strategyFamily).toBe("delegated_subagent");
+    expect(review.state.loopGuardLevel).toBe("force_shift");
+    expect(review.delegation?.roles).toEqual(["debugger"]);
+  });
+
+  it("keeps internal-system runs out of delegated recovery", () => {
+    const initial = createGoalLoopState({
+      prompt: "Investigate the blocker and finish the fix without asking me.",
+    }) as GoalLoopState;
+    const review = reviewGoalProgress({
+      state: {
+        ...initial,
+        shiftCount: 2,
+        stuckCounter: 5,
+        strategyFamily: "try_alternative",
+      },
+      attempt: createAttemptResult({
+        assistantTexts: [],
+        lastAssistant: {
+          role: "assistant",
+          content: "still blocked",
+          stopReason: "error",
+          errorMessage: "write failed again",
+        } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
+      }),
+      recentToolCalls: [
+        {
+          toolName: "apply_patch",
+          argsHash: "a",
+          resultHash: "same",
+          timestamp: Date.now(),
+        },
+      ],
+      priorResultHashes: new Set(["same"]),
+      recentLoopEvents: [],
+      promptErrorText: "write failed again",
+      canDelegate: false,
+    });
+
+    expect(review.strategyFamily).not.toBe("delegated_subagent");
+    expect(review.state.loopGuardLevel).toBe("stop");
   });
 });

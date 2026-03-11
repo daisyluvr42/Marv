@@ -319,6 +319,6 @@ Provider options:
 
 Related global options:
 
-- `agents.list[].groupChat.mentionPatterns` (Signal does not support native mentions).
+- `agents.defaults.groupChat.mentionPatterns` (Signal does not support native mentions).
 - `messages.groupChat.mentionPatterns` (global fallback).
 - `messages.responsePrefix`.

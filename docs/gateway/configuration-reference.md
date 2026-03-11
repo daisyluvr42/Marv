@@ -441,7 +441,8 @@ Run multiple accounts per channel (each with its own `accountId`):
 - `default` is used when `accountId` is omitted (CLI + routing).
 - Env tokens only apply to the **default** account.
 - Base channel settings apply to all accounts unless overridden per account.
-- Use `bindings[].match.accountId` to route each account to a different agent.
+- Multiple accounts still keep distinct account state, but inbound routing now
+  resolves to the durable `main` agent.
 
 ### Group chat mention gating
 
@@ -450,7 +451,7 @@ Group messages default to **require mention** (metadata mention or regex pattern
 **Mention types:**
 
 - **Metadata mentions**: Native platform @-mentions. Ignored in WhatsApp self-chat mode.
-- **Text patterns**: Regex patterns in `agents.list[].groupChat.mentionPatterns`. Always checked.
+- **Text patterns**: Regex patterns in `agents.defaults.groupChat.mentionPatterns`. Always checked.
 - Mention gating is enforced only when detection is possible (native mentions or at least one pattern).
 
 ```json5
@@ -742,7 +743,7 @@ Periodic heartbeat runs.
 
 - `every`: duration string (ms/s/m/h). Default: `30m`.
 - `suppressToolErrorWarnings`: when true, suppresses tool error warning payloads during heartbeat runs.
-- Per-agent: set `agents.list[].heartbeat`. When any agent defines `heartbeat`, **only those agents** run heartbeats.
+- Per-agent: set `agents.defaults.heartbeat`. When any agent defines `heartbeat`, **only those agents** run heartbeats.
 - Heartbeats run full agent turns — shorter intervals burn more tokens.
 
 ### `agents.defaults.compaction`
@@ -831,7 +832,7 @@ See [Session Pruning](/concepts/session-pruning) for behavior details.
 
 - Non-Telegram channels require explicit `*.blockStreaming: true` to enable block replies.
 - Channel overrides: `channels.<channel>.blockStreamingCoalesce` (and per-account variants). Signal/Slack/Discord/Google Chat default `minChars: 1500`.
-- `humanDelay`: randomized pause between block replies. `natural` = 800–2500ms. Per-agent override: `agents.list[].humanDelay`.
+- `humanDelay`: randomized pause between block replies. `natural` = 800–2500ms. Per-agent override: `agents.defaults.humanDelay`.
 
 See [Streaming](/concepts/streaming) for behavior + chunking details.
 
@@ -953,7 +954,7 @@ Optional **Docker sandboxing** for the embedded agent. See [Sandboxing](/gateway
 
 **Inbound attachments** are staged into `media/inbound/*` in the active workspace.
 
-**`docker.binds`** mounts additional host directories; global and per-agent binds are merged.
+**`docker.binds`** mounts additional host directories into the sandbox container.
 
 **Sandboxed browser** (`sandbox.browser.enabled`): Chromium + CDP in a container. noVNC URL injected into system prompt. Does not require `browser.enabled` in main config.
 
@@ -969,182 +970,23 @@ scripts/sandbox-setup.sh           # main sandbox image
 scripts/sandbox-browser-setup.sh   # optional browser image
 ```
 
-### `agents.list` (per-agent overrides)
+### Durable agent config
 
-```json5
-{
-  agents: {
-    list: [
-      {
-        id: "main",
-        default: true,
-        name: "Main Agent",
-        workspace: "~/.marv/workspace",
-        agentDir: "~/.marv/agents/main/agent",
-        model: "anthropic/claude-opus-4-6", // or { primary, fallbacks }
-        identity: {
-          name: "Samantha",
-          theme: "helpful sloth",
-          emoji: "🦥",
-          avatar: "avatars/samantha.png",
-        },
-        groupChat: { mentionPatterns: ["@marv"] },
-        sandbox: { mode: "off" },
-        subagents: { allowAgents: ["*"] },
-        tools: {
-          profile: "coding",
-          allow: ["browser"],
-          deny: ["canvas"],
-          elevated: { enabled: true },
-        },
-      },
-    ],
-  },
-}
-```
+Top-level `agents.list` and `bindings` were removed. Configure the durable
+agent under `agents.defaults`, and use enhanced subagents when you need
+delegated work or collaboration.
 
-- `id`: stable agent id (required).
-- `default`: when multiple are set, first wins (warning logged). If none set, first list entry is default.
-- `model`: string form overrides `primary` only; object form `{ primary, fallbacks }` overrides both (`[]` disables global fallbacks). Cron jobs that only override `primary` still inherit default fallbacks unless you set `fallbacks: []`.
-- `identity.avatar`: workspace-relative path, `http(s)` URL, or `data:` URI.
-- `identity` derives defaults: `ackReaction` from `emoji`, `mentionPatterns` from `name`/`emoji`.
-- `subagents.allowAgents`: allowlist of agent ids for `sessions_spawn` (`["*"]` = any; default: same agent only).
+Relevant fields that still live under `agents.defaults` include:
 
----
-
-## Multi-agent routing
-
-Run multiple isolated agents inside one Gateway. See [Multi-Agent](/concepts/multi-agent).
-
-```json5
-{
-  agents: {
-    list: [
-      { id: "home", default: true, workspace: "~/.marv/workspace-home" },
-      { id: "work", workspace: "~/.marv/workspace-work" },
-    ],
-  },
-  bindings: [
-    { agentId: "home", match: { channel: "whatsapp", accountId: "personal" } },
-    { agentId: "work", match: { channel: "whatsapp", accountId: "biz" } },
-  ],
-}
-```
-
-### Binding match fields
-
-- `match.channel` (required)
-- `match.accountId` (optional; `*` = any account; omitted = default account)
-- `match.peer` (optional; `{ kind: direct|group|channel, id }`)
-- `match.guildId` / `match.teamId` (optional; channel-specific)
-
-**Deterministic match order:**
-
-1. `match.peer`
-2. `match.guildId`
-3. `match.teamId`
-4. `match.accountId` (exact, no peer/guild/team)
-5. `match.accountId: "*"` (channel-wide)
-6. Default agent
-
-Within each tier, the first matching `bindings` entry wins.
-
-### Per-agent access profiles
-
-<Accordion title="Full access (no sandbox)">
-
-```json5
-{
-  agents: {
-    list: [
-      {
-        id: "personal",
-        workspace: "~/.marv/workspace-personal",
-        sandbox: { mode: "off" },
-      },
-    ],
-  },
-}
-```
-
-</Accordion>
-
-<Accordion title="Read-only tools + workspace">
-
-```json5
-{
-  agents: {
-    list: [
-      {
-        id: "family",
-        workspace: "~/.marv/workspace-family",
-        sandbox: { mode: "all", scope: "agent", workspaceAccess: "ro" },
-        tools: {
-          allow: [
-            "read",
-            "sessions_list",
-            "sessions_history",
-            "sessions_send",
-            "sessions_spawn",
-            "session_status",
-          ],
-          deny: ["write", "edit", "apply_patch", "exec", "process", "browser"],
-        },
-      },
-    ],
-  },
-}
-```
-
-</Accordion>
-
-<Accordion title="No filesystem access (messaging only)">
-
-```json5
-{
-  agents: {
-    list: [
-      {
-        id: "public",
-        workspace: "~/.marv/workspace-public",
-        sandbox: { mode: "all", scope: "agent", workspaceAccess: "none" },
-        tools: {
-          allow: [
-            "sessions_list",
-            "sessions_history",
-            "sessions_send",
-            "sessions_spawn",
-            "session_status",
-            "whatsapp",
-            "telegram",
-            "slack",
-            "discord",
-            "gateway",
-          ],
-          deny: [
-            "read",
-            "write",
-            "edit",
-            "apply_patch",
-            "exec",
-            "process",
-            "browser",
-            "canvas",
-            "nodes",
-            "cron",
-            "gateway",
-            "image",
-          ],
-        },
-      },
-    ],
-  },
-}
-```
-
-</Accordion>
-
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for precedence details.
+- `name`
+- `workspace`
+- `agentDir`
+- `model`
+- `identity`
+- `groupChat`
+- `sandbox`
+- `subagents`
+- `tools`
 
 ---
 
@@ -1408,7 +1250,7 @@ Controls elevated (host) exec access:
 }
 ```
 
-- Per-agent override (`agents.list[].tools.elevated`) can only further restrict.
+- Per-agent override (`agents.defaults.tools.elevated`) can only further restrict.
 - `/elevated on|off|ask|full` stores state per session; inline directives apply to single message.
 - Elevated `exec` runs on the host, bypasses sandboxing.
 
@@ -1435,7 +1277,8 @@ Controls elevated (host) exec access:
 ### `tools.loopDetection`
 
 Tool-loop safety checks are **disabled by default**. Set `enabled: true` to activate detection.
-Settings can be defined globally in `tools.loopDetection` and overridden per-agent at `agents.list[].tools.loopDetection`.
+Settings can be defined globally in `tools.loopDetection` and overridden on the
+durable agent at `agents.defaults.tools.loopDetection`.
 
 ```json5
 {
@@ -2267,7 +2110,7 @@ Reference env vars in any config string with `${VAR_NAME}`:
 }
 ```
 
-- Per-agent auth profiles stored at `<agentDir>/auth-profiles.json`.
+- Auth profiles are stored at `<agentDir>/auth-profiles.json` (`main` by default).
 - Legacy OAuth imports from `~/.marv/credentials/oauth.json`.
 - See [OAuth](/concepts/oauth).
 

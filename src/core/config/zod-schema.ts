@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { DEFAULT_AGENT_ID } from "../../routing/session-key.js";
 import { ToolsSchema } from "./zod-schema.agent-runtime.js";
-import { AgentsSchema, AudioSchema, BindingsSchema, BroadcastSchema } from "./zod-schema.agents.js";
+import { AgentsSchema, AudioSchema, BroadcastSchema } from "./zod-schema.agents.js";
 import { ApprovalsSchema } from "./zod-schema.approvals.js";
 import { AutonomySchema } from "./zod-schema.autonomy.js";
 import { HexColorSchema, ModelsConfigSchema } from "./zod-schema.core.js";
@@ -389,7 +390,6 @@ export const MarvSchema = z
     nodeHost: NodeHostSchema,
     agents: AgentsSchema,
     tools: ToolsSchema,
-    bindings: BindingsSchema,
     broadcast: BroadcastSchema,
     audio: AudioSchema,
     media: z
@@ -759,12 +759,6 @@ export const MarvSchema = z
   })
   .strict()
   .superRefine((cfg, ctx) => {
-    const agents = cfg.agents?.list ?? [];
-    if (agents.length === 0) {
-      return;
-    }
-    const agentIds = new Set(agents.map((agent) => agent.id));
-
     const broadcast = cfg.broadcast;
     if (!broadcast) {
       return;
@@ -779,11 +773,11 @@ export const MarvSchema = z
       }
       for (let idx = 0; idx < ids.length; idx += 1) {
         const agentId = ids[idx];
-        if (!agentIds.has(agentId)) {
+        if (agentId !== DEFAULT_AGENT_ID) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["broadcast", peerId, idx],
-            message: `Unknown agent id "${agentId}" (not in agents.list).`,
+            message: `Unknown agent id "${agentId}" (only "main" is supported).`,
           });
         }
       }

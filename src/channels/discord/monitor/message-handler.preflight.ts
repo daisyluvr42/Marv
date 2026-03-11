@@ -236,7 +236,7 @@ export async function preflightDiscordMessage(
     earlyThreadParentType = parentInfo.type;
   }
 
-  // Fresh config for bindings lookup; other routing inputs are payload-derived.
+  // Fresh config for route resolution; other routing inputs are payload-derived.
   const memberRoleIds = Array.isArray(params.data.rawMember?.roles)
     ? params.data.rawMember.roles.map((roleId: string) => String(roleId))
     : [];
@@ -250,7 +250,7 @@ export async function preflightDiscordMessage(
       kind: isDirectMessage ? "direct" : isGroupDm ? "group" : "channel",
       id: isDirectMessage ? author.id : messageChannelId,
     },
-    // Pass parent peer for thread binding inheritance
+    // Pass parent peer so thread routing can reuse the parent conversation scope.
     parentPeer: earlyThreadParentId ? { kind: "channel", id: earlyThreadParentId } : undefined,
   });
   const mentionRegexes = buildMentionRegexes(params.cfg, route.agentId);

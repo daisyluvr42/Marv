@@ -35,7 +35,7 @@ See [Token use & costs](/reference/token-use) for details and examples.
 
 Marv can pick up credentials from:
 
-- **Auth profiles** (per-agent, stored in `auth-profiles.json`).
+- **Auth profiles** (stored in `auth-profiles.json` for the active agent directory; `main` by default).
 - **Environment variables** (e.g. `OPENAI_API_KEY`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY`).
 - **Config** (`models.providers.*.apiKey`, `tools.web.search.*`, `tools.web.fetch.firecrawl.*`,
   `memorySearch.*`, `talk.apiKey`).

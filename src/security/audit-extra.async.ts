@@ -318,17 +318,13 @@ export async function collectPluginsTrustFindings(params: {
       label: string;
       agentId?: string;
       tools?: AgentToolsConfig;
-    }> = [{ label: "default" }];
-    for (const entry of params.cfg.agents?.list ?? []) {
-      if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
-        continue;
-      }
-      contexts.push({
-        label: `agents.list.${entry.id}`,
-        agentId: entry.id,
-        tools: entry.tools,
-      });
-    }
+    }> = [
+      {
+        label: "agents.defaults",
+        agentId: "main",
+        tools: params.cfg.agents?.defaults?.tools,
+      },
+    ];
 
     const permissiveContexts: string[] = [];
     for (const context of contexts) {

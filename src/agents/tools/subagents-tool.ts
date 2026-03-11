@@ -381,6 +381,24 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
           const label = truncateLine(resolveSubagentLabel(entry), 48);
           const task = truncateLine(entry.task.trim(), 72);
           const line = `${index}. ${label} (${resolveModelDisplay(sessionEntry, entry.model)}, ${runtime}${usageText ? `, ${usageText}` : ""}) ${status}${task.toLowerCase() !== label.toLowerCase() ? ` - ${task}` : ""}`;
+          const subagentRole =
+            typeof sessionEntry?.subagentRole === "string" ? sessionEntry.subagentRole : entry.role;
+          const subagentPreset =
+            typeof sessionEntry?.subagentPreset === "string"
+              ? sessionEntry.subagentPreset
+              : entry.preset;
+          const subagentTaskGroup =
+            typeof sessionEntry?.subagentTaskGroup === "string"
+              ? sessionEntry.subagentTaskGroup
+              : entry.taskGroup;
+          const subagentDispatchId =
+            typeof sessionEntry?.subagentDispatchId === "string"
+              ? sessionEntry.subagentDispatchId
+              : entry.dispatchId;
+          const subagentAnnounceMode =
+            typeof sessionEntry?.subagentAnnounceMode === "string"
+              ? sessionEntry.subagentAnnounceMode
+              : entry.announceMode;
           const baseView = {
             index,
             runId: entry.runId,
@@ -393,6 +411,11 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
             model: resolveModelRef(sessionEntry) || entry.model,
             totalTokens,
             startedAt: entry.startedAt,
+            role: subagentRole,
+            preset: subagentPreset,
+            taskGroup: subagentTaskGroup,
+            dispatchId: subagentDispatchId,
+            announceMode: subagentAnnounceMode,
           };
           index += 1;
           return { line, view: entry.endedAt ? { ...baseView, endedAt: entry.endedAt } : baseView };

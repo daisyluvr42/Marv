@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createDoctorRuntime, mockDoctorConfigSnapshot, note } from "./doctor.e2e-harness.js";
 
 describe("doctor command", () => {
-  it("warns when per-agent sandbox docker/browser/prune overrides are ignored under shared scope", async () => {
+  it("does not warn for removed per-agent sandbox overrides", async () => {
     mockDoctorConfigSnapshot({
       config: {
         agents: {
@@ -37,18 +37,7 @@ describe("doctor command", () => {
     const { doctorCommand } = await import("./doctor.js");
     await doctorCommand(createDoctorRuntime(), { nonInteractive: true });
 
-    expect(
-      note.mock.calls.some(([message, title]) => {
-        if (title !== "Sandbox" || typeof message !== "string") {
-          return false;
-        }
-        const normalized = message.replace(/\s+/g, " ").trim();
-        return (
-          normalized.includes('agents.list (id "work") sandbox docker') &&
-          normalized.includes('scope resolves to "shared"')
-        );
-      }),
-    ).toBe(true);
+    expect(note.mock.calls.some(([_, title]) => title === "Sandbox")).toBe(false);
   }, 30_000);
 
   it("does not warn when only the active workspace is present", async () => {

@@ -24,7 +24,7 @@ export function registerAgentCommands(program: Command, args: { agentChannelOpti
     .requiredOption("-m, --message <text>", "Message body for the agent")
     .option("-t, --to <number>", "Recipient number in E.164 used to derive the session key")
     .option("--session-id <id>", "Use an explicit session id")
-    .option("--agent <id>", "Agent id (overrides routing bindings)")
+    .option("--agent <id>", 'Top-level agent id (legacy; only "main" is supported)')
     .option("--thinking <level>", "Thinking level: off | minimal | low | medium | high")
     .option("--verbose <on|off>", "Persist agent verbose level for the session")
     .option(
@@ -82,7 +82,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs: /cli/agent")}`,
 
   const agents = program
     .command("agents")
-    .description("Manage isolated agents (workspaces + auth + routing)")
+    .description('Inspect or update the durable "main" agent and its workspace files')
     .addHelpText(
       "after",
       () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "docs: /cli/agents")}\n`,
@@ -92,19 +92,15 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs: /cli/agent")}`,
     .command("list")
     .description("List configured agents")
     .option("--json", "Output JSON instead of text", false)
-    .option("--bindings", "Include routing bindings", false)
     .action(async (opts) => {
       await runCommandWithRuntime(defaultRuntime, async () => {
-        await agentsListCommand(
-          { json: Boolean(opts.json), bindings: Boolean(opts.bindings) },
-          defaultRuntime,
-        );
+        await agentsListCommand({ json: Boolean(opts.json) }, defaultRuntime);
       });
     });
 
   agents
     .command("add [name]")
-    .description("Add a new isolated agent")
+    .description('Legacy command removed; Marv now uses a single "main" agent')
     .option("--workspace <dir>", "Workspace directory for the new agent")
     .option("--model <id>", "Model id for this agent")
     .option("--agent-dir <dir>", "Agent state directory for this agent")
@@ -188,7 +184,7 @@ ${formatHelpExamples([
 
   agents
     .command("delete <id>")
-    .description("Delete an agent and prune workspace/state")
+    .description('Legacy command removed; Marv now uses a single "main" agent')
     .option("--force", "Skip confirmation", false)
     .option("--json", "Output JSON summary", false)
     .action(async (id, opts) => {

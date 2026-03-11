@@ -49,7 +49,7 @@ Marv is a **self-hosted gateway** that connects your favorite chat apps — What
 
 - **Self-hosted**: runs on your hardware, your rules
 - **Multi-channel**: one Gateway serves WhatsApp, Telegram, Discord, and more simultaneously
-- **Agent-native**: built for coding agents with tool use, sessions, memory, and multi-agent routing
+- **Agent-native**: built for coding agents with tool use, sessions, memory, and enhanced subagents
 - **Open source**: MIT licensed, community-driven
 
 **What do you need?** Node 22+, an API key (Anthropic recommended), and 5 minutes.
@@ -174,8 +174,8 @@ Example:
   <Card title="Full feature list" href="/concepts/features" icon="list">
     Complete channel, routing, and media capabilities.
   </Card>
-  <Card title="Multi-agent routing" href="/concepts/multi-agent" icon="route">
-    Workspace isolation and per-agent sessions.
+  <Card title="Subagents" href="/tools/subagents" icon="route">
+    Delegate parallel or role-based work from the durable main agent.
   </Card>
   <Card title="Security" href="/gateway/security" icon="shield">
     Tokens, allowlists, and safety controls.

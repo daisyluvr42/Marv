@@ -13,7 +13,6 @@ import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import type { MarvConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { AgentBinding } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
 
 type StubChannelOptions = {
@@ -215,7 +214,6 @@ export const getReplyFromConfig: Mock<GetReplyFromConfigFn> = hoisted.getReplyFr
 export const testState = {
   agentConfig: undefined as Record<string, unknown> | undefined,
   agentsConfig: undefined as Record<string, unknown> | undefined,
-  bindingsConfig: undefined as AgentBinding[] | undefined,
   channelsConfig: undefined as Record<string, unknown> | undefined,
   sessionStorePath: undefined as string | undefined,
   sessionConfig: undefined as Record<string, unknown> | undefined,
@@ -422,10 +420,6 @@ vi.mock("../config/config.js", async () => {
         ? { ...fileAgents, ...testState.agentsConfig, defaults }
         : { ...fileAgents, defaults };
 
-      const fileBindings = Array.isArray(fileConfig.bindings)
-        ? (fileConfig.bindings as AgentBinding[])
-        : undefined;
-
       const fileChannels =
         fileConfig.channels &&
         typeof fileConfig.channels === "object" &&
@@ -513,7 +507,6 @@ vi.mock("../config/config.js", async () => {
       const config = {
         ...fileConfig,
         agents,
-        bindings: testState.bindingsConfig ?? fileBindings,
         channels,
         session,
         gateway,

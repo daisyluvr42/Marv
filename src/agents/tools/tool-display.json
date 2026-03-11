@@ -266,6 +266,27 @@
         "agentId",
         "model",
         "thinking",
+        "role",
+        "preset",
+        "taskGroup",
+        "dispatchId",
+        "announceMode",
+        "runTimeoutSeconds",
+        "cleanup"
+      ]
+    },
+    "task_dispatch": {
+      "emoji": "🪄",
+      "title": "Task Dispatch",
+      "detailKeys": [
+        "task",
+        "roles",
+        "preset",
+        "agentId",
+        "waitForAll",
+        "taskGroup",
+        "dispatchId",
+        "announceMode",
         "runTimeoutSeconds",
         "cleanup"
       ]

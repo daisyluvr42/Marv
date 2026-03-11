@@ -30,30 +30,8 @@ function canonicalizeAgentDir(agentDir: string): string {
 }
 
 function collectReferencedAgentIds(cfg: MarvConfig): string[] {
-  const ids = new Set<string>();
-
-  const agents = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
-  const defaultAgentId =
-    agents.find((agent) => agent?.default)?.id ?? agents[0]?.id ?? DEFAULT_AGENT_ID;
-  ids.add(normalizeAgentId(defaultAgentId));
-
-  for (const entry of agents) {
-    if (entry?.id) {
-      ids.add(normalizeAgentId(entry.id));
-    }
-  }
-
-  const bindings = cfg.bindings;
-  if (Array.isArray(bindings)) {
-    for (const binding of bindings) {
-      const id = binding?.agentId;
-      if (typeof id === "string" && id.trim()) {
-        ids.add(normalizeAgentId(id));
-      }
-    }
-  }
-
-  return [...ids];
+  void cfg;
+  return [DEFAULT_AGENT_ID];
 }
 
 function resolveEffectiveAgentDir(
@@ -62,9 +40,7 @@ function resolveEffectiveAgentDir(
   deps?: { env?: NodeJS.ProcessEnv; homedir?: () => string },
 ): string {
   const id = normalizeAgentId(agentId);
-  const configured = Array.isArray(cfg.agents?.list)
-    ? cfg.agents?.list.find((agent) => normalizeAgentId(agent.id) === id)?.agentDir
-    : undefined;
+  const configured = id === DEFAULT_AGENT_ID ? cfg.agents?.defaults?.agentDir : undefined;
   const trimmed = configured?.trim();
   if (trimmed) {
     return resolveUserPath(trimmed);
@@ -99,13 +75,13 @@ export function findDuplicateAgentDirs(
 
 export function formatDuplicateAgentDirError(dups: DuplicateAgentDir[]): string {
   const lines: string[] = [
-    "Duplicate agentDir detected (multi-agent config).",
-    "Each agent must have a unique agentDir; sharing it causes auth/session state collisions and token invalidation.",
+    "Duplicate agentDir detected.",
+    "Multiple agent ids resolved to the same agentDir, which causes auth/session state collisions and token invalidation.",
     "",
     "Conflicts:",
     ...dups.map((d) => `- ${d.agentDir}: ${d.agentIds.map((id) => `"${id}"`).join(", ")}`),
     "",
-    "Fix: remove the shared agents.list[].agentDir override (or give each agent its own directory).",
+    "Fix: remove the conflicting agentDir override so only main uses that directory.",
     "If you want to share credentials, copy auth-profiles.json instead of sharing the entire agentDir.",
   ];
   return lines.join("\n");

@@ -344,18 +344,15 @@ container. The gateway stays on your host, but the tool execution is isolated:
 Warning: `scope: "shared"` disables cross-session isolation. All sessions share
 one container and one workspace.
 
-### Per-agent sandbox profiles (multi-agent)
+### Durable agent sandbox profile
 
-If you use multi-agent routing, each agent can override sandbox + tool settings:
-`agents.list[].sandbox` and `agents.list[].tools` (plus `agents.list[].tools.sandbox.tools`). This lets you run
-mixed access levels in one gateway:
+In the main-only architecture, sandbox + tool settings live under
+`agents.defaults.sandbox`, `agents.defaults.tools`, and
+`agents.defaults.tools.sandbox.tools`.
 
-- Full access (personal agent)
-- Read-only tools + read-only workspace (family/work agent)
-- No filesystem/shell tools (public agent)
-
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for examples,
-precedence, and troubleshooting.
+See [Sandboxing](/gateway/sandboxing) and
+[Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated)
+for examples, precedence, and troubleshooting.
 
 ### Default behavior
 
@@ -445,8 +442,7 @@ Hardening knobs live under `agents.defaults.sandbox.docker`:
 `network`, `user`, `pidsLimit`, `memory`, `memorySwap`, `cpus`, `ulimits`,
 `seccompProfile`, `apparmorProfile`, `dns`, `extraHosts`.
 
-Multi-agent: override `agents.defaults.sandbox.{docker,browser,prune}.*` per agent via `agents.list[].sandbox.{docker,browser,prune}.*`
-(ignored when `agents.defaults.sandbox.scope` / `agents.list[].sandbox.scope` is `"shared"`).
+These knobs apply to the durable `main` agent sandbox profile.
 
 ### Build the default sandbox image
 

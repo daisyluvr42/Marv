@@ -42,7 +42,7 @@ Example config:
 
 ## Defaults
 
-- Interval: `30m` (or `1h` when Anthropic OAuth/setup-token is the detected auth mode). Set `agents.defaults.heartbeat.every` or per-agent `agents.list[].heartbeat.every`; use `0m` to disable.
+- Interval: `30m` (or `1h` when Anthropic OAuth/setup-token is the detected auth mode). Set `agents.defaults.heartbeat.every`; use `0m` to disable.
 - Prompt body (configurable via `agents.defaults.heartbeat.prompt`):
   `Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.`
 - The heartbeat prompt is sent **verbatim** as the user message. The system
@@ -62,7 +62,7 @@ The default prompt is intentionally broad:
 
 If you want a heartbeat to do something very specific (e.g. “check Gmail PubSub
 stats” or “verify gateway health”), set `agents.defaults.heartbeat.prompt` (or
-`agents.list[].heartbeat.prompt`) to a custom body (sent verbatim).
+`agents.defaults.heartbeat.prompt`) to a custom body (sent verbatim).
 
 ## Response contract
 
@@ -101,16 +101,15 @@ and logged; a message that is only `HEARTBEAT_OK` is dropped.
 ### Scope and precedence
 
 - `agents.defaults.heartbeat` sets global heartbeat behavior.
-- `agents.list[].heartbeat` merges on top; if any agent has a `heartbeat` block, **only those agents** run heartbeats.
+- `agents.defaults.heartbeat` configures the durable agent heartbeat.
 - `channels.defaults.heartbeat` sets visibility defaults for all channels.
 - `channels.<channel>.heartbeat` overrides channel defaults.
 - `channels.<channel>.accounts.<id>.heartbeat` (multi-account channels) overrides per-channel settings.
 
-### Per-agent heartbeats
+### Durable agent heartbeats
 
-If any `agents.list[]` entry includes a `heartbeat` block, **only those agents**
-run heartbeats. The per-agent block merges on top of `agents.defaults.heartbeat`
-(so you can set shared defaults once and override per agent).
+Heartbeats now run for the durable `main` agent only. Configure them under
+`agents.defaults.heartbeat`.
 
 Example: two agents, only the second agent runs heartbeats.
 

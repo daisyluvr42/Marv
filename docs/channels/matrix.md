@@ -174,7 +174,8 @@ Notes:
 - Account startup is serialized to avoid race conditions with concurrent module imports.
 - Env variables (`MATRIX_HOMESERVER`, `MATRIX_ACCESS_TOKEN`, etc.) only apply to the **default** account.
 - Base channel settings (DM policy, group policy, mention gating, etc.) apply to all accounts unless overridden per account.
-- Use `bindings[].match.accountId` to route each account to a different agent.
+- Each Matrix account still keeps its own account state, but inbound routing now
+  resolves to the durable `main` agent.
 - Crypto state is stored per account + access token (separate key stores per account).
 
 ## Routing model

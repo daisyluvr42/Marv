@@ -3,6 +3,7 @@ import {
   HeartbeatSchema,
   AgentSandboxSchema,
   AgentModelSchema,
+  AgentToolsSchema,
   MemorySearchSchema,
 } from "./zod-schema.agent-runtime.js";
 import { AutoRoutingSchema } from "./zod-schema.auto-routing.js";
@@ -10,14 +11,65 @@ import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
   CliBackendSchema,
+  GroupChatSchema,
   HumanDelaySchema,
+  IdentitySchema,
   ModelPoolSchema,
 } from "./zod-schema.core.js";
 
 export { AutoRoutingSchema };
 
+const SubagentRoleToolPolicySchema = z
+  .object({
+    allow: z.array(z.string()).optional(),
+    deny: z.array(z.string()).optional(),
+  })
+  .strict();
+
+const SubagentRoleSchema = z
+  .object({
+    description: z.string().optional(),
+    modelPool: z.string().optional(),
+    model: AgentModelSchema.optional(),
+    thinking: z
+      .union([
+        z.literal("off"),
+        z.literal("minimal"),
+        z.literal("low"),
+        z.literal("medium"),
+        z.literal("high"),
+        z.literal("xhigh"),
+      ])
+      .optional(),
+    systemPromptAppend: z.string().optional(),
+    tools: SubagentRoleToolPolicySchema.optional(),
+  })
+  .strict();
+
+const SubagentPresetSchema = z
+  .object({
+    description: z.string().optional(),
+    roles: z.array(z.string()).min(1),
+    autoTrigger: z
+      .object({
+        keywords: z.array(z.string()).optional(),
+        minComplexity: z
+          .union([
+            z.literal("simple"),
+            z.literal("moderate"),
+            z.literal("complex"),
+            z.literal("expert"),
+          ])
+          .optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export const AgentDefaultsSchema = z
   .object({
+    name: z.string().optional(),
     model: z
       .object({
         primary: z.string().optional(),
@@ -49,6 +101,7 @@ export const AgentDefaultsSchema = z
       )
       .optional(),
     workspace: z.string().optional(),
+    agentDir: z.string().optional(),
     repoRoot: z.string().optional(),
     skipBootstrap: z.boolean().optional(),
     bootstrapMaxChars: z.number().int().positive().optional(),
@@ -61,6 +114,7 @@ export const AgentDefaultsSchema = z
     contextTokens: z.number().int().positive().optional(),
     cliBackends: z.record(z.string(), CliBackendSchema).optional(),
     memorySearch: MemorySearchSchema,
+    skills: z.array(z.string()).optional(),
     contextPruning: z
       .object({
         mode: z.union([z.literal("off"), z.literal("cache-ttl")]).optional(),
@@ -131,6 +185,8 @@ export const AgentDefaultsSchema = z
     blockStreamingChunk: BlockStreamingChunkSchema.optional(),
     blockStreamingCoalesce: BlockStreamingCoalesceSchema.optional(),
     humanDelay: HumanDelaySchema.optional(),
+    identity: IdentitySchema.optional(),
+    groupChat: GroupChatSchema.optional(),
     timeoutSeconds: z.number().int().positive().optional(),
     mediaMaxMb: z.number().positive().optional(),
     imageMaxDimensionPx: z.number().int().positive().optional(),
@@ -169,10 +225,14 @@ export const AgentDefaultsSchema = z
         archiveAfterMinutes: z.number().int().positive().optional(),
         model: AgentModelSchema.optional(),
         thinking: z.string().optional(),
+        roles: z.record(z.string(), SubagentRoleSchema).optional(),
+        presets: z.record(z.string(), SubagentPresetSchema).optional(),
+        defaultPreset: z.string().optional(),
       })
       .strict()
       .optional(),
     sandbox: AgentSandboxSchema,
+    tools: AgentToolsSchema,
   })
   .strict()
   .optional();

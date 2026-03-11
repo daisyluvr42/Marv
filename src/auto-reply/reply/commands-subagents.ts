@@ -423,6 +423,22 @@ export const handleSubagentsCommand: CommandHandler = async (params, allowTextCo
       run.startedAt && Number.isFinite(run.startedAt)
         ? (formatDurationCompact((run.endedAt ?? Date.now()) - run.startedAt) ?? "n/a")
         : "n/a";
+    const role =
+      typeof sessionEntry?.subagentRole === "string" ? sessionEntry.subagentRole : run.role;
+    const preset =
+      typeof sessionEntry?.subagentPreset === "string" ? sessionEntry.subagentPreset : run.preset;
+    const taskGroup =
+      typeof sessionEntry?.subagentTaskGroup === "string"
+        ? sessionEntry.subagentTaskGroup
+        : run.taskGroup;
+    const dispatchId =
+      typeof sessionEntry?.subagentDispatchId === "string"
+        ? sessionEntry.subagentDispatchId
+        : run.dispatchId;
+    const announceMode =
+      typeof sessionEntry?.subagentAnnounceMode === "string"
+        ? sessionEntry.subagentAnnounceMode
+        : run.announceMode;
     const outcome = run.outcome
       ? `${run.outcome.status}${run.outcome.error ? ` (${run.outcome.error})` : ""}`
       : "n/a";
@@ -435,6 +451,11 @@ export const handleSubagentsCommand: CommandHandler = async (params, allowTextCo
       `Session: ${run.childSessionKey}`,
       `SessionId: ${sessionEntry?.sessionId ?? "n/a"}`,
       `Transcript: ${sessionEntry?.sessionFile ?? "n/a"}`,
+      role ? `Role: ${role}` : undefined,
+      preset ? `Preset: ${preset}` : undefined,
+      taskGroup ? `Task group: ${taskGroup}` : undefined,
+      dispatchId ? `Dispatch: ${dispatchId}` : undefined,
+      announceMode ? `Announce: ${announceMode}` : undefined,
       `Runtime: ${runtime}`,
       `Created: ${formatTimestampWithAge(run.createdAt)}`,
       `Started: ${formatTimestampWithAge(run.startedAt)}`,

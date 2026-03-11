@@ -125,31 +125,27 @@ Add `--json` for a machine-readable summary.
   </Accordion>
 </AccordionGroup>
 
-## Add another agent
+## Inspect or adjust the durable agent
 
-Use `marv agents add <name>` to create a separate agent with its own workspace,
-sessions, and auth profiles. Running without `--workspace` launches the wizard.
+Use `marv configure` to update the durable `main` agent. For scripted changes,
+use `marv config get/set` under `agents.defaults`.
 
 ```bash
-marv agents add work \
-  --workspace ~/.marv/workspace-work \
-  --model openai/gpt-5.2 \
-  --bind whatsapp:biz \
-  --non-interactive \
-  --json
+marv config get agents.defaults
+marv config set agents.defaults.workspace "~/.marv/workspace"
 ```
 
 What it sets:
 
-- `agents.list[].name`
-- `agents.list[].workspace`
-- `agents.list[].agentDir`
+- `agents.defaults.name`
+- `agents.defaults.workspace`
+- `agents.defaults.agentDir`
 
 Notes:
 
-- Default workspaces follow `~/.marv/workspace-<agentId>`.
-- Add `bindings` to route inbound messages (the wizard can do this).
-- Non-interactive flags: `--model`, `--agent-dir`, `--bind`, `--non-interactive`.
+- The default workspace is `~/.marv/workspace`.
+- Top-level `agents add`/`bindings` flows were removed.
+- Use enhanced subagents for delegated work.
 
 ## Related docs
 

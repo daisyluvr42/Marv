@@ -166,12 +166,6 @@ cat > /data/marv.json << 'EOF'
       "openai:default": { "mode": "token", "provider": "openai" }
     }
   },
-  "bindings": [
-    {
-      "agentId": "main",
-      "match": { "channel": "discord" }
-    }
-  ],
   "channels": {
     "discord": {
       "enabled": true,

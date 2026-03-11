@@ -10,15 +10,11 @@ import type { SessionScope } from "./types.js";
 
 export function resolveMainSessionKey(cfg?: {
   session?: { scope?: SessionScope; mainKey?: string };
-  agents?: { list?: Array<{ id?: string; default?: boolean }> };
 }): string {
   if (cfg?.session?.scope === "global") {
     return "global";
   }
-  const agents = cfg?.agents?.list ?? [];
-  const defaultAgentId =
-    agents.find((agent) => agent?.default)?.id ?? agents[0]?.id ?? DEFAULT_AGENT_ID;
-  const agentId = normalizeAgentId(defaultAgentId);
+  const agentId = normalizeAgentId(DEFAULT_AGENT_ID);
   const mainKey = normalizeMainKey(cfg?.session?.mainKey);
   return buildAgentMainSessionKey({ agentId, mainKey });
 }

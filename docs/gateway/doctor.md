@@ -116,12 +116,12 @@ Current migrations:
 - `routing.groupChat.historyLimit` → `messages.groupChat.historyLimit`
 - `routing.groupChat.mentionPatterns` → `messages.groupChat.mentionPatterns`
 - `routing.queue` → `messages.queue`
-- `routing.bindings` → top-level `bindings`
-- `routing.agents`/`routing.defaultAgentId` → `agents.list` + `agents.list[].default`
+- `routing.bindings` → removed
+- `routing.agents`/`routing.defaultAgentId` → removed
 - `routing.agentToAgent` → `tools.agentToAgent`
 - `routing.transcribeAudio` → `tools.media.audio.models`
-- `bindings[].match.accountID` → `bindings[].match.accountId`
-- `identity` → `agents.list[].identity`
+- `bindings[].match.accountID` → removed with top-level `bindings`
+- `identity` → `agents.defaults.identity`
 - `agent.*` → `agents.defaults` + `tools.*` (tools/elevated/exec/sandbox/subagents)
 - `agent.model`/`allowedModels`/`modelAliases`/`modelFallbacks`/`imageModelFallbacks`
   → `models.catalog` + `agents.defaults.modelPool` + `agents.modelPools` + `agents.defaults.imageModel`

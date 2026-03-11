@@ -1,3 +1,4 @@
+import { resolveDefaultAgentId } from "../../../../agents/agent-scope.js";
 import type { loadConfig } from "../../../../core/config/config.js";
 import type { resolveAgentRoute } from "../../../../routing/resolve-route.js";
 import { buildAgentSessionKey } from "../../../../routing/resolve-route.js";
@@ -39,8 +40,18 @@ export async function maybeBroadcastMessage(params: {
   const strategy = params.cfg.broadcast?.strategy || "parallel";
   whatsappInboundLog.info(`Broadcasting message to ${broadcastAgents.length} agents (${strategy})`);
 
-  const agentIds = params.cfg.agents?.list?.map((agent) => normalizeAgentId(agent.id));
-  const hasKnownAgents = (agentIds?.length ?? 0) > 0;
+  const defaultAgentId = normalizeAgentId(resolveDefaultAgentId(params.cfg));
+  const eligibleAgentIds = Array.from(
+    new Set(
+      broadcastAgents
+        .map((agentId) => normalizeAgentId(agentId))
+        .filter((agentId) => agentId === defaultAgentId),
+    ),
+  );
+  if (eligibleAgentIds.length === 0) {
+    whatsappInboundLog.warn("Broadcast config references only legacy agents; skipping broadcast.");
+    return false;
+  }
   const groupHistorySnapshot =
     params.msg.chatType === "group"
       ? (params.groupHistories.get(params.groupHistoryKey) ?? [])
@@ -48,10 +59,6 @@ export async function maybeBroadcastMessage(params: {
 
   const processForAgent = async (agentId: string): Promise<boolean> => {
     const normalizedAgentId = normalizeAgentId(agentId);
-    if (hasKnownAgents && !agentIds?.includes(normalizedAgentId)) {
-      whatsappInboundLog.warn(`Broadcast agent ${agentId} not found in agents.list; skipping`);
-      return false;
-    }
     const agentRoute = {
       ...params.route,
       agentId: normalizedAgentId,
@@ -84,11 +91,11 @@ export async function maybeBroadcastMessage(params: {
   };
 
   if (strategy === "sequential") {
-    for (const agentId of broadcastAgents) {
+    for (const agentId of eligibleAgentIds) {
       await processForAgent(agentId);
     }
   } else {
-    await Promise.allSettled(broadcastAgents.map(processForAgent));
+    await Promise.allSettled(eligibleAgentIds.map(processForAgent));
   }
 
   if (params.msg.chatType === "group") {

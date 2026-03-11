@@ -15,7 +15,6 @@ import {
 } from "../../routing/session-key.js";
 import { normalizeSessionDeliveryFields } from "../../utils/delivery-context.js";
 import { type MarvConfig, loadConfig } from "../config/config.js";
-import { resolveStateDir } from "../config/paths.js";
 import {
   buildGroupDisplayName,
   canonicalizeMainSessionAlias,
@@ -304,50 +303,9 @@ function isStorePathTemplate(store?: string): boolean {
   return typeof store === "string" && store.includes("{agentId}");
 }
 
-function listExistingAgentIdsFromDisk(): string[] {
-  const root = resolveStateDir();
-  const agentsDir = path.join(root, "agents");
-  try {
-    const entries = fs.readdirSync(agentsDir, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => normalizeAgentId(entry.name))
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
 function listConfiguredAgentIds(cfg: MarvConfig): string[] {
-  const agents = cfg.agents?.list ?? [];
-  if (agents.length > 0) {
-    const ids = new Set<string>();
-    for (const entry of agents) {
-      if (entry?.id) {
-        ids.add(normalizeAgentId(entry.id));
-      }
-    }
-    const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
-    ids.add(defaultId);
-    const sorted = Array.from(ids).filter(Boolean);
-    sorted.sort((a, b) => a.localeCompare(b));
-    return sorted.includes(defaultId)
-      ? [defaultId, ...sorted.filter((id) => id !== defaultId)]
-      : sorted;
-  }
-
-  const ids = new Set<string>();
   const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
-  ids.add(defaultId);
-  for (const id of listExistingAgentIdsFromDisk()) {
-    ids.add(id);
-  }
-  const sorted = Array.from(ids).filter(Boolean);
-  sorted.sort((a, b) => a.localeCompare(b));
-  if (sorted.includes(defaultId)) {
-    return [defaultId, ...sorted.filter((id) => id !== defaultId)];
-  }
-  return sorted;
+  return [defaultId];
 }
 
 export function listAgentsForGateway(cfg: MarvConfig): {
@@ -359,52 +317,23 @@ export function listAgentsForGateway(cfg: MarvConfig): {
   const defaultId = normalizeAgentId(resolveDefaultAgentId(cfg));
   const mainKey = normalizeMainKey(cfg.session?.mainKey);
   const scope = cfg.session?.scope ?? "per-sender";
-  const configuredById = new Map<
-    string,
-    { name?: string; identity?: GatewayAgentRow["identity"] }
-  >();
-  for (const entry of cfg.agents?.list ?? []) {
-    if (!entry?.id) {
-      continue;
-    }
-    const identity = entry.identity
-      ? {
-          name: entry.identity.name?.trim() || undefined,
-          theme: entry.identity.theme?.trim() || undefined,
-          emoji: entry.identity.emoji?.trim() || undefined,
-          avatar: entry.identity.avatar?.trim() || undefined,
-          avatarUrl: resolveIdentityAvatarUrl(
-            cfg,
-            normalizeAgentId(entry.id),
-            entry.identity.avatar?.trim(),
-          ),
-        }
-      : undefined;
-    configuredById.set(normalizeAgentId(entry.id), {
-      name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : undefined,
+  const defaults = cfg.agents?.defaults;
+  const identity = defaults?.identity
+    ? {
+        name: defaults.identity.name?.trim() || undefined,
+        theme: defaults.identity.theme?.trim() || undefined,
+        emoji: defaults.identity.emoji?.trim() || undefined,
+        avatar: defaults.identity.avatar?.trim() || undefined,
+        avatarUrl: resolveIdentityAvatarUrl(cfg, defaultId, defaults.identity.avatar?.trim()),
+      }
+    : undefined;
+  const agents = [
+    {
+      id: defaultId,
+      name: defaults?.name?.trim() || undefined,
       identity,
-    });
-  }
-  const explicitIds = new Set(
-    (cfg.agents?.list ?? [])
-      .map((entry) => (entry?.id ? normalizeAgentId(entry.id) : ""))
-      .filter(Boolean),
-  );
-  const allowedIds = explicitIds.size > 0 ? new Set([...explicitIds, defaultId]) : null;
-  let agentIds = listConfiguredAgentIds(cfg).filter((id) =>
-    allowedIds ? allowedIds.has(id) : true,
-  );
-  if (mainKey && !agentIds.includes(mainKey) && (!allowedIds || allowedIds.has(mainKey))) {
-    agentIds = [...agentIds, mainKey];
-  }
-  const agents = agentIds.map((id) => {
-    const meta = configuredById.get(id);
-    return {
-      id,
-      name: meta?.name,
-      identity: meta?.identity,
-    };
-  });
+    },
+  ];
   return { defaultId, mainKey, scope, agents };
 }
 
@@ -815,6 +744,11 @@ export function listSessionsFromStore(params: {
         modelProvider,
         model,
         contextTokens: entry?.contextTokens,
+        subagentRole: entry?.subagentRole,
+        subagentPreset: entry?.subagentPreset,
+        subagentTaskGroup: entry?.subagentTaskGroup,
+        subagentDispatchId: entry?.subagentDispatchId,
+        subagentAnnounceMode: entry?.subagentAnnounceMode,
         deliveryContext: deliveryFields.deliveryContext,
         lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
         lastTo: deliveryFields.lastTo ?? entry?.lastTo,

@@ -45,7 +45,7 @@ export function resolveSandboxToolPolicyForAgent(
   const allowSource = Array.isArray(agentAllow)
     ? ({
         source: "agent",
-        key: "agents.list[].tools.sandbox.tools.allow",
+        key: "agents.defaults.tools.sandbox.tools.allow",
       } satisfies SandboxToolPolicySource)
     : Array.isArray(globalAllow)
       ? ({
@@ -60,7 +60,7 @@ export function resolveSandboxToolPolicyForAgent(
   const denySource = Array.isArray(agentDeny)
     ? ({
         source: "agent",
-        key: "agents.list[].tools.sandbox.tools.deny",
+        key: "agents.defaults.tools.sandbox.tools.deny",
       } satisfies SandboxToolPolicySource)
     : Array.isArray(globalDeny)
       ? ({

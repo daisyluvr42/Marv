@@ -206,15 +206,12 @@ Add `--json` for a machine‑readable summary.
   </Accordion>
 </AccordionGroup>
 
-### Add agent (non-interactive)
+### Adjust durable agent defaults (non-interactive)
 
 ```bash
-marv agents add work \
-  --workspace ~/.marv/workspace-work \
-  --model openai/gpt-5.2 \
-  --bind whatsapp:biz \
-  --non-interactive \
-  --json
+marv config set agents.defaults.workspace "~/.marv/workspace-work"
+marv config set agents.defaults.model "openai/gpt-5.2"
+marv config get agents.defaults
 ```
 
 ## Gateway wizard RPC
@@ -252,7 +249,7 @@ Typical fields in `~/.marv/marv.json`:
 - `wizard.lastRunCommand`
 - `wizard.lastRunMode`
 
-`marv agents add` writes `agents.list[]` and optional `bindings`.
+The onboarding wizard writes `agents.defaults.*` for the durable `main` agent.
 
 WhatsApp credentials go under `~/.marv/credentials/whatsapp/<accountId>/`.
 Sessions are stored under `~/.marv/agents/<agentId>/sessions/`.

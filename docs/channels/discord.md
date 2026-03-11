@@ -409,7 +409,7 @@ Example:
     Mention detection includes:
 
     - explicit bot mention
-    - configured mention patterns (`agents.list[].groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
+    - configured mention patterns (`agents.defaults.groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
     - implicit reply-to-bot behavior in supported cases
 
     `requireMention` is configured per guild/channel (`channels.discord.guilds...`).
@@ -424,29 +424,9 @@ Example:
 
 ### Role-based agent routing
 
-Use `bindings[].match.roles` to route Discord guild members to different agents by role ID. Role-based bindings accept role IDs only and are evaluated after peer or parent-peer bindings and before guild-only bindings. If a binding also sets other match fields (for example `peer` + `guildId` + `roles`), all configured fields must match.
-
-```json5
-{
-  bindings: [
-    {
-      agentId: "opus",
-      match: {
-        channel: "discord",
-        guildId: "123456789012345678",
-        roles: ["111111111111111111"],
-      },
-    },
-    {
-      agentId: "sonnet",
-      match: {
-        channel: "discord",
-        guildId: "123456789012345678",
-      },
-    },
-  ],
-}
-```
+Top-level role-based agent routing was removed with the single-agent cutover.
+Discord messages now resolve to the durable `main` agent, and any collaboration
+should happen through enhanced subagents inside that run.
 
 ## Developer Portal setup
 
@@ -572,7 +552,7 @@ See [Slash commands](/tools/slash-commands) for command catalog and behavior.
     - `channels.discord.accounts.<accountId>.ackReaction`
     - `channels.discord.ackReaction`
     - `messages.ackReaction`
-    - agent identity emoji fallback (`agents.list[].identity.emoji`, else "👀")
+    - agent identity emoji fallback (`agents.defaults.identity.emoji`, else "👀")
 
     Notes:
 
@@ -879,6 +859,6 @@ High-signal Discord fields:
 
 - [Pairing](/channels/pairing)
 - [Channel routing](/channels/channel-routing)
-- [Multi-agent routing](/concepts/multi-agent)
+- [Sub-agents](/tools/subagents)
 - [Troubleshooting](/channels/troubleshooting)
 - [Slash commands](/tools/slash-commands)

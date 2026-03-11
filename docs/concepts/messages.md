@@ -16,7 +16,7 @@ streaming, and reasoning visibility.
 
 ```
 Inbound message
-  -> routing/bindings -> session key
+  -> routing/session selection -> session key
   -> queue (if a run is active)
   -> agent run (streaming + tools)
   -> outbound replies (channel limits + chunking)

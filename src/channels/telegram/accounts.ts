@@ -1,7 +1,6 @@
 import type { MarvConfig } from "../../core/config/config.js";
 import type { TelegramAccountConfig, TelegramActionConfig } from "../../core/config/types.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
-import { listBoundAccountIds, resolveDefaultAgentBoundAccountId } from "../../routing/bindings.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { createAccountActionGate } from "../plugins/account-action-gate.js";
 import { resolveTelegramToken } from "./token.js";
@@ -37,9 +36,7 @@ function listConfiguredAccountIds(cfg: MarvConfig): string[] {
 }
 
 export function listTelegramAccountIds(cfg: MarvConfig): string[] {
-  const ids = Array.from(
-    new Set([...listConfiguredAccountIds(cfg), ...listBoundAccountIds(cfg, "telegram")]),
-  );
+  const ids = listConfiguredAccountIds(cfg);
   debugAccounts("listTelegramAccountIds", ids);
   if (ids.length === 0) {
     return [DEFAULT_ACCOUNT_ID];
@@ -48,10 +45,6 @@ export function listTelegramAccountIds(cfg: MarvConfig): string[] {
 }
 
 export function resolveDefaultTelegramAccountId(cfg: MarvConfig): string {
-  const boundDefault = resolveDefaultAgentBoundAccountId(cfg, "telegram");
-  if (boundDefault) {
-    return boundDefault;
-  }
   const ids = listTelegramAccountIds(cfg);
   if (ids.includes(DEFAULT_ACCOUNT_ID)) {
     return DEFAULT_ACCOUNT_ID;

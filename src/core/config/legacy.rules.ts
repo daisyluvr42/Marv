@@ -36,16 +36,16 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["routing", "bindings"],
-    message: "routing.bindings was moved; use top-level bindings instead (auto-migrated on load).",
+    message: 'routing.bindings was removed. Routing now targets only "main".',
   },
   {
     path: ["routing", "agents"],
-    message: "routing.agents was moved; use agents.list instead (auto-migrated on load).",
+    message:
+      'routing.agents was removed. Configure only agents.defaults for "main" and use enhanced subagents for delegation.',
   },
   {
     path: ["routing", "defaultAgentId"],
-    message:
-      "routing.defaultAgentId was moved; use agents.list[].default instead (auto-migrated on load).",
+    message: 'routing.defaultAgentId was removed. The only durable top-level agent id is "main".',
   },
   {
     path: ["routing", "agentToAgent"],
@@ -60,7 +60,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   {
     path: ["routing", "groupChat", "mentionPatterns"],
     message:
-      "routing.groupChat.mentionPatterns was moved; use agents.list[].groupChat.mentionPatterns or messages.groupChat.mentionPatterns instead (auto-migrated on load).",
+      "routing.groupChat.mentionPatterns was removed; use agents.defaults.groupChat.mentionPatterns or messages.groupChat.mentionPatterns instead.",
   },
   {
     path: ["routing", "queue"],
@@ -78,7 +78,7 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["identity"],
-    message: "identity was moved; use agents.list[].identity instead (auto-migrated on load).",
+    message: "identity was moved; use agents.defaults.identity instead.",
   },
   {
     path: ["agent"],

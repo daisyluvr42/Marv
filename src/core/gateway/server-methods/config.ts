@@ -18,7 +18,7 @@ import {
   validateConfigObjectWithPlugins,
   writeConfigFile,
 } from "../../config/config.js";
-import { applyLegacyMigrations } from "../../config/legacy.js";
+import { applyLegacyMigrations, findRemovedTopLevelMultiAgentIssues } from "../../config/legacy.js";
 import { applyMergePatch } from "../../config/merge-patch.js";
 import {
   redactConfigObject,
@@ -150,6 +150,22 @@ function parseValidateConfigFromRawOrRespond(
     );
     return null;
   }
+  const removedMultiAgentIssues = findRemovedTopLevelMultiAgentIssues(restored.result);
+  if (removedMultiAgentIssues.length > 0) {
+    respond(
+      false,
+      undefined,
+      errorShape(ErrorCodes.INVALID_REQUEST, "invalid config", {
+        details: {
+          issues: removedMultiAgentIssues.map((issue) => ({
+            path: issue.path,
+            message: issue.message,
+          })),
+        },
+      }),
+    );
+    return null;
+  }
   const validated = validateConfigObjectWithPlugins(restored.result);
   if (!validated.ok) {
     respond(
@@ -162,6 +178,27 @@ function parseValidateConfigFromRawOrRespond(
     return null;
   }
   return { config: validated.config, schema };
+}
+
+function listRemovedMultiAgentPatchPaths(patch: Record<string, unknown>, prefix = ""): string[] {
+  const paths: string[] = [];
+  for (const [key, value] of Object.entries(patch)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (
+      path === "bindings" ||
+      path === "agents.list" ||
+      path === "routing.bindings" ||
+      path === "routing.agents" ||
+      path === "routing.defaultAgentId"
+    ) {
+      paths.push(path);
+      continue;
+    }
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      paths.push(...listRemovedMultiAgentPatchPaths(value as Record<string, unknown>, path));
+    }
+  }
+  return paths;
 }
 
 function parsePatchObjectOrRespond(
@@ -207,6 +244,18 @@ async function mergePatchAndWriteConfigOrRespond(params: {
   patch: Record<string, unknown>;
   respond: RespondFn;
 }): Promise<{ config: MarvConfig; schema: ConfigSchemaResponse } | null> {
+  const removedPatchPaths = listRemovedMultiAgentPatchPaths(params.patch);
+  if (removedPatchPaths.length > 0) {
+    params.respond(
+      false,
+      undefined,
+      errorShape(
+        ErrorCodes.INVALID_REQUEST,
+        `legacy multi-agent config is no longer patchable: ${removedPatchPaths.join(", ")}`,
+      ),
+    );
+    return null;
+  }
   if (!params.snapshot.valid) {
     params.respond(
       false,

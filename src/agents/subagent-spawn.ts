@@ -3,6 +3,7 @@ import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinkin
 import { loadConfig } from "../core/config/config.js";
 import { callGateway } from "../core/gateway/call.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
+import type { SubagentAnnounceMode } from "../shared/subagent-metadata.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
@@ -23,6 +24,11 @@ export type SpawnSubagentParams = {
   agentId?: string;
   model?: string;
   thinking?: string;
+  role?: string;
+  preset?: string;
+  taskGroup?: string;
+  dispatchId?: string;
+  announceMode?: SubagentAnnounceMode;
   runTimeoutSeconds?: number;
   cleanup?: "delete" | "keep";
   expectsCompletionMessage?: boolean;
@@ -76,6 +82,7 @@ export async function spawnSubagentDirect(
   const requestedAgentId = params.agentId;
   const modelOverride = params.model;
   const thinkingOverrideRaw = params.thinking;
+  const role = params.role?.trim() || undefined;
   const cleanup =
     params.cleanup === "keep" || params.cleanup === "delete" ? params.cleanup : "keep";
   const requesterOrigin = normalizeDeliveryContext({
@@ -129,30 +136,28 @@ export async function spawnSubagentDirect(
   );
   const targetAgentId = requestedAgentId ? normalizeAgentId(requestedAgentId) : requesterAgentId;
   if (targetAgentId !== requesterAgentId) {
-    const allowAgents = resolveAgentConfig(cfg, requesterAgentId)?.subagents?.allowAgents ?? [];
-    const allowAny = allowAgents.some((value) => value.trim() === "*");
-    const normalizedTargetId = targetAgentId.toLowerCase();
-    const allowSet = new Set(
-      allowAgents
-        .filter((value) => value.trim() && value.trim() !== "*")
-        .map((value) => normalizeAgentId(value).toLowerCase()),
-    );
-    if (!allowAny && !allowSet.has(normalizedTargetId)) {
-      const allowedText = allowSet.size > 0 ? Array.from(allowSet).join(", ") : "none";
-      return {
-        status: "forbidden",
-        error: `agentId is not allowed for sessions_spawn (allowed: ${allowedText})`,
-      };
-    }
+    return {
+      status: "forbidden",
+      error:
+        'sessions_spawn no longer supports targeting another top-level agent. Use role/preset metadata under "main" instead.',
+    };
   }
   const childSessionKey = `agent:${targetAgentId}:subagent:${crypto.randomUUID()}`;
   const childDepth = callerDepth + 1;
   const spawnedByKey = requesterInternalKey;
   const targetAgentConfig = resolveAgentConfig(cfg, targetAgentId);
+  const preset =
+    params.preset?.trim() || cfg.agents?.defaults?.subagents?.defaultPreset?.trim() || undefined;
+  const taskGroup = params.taskGroup?.trim() || undefined;
+  const dispatchId = params.dispatchId?.trim() || undefined;
+  const announceMode = params.announceMode;
+  const roleConfig = role ? cfg.agents?.defaults?.subagents?.roles?.[role] : undefined;
+  const systemPromptAppend = roleConfig?.systemPromptAppend?.trim() || undefined;
   const resolvedModel = resolveSubagentSpawnModelSelection({
     cfg,
     agentId: targetAgentId,
     modelOverride,
+    role,
   });
 
   const resolvedThinkingDefaultRaw =
@@ -176,7 +181,15 @@ export async function spawnSubagentDirect(
   try {
     await callGateway({
       method: "sessions.patch",
-      params: { key: childSessionKey, spawnDepth: childDepth },
+      params: {
+        key: childSessionKey,
+        spawnDepth: childDepth,
+        ...(role ? { subagentRole: role } : {}),
+        ...(preset ? { subagentPreset: preset } : {}),
+        ...(taskGroup ? { subagentTaskGroup: taskGroup } : {}),
+        ...(dispatchId ? { subagentDispatchId: dispatchId } : {}),
+        ...(announceMode ? { subagentAnnounceMode: announceMode } : {}),
+      },
       timeoutMs: 10_000,
     });
   } catch (err) {
@@ -233,6 +246,9 @@ export async function spawnSubagentDirect(
     childSessionKey,
     label: label || undefined,
     task,
+    role,
+    preset,
+    systemPromptAppend,
     childDepth,
     maxSpawnDepth,
   });
@@ -291,6 +307,11 @@ export async function spawnSubagentDirect(
     cleanup,
     label: label || undefined,
     model: resolvedModel,
+    role,
+    preset,
+    taskGroup,
+    dispatchId,
+    announceMode,
     runTimeoutSeconds,
     expectsCompletionMessage: params.expectsCompletionMessage === true,
   });

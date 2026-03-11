@@ -175,7 +175,7 @@ curl "https://api.telegram.org/bot<bot_token>/getUpdates"
 
     - native `@botusername` mention, or
     - mention patterns in:
-      - `agents.list[].groupChat.mentionPatterns`
+      - `agents.defaults.groupChat.mentionPatterns`
       - `messages.groupChat.mentionPatterns`
 
     Session-level command toggles:
@@ -579,7 +579,7 @@ curl "https://api.telegram.org/bot<bot_token>/getUpdates"
     - `channels.telegram.accounts.<accountId>.ackReaction`
     - `channels.telegram.ackReaction`
     - `messages.ackReaction`
-    - agent identity emoji fallback (`agents.list[].identity.emoji`, else "👀")
+    - agent identity emoji fallback (`agents.defaults.identity.emoji`, else "👀")
 
     Notes:
 
@@ -757,5 +757,5 @@ Telegram-specific high-signal fields:
 
 - [Pairing](/channels/pairing)
 - [Channel routing](/channels/channel-routing)
-- [Multi-agent routing](/concepts/multi-agent)
+- [Sub-agents](/tools/subagents)
 - [Troubleshooting](/channels/troubleshooting)

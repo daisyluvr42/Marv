@@ -81,10 +81,6 @@ function resolveAgentIds(cfg: ReturnType<typeof loadConfig>, agent?: string): st
   if (trimmed) {
     return [trimmed];
   }
-  const list = cfg.agents?.list ?? [];
-  if (list.length > 0) {
-    return list.map((entry) => entry.id).filter(Boolean);
-  }
   return [resolveDefaultAgentId(cfg)];
 }
 

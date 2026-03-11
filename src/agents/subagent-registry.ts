@@ -2,6 +2,7 @@ import { loadConfig } from "../core/config/config.js";
 import { callGateway } from "../core/gateway/call.js";
 import { onAgentEvent } from "../infra/agent-events.js";
 import { defaultRuntime } from "../runtime.js";
+import type { SubagentAnnounceMode } from "../shared/subagent-metadata.js";
 import { type DeliveryContext, normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resetAnnounceQueuesForTests } from "./subagent-announce-queue.js";
 import { runSubagentAnnounceFlow, type SubagentRunOutcome } from "./subagent-announce.js";
@@ -21,6 +22,11 @@ export type SubagentRunRecord = {
   cleanup: "delete" | "keep";
   label?: string;
   model?: string;
+  role?: string;
+  preset?: string;
+  taskGroup?: string;
+  dispatchId?: string;
+  announceMode?: SubagentAnnounceMode;
   runTimeoutSeconds?: number;
   createdAt: number;
   startedAt?: number;
@@ -93,6 +99,11 @@ function suppressAnnounceForSteerRestart(entry?: SubagentRunRecord) {
 function startSubagentAnnounceCleanupFlow(runId: string, entry: SubagentRunRecord): boolean {
   if (!beginSubagentCleanup(runId)) {
     return false;
+  }
+  if (entry.announceMode === "aggregate") {
+    entry.cleanupCompletedAt = Date.now();
+    persistSubagentRuns();
+    return true;
   }
   const requesterOrigin = normalizeDeliveryContext(entry.requesterOrigin);
   void runSubagentAnnounceFlow({
@@ -514,6 +525,11 @@ export function registerSubagentRun(params: {
   cleanup: "delete" | "keep";
   label?: string;
   model?: string;
+  role?: string;
+  preset?: string;
+  taskGroup?: string;
+  dispatchId?: string;
+  announceMode?: SubagentAnnounceMode;
   runTimeoutSeconds?: number;
   expectsCompletionMessage?: boolean;
 }) {
@@ -535,6 +551,11 @@ export function registerSubagentRun(params: {
     expectsCompletionMessage: params.expectsCompletionMessage,
     label: params.label,
     model: params.model,
+    role: params.role,
+    preset: params.preset,
+    taskGroup: params.taskGroup,
+    dispatchId: params.dispatchId,
+    announceMode: params.announceMode,
     runTimeoutSeconds,
     createdAt: now,
     startedAt: now,

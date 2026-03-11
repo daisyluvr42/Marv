@@ -155,7 +155,7 @@ imsg send <handle> "test"
     Mention gating for groups:
 
     - iMessage has no native mention metadata
-    - mention detection uses regex patterns (`agents.list[].groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
+    - mention detection uses regex patterns (`agents.defaults.groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
     - with no configured patterns, mention gating cannot be enforced
 
     Control commands from authorized senders can bypass mention gating in groups.
@@ -317,7 +317,7 @@ marv channels status --probe
     - `channels.imessage.groupPolicy`
     - `channels.imessage.groupAllowFrom`
     - `channels.imessage.groups` allowlist behavior
-    - mention pattern configuration (`agents.list[].groupChat.mentionPatterns`)
+    - mention pattern configuration (`agents.defaults.groupChat.mentionPatterns`)
 
   </Accordion>
 

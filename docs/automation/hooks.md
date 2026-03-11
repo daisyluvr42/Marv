@@ -80,7 +80,7 @@ During onboarding (`marv onboard`), you'll be prompted to enable recommended hoo
 
 Hooks are automatically discovered from three directories (in order of precedence):
 
-1. **Workspace hooks**: `<workspace>/hooks/` (per-agent, highest precedence)
+1. **Workspace hooks**: `<workspace>/hooks/` (workspace-scoped, highest precedence)
 2. **Managed hooks**: `~/.marv/hooks/` (user-installed, shared across workspaces)
 3. **Bundled hooks**: `<marv>/dist/hooks/bundled/` (shipped with Marv)
 

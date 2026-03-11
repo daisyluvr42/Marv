@@ -34,53 +34,44 @@ function isWorkspaceAvatarPath(value: string, workspaceDir: string): boolean {
 }
 
 function validateIdentityAvatar(config: MarvConfig): ConfigValidationIssue[] {
-  const agents = config.agents?.list;
-  if (!Array.isArray(agents) || agents.length === 0) {
+  const avatarRaw = config.agents?.defaults?.identity?.avatar;
+  if (typeof avatarRaw !== "string") {
     return [];
   }
-  const issues: ConfigValidationIssue[] = [];
-  for (const [index, entry] of agents.entries()) {
-    if (!entry || typeof entry !== "object") {
-      continue;
-    }
-    const avatarRaw = entry.identity?.avatar;
-    if (typeof avatarRaw !== "string") {
-      continue;
-    }
-    const avatar = avatarRaw.trim();
-    if (!avatar) {
-      continue;
-    }
-    if (AVATAR_DATA_RE.test(avatar) || AVATAR_HTTP_RE.test(avatar)) {
-      continue;
-    }
-    if (avatar.startsWith("~")) {
-      issues.push({
-        path: `agents.list.${index}.identity.avatar`,
-        message: "identity.avatar must be a workspace-relative path, http(s) URL, or data URI.",
-      });
-      continue;
-    }
-    const hasScheme = AVATAR_SCHEME_RE.test(avatar);
-    if (hasScheme && !WINDOWS_ABS_RE.test(avatar)) {
-      issues.push({
-        path: `agents.list.${index}.identity.avatar`,
-        message: "identity.avatar must be a workspace-relative path, http(s) URL, or data URI.",
-      });
-      continue;
-    }
-    const workspaceDir = resolveAgentWorkspaceDir(
-      config,
-      entry.id ?? resolveDefaultAgentId(config),
-    );
-    if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
-      issues.push({
-        path: `agents.list.${index}.identity.avatar`,
-        message: "identity.avatar must stay within the agent workspace.",
-      });
-    }
+  const avatar = avatarRaw.trim();
+  if (!avatar) {
+    return [];
   }
-  return issues;
+  if (AVATAR_DATA_RE.test(avatar) || AVATAR_HTTP_RE.test(avatar)) {
+    return [];
+  }
+  if (avatar.startsWith("~")) {
+    return [
+      {
+        path: "agents.defaults.identity.avatar",
+        message: "identity.avatar must be a workspace-relative path, http(s) URL, or data URI.",
+      },
+    ];
+  }
+  const hasScheme = AVATAR_SCHEME_RE.test(avatar);
+  if (hasScheme && !WINDOWS_ABS_RE.test(avatar)) {
+    return [
+      {
+        path: "agents.defaults.identity.avatar",
+        message: "identity.avatar must be a workspace-relative path, http(s) URL, or data URI.",
+      },
+    ];
+  }
+  const workspaceDir = resolveAgentWorkspaceDir(config, resolveDefaultAgentId(config));
+  if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
+    return [
+      {
+        path: "agents.defaults.identity.avatar",
+        message: "identity.avatar must stay within the agent workspace.",
+      },
+    ];
+  }
+  return [];
 }
 
 /**
@@ -116,7 +107,7 @@ export function validateConfigObjectRaw(
       ok: false,
       issues: [
         {
-          path: "agents.list",
+          path: "agents.defaults.agentDir",
           message: formatDuplicateAgentDirError(duplicates),
         },
       ],
@@ -304,11 +295,6 @@ function validateConfigObjectWithPluginsBase(
     config.agents?.defaults?.heartbeat?.target,
     "agents.defaults.heartbeat.target",
   );
-  if (Array.isArray(config.agents?.list)) {
-    for (const [index, entry] of config.agents.list.entries()) {
-      validateHeartbeatTarget(entry?.heartbeat?.target, `agents.list.${index}.heartbeat.target`);
-    }
-  }
 
   if (!hasExplicitPluginsConfig) {
     if (issues.length > 0) {

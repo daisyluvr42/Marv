@@ -70,7 +70,7 @@ does **not** inherit the host `process.env`.
 
 Use one of:
 
-- `agents.defaults.sandbox.docker.env` (or per-agent `agents.list[].sandbox.docker.env`)
+- `agents.defaults.sandbox.docker.env`
 - bake the env into your custom sandbox image
 
 Global `env` and `skills.entries.<skill>.env/apiKey` apply to **host** runs only.

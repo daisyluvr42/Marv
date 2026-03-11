@@ -199,7 +199,7 @@ export async function sandboxExplainCommand(
   if (!elevatedAgentEnabled) {
     elevatedFailures.push({
       gate: "enabled",
-      key: "agents.list[].tools.elevated.enabled",
+      key: "agents.defaults.tools.elevated.enabled",
     });
   }
   if (channel && globalAllowTokens.length === 0) {
@@ -211,22 +211,22 @@ export async function sandboxExplainCommand(
   if (channel && elevatedAgent?.allowFrom && agentAllowTokens.length === 0) {
     elevatedFailures.push({
       gate: "allowFrom",
-      key: `agents.list[].tools.elevated.allowFrom.${channel}`,
+      key: `agents.defaults.tools.elevated.allowFrom.${channel}`,
     });
   }
 
   const fixIt: string[] = [];
   if (sandboxCfg.mode !== "off") {
     fixIt.push("agents.defaults.sandbox.mode=off");
-    fixIt.push("agents.list[].sandbox.mode=off");
   }
   fixIt.push("tools.sandbox.tools.allow");
   fixIt.push("tools.sandbox.tools.deny");
-  fixIt.push("agents.list[].tools.sandbox.tools.allow");
-  fixIt.push("agents.list[].tools.sandbox.tools.deny");
+  fixIt.push("agents.defaults.tools.sandbox.tools.allow");
+  fixIt.push("agents.defaults.tools.sandbox.tools.deny");
   fixIt.push("tools.elevated.enabled");
   if (channel) {
     fixIt.push(`tools.elevated.allowFrom.${channel}`);
+    fixIt.push(`agents.defaults.tools.elevated.allowFrom.${channel}`);
   }
 
   const payload = {

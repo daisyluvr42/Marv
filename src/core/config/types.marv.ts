@@ -1,4 +1,4 @@
-import type { AgentBinding, AgentsConfig } from "./types.agents.js";
+import type { AgentsConfig } from "./types.agents.js";
 import type { ApprovalsConfig } from "./types.approvals.js";
 import type { AuthConfig } from "./types.auth.js";
 import type { AutonomyConfig } from "./types.autonomy.js";
@@ -100,7 +100,6 @@ export type MarvConfig = {
   nodeHost?: NodeHostConfig;
   agents?: AgentsConfig;
   tools?: ToolsConfig;
-  bindings?: AgentBinding[];
   broadcast?: BroadcastConfig;
   audio?: AudioConfig;
   messages?: MessagesConfig;

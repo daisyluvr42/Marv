@@ -68,7 +68,7 @@ Flow notes:
 
 ```bash
 marv configure
-marv agents add <name>
+marv agents list
 ```
 
 <Note>

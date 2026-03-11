@@ -9,7 +9,7 @@ status: active
 
 Marv can run **tools inside Docker containers** to reduce blast radius.
 This is **optional** and controlled by configuration (`agents.defaults.sandbox` or
-`agents.list[].sandbox`). If sandboxing is off, tools run on the host.
+`agents.defaults.sandbox`). If sandboxing is off, tools run on the host.
 The Gateway stays on the host; tool execution runs in an isolated sandbox
 when enabled.
 
@@ -69,7 +69,7 @@ they can be read. With `"rw"`, workspace skills are readable from
 `agents.defaults.sandbox.docker.binds` mounts additional host directories into the container.
 Format: `host:container:mode` (e.g., `"/home/user/source:/source:rw"`).
 
-Global and per-agent binds are **merged** (not replaced). Under `scope: "shared"`, per-agent binds are ignored.
+Global binds and the durable agent bind list are **merged** (not replaced). Under `scope: "shared"`, only the shared/global bind set applies.
 
 `agents.defaults.sandbox.browser.binds` mounts additional host directories into the **sandbox browser** container only.
 
@@ -145,7 +145,7 @@ It executes inside the container via `sh -lc`.
 Paths:
 
 - Global: `agents.defaults.sandbox.docker.setupCommand`
-- Per-agent: `agents.list[].sandbox.docker.setupCommand`
+- Per-agent: `agents.defaults.sandbox.docker.setupCommand`
 
 Common pitfalls:
 
@@ -158,7 +158,7 @@ Common pitfalls:
 ## Tool policy + escape hatches
 
 Tool allow/deny policies still apply before sandbox rules. If a tool is denied
-globally or per-agent, sandboxing doesn’t bring it back.
+globally or on the durable agent, sandboxing doesn’t bring it back.
 
 `tools.elevated` is an explicit escape hatch that runs `exec` on the host.
 `/exec` directives only apply for authorized senders and persist per session; to hard-disable
@@ -170,11 +170,11 @@ Debugging:
 - See [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated) for the “why is this blocked?” mental model.
   Keep it locked down.
 
-## Multi-agent overrides
+## Durable agent overrides
 
-Each agent can override sandbox + tools:
-`agents.list[].sandbox` and `agents.list[].tools` (plus `agents.list[].tools.sandbox.tools` for sandbox tool policy).
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for precedence.
+Sandbox and tool policy now live on the durable agent config:
+`agents.defaults.sandbox`, `agents.defaults.tools`, and
+`agents.defaults.tools.sandbox.tools`.
 
 ## Minimal enable example
 
@@ -195,5 +195,5 @@ See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for preceden
 ## Related docs
 
 - [Sandbox Configuration](/gateway/configuration#agentsdefaults-sandbox)
-- [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools)
+- [Subagents](/tools/subagents)
 - [Security](/gateway/security)

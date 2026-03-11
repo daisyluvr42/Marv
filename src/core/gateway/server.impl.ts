@@ -208,7 +208,11 @@ export async function startGatewayServer(
     const { config: migrated, changes } = migrateLegacyConfig(configSnapshot.parsed);
     if (!migrated) {
       throw new Error(
-        `Legacy config entries detected but auto-migration failed. Run "${formatCliCommand("marv doctor")}" to migrate.`,
+        [
+          "Legacy config entries detected and cannot be auto-migrated.",
+          ...changes,
+          "Remove unsupported legacy fields and retry.",
+        ].join("\n"),
       );
     }
     await writeConfigFile(migrated);

@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { getSubagentDepthFromSessionStore } from "../../agents/subagent-depth.js";
 import { ToolInputError } from "../../agents/tools/common.js";
 import { createMarvTools } from "../../agents/tools/marv-tools.js";
 import {
@@ -234,7 +235,11 @@ export async function handleToolsInvokeHttpRequest(
     accountId: accountId ?? null,
   });
   const subagentPolicy = isSubagentSessionKey(sessionKey)
-    ? resolveSubagentToolPolicy(cfg)
+    ? resolveSubagentToolPolicy(
+        cfg,
+        getSubagentDepthFromSessionStore(sessionKey, { cfg }),
+        sessionKey,
+      )
     : undefined;
 
   // Build tool list (core + plugin tools).

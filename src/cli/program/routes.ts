@@ -64,9 +64,8 @@ const routeAgentsList: RouteSpec = {
   match: (path) => path[0] === "agents" && path[1] === "list",
   run: async (argv) => {
     const json = hasFlag(argv, "--json");
-    const bindings = hasFlag(argv, "--bindings");
     const { agentsListCommand } = await import("../../commands/agents.js");
-    await agentsListCommand({ json, bindings }, defaultRuntime);
+    await agentsListCommand({ json }, defaultRuntime);
     return true;
   },
 };

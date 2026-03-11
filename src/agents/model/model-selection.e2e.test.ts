@@ -7,6 +7,8 @@ import {
   buildModelAliasIndex,
   normalizeProviderId,
   modelKey,
+  resolveSubagentRoleModelSelection,
+  resolveSubagentSpawnModelSelection,
 } from "./model-selection.js";
 
 describe("model-selection", () => {
@@ -176,6 +178,74 @@ describe("model-selection", () => {
         defaultModel: "gpt-4",
       });
       expect(result).toEqual({ provider: "openai", model: "gpt-4" });
+    });
+  });
+
+  describe("resolveSubagentRoleModelSelection", () => {
+    it("prefers role-specific model override before global subagent model", () => {
+      const cfg = {
+        agents: {
+          defaults: {
+            model: { primary: "anthropic/claude-sonnet-4-6" },
+            subagents: {
+              model: { primary: "openai/gpt-5.4" },
+              roles: {
+                reviewer: {
+                  model: { primary: "anthropic/claude-opus-4-6" },
+                },
+              },
+            },
+          },
+        },
+      } as MarvConfig;
+
+      expect(
+        resolveSubagentRoleModelSelection({
+          cfg,
+          agentId: "main",
+          role: "reviewer",
+        }),
+      ).toBe("anthropic/claude-opus-4-6");
+    });
+
+    it("resolves role modelPool before global defaults", () => {
+      const cfg = {
+        models: {
+          catalog: {
+            "openai/gpt-5.4": { tier: "standard", capabilities: ["text"], priority: 50 },
+            "anthropic/claude-opus-4-6": { tier: "high", capabilities: ["text"], priority: 10 },
+          },
+        },
+        agents: {
+          defaults: {
+            model: { primary: "openai/gpt-5.4" },
+            models: {
+              "openai/gpt-5.4": {},
+              "anthropic/claude-opus-4-6": {},
+            },
+            modelPools: {
+              reasoning: {
+                tiers: ["high"],
+              },
+            },
+            subagents: {
+              roles: {
+                reviewer: {
+                  modelPool: "reasoning",
+                },
+              },
+            },
+          },
+        },
+      } as unknown as MarvConfig;
+
+      expect(
+        resolveSubagentSpawnModelSelection({
+          cfg,
+          agentId: "main",
+          role: "reviewer",
+        }),
+      ).toBe("anthropic/claude-opus-4-6");
     });
   });
 });

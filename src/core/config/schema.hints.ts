@@ -28,7 +28,6 @@ const GROUP_LABELS: Record<string, string> = {
   nodeHost: "Node Host",
   agents: "Agents",
   tools: "Tools",
-  bindings: "Bindings",
   audio: "Audio",
   models: "Models",
   messages: "Messages",
@@ -55,7 +54,6 @@ const GROUP_ORDER: Record<string, number> = {
   nodeHost: 35,
   agents: 40,
   tools: 50,
-  bindings: 55,
   audio: 60,
   models: 70,
   messages: 80,
@@ -83,7 +81,7 @@ const FIELD_PLACEHOLDERS: Record<string, string> = {
   "gateway.controlUi.root": "dist/control-ui",
   "gateway.controlUi.allowedOrigins": "https://control.example.com",
   "channels.mattermost.baseUrl": "https://chat.example.com",
-  "agents.list[].identity.avatar": "avatars/marv.png",
+  "agents.defaults.identity.avatar": "avatars/marv.png",
 };
 
 /**

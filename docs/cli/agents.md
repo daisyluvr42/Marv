@@ -1,41 +1,51 @@
 ---
-summary: "CLI reference for `marv agents` (list/add/delete/set identity)"
+summary: "CLI reference for `marv agents` in the main-only architecture"
 read_when:
-  - You want multiple isolated agents (workspaces + routing + auth)
+  - You want to inspect the durable agent or update its identity
 title: "agents"
 ---
 
 # `marv agents`
 
-Manage isolated agents (workspaces + auth + routing).
+The durable top-level agent is now always `main`.
+
+`marv agents` is kept for inspecting that durable agent and for updating its
+identity. Legacy top-level create/delete flows were removed.
 
 Related:
 
-- Multi-agent routing: [Multi-Agent Routing](/concepts/multi-agent)
 - Agent workspace: [Agent workspace](/concepts/agent-workspace)
+- Subagents: [Subagents](/tools/subagents)
 
 ## Examples
 
 ```bash
 marv agents list
-marv agents add work --workspace ~/.marv/workspace-work
 marv agents set-identity --workspace ~/.marv/workspace --from-identity
 marv agents set-identity --agent main --avatar avatars/marv.png
-marv agents delete work
 ```
+
+## Removed commands
+
+- `marv agents add`
+- `marv agents delete`
+
+Use `agents.defaults` for durable agent config and enhanced subagents for
+delegated work.
 
 ## Identity files
 
-Each agent workspace can include an `IDENTITY.md` at the workspace root:
+The main workspace can include an `IDENTITY.md` at the workspace root:
 
-- Example path: `~/.marv/workspace/IDENTITY.md`
-- `set-identity --from-identity` reads from the workspace root (or an explicit `--identity-file`)
+- example path: `~/.marv/workspace/IDENTITY.md`
+- `set-identity --from-identity` reads from the workspace root unless you pass
+  `--identity-file`
 
 Avatar paths resolve relative to the workspace root.
 
 ## Set identity
 
-`set-identity` writes fields into `agents.list[].identity`:
+`set-identity` writes fields into `agents.defaults.identity`:
 
 - `name`
 - `theme`
@@ -59,17 +69,14 @@ Config sample:
 ```json5
 {
   agents: {
-    list: [
-      {
-        id: "main",
-        identity: {
-          name: "Marv",
-          theme: "space lobster",
-          emoji: "🤖",
-          avatar: "avatars/marv.png",
-        },
+    defaults: {
+      identity: {
+        name: "Marv",
+        theme: "space lobster",
+        emoji: "🤖",
+        avatar: "avatars/marv.png",
       },
-    ],
+    },
   },
 }
 ```

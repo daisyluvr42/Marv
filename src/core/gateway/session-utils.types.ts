@@ -1,4 +1,5 @@
 import type { ChatType } from "../../channels/chat-type.js";
+import type { SubagentAnnounceMode } from "../../shared/subagent-metadata.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";
 import type { SessionEntry } from "../config/sessions.js";
 
@@ -40,6 +41,11 @@ export type GatewaySessionRow = {
   modelProvider?: string;
   model?: string;
   contextTokens?: number;
+  subagentRole?: string;
+  subagentPreset?: string;
+  subagentTaskGroup?: string;
+  subagentDispatchId?: string;
+  subagentAnnounceMode?: SubagentAnnounceMode;
   deliveryContext?: DeliveryContext;
   lastChannel?: SessionEntry["lastChannel"];
   lastTo?: string;

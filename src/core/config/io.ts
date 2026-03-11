@@ -33,7 +33,7 @@ import {
 } from "./env-substitution.js";
 import { applyConfigEnvVars } from "./env-vars.js";
 import { ConfigIncludeError, resolveConfigIncludes } from "./includes.js";
-import { findLegacyConfigIssues } from "./legacy.js";
+import { findLegacyConfigIssues, findRemovedTopLevelMultiAgentIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
 import { normalizeConfigPaths } from "./normalize-paths.js";
 import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } from "./paths.js";
@@ -553,6 +553,20 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       if (typeof resolvedConfig !== "object" || resolvedConfig === null) {
         return {};
       }
+      const removedMultiAgentIssues = findRemovedTopLevelMultiAgentIssues(resolvedConfig);
+      if (removedMultiAgentIssues.length > 0) {
+        const details = removedMultiAgentIssues
+          .map((iss) => `- ${iss.path || "<root>"}: ${iss.message}`)
+          .join("\n");
+        if (!loggedInvalidConfigs.has(configPath)) {
+          loggedInvalidConfigs.add(configPath);
+          deps.logger.error(`Invalid config at ${configPath}:\n${details}`);
+        }
+        const error = new Error("Invalid config");
+        (error as { code?: string; details?: string }).code = "INVALID_CONFIG";
+        (error as { code?: string; details?: string }).details = details;
+        throw error;
+      }
       const preValidationDuplicates = findDuplicateAgentDirs(resolvedConfig as MarvConfig, {
         env: deps.env,
         homedir: deps.homedir,
@@ -734,10 +748,15 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
 
       const resolvedConfigRaw = readResolution.resolvedConfigRaw;
-      const legacyIssues = findLegacyConfigIssues(resolvedConfigRaw);
+      const legacyIssues = [
+        ...findLegacyConfigIssues(resolvedConfigRaw),
+        ...findRemovedTopLevelMultiAgentIssues(resolvedConfigRaw),
+      ];
 
       const validated = validateConfigObjectWithPlugins(resolvedConfigRaw);
-      if (!validated.ok) {
+      if (!validated.ok || legacyIssues.length > 0) {
+        const warnings = validated.warnings;
+        const validationIssues = validated.ok ? [] : validated.issues;
         return {
           snapshot: {
             path: configPath,
@@ -748,8 +767,14 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
             valid: false,
             config: coerceConfig(resolvedConfigRaw),
             hash,
-            issues: validated.issues,
-            warnings: validated.warnings,
+            issues:
+              legacyIssues.length > 0
+                ? legacyIssues.map((issue) => ({
+                    path: issue.path,
+                    message: issue.message,
+                  }))
+                : validationIssues,
+            warnings,
             legacyIssues,
           },
         };

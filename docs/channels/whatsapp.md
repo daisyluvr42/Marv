@@ -180,7 +180,7 @@ Marv recommends running WhatsApp on a separate number when possible. (The channe
     Mention detection includes:
 
     - explicit WhatsApp mentions of the bot identity
-    - configured mention regex patterns (`agents.list[].groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
+    - configured mention regex patterns (`agents.defaults.groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
     - implicit reply-to-bot detection (reply sender matches bot identity)
 
     Session-level activation command:
@@ -433,5 +433,5 @@ High-signal WhatsApp fields:
 
 - [Pairing](/channels/pairing)
 - [Channel routing](/channels/channel-routing)
-- [Multi-agent routing](/concepts/multi-agent)
+- [Sub-agents](/tools/subagents)
 - [Troubleshooting](/channels/troubleshooting)

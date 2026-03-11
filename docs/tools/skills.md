@@ -25,13 +25,15 @@ If a skill name conflicts, precedence is:
 Additionally, you can configure extra skill folders (lowest precedence) via
 `skills.load.extraDirs` in `~/.marv/marv.json`.
 
-## Per-agent vs shared skills
+## Workspace vs shared skills
 
-In **multi-agent** setups, each agent has its own workspace. That means:
+In the main-only architecture, the durable agent workspace can keep local
+skills while machine-wide shared skills remain available across installs or
+profiles.
 
-- **Per-agent skills** live in `<workspace>/skills` for that agent only.
+- **Workspace skills** live in `<workspace>/skills` for that durable workspace only.
 - **Shared skills** live in `~/.marv/skills` (managed/local) and are visible
-  to **all agents** on the same machine.
+  to all Marv installs on the same machine.
 - **Shared folders** can also be added via `skills.load.extraDirs` (lowest
   precedence) if you want a common skills pack used by multiple agents.
 

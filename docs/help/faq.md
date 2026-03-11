@@ -5,7 +5,7 @@ title: "FAQ"
 
 # FAQ
 
-Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS, multi-agent, OAuth/API keys, model failover). For runtime diagnostics, see [Troubleshooting](/gateway/troubleshooting). For the full config reference, see [Configuration](/gateway/configuration).
+Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS, subagents, OAuth/API keys, model failover). For runtime diagnostics, see [Troubleshooting](/gateway/troubleshooting). For the full config reference, see [Configuration](/gateway/configuration).
 
 ## Table of contents
 
@@ -814,11 +814,19 @@ See [/channels/telegram](/channels/telegram#access-control-dms--groups).
 
 ### Can multiple people use one WhatsApp number with different Marv instances
 
-Yes, via **multi-agent routing**. Bind each sender's WhatsApp **DM** (peer `kind: "direct"`, sender E.164 like `+15551234567`) to a different `agentId`, so each person gets their own workspace and session store. Replies still come from the **same WhatsApp account**, and DM access control (`channels.whatsapp.dmPolicy` / `channels.whatsapp.allowFrom`) is global per WhatsApp account. See [Multi-Agent Routing](/concepts/multi-agent) and [WhatsApp](/channels/whatsapp).
+Not inside one gateway with multiple top-level durable agents anymore. If you
+need hard isolation for different people on one WhatsApp number, run separate
+Marv profiles or separate Marv installs. If isolation can be softer, keep one
+durable `main` agent and use separate sessions. See [Multiple Gateways](/gateway/multiple-gateways)
+and [WhatsApp](/channels/whatsapp).
 
 ### Can I run a fast chat agent and an Opus for coding agent
 
-Yes. Use multi-agent routing: give each agent its own default model, then bind inbound routes (provider account or specific peers) to each agent. Example config lives in [Multi-Agent Routing](/concepts/multi-agent). See also [Models](/concepts/models) and [Configuration](/gateway/configuration).
+Yes, but now you do it with model defaults, session-level selection, or
+subagents instead of top-level multi-agent routing. Keep `main` on your
+preferred default model and use explicit model selection or cheaper subagents
+for fast/parallel work. See [Models](/concepts/models) and
+[Configuration](/gateway/configuration).
 
 ### Does Homebrew work on Linux
 
@@ -946,14 +954,14 @@ Highlights:
   workspace + session history local.
 - **Real channels, not a web sandbox:** WhatsApp/Telegram/Slack/Discord/Signal/iMessage/etc,
   plus mobile voice and Canvas on supported platforms.
-- **Model-agnostic:** use Anthropic, OpenAI, MiniMax, OpenRouter, etc., with per-agent routing
-  and failover.
+- **Model-agnostic:** use Anthropic, OpenAI, MiniMax, OpenRouter, etc., with configurable
+  defaults, aliases, and failover.
 - **Local-only option:** run local models so **all data can stay on your device** if you want.
-- **Multi-agent routing:** separate agents per channel, account, or task, each with its own
-  workspace and defaults.
+- **Subagents + isolated sessions:** keep one durable `main` agent, then delegate background work
+  to subagents or use separate installs when you need hard isolation.
 - **Open source and hackable:** inspect, extend, and self-host without vendor lock-in.
 
-Docs: [Gateway](/gateway), [Channels](/channels), [Multi-agent](/concepts/multi-agent),
+Docs: [Gateway](/gateway), [Channels](/channels), [Sub-agents](/tools/subagents),
 [Memory](/concepts/memory).
 
 ### I just set it up what should I do first
@@ -1023,7 +1031,7 @@ Today the supported patterns are:
 - **Sub-agents**: route tasks to separate agents with different default models.
 - **On-demand switch**: use `/model` to switch the current session model at any time.
 
-See [Cron jobs](/automation/cron-jobs), [Multi-Agent Routing](/concepts/multi-agent), and [Slash commands](/tools/slash-commands).
+See [Cron jobs](/automation/cron-jobs), [Sub-agents](/tools/subagents), and [Slash commands](/tools/slash-commands).
 
 ### The bot freezes while doing heavy work How do I offload that
 
@@ -1329,7 +1337,7 @@ See the dedicated guide: [Uninstall](/install/uninstall).
 Yes. The workspace is the **default cwd** and memory anchor, not a hard sandbox.
 Relative paths resolve inside the workspace, but absolute paths can access other
 host locations unless sandboxing is enabled. If you need isolation, use
-[`agents.defaults.sandbox`](/gateway/sandboxing) or per-agent sandbox settings. If you
+[`agents.defaults.sandbox`](/gateway/sandboxing) or subagent-specific sandbox settings. If you
 want a repo to be the default working directory, point that agent's
 `workspace` to the repo root. The Marv repo is just source code; keep the
 workspace separate unless you intentionally want the agent to work inside it.
@@ -1430,15 +1438,14 @@ Docs: [Web tools](/tools/web).
 
 ### How do I run a central Gateway with specialized workers across devices
 
-The common pattern is **one Gateway** (e.g. Raspberry Pi) plus **nodes** and **agents**:
+The common pattern is **one Gateway** (e.g. Raspberry Pi) plus **nodes** and **subagents**:
 
 - **Gateway (central):** owns channels (Signal/WhatsApp), routing, and sessions.
 - **Nodes (devices):** Macs/iOS/Android connect as peripherals and expose local tools (`system.run`, `canvas`, `camera`).
-- **Agents (workers):** separate brains/workspaces for special roles (e.g. "Hetzner ops", "Personal data").
-- **Sub-agents:** spawn background work from a main agent when you want parallelism.
-- **TUI:** connect to the Gateway and switch agents/sessions.
+- **Sub-agents (workers):** spawn delegated runs for special roles or parallel work.
+- **TUI:** connect to the Gateway and switch sessions.
 
-Docs: [Nodes](/nodes), [Remote access](/gateway/remote), [Multi-Agent Routing](/concepts/multi-agent), [Sub-agents](/tools/subagents), [TUI](/web/tui).
+Docs: [Nodes](/nodes), [Remote access](/gateway/remote), [Sub-agents](/tools/subagents), [Multiple Gateways](/gateway/multiple-gateways), [TUI](/web/tui).
 
 ### Can the Marv browser run headless
 
@@ -1764,15 +1771,15 @@ transcripts - it just starts a new session.
 
 ### Is there a way to make a team of Marv instances one CEO and many agents
 
-Yes, via **multi-agent routing** and **sub-agents**. You can create one coordinator
-agent and several worker agents with their own workspaces and models.
+Yes, via one durable `main` agent plus **sub-agents**. The coordinator lives in
+`main`, and worker subagents can use different presets/models inside that run.
 
 That said, this is best seen as a **fun experiment**. It is token heavy and often
 less efficient than using one bot with separate sessions. The typical model we
 envision is one bot you talk to, with different sessions for parallel work. That
 bot can also spawn sub-agents when needed.
 
-Docs: [Multi-agent routing](/concepts/multi-agent), [Sub-agents](/tools/subagents), [Agents CLI](/cli/agents).
+Docs: [Sub-agents](/tools/subagents), [Agents CLI](/cli/agents), [Models](/concepts/models).
 
 ### Why did context get truncated midtask How do I prevent it
 
@@ -1867,7 +1874,7 @@ If `HEARTBEAT.md` exists but is effectively empty (only blank lines and markdown
 headers like `# Heading`), Marv skips the heartbeat run to save API calls.
 If the file is missing, the heartbeat still runs and the model decides what to do.
 
-Per-agent overrides use `agents.list[].heartbeat`. Docs: [Heartbeat](/gateway/heartbeat).
+Per-agent overrides use `agents.defaults.heartbeat`. Docs: [Heartbeat](/gateway/heartbeat).
 
 ### Do I need to add a bot account to a WhatsApp group
 
@@ -1925,7 +1932,7 @@ No hard limits. Dozens (even hundreds) are fine, but watch for:
 
 - **Disk growth:** sessions + transcripts live under `~/.marv/agents/<agentId>/sessions/`.
 - **Token cost:** more agents means more concurrent model usage.
-- **Ops overhead:** per-agent auth profiles, workspaces, and channel routing.
+- **Ops overhead:** extra profiles/installations, workspaces, and channel setup if you need hard isolation.
 
 Tips:
 
@@ -1935,8 +1942,9 @@ Tips:
 
 ### Can I run multiple bots or chats at the same time Slack and how should I set that up
 
-Yes. Use **Multi-Agent Routing** to run multiple isolated agents and route inbound messages by
-channel/account/peer. Slack is supported as a channel and can be bound to specific agents.
+Yes. Slack supports multiple accounts/channels, but top-level multi-agent
+routing was removed. Use one durable `main` agent, separate Slack accounts or
+channels where needed, and subagents for delegated work inside that run.
 
 Browser access is powerful but not "do anything a human can" - anti-bot, CAPTCHAs, and MFA can
 still block automation. For the most reliable browser control, use the Chrome extension relay
@@ -1945,11 +1953,11 @@ on the machine that runs the browser (and keep the Gateway anywhere).
 Best-practice setup:
 
 - Always-on Gateway host (VPS/Mac mini).
-- One agent per role (bindings).
-- Slack channel(s) bound to those agents.
+- One durable `main` agent plus role-based subagents.
+- Slack channel(s) connected to that durable agent.
 - Local browser via extension relay (or a node) when needed.
 
-Docs: [Multi-Agent Routing](/concepts/multi-agent), [Slack](/channels/slack),
+Docs: [Sub-agents](/tools/subagents), [Slack](/channels/slack),
 [Browser](/tools/browser), [Chrome extension](/tools/chrome-extension), [Nodes](/nodes).
 
 ## Models: defaults, selection, aliases, switching
@@ -2139,13 +2147,12 @@ Then:
 /model gpt
 ```
 
-**Option B: separate agents**
+**Option B: subagents with different presets**
 
-- Agent A default: MiniMax
-- Agent B default: OpenAI
-- Route by agent or use `/agent` to switch
+- Keep `main` on MiniMax.
+- Spawn an OpenAI-flavored subagent when you want a different default model for a delegated task.
 
-Docs: [Models](/concepts/models), [Multi-Agent Routing](/concepts/multi-agent), [MiniMax](/providers/minimax), [OpenAI](/providers/openai).
+Docs: [Models](/concepts/models), [Sub-agents](/tools/subagents), [MiniMax](/providers/minimax), [OpenAI](/providers/openai).
 
 ### Are opus sonnet gpt builtin shortcuts
 
@@ -2232,19 +2239,23 @@ Z.AI (GLM models):
 
 If you reference a provider/model but the required provider key is missing, you'll get a runtime auth error (e.g. `No API key found for provider "zai"`).
 
-**No API key found for provider after adding a new agent**
+**No API key found for provider in a subagent or non-main agentDir**
 
-This usually means the **new agent** has an empty auth store. Auth is per-agent and
-stored in:
+This usually means the targeted agent directory does not have credentials for
+that provider yet. Auth is stored per agent directory and lives in:
 
 ```
 ~/.marv/agents/<agentId>/agent/auth-profiles.json
 ```
 
+For most setups, `main` is the durable source of truth and subagents inherit or
+copy auth from there on first use.
+
 Fix options:
 
-- Run `marv agents add <id>` and configure auth during the wizard.
-- Or copy `auth-profiles.json` from the main agent's `agentDir` into the new agent's `agentDir`.
+- Configure the missing provider key/profile for `main`.
+- If you are intentionally using a separate non-main `agentDir`, copy `auth-profiles.json` from the main `agentDir`.
+- Double-check that the selected provider/model matches the credential you configured.
 
 Do **not** reuse `agentDir` across agents; it causes auth/session collisions.
 
@@ -2858,7 +2869,7 @@ Enable cross-provider messaging for the agent:
 ```
 
 Restart the gateway after editing config. If you only want this for a single
-agent, set it under `agents.list[].tools.message` instead.
+agent, set it under `agents.defaults.tools.message` instead.
 
 ### Why does it feel like the bot ignores rapidfire messages
 

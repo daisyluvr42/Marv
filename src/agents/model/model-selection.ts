@@ -108,6 +108,28 @@ function normalizeProviderModelId(provider: string, model: string): string {
   return model;
 }
 
+function inferProviderForBareModel(raw: string, defaultProvider: string): string {
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) {
+    return defaultProvider;
+  }
+  if (
+    trimmed.startsWith("claude-") ||
+    trimmed.startsWith("opus-") ||
+    trimmed.startsWith("sonnet-") ||
+    trimmed.startsWith("haiku-")
+  ) {
+    return "anthropic";
+  }
+  if (trimmed.startsWith("gpt-") || trimmed.startsWith("o1") || trimmed.startsWith("o3")) {
+    return "openai";
+  }
+  if (trimmed.startsWith("gemini")) {
+    return "google";
+  }
+  return defaultProvider;
+}
+
 function shouldUseOpenAICodexProvider(provider: string, model: string): boolean {
   if (provider !== "openai") {
     return false;
@@ -309,6 +331,21 @@ export function resolveConfiguredModelRef(params: {
   if (refs.length > 0) {
     return refs[0];
   }
+  const configuredPrimary = normalizeModelSelection(params.cfg.agents?.defaults?.model);
+  if (configuredPrimary) {
+    const configuredProvider = configuredPrimary.includes("/")
+      ? params.defaultProvider
+      : inferProviderForBareModel(configuredPrimary, params.defaultProvider);
+    const parsed = parseModelRef(configuredPrimary, configuredProvider);
+    if (parsed) {
+      if (!configuredPrimary.includes("/") && configuredProvider !== params.defaultProvider) {
+        console.warn(
+          `Falling back to "${parsed.provider}/${parsed.model}" because "${configuredPrimary}" did not include a provider prefix.`,
+        );
+      }
+      return parsed;
+    }
+  }
   return { provider: params.defaultProvider, model: params.defaultModel };
 }
 
@@ -316,23 +353,33 @@ export function resolveDefaultModelForAgent(params: {
   cfg: MarvConfig;
   agentId?: string;
 }): ModelRef {
-  const poolName =
-    (params.agentId
-      ? resolveAgentConfig(params.cfg, params.agentId)?.modelPool?.trim()
-      : undefined) || params.cfg.agents?.defaults?.modelPool?.trim();
-  const cfg =
-    poolName && poolName !== params.cfg.agents?.defaults?.modelPool
-      ? {
-          ...params.cfg,
-          agents: {
-            ...params.cfg.agents,
-            defaults: {
-              ...params.cfg.agents?.defaults,
-              modelPool: poolName,
-            },
+  const agentConfig = params.agentId ? resolveAgentConfig(params.cfg, params.agentId) : undefined;
+  const poolName = agentConfig?.modelPool?.trim() || params.cfg.agents?.defaults?.modelPool?.trim();
+  const agentModel =
+    typeof agentConfig?.model === "string"
+      ? { primary: agentConfig.model }
+      : agentConfig?.model
+        ? {
+            primary: agentConfig.model.primary,
+            fallbacks: agentConfig.model.fallbacks,
+          }
+        : undefined;
+  const shouldOverrideDefaults = Boolean(
+    agentModel || (poolName && poolName !== params.cfg.agents?.defaults?.modelPool),
+  );
+  const cfg = shouldOverrideDefaults
+    ? {
+        ...params.cfg,
+        agents: {
+          ...params.cfg.agents,
+          defaults: {
+            ...params.cfg.agents?.defaults,
+            ...(agentModel ? { model: agentModel } : {}),
+            ...(poolName ? { modelPool: poolName } : {}),
           },
-        }
-      : params.cfg;
+        },
+      }
+    : params.cfg;
   return resolveConfiguredModelRef({
     cfg,
     defaultProvider: DEFAULT_PROVIDER,
@@ -352,22 +399,67 @@ export function resolveSubagentConfiguredModelSelection(params: {
   );
 }
 
+export function resolveSubagentRoleModelSelection(params: {
+  cfg: MarvConfig;
+  agentId: string;
+  role?: string;
+  modelOverride?: unknown;
+}): string | undefined {
+  const explicit = normalizeModelSelection(params.modelOverride);
+  if (explicit) {
+    return explicit;
+  }
+
+  const roleKey = params.role?.trim();
+  const roleConfig = roleKey ? params.cfg.agents?.defaults?.subagents?.roles?.[roleKey] : undefined;
+  const roleModel = normalizeModelSelection(roleConfig?.model);
+  if (roleModel) {
+    return roleModel;
+  }
+
+  const rolePoolName = roleConfig?.modelPool?.trim();
+  if (rolePoolName) {
+    const cfgWithRolePool: MarvConfig = {
+      ...params.cfg,
+      agents: {
+        ...params.cfg.agents,
+        defaults: {
+          ...params.cfg.agents?.defaults,
+          modelPool: rolePoolName,
+        },
+      },
+    };
+    const resolved = resolveConfiguredModelRef({
+      cfg: cfgWithRolePool,
+      defaultProvider: DEFAULT_PROVIDER,
+      defaultModel: DEFAULT_MODEL,
+    });
+    return `${resolved.provider}/${resolved.model}`;
+  }
+
+  return resolveSubagentConfiguredModelSelection({
+    cfg: params.cfg,
+    agentId: params.agentId,
+  });
+}
+
 export function resolveSubagentSpawnModelSelection(params: {
   cfg: MarvConfig;
   agentId: string;
   modelOverride?: unknown;
+  role?: string;
 }): string {
   const runtimeDefault = resolveDefaultModelForAgent({
     cfg: params.cfg,
     agentId: params.agentId,
   });
   return (
-    normalizeModelSelection(params.modelOverride) ??
-    resolveSubagentConfiguredModelSelection({
+    resolveSubagentRoleModelSelection({
       cfg: params.cfg,
       agentId: params.agentId,
-    }) ??
-    `${runtimeDefault.provider}/${runtimeDefault.model}`
+      role: params.role,
+      modelOverride: params.modelOverride,
+    }) ?? `${runtimeDefault.provider}/${runtimeDefault.model}`
   );
 }
 

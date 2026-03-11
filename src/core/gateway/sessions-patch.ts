@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveAgentConfig, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import type { ModelCatalogEntry } from "../../agents/model/model-catalog.js";
 import {
+  normalizeModelSelection,
+  parseModelRef,
   resolveAllowedModelRef,
   resolveDefaultModelForAgent,
   resolveSubagentConfiguredModelSelection,
@@ -25,6 +27,10 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
+import {
+  normalizeSubagentAnnounceMode,
+  normalizeSubagentMetadataValue,
+} from "../../shared/subagent-metadata.js";
 import type { MarvConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { applyVerboseOverride, parseVerboseOverride } from "../session/level-overrides.js";
@@ -66,6 +72,36 @@ function normalizeExecAsk(raw: string): "off" | "on-miss" | "always" | undefined
   return undefined;
 }
 
+function updateSubagentMetadataField(params: {
+  patchValue: unknown;
+  existingValue: string | undefined;
+  storeKey: string;
+  label: string;
+  assign: (value: string) => void;
+}): { ok: true } | { ok: false; error: ErrorShape } {
+  if (params.patchValue === null) {
+    if (params.existingValue) {
+      return invalid(`${params.label} cannot be cleared once set`);
+    }
+    return { ok: true };
+  }
+  if (params.patchValue === undefined) {
+    return { ok: true };
+  }
+  if (!isSubagentSessionKey(params.storeKey)) {
+    return invalid(`${params.label} is only supported for subagent:* sessions`);
+  }
+  const normalized = normalizeSubagentMetadataValue(params.patchValue);
+  if (!normalized) {
+    return invalid(`invalid ${params.label}: empty`);
+  }
+  if (params.existingValue && params.existingValue !== normalized) {
+    return invalid(`${params.label} cannot be changed once set`);
+  }
+  params.assign(normalized);
+  return { ok: true };
+}
+
 export async function applySessionsPatchToStore(params: {
   cfg: MarvConfig;
   store: Record<string, SessionEntry>;
@@ -80,6 +116,10 @@ export async function applySessionsPatchToStore(params: {
   const resolvedDefault = resolveDefaultModelForAgent({ cfg, agentId: sessionAgentId });
   const subagentModelHint = isSubagentSessionKey(storeKey)
     ? resolveSubagentConfiguredModelSelection({ cfg, agentId: sessionAgentId })
+    : undefined;
+  const explicitSubagentModelHint = isSubagentSessionKey(storeKey)
+    ? (normalizeModelSelection(resolveAgentConfig(cfg, sessionAgentId)?.subagents?.model) ??
+      normalizeModelSelection(cfg.agents?.defaults?.subagents?.model))
     : undefined;
 
   const existing = store[storeKey];
@@ -130,6 +170,87 @@ export async function applySessionsPatchToStore(params: {
         return invalid("spawnDepth cannot be changed once set");
       }
       next.spawnDepth = normalized;
+    }
+  }
+
+  if ("subagentRole" in patch) {
+    const result = updateSubagentMetadataField({
+      patchValue: patch.subagentRole,
+      existingValue: existing?.subagentRole,
+      storeKey,
+      label: "subagentRole",
+      assign: (value) => {
+        next.subagentRole = value;
+      },
+    });
+    if (!result.ok) {
+      return result;
+    }
+  }
+
+  if ("subagentPreset" in patch) {
+    const result = updateSubagentMetadataField({
+      patchValue: patch.subagentPreset,
+      existingValue: existing?.subagentPreset,
+      storeKey,
+      label: "subagentPreset",
+      assign: (value) => {
+        next.subagentPreset = value;
+      },
+    });
+    if (!result.ok) {
+      return result;
+    }
+  }
+
+  if ("subagentTaskGroup" in patch) {
+    const result = updateSubagentMetadataField({
+      patchValue: patch.subagentTaskGroup,
+      existingValue: existing?.subagentTaskGroup,
+      storeKey,
+      label: "subagentTaskGroup",
+      assign: (value) => {
+        next.subagentTaskGroup = value;
+      },
+    });
+    if (!result.ok) {
+      return result;
+    }
+  }
+
+  if ("subagentDispatchId" in patch) {
+    const result = updateSubagentMetadataField({
+      patchValue: patch.subagentDispatchId,
+      existingValue: existing?.subagentDispatchId,
+      storeKey,
+      label: "subagentDispatchId",
+      assign: (value) => {
+        next.subagentDispatchId = value;
+      },
+    });
+    if (!result.ok) {
+      return result;
+    }
+  }
+
+  if ("subagentAnnounceMode" in patch) {
+    const raw = patch.subagentAnnounceMode;
+    if (raw === null) {
+      if (existing?.subagentAnnounceMode) {
+        return invalid("subagentAnnounceMode cannot be cleared once set");
+      }
+    } else if (raw !== undefined) {
+      if (!isSubagentSessionKey(storeKey)) {
+        return invalid("subagentAnnounceMode is only supported for subagent:* sessions");
+      }
+      const normalized = normalizeSubagentAnnounceMode(raw);
+      if (!normalized) {
+        return invalid('invalid subagentAnnounceMode (use "child"|"aggregate")');
+      }
+      if (existing?.subagentAnnounceMode && existing.subagentAnnounceMode !== normalized) {
+        return invalid("subagentAnnounceMode cannot be changed once set");
+      }
+      next.subagentAnnounceMode = normalized;
     }
   }
 
@@ -368,9 +489,13 @@ export async function applySessionsPatchToStore(params: {
       if ("error" in resolved) {
         return invalid(resolved.error);
       }
+      const effectiveDefaultRef =
+        subagentModelHint && isSubagentSessionKey(storeKey) && !explicitSubagentModelHint
+          ? (parseModelRef(subagentModelHint, resolvedDefault.provider) ?? resolvedDefault)
+          : resolvedDefault;
       const isDefault =
-        resolved.ref.provider === resolvedDefault.provider &&
-        resolved.ref.model === resolvedDefault.model;
+        resolved.ref.provider === effectiveDefaultRef.provider &&
+        resolved.ref.model === effectiveDefaultRef.model;
       applyModelOverrideToSessionEntry({
         entry: next,
         selection: {

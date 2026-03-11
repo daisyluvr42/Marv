@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { Skill } from "@mariozechner/pi-coding-agent";
 import type { ChatType } from "../../../channels/chat-type.js";
 import type { ChannelId } from "../../../channels/plugins/types.js";
+import type { SubagentSessionMetadata } from "../../../shared/subagent-metadata.js";
 import type { DeliveryContext } from "../../../utils/delivery-context.js";
 import type { TtsAutoMode } from "../types.tts.js";
 
@@ -37,6 +38,12 @@ export type SessionEntry = {
   spawnedBy?: string;
   /** Subagent spawn depth (0 = main, 1 = sub-agent, 2 = sub-sub-agent). */
   spawnDepth?: number;
+  /** Runtime-persisted subagent metadata used for orchestration and policy. */
+  subagentRole?: SubagentSessionMetadata["subagentRole"];
+  subagentPreset?: SubagentSessionMetadata["subagentPreset"];
+  subagentTaskGroup?: SubagentSessionMetadata["subagentTaskGroup"];
+  subagentDispatchId?: SubagentSessionMetadata["subagentDispatchId"];
+  subagentAnnounceMode?: SubagentSessionMetadata["subagentAnnounceMode"];
   systemSent?: boolean;
   abortedLastRun?: boolean;
   chatType?: SessionChatType;

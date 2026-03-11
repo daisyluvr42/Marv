@@ -462,11 +462,11 @@ marv cron add \
   --to "+15551234567"
 ```
 
-Agent selection (multi-agent setups):
+Agent selection:
 
 ```bash
-# Pin a job to agent "ops" (falls back to default if that agent is missing)
-marv cron add --name "Ops sweep" --cron "0 6 * * *" --session isolated --message "Check ops queue" --agent ops
+# Pin a job to the durable main agent explicitly
+marv cron add --name "Ops sweep" --cron "0 6 * * *" --session isolated --message "Check ops queue" --agent main
 
 # Switch or clear the agent on an existing job
 marv cron edit <jobId> --agent ops

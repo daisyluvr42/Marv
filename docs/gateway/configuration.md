@@ -282,25 +282,22 @@ When validation fails:
 
   </Accordion>
 
-  <Accordion title="Configure multi-agent routing">
-    Run multiple isolated agents with separate workspaces and sessions:
+  <Accordion title="Configure the durable agent">
+    Configure the durable `main` agent:
 
     ```json5
     {
       agents: {
-        list: [
-          { id: "home", default: true, workspace: "~/.marv/workspace-home" },
-          { id: "work", workspace: "~/.marv/workspace-work" },
-        ],
+        defaults: {
+          name: "Main Agent",
+          workspace: "~/.marv/workspace",
+        },
       },
-      bindings: [
-        { agentId: "home", match: { channel: "whatsapp", accountId: "personal" } },
-        { agentId: "work", match: { channel: "whatsapp", accountId: "biz" } },
-      ],
     }
     ```
 
-    See [Multi-Agent](/concepts/multi-agent) and [full reference](/gateway/configuration-reference#multi-agent-routing) for binding rules and per-agent access profiles.
+    Top-level multi-agent routing was removed. Configure `agents.defaults` for
+    the durable agent and use enhanced subagents for delegated work.
 
   </Accordion>
 
@@ -360,7 +357,7 @@ Most fields hot-apply without downtime. In `hybrid` mode, restart-required chang
 | Automation          | `hooks`, `cron`, `agent.heartbeat`                                   | No              |
 | Sessions & messages | `session`, `messages`                                                | No              |
 | Tools & media       | `tools`, `browser`, `skills`, `audio`, `talk`                        | No              |
-| UI & misc           | `ui`, `logging`, `identity`, `bindings`                              | No              |
+| UI & misc           | `ui`, `logging`, `identity`                                          | No              |
 | Gateway server      | `gateway.*` (port, bind, auth, tailscale, TLS, HTTP)                 | **Yes**         |
 | Infrastructure      | `discovery`, `canvasHost`, `plugins`                                 | **Yes**         |
 

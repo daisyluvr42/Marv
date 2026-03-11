@@ -1,6 +1,7 @@
 import { getChannelDock } from "../../channels/dock.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveChannelGroupToolsPolicy } from "../../core/config/group-policy.js";
+import { loadSessionEntry } from "../../core/gateway/session-utils.js";
 import { resolveThreadParentSessionKey } from "../../core/session/session-key-utils.js";
 import { normalizeMessageChannel } from "../../utils/message-channel.js";
 import { resolveAgentConfig, resolveAgentIdFromSessionKey } from "../agent-scope.js";
@@ -63,7 +64,18 @@ const SUBAGENT_TOOL_DENY_ALWAYS = [
  * Additional tools denied for leaf sub-agents (depth >= maxSpawnDepth).
  * These are tools that only make sense for orchestrator sub-agents that can spawn children.
  */
-const SUBAGENT_TOOL_DENY_LEAF = ["sessions_list", "sessions_history", "sessions_spawn"];
+const SUBAGENT_TOOL_DENY_LEAF = [
+  "sessions_list",
+  "sessions_history",
+  "sessions_spawn",
+  "task_dispatch",
+];
+
+const ROLE_POLICY_DENYLISTS: Record<string, string[]> = {
+  tester: ["write", "edit", "apply_patch", "exec", "process"],
+  architect: ["write", "edit", "apply_patch", "exec", "process"],
+  reviewer: ["write", "edit", "apply_patch", "exec", "process"],
+};
 
 /**
  * Build the deny list for a sub-agent at a given depth.
@@ -83,14 +95,45 @@ function resolveSubagentDenyList(depth: number, maxSpawnDepth: number): string[]
   return [...SUBAGENT_TOOL_DENY_ALWAYS];
 }
 
-export function resolveSubagentToolPolicy(cfg?: MarvConfig, depth?: number): SandboxToolPolicy {
+function resolveSubagentRolePolicy(params: {
+  cfg?: MarvConfig;
+  sessionKey?: string;
+}): SandboxToolPolicy | undefined {
+  const sessionKey = params.sessionKey?.trim();
+  if (!sessionKey) {
+    return undefined;
+  }
+  const role = loadSessionEntry(sessionKey)?.entry?.subagentRole?.trim().toLowerCase();
+  if (!role) {
+    return undefined;
+  }
+  const configured = params.cfg?.agents?.defaults?.subagents?.roles?.[role]?.tools;
+  const builtInDeny = ROLE_POLICY_DENYLISTS[role] ?? [];
+  const allow = Array.isArray(configured?.allow) ? configured.allow : undefined;
+  const deny = [...builtInDeny, ...(Array.isArray(configured?.deny) ? configured.deny : [])];
+  return allow || deny.length > 0 ? { allow, deny } : undefined;
+}
+
+export function resolveSubagentToolPolicy(
+  cfg?: MarvConfig,
+  depth?: number,
+  sessionKey?: string,
+): SandboxToolPolicy {
   const configured = cfg?.tools?.subagents?.tools;
   const maxSpawnDepth = cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? 1;
   const effectiveDepth = typeof depth === "number" && depth >= 0 ? depth : 1;
   const baseDeny = resolveSubagentDenyList(effectiveDepth, maxSpawnDepth);
-  const deny = [...baseDeny, ...(Array.isArray(configured?.deny) ? configured.deny : [])];
-  const allow = Array.isArray(configured?.allow) ? configured.allow : undefined;
-  return { allow, deny };
+  const rolePolicy = resolveSubagentRolePolicy({ cfg, sessionKey });
+  const deny = [
+    ...baseDeny,
+    ...(Array.isArray(configured?.deny) ? configured.deny : []),
+    ...(Array.isArray(rolePolicy?.deny) ? rolePolicy.deny : []),
+  ];
+  const allow = [
+    ...(Array.isArray(configured?.allow) ? configured.allow : []),
+    ...(Array.isArray(rolePolicy?.allow) ? rolePolicy.allow : []),
+  ];
+  return { allow: allow.length > 0 ? allow : undefined, deny };
 }
 
 export function isToolAllowedByPolicyName(name: string, policy?: SandboxToolPolicy): boolean {

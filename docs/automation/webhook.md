@@ -206,7 +206,8 @@ curl -X POST http://127.0.0.1:18789/hooks/gmail \
 - Keep hook endpoints behind loopback, tailnet, or trusted reverse proxy.
 - Use a dedicated hook token; do not reuse gateway auth tokens.
 - Repeated auth failures are rate-limited per client address to slow brute-force attempts.
-- If you use multi-agent routing, set `hooks.allowedAgentIds` to limit explicit `agentId` selection.
+- If you expose explicit `agentId` selection, keep `hooks.allowedAgentIds`
+  narrow. In the main-only architecture this is normally just `["main"]`.
 - Keep `hooks.allowRequestSessionKey=false` unless you require caller-selected sessions.
 - If you enable request `sessionKey`, restrict `hooks.allowedSessionKeyPrefixes` (for example, `["hook:"]`).
 - Avoid including sensitive raw payloads in webhook logs.

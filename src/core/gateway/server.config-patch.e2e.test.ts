@@ -29,23 +29,6 @@ afterAll(async () => {
 });
 
 describe("gateway config methods", () => {
-  type AgentConfigEntry = {
-    id: string;
-    default?: boolean;
-    workspace?: string;
-  };
-
-  const seedAgentsConfig = async (list: AgentConfigEntry[]) => {
-    const setRes = await rpcReq<{ ok?: boolean }>(ws, "config.set", {
-      raw: JSON.stringify({
-        agents: {
-          list,
-        },
-      }),
-    });
-    expect(setRes.ok).toBe(true);
-  };
-
   const readConfigHash = async () => {
     const snapshotRes = await rpcReq<{ hash?: string }>(ws, "config.get", {});
     expect(snapshotRes.ok).toBe(true);
@@ -68,70 +51,45 @@ describe("gateway config methods", () => {
     expect(res.error?.message ?? "").toContain("raw must be an object");
   });
 
-  it("merges agents.list entries by id instead of replacing the full array", async () => {
-    await seedAgentsConfig([
-      { id: "primary", default: true, workspace: "/tmp/primary" },
-      { id: "secondary", workspace: "/tmp/secondary" },
-    ]);
-    const baseHash = await readConfigHash();
-
-    const patchRes = await rpcReq<{
-      config?: {
-        agents?: {
-          list?: Array<{
-            id?: string;
-            workspace?: string;
-          }>;
-        };
-      };
-    }>(ws, "config.patch", {
-      baseHash,
+  it("rejects config.set when top-level agents.list is provided", async () => {
+    const setRes = await rpcReq<{ ok?: boolean }>(ws, "config.set", {
       raw: JSON.stringify({
         agents: {
-          list: [
-            {
-              id: "primary",
-              workspace: "/tmp/primary-updated",
-            },
-          ],
+          list: [{ id: "primary", default: true, workspace: "/tmp/primary" }],
         },
       }),
     });
-    expect(patchRes.ok).toBe(true);
-
-    const list = patchRes.payload?.config?.agents?.list ?? [];
-    expect(list).toHaveLength(2);
-    const primary = list.find((entry) => entry.id === "primary");
-    const secondary = list.find((entry) => entry.id === "secondary");
-    expect(primary?.workspace).toBe("/tmp/primary-updated");
-    expect(secondary?.workspace).toBe("/tmp/secondary");
+    expect(setRes.ok).toBe(false);
+    expect(setRes.error?.message ?? "").toContain("invalid config");
+    expect(JSON.stringify(setRes.error?.details ?? {})).toContain("agents.list");
   });
 
-  it("rejects mixed-id agents.list patches without mutating persisted config", async () => {
-    await seedAgentsConfig([
-      { id: "primary", default: true, workspace: "/tmp/primary" },
-      { id: "secondary", workspace: "/tmp/secondary" },
-    ]);
+  it("rejects config.patch when legacy multi-agent fields are targeted", async () => {
+    const baseHash = await readConfigHash();
+
+    const patchRes = await rpcReq<{ ok?: boolean }>(ws, "config.patch", {
+      baseHash,
+      raw: JSON.stringify({
+        agents: {
+          list: [{ id: "primary", workspace: "/tmp/primary-updated" }],
+        },
+      }),
+    });
+    expect(patchRes.ok).toBe(false);
+    expect(patchRes.error?.message ?? "").toContain("legacy multi-agent config");
+  });
+
+  it("rejects bindings patches without mutating persisted config", async () => {
     const beforeHash = await readConfigHash();
 
     const patchRes = await rpcReq<{ ok?: boolean }>(ws, "config.patch", {
       baseHash: beforeHash,
       raw: JSON.stringify({
-        agents: {
-          list: [
-            {
-              id: "primary",
-              workspace: "/tmp/primary-updated",
-            },
-            {
-              workspace: "/tmp/orphan-no-id",
-            },
-          ],
-        },
+        bindings: [{ agentId: "main", match: { channel: "telegram" } }],
       }),
     });
     expect(patchRes.ok).toBe(false);
-    expect(patchRes.error?.message ?? "").toContain("invalid config");
+    expect(patchRes.error?.message ?? "").toContain("legacy multi-agent config");
 
     const afterHash = await readConfigHash();
     expect(afterHash).toBe(beforeHash);
@@ -199,7 +157,7 @@ describe("gateway config methods", () => {
 });
 
 describe("gateway server sessions", () => {
-  it("filters sessions by agentId", async () => {
+  it("only serves main-agent sessions in the main-only architecture", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-sessions-agents-"));
     testState.sessionConfig = {
       store: path.join(dir, "{agentId}", "sessions.json"),
@@ -207,20 +165,20 @@ describe("gateway server sessions", () => {
     testState.agentsConfig = {
       list: [{ id: "home", default: true }, { id: "work" }],
     };
-    const homeDir = path.join(dir, "home");
+    const mainDir = path.join(dir, "main");
     const workDir = path.join(dir, "work");
-    await fs.mkdir(homeDir, { recursive: true });
+    await fs.mkdir(mainDir, { recursive: true });
     await fs.mkdir(workDir, { recursive: true });
     await writeSessionStore({
-      storePath: path.join(homeDir, "sessions.json"),
-      agentId: "home",
+      storePath: path.join(mainDir, "sessions.json"),
+      agentId: "main",
       entries: {
         main: {
-          sessionId: "sess-home-main",
+          sessionId: "sess-main-main",
           updatedAt: Date.now(),
         },
         "discord:group:dev": {
-          sessionId: "sess-home-group",
+          sessionId: "sess-main-group",
           updatedAt: Date.now() - 1000,
         },
       },
@@ -236,44 +194,44 @@ describe("gateway server sessions", () => {
       },
     });
 
-    const homeSessions = await rpcReq<{
+    const mainSessions = await rpcReq<{
       sessions: Array<{ key: string }>;
     }>(ws, "sessions.list", {
       includeGlobal: false,
       includeUnknown: false,
-      agentId: "home",
+      agentId: "main",
     });
-    expect(homeSessions.ok).toBe(true);
-    expect(homeSessions.payload?.sessions.map((s) => s.key).toSorted()).toEqual([
-      "agent:home:discord:group:dev",
-      "agent:home:main",
+    expect(mainSessions.ok).toBe(true);
+    expect(mainSessions.payload?.sessions.map((s) => s.key).toSorted()).toEqual([
+      "agent:main:discord:group:dev",
+      "agent:main:main",
     ]);
 
-    const workSessions = await rpcReq<{
+    const legacySessions = await rpcReq<{
       sessions: Array<{ key: string }>;
     }>(ws, "sessions.list", {
       includeGlobal: false,
       includeUnknown: false,
       agentId: "work",
     });
-    expect(workSessions.ok).toBe(true);
-    expect(workSessions.payload?.sessions.map((s) => s.key)).toEqual(["agent:work:main"]);
+    expect(legacySessions.ok).toBe(true);
+    expect(legacySessions.payload?.sessions).toEqual([]);
   });
 
-  it("resolves and patches main alias to default agent main key", async () => {
+  it("resolves and patches main alias to the durable main agent key", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-sessions-"));
     const storePath = path.join(dir, "sessions.json");
     testState.sessionStorePath = storePath;
-    testState.agentsConfig = { list: [{ id: "ops", default: true }] };
+    testState.agentsConfig = undefined;
     testState.sessionConfig = { mainKey: "work" };
 
     await writeSessionStore({
       storePath,
-      agentId: "ops",
+      agentId: "main",
       mainKey: "work",
       entries: {
         main: {
-          sessionId: "sess-ops-main",
+          sessionId: "sess-main-main",
           updatedAt: Date.now(),
         },
       },
@@ -283,20 +241,20 @@ describe("gateway server sessions", () => {
       key: "main",
     });
     expect(resolved.ok).toBe(true);
-    expect(resolved.payload?.key).toBe("agent:ops:work");
+    expect(resolved.payload?.key).toBe("agent:main:work");
 
     const patched = await rpcReq<{ ok: true; key: string }>(ws, "sessions.patch", {
       key: "main",
       thinkingLevel: "medium",
     });
     expect(patched.ok).toBe(true);
-    expect(patched.payload?.key).toBe("agent:ops:work");
+    expect(patched.payload?.key).toBe("agent:main:work");
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
       { thinkingLevel?: string }
     >;
-    expect(stored["agent:ops:work"]?.thinkingLevel).toBe("medium");
+    expect(stored["agent:main:work"]?.thinkingLevel).toBe("medium");
     expect(stored.main).toBeUndefined();
   });
 });

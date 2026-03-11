@@ -643,6 +643,11 @@ export async function runEmbeddedPiAgent(
         prompt: params.prompt,
         priorStrategyHints,
       });
+      const goalLoopCanDelegate =
+        !isProbeSession &&
+        params.disableTools !== true &&
+        !params.spawnedBy &&
+        params.inputProvenance?.kind !== "internal_system";
       let goalSteeringContext = goalLoopState
         ? buildGoalSteeringContext(goalLoopState, { includeAnchor: true })
         : null;
@@ -839,6 +844,7 @@ export async function runEmbeddedPiAgent(
                 typeof promptError === "object" || typeof promptError === "string"
                   ? describeUnknownError(promptError)
                   : assistantErrorText,
+              canDelegate: goalLoopCanDelegate,
             });
             goalLoopState = review.state;
             goalSteeringContext =
@@ -850,7 +856,10 @@ export async function runEmbeddedPiAgent(
                 objective: goalLoopState.goalFrame.objective,
                 classification: review.classification,
                 strategyFamily: review.strategyFamily,
+                strategyTrack: review.strategyTrack,
                 problemShape: review.problemShape ?? null,
+                delegationRoles: review.delegation?.roles ?? null,
+                delegationTaskGroup: review.delegation?.taskGroup ?? null,
                 loopGuardLevel: goalLoopState.loopGuardLevel,
                 visibility: review.visibility,
               },

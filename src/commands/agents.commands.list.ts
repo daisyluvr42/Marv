@@ -1,22 +1,14 @@
 import { formatCliCommand } from "../cli/command-format.js";
-import type { AgentBinding } from "../core/config/types.js";
-import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
-import { describeBinding } from "./agents.bindings.js";
 import { requireValidConfig } from "./agents.command-shared.js";
 import type { AgentSummary } from "./agents.config.js";
 import { buildAgentSummaries } from "./agents.config.js";
-import {
-  buildProviderStatusIndex,
-  listProvidersForAgent,
-  summarizeBindings,
-} from "./agents.providers.js";
+import { buildProviderStatusIndex, listProvidersForAgent } from "./agents.providers.js";
 
 type AgentsListOptions = {
   json?: boolean;
-  bindings?: boolean;
 };
 
 function formatSummary(summary: AgentSummary) {
@@ -50,22 +42,11 @@ function formatSummary(summary: AgentSummary) {
   if (summary.model) {
     lines.push(`  Model: ${summary.model}`);
   }
-  lines.push(`  Routing rules: ${summary.bindings}`);
-
-  if (summary.routes?.length) {
-    lines.push(`  Routing: ${summary.routes.join(", ")}`);
-  }
+  lines.push("  Top-level routing: main only");
   if (summary.providers?.length) {
     lines.push("  Providers:");
     for (const provider of summary.providers) {
       lines.push(`    - ${provider}`);
-    }
-  }
-
-  if (summary.bindingDetails?.length) {
-    lines.push("  Routing rules:");
-    for (const binding of summary.bindingDetails) {
-      lines.push(`    - ${binding}`);
     }
   }
   return lines.join("\n");
@@ -81,38 +62,13 @@ export async function agentsListCommand(
   }
 
   const summaries = buildAgentSummaries(cfg);
-  const bindingMap = new Map<string, AgentBinding[]>();
-  for (const binding of cfg.bindings ?? []) {
-    const agentId = normalizeAgentId(binding.agentId);
-    const list = bindingMap.get(agentId) ?? [];
-    list.push(binding);
-    bindingMap.set(agentId, list);
-  }
-
-  if (opts.bindings) {
-    for (const summary of summaries) {
-      const bindings = bindingMap.get(summary.id) ?? [];
-      if (bindings.length > 0) {
-        summary.bindingDetails = bindings.map((binding) => describeBinding(binding));
-      }
-    }
-  }
 
   const providerStatus = await buildProviderStatusIndex(cfg);
 
   for (const summary of summaries) {
-    const bindings = bindingMap.get(summary.id) ?? [];
-    const routes = summarizeBindings(cfg, bindings);
-    if (routes.length > 0) {
-      summary.routes = routes;
-    } else if (summary.isDefault) {
-      summary.routes = ["default (no explicit rules)"];
-    }
-
     const providerLines = listProvidersForAgent({
       summaryIsDefault: summary.isDefault,
       cfg,
-      bindings,
       providerStatus,
     });
     if (providerLines.length > 0) {
@@ -126,7 +82,7 @@ export async function agentsListCommand(
   }
 
   const lines = ["Agents:", ...summaries.map(formatSummary)];
-  lines.push("Routing rules map channel/account/peer to an agent. Use --bindings for full rules.");
+  lines.push('Top-level multi-agent routing was removed. Use "main" plus enhanced subagents.');
   lines.push(
     `Channel status reflects local config/creds. For live health: ${formatCliCommand("marv channels status --probe")}.`,
   );

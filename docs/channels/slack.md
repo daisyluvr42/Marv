@@ -180,7 +180,7 @@ For actions/directory reads, user token can be preferred when configured. For wr
     Mention sources:
 
     - explicit app mention (`<@botId>`)
-    - mention regex patterns (`agents.list[].groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
+    - mention regex patterns (`agents.defaults.groupChat.mentionPatterns`, fallback `messages.groupChat.mentionPatterns`)
     - implicit reply-to-bot thread behavior
 
     Per-channel controls (`channels.slack.channels.<id|name>`):
@@ -306,7 +306,7 @@ Resolution order:
 - `channels.slack.accounts.<accountId>.ackReaction`
 - `channels.slack.ackReaction`
 - `messages.ackReaction`
-- agent identity emoji fallback (`agents.list[].identity.emoji`, else "👀")
+- agent identity emoji fallback (`agents.defaults.identity.emoji`, else "👀")
 
 Notes:
 

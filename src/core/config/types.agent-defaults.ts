@@ -3,15 +3,17 @@ import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,
   HumanDelayConfig,
+  IdentityConfig,
   TypingMode,
 } from "./types.base.js";
+import type { GroupChatConfig } from "./types.messages.js";
 import type { ConfiguredModelLocation, ConfiguredModelTier } from "./types.models.js";
 import type {
   SandboxBrowserSettings,
   SandboxDockerSettings,
   SandboxPruneSettings,
 } from "./types.sandbox.js";
-import type { MemorySearchConfig } from "./types.tools.js";
+import type { AgentToolsConfig, MemorySearchConfig } from "./types.tools.js";
 
 export type AutoRoutingComplexity = "simple" | "moderate" | "complex" | "expert";
 
@@ -165,7 +167,32 @@ export type CliBackendConfig = {
   };
 };
 
+export type SubagentRoleToolPolicyConfig = {
+  allow?: string[];
+  deny?: string[];
+};
+
+export type SubagentRoleConfig = {
+  description?: string;
+  modelPool?: string;
+  model?: string | { primary?: string; fallbacks?: string[] };
+  thinking?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+  systemPromptAppend?: string;
+  tools?: SubagentRoleToolPolicyConfig;
+};
+
+export type SubagentPresetConfig = {
+  description?: string;
+  roles: string[];
+  autoTrigger?: {
+    keywords?: string[];
+    minComplexity?: AutoRoutingComplexity;
+  };
+};
+
 export type AgentDefaultsConfig = {
+  /** Durable configured top-level agent name. Runtime still uses agent id "main". */
+  name?: string;
   /** Primary model and fallbacks (provider/model). */
   model?: AgentModelListConfig;
   /** Default model pool name used for automatic selection. */
@@ -178,6 +205,8 @@ export type AgentDefaultsConfig = {
   models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
   workspace?: string;
+  /** Optional main-agent state directory override. */
+  agentDir?: string;
   /** Optional repository root for system prompt runtime line (overrides auto-detect). */
   repoRoot?: string;
   /** Skip bootstrap (BOOTSTRAP.md creation, etc.) for pre-configured deployments. */
@@ -212,6 +241,8 @@ export type AgentDefaultsConfig = {
   compaction?: AgentCompactionConfig;
   /** Vector memory search configuration (per-agent overrides supported). */
   memorySearch?: MemorySearchConfig;
+  /** Optional allowlist of skills for the main durable agent. */
+  skills?: string[];
   /** Auto model routing: classify message complexity and route to appropriate model. */
   autoRouting?: AutoRoutingConfig;
   /** Default thinking level when no /think directive is present. */
@@ -237,6 +268,10 @@ export type AgentDefaultsConfig = {
   blockStreamingCoalesce?: BlockStreamingCoalesceConfig;
   /** Human-like delay between block replies. */
   humanDelay?: HumanDelayConfig;
+  /** Durable assistant identity for the main agent. */
+  identity?: IdentityConfig;
+  /** Durable group-chat settings for the main agent. */
+  groupChat?: GroupChatConfig;
   timeoutSeconds?: number;
   /** Max inbound media size in MB for agent-visible attachments (text note or future image attach). */
   mediaMaxMb?: number;
@@ -301,6 +336,12 @@ export type AgentDefaultsConfig = {
     model?: string | { primary?: string; fallbacks?: string[] };
     /** Default thinking level for spawned sub-agents (e.g. "off", "low", "medium", "high"). */
     thinking?: string;
+    /** Built-in or custom role policies used by enhanced subagents. */
+    roles?: Record<string, SubagentRoleConfig>;
+    /** Named role bundles that can be expanded by orchestration tools. */
+    presets?: Record<string, SubagentPresetConfig>;
+    /** Default preset applied when orchestration does not choose one explicitly. */
+    defaultPreset?: string;
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: {
@@ -333,6 +374,8 @@ export type AgentDefaultsConfig = {
     /** Auto-prune sandbox containers. */
     prune?: SandboxPruneSettings;
   };
+  /** Main-agent tool policy overrides. */
+  tools?: AgentToolsConfig;
 };
 
 export type AgentCompactionMode = "default" | "safeguard";

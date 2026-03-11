@@ -70,7 +70,7 @@ describe("directive behavior", () => {
       );
 
       const text = replyText(res);
-      expect(text).toContain("agents.list[].tools.elevated.enabled");
+      expect(text).toContain("agents.defaults.tools.elevated.enabled");
       expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });

@@ -229,7 +229,7 @@ Add:
 - `models.catalog`
 - `agents.defaults.modelPool`
 - `agents.modelPools`
-- optional `agents.list[].modelPool`
+- optional `agents.defaults.modelPool`
 
 Deprecate from active runtime path:
 

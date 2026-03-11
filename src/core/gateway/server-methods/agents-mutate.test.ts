@@ -6,10 +6,6 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   loadConfigReturn: {} as Record<string, unknown>,
-  listAgentEntries: vi.fn(() => [] as Array<{ agentId: string }>),
-  findAgentEntryIndex: vi.fn(() => -1),
-  applyAgentConfig: vi.fn((_cfg: unknown, _opts: unknown) => ({})),
-  pruneAgentConfig: vi.fn(() => ({ config: {}, removedBindings: 0 })),
   writeConfigFile: vi.fn(async () => {}),
   ensureAgentWorkspace: vi.fn(async () => {}),
   resolveAgentDir: vi.fn(() => "/agents/test-agent"),
@@ -32,13 +28,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../../config/config.js", () => ({
   loadConfig: () => mocks.loadConfigReturn,
   writeConfigFile: mocks.writeConfigFile,
-}));
-
-vi.mock("../../../commands/agents.config.js", () => ({
-  applyAgentConfig: mocks.applyAgentConfig,
-  findAgentEntryIndex: mocks.findAgentEntryIndex,
-  listAgentEntries: mocks.listAgentEntries,
-  pruneAgentConfig: mocks.pruneAgentConfig,
 }));
 
 vi.mock("../../../agents/agent-scope.js", () => ({
@@ -173,11 +162,9 @@ describe("agents.create", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadConfigReturn = {};
-    mocks.findAgentEntryIndex.mockReturnValue(-1);
-    mocks.applyAgentConfig.mockImplementation((_cfg, _opts) => ({}));
   });
 
-  it("creates a new agent successfully", async () => {
+  it("rejects legacy top-level agent creation", async () => {
     const { respond, promise } = makeCall("agents.create", {
       name: "Test Agent",
       workspace: "/home/user/agents/test",
@@ -185,110 +172,15 @@ describe("agents.create", () => {
     await promise;
 
     expect(respond).toHaveBeenCalledWith(
-      true,
+      false,
+      undefined,
       expect.objectContaining({
-        ok: true,
-        agentId: "test-agent",
-        name: "Test Agent",
+        message: expect.stringContaining("single durable"),
       }),
-      undefined,
-    );
-    expect(mocks.ensureAgentWorkspace).toHaveBeenCalled();
-    expect(mocks.writeConfigFile).toHaveBeenCalled();
-  });
-
-  it("ensures workspace is set up before writing config", async () => {
-    const callOrder: string[] = [];
-    mocks.ensureAgentWorkspace.mockImplementation(async () => {
-      callOrder.push("ensureAgentWorkspace");
-    });
-    mocks.writeConfigFile.mockImplementation(async () => {
-      callOrder.push("writeConfigFile");
-    });
-
-    const { promise } = makeCall("agents.create", {
-      name: "Order Test",
-      workspace: "/tmp/ws",
-    });
-    await promise;
-
-    expect(callOrder.indexOf("ensureAgentWorkspace")).toBeLessThan(
-      callOrder.indexOf("writeConfigFile"),
-    );
-  });
-
-  it("rejects creating an agent with reserved 'main' id", async () => {
-    const { respond, promise } = makeCall("agents.create", {
-      name: "main",
-      workspace: "/tmp/ws",
-    });
-    await promise;
-
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("reserved") }),
-    );
-  });
-
-  it("rejects creating a duplicate agent", async () => {
-    mocks.findAgentEntryIndex.mockReturnValue(0);
-
-    const { respond, promise } = makeCall("agents.create", {
-      name: "Existing",
-      workspace: "/tmp/ws",
-    });
-    await promise;
-
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("already exists") }),
     );
     expect(mocks.writeConfigFile).not.toHaveBeenCalled();
-  });
-
-  it("rejects invalid params (missing name)", async () => {
-    const { respond, promise } = makeCall("agents.create", {
-      workspace: "/tmp/ws",
-    });
-    await promise;
-
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("invalid") }),
-    );
-  });
-
-  it("always writes Name to IDENTITY.md even without emoji/avatar", async () => {
-    const { promise } = makeCall("agents.create", {
-      name: "Plain Agent",
-      workspace: "/tmp/ws",
-    });
-    await promise;
-
-    expect(mocks.fsAppendFile).toHaveBeenCalledWith(
-      expect.stringContaining("IDENTITY.md"),
-      expect.stringContaining("- Name: Plain Agent"),
-      "utf-8",
-    );
-  });
-
-  it("writes emoji and avatar to IDENTITY.md when provided", async () => {
-    const { promise } = makeCall("agents.create", {
-      name: "Fancy Agent",
-      workspace: "/tmp/ws",
-      emoji: "🤖",
-      avatar: "https://example.com/avatar.png",
-    });
-    await promise;
-
-    expect(mocks.fsAppendFile).toHaveBeenCalledWith(
-      expect.stringContaining("IDENTITY.md"),
-      expect.stringMatching(/- Name: Fancy Agent[\s\S]*- Emoji: 🤖[\s\S]*- Avatar:/),
-      "utf-8",
-    );
+    expect(mocks.ensureAgentWorkspace).not.toHaveBeenCalled();
+    expect(mocks.fsAppendFile).not.toHaveBeenCalled();
   });
 });
 
@@ -296,54 +188,23 @@ describe("agents.update", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadConfigReturn = {};
-    mocks.findAgentEntryIndex.mockReturnValue(0);
-    mocks.applyAgentConfig.mockImplementation((_cfg, _opts) => ({}));
   });
 
-  it("updates an existing agent successfully", async () => {
+  it("rejects legacy top-level agent updates", async () => {
     const { respond, promise } = makeCall("agents.update", {
       agentId: "test-agent",
       name: "Updated Name",
     });
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(true, { ok: true, agentId: "test-agent" }, undefined);
-    expect(mocks.writeConfigFile).toHaveBeenCalled();
-  });
-
-  it("rejects updating a nonexistent agent", async () => {
-    mocks.findAgentEntryIndex.mockReturnValue(-1);
-
-    const { respond, promise } = makeCall("agents.update", {
-      agentId: "nonexistent",
-    });
-    await promise;
-
     expect(respond).toHaveBeenCalledWith(
       false,
       undefined,
-      expect.objectContaining({ message: expect.stringContaining("not found") }),
+      expect.objectContaining({
+        message: expect.stringContaining("single durable"),
+      }),
     );
     expect(mocks.writeConfigFile).not.toHaveBeenCalled();
-  });
-
-  it("ensures workspace when workspace changes", async () => {
-    const { promise } = makeCall("agents.update", {
-      agentId: "test-agent",
-      workspace: "/new/workspace",
-    });
-    await promise;
-
-    expect(mocks.ensureAgentWorkspace).toHaveBeenCalled();
-  });
-
-  it("does not ensure workspace when workspace is unchanged", async () => {
-    const { promise } = makeCall("agents.update", {
-      agentId: "test-agent",
-      name: "Just a rename",
-    });
-    await promise;
-
     expect(mocks.ensureAgentWorkspace).not.toHaveBeenCalled();
   });
 });
@@ -352,68 +213,23 @@ describe("agents.delete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadConfigReturn = {};
-    mocks.findAgentEntryIndex.mockReturnValue(0);
-    mocks.pruneAgentConfig.mockReturnValue({ config: {}, removedBindings: 2 });
   });
 
-  it("deletes an existing agent and trashes files by default", async () => {
+  it("rejects legacy top-level agent deletion", async () => {
     const { respond, promise } = makeCall("agents.delete", {
       agentId: "test-agent",
     });
     await promise;
 
     expect(respond).toHaveBeenCalledWith(
-      true,
-      { ok: true, agentId: "test-agent", removedBindings: 2 },
-      undefined,
-    );
-    expect(mocks.writeConfigFile).toHaveBeenCalled();
-    // moveToTrashBestEffort calls fs.access then movePathToTrash for each dir
-    expect(mocks.movePathToTrash).toHaveBeenCalled();
-  });
-
-  it("skips file deletion when deleteFiles is false", async () => {
-    mocks.fsAccess.mockClear();
-
-    const { respond, promise } = makeCall("agents.delete", {
-      agentId: "test-agent",
-      deleteFiles: false,
-    });
-    await promise;
-
-    expect(respond).toHaveBeenCalledWith(true, expect.objectContaining({ ok: true }), undefined);
-    // moveToTrashBestEffort should not be called at all
-    expect(mocks.fsAccess).not.toHaveBeenCalled();
-  });
-
-  it("rejects deleting the main agent", async () => {
-    const { respond, promise } = makeCall("agents.delete", {
-      agentId: "main",
-    });
-    await promise;
-
-    expect(respond).toHaveBeenCalledWith(
       false,
       undefined,
-      expect.objectContaining({ message: expect.stringContaining("cannot be deleted") }),
+      expect.objectContaining({
+        message: expect.stringContaining("single durable"),
+      }),
     );
     expect(mocks.writeConfigFile).not.toHaveBeenCalled();
-  });
-
-  it("rejects deleting a nonexistent agent", async () => {
-    mocks.findAgentEntryIndex.mockReturnValue(-1);
-
-    const { respond, promise } = makeCall("agents.delete", {
-      agentId: "ghost",
-    });
-    await promise;
-
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("not found") }),
-    );
-    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
+    expect(mocks.movePathToTrash).not.toHaveBeenCalled();
   });
 
   it("rejects invalid params (missing agentId)", async () => {

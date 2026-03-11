@@ -104,3 +104,50 @@ describe("legacy migrate mention routing", () => {
     ).toBeUndefined();
   });
 });
+
+describe("legacy single-agent cutover", () => {
+  it("refuses to auto-migrate top-level agents.list and bindings", () => {
+    const res = migrateLegacyConfig({
+      agents: {
+        list: [
+          {
+            id: "ops",
+            default: true,
+            workspace: "/tmp/ops-workspace",
+            model: "anthropic/claude-sonnet-4-6",
+            identity: {
+              name: "Ops",
+              emoji: "🛠",
+            },
+          },
+        ],
+      },
+      bindings: [
+        {
+          agentId: "ops",
+          match: {
+            channel: "telegram",
+          },
+        },
+      ],
+    });
+
+    expect(res.config).toBeNull();
+    expect(res.changes[0]).toContain("Top-level multi-agent config is no longer supported.");
+    expect(res.changes[1]).toContain("ops");
+    expect(res.changes[2]).toContain("Remove agents.list and bindings manually");
+  });
+
+  it("refuses to auto-migrate distinct legacy top-level agents", () => {
+    const res = migrateLegacyConfig({
+      agents: {
+        list: [{ id: "ops" }, { id: "research" }],
+      },
+    });
+
+    expect(res.config).toBeNull();
+    expect(res.changes[0]).toContain("Top-level multi-agent config is no longer supported.");
+    expect(res.changes[1]).toContain("ops");
+    expect(res.changes[1]).toContain("research");
+  });
+});

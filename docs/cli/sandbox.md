@@ -76,7 +76,7 @@ docker pull marv-sandbox:latest
 docker tag marv-sandbox:latest marv-sandbox:bookworm-slim
 
 # Update config to use new image
-# Edit config: agents.defaults.sandbox.docker.image (or agents.list[].sandbox.docker.image)
+# Edit config: agents.defaults.sandbox.docker.image (or agents.defaults.sandbox.docker.image)
 
 # Recreate containers
 marv sandbox recreate --all
@@ -85,7 +85,7 @@ marv sandbox recreate --all
 ### After changing sandbox configuration
 
 ```bash
-# Edit config: agents.defaults.sandbox.* (or agents.list[].sandbox.*)
+# Edit config: agents.defaults.sandbox.* (or agents.defaults.sandbox.*)
 
 # Recreate to apply new config
 marv sandbox recreate --all
@@ -121,7 +121,7 @@ Gateway’s container naming and avoids mismatches when scope/session keys chang
 
 ## Configuration
 
-Sandbox settings live in `~/.marv/marv.json` under `agents.defaults.sandbox` (per-agent overrides go in `agents.list[].sandbox`):
+Sandbox settings live in `~/.marv/marv.json` under `agents.defaults.sandbox`:
 
 ```jsonc
 {

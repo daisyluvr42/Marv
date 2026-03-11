@@ -38,7 +38,7 @@ To reduce that, Marv treats `auth-profiles.json` as a **token sink**:
 
 ## Storage (where tokens live)
 
-Secrets are stored **per-agent**:
+Secrets are stored per durable agent/profile:
 
 - Auth profiles (OAuth + API keys): `~/.marv/agents/<agentId>/agent/auth-profiles.json`
 - Runtime cache (managed automatically; don’t edit): `~/.marv/agents/<agentId>/agent/auth.json`
@@ -111,16 +111,11 @@ The refresh flow is automatic; you generally don't need to manage tokens manuall
 
 Two patterns:
 
-### 1) Preferred: separate agents
+### 1) Preferred: separate Marv profiles or installs
 
-If you want “personal” and “work” to never interact, use isolated agents (separate sessions + credentials + workspace):
-
-```bash
-marv agents add work
-marv agents add personal
-```
-
-Then configure auth per-agent (wizard) and route chats to the right agent.
+If you want “personal” and “work” to never interact, run separate Marv
+profiles or separate installs so each one has its own durable `main`
+workspace, sessions, and credentials.
 
 ### 2) Advanced: multiple profiles in one agent
 

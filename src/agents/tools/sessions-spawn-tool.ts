@@ -11,6 +11,11 @@ const SessionsSpawnToolSchema = Type.Object({
   agentId: Type.Optional(Type.String()),
   model: Type.Optional(Type.String()),
   thinking: Type.Optional(Type.String()),
+  role: Type.Optional(Type.String()),
+  preset: Type.Optional(Type.String()),
+  taskGroup: Type.Optional(Type.String()),
+  dispatchId: Type.Optional(Type.String()),
+  announceMode: optionalStringEnum(["child", "aggregate"] as const),
   runTimeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
   // Back-compat: older callers used timeoutSeconds for this tool.
   timeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
@@ -43,6 +48,14 @@ export function createSessionsSpawnTool(opts?: {
       const requestedAgentId = readStringParam(params, "agentId");
       const modelOverride = readStringParam(params, "model");
       const thinkingOverrideRaw = readStringParam(params, "thinking");
+      const role = readStringParam(params, "role");
+      const preset = readStringParam(params, "preset");
+      const taskGroup = readStringParam(params, "taskGroup");
+      const dispatchId = readStringParam(params, "dispatchId");
+      const announceMode =
+        params.announceMode === "child" || params.announceMode === "aggregate"
+          ? params.announceMode
+          : undefined;
       const cleanup =
         params.cleanup === "keep" || params.cleanup === "delete" ? params.cleanup : "keep";
       // Back-compat: older callers used timeoutSeconds for this tool.
@@ -64,6 +77,11 @@ export function createSessionsSpawnTool(opts?: {
           agentId: requestedAgentId,
           model: modelOverride,
           thinking: thinkingOverrideRaw,
+          role,
+          preset,
+          taskGroup,
+          dispatchId,
+          announceMode,
           runTimeoutSeconds,
           cleanup,
           expectsCompletionMessage: true,

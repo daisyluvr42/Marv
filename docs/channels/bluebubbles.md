@@ -164,7 +164,7 @@ Groups:
 
 BlueBubbles supports mention gating for group chats, matching iMessage/WhatsApp behavior:
 
-- Uses `agents.list[].groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`) to detect mentions.
+- Uses `agents.defaults.groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`) to detect mentions.
 - When `requireMention` is enabled for a group, the agent only responds when mentioned.
 - Control commands from authorized senders bypass mention gating.
 
@@ -312,7 +312,7 @@ Provider options:
 
 Related global options:
 
-- `agents.list[].groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`).
+- `agents.defaults.groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`).
 - `messages.responsePrefix`.
 
 ## Addressing / delivery targets

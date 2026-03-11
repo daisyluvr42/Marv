@@ -27,7 +27,7 @@ Related:
 - `models.catalog` is the configured inventory of models Marv can use.
 - `agents.modelPools` defines named automatic pools.
 - `agents.defaults.modelPool` picks the default pool.
-- `agents.list[].modelPool` can override the pool for a specific agent.
+- `agents.defaults.modelPool` can override the pool for a specific agent.
 
 ## Quick model picks (anecdotal)
 

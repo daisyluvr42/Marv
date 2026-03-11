@@ -75,7 +75,7 @@ If more than one person can DM your bot:
 - **Browser control exposure** (remote nodes, relay ports, remote CDP endpoints).
 - **Local disk hygiene** (permissions, symlinks, config includes, “synced folder” paths).
 - **Plugins** (extensions exist without an explicit allowlist).
-- **Policy drift/misconfig** (sandbox docker settings configured but sandbox mode off; ineffective `gateway.nodes.denyCommands` patterns; global `tools.profile="minimal"` overridden by per-agent profiles; extension plugin tools reachable under permissive tool policy).
+- **Policy drift/misconfig** (sandbox docker settings configured but sandbox mode off; ineffective `gateway.nodes.denyCommands` patterns; global `tools.profile="minimal"` overridden by durable-agent profiles; extension plugin tools reachable under permissive tool policy).
 - **Model hygiene** (warn when configured models look legacy; not a hard block).
 
 If you run `--deep`, Marv also attempts a best-effort live Gateway probe.
@@ -123,7 +123,7 @@ High-signal `checkId` values you will most likely see in real deployments (not e
 | `hooks.request_session_key_prefixes_missing` | warn/critical | No bound on external session key shapes                  | `hooks.allowedSessionKeyPrefixes`                | no       |
 | `logging.redact_off`                         | warn          | Sensitive values leak to logs/status                     | `logging.redactSensitive`                        | yes      |
 | `sandbox.docker_config_mode_off`             | warn          | Sandbox Docker config present but inactive               | `agents.*.sandbox.mode`                          | no       |
-| `tools.profile_minimal_overridden`           | warn          | Agent overrides bypass global minimal profile            | `agents.list[].tools.profile`                    | no       |
+| `tools.profile_minimal_overridden`           | warn          | Agent overrides bypass global minimal profile            | `agents.defaults.tools.profile`                  | no       |
 | `plugins.tools_reachable_permissive_policy`  | warn          | Extension tools reachable in permissive contexts         | `tools.profile` + tool allow/deny                | no       |
 | `models.small_params`                        | critical/info | Small models + unsafe tool surfaces raise injection risk | model choice + sandbox/tool policy               | no       |
 
@@ -678,7 +678,7 @@ Also consider agent workspace access inside the sandbox:
 - `agents.defaults.sandbox.workspaceAccess: "ro"` mounts the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
 - `agents.defaults.sandbox.workspaceAccess: "rw"` mounts the agent workspace read/write at `/workspace`
 
-Important: `tools.elevated` is the global baseline escape hatch that runs exec on the host. Keep `tools.elevated.allowFrom` tight and don’t enable it for strangers. You can further restrict elevated per agent via `agents.list[].tools.elevated`. See [Elevated Mode](/tools/elevated).
+Important: `tools.elevated` is the global baseline escape hatch that runs exec on the host. Keep `tools.elevated.allowFrom` tight and don’t enable it for strangers. You can further restrict elevated per agent via `agents.defaults.tools.elevated`. See [Elevated Mode](/tools/elevated).
 
 ## Browser control risks
 
@@ -697,18 +697,16 @@ access those accounts and data. Treat browser profiles as **sensitive state**:
 - Disable browser proxy routing when you don’t need it (`gateway.nodes.browser.mode="off"`).
 - Chrome extension relay mode is **not** “safer”; it can take over your existing Chrome tabs. Assume it can act as you in whatever that tab/profile can reach.
 
-## Per-agent access profiles (multi-agent)
+## Durable agent access profile
 
-With multi-agent routing, each agent can have its own sandbox + tool policy:
-use this to give **full access**, **read-only**, or **no access** per agent.
-See [Multi-Agent Sandbox & Tools](/tools/multi-agent-sandbox-tools) for full details
-and precedence rules.
+Top-level per-agent access profiles were removed with the single-agent cutover.
+Use the durable `main` agent's sandbox + tool policy for the base runtime
+profile, and use enhanced subagents when you want narrower delegated behavior.
 
 Common use cases:
 
-- Personal agent: full access, no sandbox
-- Family/work agent: sandboxed + read-only tools
-- Public agent: sandboxed + no filesystem/shell tools
+- Durable main agent: full or restricted access depending on your deployment
+- Role-based subagents: narrower delegated behavior inside the same durable run
 
 ### Example: full access (no sandbox)
 

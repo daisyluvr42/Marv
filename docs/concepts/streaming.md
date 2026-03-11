@@ -86,7 +86,7 @@ When block streaming is enabled, you can add a **randomized pause** between
 block replies (after the first block). This makes multi-bubble responses feel
 more natural.
 
-- Config: `agents.defaults.humanDelay` (override per agent via `agents.list[].humanDelay`).
+- Config: `agents.defaults.humanDelay` (override per agent via `agents.defaults.humanDelay`).
 - Modes: `off` (default), `natural` (800–2500ms), `custom` (`minMs`/`maxMs`).
 - Applies only to **block replies**, not final replies or tool summaries.
 

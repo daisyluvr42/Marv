@@ -96,7 +96,7 @@ describe("directive behavior", () => {
       );
 
       const text = replyText(res);
-      expect(text).toContain("agents.list[].tools.elevated.allowFrom.whatsapp");
+      expect(text).toContain("agents.defaults.tools.elevated.allowFrom.whatsapp");
       expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });

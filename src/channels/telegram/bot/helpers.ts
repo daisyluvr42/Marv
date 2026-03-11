@@ -172,11 +172,11 @@ export function buildTelegramGroupFrom(chatId: number | string, messageThreadId?
 }
 
 /**
- * Build parentPeer for forum topic binding inheritance.
+ * Build parentPeer for forum topic route inheritance.
  * When a message comes from a forum topic, the peer ID includes the topic suffix
- * (e.g., `-1001234567890:topic:99`). To allow bindings configured for the base
- * group ID to match, we provide the parent group as `parentPeer` so the routing
- * layer can fall back to it when the exact peer doesn't match.
+ * (e.g., `-1001234567890:topic:99`). We provide the parent group as
+ * `parentPeer` so the routing layer can fall back to the base conversation when
+ * the exact peer doesn't match.
  */
 export function buildTelegramParentPeer(params: {
   isGroup: boolean;

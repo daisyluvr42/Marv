@@ -24,6 +24,7 @@ import { createSessionsListTool } from "./sessions-list-tool.js";
 import { createSessionsSendTool } from "./sessions-send-tool.js";
 import { createSessionsSpawnTool } from "./sessions-spawn-tool.js";
 import { createSubagentsTool } from "./subagents-tool.js";
+import { createTaskDispatchTool } from "./task-dispatch-tool.js";
 import { createTtsTool } from "./tts-tool.js";
 import { createWebFetchTool, createWebSearchTool } from "./web-tools.js";
 
@@ -167,6 +168,17 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       agentGroupChannel: options?.agentGroupChannel,
       agentGroupSpace: options?.agentGroupSpace,
       sandboxed: options?.sandboxed,
+      requesterAgentIdOverride: options?.requesterAgentIdOverride,
+    }),
+    createTaskDispatchTool({
+      agentSessionKey: options?.agentSessionKey,
+      agentChannel: options?.agentChannel,
+      agentAccountId: options?.agentAccountId,
+      agentTo: options?.agentTo,
+      agentThreadId: options?.agentThreadId,
+      agentGroupId: options?.agentGroupId,
+      agentGroupChannel: options?.agentGroupChannel,
+      agentGroupSpace: options?.agentGroupSpace,
       requesterAgentIdOverride: options?.requesterAgentIdOverride,
     }),
     createSubagentsTool({

@@ -28,7 +28,7 @@ Short guide to verify channel connectivity without guessing.
 
 - `logged out` or status 409–515 → relink with `marv channels logout` then `marv channels login`.
 - Gateway unreachable → start it: `marv gateway --port 18789` (use `--force` if the port is busy).
-- No inbound messages → confirm linked phone is online and the sender is allowed (`channels.whatsapp.allowFrom`); for group chats, ensure allowlist + mention rules match (`channels.whatsapp.groups`, `agents.list[].groupChat.mentionPatterns`).
+- No inbound messages → confirm linked phone is online and the sender is allowed (`channels.whatsapp.allowFrom`); for group chats, ensure allowlist + mention rules match (`channels.whatsapp.groups`, `agents.defaults.groupChat.mentionPatterns`).
 
 ## Dedicated "health" command
 

@@ -91,12 +91,9 @@ Enable the tool:
     }
   },
   "agents": {
-    "list": [
-      {
-        "id": "main",
-        "tools": { "allow": ["llm-task"] }
-      }
-    ]
+    "defaults": {
+      "tools": { "allow": ["llm-task"] }
+    }
   }
 }
 ```

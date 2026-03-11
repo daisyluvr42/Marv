@@ -224,7 +224,7 @@ Typical fields in `~/.marv/marv.json`:
 - `wizard.lastRunCommand`
 - `wizard.lastRunMode`
 
-`marv agents add` writes `agents.list[]` and optional `bindings`.
+The onboarding flow writes `agents.defaults.*` for the durable `main` agent.
 
 WhatsApp credentials go under `~/.marv/credentials/whatsapp/<accountId>/`.
 Sessions are stored under `~/.marv/agents/<agentId>/sessions/`.

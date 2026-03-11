@@ -17,7 +17,7 @@ For a complete map of the docs, see [Docs hubs](/start/hubs).
 - [Configuration](/gateway/configuration)
 - [Configuration examples](/gateway/configuration-examples)
 - [Slash commands](/tools/slash-commands)
-- [Multi-agent routing](/concepts/multi-agent)
+- [Sub-agents](/tools/subagents)
 - [Updating and rollback](/install/updating)
 - [Pairing (DM and nodes)](/channels/pairing)
 - [Nix mode](/install/nix)

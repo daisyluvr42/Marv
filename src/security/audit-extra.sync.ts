@@ -1,3 +1,4 @@
+import { resolveAgentConfig } from "../agents/agent-scope.js";
 import {
   resolveSandboxConfigForAgent,
   resolveSandboxToolPolicyForAgent,
@@ -115,26 +116,6 @@ function collectModels(cfg: MarvConfig): ModelRef[] {
     addModel(out, f, "agents.defaults.imageModel.fallbacks");
   }
 
-  const list = Array.isArray(cfg.agents?.list) ? cfg.agents?.list : [];
-  for (const agent of list ?? []) {
-    if (!agent || typeof agent !== "object") {
-      continue;
-    }
-    const id =
-      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id : "";
-    const model = (agent as { model?: unknown }).model;
-    if (typeof model === "string") {
-      addModel(out, model, `agents.list.${id}.model`);
-    } else if (model && typeof model === "object") {
-      addModel(out, (model as { primary?: unknown }).primary, `agents.list.${id}.model.primary`);
-      const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
-      if (Array.isArray(fallbacks)) {
-        for (const f of fallbacks) {
-          addModel(out, f, `agents.list.${id}.model.fallbacks`);
-        }
-      }
-    }
-  }
   return out;
 }
 
@@ -547,33 +528,14 @@ export function collectGatewayHttpSessionKeyOverrideFindings(
 export function collectSandboxDockerNoopFindings(cfg: MarvConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const configuredPaths: string[] = [];
-  const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
 
   const defaultsSandbox = cfg.agents?.defaults?.sandbox;
   const hasDefaultDocker = hasConfiguredDockerConfig(
     defaultsSandbox?.docker as Record<string, unknown> | undefined,
   );
   const defaultMode = defaultsSandbox?.mode ?? "off";
-  const hasAnySandboxEnabledAgent = agents.some((entry) => {
-    if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
-      return false;
-    }
-    return resolveSandboxConfigForAgent(cfg, entry.id).mode !== "off";
-  });
-  if (hasDefaultDocker && defaultMode === "off" && !hasAnySandboxEnabledAgent) {
+  if (hasDefaultDocker && defaultMode === "off") {
     configuredPaths.push("agents.defaults.sandbox.docker");
-  }
-
-  for (const entry of agents) {
-    if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
-      continue;
-    }
-    if (!hasConfiguredDockerConfig(entry.sandbox?.docker as Record<string, unknown> | undefined)) {
-      continue;
-    }
-    if (resolveSandboxConfigForAgent(cfg, entry.id).mode === "off") {
-      configuredPaths.push(`agents.list.${entry.id}.sandbox.docker`);
-    }
   }
 
   if (configuredPaths.length === 0) {
@@ -596,7 +558,6 @@ export function collectSandboxDockerNoopFindings(cfg: MarvConfig): SecurityAudit
 
 export function collectSandboxDangerousConfigFindings(cfg: MarvConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
 
   const configs: Array<{ source: string; docker: Record<string, unknown> }> = [];
   const defaultDocker = cfg.agents?.defaults?.sandbox?.docker;
@@ -605,18 +566,6 @@ export function collectSandboxDangerousConfigFindings(cfg: MarvConfig): Security
       source: "agents.defaults.sandbox.docker",
       docker: defaultDocker as Record<string, unknown>,
     });
-  }
-  for (const entry of agents) {
-    if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
-      continue;
-    }
-    const agentDocker = entry.sandbox?.docker;
-    if (agentDocker && typeof agentDocker === "object") {
-      configs.push({
-        source: `agents.list.${entry.id}.sandbox.docker`,
-        docker: agentDocker as Record<string, unknown>,
-      });
-    }
   }
 
   for (const { source, docker } of configs) {
@@ -746,34 +695,6 @@ export function collectMinimalProfileOverrideFindings(cfg: MarvConfig): Security
   if (cfg.tools?.profile !== "minimal") {
     return findings;
   }
-
-  const overrides = (cfg.agents?.list ?? [])
-    .filter((entry): entry is { id: string; tools?: AgentToolsConfig } => {
-      return Boolean(
-        entry &&
-        typeof entry === "object" &&
-        typeof entry.id === "string" &&
-        entry.tools?.profile &&
-        entry.tools.profile !== "minimal",
-      );
-    })
-    .map((entry) => `${entry.id}=${entry.tools?.profile}`);
-
-  if (overrides.length === 0) {
-    return findings;
-  }
-
-  findings.push({
-    checkId: "tools.profile_minimal_overridden",
-    severity: "warn",
-    title: "Global tools.profile=minimal is overridden by agent profiles",
-    detail:
-      "Global minimal profile is set, but these agent profiles take precedence:\n" +
-      overrides.map((entry) => `- agents.list.${entry}`).join("\n"),
-    remediation:
-      'Set those agents to `tools.profile="minimal"` (or remove the agent override) if you want minimal tools enforced globally.',
-  });
-
   return findings;
 }
 
@@ -892,10 +813,7 @@ export function collectSmallModelRiskFindings(params: {
   for (const entry of smallModels) {
     const agentId = extractAgentIdFromSource(entry.source);
     const sandboxMode = resolveSandboxConfigForAgent(params.cfg, agentId ?? undefined).mode;
-    const agentTools =
-      agentId && params.cfg.agents?.list
-        ? params.cfg.agents.list.find((agent) => agent?.id === agentId)?.tools
-        : undefined;
+    const agentTools = agentId ? resolveAgentConfig(params.cfg, agentId)?.tools : undefined;
     const policies = resolveToolPolicies({
       cfg: params.cfg,
       agentTools,

@@ -209,6 +209,74 @@ describe("gateway sessions patch", () => {
     expect(res.error.message).toContain("spawnDepth is only supported");
   });
 
+  test("persists subagent metadata for subagent sessions", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:subagent:child",
+      patch: {
+        key: "agent:main:subagent:child",
+        subagentRole: "reviewer",
+        subagentPreset: "review-pack",
+        subagentTaskGroup: "tg-1",
+        subagentDispatchId: "dispatch-1",
+        subagentAnnounceMode: "aggregate",
+      },
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+    expect(res.entry.subagentRole).toBe("reviewer");
+    expect(res.entry.subagentPreset).toBe("review-pack");
+    expect(res.entry.subagentTaskGroup).toBe("tg-1");
+    expect(res.entry.subagentDispatchId).toBe("dispatch-1");
+    expect(res.entry.subagentAnnounceMode).toBe("aggregate");
+  });
+
+  test("rejects subagent metadata on non-subagent sessions", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:main",
+      patch: {
+        key: "agent:main:main",
+        subagentRole: "reviewer",
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (res.ok) {
+      return;
+    }
+    expect(res.error.message).toContain("subagentRole is only supported");
+  });
+
+  test("rejects changing persisted subagent metadata", async () => {
+    const store: Record<string, SessionEntry> = {
+      "agent:main:subagent:child": {
+        sessionId: "sess",
+        updatedAt: 1,
+        subagentRole: "reviewer",
+      } as SessionEntry,
+    };
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:subagent:child",
+      patch: {
+        key: "agent:main:subagent:child",
+        subagentRole: "tester",
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (res.ok) {
+      return;
+    }
+    expect(res.error.message).toContain("subagentRole cannot be changed once set");
+  });
+
   test("normalizes exec/send/group patches", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({

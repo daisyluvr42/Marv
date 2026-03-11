@@ -1,5 +1,5 @@
 ---
-summary: "Routing rules per channel (WhatsApp, Telegram, Discord, Slack) and shared context"
+summary: "Routing rules per channel and how session keys are chosen in main-only mode"
 read_when:
   - Changing channel routing or inbox behavior
 title: "Channel Routing"
@@ -7,112 +7,60 @@ title: "Channel Routing"
 
 # Channels & routing
 
-Marv routes replies **back to the channel where a message came from**. The
-model does not choose a channel; routing is deterministic and controlled by the
-host configuration.
+Marv routes replies back to the same channel/account/conversation a message came
+from. The host decides routing deterministically.
+
+After the single-agent cutover, the durable top-level agent is always `main`.
+Channel routing now decides the session key and outbound target, not which
+durable agent to run.
 
 ## Key terms
 
-- **Channel**: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `imessage`, `webchat`.
-- **AccountId**: per‑channel account instance (when supported).
-- **AgentId**: an isolated workspace + session store (“brain”).
-- **SessionKey**: the bucket key used to store context and control concurrency.
+- **Channel**: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `imessage`, `webchat`
+- **AccountId**: a per-channel account instance when the channel supports it
+- **AgentId**: the durable top-level agent id, always `main`
+- **SessionKey**: the bucket key used to store context and control concurrency
 
-## Session key shapes (examples)
+## Session key shapes
 
-Direct messages collapse to the agent’s **main** session:
+Direct messages collapse to the main session:
 
-- `agent:<agentId>:<mainKey>` (default: `agent:main:main`)
+- `agent:main:<mainKey>` (default: `agent:main:main`)
 
-Groups and channels remain isolated per channel:
+Groups and channels stay isolated per conversation:
 
-- Groups: `agent:<agentId>:<channel>:group:<id>`
-- Channels/rooms: `agent:<agentId>:<channel>:channel:<id>`
-
-Threads:
-
-- Slack/Discord threads append `:thread:<threadId>` to the base key.
-- Telegram forum topics embed `:topic:<topicId>` in the group key.
+- groups: `agent:main:<channel>:group:<id>`
+- channels/rooms: `agent:main:<channel>:channel:<id>`
+- threads append `:thread:<threadId>` when supported
 
 Examples:
 
 - `agent:main:telegram:group:-1001234567890:topic:42`
 - `agent:main:discord:channel:123456:thread:987654`
 
-## Routing rules (how an agent is chosen)
+## Routing rules
 
-Routing picks **one agent** for each inbound message:
+Inbound routing now resolves to `main` in all cases.
 
-1. **Exact peer match** (`bindings` with `peer.kind` + `peer.id`).
-2. **Parent peer match** (thread inheritance).
-3. **Guild + roles match** (Discord) via `guildId` + `roles`.
-4. **Guild match** (Discord) via `guildId`.
-5. **Team match** (Slack) via `teamId`.
-6. **Account match** (`accountId` on the channel).
-7. **Channel match** (any account on that channel, `accountId: "*"`).
-8. **Default agent** (`agents.list[].default`, else first list entry, fallback to `main`).
+The following inputs still matter because they shape session selection and
+reply targeting:
 
-When a binding includes multiple match fields (`peer`, `guildId`, `teamId`, `roles`), **all provided fields must match** for that binding to apply.
+- channel id
+- account id
+- peer kind/id
+- thread/topic context
+- provider-specific delivery metadata
 
-The matched agent determines which workspace and session store are used.
+There is no supported top-level `bindings` or `agents.list` routing layer.
 
-## Broadcast groups (run multiple agents)
+## Delegation
 
-Broadcast groups let you run **multiple agents** for the same peer **when Marv would normally reply** (for example: in WhatsApp groups, after mention/activation gating).
+If one conversation needs collaborative work, let `main` delegate internally
+with enhanced subagents instead of routing the inbound message to another
+durable top-level agent.
 
-Config:
+## Related docs
 
-```json5
-{
-  broadcast: {
-    strategy: "parallel",
-    "120363403215116621@g.us": ["alfred", "baerbel"],
-    "+15555550123": ["support", "logger"],
-  },
-}
-```
-
-See: [Broadcast Groups](/channels/broadcast-groups).
-
-## Config overview
-
-- `agents.list`: named agent definitions (workspace, model, etc.).
-- `bindings`: map inbound channels/accounts/peers to agents.
-
-Example:
-
-```json5
-{
-  agents: {
-    list: [{ id: "support", name: "Support", workspace: "~/.marv/workspace-support" }],
-  },
-  bindings: [
-    { match: { channel: "slack", teamId: "T123" }, agentId: "support" },
-    { match: { channel: "telegram", peer: { kind: "group", id: "-100123" } }, agentId: "support" },
-  ],
-}
-```
-
-## Session storage
-
-Session stores live under the state directory (default `~/.marv`):
-
-- `~/.marv/agents/<agentId>/sessions/sessions.json`
-- JSONL transcripts live alongside the store
-
-You can override the store path via `session.store` and `{agentId}` templating.
-
-## WebChat behavior
-
-WebChat attaches to the **selected agent** and defaults to the agent’s main
-session. Because of this, WebChat lets you see cross‑channel context for that
-agent in one place.
-
-## Reply context
-
-Inbound replies include:
-
-- `ReplyToId`, `ReplyToBody`, and `ReplyToSender` when available.
-- Quoted context is appended to `Body` as a `[Replying to ...]` block.
-
-This is consistent across channels.
+- Multi-agent routing removal: [Multi-Agent Routing](/concepts/multi-agent)
+- Broadcast groups: [Broadcast Groups](/channels/broadcast-groups)
+- Subagents: [Subagents](/tools/subagents)

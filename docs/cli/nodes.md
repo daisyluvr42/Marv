@@ -56,7 +56,7 @@ Invoke flags:
 
 `nodes run` mirrors the model’s exec behavior (defaults + approvals):
 
-- Reads `tools.exec.*` (plus `agents.list[].tools.exec.*` overrides).
+- Reads `tools.exec.*` (plus `agents.defaults.tools.exec.*` overrides).
 - Uses exec approvals (`exec.approval.request`) before invoking `system.run`.
 - `--node` can be omitted when `tools.exec.node` is set.
 - Requires a node that advertises `system.run` (macOS companion app or headless node host).

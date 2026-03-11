@@ -81,8 +81,8 @@ Example:
 Per-agent node binding (use the agent list index in config):
 
 ```bash
-marv config get agents.list
-marv config set agents.list[0].tools.exec.node "node-id-or-name"
+marv config get agents.defaults
+marv config set agents.defaults.tools.exec.node "node-id-or-name"
 ```
 
 Control UI: the Nodes tab includes a small “Exec node binding” panel for the same settings.
@@ -102,7 +102,7 @@ Example:
 
 `/exec` is only honored for **authorized senders** (channel allowlists/pairing plus `commands.useAccessGroups`).
 It updates **session state only** and does not write config. To hard-disable exec, deny it via tool
-policy (`tools.deny: ["exec"]` or per-agent). Host approvals still apply unless you explicitly set
+policy (`tools.deny: ["exec"]` or `agents.defaults.tools.deny`). Host approvals still apply unless you explicitly set
 `security=full` and `ask=off`.
 
 ## Exec approvals (companion app / node host)

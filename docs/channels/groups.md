@@ -65,7 +65,7 @@ This gives you one agent “brain” (shared workspace + memory), but two execut
 - **DMs**: full tools (host)
 - **Groups**: sandbox + restricted tools (Docker)
 
-> If you need truly separate workspaces/personas (“personal” and “public” must never mix), use a second agent + bindings. See [Multi-Agent Routing](/concepts/multi-agent).
+> If you need truly separate workspaces/personas (“personal” and “public” must never mix), run separate Marv profiles or separate Marv installs. See [Multiple Gateways](/gateway/multiple-gateways).
 
 Example (DMs on host, groups sandboxed + messaging-only tools):
 
@@ -243,7 +243,7 @@ Notes:
 
 - `mentionPatterns` are case-insensitive regexes.
 - Surfaces that provide explicit mentions still pass; patterns are a fallback.
-- Per-agent override: `agents.list[].groupChat.mentionPatterns` (useful when multiple agents share a group).
+- Per-agent override: `agents.defaults.groupChat.mentionPatterns` (useful when multiple agents share a group).
 - Mention gating is only enforced when mention detection is possible (native mentions or `mentionPatterns` are configured).
 - Discord defaults live in `channels.discord.guilds."*"` (overridable per guild/channel).
 - Group history context is wrapped uniformly across channels and is **pending-only** (messages skipped due to mention gating); use `messages.groupChat.historyLimit` for the global default and `channels.<channel>.historyLimit` (or `channels.<channel>.accounts.*.historyLimit`) for overrides. Set `0` to disable.

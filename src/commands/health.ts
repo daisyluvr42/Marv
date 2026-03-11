@@ -14,7 +14,6 @@ import {
   type HeartbeatSummary,
   resolveHeartbeatSummaryForAgent,
 } from "../infra/heartbeat/heartbeat-runner.js";
-import { buildChannelAccountBindings, resolvePreferredAccountId } from "../routing/bindings.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { styleHealthChannelLine } from "../terminal/health-style.js";
@@ -113,34 +112,15 @@ const resolveHeartbeatSummary = (cfg: ReturnType<typeof loadConfig>, agentId: st
 
 const resolveAgentOrder = (cfg: ReturnType<typeof loadConfig>) => {
   const defaultAgentId = resolveDefaultAgentId(cfg);
-  const entries = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
-  const seen = new Set<string>();
-  const ordered: Array<{ id: string; name?: string }> = [];
-
-  for (const entry of entries) {
-    if (!entry || typeof entry !== "object") {
-      continue;
-    }
-    if (typeof entry.id !== "string" || !entry.id.trim()) {
-      continue;
-    }
-    const id = normalizeAgentId(entry.id);
-    if (!id || seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    ordered.push({ id, name: typeof entry.name === "string" ? entry.name : undefined });
-  }
-
-  if (!seen.has(defaultAgentId)) {
-    ordered.unshift({ id: defaultAgentId });
-  }
-
-  if (ordered.length === 0) {
-    ordered.push({ id: defaultAgentId });
-  }
-
-  return { defaultAgentId, ordered };
+  return {
+    defaultAgentId,
+    ordered: [
+      {
+        id: normalizeAgentId(defaultAgentId),
+        name: cfg.agents?.defaults?.name?.trim() || undefined,
+      },
+    ],
+  };
 };
 
 const buildSessionSummary = (storePath: string) => {
@@ -352,7 +332,6 @@ export async function getHealthSnapshot(params?: {
   const timeoutMs = params?.timeoutMs;
   const cfg = loadConfig();
   const { defaultAgentId, ordered } = resolveAgentOrder(cfg);
-  const channelBindings = buildChannelAccountBindings(cfg);
   const sessionCache = new Map<string, HealthSummary["sessions"]>();
   const agents: AgentHealthSummary[] = ordered.map((entry) => {
     const storePath = resolveStorePath(cfg.session?.store, { agentId: entry.id });
@@ -389,28 +368,13 @@ export async function getHealthSnapshot(params?: {
       cfg,
       accountIds,
     });
-    const boundAccounts = channelBindings.get(plugin.id)?.get(defaultAgentId) ?? [];
-    const preferredAccountId = resolvePreferredAccountId({
-      accountIds,
-      defaultAccountId,
-      boundAccounts,
-    });
-    const boundAccountIdsAll = Array.from(
-      new Set(Array.from(channelBindings.get(plugin.id)?.values() ?? []).flatMap((ids) => ids)),
-    );
     const accountIdsToProbe = Array.from(
-      new Set(
-        [preferredAccountId, defaultAccountId, ...accountIds, ...boundAccountIdsAll].filter(
-          (value) => value && value.trim(),
-        ),
-      ),
+      new Set([defaultAccountId, ...accountIds].filter((value) => value && value.trim())),
     );
     debugHealth("channel", {
       id: plugin.id,
       accountIds,
       defaultAccountId,
-      boundAccounts,
-      preferredAccountId,
       accountIdsToProbe,
     });
     const accountSummaries: Record<string, ChannelAccountHealthSummary> = {};
@@ -490,9 +454,8 @@ export async function getHealthSnapshot(params?: {
     }
 
     const defaultSummary =
-      accountSummaries[preferredAccountId] ??
       accountSummaries[defaultAccountId] ??
-      accountSummaries[accountIdsToProbe[0] ?? preferredAccountId];
+      accountSummaries[accountIdsToProbe[0] ?? defaultAccountId];
     const fallbackSummary = defaultSummary ?? accountSummaries[Object.keys(accountSummaries)[0]];
     if (fallbackSummary) {
       channels[plugin.id] = {
@@ -574,7 +537,6 @@ export async function healthCommand(
     const displayAgents = opts.verbose
       ? resolvedAgents
       : resolvedAgents.filter((agent) => agent.agentId === defaultAgentId);
-    const channelBindings = buildChannelAccountBindings(cfg);
     if (debugEnabled) {
       runtime.log(info("[debug] local channel accounts"));
       for (const plugin of listChannelPlugins()) {
@@ -600,13 +562,6 @@ export async function healthCommand(
           );
         }
       }
-      runtime.log(info("[debug] bindings map"));
-      for (const [channelId, byAgent] of channelBindings.entries()) {
-        const entries = Array.from(byAgent.entries()).map(
-          ([agentId, ids]) => `${agentId}=[${ids.join(", ")}]`,
-        );
-        runtime.log(`  ${channelId}: ${entries.join(" ")}`);
-      }
       runtime.log(info("[debug] gateway channel probes"));
       for (const [channelId, channelSummary] of Object.entries(summary.channels ?? {})) {
         const accounts = channelSummary.accounts ?? {};
@@ -627,31 +582,11 @@ export async function healthCommand(
           cfg,
           accountIds,
         });
-        const preferred = resolvePreferredAccountId({
-          accountIds,
-          defaultAccountId,
-          boundAccounts: channelBindings.get(plugin.id)?.get(defaultAgentId) ?? [],
-        });
-        return [plugin.id, [preferred] as string[]] as const;
+        return [plugin.id, [defaultAccountId] as string[]] as const;
       }),
     );
     const accountIdsByChannel = (() => {
-      const entries = displayAgents.length > 0 ? displayAgents : resolvedAgents;
       const byChannel: Record<string, string[]> = {};
-      for (const [channelId, byAgent] of channelBindings.entries()) {
-        const accountIds: string[] = [];
-        for (const agent of entries) {
-          const ids = byAgent.get(agent.agentId) ?? [];
-          for (const id of ids) {
-            if (!accountIds.includes(id)) {
-              accountIds.push(id);
-            }
-          }
-        }
-        if (accountIds.length > 0) {
-          byChannel[channelId] = accountIds;
-        }
-      }
       for (const [channelId, fallbackIds] of Object.entries(channelAccountFallbacks)) {
         if (!byChannel[channelId] || byChannel[channelId].length === 0) {
           byChannel[channelId] = fallbackIds;
@@ -679,18 +614,13 @@ export async function healthCommand(
       if (!plugin.status?.logSelfId) {
         continue;
       }
-      const boundAccounts = channelBindings.get(plugin.id)?.get(defaultAgentId) ?? [];
       const accountIds = plugin.config.listAccountIds(cfg);
       const defaultAccountId = resolveChannelDefaultAccountId({
         plugin,
         cfg,
         accountIds,
       });
-      const accountId = resolvePreferredAccountId({
-        accountIds,
-        defaultAccountId,
-        boundAccounts,
-      });
+      const accountId = defaultAccountId;
       const account = plugin.config.resolveAccount(cfg, accountId);
       plugin.status.logSelfId({
         account,

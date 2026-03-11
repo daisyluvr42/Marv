@@ -9,9 +9,9 @@ status: active
 
 Marv has three related (but different) controls:
 
-1. **Sandbox** (`agents.defaults.sandbox.*` / `agents.list[].sandbox.*`) decides **where tools run** (Docker vs host).
-2. **Tool policy** (`tools.*`, `tools.sandbox.tools.*`, `agents.list[].tools.*`) decides **which tools are available/allowed**.
-3. **Elevated** (`tools.elevated.*`, `agents.list[].tools.elevated.*`) is an **exec-only escape hatch** to run on the host when you’re sandboxed.
+1. **Sandbox** (`agents.defaults.sandbox.*`) decides **where tools run** (Docker vs host).
+2. **Tool policy** (`tools.*`, `tools.sandbox.tools.*`, `agents.defaults.tools.*`) decides **which tools are available/allowed**.
+3. **Elevated** (`tools.elevated.*`, `agents.defaults.tools.elevated.*`) is an **exec-only escape hatch** to run on the host when you’re sandboxed.
 
 ## Quick debug
 
@@ -45,7 +45,7 @@ See [Sandboxing](/gateway/sandboxing) for the full matrix (scope, workspace moun
 
 - `docker.binds` _pierces_ the sandbox filesystem: whatever you mount is visible inside the container with the mode you set (`:ro` or `:rw`).
 - Default is read-write if you omit the mode; prefer `:ro` for source/secrets.
-- `scope: "shared"` ignores per-agent binds (only global binds apply).
+- `scope: "shared"` ignores durable-agent-specific bind tweaks and uses the shared/global bind set.
 - Binding `/var/run/docker.sock` effectively hands host control to the sandbox; only do this intentionally.
 - Workspace access (`workspaceAccess: "ro"`/`"rw"`) is independent of bind modes.
 
@@ -53,11 +53,11 @@ See [Sandboxing](/gateway/sandboxing) for the full matrix (scope, workspace moun
 
 Two layers matter:
 
-- **Tool profile**: `tools.profile` and `agents.list[].tools.profile` (base allowlist)
-- **Provider tool profile**: `tools.byProvider[provider].profile` and `agents.list[].tools.byProvider[provider].profile`
-- **Global/per-agent tool policy**: `tools.allow`/`tools.deny` and `agents.list[].tools.allow`/`agents.list[].tools.deny`
-- **Provider tool policy**: `tools.byProvider[provider].allow/deny` and `agents.list[].tools.byProvider[provider].allow/deny`
-- **Sandbox tool policy** (only applies when sandboxed): `tools.sandbox.tools.allow`/`tools.sandbox.tools.deny` and `agents.list[].tools.sandbox.tools.*`
+- **Tool profile**: `tools.profile` and `agents.defaults.tools.profile` (base allowlist)
+- **Provider tool profile**: `tools.byProvider[provider].profile` and `agents.defaults.tools.byProvider[provider].profile`
+- **Global + durable-agent tool policy**: `tools.allow`/`tools.deny` and `agents.defaults.tools.allow`/`agents.defaults.tools.deny`
+- **Provider tool policy**: `tools.byProvider[provider].allow/deny` and `agents.defaults.tools.byProvider[provider].allow/deny`
+- **Sandbox tool policy** (only applies when sandboxed): `tools.sandbox.tools.allow`/`tools.sandbox.tools.deny` and `agents.defaults.tools.sandbox.tools.*`
 
 Rules of thumb:
 
@@ -107,8 +107,8 @@ Elevated does **not** grant extra tools; it only affects `exec`.
 
 Gates:
 
-- Enablement: `tools.elevated.enabled` (and optionally `agents.list[].tools.elevated.enabled`)
-- Sender allowlists: `tools.elevated.allowFrom.<provider>` (and optionally `agents.list[].tools.elevated.allowFrom.<provider>`)
+- Enablement: `tools.elevated.enabled` (and optionally `agents.defaults.tools.elevated.enabled`)
+- Sender allowlists: `tools.elevated.allowFrom.<provider>` (and optionally `agents.defaults.tools.elevated.allowFrom.<provider>`)
 
 See [Elevated Mode](/tools/elevated).
 
@@ -118,10 +118,10 @@ See [Elevated Mode](/tools/elevated).
 
 Fix-it keys (pick one):
 
-- Disable sandbox: `agents.defaults.sandbox.mode=off` (or per-agent `agents.list[].sandbox.mode=off`)
+- Disable sandbox: `agents.defaults.sandbox.mode=off`
 - Allow the tool inside sandbox:
-  - remove it from `tools.sandbox.tools.deny` (or per-agent `agents.list[].tools.sandbox.tools.deny`)
-  - or add it to `tools.sandbox.tools.allow` (or per-agent allow)
+  - remove it from `tools.sandbox.tools.deny` (or `agents.defaults.tools.sandbox.tools.deny`)
+  - or add it to `tools.sandbox.tools.allow` (or `agents.defaults.tools.sandbox.tools.allow`)
 
 ### “I thought this was main, why is it sandboxed?”
 

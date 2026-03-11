@@ -295,18 +295,18 @@ Global default:
 marv config set tools.exec.node "node-id-or-name"
 ```
 
-Per-agent override:
+Durable agent override:
 
 ```bash
-marv config get agents.list
-marv config set agents.list[0].tools.exec.node "node-id-or-name"
+marv config get agents.defaults
+marv config set agents.defaults.tools.exec.node "node-id-or-name"
 ```
 
 Unset to allow any node:
 
 ```bash
 marv config unset tools.exec.node
-marv config unset agents.list[0].tools.exec.node
+marv config unset agents.defaults.tools.exec.node
 ```
 
 ## Permissions map

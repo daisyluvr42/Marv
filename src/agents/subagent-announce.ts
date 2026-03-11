@@ -598,6 +598,9 @@ export function buildSubagentSystemPrompt(params: {
   childSessionKey: string;
   label?: string;
   task?: string;
+  role?: string;
+  preset?: string;
+  systemPromptAppend?: string;
   /** Depth of the child being spawned (1 = sub-agent, 2 = sub-sub-agent). */
   childDepth?: number;
   /** Config value: max allowed spawn depth. */
@@ -621,6 +624,8 @@ export function buildSubagentSystemPrompt(params: {
     `- You were created to handle: ${taskText}`,
     "- Complete this task. That's your entire purpose.",
     `- You are NOT the ${parentLabel}. Don't try to be.`,
+    params.role ? `- Runtime role: ${params.role}` : undefined,
+    params.preset ? `- Dispatch preset: ${params.preset}` : undefined,
     "",
     "## Rules",
     "1. **Stay focused** - Do your assigned task, nothing else",
@@ -678,6 +683,9 @@ export function buildSubagentSystemPrompt(params: {
     ].filter((line): line is string => line !== undefined),
     "",
   );
+  if (params.systemPromptAppend) {
+    lines.push("## Role Guidance", params.systemPromptAppend, "");
+  }
   return lines.join("\n");
 }
 

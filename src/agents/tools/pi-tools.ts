@@ -270,6 +270,7 @@ export function createMarvCodingTools(options?: {
       ? resolveSubagentToolPolicy(
           options.config,
           getSubagentDepthFromSessionStore(options.sessionKey, { cfg: options.config }),
+          options.sessionKey,
         )
       : undefined;
   const allowBackground = isToolAllowedByPolicies("process", [

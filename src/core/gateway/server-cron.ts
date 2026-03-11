@@ -126,13 +126,7 @@ export function buildGatewayCronService(params: {
     const runtimeConfig = loadConfig();
     const normalized =
       typeof requested === "string" && requested.trim() ? normalizeAgentId(requested) : undefined;
-    const hasAgent =
-      normalized !== undefined &&
-      Array.isArray(runtimeConfig.agents?.list) &&
-      runtimeConfig.agents.list.some(
-        (entry) =>
-          entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
-      );
+    const hasAgent = normalized === normalizeAgentId(resolveDefaultAgentId(runtimeConfig));
     const agentId = hasAgent ? normalized : resolveDefaultAgentId(runtimeConfig);
     return { agentId, cfg: runtimeConfig };
   };

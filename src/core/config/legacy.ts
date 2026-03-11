@@ -24,6 +24,34 @@ export function findLegacyConfigIssues(raw: unknown): LegacyConfigIssue[] {
   return issues;
 }
 
+export function findRemovedTopLevelMultiAgentIssues(raw: unknown): LegacyConfigIssue[] {
+  if (!raw || typeof raw !== "object") {
+    return [];
+  }
+  const root = raw as Record<string, unknown>;
+  const issues: LegacyConfigIssue[] = [];
+
+  const agents = root.agents;
+  const list =
+    agents && typeof agents === "object" ? (agents as { list?: unknown }).list : undefined;
+  if (list !== undefined) {
+    issues.push({
+      path: "agents.list",
+      message:
+        'Top-level agents.list was removed. Keep only agents.defaults for "main" and use enhanced subagents for delegation.',
+    });
+  }
+
+  if (root.bindings !== undefined) {
+    issues.push({
+      path: "bindings",
+      message: 'Top-level bindings were removed. Routing now targets only "main".',
+    });
+  }
+
+  return issues;
+}
+
 export function applyLegacyMigrations(raw: unknown): {
   next: Record<string, unknown> | null;
   changes: string[];

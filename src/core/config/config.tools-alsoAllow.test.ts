@@ -18,24 +18,21 @@ describe("config: tools.alsoAllow", () => {
     }
   });
 
-  it("rejects agents.list[].tools.allow + alsoAllow together", () => {
+  it("rejects agents.defaults.tools.allow + alsoAllow together", () => {
     const res = validateConfigObject({
       agents: {
-        list: [
-          {
-            id: "main",
-            tools: {
-              allow: ["group:fs"],
-              alsoAllow: ["lobster"],
-            },
+        defaults: {
+          tools: {
+            allow: ["group:fs"],
+            alsoAllow: ["lobster"],
           },
-        ],
+        },
       },
     });
 
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.issues.some((i) => i.path.includes("agents.list"))).toBe(true);
+      expect(res.issues.some((i) => i.path.includes("agents.defaults"))).toBe(true);
     }
   });
 

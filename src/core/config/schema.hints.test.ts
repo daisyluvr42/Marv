@@ -110,8 +110,6 @@ describe("mapSensitivePaths", () => {
     expect(hints["agents.defaults.memorySearch.query.hybrid.reranker.apiKey"]?.sensitive).toBe(
       true,
     );
-    expect(hints["agents.list[].memorySearch.remote.apiKey"]?.sensitive).toBe(true);
-    expect(hints["agents.list[].memorySearch.query.hybrid.reranker.apiKey"]?.sensitive).toBe(true);
     expect(hints["channels.discord.accounts.*.token"]?.sensitive).toBe(true);
     expect(hints["gateway.auth.token"]?.sensitive).toBe(true);
     expect(hints["skills.entries.*.apiKey"]?.sensitive).toBe(true);

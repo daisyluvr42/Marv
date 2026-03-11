@@ -12,8 +12,8 @@ Marv plugins can register **agent tools** (JSON‑schema functions) that are exp
 to the LLM during agent runs. Tools can be **required** (always available) or
 **optional** (opt‑in).
 
-Agent tools are configured under `tools` in the main config, or per‑agent under
-`agents.list[].tools`. The allowlist/denylist policy controls which tools the agent
+Agent tools are configured under `tools` in the main config, or on the durable
+agent under `agents.defaults.tools`. The allowlist/denylist policy controls which tools the agent
 can call.
 
 ## Basic tool
@@ -62,7 +62,7 @@ export default function (api) {
 }
 ```
 
-Enable optional tools in `agents.list[].tools.allow` (or global `tools.allow`):
+Enable optional tools in `agents.defaults.tools.allow` (or global `tools.allow`):
 
 ```json5
 {
@@ -87,8 +87,8 @@ Other config knobs that affect tool availability:
 
 - Allowlists that only name plugin tools are treated as plugin opt-ins; core tools remain
   enabled unless you also include core tools or groups in the allowlist.
-- `tools.profile` / `agents.list[].tools.profile` (base allowlist)
-- `tools.byProvider` / `agents.list[].tools.byProvider` (provider‑specific allow/deny)
+- `tools.profile` / `agents.defaults.tools.profile` (base allowlist)
+- `tools.byProvider` / `agents.defaults.tools.byProvider` (provider-specific allow/deny)
 - `tools.sandbox.tools.*` (sandbox tool policy when sandboxed)
 
 ## Rules + tips

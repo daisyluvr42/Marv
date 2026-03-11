@@ -216,7 +216,7 @@ function applyHeartbeatTargetHints(
   const channelList = listHeartbeatTargetChannels(channels);
   const channelHelp = channelList.length ? ` Known channels: ${channelList.join(", ")}.` : "";
   const help = `Delivery target ("last", "none", or a channel id).${channelHelp}`;
-  const paths = ["agents.defaults.heartbeat.target", "agents.list.*.heartbeat.target"];
+  const paths = ["agents.defaults.heartbeat.target"];
   for (const path of paths) {
     const current = next[path] ?? {};
     next[path] = {
@@ -226,6 +226,16 @@ function applyHeartbeatTargetHints(
     };
   }
   return next;
+}
+
+function isLegacyMultiAgentHintPath(path: string): boolean {
+  return path === "bindings" || path.startsWith("bindings.") || path.startsWith("agents.list");
+}
+
+function stripLegacyMultiAgentHints(hints: ConfigUiHints): ConfigUiHints {
+  return Object.fromEntries(
+    Object.entries(hints).filter(([path]) => !isLegacyMultiAgentHintPath(path)),
+  );
 }
 
 function applyPluginSchemas(schema: ConfigSchema, plugins: PluginUiMetadata[]): ConfigSchema {
@@ -306,8 +316,16 @@ function stripChannelSchema(schema: ConfigSchema): ConfigSchema {
   // Allow `$schema` in config files for editor tooling, but hide it from the
   // Control UI form schema so it does not show up as a configurable section.
   delete root.properties.$schema;
+  delete root.properties.bindings;
   if (Array.isArray(root.required)) {
-    root.required = root.required.filter((key) => key !== "$schema");
+    root.required = root.required.filter((key) => key !== "$schema" && key !== "bindings");
+  }
+  const agentsNode = asSchemaObject(root.properties.agents);
+  if (agentsNode?.properties) {
+    delete agentsNode.properties.list;
+    if (Array.isArray(agentsNode.required)) {
+      agentsNode.required = agentsNode.required.filter((key) => key !== "list");
+    }
   }
   const channelsNode = asSchemaObject(root.properties.channels);
   if (channelsNode) {
@@ -330,7 +348,7 @@ function buildBaseConfigSchema(): ConfigSchemaResponse {
   const hints = mapSensitivePaths(MarvSchema, "", buildBaseHints());
   const next = {
     schema: stripChannelSchema(schema),
-    uiHints: hints,
+    uiHints: stripLegacyMultiAgentHints(hints),
     version: VERSION,
     generatedAt: new Date().toISOString(),
   };

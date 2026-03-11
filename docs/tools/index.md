@@ -32,7 +32,7 @@ Notes:
 ## Tool profiles (base allowlist)
 
 `tools.profile` sets a **base tool allowlist** before `tools.allow`/`tools.deny`.
-Per-agent override: `agents.list[].tools.profile`.
+Per-agent override: `agents.defaults.tools.profile`.
 
 Profiles:
 
@@ -83,7 +83,7 @@ Example (global coding profile, messaging-only support agent):
 
 Use `tools.byProvider` to **further restrict** tools for specific providers
 (or a single `provider/model`) without changing your global defaults.
-Per-agent override: `agents.list[].tools.byProvider`.
+Durable agent override: `agents.defaults.tools.byProvider`.
 
 This is applied **after** the base tool profile and **before** allow/deny lists,
 so it can only narrow the tool set.
@@ -205,7 +205,7 @@ Notes:
 - Returns `status: "running"` with a `sessionId` when backgrounded.
 - Use `process` to poll/log/write/kill/clear background sessions.
 - If `process` is disallowed, `exec` runs synchronously and ignores `yieldMs`/`background`.
-- `elevated` is gated by `tools.elevated` plus any `agents.list[].tools.elevated` override (both must allow) and is an alias for `host=gateway` + `security=full`.
+- `elevated` is gated by `tools.elevated` plus any `agents.defaults.tools.elevated` override (both must allow) and is an alias for `host=gateway` + `security=full`.
 - `elevated` only changes behavior when the agent is sandboxed (otherwise it’s a no-op).
 - `host=node` can target a macOS companion app or a headless node host (`marv node run`).
 - gateway/node approvals and allowlists: [Exec approvals](/tools/exec-approvals).
@@ -251,7 +251,7 @@ Enable with `tools.loopDetection.enabled: true` (default is `false`).
 - `genericRepeat`: repeated same tool + same params call pattern.
 - `knownPollNoProgress`: repeating poll-like tools with identical outputs.
 - `pingPong`: alternating `A/B/A/B` no-progress patterns.
-- Per-agent override: `agents.list[].tools.loopDetection`.
+- Durable agent override: `agents.defaults.tools.loopDetection`.
 
 ### `web_search`
 
@@ -489,7 +489,7 @@ List agent ids that the current session may target with `sessions_spawn`.
 
 Notes:
 
-- Result is restricted to per-agent allowlists (`agents.list[].subagents.allowAgents`).
+- Result is restricted to the durable agent allowlist (`agents.defaults.subagents.allowAgents`).
 - When `["*"]` is configured, the tool includes all configured agents and marks `allowAny: true`.
 
 ## Parameters (common)

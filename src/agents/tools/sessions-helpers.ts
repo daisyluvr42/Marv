@@ -54,6 +54,11 @@ export type SessionListRow = {
   totalTokens?: number | null;
   thinkingLevel?: string;
   verboseLevel?: string;
+  subagentRole?: string;
+  subagentPreset?: string;
+  subagentTaskGroup?: string;
+  subagentDispatchId?: string;
+  subagentAnnounceMode?: string;
   systemSent?: boolean;
   abortedLastRun?: boolean;
   sendPolicy?: string;

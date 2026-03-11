@@ -190,6 +190,15 @@ export function createSessionsListTool(opts?: {
           totalTokens: typeof entry.totalTokens === "number" ? entry.totalTokens : undefined,
           thinkingLevel: typeof entry.thinkingLevel === "string" ? entry.thinkingLevel : undefined,
           verboseLevel: typeof entry.verboseLevel === "string" ? entry.verboseLevel : undefined,
+          subagentRole: typeof entry.subagentRole === "string" ? entry.subagentRole : undefined,
+          subagentPreset:
+            typeof entry.subagentPreset === "string" ? entry.subagentPreset : undefined,
+          subagentTaskGroup:
+            typeof entry.subagentTaskGroup === "string" ? entry.subagentTaskGroup : undefined,
+          subagentDispatchId:
+            typeof entry.subagentDispatchId === "string" ? entry.subagentDispatchId : undefined,
+          subagentAnnounceMode:
+            typeof entry.subagentAnnounceMode === "string" ? entry.subagentAnnounceMode : undefined,
           systemSent: typeof entry.systemSent === "boolean" ? entry.systemSent : undefined,
           abortedLastRun:
             typeof entry.abortedLastRun === "boolean" ? entry.abortedLastRun : undefined,

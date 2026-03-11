@@ -27,7 +27,7 @@ To reconfigure later:
 
 ```bash
 marv configure
-marv agents add <name>
+marv agents list
 ```
 
 <Note>
@@ -79,22 +79,21 @@ If the config is invalid or contains legacy keys, the wizard asks you to run `ma
 **Remote mode** only configures the local client to connect to a Gateway elsewhere.
 It does **not** install or change anything on the remote host.
 
-## Add another agent
+## Durable agent setup
 
-Use `marv agents add <name>` to create a separate agent with its own workspace,
-sessions, and auth profiles. Running without `--workspace` launches the wizard.
+The onboarding flow configures the single durable `main` agent.
 
 What it sets:
 
-- `agents.list[].name`
-- `agents.list[].workspace`
-- `agents.list[].agentDir`
+- `agents.defaults.name`
+- `agents.defaults.workspace`
+- `agents.defaults.agentDir`
 
 Notes:
 
-- Default workspaces follow `~/.marv/workspace-<agentId>`.
-- Add `bindings` to route inbound messages (the wizard can do this).
-- Non-interactive flags: `--model`, `--agent-dir`, `--bind`, `--non-interactive`.
+- The default workspace is `~/.marv/workspace`.
+- Top-level `agents add`/`bindings` flows were removed.
+- Use enhanced subagents when `main` needs delegated work.
 
 ## Full reference
 

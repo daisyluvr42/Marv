@@ -50,7 +50,7 @@ Primary goals:
 
 Cost note: each sub-agent has its **own** context and token usage. For heavy or repetitive
 tasks, set a cheaper model for sub-agents and keep your main agent on a higher-quality model.
-You can configure this via `agents.defaults.subagents.model` or per-agent overrides.
+You can configure this via `agents.defaults.subagents.model`.
 
 ## Tool
 
@@ -58,8 +58,8 @@ Use `sessions_spawn`:
 
 - Starts a sub-agent run (`deliver: false`, global lane: `subagent`)
 - Then runs an announce step and posts the announce reply to the requester chat channel
-- Default model: inherits the caller unless you set `agents.defaults.subagents.model` (or per-agent `agents.list[].subagents.model`); an explicit `sessions_spawn.model` still wins.
-- Default thinking: inherits the caller unless you set `agents.defaults.subagents.thinking` (or per-agent `agents.list[].subagents.thinking`); an explicit `sessions_spawn.thinking` still wins.
+- Default model: inherits the caller unless you set `agents.defaults.subagents.model`; an explicit `sessions_spawn.model` still wins.
+- Default thinking: inherits the caller unless you set `agents.defaults.subagents.thinking`; an explicit `sessions_spawn.thinking` still wins.
 
 Tool params:
 
@@ -73,7 +73,7 @@ Tool params:
 
 Allowlist:
 
-- `agents.list[].subagents.allowAgents`: list of agent ids that can be targeted via `agentId` (`["*"]` to allow any). Default: only the requester agent.
+- `agents.defaults.subagents.allowAgents`: list of agent ids that can be targeted via `agentId` (`["*"]` to allow any). Default: only the requester agent.
 
 Discovery:
 

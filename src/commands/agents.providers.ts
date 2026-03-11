@@ -1,12 +1,6 @@
-import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
-import {
-  getChannelPlugin,
-  listChannelPlugins,
-  normalizeChannelId,
-} from "../channels/plugins/index.js";
+import { getChannelPlugin, listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { MarvConfig } from "../core/config/config.js";
-import type { AgentBinding } from "../core/config/types.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
 type ProviderAccountStatus = {
@@ -91,14 +85,6 @@ export async function buildProviderStatusIndex(
   return map;
 }
 
-function resolveDefaultAccountId(cfg: MarvConfig, provider: ChannelId): string {
-  const plugin = getChannelPlugin(provider);
-  if (!plugin) {
-    return DEFAULT_ACCOUNT_ID;
-  }
-  return resolveChannelDefaultAccountId({ plugin, cfg });
-}
-
 function shouldShowProviderEntry(entry: ProviderAccountStatus, cfg: MarvConfig): boolean {
   const plugin = getChannelPlugin(entry.provider);
   if (!plugin) {
@@ -120,69 +106,20 @@ function formatProviderEntry(entry: ProviderAccountStatus): string {
   return `${label}: ${formatProviderState(entry)}`;
 }
 
-export function summarizeBindings(cfg: MarvConfig, bindings: AgentBinding[]): string[] {
-  if (bindings.length === 0) {
-    return [];
-  }
-  const seen = new Map<string, string>();
-  for (const binding of bindings) {
-    const channel = normalizeChannelId(binding.match.channel);
-    if (!channel) {
-      continue;
-    }
-    const accountId = binding.match.accountId ?? resolveDefaultAccountId(cfg, channel);
-    const key = providerAccountKey(channel, accountId);
-    if (!seen.has(key)) {
-      const label = formatChannelAccountLabel({
-        provider: channel,
-        accountId,
-      });
-      seen.set(key, label);
-    }
-  }
-  return [...seen.values()];
-}
-
 export function listProvidersForAgent(params: {
   summaryIsDefault: boolean;
   cfg: MarvConfig;
-  bindings: AgentBinding[];
   providerStatus: Map<string, ProviderAccountStatus>;
 }): string[] {
-  const allProviderEntries = [...params.providerStatus.values()];
+  if (!params.summaryIsDefault) {
+    return [];
+  }
+
   const providerLines: string[] = [];
-  if (params.bindings.length > 0) {
-    const seen = new Set<string>();
-    for (const binding of params.bindings) {
-      const channel = normalizeChannelId(binding.match.channel);
-      if (!channel) {
-        continue;
-      }
-      const accountId = binding.match.accountId ?? resolveDefaultAccountId(params.cfg, channel);
-      const key = providerAccountKey(channel, accountId);
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      const status = params.providerStatus.get(key);
-      if (status) {
-        providerLines.push(formatProviderEntry(status));
-      } else {
-        providerLines.push(
-          `${formatChannelAccountLabel({ provider: channel, accountId })}: unknown`,
-        );
-      }
-    }
-    return providerLines;
-  }
-
-  if (params.summaryIsDefault) {
-    for (const entry of allProviderEntries) {
-      if (shouldShowProviderEntry(entry, params.cfg)) {
-        providerLines.push(formatProviderEntry(entry));
-      }
+  for (const entry of params.providerStatus.values()) {
+    if (shouldShowProviderEntry(entry, params.cfg)) {
+      providerLines.push(formatProviderEntry(entry));
     }
   }
-
   return providerLines;
 }

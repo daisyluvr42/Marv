@@ -91,10 +91,10 @@ Ask is **independent** of allowlist; allowlist can be used with `always` or `on-
 
 ### Config keys (per agent)
 
-- `agents.list[].tools.exec.host`
-- `agents.list[].tools.exec.security`
-- `agents.list[].tools.exec.ask`
-- `agents.list[].tools.exec.node`
+- `agents.defaults.tools.exec.host`
+- `agents.defaults.tools.exec.security`
+- `agents.defaults.tools.exec.ask`
+- `agents.defaults.tools.exec.node`
 
 ### Alias
 
