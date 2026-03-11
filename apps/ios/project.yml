@@ -1,0 +1,49 @@
+name: MarvCompanion
+options:
+  bundleIdPrefix: ai.marv
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+
+packages:
+  OpenClawKit:
+    path: ../shared/OpenClawKit
+
+schemes:
+  MarvCompanion:
+    shared: true
+    build:
+      targets:
+        MarvCompanion: all
+
+targets:
+  MarvCompanion:
+    type: application
+    platform: iOS
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
+    sources:
+      - path: Sources
+    dependencies:
+      - package: OpenClawKit
+      - package: OpenClawKit
+        product: OpenClawChatUI
+      - package: OpenClawKit
+        product: OpenClawProtocol
+      - sdk: Speech.framework
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: "$(MARV_IOS_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(MARV_IOS_DEVELOPMENT_TEAM)"
+        PRODUCT_BUNDLE_IDENTIFIER: "$(MARV_IOS_APP_BUNDLE_ID)"
+        PROVISIONING_PROFILE_SPECIFIER: "$(MARV_IOS_APP_PROFILE)"
+        SWIFT_STRICT_CONCURRENCY: complete
+        ENABLE_APPINTENTS_METADATA: NO
+    info:
+      path: Sources/Info.plist

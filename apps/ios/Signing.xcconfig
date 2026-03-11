@@ -1,0 +1,15 @@
+// Shared defaults for local iOS development.
+// Local overrides should live in .local-signing.xcconfig or LocalSigning.xcconfig.
+
+MARV_IOS_CODE_SIGN_STYLE = Automatic
+MARV_IOS_DEVELOPMENT_TEAM =
+MARV_IOS_APP_BUNDLE_ID = ai.marv.ios
+MARV_IOS_APP_PROFILE =
+
+#include? ".local-signing.xcconfig"
+#include? "LocalSigning.xcconfig"
+
+CODE_SIGN_STYLE = $(MARV_IOS_CODE_SIGN_STYLE)
+CODE_SIGN_IDENTITY = Apple Development
+DEVELOPMENT_TEAM = $(MARV_IOS_DEVELOPMENT_TEAM)
+PROVISIONING_PROFILE_SPECIFIER = $(MARV_IOS_APP_PROFILE)

@@ -71,6 +71,8 @@
     "gateway:dev": "MARV_SKIP_CHANNELS=1 CLAWDBOT_SKIP_CHANNELS=1 node scripts/run-node.mjs --dev gateway",
     "gateway:dev:reset": "MARV_SKIP_CHANNELS=1 CLAWDBOT_SKIP_CHANNELS=1 node scripts/run-node.mjs --dev gateway --reset",
     "gateway:watch": "node scripts/watch-node.mjs gateway --force",
+    "ios:generate": "bash scripts/ios-open.sh --generate-only",
+    "ios:open": "bash scripts/ios-open.sh",
     "lint": "oxlint --type-aware",
     "lint:all": "pnpm lint",
     "lint:docs": "pnpm dlx markdownlint-cli2",

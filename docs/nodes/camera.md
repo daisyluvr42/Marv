@@ -10,19 +10,20 @@ title: "Camera Capture"
 
 Marv supports **camera capture** for agent workflows:
 
-- **iOS node** (paired via Gateway): capture a **photo** (`jpg`) or **short video clip** (`mp4`, with optional audio) via `node.invoke`.
+- **iOS companion app** (paired via Gateway): capture a **photo** (`jpg`) via `node.invoke`.
 - **Android node** (paired via Gateway): capture a **photo** (`jpg`) or **short video clip** (`mp4`, with optional audio) via `node.invoke`.
 - **macOS app** (node via Gateway): capture a **photo** (`jpg`) or **short video clip** (`mp4`, with optional audio) via `node.invoke`.
 
 All camera access is gated behind **user-controlled settings**.
 
-## iOS node
+## iOS companion app
 
-### User setting (default on)
+### User setting (default off)
 
-- iOS Settings tab → **Camera** → **Allow Camera** (`camera.enabled`)
-  - Default: **on** (missing key is treated as enabled).
-  - When off: `camera.*` commands return `CAMERA_DISABLED`.
+- iOS Settings tab → **Enable agent camera snapshots**
+  - Default: **off**
+  - When off: the app does not open the node camera connection at all.
+  - Turning it on usually creates a second pairing request because the device now asks for the `node` role.
 
 ### Commands (via Gateway `node.invoke`)
 
@@ -44,22 +45,15 @@ All camera access is gated behind **user-controlled settings**.
     - `width`, `height`
   - Payload guard: photos are recompressed to keep the base64 payload under 5 MB.
 
-- `camera.clip`
-  - Params:
-    - `facing`: `front|back` (default: `front`)
-    - `durationMs`: number (default `3000`, clamped to a max of `60000`)
-    - `includeAudio`: boolean (default `true`)
-    - `format`: currently `mp4`
-    - `deviceId`: string (optional; from `camera.list`)
-  - Response payload:
-    - `format: "mp4"`
-    - `base64: "<...>"`
-    - `durationMs`
-    - `hasAudio`
+Current repo status:
+
+- `camera.clip` is **not** wired in the iOS companion app.
+- The app only declares `camera.list` and `camera.snap`.
+- The Gateway still treats `camera.snap` as a dangerous node command, so you must explicitly allowlist it with `gateway.nodes.allowCommands`.
 
 ### Foreground requirement
 
-Like `canvas.*`, the iOS node only allows `camera.*` commands in the **foreground**. Background invocations return `NODE_BACKGROUND_UNAVAILABLE`.
+The iOS companion app only allows camera snapshots while it is in the **foreground**. Background invocations return `NODE_BACKGROUND_UNAVAILABLE`.
 
 ### CLI helper (temp files + MEDIA)
 
@@ -70,12 +64,11 @@ Examples:
 ```bash
 marv nodes camera snap --node <id>               # default: both front + back (2 MEDIA lines)
 marv nodes camera snap --node <id> --facing front
-marv nodes camera clip --node <id> --duration 3000
-marv nodes camera clip --node <id> --no-audio
 ```
 
 Notes:
 
+- The iOS companion app exposes only still-photo capture right now.
 - `nodes camera snap` defaults to **both** facings to give the agent both views.
 - Output files are temporary (in the OS temp directory) unless you build your own wrapper.
 

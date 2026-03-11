@@ -1,108 +1,124 @@
 ---
-summary: "iOS node app: connect to the Gateway, pairing, canvas, and troubleshooting"
+summary: "iOS companion app: chat, dashboard, voice input, and optional camera snapshots"
 read_when:
-  - Pairing or reconnecting the iOS node
+  - Pairing or reconnecting the iOS companion app
   - Running the iOS app from source
-  - Debugging gateway discovery or canvas commands
+  - Enabling optional camera snapshots for the agent
 title: "iOS App"
 ---
 
-# iOS App (Node)
+# iOS App
 
 Availability: internal preview. The iOS app is not publicly distributed yet.
 
-## What it does
+## What it is
 
-- Connects to a Gateway over WebSocket (LAN or tailnet).
-- Exposes node capabilities: Canvas, Screen snapshot, Camera capture, Location, Talk mode, Voice wake.
-- Receives `node.invoke` commands and reports node status events.
+- Connects to a Gateway over WebSocket as an operator companion.
+- Shows native chat and dashboard state from the Gateway.
+- Supports on-device speech-to-text input that is sent into a normal chat session.
+- Can optionally open a separate node connection for `camera.list` + `camera.snap`.
 
-## Requirements
+## Boundaries
 
-- Gateway running on another device (macOS, Linux, or Windows via WSL2).
-- Network path:
-  - Same LAN via Bonjour, **or**
-  - Tailnet via unicast DNS-SD (example domain: `marv.internal.`), **or**
-  - Manual host/port (fallback).
+- App Store distribution
+- Background sensing or always-on listening
+- Canvas, screen capture, or broad device control
+- Continuous camera access
 
-## Quick start (pair + connect)
+## Before you start
 
-1. Start the Gateway:
+- Full Xcode installed
+- `xcodegen` available on your PATH
+- A real iPhone connected to this Mac
+- A reachable `ws://` or `wss://` Gateway URL
+- A shared Gateway token or password for the first connection
 
-```bash
-marv gateway --port 18789
-```
-
-2. In the iOS app, open Settings and pick a discovered gateway (or enable Manual Host and enter host/port).
-
-3. Approve the pairing request on the gateway host:
+If `xcodebuild` still resolves to Command Line Tools, switch the active developer directory first:
 
 ```bash
-marv nodes pending
-marv nodes approve <requestId>
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
 
-4. Verify connection:
+## Local deploy from source
+
+Fast path:
 
 ```bash
-marv nodes status
-marv gateway call node.list --params "{}"
+pnpm ios:open
 ```
 
-## Discovery paths
+This runs local signing setup, generates the Xcode project, and opens it.
+Choose a real iPhone in Xcode and run the `MarvCompanion` scheme.
 
-### Bonjour (LAN)
-
-The Gateway advertises `_marv-gw._tcp` on `local.`. The iOS app lists these automatically.
-
-### Tailnet (cross-network)
-
-If mDNS is blocked, use a unicast DNS-SD zone (choose a domain; example: `marv.internal.`) and Tailscale split DNS.
-See [Bonjour](/gateway/bonjour) for the CoreDNS example.
-
-### Manual host/port
-
-In Settings, enable **Manual Host** and enter the gateway host + port (default `18789`).
-
-## Canvas + A2UI
-
-The iOS node renders a WKWebView canvas. Use `node.invoke` to drive it:
+If you only want to generate the project without opening Xcode:
 
 ```bash
-marv nodes invoke --node "iOS Node" --command canvas.navigate --params '{"url":"http://<gateway-host>:18789/__marv__/canvas/"}'
+pnpm ios:generate
 ```
 
-Notes:
-
-- The Gateway canvas host serves `/__marv__/canvas/` and `/__marv__/a2ui/`.
-- It is served from the Gateway HTTP server (same port as `gateway.port`, default `18789`).
-- The iOS node auto-navigates to A2UI on connect when a canvas host URL is advertised.
-- Return to the built-in scaffold with `canvas.navigate` and `{"url":""}`.
-
-### Canvas eval / snapshot
+Optional signing overrides:
 
 ```bash
-marv nodes invoke --node "iOS Node" --command canvas.eval --params '{"javaScript":"(() => { const {ctx} = window.__marv; ctx.clearRect(0,0,innerWidth,innerHeight); ctx.lineWidth=6; ctx.strokeStyle=\"#ff2d55\"; ctx.beginPath(); ctx.moveTo(40,40); ctx.lineTo(innerWidth-40, innerHeight-40); ctx.stroke(); return \"ok\"; })()"}'
+MARV_IOS_APP_BUNDLE_ID=ai.marv.ios.myphone pnpm ios:open
 ```
+
+The helper scripts auto-detect your Apple Development team ID and write a local signing file under `apps/ios/.local-signing.xcconfig`.
+Advanced overrides:
+
+- `MARV_IOS_APP_BUNDLE_ID`
+- `MARV_IOS_CODE_SIGN_STYLE`
+- `MARV_IOS_APP_PROFILE`
+
+## Pair as an operator companion
+
+1. Start the Gateway.
+2. In the app Settings tab, enter the Gateway URL and shared token/password.
+3. Tap **Save And Connect**.
+4. Approve the first device pairing request for the `operator` role.
+5. Reconnect after approval to activate chat and dashboard.
+
+Example approval flow:
 
 ```bash
-marv nodes invoke --node "iOS Node" --command canvas.snapshot --params '{"maxWidth":900,"format":"jpeg"}'
+marv devices list
+marv devices approve <requestId>
 ```
 
-## Voice wake + talk mode
+## Use it as a display + input terminal
 
-- Voice wake and talk mode are available in Settings.
-- iOS may suspend background audio; treat voice features as best-effort when the app is not active.
+- **Chat** shows a normal operator session backed by the Gateway.
+- **Dashboard** shows the same Memory / Knowledge / Proactive status cards as the browser Control UI.
+- **Voice input** uses on-device speech recognition and sends the transcript into the current session.
+
+This makes the app a good fit for an idle iPhone that mainly sits on a desk as a companion screen and input endpoint.
+
+## Optional camera snapshots for the agent
+
+The camera path is deliberately separate from the operator path.
+
+1. In the app Settings tab, enable **Enable agent camera snapshots**.
+2. Reconnect the app.
+3. Approve the new pairing request for the `node` role if prompted.
+4. Allowlist the dangerous camera command on the Gateway:
+
+```bash
+marv config set gateway.nodes.allowCommands '["camera.snap"]'
+```
+
+The current repo app declares `camera.list` and `camera.snap` only. It does not keep the camera open, and snapshot requests only succeed while the app is in the foreground.
 
 ## Common errors
 
-- `NODE_BACKGROUND_UNAVAILABLE`: bring the iOS app to the foreground (canvas/camera/screen commands require it).
-- `A2UI_HOST_NOT_CONFIGURED`: the Gateway did not advertise a canvas host URL; check `canvasHost` in [Gateway configuration](/gateway/configuration).
-- Pairing prompt never appears: run `marv nodes pending` and approve manually.
-- Reconnect fails after reinstall: the Keychain pairing token was cleared; re-pair the node.
+- `xcodegen is required`: install it with `brew install xcodegen`, then run `pnpm ios:open` again.
+- `xcodebuild is pointing at CommandLineTools`: switch to full Xcode with `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
+- `pairing required`: approve the pending device request, then reconnect.
+- `missing scope: operator.read` or `operator.write`: reconnect after the operator-role pairing approval is complete.
+- `command not allowlisted`: add `camera.snap` to `gateway.nodes.allowCommands`.
+- `NODE_BACKGROUND_UNAVAILABLE`: bring the app to the foreground before asking the agent to take a snapshot.
 
 ## Related docs
 
+- [Dashboard](/web/dashboard)
 - [Pairing](/gateway/pairing)
-- [Discovery](/gateway/discovery)
-- [Bonjour](/gateway/bonjour)
+- [Camera Capture](/nodes/camera)
+- [Remote Access](/gateway/remote)

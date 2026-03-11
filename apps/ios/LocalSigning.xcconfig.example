@@ -1,0 +1,7 @@
+// Copy to LocalSigning.xcconfig for personal local signing overrides.
+// This file is only an example and should stay committed.
+
+MARV_IOS_CODE_SIGN_STYLE = Automatic
+MARV_IOS_DEVELOPMENT_TEAM = TEAMID1234
+MARV_IOS_APP_BUNDLE_ID = ai.marv.ios.test.local
+MARV_IOS_APP_PROFILE =
