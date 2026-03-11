@@ -7,11 +7,14 @@ import { chatHandlers } from "./server-methods/chat.js";
 import { configHandlers } from "./server-methods/config.js";
 import { connectHandlers } from "./server-methods/connect.js";
 import { cronHandlers } from "./server-methods/cron.js";
+import { dashboardHandlers } from "./server-methods/dashboard.js";
 import { deviceHandlers } from "./server-methods/devices.js";
+import { documentsHandlers } from "./server-methods/documents.js";
 import { execApprovalsHandlers } from "./server-methods/exec-approvals.js";
 import { healthHandlers } from "./server-methods/health.js";
 import { ledgerHandlers } from "./server-methods/ledger.js";
 import { logsHandlers } from "./server-methods/logs.js";
+import { memoryHandlers } from "./server-methods/memory.js";
 import { modelsHandlers } from "./server-methods/models.js";
 import { nodeHandlers } from "./server-methods/nodes.js";
 import { pushHandlers } from "./server-methods/push.js";
@@ -60,6 +63,13 @@ const READ_METHODS = new Set([
   "logs.tail",
   "channels.status",
   "status",
+  "memory.stats",
+  "memory.list",
+  "memory.search",
+  "knowledge.status",
+  "proactive.buffer",
+  "documents.list",
+  "documents.read",
   "usage.status",
   "usage.cost",
   "tts.status",
@@ -182,10 +192,13 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...channelsHandlers,
   ...chatHandlers,
   ...cronHandlers,
+  ...dashboardHandlers,
   ...deviceHandlers,
+  ...documentsHandlers,
   ...execApprovalsHandlers,
   ...webHandlers,
   ...modelsHandlers,
+  ...memoryHandlers,
   ...configHandlers,
   ...wizardHandlers,
   ...talkHandlers,

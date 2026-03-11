@@ -69,6 +69,7 @@ around in the browser.
 
 ## What it can do (today)
 
+- Overview: Gateway access + live status cards for memory, knowledge vault sync, and proactive digest state
 - Chat with the model via Gateway WS (`chat.history`, `chat.send`, `chat.abort`, `chat.inject`)
 - Stream tool calls + live tool output cards in Chat (agent events)
 - Channels: WhatsApp/Telegram/Discord/Slack + plugin channels (Mattermost, etc.) status + QR login + per-channel config (`channels.status`, `web.login.*`, `config.patch`)
@@ -94,6 +95,24 @@ Cron jobs panel notes:
 - For main-session jobs, webhook and none delivery modes are available.
 - Set `cron.webhookToken` to send a dedicated bearer token, if omitted the webhook is sent without an auth header.
 - Deprecated fallback: stored legacy jobs with `notify: true` can still use `cron.webhook` until migrated.
+
+## Overview status cards
+
+The default **Overview** page is now the quickest way to verify whether the local-first assistant features are alive.
+
+It shows three cards:
+
+- **Memory**: backend, citation mode, auto recall, runtime ingest, total memory items, and archive event count
+- **Knowledge**: whether local knowledge is enabled, how many vaults/files/chunks are indexed, last scan time, and boot/search sync flags
+- **Proactive**: whether managed proactive mode is enabled, pending and urgent digest entries, last flush time, digest schedule, and delivery route
+
+To make these cards meaningful:
+
+1. Turn on `memory.knowledge` and/or `autonomy.proactive` in config if you want those subsystems active.
+2. Restart the Gateway after config changes so boot-time scans and managed cron jobs are created.
+3. Open `marv dashboard` and check the Overview page.
+
+For the full setup flow, see [Personal Assistant Setup](/start/marv).
 
 ## Chat behavior
 

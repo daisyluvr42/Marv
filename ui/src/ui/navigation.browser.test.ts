@@ -41,6 +41,14 @@ describe("control UI routing", () => {
     expect(window.location.pathname).toBe("/apps/marv/cron");
   });
 
+  it("hydrates workspace tabs from the location", async () => {
+    const app = mountApp("/projects");
+    await app.updateComplete;
+
+    expect(app.tab).toBe("projects");
+    expect(window.location.pathname).toBe("/projects");
+  });
+
   it("honors explicit base path overrides", async () => {
     window.__MARV_CONTROL_UI_BASE_PATH__ = "/marv";
     const app = mountApp("/marv/sessions");

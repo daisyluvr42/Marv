@@ -7,18 +7,23 @@ export const TAB_GROUPS = [
     label: "control",
     tabs: ["overview", "channels", "instances", "sessions", "usage", "cron"],
   },
+  { label: "workspace", tabs: ["calendar", "projects", "memory", "documents"] },
   { label: "agent", tabs: ["agents", "skills", "nodes"] },
   { label: "settings", tabs: ["config", "debug", "logs"] },
 ] as const;
 
 export type Tab =
   | "agents"
+  | "calendar"
   | "overview"
   | "channels"
   | "instances"
   | "sessions"
   | "usage"
   | "cron"
+  | "projects"
+  | "memory"
+  | "documents"
   | "skills"
   | "nodes"
   | "chat"
@@ -28,12 +33,16 @@ export type Tab =
 
 const TAB_PATHS: Record<Tab, string> = {
   agents: "/agents",
+  calendar: "/calendar",
   overview: "/overview",
   channels: "/channels",
   instances: "/instances",
   sessions: "/sessions",
   usage: "/usage",
   cron: "/cron",
+  projects: "/projects",
+  memory: "/memory",
+  documents: "/documents",
   skills: "/skills",
   nodes: "/nodes",
   chat: "/chat",
@@ -43,6 +52,7 @@ const TAB_PATHS: Record<Tab, string> = {
 };
 
 const PATH_TO_TAB = new Map(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab as Tab]));
+const WORKSPACE_TABS = new Set<Tab>(["calendar", "projects", "memory", "documents"]);
 
 export function normalizeBasePath(basePath: string): string {
   if (!basePath) {
@@ -127,6 +137,8 @@ export function iconForTab(tab: Tab): IconName {
   switch (tab) {
     case "agents":
       return "folder";
+    case "calendar":
+      return "book";
     case "chat":
       return "messageSquare";
     case "overview":
@@ -141,6 +153,12 @@ export function iconForTab(tab: Tab): IconName {
       return "barChart";
     case "cron":
       return "loader";
+    case "projects":
+      return "folder";
+    case "memory":
+      return "brain";
+    case "documents":
+      return "fileText";
     case "skills":
       return "zap";
     case "nodes":
@@ -162,4 +180,8 @@ export function titleForTab(tab: Tab) {
 
 export function subtitleForTab(tab: Tab) {
   return t(`subtitles.${tab}`);
+}
+
+export function isWorkspaceTab(tab: Tab): boolean {
+  return WORKSPACE_TABS.has(tab);
 }

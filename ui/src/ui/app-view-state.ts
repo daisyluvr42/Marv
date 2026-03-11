@@ -26,7 +26,10 @@ import type {
   PresenceEntry,
   SessionsUsageResult,
   CostUsageSummary,
+  KnowledgeStatusSnapshot,
+  MemoryStatusSnapshot,
   SessionUsageTimeSeries,
+  ProactiveStatusSnapshot,
   SessionsListResult,
   SkillStatusReport,
   StatusSummary,
@@ -34,6 +37,14 @@ import type {
 import type { ChatAttachment, ChatQueueItem, CronFormState } from "./ui-types.js";
 import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.js";
 import type { SessionLogEntry } from "./views/usage.js";
+import type {
+  WorkspaceCalendarSnapshot,
+  WorkspaceDocumentsListResult,
+  WorkspaceDocumentsReadResult,
+  WorkspaceMemoryListResult,
+  WorkspaceMemorySearchResult,
+  WorkspaceSummarySnapshot,
+} from "./workspace-types.js";
 
 export type AppViewState = {
   settings: UiSettings;
@@ -151,6 +162,43 @@ export type AppViewState = {
   sessionsFilterLimit: string;
   sessionsIncludeGlobal: boolean;
   sessionsIncludeUnknown: boolean;
+  dashboardLoading: boolean;
+  dashboardError: string | null;
+  memoryStats: MemoryStatusSnapshot | null;
+  knowledgeStatus: KnowledgeStatusSnapshot | null;
+  proactiveStatus: ProactiveStatusSnapshot | null;
+  workspaceSummaryLoading: boolean;
+  workspaceSummaryError: string | null;
+  workspaceSummary: WorkspaceSummarySnapshot | null;
+  workspaceProjectsLoading: boolean;
+  workspaceProjectsError: string | null;
+  workspaceProjectsResult: SessionsUsageResult | null;
+  workspaceProjectsRangeStart: string;
+  workspaceProjectsRangeEnd: string;
+  workspaceProjectsQuery: string;
+  workspaceProjectsSelectedKey: string | null;
+  workspaceProjectTimeSeries: SessionUsageTimeSeries | null;
+  workspaceProjectTimeSeriesLoading: boolean;
+  workspaceProjectLogs: SessionLogEntry[] | null;
+  workspaceProjectLogsLoading: boolean;
+  workspaceCalendarLoading: boolean;
+  workspaceCalendarError: string | null;
+  workspaceCalendar: WorkspaceCalendarSnapshot | null;
+  workspaceCalendarSelectedDay: string | null;
+  workspaceMemoryLoading: boolean;
+  workspaceMemoryError: string | null;
+  workspaceMemoryQuery: string;
+  workspaceMemoryList: WorkspaceMemoryListResult | null;
+  workspaceMemorySearch: WorkspaceMemorySearchResult | null;
+  workspaceDocumentsLoading: boolean;
+  workspaceDocumentsError: string | null;
+  workspaceDocumentsQuery: string;
+  workspaceDocumentsResult: WorkspaceDocumentsListResult | null;
+  workspaceDocumentsSelectedRootId: string | null;
+  workspaceDocumentsSelectedPath: string | null;
+  workspaceDocumentReadLoading: boolean;
+  workspaceDocumentReadError: string | null;
+  workspaceDocumentReadResult: WorkspaceDocumentsReadResult | null;
   usageLoading: boolean;
   usageResult: SessionsUsageResult | null;
   usageCostSummary: CostUsageSummary | null;

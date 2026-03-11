@@ -10,19 +10,26 @@ import type { MarvApp } from "./app.js";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.js";
 import { loadAgentSkills } from "./controllers/agent-skills.js";
 import { loadAgents } from "./controllers/agents.js";
+import { loadWorkspaceCalendar } from "./controllers/calendar.js";
 import { loadChannels } from "./controllers/channels.js";
 import { loadConfig, loadConfigSchema } from "./controllers/config.js";
 import { loadCronJobs, loadCronStatus } from "./controllers/cron.js";
+import { loadDashboard } from "./controllers/dashboard.js";
 import { loadDebug } from "./controllers/debug.js";
 import { loadDevices } from "./controllers/devices.js";
+import { loadWorkspaceDocuments } from "./controllers/documents.js";
 import { loadExecApprovals } from "./controllers/exec-approvals.js";
 import { loadLogs } from "./controllers/logs.js";
+import { loadWorkspaceMemory, searchWorkspaceMemory } from "./controllers/memory.js";
 import { loadNodes } from "./controllers/nodes.js";
 import { loadPresence } from "./controllers/presence.js";
+import { loadWorkspaceProjects } from "./controllers/projects.js";
 import { loadSessions } from "./controllers/sessions.js";
 import { loadSkills } from "./controllers/skills.js";
+import { loadWorkspaceSummary } from "./controllers/workspace-summary.js";
 import {
   inferBasePathFromPathname,
+  isWorkspaceTab,
   normalizeBasePath,
   normalizePath,
   pathForTab,
@@ -179,6 +186,9 @@ export function setTheme(host: SettingsHost, next: ThemeMode, context?: ThemeTra
 }
 
 export async function refreshActiveTab(host: SettingsHost) {
+  if (isWorkspaceTab(host.tab)) {
+    await loadWorkspaceSummary(host as unknown as Parameters<typeof loadWorkspaceSummary>[0]);
+  }
   if (host.tab === "overview") {
     await loadOverview(host);
   }
@@ -193,6 +203,26 @@ export async function refreshActiveTab(host: SettingsHost) {
   }
   if (host.tab === "cron") {
     await loadCron(host);
+  }
+  if (host.tab === "projects") {
+    await loadWorkspaceProjects(host as unknown as Parameters<typeof loadWorkspaceProjects>[0]);
+  }
+  if (host.tab === "calendar") {
+    await loadWorkspaceCalendar(host as unknown as Parameters<typeof loadWorkspaceCalendar>[0]);
+  }
+  if (host.tab === "memory") {
+    if (
+      "workspaceMemoryQuery" in host &&
+      typeof host.workspaceMemoryQuery === "string" &&
+      host.workspaceMemoryQuery.trim()
+    ) {
+      await searchWorkspaceMemory(host as unknown as Parameters<typeof searchWorkspaceMemory>[0]);
+    } else {
+      await loadWorkspaceMemory(host as unknown as Parameters<typeof loadWorkspaceMemory>[0]);
+    }
+  }
+  if (host.tab === "documents") {
+    await loadWorkspaceDocuments(host as unknown as Parameters<typeof loadWorkspaceDocuments>[0]);
   }
   if (host.tab === "skills") {
     await loadSkills(host as unknown as MarvApp);
@@ -408,6 +438,7 @@ export async function loadOverview(host: SettingsHost) {
     loadPresence(host as unknown as MarvApp),
     loadSessions(host as unknown as MarvApp),
     loadCronStatus(host as unknown as MarvApp),
+    loadDashboard(host as unknown as MarvApp),
     loadDebug(host as unknown as MarvApp),
   ]);
 }

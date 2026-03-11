@@ -56,6 +56,7 @@ import type { DevicePairingList } from "./controllers/devices.js";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.js";
 import type { SkillMessage } from "./controllers/skills.js";
+import { getRecentDateRange } from "./controllers/workspace-date.js";
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.js";
 import type { Tab } from "./navigation.js";
 import { loadSettings, type UiSettings } from "./storage.js";
@@ -80,9 +81,20 @@ import type {
   StatusSummary,
   NostrProfile,
   GatewayModelChoice,
+  KnowledgeStatusSnapshot,
+  MemoryStatusSnapshot,
+  ProactiveStatusSnapshot,
 } from "./types.js";
 import { type ChatAttachment, type ChatQueueItem, type CronFormState } from "./ui-types.js";
 import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.js";
+import type {
+  WorkspaceCalendarSnapshot,
+  WorkspaceDocumentsListResult,
+  WorkspaceDocumentsReadResult,
+  WorkspaceMemoryListResult,
+  WorkspaceMemorySearchResult,
+  WorkspaceSummarySnapshot,
+} from "./workspace-types.js";
 
 declare global {
   interface Window {
@@ -239,6 +251,43 @@ export class MarvApp extends LitElement {
   @state() sessionsFilterLimit = "120";
   @state() sessionsIncludeGlobal = true;
   @state() sessionsIncludeUnknown = false;
+  @state() dashboardLoading = false;
+  @state() dashboardError: string | null = null;
+  @state() memoryStats: MemoryStatusSnapshot | null = null;
+  @state() knowledgeStatus: KnowledgeStatusSnapshot | null = null;
+  @state() proactiveStatus: ProactiveStatusSnapshot | null = null;
+  @state() workspaceSummaryLoading = false;
+  @state() workspaceSummaryError: string | null = null;
+  @state() workspaceSummary: WorkspaceSummarySnapshot | null = null;
+  @state() workspaceProjectsLoading = false;
+  @state() workspaceProjectsError: string | null = null;
+  @state() workspaceProjectsResult: import("./types.js").SessionsUsageResult | null = null;
+  @state() workspaceProjectsRangeStart = getRecentDateRange(30).startDate;
+  @state() workspaceProjectsRangeEnd = getRecentDateRange(30).endDate;
+  @state() workspaceProjectsQuery = "";
+  @state() workspaceProjectsSelectedKey: string | null = null;
+  @state() workspaceProjectTimeSeries: import("./types.js").SessionUsageTimeSeries | null = null;
+  @state() workspaceProjectTimeSeriesLoading = false;
+  @state() workspaceProjectLogs: import("./views/usage.js").SessionLogEntry[] | null = null;
+  @state() workspaceProjectLogsLoading = false;
+  @state() workspaceCalendarLoading = false;
+  @state() workspaceCalendarError: string | null = null;
+  @state() workspaceCalendar: WorkspaceCalendarSnapshot | null = null;
+  @state() workspaceCalendarSelectedDay: string | null = null;
+  @state() workspaceMemoryLoading = false;
+  @state() workspaceMemoryError: string | null = null;
+  @state() workspaceMemoryQuery = "";
+  @state() workspaceMemoryList: WorkspaceMemoryListResult | null = null;
+  @state() workspaceMemorySearch: WorkspaceMemorySearchResult | null = null;
+  @state() workspaceDocumentsLoading = false;
+  @state() workspaceDocumentsError: string | null = null;
+  @state() workspaceDocumentsQuery = "";
+  @state() workspaceDocumentsResult: WorkspaceDocumentsListResult | null = null;
+  @state() workspaceDocumentsSelectedRootId: string | null = null;
+  @state() workspaceDocumentsSelectedPath: string | null = null;
+  @state() workspaceDocumentReadLoading = false;
+  @state() workspaceDocumentReadError: string | null = null;
+  @state() workspaceDocumentReadResult: WorkspaceDocumentsReadResult | null = null;
 
   @state() usageLoading = false;
   @state() usageResult: import("./types.js").SessionsUsageResult | null = null;

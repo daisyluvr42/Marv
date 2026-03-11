@@ -140,6 +140,21 @@ import type {
   WizardStatusResultSchema,
   WizardStepSchema,
 } from "./wizard.js";
+import type {
+  DocumentsListParamsSchema,
+  DocumentsListResultSchema,
+  DocumentsReadParamsSchema,
+  DocumentsReadResultSchema,
+  MemoryItemSchema,
+  MemoryListParamsSchema,
+  MemoryListResultSchema,
+  MemoryScopeSchema,
+  MemorySearchItemSchema,
+  MemorySearchParamsSchema,
+  MemorySearchResultSchema,
+  WorkspaceDocumentEntrySchema,
+  WorkspaceDocumentRootSchema,
+} from "./workspace.js";
 
 export type ConnectParams = Static<typeof ConnectParamsSchema>;
 export type HelloOk = Static<typeof HelloOkSchema>;
@@ -178,6 +193,19 @@ export type SessionsResetParams = Static<typeof SessionsResetParamsSchema>;
 export type SessionsDeleteParams = Static<typeof SessionsDeleteParamsSchema>;
 export type SessionsCompactParams = Static<typeof SessionsCompactParamsSchema>;
 export type SessionsUsageParams = Static<typeof SessionsUsageParamsSchema>;
+export type MemoryScope = Static<typeof MemoryScopeSchema>;
+export type MemoryItem = Static<typeof MemoryItemSchema>;
+export type MemorySearchItem = Static<typeof MemorySearchItemSchema>;
+export type MemoryListParams = Static<typeof MemoryListParamsSchema>;
+export type MemorySearchParams = Static<typeof MemorySearchParamsSchema>;
+export type MemoryListResult = Static<typeof MemoryListResultSchema>;
+export type MemorySearchResult = Static<typeof MemorySearchResultSchema>;
+export type WorkspaceDocumentRoot = Static<typeof WorkspaceDocumentRootSchema>;
+export type WorkspaceDocumentEntry = Static<typeof WorkspaceDocumentEntrySchema>;
+export type DocumentsListParams = Static<typeof DocumentsListParamsSchema>;
+export type DocumentsReadParams = Static<typeof DocumentsReadParamsSchema>;
+export type DocumentsListResult = Static<typeof DocumentsListResultSchema>;
+export type DocumentsReadResult = Static<typeof DocumentsReadResultSchema>;
 export type ConfigGetParams = Static<typeof ConfigGetParamsSchema>;
 export type ConfigSetParams = Static<typeof ConfigSetParamsSchema>;
 export type ConfigApplyParams = Static<typeof ConfigApplyParamsSchema>;

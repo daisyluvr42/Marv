@@ -9,6 +9,7 @@ import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controlle
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.js";
 import { loadAgentSkills } from "./controllers/agent-skills.js";
 import { loadAgents } from "./controllers/agents.js";
+import { loadWorkspaceCalendar } from "./controllers/calendar.js";
 import { loadChannels } from "./controllers/channels.js";
 import { loadChatHistory } from "./controllers/chat.js";
 import {
@@ -35,6 +36,7 @@ import {
   revokeDeviceToken,
   rotateDeviceToken,
 } from "./controllers/devices.js";
+import { loadWorkspaceDocuments, selectWorkspaceDocument } from "./controllers/documents.js";
 import {
   loadExecApprovals,
   removeExecApprovalsFormValue,
@@ -42,8 +44,10 @@ import {
   updateExecApprovalsFormValue,
 } from "./controllers/exec-approvals.js";
 import { loadLogs } from "./controllers/logs.js";
+import { loadWorkspaceMemory, searchWorkspaceMemory } from "./controllers/memory.js";
 import { loadNodes } from "./controllers/nodes.js";
 import { loadPresence } from "./controllers/presence.js";
+import { loadWorkspaceProjects, selectWorkspaceProjectSession } from "./controllers/projects.js";
 import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.js";
 import {
   installSkill,
@@ -53,21 +57,32 @@ import {
   updateSkillEnabled,
 } from "./controllers/skills.js";
 import { icons } from "./icons.js";
-import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.js";
+import {
+  isWorkspaceTab,
+  normalizeBasePath,
+  TAB_GROUPS,
+  subtitleForTab,
+  titleForTab,
+} from "./navigation.js";
 import { renderAgents } from "./views/agents.js";
+import { renderCalendar } from "./views/calendar.js";
 import { renderChannels } from "./views/channels.js";
 import { renderChat } from "./views/chat.js";
 import { renderConfig } from "./views/config.js";
 import { renderCron } from "./views/cron.js";
 import { renderDebug } from "./views/debug.js";
+import { renderDocuments } from "./views/documents.js";
 import { renderExecApprovalPrompt } from "./views/exec-approval.js";
 import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.js";
 import { renderInstances } from "./views/instances.js";
 import { renderLogs } from "./views/logs.js";
+import { renderMemory } from "./views/memory.js";
 import { renderNodes } from "./views/nodes.js";
 import { renderOverview } from "./views/overview.js";
+import { renderProjects } from "./views/projects.js";
 import { renderSessions } from "./views/sessions.js";
 import { renderSkills } from "./views/skills.js";
+import { renderWorkspaceSummary } from "./views/workspace-summary.js";
 
 const AVATAR_DATA_RE = /^data:/i;
 const AVATAR_HTTP_RE = /^https?:\/\//i;
@@ -200,6 +215,16 @@ export function renderApp(state: AppViewState) {
         </section>
 
         ${
+          isWorkspaceTab(state.tab)
+            ? renderWorkspaceSummary({
+                loading: state.workspaceSummaryLoading,
+                error: state.workspaceSummaryError,
+                summary: state.workspaceSummary,
+              })
+            : nothing
+        }
+
+        ${
           state.tab === "overview"
             ? renderOverview({
                 connected: state.connected,
@@ -215,6 +240,11 @@ export function renderApp(state: AppViewState) {
                 cronEnabled: state.cronStatus?.enabled ?? null,
                 cronNext,
                 lastChannelsRefresh: state.channelsLastSuccess,
+                dashboardLoading: state.dashboardLoading,
+                dashboardError: state.dashboardError,
+                memoryStats: state.memoryStats,
+                knowledgeStatus: state.knowledgeStatus,
+                proactiveStatus: state.proactiveStatus,
                 onSettingsChange: (next) => state.applySettings(next),
                 onPasswordChange: (next) => (state.password = next),
                 onSessionKeyChange: (next) => {
@@ -337,6 +367,94 @@ export function renderApp(state: AppViewState) {
                 onRun: (job) => runCronJob(state, job),
                 onRemove: (job) => removeCronJob(state, job),
                 onLoadRuns: (jobId) => loadCronRuns(state, jobId),
+              })
+            : nothing
+        }
+
+        ${
+          state.tab === "projects"
+            ? renderProjects({
+                loading: state.workspaceProjectsLoading,
+                error: state.workspaceProjectsError,
+                result: state.workspaceProjectsResult,
+                query: state.workspaceProjectsQuery,
+                selectedKey: state.workspaceProjectsSelectedKey,
+                timeSeries: state.workspaceProjectTimeSeries,
+                timeSeriesLoading: state.workspaceProjectTimeSeriesLoading,
+                logs: state.workspaceProjectLogs,
+                logsLoading: state.workspaceProjectLogsLoading,
+                onRefresh: () => loadWorkspaceProjects(state),
+                onQueryChange: (value) => {
+                  state.workspaceProjectsQuery = value;
+                },
+                onSelectSession: (sessionKey) => {
+                  void selectWorkspaceProjectSession(state, sessionKey);
+                },
+              })
+            : nothing
+        }
+
+        ${
+          state.tab === "calendar"
+            ? renderCalendar({
+                loading: state.workspaceCalendarLoading,
+                error: state.workspaceCalendarError,
+                snapshot: state.workspaceCalendar,
+                selectedDay: state.workspaceCalendarSelectedDay,
+                onRefresh: () => loadWorkspaceCalendar(state),
+                onSelectDay: (date) => {
+                  state.workspaceCalendarSelectedDay = date;
+                },
+              })
+            : nothing
+        }
+
+        ${
+          state.tab === "memory"
+            ? renderMemory({
+                loading: state.workspaceMemoryLoading,
+                error: state.workspaceMemoryError,
+                query: state.workspaceMemoryQuery,
+                list: state.workspaceMemoryList,
+                search: state.workspaceMemorySearch,
+                onRefresh: () =>
+                  state.workspaceMemoryQuery.trim()
+                    ? searchWorkspaceMemory(state)
+                    : loadWorkspaceMemory(state),
+                onQueryChange: (value) => {
+                  state.workspaceMemoryQuery = value;
+                },
+                onSearch: () => {
+                  void searchWorkspaceMemory(state);
+                },
+                onClear: () => {
+                  state.workspaceMemoryQuery = "";
+                  state.workspaceMemorySearch = null;
+                  void loadWorkspaceMemory(state);
+                },
+              })
+            : nothing
+        }
+
+        ${
+          state.tab === "documents"
+            ? renderDocuments({
+                loading: state.workspaceDocumentsLoading,
+                error: state.workspaceDocumentsError,
+                query: state.workspaceDocumentsQuery,
+                result: state.workspaceDocumentsResult,
+                selectedRootId: state.workspaceDocumentsSelectedRootId,
+                selectedPath: state.workspaceDocumentsSelectedPath,
+                readLoading: state.workspaceDocumentReadLoading,
+                readError: state.workspaceDocumentReadError,
+                readResult: state.workspaceDocumentReadResult,
+                onRefresh: () => loadWorkspaceDocuments(state),
+                onQueryChange: (value) => {
+                  state.workspaceDocumentsQuery = value;
+                },
+                onSelect: (rootId, relativePath) => {
+                  void selectWorkspaceDocument(state, rootId, relativePath);
+                },
               })
             : nothing
         }

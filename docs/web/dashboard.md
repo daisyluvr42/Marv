@@ -39,6 +39,16 @@ Prefer localhost, Tailscale Serve, or an SSH tunnel.
 - **Token source**: `gateway.auth.token` (or `MARV_GATEWAY_TOKEN`); the UI stores a copy in localStorage after you connect.
 - **Not localhost**: use Tailscale Serve (tokenless if `gateway.auth.allowTailscale: true`), tailnet bind with a token, or an SSH tunnel. See [Web surfaces](/web).
 
+## Overview page
+
+After you enable the local-first assistant features, the dashboard Overview page also becomes your health panel for them.
+
+- **Memory** shows auto recall state, runtime ingest state, total memory items, archive events, backend, and citations.
+- **Knowledge** shows local vault count, indexed files/chunks, last scan time, and whether boot/search sync is active.
+- **Proactive** shows pending and urgent digest entries, last flush time, digest schedule, and delivery target.
+
+For the full deployment flow, see [Personal Assistant Setup](/start/marv). For the full UI surface, see [Control UI](/web/control-ui).
+
 ## If you see “unauthorized” / 1008
 
 - Ensure the gateway is reachable (local: `marv status`; remote: SSH tunnel `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/`).

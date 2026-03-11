@@ -28,10 +28,14 @@ describe("iconForTab", () => {
   it("returns stable icons for known tabs", () => {
     expect(iconForTab("chat")).toBe("messageSquare");
     expect(iconForTab("overview")).toBe("barChart");
+    expect(iconForTab("calendar")).toBe("book");
     expect(iconForTab("channels")).toBe("link");
     expect(iconForTab("instances")).toBe("radio");
     expect(iconForTab("sessions")).toBe("fileText");
     expect(iconForTab("cron")).toBe("loader");
+    expect(iconForTab("projects")).toBe("folder");
+    expect(iconForTab("memory")).toBe("brain");
+    expect(iconForTab("documents")).toBe("fileText");
     expect(iconForTab("skills")).toBe("zap");
     expect(iconForTab("nodes")).toBe("monitor");
     expect(iconForTab("config")).toBe("settings");
@@ -59,6 +63,7 @@ describe("titleForTab", () => {
     expect(titleForTab("chat")).toBe("Chat");
     expect(titleForTab("overview")).toBe("Overview");
     expect(titleForTab("cron")).toBe("Cron Jobs");
+    expect(titleForTab("projects")).toBe("Projects");
   });
 });
 
@@ -73,6 +78,7 @@ describe("subtitleForTab", () => {
   it("returns descriptive subtitles", () => {
     expect(subtitleForTab("chat")).toContain("chat session");
     expect(subtitleForTab("config")).toContain("marv.json");
+    expect(subtitleForTab("documents")).toContain("workspace files");
   });
 });
 
@@ -117,6 +123,7 @@ describe("pathForTab", () => {
   it("returns correct path without base", () => {
     expect(pathForTab("chat")).toBe("/chat");
     expect(pathForTab("overview")).toBe("/overview");
+    expect(pathForTab("calendar")).toBe("/calendar");
   });
 
   it("prepends base path", () => {
@@ -130,6 +137,7 @@ describe("tabFromPath", () => {
     expect(tabFromPath("/chat")).toBe("chat");
     expect(tabFromPath("/overview")).toBe("overview");
     expect(tabFromPath("/sessions")).toBe("sessions");
+    expect(tabFromPath("/projects")).toBe("projects");
   });
 
   it("returns chat for root path", () => {
@@ -159,6 +167,7 @@ describe("inferBasePathFromPathname", () => {
   it("returns empty string for direct tab path", () => {
     expect(inferBasePathFromPathname("/chat")).toBe("");
     expect(inferBasePathFromPathname("/overview")).toBe("");
+    expect(inferBasePathFromPathname("/calendar")).toBe("");
   });
 
   it("infers base path from nested paths", () => {
@@ -175,10 +184,11 @@ describe("inferBasePathFromPathname", () => {
 describe("TAB_GROUPS", () => {
   it("contains all expected groups", () => {
     const labels = TAB_GROUPS.map((g) => g.label);
-    expect(labels).toContain("Chat");
-    expect(labels).toContain("Control");
-    expect(labels).toContain("Agent");
-    expect(labels).toContain("Settings");
+    expect(labels).toContain("chat");
+    expect(labels).toContain("control");
+    expect(labels).toContain("workspace");
+    expect(labels).toContain("agent");
+    expect(labels).toContain("settings");
   });
 
   it("all tabs are unique", () => {

@@ -4,6 +4,11 @@ import { formatRelativeTimestamp, formatDurationHuman } from "../format.js";
 import type { GatewayHelloOk } from "../gateway.js";
 import { formatNextRun } from "../presenter.js";
 import type { UiSettings } from "../storage.js";
+import type {
+  KnowledgeStatusSnapshot,
+  MemoryStatusSnapshot,
+  ProactiveStatusSnapshot,
+} from "../types.js";
 
 export type OverviewProps = {
   connected: boolean;
@@ -17,6 +22,11 @@ export type OverviewProps = {
   cronEnabled: boolean | null;
   cronNext: number | null;
   lastChannelsRefresh: number | null;
+  dashboardLoading: boolean;
+  dashboardError: string | null;
+  memoryStats: MemoryStatusSnapshot | null;
+  knowledgeStatus: KnowledgeStatusSnapshot | null;
+  proactiveStatus: ProactiveStatusSnapshot | null;
   onSettingsChange: (next: UiSettings) => void;
   onPasswordChange: (next: string) => void;
   onSessionKeyChange: (next: string) => void;
@@ -26,6 +36,20 @@ export type OverviewProps = {
 };
 
 export function renderOverview(props: OverviewProps) {
+  const formatTimestamp = (value: number | null | undefined) =>
+    value ? formatRelativeTimestamp(value) : t("common.na");
+  const formatBoolean = (value: boolean | null | undefined) =>
+    value == null ? t("common.na") : value ? t("common.enabled") : t("common.disabled");
+  const formatList = (values: string[] | undefined) =>
+    values && values.length > 0 ? values.join(", ") : t("common.na");
+  const tierSummary = props.memoryStats
+    ? ["P0", "P1", "P2", "P3"]
+        .map(
+          (tier) =>
+            `${tier} ${props.memoryStats?.tiers[tier as keyof typeof props.memoryStats.tiers] ?? 0}`,
+        )
+        .join(" · ")
+    : t("common.na");
   const snapshot = props.hello?.snapshot as
     | {
         uptimeMs?: number;
@@ -279,6 +303,115 @@ export function renderOverview(props: OverviewProps) {
           ${props.cronEnabled == null ? t("common.na") : props.cronEnabled ? t("common.enabled") : t("common.disabled")}
         </div>
         <div class="muted">${t("overview.stats.cronNext", { time: formatNextRun(props.cronNext) })}</div>
+      </div>
+    </section>
+
+    ${
+      props.dashboardError
+        ? html`
+            <section class="callout danger" style="margin-top: 18px;">
+              ${props.dashboardError}
+            </section>
+          `
+        : ""
+    }
+
+    <section class="grid grid-cols-3" style="margin-top: 18px;">
+      <div class="card">
+        <div class="card-title">${t("overview.advanced.memoryTitle")}</div>
+        <div class="card-sub">${t("overview.advanced.memorySubtitle")}</div>
+        <div class="stat-grid" style="margin-top: 16px;">
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.totalItems")}</div>
+            <div class="stat-value">${props.memoryStats?.totalItems ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.archiveEvents")}</div>
+            <div class="stat-value">${props.memoryStats?.archiveEvents ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.autoRecall")}</div>
+            <div class="stat-value">${formatBoolean(props.memoryStats?.autoRecallEnabled)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.runtimeIngest")}</div>
+            <div class="stat-value">${formatBoolean(props.memoryStats?.runtimeIngestEnabled)}</div>
+          </div>
+        </div>
+        <div class="muted" style="margin-top: 12px">
+          ${t("overview.advanced.tiers")}: ${tierSummary}
+        </div>
+        <div class="muted" style="margin-top: 8px">
+          ${t("overview.advanced.backend")}: ${props.memoryStats?.backend ?? t("common.na")}
+          <span class="muted"> · </span>
+          ${t("overview.advanced.citations")}: ${props.memoryStats?.citations ?? t("common.na")}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("overview.advanced.knowledgeTitle")}</div>
+        <div class="card-sub">${t("overview.advanced.knowledgeSubtitle")}</div>
+        <div class="stat-grid" style="margin-top: 16px;">
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.status")}</div>
+            <div class="stat-value">${formatBoolean(props.knowledgeStatus?.enabled)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.vaults")}</div>
+            <div class="stat-value">${props.knowledgeStatus?.vaultCount ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.files")}</div>
+            <div class="stat-value">${props.knowledgeStatus?.totalFiles ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.chunks")}</div>
+            <div class="stat-value">${props.knowledgeStatus?.totalChunks ?? t("common.na")}</div>
+          </div>
+        </div>
+        <div class="muted" style="margin-top: 12px">
+          ${t("overview.advanced.lastScan")}: ${formatTimestamp(props.knowledgeStatus?.lastScanAt)}
+        </div>
+        <div class="muted" style="margin-top: 8px">
+          ${t("overview.advanced.sync")}: search ${formatBoolean(props.knowledgeStatus?.autoSyncOnSearch)}
+          <span class="muted"> · </span>
+          boot ${formatBoolean(props.knowledgeStatus?.autoSyncOnBoot)}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("overview.advanced.proactiveTitle")}</div>
+        <div class="card-sub">${t("overview.advanced.proactiveSubtitle")}</div>
+        <div class="stat-grid" style="margin-top: 16px;">
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.status")}</div>
+            <div class="stat-value">${formatBoolean(props.proactiveStatus?.enabled)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.pending")}</div>
+            <div class="stat-value">${props.proactiveStatus?.pendingEntries ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.urgent")}</div>
+            <div class="stat-value">${props.proactiveStatus?.urgentEntries ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.advanced.lastFlush")}</div>
+            <div class="stat-value">${formatTimestamp(props.proactiveStatus?.lastFlushAt)}</div>
+          </div>
+        </div>
+        <div class="muted" style="margin-top: 12px">
+          ${t("overview.advanced.digests")}: ${formatList(props.proactiveStatus?.digestTimes)}
+        </div>
+        <div class="muted" style="margin-top: 8px">
+          ${t("overview.advanced.delivery")}: ${props.proactiveStatus?.delivery.channel ?? t("common.na")}
+          ${props.proactiveStatus?.delivery.to ? ` -> ${props.proactiveStatus.delivery.to}` : ""}
+        </div>
+        ${
+          props.dashboardLoading
+            ? html`<div class="muted" style="margin-top: 8px">${t("overview.advanced.loading")}</div>`
+            : ""
+        }
       </div>
     </section>
 

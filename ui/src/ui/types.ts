@@ -10,6 +10,58 @@ export type ChannelsStatusSnapshot = {
   channelDefaultAccountId: Record<string, string>;
 };
 
+export type MemoryStatusSnapshot = {
+  agentId: string;
+  backend: string;
+  citations: string;
+  autoRecallEnabled: boolean;
+  knowledgeEnabled: boolean;
+  runtimeIngestEnabled: boolean;
+  totalItems: number;
+  tiers: Record<"P0" | "P1" | "P2" | "P3", number>;
+  recordKinds: Record<"fact" | "relationship" | "experience" | "soul", number>;
+  archiveEvents: number;
+};
+
+export type KnowledgeVaultStatus = {
+  name: string;
+  path: string;
+  registryId: string;
+  exclude: string[];
+  fileCount: number;
+  chunkCount: number;
+  lastScanAt: number | null;
+};
+
+export type KnowledgeStatusSnapshot = {
+  agentId: string;
+  enabled: boolean;
+  autoSyncOnSearch: boolean;
+  autoSyncOnBoot: boolean;
+  syncIntervalMs: number | null;
+  vaultCount: number;
+  totalFiles: number;
+  totalChunks: number;
+  lastScanAt: number | null;
+  vaults: KnowledgeVaultStatus[];
+};
+
+export type ProactiveStatusSnapshot = {
+  agentId: string;
+  enabled: boolean;
+  checkEveryMinutes: number | null;
+  digestTimes: string[];
+  delivery: {
+    channel: string;
+    to: string | null;
+  };
+  totalEntries: number;
+  pendingEntries: number;
+  deliveredEntries: number;
+  urgentEntries: number;
+  lastFlushAt: number | null;
+};
+
 export type ChannelUiMetaEntry = {
   id: string;
   label: string;

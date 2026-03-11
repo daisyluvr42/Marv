@@ -530,6 +530,11 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.grid-master-detail {
+  grid-template-columns: minmax(320px, 4fr) minmax(400px, 6fr);
+  align-items: start;
+}
+
 .stat-grid {
   display: grid;
   gap: 14px;
@@ -596,7 +601,8 @@
   }
 
   .grid-cols-2,
-  .grid-cols-3 {
+  .grid-cols-3,
+  .grid-master-detail {
     grid-template-columns: 1fr;
   }
 
