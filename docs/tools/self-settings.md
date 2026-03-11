@@ -13,6 +13,9 @@ title: "Self settings"
 It exists so the agent can safely change its own live behavior when the current
 operator explicitly asks.
 
+It can also update a small allowlisted set of shared deep-memory consolidation
+settings when the operator directly asks for that.
+
 ## What it can change
 
 `self_settings` can update current-session behavior such as:
@@ -26,6 +29,17 @@ operator explicitly asks.
 - queue behavior
 - session reset or new-session action
 - runtime model registry refresh
+
+It can also update restricted shared deep-memory settings such as:
+
+- deep-memory consolidation enabled/disabled
+- deep-memory schedule
+- deep-memory model provider, API, model id, base URL, and timeout
+- deep-memory stage toggles
+- deep-memory max items / max reflections
+
+These deep-memory changes are shared config changes, not current-session-only
+changes.
 
 ## Direct user instruction requirement
 
@@ -45,6 +59,8 @@ Examples of requests that map well to `self_settings`:
 - "reset this session"
 - "refresh your model registry"
 - "set your queue mode to collect"
+- "enable deep memory consolidation every Sunday at 4:20 AM"
+- "switch deep memory consolidation to the local ollama qwen model"
 
 ## When to use this instead of `self_inspecting`
 
@@ -52,6 +68,9 @@ Use `self_settings` when the user directly wants a change.
 
 Use [Self inspecting](/tools/self-inspecting) when the user first wants to know
 the current state, available models, scheduled tasks, or tool limits.
+
+For deep-memory settings, make it clear that the change affects the shared
+deep-memory configuration rather than only the current session.
 
 ## Related docs
 

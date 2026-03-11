@@ -312,7 +312,7 @@ export function buildAgentSystemPrompt(params: {
     self_inspecting:
       "Inspect your own runtime/settings/models/scheduled-tasks/context/tools state; use for questions about your current status, settings, available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     self_settings:
-      "Apply current-session self-settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new, runtime model-registry refresh) for a direct user request",
+      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new, runtime model-registry refresh, deep-memory model/schedule/settings)",
     request_escalation: "Request task-scoped elevated permissions with user approval",
     request_missing_tools: "Discover/install skills for missing capabilities (approval required)",
     image: "Analyze an image with the configured image model",
@@ -495,6 +495,7 @@ export function buildAgentSystemPrompt(params: {
           '- session_status: show usage/time/model state and answer "what model are we using?"',
           "- self_inspecting: inspect your own runtime/settings/models/scheduled tasks/context/tools state when the user asks about your status, settings, available models, scheduled tasks, limits, or current behavior",
           "- self_settings: change current session model/thinking/verbose/reasoning/usage/elevated/exec/queue/reset or refresh the runtime model registry when the user directly asks",
+          "- self_settings can also update the restricted shared deep-memory consolidation settings when the user directly asks; treat those as shared config changes, not session-only changes",
         ].join("\n"),
     "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first. Do not guess or switch models before checking. When the user asks you to change your own settings or behavior, use self_settings.",
     "TOOLS.md does not control tool availability; it is user guidance for how to use external tools.",
@@ -660,20 +661,34 @@ export function buildAgentSystemPrompt(params: {
     (file) => typeof file.path === "string" && file.path.trim().length > 0,
   );
   if (validContextFiles.length > 0) {
-    const hasSoulFile = validContextFiles.some((file) => {
+    const recalledContextFiles = validContextFiles.filter((file) => {
+      const normalizedPath = file.path.trim().replace(/\\/g, "/").toLowerCase();
+      return normalizedPath.endsWith("/recalled_context.md");
+    });
+    const recalledPathSet = new Set(recalledContextFiles.map((file) => file.path));
+    const projectContextFiles = validContextFiles.filter((file) => !recalledPathSet.has(file.path));
+    const hasSoulFile = projectContextFiles.some((file) => {
       const normalizedPath = file.path.trim().replace(/\\/g, "/");
       const baseName = normalizedPath.split("/").pop() ?? normalizedPath;
       return baseName.toLowerCase() === "soul.md";
     });
-    lines.push("# Project Context", "", "The following project context files have been loaded:");
-    if (hasSoulFile) {
-      lines.push(
-        "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
-      );
+    if (projectContextFiles.length > 0) {
+      lines.push("# Project Context", "", "The following project context files have been loaded:");
+      if (hasSoulFile) {
+        lines.push(
+          "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
+        );
+      }
+      lines.push("");
+      for (const file of projectContextFiles) {
+        lines.push(`## ${file.path}`, "", file.content, "");
+      }
     }
-    lines.push("");
-    for (const file of validContextFiles) {
-      lines.push(`## ${file.path}`, "", file.content, "");
+    if (recalledContextFiles.length > 0) {
+      lines.push("# Recalled Context", "");
+      for (const file of recalledContextFiles) {
+        lines.push(file.content, "");
+      }
     }
   }
 

@@ -237,6 +237,39 @@ export const FIELD_HELP: Record<string, string> = {
   memory: "Memory backend configuration (global).",
   "memory.backend": 'Memory backend ("builtin" for Marv embeddings, "qmd" for QMD sidecar).',
   "memory.citations": 'Default citation behavior ("auto", "on", or "off").',
+  "memory.autoRecall":
+    "Automatically recall relevant Soul Memory snippets before the first turn and inject them into the system prompt.",
+  "memory.autoRecall.enabled":
+    "Enable automatic Soul Memory recall before the first turn (default: true).",
+  "memory.autoRecall.maxResults":
+    "Maximum number of structured memories to auto-inject into recalled context (default: 8).",
+  "memory.autoRecall.minScore":
+    "Minimum structured memory score required for automatic recall injection (default: 0.3).",
+  "memory.autoRecall.maxContextChars":
+    "Maximum total characters reserved for recalled context injection (default: 8000).",
+  "memory.autoRecall.includeConversationContext":
+    "Include a small amount of recent conversation context when building the recall query (default: true).",
+  "memory.knowledge":
+    "Optional local document knowledge base indexed into Soul Memory for unified conversational + document recall.",
+  "memory.knowledge.enabled": "Enable local document knowledge indexing (default: false).",
+  "memory.knowledge.autoSyncOnSearch":
+    "Refresh configured knowledge vault indexes before memory_search/auto-recall when the sync interval has elapsed (default: true).",
+  "memory.knowledge.autoSyncOnBoot":
+    "Refresh configured knowledge vault indexes on gateway boot when enabled (default: true).",
+  "memory.knowledge.syncIntervalMs":
+    "Minimum interval in milliseconds between automatic knowledge-base scans (default: 300000).",
+  "memory.knowledge.vaults": "List of local Markdown vault directories to index into Soul Memory.",
+  "autonomy.proactive":
+    "Managed proactive check and digest delivery settings for autonomous notifications.",
+  "autonomy.proactive.enabled": "Enable managed proactive check/digest cron jobs (default: false).",
+  "autonomy.proactive.checkEveryMinutes":
+    "Interval in minutes between proactive check runs (default: 30).",
+  "autonomy.proactive.digestTimes":
+    "Daily digest delivery times in HH:MM local time (default: 08:00, 13:00, 20:00).",
+  "autonomy.proactive.delivery.channel":
+    'Delivery channel for proactive digests (default: "last").',
+  "autonomy.proactive.delivery.to":
+    "Explicit delivery target for proactive digests when the channel requires one.",
   "memory.p0AllowedKinds":
     "Deprecated alias for memory.soul.p0AllowedKinds. Values are normalized to lowercase.",
   "memory.soul": "Structured soul-memory tuning for decay, promotion, and retrieval scoring.",
@@ -288,6 +321,31 @@ export const FIELD_HELP: Record<string, string> = {
     "Maximum cumulative reference boost applied to one memory score (default: 0.6).",
   "memory.soul.referenceSeedTopKMultiplier":
     "How many top results become expansion seeds (topK * multiplier, default: 2).",
+  "memory.soul.deepConsolidation":
+    "Managed LLM-powered deep memory consolidation settings for semantic summarization, conflict review, and cross-scope reflection.",
+  "memory.soul.deepConsolidation.enabled":
+    "Enable the managed deep-consolidation cron job (default: false).",
+  "memory.soul.deepConsolidation.schedule":
+    'Cron expression for the managed deep-consolidation job (default: "20 4 * * 0").',
+  "memory.soul.deepConsolidation.maxItems":
+    "Maximum number of candidate memories loaded per agent for one deep-consolidation run.",
+  "memory.soul.deepConsolidation.maxReflections":
+    "Maximum number of cross-scope insight memories written per agent in one run.",
+  "memory.soul.deepConsolidation.clusterSummarization":
+    "Enable LLM-based cluster summarization during deep consolidation (default: true).",
+  "memory.soul.deepConsolidation.conflictJudgment":
+    "Enable LLM-based conflict judgment for unresolved conflict candidates (default: true).",
+  "memory.soul.deepConsolidation.crossScopeReflection":
+    "Enable cross-scope reflection insight generation (default: true).",
+  "memory.soul.deepConsolidation.model.provider":
+    "Optional configured provider id used to inherit baseUrl, headers, and apiKey for deep consolidation.",
+  "memory.soul.deepConsolidation.model.api":
+    'Local inference API style used by deep consolidation ("ollama" or "openai-completions").',
+  "memory.soul.deepConsolidation.model.model": "Model id used for deep-consolidation inference.",
+  "memory.soul.deepConsolidation.model.baseUrl":
+    "Optional base URL override for the deep-consolidation inference endpoint.",
+  "memory.soul.deepConsolidation.model.timeoutMs":
+    "Per-request timeout in milliseconds for deep-consolidation model calls.",
   "memory.qmd.command": "Path to the qmd binary (default: resolves from PATH).",
   "memory.qmd.includeDefaultMemory":
     "Whether to automatically index MEMORY.md + memory/**/*.md (default: true).",

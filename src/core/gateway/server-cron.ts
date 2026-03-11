@@ -25,10 +25,17 @@ import {
 } from "../../infra/update/update-notify.js";
 import { runGatewayUpdate } from "../../infra/update/update-runner.js";
 import { getChildLogger } from "../../logging.js";
+import { probeLocalModel } from "../../memory/storage/local-llm-client.js";
+import {
+  formatSoulMemoryDeepConsolidationSummary,
+  resolveDeepConsolidationConfig,
+  runSoulMemoryDeepConsolidation,
+} from "../../memory/storage/soul-memory-deep-consolidation.js";
 import {
   formatSoulMemoryMaintenanceSummary,
   runSoulMemoryMaintenance,
 } from "../../memory/storage/soul-memory-maintenance.js";
+import { PROACTIVE_CHECK_PROMPT, PROACTIVE_DIGEST_PROMPT } from "../../proactive/constants.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import { loadConfig } from "../config/config.js";
@@ -55,10 +62,21 @@ const SUPPORTED_SOUL_MAINTENANCE_TASKS = new Set([
   "soulMemoryMaintenance",
   "soulMemoryNightlyMaintenance",
 ]);
+const DEEP_CONSOLIDATION_JOB_NAME = "Soul Memory Deep Consolidation";
+const DEEP_CONSOLIDATION_JOB_DESCRIPTION =
+  "Managed LLM-powered deep memory consolidation for semantic summaries, conflict review, and cross-scope insights.";
+const DEEP_CONSOLIDATION_TASK = "soulMemoryDeepConsolidation";
 const UPDATE_CHECK_JOB_NAME = "Update Check";
 const UPDATE_CHECK_JOB_DESCRIPTION =
   "Periodically check for new Marv versions and notify the user through the last active channel.";
 const UPDATE_CHECK_TASK = "updateCheck";
+const PROACTIVE_CHECK_JOB_NAME = "Proactive Check";
+const PROACTIVE_CHECK_JOB_DESCRIPTION =
+  "Managed proactive meta-check that decides whether there is anything worth checking or reporting.";
+const PROACTIVE_DIGEST_JOB_NAME_PREFIX = "Proactive Digest";
+const PROACTIVE_DIGEST_JOB_DESCRIPTION =
+  "Managed proactive digest delivery that formats buffered findings into a concise update.";
+const DEFAULT_PROACTIVE_DIGEST_TIMES = ["08:00", "13:00", "20:00"] as const;
 
 function redactWebhookUrl(url: string): string {
   try {
@@ -245,6 +263,46 @@ export function buildGatewayCronService(params: {
         return {
           status: "ok",
           summary: formatSoulMemoryMaintenanceSummary(report),
+        };
+      }
+
+      if (task === DEEP_CONSOLIDATION_TASK) {
+        const runtimeConfig = loadConfig();
+        const deepConfig = resolveDeepConsolidationConfig(runtimeConfig);
+        if (!deepConfig.enabled) {
+          return { status: "skipped", summary: "Deep consolidation disabled." };
+        }
+        const probe = await probeLocalModel({
+          cfg: runtimeConfig,
+          model: deepConfig.model,
+        });
+        if (!probe.ok) {
+          return {
+            status: "skipped",
+            summary: `Deep consolidation skipped: ${probe.reason}`,
+          };
+        }
+        const report = await runSoulMemoryDeepConsolidation({
+          cfg: runtimeConfig,
+          nowMs: Date.now(),
+          agentId: job.agentId,
+          resolvedModel: probe.resolved,
+        });
+        const summary = formatSoulMemoryDeepConsolidationSummary(report);
+        if (report.agents.length > 0 && report.failedAgents >= report.agents.length) {
+          return {
+            status: "error",
+            error: "deep consolidation failed for all agents",
+            summary,
+          };
+        }
+        const didWork =
+          report.totals.llmConsolidated > 0 ||
+          report.totals.llmConflictsDetected > 0 ||
+          report.totals.crossScopeReflections > 0;
+        return {
+          status: didWork ? "ok" : "skipped",
+          summary,
         };
       }
 
@@ -640,4 +698,344 @@ export async function ensureUpdateCheckCronJob(params: {
     { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
     "cron: updated managed update-check job",
   );
+}
+
+export async function ensureDeepConsolidationCronJob(params: {
+  cron: CronService;
+  cfg?: ReturnType<typeof loadConfig>;
+  log?: { info: (obj: unknown, msg?: string) => void; warn: (obj: unknown, msg?: string) => void };
+}) {
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  const status = await params.cron.status();
+  if (!status.enabled) {
+    return;
+  }
+
+  const runtimeConfig = params.cfg ?? loadConfig();
+  const deepConfig = resolveDeepConsolidationConfig(runtimeConfig);
+  const existingJobs = await params.cron.list({ includeDisabled: true });
+  const managed = existingJobs.find(
+    (job) => job.payload.kind === "systemTask" && job.payload.task === DEEP_CONSOLIDATION_TASK,
+  );
+
+  if (!managed) {
+    const created = await params.cron.add({
+      name: DEEP_CONSOLIDATION_JOB_NAME,
+      description: DEEP_CONSOLIDATION_JOB_DESCRIPTION,
+      enabled: deepConfig.enabled,
+      deleteAfterRun: false,
+      schedule: {
+        kind: "cron",
+        expr: deepConfig.schedule,
+        staggerMs: 0,
+      },
+      sessionTarget: "main",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "systemTask",
+        task: DEEP_CONSOLIDATION_TASK,
+      },
+    });
+    logger.info(
+      { jobId: created.id, nextRunAtMs: created.state.nextRunAtMs ?? null },
+      "cron: added managed deep-consolidation job",
+    );
+    return;
+  }
+
+  const needsScheduleUpdate =
+    managed.schedule.kind !== "cron" ||
+    managed.schedule.expr !== deepConfig.schedule ||
+    (managed.schedule.staggerMs ?? 0) !== 0;
+  const needsShapeUpdate =
+    managed.enabled !== deepConfig.enabled ||
+    managed.deleteAfterRun !== false ||
+    managed.sessionTarget !== "main" ||
+    managed.wakeMode !== "next-heartbeat" ||
+    managed.payload.kind !== "systemTask" ||
+    managed.payload.task !== DEEP_CONSOLIDATION_TASK ||
+    managed.delivery !== undefined;
+  const needsMetadataUpdate =
+    managed.name !== DEEP_CONSOLIDATION_JOB_NAME ||
+    managed.description !== DEEP_CONSOLIDATION_JOB_DESCRIPTION;
+
+  if (!needsScheduleUpdate && !needsShapeUpdate && !needsMetadataUpdate) {
+    return;
+  }
+
+  const patch: Parameters<CronService["update"]>[1] = {};
+  if (needsMetadataUpdate) {
+    patch.name = DEEP_CONSOLIDATION_JOB_NAME;
+    patch.description = DEEP_CONSOLIDATION_JOB_DESCRIPTION;
+  }
+  if (needsScheduleUpdate) {
+    patch.schedule = {
+      kind: "cron",
+      expr: deepConfig.schedule,
+      staggerMs: 0,
+    };
+  }
+  if (needsShapeUpdate) {
+    patch.enabled = deepConfig.enabled;
+    patch.deleteAfterRun = false;
+    patch.sessionTarget = "main";
+    patch.wakeMode = "next-heartbeat";
+    patch.payload = {
+      kind: "systemTask",
+      task: DEEP_CONSOLIDATION_TASK,
+    };
+    patch.delivery = { mode: "none" };
+  }
+
+  const updated = await params.cron.update(managed.id, patch);
+  logger.info(
+    { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
+    "cron: updated managed deep-consolidation job",
+  );
+}
+
+export async function ensureProactiveCheckCronJob(params: {
+  cron: CronService;
+  cfg?: ReturnType<typeof loadConfig>;
+  log?: { info: (obj: unknown, msg?: string) => void; warn: (obj: unknown, msg?: string) => void };
+}) {
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  const status = await params.cron.status();
+  if (!status.enabled) {
+    return;
+  }
+
+  const runtimeConfig = params.cfg ?? loadConfig();
+  const proactive = runtimeConfig.autonomy?.proactive;
+  const desiredEnabled = proactive?.enabled === true;
+  const desiredEveryMs = Math.max(1, proactive?.checkEveryMinutes ?? 30) * 60_000;
+  const existingJobs = await params.cron.list({ includeDisabled: true });
+  const managed = existingJobs.find((job) => job.name === PROACTIVE_CHECK_JOB_NAME);
+
+  if (!managed) {
+    const created = await params.cron.add({
+      name: PROACTIVE_CHECK_JOB_NAME,
+      description: PROACTIVE_CHECK_JOB_DESCRIPTION,
+      enabled: desiredEnabled,
+      deleteAfterRun: false,
+      schedule: {
+        kind: "every",
+        everyMs: desiredEveryMs,
+      },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: PROACTIVE_CHECK_PROMPT,
+        thinking: "low",
+        timeoutSeconds: 120,
+      },
+      delivery: {
+        mode: "none",
+      },
+    });
+    logger.info(
+      { jobId: created.id, nextRunAtMs: created.state.nextRunAtMs ?? null },
+      "cron: added managed proactive-check job",
+    );
+    return;
+  }
+
+  const needsScheduleUpdate =
+    managed.schedule.kind !== "every" || managed.schedule.everyMs !== desiredEveryMs;
+  const needsShapeUpdate =
+    managed.enabled !== desiredEnabled ||
+    managed.deleteAfterRun !== false ||
+    managed.sessionTarget !== "isolated" ||
+    managed.wakeMode !== "next-heartbeat" ||
+    managed.payload.kind !== "agentTurn" ||
+    managed.payload.message !== PROACTIVE_CHECK_PROMPT ||
+    managed.payload.thinking !== "low" ||
+    managed.payload.timeoutSeconds !== 120 ||
+    managed.delivery?.mode !== "none";
+  const needsMetadataUpdate =
+    managed.name !== PROACTIVE_CHECK_JOB_NAME ||
+    managed.description !== PROACTIVE_CHECK_JOB_DESCRIPTION;
+
+  if (!needsScheduleUpdate && !needsShapeUpdate && !needsMetadataUpdate) {
+    return;
+  }
+
+  const patch: Parameters<CronService["update"]>[1] = {};
+  if (needsMetadataUpdate) {
+    patch.name = PROACTIVE_CHECK_JOB_NAME;
+    patch.description = PROACTIVE_CHECK_JOB_DESCRIPTION;
+  }
+  if (needsScheduleUpdate) {
+    patch.schedule = {
+      kind: "every",
+      everyMs: desiredEveryMs,
+    };
+  }
+  if (needsShapeUpdate) {
+    patch.enabled = desiredEnabled;
+    patch.deleteAfterRun = false;
+    patch.sessionTarget = "isolated";
+    patch.wakeMode = "next-heartbeat";
+    patch.payload = {
+      kind: "agentTurn",
+      message: PROACTIVE_CHECK_PROMPT,
+      thinking: "low",
+      timeoutSeconds: 120,
+    };
+    patch.delivery = {
+      mode: "none",
+    };
+  }
+
+  const updated = await params.cron.update(managed.id, patch);
+  logger.info(
+    { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
+    "cron: updated managed proactive-check job",
+  );
+}
+
+export async function ensureProactiveDigestCronJobs(params: {
+  cron: CronService;
+  cfg?: ReturnType<typeof loadConfig>;
+  log?: { info: (obj: unknown, msg?: string) => void; warn: (obj: unknown, msg?: string) => void };
+}) {
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  const status = await params.cron.status();
+  if (!status.enabled) {
+    return;
+  }
+
+  const runtimeConfig = params.cfg ?? loadConfig();
+  const proactive = runtimeConfig.autonomy?.proactive;
+  const desiredEnabled = proactive?.enabled === true;
+  const digestTimes = resolveProactiveDigestTimes(proactive?.digestTimes);
+  const digestTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const desiredDelivery = {
+    mode: "announce" as const,
+    channel: proactive?.delivery?.channel?.trim() || "last",
+    to: proactive?.delivery?.to?.trim() || undefined,
+  };
+  const jobs = await params.cron.list({ includeDisabled: true });
+  const existing = jobs.filter((job) =>
+    job.name.startsWith(`${PROACTIVE_DIGEST_JOB_NAME_PREFIX} `),
+  );
+
+  for (const [index, time] of digestTimes.entries()) {
+    const name = `${PROACTIVE_DIGEST_JOB_NAME_PREFIX} ${index + 1}`;
+    const expr = toDailyCronExpr(time);
+    const managed = existing.find((job) => job.name === name);
+    if (!managed) {
+      const created = await params.cron.add({
+        name,
+        description: PROACTIVE_DIGEST_JOB_DESCRIPTION,
+        enabled: desiredEnabled,
+        deleteAfterRun: false,
+        schedule: {
+          kind: "cron",
+          expr,
+          tz: digestTz,
+          staggerMs: 0,
+        },
+        sessionTarget: "isolated",
+        wakeMode: "next-heartbeat",
+        payload: {
+          kind: "agentTurn",
+          message: PROACTIVE_DIGEST_PROMPT,
+          thinking: "low",
+          timeoutSeconds: 120,
+        },
+        delivery: desiredDelivery,
+      });
+      logger.info(
+        { jobId: created.id, nextRunAtMs: created.state.nextRunAtMs ?? null },
+        "cron: added managed proactive-digest job",
+      );
+      continue;
+    }
+
+    const needsScheduleUpdate =
+      managed.schedule.kind !== "cron" ||
+      managed.schedule.expr !== expr ||
+      managed.schedule.tz !== digestTz ||
+      (managed.schedule.staggerMs ?? 0) !== 0;
+    const needsShapeUpdate =
+      managed.enabled !== desiredEnabled ||
+      managed.deleteAfterRun !== false ||
+      managed.sessionTarget !== "isolated" ||
+      managed.wakeMode !== "next-heartbeat" ||
+      managed.payload.kind !== "agentTurn" ||
+      managed.payload.message !== PROACTIVE_DIGEST_PROMPT ||
+      managed.payload.thinking !== "low" ||
+      managed.payload.timeoutSeconds !== 120 ||
+      managed.delivery?.mode !== desiredDelivery.mode ||
+      managed.delivery?.channel !== desiredDelivery.channel ||
+      (managed.delivery?.to ?? undefined) !== desiredDelivery.to;
+    const needsMetadataUpdate =
+      managed.name !== name || managed.description !== PROACTIVE_DIGEST_JOB_DESCRIPTION;
+    if (!needsScheduleUpdate && !needsShapeUpdate && !needsMetadataUpdate) {
+      continue;
+    }
+
+    const patch: Parameters<CronService["update"]>[1] = {};
+    if (needsMetadataUpdate) {
+      patch.name = name;
+      patch.description = PROACTIVE_DIGEST_JOB_DESCRIPTION;
+    }
+    if (needsScheduleUpdate) {
+      patch.schedule = {
+        kind: "cron",
+        expr,
+        tz: digestTz,
+        staggerMs: 0,
+      };
+    }
+    if (needsShapeUpdate) {
+      patch.enabled = desiredEnabled;
+      patch.deleteAfterRun = false;
+      patch.sessionTarget = "isolated";
+      patch.wakeMode = "next-heartbeat";
+      patch.payload = {
+        kind: "agentTurn",
+        message: PROACTIVE_DIGEST_PROMPT,
+        thinking: "low",
+        timeoutSeconds: 120,
+      };
+      patch.delivery = {
+        mode: desiredDelivery.mode,
+        channel: desiredDelivery.channel,
+        to: desiredDelivery.to ?? "",
+      };
+    }
+
+    const updated = await params.cron.update(managed.id, patch);
+    logger.info(
+      { jobId: updated.id, nextRunAtMs: updated.state.nextRunAtMs ?? null },
+      "cron: updated managed proactive-digest job",
+    );
+  }
+
+  for (const stale of existing) {
+    const suffix = Number.parseInt(
+      stale.name.slice(PROACTIVE_DIGEST_JOB_NAME_PREFIX.length).trim(),
+      10,
+    );
+    if (Number.isFinite(suffix) && suffix > digestTimes.length && stale.enabled) {
+      await params.cron.update(stale.id, { enabled: false });
+      logger.info({ jobId: stale.id }, "cron: disabled stale managed proactive-digest job");
+    }
+  }
+}
+
+function resolveProactiveDigestTimes(raw: string[] | undefined): string[] {
+  const times = Array.isArray(raw) ? raw.map((entry) => entry.trim()).filter(Boolean) : [];
+  const valid = times.filter((entry) => /^\d{2}:\d{2}$/.test(entry));
+  return valid.length > 0 ? valid : [...DEFAULT_PROACTIVE_DIGEST_TIMES];
+}
+
+function toDailyCronExpr(time: string): string {
+  const [hour, minute] = time.split(":").map((value) => Number.parseInt(value, 10));
+  const safeHour = Number.isFinite(hour) ? Math.min(23, Math.max(0, hour)) : 8;
+  const safeMinute = Number.isFinite(minute) ? Math.min(59, Math.max(0, minute)) : 0;
+  return `${safeMinute} ${safeHour} * * *`;
 }

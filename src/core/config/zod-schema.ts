@@ -117,6 +117,28 @@ const MemorySoulSchema = z
     referenceBoostWeight: z.number().min(0).optional(),
     referenceMaxBoost: z.number().min(0).optional(),
     referenceSeedTopKMultiplier: z.number().int().positive().optional(),
+    deepConsolidation: z
+      .object({
+        enabled: z.boolean().optional(),
+        schedule: z.string().optional(),
+        maxItems: z.number().int().positive().optional(),
+        maxReflections: z.number().int().positive().optional(),
+        clusterSummarization: z.boolean().optional(),
+        conflictJudgment: z.boolean().optional(),
+        crossScopeReflection: z.boolean().optional(),
+        model: z
+          .object({
+            provider: z.string().optional(),
+            api: z.union([z.literal("ollama"), z.literal("openai-completions")]).optional(),
+            model: z.string().optional(),
+            baseUrl: z.string().optional(),
+            timeoutMs: z.number().int().positive().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -127,6 +149,36 @@ const MemorySchema = z
     runtimeIngest: z.boolean().optional(),
     p0AllowedKinds: z.array(z.string()).optional(),
     soul: MemorySoulSchema.optional(),
+    autoRecall: z
+      .object({
+        enabled: z.boolean().optional(),
+        maxResults: z.number().int().positive().optional(),
+        minScore: z.number().min(0).max(1.5).optional(),
+        maxContextChars: z.number().int().positive().optional(),
+        includeConversationContext: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    knowledge: z
+      .object({
+        enabled: z.boolean().optional(),
+        autoSyncOnSearch: z.boolean().optional(),
+        autoSyncOnBoot: z.boolean().optional(),
+        syncIntervalMs: z.number().int().nonnegative().optional(),
+        vaults: z
+          .array(
+            z
+              .object({
+                path: z.string(),
+                name: z.string().optional(),
+                exclude: z.array(z.string()).optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
     qmd: MemoryQmdSchema.optional(),
   })
   .strict()

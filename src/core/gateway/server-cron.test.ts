@@ -13,6 +13,8 @@ const runCronIsolatedAgentTurnMock = vi.fn();
 const checkForUpdateMock = vi.fn();
 const runGatewayUpdateMock = vi.fn();
 const scheduleGatewaySigusr1RestartMock = vi.fn();
+const probeLocalModelMock = vi.fn();
+const runSoulMemoryDeepConsolidationMock = vi.fn();
 
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
@@ -81,8 +83,60 @@ vi.mock("../../infra/marv-root.js", () => ({
   resolveMarvPackageRoot: vi.fn(async () => "/tmp/marv"),
 }));
 
+vi.mock("../../memory/storage/local-llm-client.js", () => ({
+  probeLocalModel: (...args: unknown[]) => probeLocalModelMock(...args),
+}));
+
+vi.mock("../../memory/storage/soul-memory-deep-consolidation.js", () => ({
+  DEFAULT_DEEP_CONSOLIDATION_SCHEDULE: "20 4 * * 0",
+  resolveDeepConsolidationConfig: (
+    cfg: MarvConfig & {
+      memory?: {
+        soul?: {
+          deepConsolidation?: {
+            enabled?: boolean;
+            schedule?: string;
+            maxItems?: number;
+            maxReflections?: number;
+            clusterSummarization?: boolean;
+            conflictJudgment?: boolean;
+            crossScopeReflection?: boolean;
+            model?: Record<string, unknown>;
+          };
+        };
+      };
+    },
+  ) => ({
+    enabled: cfg.memory?.soul?.deepConsolidation?.enabled === true,
+    schedule: cfg.memory?.soul?.deepConsolidation?.schedule ?? "20 4 * * 0",
+    maxItems: cfg.memory?.soul?.deepConsolidation?.maxItems ?? 500,
+    maxReflections: cfg.memory?.soul?.deepConsolidation?.maxReflections ?? 5,
+    clusterSummarization: cfg.memory?.soul?.deepConsolidation?.clusterSummarization !== false,
+    conflictJudgment: cfg.memory?.soul?.deepConsolidation?.conflictJudgment !== false,
+    crossScopeReflection: cfg.memory?.soul?.deepConsolidation?.crossScopeReflection !== false,
+    model: cfg.memory?.soul?.deepConsolidation?.model ?? {},
+  }),
+  formatSoulMemoryDeepConsolidationSummary: vi.fn(
+    (report: {
+      agents: unknown[];
+      failedAgents: number;
+      totals: {
+        llmConsolidated: number;
+        llmConflictsDetected: number;
+        crossScopeReflections: number;
+      };
+    }) =>
+      `Deep consolidation complete: agents=${report.agents.length}, failed=${report.failedAgents}, consolidated=${report.totals.llmConsolidated}, conflicts=${report.totals.llmConflictsDetected}, reflections=${report.totals.crossScopeReflections}`,
+  ),
+  runSoulMemoryDeepConsolidation: (...args: unknown[]) =>
+    runSoulMemoryDeepConsolidationMock(...args),
+}));
+
 import {
   buildGatewayCronService,
+  ensureDeepConsolidationCronJob,
+  ensureProactiveCheckCronJob,
+  ensureProactiveDigestCronJobs,
   ensureSoulMemoryMaintenanceCronJob,
   ensureUpdateCheckCronJob,
 } from "./server-cron.js";
@@ -97,6 +151,8 @@ describe("buildGatewayCronService", () => {
     checkForUpdateMock.mockReset();
     runGatewayUpdateMock.mockReset();
     scheduleGatewaySigusr1RestartMock.mockReset();
+    probeLocalModelMock.mockReset();
+    runSoulMemoryDeepConsolidationMock.mockReset();
     runCronIsolatedAgentTurnMock.mockResolvedValue({ status: "ok", summary: "update delivered" });
     runGatewayUpdateMock.mockResolvedValue({
       status: "ok",
@@ -105,6 +161,39 @@ describe("buildGatewayCronService", () => {
       durationMs: 100,
     });
     scheduleGatewaySigusr1RestartMock.mockReturnValue({ scheduled: true });
+    probeLocalModelMock.mockResolvedValue({
+      ok: true,
+      resolved: {
+        api: "ollama",
+        baseUrl: "http://127.0.0.1:11434",
+        model: "qwen2.5:3b",
+        timeoutMs: 30000,
+        headers: {},
+      },
+    });
+    runSoulMemoryDeepConsolidationMock.mockResolvedValue({
+      agents: [
+        {
+          agentId: "main",
+          llmConsolidated: 1,
+          llmConflictsDetected: 0,
+          crossScopeReflections: 1,
+          skippedStages: [],
+        },
+      ],
+      totals: {
+        llmConsolidated: 1,
+        llmConflictsDetected: 0,
+        crossScopeReflections: 1,
+      },
+      model: {
+        api: "ollama",
+        baseUrl: "http://127.0.0.1:11434",
+        model: "qwen2.5:3b",
+        available: true,
+      },
+      failedAgents: 0,
+    });
   });
 
   it("canonicalizes non-agent sessionKey to agent store key for enqueue + wake", async () => {
@@ -346,6 +435,158 @@ describe("buildGatewayCronService", () => {
         everyMs: 12_000,
         anchorMs: expect.any(Number),
       });
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("ensures managed deep-consolidation cron job exists", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-deep-consolidation-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+      memory: {
+        soul: {
+          deepConsolidation: {
+            enabled: true,
+            schedule: "15 5 * * 0",
+            model: {
+              provider: "ollama",
+              api: "ollama",
+              model: "qwen2.5:3b",
+            },
+          },
+        },
+      },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureDeepConsolidationCronJob({ cron: state.cron, cfg });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const deepJob = jobs.find(
+        (job) =>
+          job.payload.kind === "systemTask" && job.payload.task === "soulMemoryDeepConsolidation",
+      );
+      expect(deepJob).toBeDefined();
+      if (!deepJob) {
+        throw new Error("deep-consolidation job missing");
+      }
+      expect(deepJob.enabled).toBe(true);
+      expect(deepJob.sessionTarget).toBe("main");
+      expect(deepJob.wakeMode).toBe("next-heartbeat");
+      expect(deepJob.schedule.kind).toBe("cron");
+      if (deepJob.schedule.kind === "cron") {
+        expect(deepJob.schedule.expr).toBe("15 5 * * 0");
+        expect(deepJob.schedule.staggerMs).toBe(0);
+      }
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("runs deep consolidation system tasks through the local-model pipeline", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-deep-run-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+      memory: {
+        soul: {
+          deepConsolidation: {
+            enabled: true,
+            schedule: "20 4 * * 0",
+            model: {
+              provider: "ollama",
+              api: "ollama",
+              model: "qwen2.5:3b",
+            },
+          },
+        },
+      },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureDeepConsolidationCronJob({ cron: state.cron, cfg });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const deepJob = jobs.find(
+        (job) =>
+          job.payload.kind === "systemTask" && job.payload.task === "soulMemoryDeepConsolidation",
+      );
+      if (!deepJob) {
+        throw new Error("deep-consolidation job missing");
+      }
+
+      await state.cron.run(deepJob.id, "force");
+
+      expect(probeLocalModelMock).toHaveBeenCalledTimes(1);
+      expect(runSoulMemoryDeepConsolidationMock).toHaveBeenCalledTimes(1);
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("ensures managed proactive check and digest cron jobs exist", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-proactive-${Date.now()}`);
+    const cfg = {
+      session: {
+        mainKey: "main",
+      },
+      cron: {
+        store: path.join(tmpDir, "cron.json"),
+      },
+      autonomy: {
+        proactive: {
+          enabled: true,
+          checkEveryMinutes: 30,
+          digestTimes: ["08:00", "20:00"],
+          delivery: {
+            channel: "telegram",
+            to: "123",
+          },
+        },
+      },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureProactiveCheckCronJob({ cron: state.cron, cfg });
+      await ensureProactiveDigestCronJobs({ cron: state.cron, cfg });
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const proactiveCheck = jobs.find((job) => job.name === "Proactive Check");
+      expect(proactiveCheck).toBeDefined();
+      expect(proactiveCheck?.payload.kind).toBe("agentTurn");
+      expect(proactiveCheck?.delivery).toEqual({ mode: "none" });
+
+      const digests = jobs.filter((job) => job.name.startsWith("Proactive Digest "));
+      expect(digests).toHaveLength(2);
+      expect(digests[0]?.delivery).toEqual({ mode: "announce", channel: "telegram", to: "123" });
     } finally {
       state.cron.stop();
     }

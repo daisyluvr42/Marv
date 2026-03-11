@@ -24,6 +24,7 @@ const DEFAULT_OPTIONS: NormalizeOptions = {
 const SUPPORTED_SYSTEM_TASKS = new Set([
   "soulMemoryMaintenance",
   "soulMemoryNightlyMaintenance",
+  "soulMemoryDeepConsolidation",
   "updateCheck",
 ]);
 

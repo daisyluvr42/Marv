@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 const loadSessionStoreMock = vi.fn();
 const updateSessionStoreMock = vi.fn();
-const refreshRuntimeModelRegistryMock = vi.fn(async () => ({
+const writeConfigFileMock = vi.fn(async (_cfg: unknown, _options?: unknown) => {});
+const refreshRuntimeModelRegistryMock = vi.fn(async (_params?: unknown) => ({
   models: [{ ref: "google/gemini-2.5-flash" }],
   lastSuccessfulRefreshAt: 123,
 }));
@@ -45,7 +46,16 @@ vi.mock("../../core/config/config.js", async (importOriginal) => {
           models: {},
         },
       },
+      memory: {
+        soul: {
+          deepConsolidation: {
+            enabled: false,
+            schedule: "20 4 * * 0",
+          },
+        },
+      },
     }),
+    writeConfigFile: (cfg: unknown, options?: unknown) => writeConfigFileMock(cfg, options),
   };
 });
 
@@ -88,16 +98,22 @@ vi.mock("../../core/gateway/server-methods/sessions.js", () => ({
 }));
 
 vi.mock("../model/runtime-model-registry.js", () => ({
-  refreshRuntimeModelRegistry: (...args: unknown[]) => refreshRuntimeModelRegistryMock(...args),
+  refreshRuntimeModelRegistry: (params?: unknown) => refreshRuntimeModelRegistryMock(params),
   resolveRuntimeRegistryPathForDisplay: () => "/tmp/main/runtime/model-registry.json",
 }));
 
 import "../test-helpers/fast-core-tools.js";
 import { createSelfSettingsTool } from "./self-settings-tool.js";
 
+function getTextContent(result?: { content?: Array<{ type: string; text?: string }> }) {
+  const textBlock = result?.content?.find((block) => block.type === "text");
+  return textBlock?.text ?? "";
+}
+
 function resetSessionStore(store: Record<string, unknown>) {
   loadSessionStoreMock.mockReset();
   updateSessionStoreMock.mockReset();
+  writeConfigFileMock.mockReset();
   refreshRuntimeModelRegistryMock.mockClear();
   loadSessionStoreMock.mockReturnValue(store);
 }
@@ -113,7 +129,7 @@ describe("self_settings tool", () => {
 
     const tool = createSelfSettingsTool({ agentSessionKey: "main" });
     const result = await tool.execute("call0", { modelRegistryAction: "refresh" });
-    const text = result.content[0]?.text ?? "";
+    const text = getTextContent(result);
     const details = result.details as {
       ok?: boolean;
       settings?: {
@@ -213,5 +229,69 @@ describe("self_settings tool", () => {
     expect(details.ok).toBe(false);
     expect(details.denied).toBe(true);
     expect(updateSessionStoreMock).not.toHaveBeenCalled();
+  });
+
+  it("updates shared deep-memory settings through a restricted config write", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({ agentSessionKey: "main" });
+    const result = await tool.execute("call4", {
+      deepMemoryEnabled: true,
+      deepMemorySchedule: "15 5 * * 0",
+      deepMemoryModelProvider: "ollama",
+      deepMemoryModelApi: "ollama",
+      deepMemoryModel: "qwen2.5:3b",
+      deepMemoryMaxItems: 250,
+    });
+    const text = getTextContent(result);
+    const details = result.details as {
+      ok?: boolean;
+      sharedConfig?: {
+        deepMemoryEnabled?: boolean;
+        deepMemorySchedule?: string;
+        deepMemoryModelProvider?: string;
+        deepMemoryModelApi?: string;
+        deepMemoryModel?: string;
+        deepMemoryMaxItems?: number;
+      };
+    };
+
+    expect(details.ok).toBe(true);
+    expect(text).toContain("Updated shared deep-memory settings");
+    expect(writeConfigFileMock).toHaveBeenCalledTimes(1);
+    expect(details.sharedConfig).toEqual(
+      expect.objectContaining({
+        deepMemoryEnabled: true,
+        deepMemorySchedule: "15 5 * * 0",
+        deepMemoryModelProvider: "ollama",
+        deepMemoryModelApi: "ollama",
+        deepMemoryModel: "qwen2.5:3b",
+        deepMemoryMaxItems: 250,
+      }),
+    );
+  });
+
+  it("rejects invalid deep-memory schedules", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({ agentSessionKey: "main" });
+    const result = await tool.execute("call5", {
+      deepMemorySchedule: "not a cron",
+    });
+    const details = result.details as { ok?: boolean; invalid?: boolean };
+
+    expect(details.ok).toBe(false);
+    expect(details.invalid).toBe(true);
+    expect(writeConfigFileMock).not.toHaveBeenCalled();
   });
 });

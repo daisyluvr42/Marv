@@ -4,6 +4,49 @@ export type MemoryBackend = "builtin" | "qmd";
 export type MemoryCitationsMode = "auto" | "on" | "off";
 export type MemoryQmdSearchMode = "query" | "search" | "vsearch";
 
+export type MemoryAutoRecallConfig = {
+  enabled?: boolean;
+  maxResults?: number;
+  minScore?: number;
+  maxContextChars?: number;
+  includeConversationContext?: boolean;
+};
+
+export type MemoryKnowledgeVaultConfig = {
+  path: string;
+  name?: string;
+  exclude?: string[];
+};
+
+export type MemoryKnowledgeConfig = {
+  enabled?: boolean;
+  autoSyncOnSearch?: boolean;
+  autoSyncOnBoot?: boolean;
+  syncIntervalMs?: number;
+  vaults?: MemoryKnowledgeVaultConfig[];
+};
+
+export type DeepConsolidationModelApi = "ollama" | "openai-completions";
+
+export type DeepConsolidationModelConfig = {
+  provider?: string;
+  api?: DeepConsolidationModelApi;
+  model?: string;
+  baseUrl?: string;
+  timeoutMs?: number;
+};
+
+export type DeepConsolidationConfig = {
+  enabled?: boolean;
+  schedule?: string;
+  maxItems?: number;
+  maxReflections?: number;
+  clusterSummarization?: boolean;
+  conflictJudgment?: boolean;
+  crossScopeReflection?: boolean;
+  model?: DeepConsolidationModelConfig;
+};
+
 export type MemoryConfig = {
   backend?: MemoryBackend;
   citations?: MemoryCitationsMode;
@@ -11,6 +54,8 @@ export type MemoryConfig = {
   runtimeIngest?: boolean;
   p0AllowedKinds?: string[];
   soul?: MemorySoulConfig;
+  autoRecall?: MemoryAutoRecallConfig;
+  knowledge?: MemoryKnowledgeConfig;
   qmd?: MemoryQmdConfig;
 };
 
@@ -44,6 +89,7 @@ export type MemorySoulConfig = {
   referenceBoostWeight?: number;
   referenceMaxBoost?: number;
   referenceSeedTopKMultiplier?: number;
+  deepConsolidation?: DeepConsolidationConfig;
 };
 
 export type MemoryQmdConfig = {

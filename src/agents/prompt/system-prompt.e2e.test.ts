@@ -197,6 +197,23 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("Reminder: commit your changes in this workspace after edits.");
   });
 
+  it("renders recalled context in a separate section", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      contextFiles: [
+        { path: "/tmp/marv/SOUL.md", content: "persona anchor" },
+        {
+          path: "/virtual/RECALLED_CONTEXT.md",
+          content: "### memory\nremember this",
+        },
+      ],
+    });
+
+    expect(prompt).toContain("# Project Context");
+    expect(prompt).toContain("# Recalled Context");
+    expect(prompt).toContain("remember this");
+  });
+
   it("includes user timezone when provided (12-hour)", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/marv",
@@ -266,6 +283,7 @@ describe("buildAgentSystemPrompt", () => {
       "available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     );
     expect(prompt).toContain("self_settings");
+    expect(prompt).toContain("restricted shared deep-memory settings");
     expect(prompt).toContain(
       "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
     );

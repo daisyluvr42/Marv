@@ -91,6 +91,32 @@ describe("memory soul tuning schema", () => {
     });
     expect(res.ok).toBe(true);
   });
+
+  it("accepts deep consolidation settings", () => {
+    const res = validateConfigObject({
+      memory: {
+        soul: {
+          deepConsolidation: {
+            enabled: true,
+            schedule: "20 4 * * 0",
+            maxItems: 300,
+            maxReflections: 4,
+            clusterSummarization: true,
+            conflictJudgment: true,
+            crossScopeReflection: false,
+            model: {
+              provider: "ollama",
+              api: "ollama",
+              model: "qwen2.5:3b",
+              baseUrl: "http://127.0.0.1:11434",
+              timeoutMs: 30000,
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(true);
+  });
 });
 
 describe("talk.voiceAliases", () => {

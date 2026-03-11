@@ -16,6 +16,7 @@ import type { CronServiceState } from "./state.js";
 const SUPPORTED_SYSTEM_TASKS = new Set([
   "soulMemoryMaintenance",
   "soulMemoryNightlyMaintenance",
+  "soulMemoryDeepConsolidation",
   "updateCheck",
 ]);
 

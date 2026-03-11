@@ -65,6 +65,7 @@ export type CronRunOutcome = {
 export type CronSystemTask =
   | "soulMemoryMaintenance"
   | "soulMemoryNightlyMaintenance"
+  | "soulMemoryDeepConsolidation"
   | "updateCheck";
 
 export type CronPayload =

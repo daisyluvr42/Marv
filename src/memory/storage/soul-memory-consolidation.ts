@@ -14,7 +14,7 @@ type MemoryRow = {
   record_kind?: string;
 };
 
-type ConsolidationItem = {
+export type ConsolidationItem = {
   id: string;
   scopeType: string;
   scopeId: string;
@@ -120,7 +120,7 @@ export function consolidateSoulMemories(params: {
   }
 }
 
-function buildSimilarityClusters(
+export function buildSimilarityClusters(
   items: ConsolidationItem[],
   params: { minSimilarity: number; maxSimilarity: number },
 ): ConsolidationItem[][] {
@@ -199,7 +199,7 @@ function compactLine(value: string): string {
   return `${normalized.slice(0, 117)}...`;
 }
 
-function groupByScopeAndKind(items: ConsolidationItem[]): Map<string, ConsolidationItem[]> {
+export function groupByScopeAndKind(items: ConsolidationItem[]): Map<string, ConsolidationItem[]> {
   const grouped = new Map<string, ConsolidationItem[]>();
   for (const item of items) {
     const key = `${item.scopeType}::${item.scopeId}::${item.kind}`;
@@ -208,6 +208,14 @@ function groupByScopeAndKind(items: ConsolidationItem[]): Map<string, Consolidat
     grouped.set(key, bucket);
   }
   return grouped;
+}
+
+export function buildConsolidationClusterKey(items: Array<Pick<ConsolidationItem, "id">>): string {
+  return items
+    .map((item) => item.id.trim())
+    .filter(Boolean)
+    .toSorted((a, b) => a.localeCompare(b))
+    .join("|");
 }
 
 function semanticSimilarity(a: string, b: string): number {
@@ -269,6 +277,21 @@ function loadMemoryItems(db: DatabaseSync, limit: number): ConsolidationItem[] {
     kind: String(row.kind),
     content: String(row.content),
   }));
+}
+
+export function listSoulMemoryConsolidationItems(params: {
+  agentId: string;
+  limit?: number;
+}): ConsolidationItem[] {
+  const limit = Number.isFinite(params.limit)
+    ? Math.max(1, Math.floor(params.limit as number))
+    : 2000;
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    return loadMemoryItems(db, limit);
+  } finally {
+    db.close();
+  }
 }
 
 function openSoulMemoryDb(agentId: string): DatabaseSync {

@@ -32,6 +32,28 @@ type MemoryPair = {
   right: MemoryRow;
 };
 
+export type SoulMemoryConflictCandidate = {
+  left: {
+    id: string;
+    scopeType: string;
+    scopeId: string;
+    kind: string;
+    content: string;
+    confidence: number;
+  };
+  right: {
+    id: string;
+    scopeType: string;
+    scopeId: string;
+    kind: string;
+    content: string;
+    confidence: number;
+  };
+  overlap: number;
+  pairKey: string;
+  ruleBasedConflictReason?: string;
+};
+
 export type SoulMemoryConflict = {
   id: string;
   memoryIdA: string;
@@ -109,6 +131,14 @@ export function detectSoulMemoryConflicts(params: {
   minConfidence?: number;
   overlapThreshold?: number;
   nowMs?: number;
+  judgeConflictPair?: (input: {
+    pairKey: string;
+    leftId: string;
+    rightId: string;
+    left: string;
+    right: string;
+    kind: string;
+  }) => string | null;
   judgeConflict?: (input: { left: string; right: string; kind: string }) => string | null;
 }): SoulMemoryConflictDetectionResult {
   const minConfidence = clamp(params.minConfidence ?? 0.7, 0, 1);
@@ -139,8 +169,17 @@ export function detectSoulMemoryConflicts(params: {
       if (overlap < overlapThreshold) {
         continue;
       }
+      const pairKey = buildSoulMemoryConflictPairKey(pair.left.id, pair.right.id);
       const conflictReason =
         detectRuleBasedConflict(pair.left.content, pair.right.content) ??
+        params.judgeConflictPair?.({
+          pairKey,
+          leftId: pair.left.id,
+          rightId: pair.right.id,
+          left: pair.left.content,
+          right: pair.right.content,
+          kind: pair.left.kind,
+        }) ??
         params.judgeConflict?.({
           left: pair.left.content,
           right: pair.right.content,
@@ -183,6 +222,11 @@ export function detectSoulMemoryConflicts(params: {
   } finally {
     db.close();
   }
+}
+
+export function buildSoulMemoryConflictPairKey(leftId: string, rightId: string): string {
+  const ordered = orderPair(leftId, rightId);
+  return `${ordered.first}|${ordered.second}`;
 }
 
 export function listSoulMemoryConflicts(params: {
@@ -255,6 +299,73 @@ function collectCandidatePairs(memories: MemoryRow[], minConfidence: number): Me
     }
   }
   return pairs;
+}
+
+export function listSoulMemoryConflictCandidates(params: {
+  agentId: string;
+  minConfidence?: number;
+  overlapThreshold?: number;
+  unresolvedOnly?: boolean;
+}): SoulMemoryConflictCandidate[] {
+  const minConfidence = clamp(params.minConfidence ?? 0.7, 0, 1);
+  const overlapThreshold = clamp(params.overlapThreshold ?? 0.2, 0, 1);
+  const unresolvedOnly = params.unresolvedOnly !== false;
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    ensureConflictSchema(db);
+    const memories = loadMemoryRows(db);
+    if (memories.length < 2) {
+      return [];
+    }
+    const pairs = collectCandidatePairs(memories, minConfidence);
+    const existsStmt = unresolvedOnly
+      ? db.prepare(
+          "SELECT id FROM memory_conflicts WHERE memory_id_a = ? AND memory_id_b = ? AND resolved_at IS NULL LIMIT 1",
+        )
+      : null;
+    const candidates: SoulMemoryConflictCandidate[] = [];
+    for (const pair of pairs) {
+      const overlap = tokenOverlap(pair.left.content, pair.right.content);
+      if (overlap < overlapThreshold) {
+        continue;
+      }
+      const ordered = orderPair(pair.left.id, pair.right.id);
+      if (existsStmt) {
+        const existing = existsStmt.get(ordered.first, ordered.second) as
+          | { id?: string }
+          | undefined;
+        if (existing?.id) {
+          continue;
+        }
+      }
+      const ruleBasedConflictReason =
+        detectRuleBasedConflict(pair.left.content, pair.right.content) ?? undefined;
+      candidates.push({
+        left: {
+          id: pair.left.id,
+          scopeType: pair.left.scope_type,
+          scopeId: pair.left.scope_id,
+          kind: pair.left.kind,
+          content: pair.left.content,
+          confidence: Number(pair.left.confidence ?? 0),
+        },
+        right: {
+          id: pair.right.id,
+          scopeType: pair.right.scope_type,
+          scopeId: pair.right.scope_id,
+          kind: pair.right.kind,
+          content: pair.right.content,
+          confidence: Number(pair.right.confidence ?? 0),
+        },
+        overlap,
+        pairKey: buildSoulMemoryConflictPairKey(pair.left.id, pair.right.id),
+        ruleBasedConflictReason,
+      });
+    }
+    return candidates;
+  } finally {
+    db.close();
+  }
 }
 
 function detectRuleBasedConflict(leftRaw: string, rightRaw: string): string | null {

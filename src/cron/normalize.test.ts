@@ -260,6 +260,22 @@ describe("normalizeCronJobCreate", () => {
     expect(normalized.sessionTarget).toBe("main");
   });
 
+  it("accepts deep-consolidation systemTask payloads", () => {
+    const normalized = normalizeCronJobCreate({
+      name: "deep consolidation",
+      enabled: true,
+      schedule: { kind: "cron", expr: "20 4 * * 0" },
+      payload: {
+        kind: "systemTask",
+        task: "soulMemoryDeepConsolidation",
+      },
+    }) as unknown as Record<string, unknown>;
+
+    const payload = normalized.payload as Record<string, unknown>;
+    expect(payload.kind).toBe("systemTask");
+    expect(payload.task).toBe("soulMemoryDeepConsolidation");
+  });
+
   it("migrates legacy delivery fields to delivery", () => {
     const normalized = normalizeCronJobCreate({
       name: "legacy deliver",
@@ -425,6 +441,18 @@ describe("normalizeCronJobPatch", () => {
     const payload = normalized.payload as Record<string, unknown>;
     expect(payload.kind).toBe("systemTask");
     expect(payload.task).toBe("soulMemoryMaintenance");
+  });
+
+  it("infers deep-consolidation systemTask kind for task-only payload patches", () => {
+    const normalized = normalizeCronJobPatch({
+      payload: {
+        task: "soulMemoryDeepConsolidation",
+      },
+    }) as unknown as Record<string, unknown>;
+
+    const payload = normalized.payload as Record<string, unknown>;
+    expect(payload.kind).toBe("systemTask");
+    expect(payload.task).toBe("soulMemoryDeepConsolidation");
   });
 
   it("preserves null sessionKey patches and trims string values", () => {

@@ -1,5 +1,9 @@
 import path from "node:path";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import {
+  listAgentIds,
+  resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
+} from "../../agents/agent-scope.js";
 import { getActiveEmbeddedRunCount } from "../../agents/pi-embedded-runner/runs.js";
 import { registerSkillsChangeListener } from "../../agents/skills/refresh.js";
 import { initSubagentRegistry } from "../../agents/subagent-registry.js";
@@ -33,6 +37,7 @@ import {
 } from "../../infra/skills-remote.js";
 import { markDeployHealthy } from "../../infra/update/deploy-state.js";
 import { scheduleGatewayUpdateCheck } from "../../infra/update/update-startup.js";
+import { syncConfiguredKnowledgeBases } from "../../knowledge/indexer.js";
 import { startDiagnosticHeartbeat, stopDiagnosticHeartbeat } from "../../logging/diagnostic.js";
 import { createSubsystemLogger, runtimeForLogger } from "../../logging/subsystem.js";
 import {
@@ -65,6 +70,9 @@ import { createAgentEventHandler } from "./server-chat.js";
 import { createGatewayCloseHandler } from "./server-close.js";
 import {
   buildGatewayCronService,
+  ensureDeepConsolidationCronJob,
+  ensureProactiveCheckCronJob,
+  ensureProactiveDigestCronJobs,
   ensureSoulMemoryMaintenanceCronJob,
   ensureUpdateCheckCronJob,
 } from "./server-cron.js";
@@ -554,9 +562,37 @@ export async function startGatewayServer(
           logCron.warn(`failed to ensure soul-memory maintenance cron job: ${String(err)}`);
         }
         try {
+          await ensureDeepConsolidationCronJob({ cron, cfg: cfgAtStart });
+        } catch (err) {
+          logCron.warn(`failed to ensure deep-consolidation cron job: ${String(err)}`);
+        }
+        try {
           await ensureUpdateCheckCronJob({ cron, cfg: cfgAtStart });
         } catch (err) {
           logCron.warn(`failed to ensure update-check cron job: ${String(err)}`);
+        }
+        try {
+          await ensureProactiveCheckCronJob({ cron, cfg: cfgAtStart });
+          await ensureProactiveDigestCronJobs({ cron, cfg: cfgAtStart });
+        } catch (err) {
+          logCron.warn(`failed to ensure proactive cron jobs: ${String(err)}`);
+        }
+        if (
+          cfgAtStart.memory?.knowledge?.enabled &&
+          cfgAtStart.memory.knowledge.autoSyncOnBoot !== false
+        ) {
+          for (const agentId of listAgentIds(cfgAtStart)) {
+            try {
+              await syncConfiguredKnowledgeBases({
+                agentId,
+                config: cfgAtStart,
+                force: true,
+                reason: "gateway-boot",
+              });
+            } catch (err) {
+              logCron.warn(`failed to sync knowledge base for agent ${agentId}: ${String(err)}`);
+            }
+          }
         }
       })
       .catch((err) => logCron.error(`failed to start: ${String(err)}`));
