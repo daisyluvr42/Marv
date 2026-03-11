@@ -60,12 +60,29 @@ const SelfSettingsToolSchema = Type.Object(
     deepMemoryCrossScopeReflection: Type.Optional(Type.Boolean()),
     deepMemoryMaxItems: Type.Optional(Type.Number({ minimum: 1 })),
     deepMemoryMaxReflections: Type.Optional(Type.Number({ minimum: 1 })),
+    memorySearchEnabled: Type.Optional(Type.Boolean()),
+    memorySearchProvider: Type.Optional(Type.String()),
+    memorySearchModel: Type.Optional(Type.String()),
+    memorySearchDimensions: Type.Optional(Type.Number({ minimum: 1 })),
+    memorySearchFallback: Type.Optional(Type.String()),
+    memorySearchRemoteBaseUrl: Type.Optional(Type.String()),
+    memorySearchRemoteApiKey: Type.Optional(Type.String()),
+    memorySearchRerankerEnabled: Type.Optional(Type.Boolean()),
+    memorySearchRerankerApiUrl: Type.Optional(Type.String()),
+    memorySearchRerankerModel: Type.Optional(Type.String()),
+    memorySearchRerankerApiKey: Type.Optional(Type.String()),
+    memorySearchRerankerMaxCandidates: Type.Optional(Type.Number({ minimum: 1 })),
+    memorySearchRerankerFtsFirst: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );
 
 const GENERIC_DENIED_MESSAGE = "This setting request cannot be applied right now.";
 const GENERIC_INVALID_MESSAGE = "I can't apply that session setting directly.";
+const REDACTED_VALUE = "[redacted]";
+
+type MemorySearchProvider = "openai" | "gemini" | "local" | "voyage";
+type MemorySearchFallback = MemorySearchProvider | "none";
 
 type SelfSettingsArgs = Record<string, unknown>;
 
@@ -127,6 +144,40 @@ function normalizeDeepMemoryApi(
   }
   if (lower === "openai-completions" || lower === "openai" || lower === "openai-compatible") {
     return "openai-completions";
+  }
+  return undefined;
+}
+
+function normalizeMemorySearchProvider(
+  raw: string | undefined,
+): MemorySearchProvider | null | undefined {
+  const normalized = normalizePatchString(raw);
+  if (normalized == null) {
+    return normalized;
+  }
+  const lower = normalized.toLowerCase();
+  if (lower === "openai" || lower === "gemini" || lower === "local" || lower === "voyage") {
+    return lower;
+  }
+  return undefined;
+}
+
+function normalizeMemorySearchFallback(
+  raw: string | undefined,
+): MemorySearchFallback | null | undefined {
+  const normalized = normalizePatchString(raw);
+  if (normalized == null) {
+    return normalized;
+  }
+  const lower = normalized.toLowerCase();
+  if (
+    lower === "openai" ||
+    lower === "gemini" ||
+    lower === "local" ||
+    lower === "voyage" ||
+    lower === "none"
+  ) {
+    return lower;
   }
   return undefined;
 }
@@ -266,6 +317,16 @@ function pruneEmptyObject(
   return Object.keys(value).length > 0 ? value : undefined;
 }
 
+function summarizeSensitivePatch(
+  label: string,
+  value: string | null | undefined,
+): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return `${label} ${value === null ? "default" : "configured"}`;
+}
+
 export function createSelfSettingsTool(opts?: {
   agentSessionKey?: string;
   config?: MarvConfig;
@@ -282,7 +343,7 @@ export function createSelfSettingsTool(opts?: {
     label: "Self Settings",
     name: "self_settings",
     description:
-      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, or managed deep-consolidation settings.",
+      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory and memory-search settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, managed deep-consolidation settings, or shared memory-search embedding/reranker defaults.",
     parameters: SelfSettingsToolSchema,
     execute: async (_toolCallId, args) => {
       if (!opts?.agentSessionKey?.trim()) {
@@ -339,6 +400,36 @@ export function createSelfSettingsTool(opts?: {
       );
       const deepMemoryMaxItems = readNumberParam(params, "deepMemoryMaxItems");
       const deepMemoryMaxReflections = readNumberParam(params, "deepMemoryMaxReflections");
+      const memorySearchEnabled = readBooleanParam(params, "memorySearchEnabled");
+      const memorySearchProvider = normalizeMemorySearchProvider(
+        readStringParam(params, "memorySearchProvider"),
+      );
+      const memorySearchModel = normalizePatchString(readStringParam(params, "memorySearchModel"));
+      const memorySearchDimensions = readNumberParam(params, "memorySearchDimensions");
+      const memorySearchFallback = normalizeMemorySearchFallback(
+        readStringParam(params, "memorySearchFallback"),
+      );
+      const memorySearchRemoteBaseUrl = normalizePatchString(
+        readStringParam(params, "memorySearchRemoteBaseUrl"),
+      );
+      const memorySearchRemoteApiKey = normalizePatchString(
+        readStringParam(params, "memorySearchRemoteApiKey"),
+      );
+      const memorySearchRerankerEnabled = readBooleanParam(params, "memorySearchRerankerEnabled");
+      const memorySearchRerankerApiUrl = normalizePatchString(
+        readStringParam(params, "memorySearchRerankerApiUrl"),
+      );
+      const memorySearchRerankerModel = normalizePatchString(
+        readStringParam(params, "memorySearchRerankerModel"),
+      );
+      const memorySearchRerankerApiKey = normalizePatchString(
+        readStringParam(params, "memorySearchRerankerApiKey"),
+      );
+      const memorySearchRerankerMaxCandidates = readNumberParam(
+        params,
+        "memorySearchRerankerMaxCandidates",
+      );
+      const memorySearchRerankerFtsFirst = readBooleanParam(params, "memorySearchRerankerFtsFirst");
       const hasDeepMemoryConfigChange =
         deepMemoryEnabled !== undefined ||
         deepMemorySchedule !== undefined ||
@@ -352,6 +443,20 @@ export function createSelfSettingsTool(opts?: {
         deepMemoryCrossScopeReflection !== undefined ||
         deepMemoryMaxItems !== undefined ||
         deepMemoryMaxReflections !== undefined;
+      const hasMemorySearchConfigChange =
+        memorySearchEnabled !== undefined ||
+        readStringParam(params, "memorySearchProvider") !== undefined ||
+        memorySearchModel !== undefined ||
+        memorySearchDimensions !== undefined ||
+        readStringParam(params, "memorySearchFallback") !== undefined ||
+        memorySearchRemoteBaseUrl !== undefined ||
+        memorySearchRemoteApiKey !== undefined ||
+        memorySearchRerankerEnabled !== undefined ||
+        memorySearchRerankerApiUrl !== undefined ||
+        memorySearchRerankerModel !== undefined ||
+        memorySearchRerankerApiKey !== undefined ||
+        memorySearchRerankerMaxCandidates !== undefined ||
+        memorySearchRerankerFtsFirst !== undefined;
 
       if (
         !sessionAction &&
@@ -371,7 +476,8 @@ export function createSelfSettingsTool(opts?: {
         queueCap === undefined &&
         queueDrop === undefined &&
         modelRegistryAction === undefined &&
-        !hasDeepMemoryConfigChange
+        !hasDeepMemoryConfigChange &&
+        !hasMemorySearchConfigChange
       ) {
         throw new ToolInputError("at least one setting change is required");
       }
@@ -379,6 +485,18 @@ export function createSelfSettingsTool(opts?: {
       if (
         readStringParam(params, "deepMemoryModelApi") !== undefined &&
         deepMemoryModelApi === undefined
+      ) {
+        return buildInvalidResult();
+      }
+      if (
+        readStringParam(params, "memorySearchProvider") !== undefined &&
+        memorySearchProvider === undefined
+      ) {
+        return buildInvalidResult();
+      }
+      if (
+        readStringParam(params, "memorySearchFallback") !== undefined &&
+        memorySearchFallback === undefined
       ) {
         return buildInvalidResult();
       }
@@ -418,11 +536,13 @@ export function createSelfSettingsTool(opts?: {
         }
       }
 
-      const sharedConfigLabels: string[] = [];
+      const sharedDeepMemoryLabels: string[] = [];
+      const sharedMemorySearchLabels: string[] = [];
       let nextConfig = cfg;
+      let hasSharedConfigChange = false;
       if (hasDeepMemoryConfigChange) {
         const nextDeepModel = {
-          ...cfg.memory?.soul?.deepConsolidation?.model,
+          ...nextConfig.memory?.soul?.deepConsolidation?.model,
         } as Record<string, unknown>;
         applyOptionalStringPatch(nextDeepModel, "provider", deepMemoryModelProvider);
         applyOptionalStringPatch(nextDeepModel, "api", deepMemoryModelApi);
@@ -433,7 +553,7 @@ export function createSelfSettingsTool(opts?: {
         }
 
         const nextDeep = {
-          ...cfg.memory?.soul?.deepConsolidation,
+          ...nextConfig.memory?.soul?.deepConsolidation,
         } as Record<string, unknown>;
         if (deepMemoryEnabled !== undefined) {
           nextDeep.enabled = deepMemoryEnabled;
@@ -462,64 +582,225 @@ export function createSelfSettingsTool(opts?: {
         }
 
         nextConfig = {
-          ...cfg,
+          ...nextConfig,
           memory: {
-            ...cfg.memory,
+            ...nextConfig.memory,
             soul: {
-              ...cfg.memory?.soul,
+              ...nextConfig.memory?.soul,
               deepConsolidation: nextDeep,
             },
           },
         };
-        try {
-          await writeConfigFile(nextConfig);
-        } catch {
-          return buildInvalidResult();
-        }
+        hasSharedConfigChange = true;
 
         if (deepMemoryEnabled !== undefined) {
-          sharedConfigLabels.push(`deep memory ${deepMemoryEnabled ? "enabled" : "disabled"}`);
+          sharedDeepMemoryLabels.push(`deep memory ${deepMemoryEnabled ? "enabled" : "disabled"}`);
         }
         if (deepMemorySchedule !== undefined) {
-          sharedConfigLabels.push(`deep memory schedule ${deepMemorySchedule ?? "default"}`);
+          sharedDeepMemoryLabels.push(`deep memory schedule ${deepMemorySchedule ?? "default"}`);
         }
         if (deepMemoryModelProvider !== undefined) {
-          sharedConfigLabels.push(`deep memory provider ${deepMemoryModelProvider ?? "default"}`);
+          sharedDeepMemoryLabels.push(
+            `deep memory provider ${deepMemoryModelProvider ?? "default"}`,
+          );
         }
         if (deepMemoryModelApi !== undefined) {
-          sharedConfigLabels.push(`deep memory api ${deepMemoryModelApi ?? "default"}`);
+          sharedDeepMemoryLabels.push(`deep memory api ${deepMemoryModelApi ?? "default"}`);
         }
         if (deepMemoryModel !== undefined) {
-          sharedConfigLabels.push(`deep memory model ${deepMemoryModel ?? "default"}`);
+          sharedDeepMemoryLabels.push(`deep memory model ${deepMemoryModel ?? "default"}`);
         }
         if (deepMemoryBaseUrl !== undefined) {
-          sharedConfigLabels.push(`deep memory base URL ${deepMemoryBaseUrl ?? "default"}`);
+          sharedDeepMemoryLabels.push(`deep memory base URL ${deepMemoryBaseUrl ?? "default"}`);
         }
         if (deepMemoryTimeoutMs !== undefined) {
-          sharedConfigLabels.push(`deep memory timeout ${Math.trunc(deepMemoryTimeoutMs)}ms`);
+          sharedDeepMemoryLabels.push(`deep memory timeout ${Math.trunc(deepMemoryTimeoutMs)}ms`);
         }
         if (deepMemoryClusterSummarization !== undefined) {
-          sharedConfigLabels.push(
+          sharedDeepMemoryLabels.push(
             `deep summaries ${deepMemoryClusterSummarization ? "on" : "off"}`,
           );
         }
         if (deepMemoryConflictJudgment !== undefined) {
-          sharedConfigLabels.push(
+          sharedDeepMemoryLabels.push(
             `deep conflict judgment ${deepMemoryConflictJudgment ? "on" : "off"}`,
           );
         }
         if (deepMemoryCrossScopeReflection !== undefined) {
-          sharedConfigLabels.push(
+          sharedDeepMemoryLabels.push(
             `deep cross-scope reflection ${deepMemoryCrossScopeReflection ? "on" : "off"}`,
           );
         }
         if (deepMemoryMaxItems !== undefined) {
-          sharedConfigLabels.push(`deep memory max items ${Math.trunc(deepMemoryMaxItems)}`);
+          sharedDeepMemoryLabels.push(`deep memory max items ${Math.trunc(deepMemoryMaxItems)}`);
         }
         if (deepMemoryMaxReflections !== undefined) {
-          sharedConfigLabels.push(
+          sharedDeepMemoryLabels.push(
             `deep memory max reflections ${Math.trunc(deepMemoryMaxReflections)}`,
           );
+        }
+      }
+      if (hasMemorySearchConfigChange) {
+        const nextReranker = {
+          ...nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker,
+        } as Record<string, unknown>;
+        if (memorySearchRerankerEnabled !== undefined) {
+          nextReranker.enabled = memorySearchRerankerEnabled;
+        }
+        applyOptionalStringPatch(nextReranker, "apiUrl", memorySearchRerankerApiUrl);
+        applyOptionalStringPatch(nextReranker, "model", memorySearchRerankerModel);
+        applyOptionalStringPatch(nextReranker, "apiKey", memorySearchRerankerApiKey);
+        if (memorySearchRerankerMaxCandidates !== undefined) {
+          nextReranker.maxCandidates = Math.max(1, Math.trunc(memorySearchRerankerMaxCandidates));
+        }
+        if (memorySearchRerankerFtsFirst !== undefined) {
+          nextReranker.ftsFirst = memorySearchRerankerFtsFirst;
+        }
+
+        const nextHybrid = {
+          ...nextConfig.agents?.defaults?.memorySearch?.query?.hybrid,
+        } as Record<string, unknown>;
+        const prunedReranker = pruneEmptyObject(nextReranker);
+        if (prunedReranker) {
+          nextHybrid.reranker = prunedReranker;
+        } else {
+          delete nextHybrid.reranker;
+        }
+
+        const nextQuery = {
+          ...nextConfig.agents?.defaults?.memorySearch?.query,
+        } as Record<string, unknown>;
+        const prunedHybrid = pruneEmptyObject(nextHybrid);
+        if (prunedHybrid) {
+          nextQuery.hybrid = prunedHybrid;
+        } else {
+          delete nextQuery.hybrid;
+        }
+
+        const nextRemote = {
+          ...nextConfig.agents?.defaults?.memorySearch?.remote,
+        } as Record<string, unknown>;
+        applyOptionalStringPatch(nextRemote, "baseUrl", memorySearchRemoteBaseUrl);
+        applyOptionalStringPatch(nextRemote, "apiKey", memorySearchRemoteApiKey);
+
+        const nextMemorySearch = {
+          ...nextConfig.agents?.defaults?.memorySearch,
+        } as Record<string, unknown>;
+        if (memorySearchEnabled !== undefined) {
+          nextMemorySearch.enabled = memorySearchEnabled;
+        }
+        if (memorySearchDimensions !== undefined) {
+          nextMemorySearch.dimensions = Math.max(1, Math.trunc(memorySearchDimensions));
+        }
+        applyOptionalStringPatch(nextMemorySearch, "provider", memorySearchProvider);
+        applyOptionalStringPatch(nextMemorySearch, "model", memorySearchModel);
+        applyOptionalStringPatch(nextMemorySearch, "fallback", memorySearchFallback);
+        const prunedRemote = pruneEmptyObject(nextRemote);
+        if (prunedRemote) {
+          nextMemorySearch.remote = prunedRemote;
+        } else {
+          delete nextMemorySearch.remote;
+        }
+        const prunedQuery = pruneEmptyObject(nextQuery);
+        if (prunedQuery) {
+          nextMemorySearch.query = prunedQuery;
+        } else {
+          delete nextMemorySearch.query;
+        }
+
+        const nextRerankerConfig = nextMemorySearch.query as
+          | { hybrid?: { reranker?: { enabled?: unknown; apiUrl?: unknown; model?: unknown } } }
+          | undefined;
+        const rerankerConfig = nextRerankerConfig?.hybrid?.reranker;
+        if (
+          rerankerConfig?.enabled === true &&
+          (typeof rerankerConfig.apiUrl !== "string" ||
+            !rerankerConfig.apiUrl.trim() ||
+            typeof rerankerConfig.model !== "string" ||
+            !rerankerConfig.model.trim())
+        ) {
+          return buildInvalidResult();
+        }
+
+        nextConfig = {
+          ...nextConfig,
+          agents: {
+            ...nextConfig.agents,
+            defaults: {
+              ...nextConfig.agents?.defaults,
+              memorySearch: nextMemorySearch,
+            },
+          },
+        };
+        hasSharedConfigChange = true;
+
+        if (memorySearchEnabled !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory search ${memorySearchEnabled ? "enabled" : "disabled"}`,
+          );
+        }
+        if (memorySearchProvider !== undefined) {
+          sharedMemorySearchLabels.push(`memory provider ${memorySearchProvider ?? "default"}`);
+        }
+        if (memorySearchModel !== undefined) {
+          sharedMemorySearchLabels.push(`memory model ${memorySearchModel ?? "default"}`);
+        }
+        if (memorySearchDimensions !== undefined) {
+          sharedMemorySearchLabels.push(`memory dimensions ${Math.trunc(memorySearchDimensions)}`);
+        }
+        if (memorySearchFallback !== undefined) {
+          sharedMemorySearchLabels.push(`memory fallback ${memorySearchFallback ?? "default"}`);
+        }
+        if (memorySearchRemoteBaseUrl !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory remote base URL ${memorySearchRemoteBaseUrl ?? "default"}`,
+          );
+        }
+        const remoteApiKeySummary = summarizeSensitivePatch(
+          "memory remote API key",
+          memorySearchRemoteApiKey,
+        );
+        if (remoteApiKeySummary) {
+          sharedMemorySearchLabels.push(remoteApiKeySummary);
+        }
+        if (memorySearchRerankerEnabled !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory reranker ${memorySearchRerankerEnabled ? "enabled" : "disabled"}`,
+          );
+        }
+        if (memorySearchRerankerApiUrl !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory reranker URL ${memorySearchRerankerApiUrl ?? "default"}`,
+          );
+        }
+        if (memorySearchRerankerModel !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory reranker model ${memorySearchRerankerModel ?? "default"}`,
+          );
+        }
+        const rerankerApiKeySummary = summarizeSensitivePatch(
+          "memory reranker API key",
+          memorySearchRerankerApiKey,
+        );
+        if (rerankerApiKeySummary) {
+          sharedMemorySearchLabels.push(rerankerApiKeySummary);
+        }
+        if (memorySearchRerankerMaxCandidates !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory reranker max candidates ${Math.trunc(memorySearchRerankerMaxCandidates)}`,
+          );
+        }
+        if (memorySearchRerankerFtsFirst !== undefined) {
+          sharedMemorySearchLabels.push(
+            `memory reranker ftsFirst ${memorySearchRerankerFtsFirst ? "on" : "off"}`,
+          );
+        }
+      }
+      if (hasSharedConfigChange) {
+        try {
+          await writeConfigFile(nextConfig);
+        } catch {
+          return buildInvalidResult();
         }
       }
 
@@ -681,8 +962,11 @@ export function createSelfSettingsTool(opts?: {
 
       const summaryParts = [
         appliedLabels.length > 0 ? `Updated current session: ${appliedLabels.join("; ")}.` : null,
-        sharedConfigLabels.length > 0
-          ? `Updated shared deep-memory settings: ${sharedConfigLabels.join("; ")}.`
+        sharedDeepMemoryLabels.length > 0
+          ? `Updated shared deep-memory settings: ${sharedDeepMemoryLabels.join("; ")}.`
+          : null,
+        sharedMemorySearchLabels.length > 0
+          ? `Updated shared memory-search settings: ${sharedMemorySearchLabels.join("; ")}.`
           : null,
       ].filter((value): value is string => Boolean(value));
 
@@ -720,28 +1004,51 @@ export function createSelfSettingsTool(opts?: {
             modelRegistryPath: resolveRuntimeRegistryPathForDisplay(),
             modelRegistryRefreshedAt: refreshedRegistry?.lastSuccessfulRefreshAt,
           },
-          sharedConfig:
-            sharedConfigLabels.length > 0
-              ? {
-                  deepMemoryEnabled: nextConfig.memory?.soul?.deepConsolidation?.enabled,
-                  deepMemorySchedule: nextConfig.memory?.soul?.deepConsolidation?.schedule,
-                  deepMemoryModelProvider:
-                    nextConfig.memory?.soul?.deepConsolidation?.model?.provider,
-                  deepMemoryModelApi: nextConfig.memory?.soul?.deepConsolidation?.model?.api,
-                  deepMemoryModel: nextConfig.memory?.soul?.deepConsolidation?.model?.model,
-                  deepMemoryBaseUrl: nextConfig.memory?.soul?.deepConsolidation?.model?.baseUrl,
-                  deepMemoryTimeoutMs: nextConfig.memory?.soul?.deepConsolidation?.model?.timeoutMs,
-                  deepMemoryClusterSummarization:
-                    nextConfig.memory?.soul?.deepConsolidation?.clusterSummarization,
-                  deepMemoryConflictJudgment:
-                    nextConfig.memory?.soul?.deepConsolidation?.conflictJudgment,
-                  deepMemoryCrossScopeReflection:
-                    nextConfig.memory?.soul?.deepConsolidation?.crossScopeReflection,
-                  deepMemoryMaxItems: nextConfig.memory?.soul?.deepConsolidation?.maxItems,
-                  deepMemoryMaxReflections:
-                    nextConfig.memory?.soul?.deepConsolidation?.maxReflections,
-                }
-              : undefined,
+          sharedConfig: hasSharedConfigChange
+            ? {
+                deepMemoryEnabled: nextConfig.memory?.soul?.deepConsolidation?.enabled,
+                deepMemorySchedule: nextConfig.memory?.soul?.deepConsolidation?.schedule,
+                deepMemoryModelProvider:
+                  nextConfig.memory?.soul?.deepConsolidation?.model?.provider,
+                deepMemoryModelApi: nextConfig.memory?.soul?.deepConsolidation?.model?.api,
+                deepMemoryModel: nextConfig.memory?.soul?.deepConsolidation?.model?.model,
+                deepMemoryBaseUrl: nextConfig.memory?.soul?.deepConsolidation?.model?.baseUrl,
+                deepMemoryTimeoutMs: nextConfig.memory?.soul?.deepConsolidation?.model?.timeoutMs,
+                deepMemoryClusterSummarization:
+                  nextConfig.memory?.soul?.deepConsolidation?.clusterSummarization,
+                deepMemoryConflictJudgment:
+                  nextConfig.memory?.soul?.deepConsolidation?.conflictJudgment,
+                deepMemoryCrossScopeReflection:
+                  nextConfig.memory?.soul?.deepConsolidation?.crossScopeReflection,
+                deepMemoryMaxItems: nextConfig.memory?.soul?.deepConsolidation?.maxItems,
+                deepMemoryMaxReflections:
+                  nextConfig.memory?.soul?.deepConsolidation?.maxReflections,
+                memorySearchEnabled: nextConfig.agents?.defaults?.memorySearch?.enabled,
+                memorySearchProvider: nextConfig.agents?.defaults?.memorySearch?.provider,
+                memorySearchModel: nextConfig.agents?.defaults?.memorySearch?.model,
+                memorySearchDimensions: nextConfig.agents?.defaults?.memorySearch?.dimensions,
+                memorySearchFallback: nextConfig.agents?.defaults?.memorySearch?.fallback,
+                memorySearchRemoteBaseUrl:
+                  nextConfig.agents?.defaults?.memorySearch?.remote?.baseUrl,
+                memorySearchRemoteApiKey: nextConfig.agents?.defaults?.memorySearch?.remote?.apiKey
+                  ? REDACTED_VALUE
+                  : undefined,
+                memorySearchRerankerEnabled:
+                  nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.enabled,
+                memorySearchRerankerApiUrl:
+                  nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.apiUrl,
+                memorySearchRerankerModel:
+                  nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.model,
+                memorySearchRerankerApiKey: nextConfig.agents?.defaults?.memorySearch?.query?.hybrid
+                  ?.reranker?.apiKey
+                  ? REDACTED_VALUE
+                  : undefined,
+                memorySearchRerankerMaxCandidates:
+                  nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.maxCandidates,
+                memorySearchRerankerFtsFirst:
+                  nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.ftsFirst,
+              }
+            : undefined,
         },
       };
     },

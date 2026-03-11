@@ -73,6 +73,37 @@ describe("web search provider config", () => {
 });
 
 describe("memory soul tuning schema", () => {
+  it("accepts memory-search dimensions and reranker settings", () => {
+    const res = validateConfigObject({
+      agents: {
+        defaults: {
+          memorySearch: {
+            provider: "openai",
+            model: "Qwen3-Embedding-0.6B",
+            dimensions: 512,
+            remote: {
+              baseUrl: "http://127.0.0.1:8080/v1",
+              apiKey: "local",
+            },
+            query: {
+              hybrid: {
+                reranker: {
+                  enabled: true,
+                  apiUrl: "http://127.0.0.1:8081/v1/rerank",
+                  model: "Qwen3-Reranker-0.6B",
+                  apiKey: "local-rerank",
+                  maxCandidates: 24,
+                  ftsFirst: false,
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(true);
+  });
+
   it("accepts configurable soul memory tuning fields", () => {
     const res = validateConfigObject({
       memory: {

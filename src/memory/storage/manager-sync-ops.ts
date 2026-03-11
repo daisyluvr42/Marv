@@ -959,6 +959,7 @@ export abstract class MemoryManagerSyncOps {
       provider: fallback,
       remote: this.settings.remote,
       model: fallbackModel,
+      dimensions: this.settings.dimensions,
       fallback: "none",
       local: this.settings.local,
     });

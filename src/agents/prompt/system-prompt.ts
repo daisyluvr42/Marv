@@ -96,6 +96,31 @@ function buildLanguageSection(params: { isMinimal: boolean; availableTools: Set<
   return lines;
 }
 
+function buildSelfManagementSection(params: { isMinimal: boolean; availableTools: Set<string> }) {
+  if (params.isMinimal) {
+    return [];
+  }
+  const lines: string[] = [];
+  if (params.availableTools.has("self_inspecting")) {
+    lines.push(
+      "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
+    );
+    lines.push("Do not guess or switch models before checking.");
+  }
+  if (params.availableTools.has("self_settings")) {
+    lines.push(
+      "When the user directly asks you to change your own settings or behavior, use self_settings.",
+    );
+    lines.push(
+      "self_settings can update restricted shared deep-memory and shared memory-search defaults, including local memory embedding endpoints and optional reranker settings.",
+    );
+  }
+  if (lines.length === 0) {
+    return [];
+  }
+  return ["## Self Management", ...lines, ""];
+}
+
 function buildUserIdentitySection(ownerLine: string | undefined, isMinimal: boolean) {
   if (!ownerLine || isMinimal) {
     return [];
@@ -312,7 +337,7 @@ export function buildAgentSystemPrompt(params: {
     self_inspecting:
       "Inspect your own runtime/settings/models/scheduled-tasks/context/tools state; use for questions about your current status, settings, available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     self_settings:
-      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new, runtime model-registry refresh, deep-memory model/schedule/settings)",
+      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory and memory-search settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new, runtime model-registry refresh, deep-memory settings, shared memory embeddings/reranker defaults)",
     request_escalation: "Request task-scoped elevated permissions with user approval",
     request_missing_tools: "Discover/install skills for missing capabilities (approval required)",
     image: "Analyze an image with the configured image model",
@@ -487,7 +512,7 @@ export function buildAgentSystemPrompt(params: {
     "",
     ...safetySection,
     "## Marv CLI Quick Reference",
-    "Marv is controlled via subcommands. Do not invent commands. Gateway: `marv gateway {status|start|stop|restart}`.",
+    "Marv is controlled via subcommands. Do not invent commands. Gateway commands: `marv gateway status`, `marv gateway start`, `marv gateway stop`, `marv gateway restart`.",
     "If unsure, ask the user to run `marv help` (or `marv gateway --help`) and paste the output.",
     "",
     ...skillsSection,
@@ -572,6 +597,7 @@ export function buildAgentSystemPrompt(params: {
       : "",
     params.sandboxInfo?.enabled ? "" : "",
     ...buildUserIdentitySection(ownerLine, isMinimal),
+    ...buildSelfManagementSection({ isMinimal, availableTools }),
     ...buildLanguageSection({ isMinimal, availableTools }),
     ...buildTimeSection({
       userTimezone,

@@ -148,6 +148,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.memorySearch.experimental.sessionMemory":
     "Memory Search Session Index (Experimental)",
   "agents.defaults.memorySearch.provider": "Memory Search Provider",
+  "agents.defaults.memorySearch.dimensions": "Memory Search Embedding Dimensions",
   "agents.defaults.memorySearch.remote.baseUrl": "Remote Embedding Base URL",
   "agents.defaults.memorySearch.remote.apiKey": "Remote Embedding API Key",
   "agents.defaults.memorySearch.remote.headers": "Remote Embedding Headers",
@@ -177,6 +178,13 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.memorySearch.query.hybrid.textWeight": "Memory Search Text Weight",
   "agents.defaults.memorySearch.query.hybrid.candidateMultiplier":
     "Memory Search Hybrid Candidate Multiplier",
+  "agents.defaults.memorySearch.query.hybrid.reranker.enabled": "Memory Search Reranker",
+  "agents.defaults.memorySearch.query.hybrid.reranker.apiUrl": "Memory Search Reranker API URL",
+  "agents.defaults.memorySearch.query.hybrid.reranker.model": "Memory Search Reranker Model",
+  "agents.defaults.memorySearch.query.hybrid.reranker.apiKey": "Memory Search Reranker API Key",
+  "agents.defaults.memorySearch.query.hybrid.reranker.maxCandidates":
+    "Memory Search Reranker Max Candidates",
+  "agents.defaults.memorySearch.query.hybrid.reranker.ftsFirst": "Memory Search Reranker FTS First",
   "agents.defaults.memorySearch.cache.enabled": "Memory Search Embedding Cache",
   "agents.defaults.memorySearch.cache.maxEntries": "Memory Search Embedding Cache Max Entries",
   memory: "Memory",

@@ -15,11 +15,12 @@ vi.mock("./embeddings/embeddings.js", () => {
     return [alpha, beta];
   };
   return {
-    createEmbeddingProvider: async (options: { model?: string }) => ({
+    createEmbeddingProvider: async (options: { model?: string; dimensions?: number }) => ({
       requestedProvider: "openai",
       provider: {
         id: "mock",
         model: options.model ?? "mock-embed",
+        dimensions: options.dimensions,
         embedQuery: async (text: string) => embedText(text),
         embedBatch: async (texts: string[]) => {
           embedBatchCalls += 1;
@@ -250,6 +251,62 @@ describe("memory index", () => {
     expect(embedBatchCalls).toBeGreaterThan(callsAfterFirstSync);
     const status = second.manager.status();
     expect(status.files).toBeGreaterThan(0);
+    await second.manager.close?.();
+  });
+
+  it("reindexes when embedding dimensions change", async () => {
+    const indexModelPath = path.join(workspaceDir, `index-dim-change-${Date.now()}.sqlite`);
+    const base = createCfg({ storePath: indexModelPath });
+    const baseAgents = base.agents!;
+    const baseDefaults = baseAgents.defaults!;
+    const baseMemorySearch = baseDefaults.memorySearch!;
+
+    const first = await getMemorySearchManager({
+      cfg: {
+        ...base,
+        agents: {
+          ...baseAgents,
+          defaults: {
+            ...baseDefaults,
+            memorySearch: {
+              ...baseMemorySearch,
+              dimensions: 512,
+            },
+          },
+        },
+      },
+      agentId: "main",
+    });
+    expect(first.manager).not.toBeNull();
+    if (!first.manager) {
+      throw new Error("manager missing");
+    }
+    await first.manager.sync?.({ reason: "test" });
+    const callsAfterFirstSync = embedBatchCalls;
+    await first.manager.close?.();
+
+    const second = await getMemorySearchManager({
+      cfg: {
+        ...base,
+        agents: {
+          ...baseAgents,
+          defaults: {
+            ...baseDefaults,
+            memorySearch: {
+              ...baseMemorySearch,
+              dimensions: 256,
+            },
+          },
+        },
+      },
+      agentId: "main",
+    });
+    expect(second.manager).not.toBeNull();
+    if (!second.manager) {
+      throw new Error("manager missing");
+    }
+    await second.manager.sync?.({ reason: "test" });
+    expect(embedBatchCalls).toBeGreaterThan(callsAfterFirstSync);
     await second.manager.close?.();
   });
 

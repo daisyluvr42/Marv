@@ -263,6 +263,8 @@ export type AgentToolsConfig = {
 export type MemorySearchConfig = {
   /** Enable vector memory search (default: true). */
   enabled?: boolean;
+  /** Optional embedding output dimensions for compatible providers. */
+  dimensions?: number;
   /** Sources to index and search (default: ["memory"]). */
   sources?: Array<"memory" | "sessions">;
   /** Extra paths to include in memory search (directories or .md files). */
@@ -372,6 +374,21 @@ export type MemorySearchConfig = {
         enabled?: boolean;
         /** Half-life in days for exponential decay (default: 30). */
         halfLifeDays?: number;
+      };
+      /** Optional remote reranker for candidate reordering. */
+      reranker?: {
+        /** Enable reranking (default: false). */
+        enabled?: boolean;
+        /** HTTP endpoint for the reranker API. */
+        apiUrl?: string;
+        /** Reranker model id. */
+        model?: string;
+        /** Optional reranker API key (sensitive). */
+        apiKey?: string;
+        /** Max candidates to send to the reranker (default: 24). */
+        maxCandidates?: number;
+        /** Parsed for compatibility; inactive in the first release (default: false). */
+        ftsFirst?: boolean;
       };
     };
   };

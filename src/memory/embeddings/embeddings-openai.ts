@@ -6,6 +6,7 @@ export type OpenAiEmbeddingClient = {
   baseUrl: string;
   headers: Record<string, string>;
   model: string;
+  dimensions?: number;
 };
 
 export const DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-small";
@@ -27,6 +28,13 @@ export function normalizeOpenAiModel(model: string): string {
   return trimmed;
 }
 
+function normalizeOpenAiDimensions(dimensions: number | undefined): number | undefined {
+  if (typeof dimensions !== "number" || !Number.isFinite(dimensions)) {
+    return undefined;
+  }
+  return Math.max(1, Math.floor(dimensions));
+}
+
 export async function createOpenAiEmbeddingProvider(
   options: EmbeddingProviderOptions,
 ): Promise<{ provider: EmbeddingProvider; client: OpenAiEmbeddingClient }> {
@@ -40,7 +48,11 @@ export async function createOpenAiEmbeddingProvider(
     return await fetchRemoteEmbeddingVectors({
       url,
       headers: client.headers,
-      body: { model: client.model, input },
+      body: {
+        model: client.model,
+        input,
+        ...(client.dimensions ? { dimensions: client.dimensions } : {}),
+      },
       errorPrefix: "openai embeddings failed",
     });
   };
@@ -49,6 +61,7 @@ export async function createOpenAiEmbeddingProvider(
     provider: {
       id: "openai",
       model: client.model,
+      dimensions: client.dimensions,
       maxInputTokens: OPENAI_MAX_INPUT_TOKENS[client.model],
       embedQuery: async (text) => {
         const [vec] = await embed([text]);
@@ -69,5 +82,10 @@ export async function resolveOpenAiEmbeddingClient(
     defaultBaseUrl: DEFAULT_OPENAI_BASE_URL,
   });
   const model = normalizeOpenAiModel(options.model);
-  return { baseUrl, headers, model };
+  return {
+    baseUrl,
+    headers,
+    model,
+    dimensions: normalizeOpenAiDimensions(options.dimensions),
+  };
 }

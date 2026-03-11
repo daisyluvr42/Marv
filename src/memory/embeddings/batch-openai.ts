@@ -13,6 +13,7 @@ export type OpenAiBatchRequest = {
   body: {
     model: string;
     input: string;
+    dimensions?: number;
   };
 };
 

@@ -913,6 +913,13 @@ describe("realredactConfigSnapshot_real", () => {
             remote: {
               apiKey: "1234",
             },
+            query: {
+              hybrid: {
+                reranker: {
+                  apiKey: "reranker-1234",
+                },
+              },
+            },
           },
         },
         list: [
@@ -920,6 +927,13 @@ describe("realredactConfigSnapshot_real", () => {
             memorySearch: {
               remote: {
                 apiKey: "6789",
+              },
+              query: {
+                hybrid: {
+                  reranker: {
+                    apiKey: "reranker-6789",
+                  },
+                },
               },
             },
           },
@@ -930,9 +944,17 @@ describe("realredactConfigSnapshot_real", () => {
     const result = redactConfigSnapshot(snapshot, hints);
     const config = result.config as typeof snapshot.config;
     expect(config.agents.defaults.memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.agents.defaults.memorySearch.query.hybrid.reranker.apiKey).toBe(
+      REDACTED_SENTINEL,
+    );
     expect(config.agents.list[0].memorySearch.remote.apiKey).toBe(REDACTED_SENTINEL);
+    expect(config.agents.list[0].memorySearch.query.hybrid.reranker.apiKey).toBe(REDACTED_SENTINEL);
     const restored = restoreRedactedValues(result.config, snapshot.config, hints);
     expect(restored.agents.defaults.memorySearch.remote.apiKey).toBe("1234");
+    expect(restored.agents.defaults.memorySearch.query.hybrid.reranker.apiKey).toBe(
+      "reranker-1234",
+    );
     expect(restored.agents.list[0].memorySearch.remote.apiKey).toBe("6789");
+    expect(restored.agents.list[0].memorySearch.query.hybrid.reranker.apiKey).toBe("reranker-6789");
   });
 });

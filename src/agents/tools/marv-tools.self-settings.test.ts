@@ -294,4 +294,108 @@ describe("self_settings tool", () => {
     expect(details.invalid).toBe(true);
     expect(writeConfigFileMock).not.toHaveBeenCalled();
   });
+
+  it("updates shared memory-search settings through a restricted config write", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({
+      agentSessionKey: "main",
+      config: {
+        session: { mainKey: "main", scope: "per-sender" },
+        agents: {
+          defaults: {
+            memorySearch: {
+              provider: "openai",
+              model: "text-embedding-3-small",
+            },
+          },
+        },
+      } as never,
+    });
+    const result = await tool.execute("call6", {
+      memorySearchProvider: "openai",
+      memorySearchModel: "Qwen3-Embedding-0.6B",
+      memorySearchDimensions: 512,
+      memorySearchRemoteBaseUrl: "http://localhost:8080/v1",
+      memorySearchRemoteApiKey: "local-key",
+      memorySearchRerankerEnabled: true,
+      memorySearchRerankerApiUrl: "http://localhost:8081/v1/rerank",
+      memorySearchRerankerModel: "Qwen3-Reranker-0.6B",
+      memorySearchRerankerApiKey: "rerank-key",
+      memorySearchRerankerMaxCandidates: 24,
+    });
+    const text = getTextContent(result);
+    const details = result.details as {
+      ok?: boolean;
+      sharedConfig?: {
+        memorySearchProvider?: string;
+        memorySearchModel?: string;
+        memorySearchDimensions?: number;
+        memorySearchRemoteBaseUrl?: string;
+        memorySearchRemoteApiKey?: string;
+        memorySearchRerankerEnabled?: boolean;
+        memorySearchRerankerApiUrl?: string;
+        memorySearchRerankerModel?: string;
+        memorySearchRerankerApiKey?: string;
+        memorySearchRerankerMaxCandidates?: number;
+      };
+    };
+
+    expect(details.ok).toBe(true);
+    expect(text).toContain("Updated shared memory-search settings");
+    expect(text).not.toContain("local-key");
+    expect(text).not.toContain("rerank-key");
+    expect(writeConfigFileMock).toHaveBeenCalledTimes(1);
+    expect(details.sharedConfig).toEqual(
+      expect.objectContaining({
+        memorySearchProvider: "openai",
+        memorySearchModel: "Qwen3-Embedding-0.6B",
+        memorySearchDimensions: 512,
+        memorySearchRemoteBaseUrl: "http://localhost:8080/v1",
+        memorySearchRemoteApiKey: "[redacted]",
+        memorySearchRerankerEnabled: true,
+        memorySearchRerankerApiUrl: "http://localhost:8081/v1/rerank",
+        memorySearchRerankerModel: "Qwen3-Reranker-0.6B",
+        memorySearchRerankerApiKey: "[redacted]",
+        memorySearchRerankerMaxCandidates: 24,
+      }),
+    );
+  });
+
+  it("rejects incomplete memory-search reranker requests", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({
+      agentSessionKey: "main",
+      config: {
+        session: { mainKey: "main", scope: "per-sender" },
+        agents: {
+          defaults: {
+            memorySearch: {
+              provider: "openai",
+              model: "text-embedding-3-small",
+            },
+          },
+        },
+      } as never,
+    });
+    const result = await tool.execute("call7", {
+      memorySearchRerankerEnabled: true,
+    });
+    const details = result.details as { ok?: boolean; invalid?: boolean };
+
+    expect(details.ok).toBe(false);
+    expect(details.invalid).toBe(true);
+    expect(writeConfigFileMock).not.toHaveBeenCalled();
+  });
 });

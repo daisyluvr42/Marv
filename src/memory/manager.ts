@@ -121,6 +121,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       provider: settings.provider,
       remote: settings.remote,
       model: settings.model,
+      dimensions: settings.dimensions,
       fallback: settings.fallback,
       local: settings.local,
     });
@@ -177,6 +178,9 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     const meta = this.readMeta();
     if (meta?.vectorDims) {
       this.vector.dims = meta.vectorDims;
+    }
+    if (params.settings.query.hybrid.reranker.warning) {
+      log.warn(params.settings.query.hybrid.reranker.warning);
     }
     this.ensureWatcher();
     this.ensureSessionListener();
@@ -258,7 +262,11 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     const hybrid = this.settings.query.hybrid;
     const candidates = Math.min(
       200,
-      Math.max(1, Math.floor(maxResults * hybrid.candidateMultiplier)),
+      Math.max(
+        1,
+        Math.floor(maxResults * hybrid.candidateMultiplier),
+        hybrid.reranker.enabled ? hybrid.reranker.maxCandidates : 0,
+      ),
     );
 
     // FTS-only mode: no embedding provider available
@@ -314,10 +322,13 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
     const merged = await this.mergeHybridResults({
       vector: vectorResults,
       keyword: keywordResults,
+      query: cleaned,
       vectorWeight: hybrid.vectorWeight,
       textWeight: hybrid.textWeight,
       mmr: hybrid.mmr,
       temporalDecay: hybrid.temporalDecay,
+      reranker: hybrid.reranker,
+      warn: (message) => log.warn(message),
     });
 
     return merged.filter((entry) => entry.score >= minScore).slice(0, maxResults);
@@ -376,10 +387,20 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
   private mergeHybridResults(params: {
     vector: Array<MemorySearchResult & { id: string }>;
     keyword: Array<MemorySearchResult & { id: string; textScore: number }>;
+    query: string;
     vectorWeight: number;
     textWeight: number;
     mmr?: { enabled: boolean; lambda: number };
     temporalDecay?: { enabled: boolean; halfLifeDays: number };
+    reranker?: {
+      enabled: boolean;
+      apiUrl?: string;
+      model?: string;
+      apiKey?: string;
+      maxCandidates: number;
+      ftsFirst: boolean;
+    };
+    warn?: (message: string) => void;
   }): Promise<MemorySearchResult[]> {
     return mergeHybridResults({
       vector: params.vector.map((r) => ({
@@ -400,12 +421,19 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
         snippet: r.snippet,
         textScore: r.textScore,
       })),
+      query: params.query,
       vectorWeight: params.vectorWeight,
       textWeight: params.textWeight,
       mmr: params.mmr,
       temporalDecay: params.temporalDecay,
+      reranker: params.reranker,
+      warn: params.warn,
       workspaceDir: this.workspaceDir,
-    }).then((entries) => entries.map((entry) => entry as MemorySearchResult));
+    }).then((entries) =>
+      entries.map(
+        ({ id: _id, rerankScore: _rerankScore, ...entry }) => entry as MemorySearchResult,
+      ),
+    );
   }
 
   async sync(params?: {

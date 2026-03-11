@@ -283,12 +283,14 @@ describe("buildAgentSystemPrompt", () => {
       "available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     );
     expect(prompt).toContain("self_settings");
-    expect(prompt).toContain("restricted shared deep-memory settings");
+    expect(prompt).toContain("restricted shared deep-memory and memory-search settings");
     expect(prompt).toContain(
       "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
     );
     expect(prompt).toContain("Do not guess or switch models before checking.");
     expect(prompt).toContain("change your own settings or behavior, use self_settings");
+    expect(prompt).toContain("shared memory-search defaults");
+    expect(prompt).toContain("local memory embedding endpoints and optional reranker settings");
   });
 
   // The system prompt intentionally does NOT include the current date/time.

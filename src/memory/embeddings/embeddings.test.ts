@@ -142,6 +142,29 @@ describe("embedding provider remote overrides", () => {
     expect(headers.Authorization).toBe("Bearer provider-key");
   });
 
+  it("sends configured dimensions to OpenAI-compatible embeddings", async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal("fetch", fetchMock);
+    mockResolvedProviderKey("provider-key");
+
+    const result = await createEmbeddingProvider({
+      config: {} as never,
+      provider: "openai",
+      model: "text-embedding-3-small",
+      dimensions: 512,
+      fallback: "none",
+    });
+
+    const provider = requireProvider(result);
+    expect(provider.dimensions).toBe(512);
+    await provider.embedQuery("hello");
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(typeof init?.body).toBe("string");
+    const payload = JSON.parse(init?.body as string) as { dimensions?: number };
+    expect(payload.dimensions).toBe(512);
+  });
+
   it("builds Gemini embeddings requests with api key header", async () => {
     const fetchMock = vi.fn(async (_input?: unknown, _init?: unknown) => ({
       ok: true,

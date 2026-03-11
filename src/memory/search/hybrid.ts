@@ -1,5 +1,10 @@
 import { applyMMRToHybridResults, type MMRConfig, DEFAULT_MMR_CONFIG } from "./mmr.js";
 import {
+  rerankHybridResults,
+  type HybridRerankerConfig,
+  DEFAULT_RERANKER_CONFIG,
+} from "./reranker.js";
+import {
   applyTemporalDecayToHybridResults,
   type TemporalDecayConfig,
   DEFAULT_TEMPORAL_DECAY_CONFIG,
@@ -8,6 +13,7 @@ import {
 export type HybridSource = string;
 
 export { type MMRConfig, DEFAULT_MMR_CONFIG };
+export { type HybridRerankerConfig, DEFAULT_RERANKER_CONFIG };
 export { type TemporalDecayConfig, DEFAULT_TEMPORAL_DECAY_CONFIG };
 
 export type HybridVectorResult = {
@@ -51,23 +57,30 @@ export function bm25RankToScore(rank: number): number {
 export async function mergeHybridResults(params: {
   vector: HybridVectorResult[];
   keyword: HybridKeywordResult[];
+  query?: string;
   vectorWeight: number;
   textWeight: number;
   workspaceDir?: string;
   /** MMR configuration for diversity-aware re-ranking */
   mmr?: Partial<MMRConfig>;
+  /** Optional remote reranker configuration. */
+  reranker?: Partial<HybridRerankerConfig>;
   /** Temporal decay configuration for recency-aware scoring */
   temporalDecay?: Partial<TemporalDecayConfig>;
   /** Test seam for deterministic time-dependent behavior */
   nowMs?: number;
+  /** Test seam / logging hook for non-fatal reranker failures. */
+  warn?: (message: string) => void;
 }): Promise<
   Array<{
+    id: string;
     path: string;
     startLine: number;
     endLine: number;
     score: number;
     snippet: string;
     source: HybridSource;
+    rerankScore?: number;
   }>
 > {
   const byId = new Map<
@@ -121,6 +134,7 @@ export async function mergeHybridResults(params: {
   const merged = Array.from(byId.values()).map((entry) => {
     const score = params.vectorWeight * entry.vectorScore + params.textWeight * entry.textScore;
     return {
+      id: entry.id,
       path: entry.path,
       startLine: entry.startLine,
       endLine: entry.endLine,
@@ -141,9 +155,12 @@ export async function mergeHybridResults(params: {
 
   // Apply MMR re-ranking if enabled
   const mmrConfig = { ...DEFAULT_MMR_CONFIG, ...params.mmr };
-  if (mmrConfig.enabled) {
-    return applyMMRToHybridResults(sorted, mmrConfig);
-  }
-
-  return sorted;
+  const mmrRanked = mmrConfig.enabled ? applyMMRToHybridResults(sorted, mmrConfig) : sorted;
+  const rerankerConfig = { ...DEFAULT_RERANKER_CONFIG, ...params.reranker };
+  return await rerankHybridResults({
+    query: params.query,
+    results: mmrRanked,
+    reranker: rerankerConfig,
+    warn: params.warn,
+  });
 }

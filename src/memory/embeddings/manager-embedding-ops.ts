@@ -219,6 +219,7 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
           provider: "openai",
           baseUrl: this.openAi.baseUrl,
           model: this.openAi.model,
+          dimensions: this.openAi.dimensions ?? this.provider.dimensions,
           headers: entries,
         }),
       );
@@ -240,7 +241,13 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
         }),
       );
     }
-    return hashText(JSON.stringify({ provider: this.provider.id, model: this.provider.model }));
+    return hashText(
+      JSON.stringify({
+        provider: this.provider.id,
+        model: this.provider.model,
+        dimensions: this.provider.dimensions,
+      }),
+    );
   }
 
   private async embedChunksWithBatch(
@@ -458,6 +465,7 @@ export abstract class MemoryManagerEmbeddingOps extends MemoryManagerSyncOps {
         body: {
           model: openAi?.model ?? this.provider?.model ?? "text-embedding-3-small",
           input: chunk.text,
+          ...(openAi?.dimensions ? { dimensions: openAi.dimensions } : {}),
         },
       }),
       runBatch: async (runnerOptions) =>

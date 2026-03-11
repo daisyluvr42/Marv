@@ -458,6 +458,7 @@ export const AgentToolsSchema = z
 export const MemorySearchSchema = z
   .object({
     enabled: z.boolean().optional(),
+    dimensions: z.number().int().positive().optional(),
     sources: z.array(z.union([z.literal("memory"), z.literal("sessions")])).optional(),
     extraPaths: z.array(z.string()).optional(),
     experimental: z
@@ -571,6 +572,17 @@ export const MemorySearchSchema = z
               .object({
                 enabled: z.boolean().optional(),
                 halfLifeDays: z.number().int().positive().optional(),
+              })
+              .strict()
+              .optional(),
+            reranker: z
+              .object({
+                enabled: z.boolean().optional(),
+                apiUrl: z.string().optional(),
+                model: z.string().optional(),
+                apiKey: z.string().optional().register(sensitive),
+                maxCandidates: z.number().int().positive().optional(),
+                ftsFirst: z.boolean().optional(),
               })
               .strict()
               .optional(),

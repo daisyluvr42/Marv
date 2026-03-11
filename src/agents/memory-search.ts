@@ -7,6 +7,7 @@ import { resolveAgentConfig } from "./agent-scope.js";
 
 export type ResolvedMemorySearchConfig = {
   enabled: boolean;
+  dimensions?: number;
   sources: Array<"memory" | "sessions">;
   extraPaths: string[];
   provider: "openai" | "local" | "gemini" | "voyage" | "auto";
@@ -75,6 +76,15 @@ export type ResolvedMemorySearchConfig = {
         enabled: boolean;
         halfLifeDays: number;
       };
+      reranker: {
+        enabled: boolean;
+        apiUrl?: string;
+        model?: string;
+        apiKey?: string;
+        maxCandidates: number;
+        ftsFirst: boolean;
+        warning?: string;
+      };
     };
   };
   cache: {
@@ -104,6 +114,9 @@ const DEFAULT_MMR_ENABLED = false;
 const DEFAULT_MMR_LAMBDA = 0.7;
 const DEFAULT_TEMPORAL_DECAY_ENABLED = false;
 const DEFAULT_TEMPORAL_DECAY_HALF_LIFE_DAYS = 30;
+const DEFAULT_RERANKER_ENABLED = false;
+const DEFAULT_RERANKER_MAX_CANDIDATES = 24;
+const DEFAULT_RERANKER_FTS_FIRST = false;
 const DEFAULT_CACHE_ENABLED = true;
 const DEFAULT_SOURCES: Array<"memory" | "sessions"> = ["memory"];
 
@@ -143,6 +156,11 @@ function mergeConfig(
   agentId: string,
 ): ResolvedMemorySearchConfig {
   const enabled = overrides?.enabled ?? defaults?.enabled ?? true;
+  const dimensionsRaw = overrides?.dimensions ?? defaults?.dimensions;
+  const dimensions =
+    typeof dimensionsRaw === "number" && Number.isFinite(dimensionsRaw)
+      ? Math.max(1, Math.floor(dimensionsRaw))
+      : undefined;
   const sessionMemory =
     overrides?.experimental?.sessionMemory ?? defaults?.experimental?.sessionMemory ?? false;
   const provider = overrides?.provider ?? defaults?.provider ?? "auto";
@@ -290,6 +308,25 @@ function mergeConfig(
         defaults?.query?.hybrid?.temporalDecay?.halfLifeDays ??
         DEFAULT_TEMPORAL_DECAY_HALF_LIFE_DAYS,
     },
+    reranker: {
+      enabled:
+        overrides?.query?.hybrid?.reranker?.enabled ??
+        defaults?.query?.hybrid?.reranker?.enabled ??
+        DEFAULT_RERANKER_ENABLED,
+      apiUrl:
+        overrides?.query?.hybrid?.reranker?.apiUrl ?? defaults?.query?.hybrid?.reranker?.apiUrl,
+      model: overrides?.query?.hybrid?.reranker?.model ?? defaults?.query?.hybrid?.reranker?.model,
+      apiKey:
+        overrides?.query?.hybrid?.reranker?.apiKey ?? defaults?.query?.hybrid?.reranker?.apiKey,
+      maxCandidates:
+        overrides?.query?.hybrid?.reranker?.maxCandidates ??
+        defaults?.query?.hybrid?.reranker?.maxCandidates ??
+        DEFAULT_RERANKER_MAX_CANDIDATES,
+      ftsFirst:
+        overrides?.query?.hybrid?.reranker?.ftsFirst ??
+        defaults?.query?.hybrid?.reranker?.ftsFirst ??
+        DEFAULT_RERANKER_FTS_FIRST,
+    },
   };
   const cache = {
     enabled: overrides?.cache?.enabled ?? defaults?.cache?.enabled ?? DEFAULT_CACHE_ENABLED,
@@ -305,6 +342,7 @@ function mergeConfig(
   const normalizedVectorWeight = sum > 0 ? vectorWeight / sum : DEFAULT_HYBRID_VECTOR_WEIGHT;
   const normalizedTextWeight = sum > 0 ? textWeight / sum : DEFAULT_HYBRID_TEXT_WEIGHT;
   const candidateMultiplier = clampInt(hybrid.candidateMultiplier, 1, 20);
+  const rerankerMaxCandidates = clampInt(hybrid.reranker.maxCandidates, 1, 200);
   const temporalDecayHalfLifeDays = Math.max(
     1,
     Math.floor(
@@ -315,8 +353,16 @@ function mergeConfig(
   );
   const deltaBytes = clampInt(sync.sessions.deltaBytes, 0, Number.MAX_SAFE_INTEGER);
   const deltaMessages = clampInt(sync.sessions.deltaMessages, 0, Number.MAX_SAFE_INTEGER);
+  const rerankerApiUrl = hybrid.reranker.apiUrl?.trim() || undefined;
+  const rerankerModel = hybrid.reranker.model?.trim() || undefined;
+  const rerankerEnabled = Boolean(hybrid.reranker.enabled && rerankerApiUrl && rerankerModel);
+  const rerankerWarning =
+    hybrid.reranker.enabled && !rerankerEnabled
+      ? "memory search reranker disabled: query.hybrid.reranker.enabled requires apiUrl and model."
+      : undefined;
   return {
     enabled,
+    dimensions,
     sources,
     extraPaths,
     provider,
@@ -358,6 +404,15 @@ function mergeConfig(
         temporalDecay: {
           enabled: Boolean(hybrid.temporalDecay.enabled),
           halfLifeDays: temporalDecayHalfLifeDays,
+        },
+        reranker: {
+          enabled: rerankerEnabled,
+          apiUrl: rerankerApiUrl,
+          model: rerankerModel,
+          apiKey: hybrid.reranker.apiKey?.trim() || undefined,
+          maxCandidates: rerankerMaxCandidates,
+          ftsFirst: Boolean(hybrid.reranker.ftsFirst),
+          warning: rerankerWarning,
         },
       },
     },

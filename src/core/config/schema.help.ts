@@ -193,6 +193,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Enable experimental session transcript indexing for memory search (default: false).",
   "agents.defaults.memorySearch.provider":
     'Embedding provider ("openai", "gemini", "voyage", or "local").',
+  "agents.defaults.memorySearch.dimensions":
+    "Optional embedding dimensions for OpenAI-compatible memory embeddings.",
   "agents.defaults.memorySearch.remote.baseUrl":
     "Custom base URL for remote embeddings (OpenAI-compatible proxies or Gemini overrides).",
   "agents.defaults.memorySearch.remote.apiKey": "Custom API key for the remote embedding provider.",
@@ -232,6 +234,18 @@ export const FIELD_HELP: Record<string, string> = {
     "Weight for BM25 text relevance when merging results (0-1).",
   "agents.defaults.memorySearch.query.hybrid.candidateMultiplier":
     "Multiplier for candidate pool size (default: 4).",
+  "agents.defaults.memorySearch.query.hybrid.reranker.enabled":
+    "Enable optional reranking for hybrid memory search (default: false).",
+  "agents.defaults.memorySearch.query.hybrid.reranker.apiUrl":
+    "HTTP endpoint for the reranker API.",
+  "agents.defaults.memorySearch.query.hybrid.reranker.model":
+    "Model id to send to the reranker API.",
+  "agents.defaults.memorySearch.query.hybrid.reranker.apiKey":
+    "Optional API key for the reranker API.",
+  "agents.defaults.memorySearch.query.hybrid.reranker.maxCandidates":
+    "Max hybrid candidates to rerank before final ordering (default: 24).",
+  "agents.defaults.memorySearch.query.hybrid.reranker.ftsFirst":
+    "Parsed for compatibility; reserved for a later reranker rollout (default: false).",
   "agents.defaults.memorySearch.cache.enabled":
     "Cache chunk embeddings in SQLite to speed up reindexing and frequent updates (default: true).",
   memory: "Memory backend configuration (global).",
