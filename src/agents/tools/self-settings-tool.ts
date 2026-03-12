@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import { resolveElevatedPermissions } from "../../auto-reply/reply/reply-elevated.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
@@ -18,7 +20,7 @@ import { applySessionsPatchToStore } from "../../core/gateway/sessions-patch.js"
 import { computeNextRunAtMs } from "../../cron/schedule.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import type { GatewayMessageChannel } from "../../utils/message-channel.js";
-import { resolveAgentDir } from "../agent-scope.js";
+import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agent-scope.js";
 import { ensureAuthProfileStore } from "../auth-profiles.js";
 import { loadModelCatalog } from "../model/model-catalog.js";
 import { normalizeProviderId, resolveDefaultModelForAgent } from "../model/model-selection.js";
@@ -26,6 +28,7 @@ import {
   refreshRuntimeModelRegistry,
   resolveRuntimeRegistryPathForDisplay,
 } from "../model/runtime-model-registry.js";
+import { DEFAULT_HEARTBEAT_FILENAME } from "../workspace.js";
 import type { AnyAgentTool } from "./common.js";
 import { readNumberParam, readStringParam, ToolInputError } from "./common.js";
 import { normalizeExternalCliId } from "./external-cli-adapters.js";
@@ -77,6 +80,20 @@ const SelfSettingsToolSchema = Type.Object(
     externalCliEnabled: Type.Optional(Type.Boolean()),
     externalCliDefault: Type.Optional(Type.String()),
     externalCliAvailableBrands: Type.Optional(Type.String()),
+    heartbeatEvery: Type.Optional(Type.String()),
+    heartbeatPrompt: Type.Optional(Type.String()),
+    heartbeatModel: Type.Optional(Type.String()),
+    heartbeatTarget: Type.Optional(Type.String()),
+    heartbeatTo: Type.Optional(Type.String()),
+    heartbeatAccountId: Type.Optional(Type.String()),
+    heartbeatIncludeReasoning: Type.Optional(Type.Boolean()),
+    heartbeatSuppressToolErrorWarnings: Type.Optional(Type.Boolean()),
+    heartbeatAckMaxChars: Type.Optional(Type.Number({ minimum: 0 })),
+    heartbeatActiveHoursStart: Type.Optional(Type.String()),
+    heartbeatActiveHoursEnd: Type.Optional(Type.String()),
+    heartbeatActiveHoursTimezone: Type.Optional(Type.String()),
+    heartbeatFileAction: Type.Optional(Type.String()),
+    heartbeatFileContent: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 );
@@ -87,6 +104,7 @@ const REDACTED_VALUE = "[redacted]";
 
 type MemorySearchProvider = "openai" | "gemini" | "local" | "voyage";
 type MemorySearchFallback = MemorySearchProvider | "none";
+type HeartbeatFileAction = "replace" | "append" | "clear";
 
 type SelfSettingsArgs = Record<string, unknown>;
 
@@ -262,6 +280,25 @@ function normalizeExternalCliAvailableBrands(
   return out;
 }
 
+function normalizeHeartbeatFileAction(raw?: string): HeartbeatFileAction | undefined {
+  const normalized = raw?.trim().toLowerCase();
+  if (
+    normalized === "replace" ||
+    normalized === "set" ||
+    normalized === "rewrite" ||
+    normalized === "overwrite"
+  ) {
+    return "replace";
+  }
+  if (normalized === "append" || normalized === "add") {
+    return "append";
+  }
+  if (normalized === "clear" || normalized === "empty" || normalized === "reset") {
+    return "clear";
+  }
+  return undefined;
+}
+
 function buildElevatedMsgContext(opts: {
   agentChannel?: GatewayMessageChannel;
   agentAccountId?: string;
@@ -391,9 +428,6 @@ export function createSelfSettingsTool(opts?: {
       if (!opts?.agentSessionKey?.trim()) {
         throw new ToolInputError("sessionKey required");
       }
-      if (opts.directUserInstruction === false) {
-        return buildGenericDeniedResult();
-      }
 
       const params = args as SelfSettingsArgs;
       const cfg = opts.config ?? loadConfig();
@@ -480,6 +514,35 @@ export function createSelfSettingsTool(opts?: {
       const externalCliAvailableBrands = normalizeExternalCliAvailableBrands(
         externalCliAvailableBrandsRaw,
       );
+      const heartbeatEvery = normalizePatchString(readStringParam(params, "heartbeatEvery"));
+      const heartbeatPrompt = normalizePatchString(readStringParam(params, "heartbeatPrompt"));
+      const heartbeatModel = normalizePatchString(readStringParam(params, "heartbeatModel"));
+      const heartbeatTarget = normalizePatchString(readStringParam(params, "heartbeatTarget"));
+      const heartbeatTo = normalizePatchString(readStringParam(params, "heartbeatTo"));
+      const heartbeatAccountId = normalizePatchString(
+        readStringParam(params, "heartbeatAccountId"),
+      );
+      const heartbeatIncludeReasoning = readBooleanParam(params, "heartbeatIncludeReasoning");
+      const heartbeatSuppressToolErrorWarnings = readBooleanParam(
+        params,
+        "heartbeatSuppressToolErrorWarnings",
+      );
+      const heartbeatAckMaxChars = readNumberParam(params, "heartbeatAckMaxChars");
+      const heartbeatActiveHoursStart = normalizePatchString(
+        readStringParam(params, "heartbeatActiveHoursStart"),
+      );
+      const heartbeatActiveHoursEnd = normalizePatchString(
+        readStringParam(params, "heartbeatActiveHoursEnd"),
+      );
+      const heartbeatActiveHoursTimezone = normalizePatchString(
+        readStringParam(params, "heartbeatActiveHoursTimezone"),
+      );
+      const heartbeatFileActionRaw = readStringParam(params, "heartbeatFileAction");
+      const heartbeatFileAction = normalizeHeartbeatFileAction(heartbeatFileActionRaw);
+      const heartbeatFileContent = readStringParam(params, "heartbeatFileContent", {
+        trim: false,
+        allowEmpty: true,
+      });
       const hasDeepMemoryConfigChange =
         deepMemoryEnabled !== undefined ||
         deepMemorySchedule !== undefined ||
@@ -511,6 +574,26 @@ export function createSelfSettingsTool(opts?: {
         externalCliEnabled !== undefined ||
         readStringParam(params, "externalCliDefault") !== undefined ||
         externalCliAvailableBrandsRaw !== undefined;
+      const hasHeartbeatConfigChange =
+        heartbeatEvery !== undefined ||
+        heartbeatPrompt !== undefined ||
+        heartbeatModel !== undefined ||
+        heartbeatTarget !== undefined ||
+        heartbeatTo !== undefined ||
+        heartbeatAccountId !== undefined ||
+        heartbeatIncludeReasoning !== undefined ||
+        heartbeatSuppressToolErrorWarnings !== undefined ||
+        heartbeatAckMaxChars !== undefined ||
+        heartbeatActiveHoursStart !== undefined ||
+        heartbeatActiveHoursEnd !== undefined ||
+        heartbeatActiveHoursTimezone !== undefined;
+      const hasHeartbeatFileChange = heartbeatFileActionRaw !== undefined;
+      const hasSystemConfigChange =
+        hasDeepMemoryConfigChange ||
+        hasMemorySearchConfigChange ||
+        hasExternalCliConfigChange ||
+        hasHeartbeatConfigChange ||
+        hasHeartbeatFileChange;
 
       if (
         !sessionAction &&
@@ -532,9 +615,15 @@ export function createSelfSettingsTool(opts?: {
         modelRegistryAction === undefined &&
         !hasDeepMemoryConfigChange &&
         !hasMemorySearchConfigChange &&
-        !hasExternalCliConfigChange
+        !hasExternalCliConfigChange &&
+        !hasHeartbeatConfigChange &&
+        !hasHeartbeatFileChange
       ) {
         throw new ToolInputError("at least one setting change is required");
+      }
+
+      if (opts.directUserInstruction === false && hasSystemConfigChange) {
+        return buildGenericDeniedResult();
       }
 
       if (
@@ -579,6 +668,19 @@ export function createSelfSettingsTool(opts?: {
       ) {
         return buildInvalidResult();
       }
+      if (heartbeatFileActionRaw !== undefined && heartbeatFileAction === undefined) {
+        return buildInvalidResult();
+      }
+      if (
+        heartbeatFileAction &&
+        heartbeatFileAction !== "clear" &&
+        heartbeatFileContent === undefined
+      ) {
+        return buildInvalidResult();
+      }
+      if (heartbeatAckMaxChars !== undefined && !Number.isInteger(heartbeatAckMaxChars)) {
+        return buildInvalidResult();
+      }
 
       let refreshedRegistry: Awaited<ReturnType<typeof refreshRuntimeModelRegistry>> | null = null;
       if (modelRegistryAction === "refresh") {
@@ -611,6 +713,7 @@ export function createSelfSettingsTool(opts?: {
       const sharedDeepMemoryLabels: string[] = [];
       const sharedMemorySearchLabels: string[] = [];
       const sharedExternalCliLabels: string[] = [];
+      const sharedHeartbeatLabels: string[] = [];
       let nextConfig = cfg;
       let hasSharedConfigChange = false;
       if (hasDeepMemoryConfigChange) {
@@ -910,9 +1013,138 @@ export function createSelfSettingsTool(opts?: {
           );
         }
       }
+      if (hasHeartbeatConfigChange) {
+        const nextActiveHours = {
+          ...nextConfig.agents?.defaults?.heartbeat?.activeHours,
+        } as Record<string, unknown>;
+        applyOptionalStringPatch(nextActiveHours, "start", heartbeatActiveHoursStart);
+        applyOptionalStringPatch(nextActiveHours, "end", heartbeatActiveHoursEnd);
+        applyOptionalStringPatch(nextActiveHours, "timezone", heartbeatActiveHoursTimezone);
+
+        const nextHeartbeat = {
+          ...nextConfig.agents?.defaults?.heartbeat,
+        } as Record<string, unknown>;
+        applyOptionalStringPatch(nextHeartbeat, "every", heartbeatEvery);
+        applyOptionalStringPatch(nextHeartbeat, "prompt", heartbeatPrompt);
+        applyOptionalStringPatch(nextHeartbeat, "model", heartbeatModel);
+        applyOptionalStringPatch(nextHeartbeat, "target", heartbeatTarget);
+        applyOptionalStringPatch(nextHeartbeat, "to", heartbeatTo);
+        applyOptionalStringPatch(nextHeartbeat, "accountId", heartbeatAccountId);
+        if (heartbeatIncludeReasoning !== undefined) {
+          nextHeartbeat.includeReasoning = heartbeatIncludeReasoning;
+        }
+        if (heartbeatSuppressToolErrorWarnings !== undefined) {
+          nextHeartbeat.suppressToolErrorWarnings = heartbeatSuppressToolErrorWarnings;
+        }
+        if (heartbeatAckMaxChars !== undefined) {
+          nextHeartbeat.ackMaxChars = Math.max(0, Math.trunc(heartbeatAckMaxChars));
+        }
+        const prunedActiveHours = pruneEmptyObject(nextActiveHours);
+        if (prunedActiveHours) {
+          nextHeartbeat.activeHours = prunedActiveHours;
+        } else {
+          delete nextHeartbeat.activeHours;
+        }
+
+        nextConfig = {
+          ...nextConfig,
+          agents: {
+            ...nextConfig.agents,
+            defaults: {
+              ...nextConfig.agents?.defaults,
+              heartbeat: nextHeartbeat,
+            },
+          },
+        };
+        hasSharedConfigChange = true;
+
+        if (heartbeatEvery !== undefined) {
+          sharedHeartbeatLabels.push(`heartbeat every ${heartbeatEvery ?? "default"}`);
+        }
+        if (heartbeatPrompt !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat prompt ${heartbeatPrompt === null ? "default" : "configured"}`,
+          );
+        }
+        if (heartbeatModel !== undefined) {
+          sharedHeartbeatLabels.push(`heartbeat model ${heartbeatModel ?? "default"}`);
+        }
+        if (heartbeatTarget !== undefined) {
+          sharedHeartbeatLabels.push(`heartbeat target ${heartbeatTarget ?? "default"}`);
+        }
+        if (heartbeatTo !== undefined) {
+          sharedHeartbeatLabels.push(`heartbeat recipient ${heartbeatTo ?? "default"}`);
+        }
+        if (heartbeatAccountId !== undefined) {
+          sharedHeartbeatLabels.push(`heartbeat account ${heartbeatAccountId ?? "default"}`);
+        }
+        if (heartbeatIncludeReasoning !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat reasoning ${heartbeatIncludeReasoning ? "enabled" : "disabled"}`,
+          );
+        }
+        if (heartbeatSuppressToolErrorWarnings !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat tool warnings ${heartbeatSuppressToolErrorWarnings ? "suppressed" : "default"}`,
+          );
+        }
+        if (heartbeatAckMaxChars !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat ack max chars ${Math.max(0, Math.trunc(heartbeatAckMaxChars))}`,
+          );
+        }
+        if (heartbeatActiveHoursStart !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat active start ${heartbeatActiveHoursStart ?? "default"}`,
+          );
+        }
+        if (heartbeatActiveHoursEnd !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat active end ${heartbeatActiveHoursEnd ?? "default"}`,
+          );
+        }
+        if (heartbeatActiveHoursTimezone !== undefined) {
+          sharedHeartbeatLabels.push(
+            `heartbeat active timezone ${heartbeatActiveHoursTimezone ?? "default"}`,
+          );
+        }
+      }
       if (hasSharedConfigChange) {
         try {
           await writeConfigFile(nextConfig);
+        } catch {
+          return buildInvalidResult();
+        }
+      }
+
+      let heartbeatFileSummary: string | undefined;
+      let heartbeatFileDetails:
+        | {
+            action: HeartbeatFileAction;
+            path: string;
+            size: number;
+          }
+        | undefined;
+      if (heartbeatFileAction) {
+        try {
+          const workspaceDir = resolveAgentWorkspaceDir(nextConfig, agentId);
+          await fs.mkdir(workspaceDir, { recursive: true });
+          const heartbeatPath = path.join(workspaceDir, DEFAULT_HEARTBEAT_FILENAME);
+          let nextContent = "";
+          if (heartbeatFileAction === "replace") {
+            nextContent = heartbeatFileContent ?? "";
+          } else if (heartbeatFileAction === "append") {
+            const current = await fs.readFile(heartbeatPath, "utf-8").catch(() => "");
+            const separator = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+            nextContent = `${current}${separator}${heartbeatFileContent ?? ""}`;
+          }
+          await fs.writeFile(heartbeatPath, nextContent, "utf-8");
+          heartbeatFileSummary = `Updated HEARTBEAT.md: ${heartbeatFileAction}.`;
+          heartbeatFileDetails = {
+            action: heartbeatFileAction,
+            path: heartbeatPath,
+            size: nextContent.length,
+          };
         } catch {
           return buildInvalidResult();
         }
@@ -1085,6 +1317,10 @@ export function createSelfSettingsTool(opts?: {
         sharedExternalCliLabels.length > 0
           ? `Updated shared external-CLI settings: ${sharedExternalCliLabels.join("; ")}.`
           : null,
+        sharedHeartbeatLabels.length > 0
+          ? `Updated shared heartbeat settings: ${sharedHeartbeatLabels.join("; ")}.`
+          : null,
+        heartbeatFileSummary ?? null,
       ].filter((value): value is string => Boolean(value));
 
       return {
@@ -1167,6 +1403,26 @@ export function createSelfSettingsTool(opts?: {
                 externalCliEnabled: nextConfig.tools?.externalCli?.enabled,
                 externalCliDefault: nextConfig.tools?.externalCli?.defaultCli,
                 externalCliAvailable: nextConfig.tools?.externalCli?.availableCli,
+                heartbeatEvery: nextConfig.agents?.defaults?.heartbeat?.every,
+                heartbeatPrompt: nextConfig.agents?.defaults?.heartbeat?.prompt,
+                heartbeatModel: nextConfig.agents?.defaults?.heartbeat?.model,
+                heartbeatTarget: nextConfig.agents?.defaults?.heartbeat?.target,
+                heartbeatTo: nextConfig.agents?.defaults?.heartbeat?.to,
+                heartbeatAccountId: nextConfig.agents?.defaults?.heartbeat?.accountId,
+                heartbeatIncludeReasoning: nextConfig.agents?.defaults?.heartbeat?.includeReasoning,
+                heartbeatSuppressToolErrorWarnings:
+                  nextConfig.agents?.defaults?.heartbeat?.suppressToolErrorWarnings,
+                heartbeatAckMaxChars: nextConfig.agents?.defaults?.heartbeat?.ackMaxChars,
+                heartbeatActiveHoursStart:
+                  nextConfig.agents?.defaults?.heartbeat?.activeHours?.start,
+                heartbeatActiveHoursEnd: nextConfig.agents?.defaults?.heartbeat?.activeHours?.end,
+                heartbeatActiveHoursTimezone:
+                  nextConfig.agents?.defaults?.heartbeat?.activeHours?.timezone,
+              }
+            : undefined,
+          files: heartbeatFileDetails
+            ? {
+                heartbeat: heartbeatFileDetails,
               }
             : undefined,
         },

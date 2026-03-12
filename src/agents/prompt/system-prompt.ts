@@ -112,7 +112,13 @@ function buildSelfManagementSection(params: { isMinimal: boolean; availableTools
       "When the user directly asks you to change your own settings or behavior, use self_settings.",
     );
     lines.push(
-      "self_settings can update restricted shared deep-memory and shared memory-search defaults, including local memory embedding endpoints, optional reranker settings, and external CLI fallback preferences.",
+      "self_settings can also update allowlisted system settings such as heartbeat behavior and HEARTBEAT.md maintenance, but only when those system-level changes are a direct user instruction.",
+    );
+    lines.push(
+      "Session-level and task-level self adjustments may use self_settings when they are low-risk and directly helpful to the current task.",
+    );
+    lines.push(
+      "self_settings can update restricted shared deep-memory and shared memory-search defaults, heartbeat settings, HEARTBEAT.md, and external CLI fallback preferences.",
     );
   }
   if (lines.length === 0) {
@@ -705,6 +711,7 @@ export function buildAgentSystemPrompt(params: {
       "## Heartbeats",
       heartbeatPromptLine,
       "On heartbeat poll: reply HEARTBEAT_OK if nothing needs attention; otherwise reply with the alert text (no HEARTBEAT_OK).",
+      "During heartbeat runs, low-risk task actions and HEARTBEAT.md maintenance are allowed when directly helpful. Do not change allowlisted system settings unless the user directly asked for them.",
       "",
     );
   }

@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const loadSessionStoreMock = vi.fn();
 const updateSessionStoreMock = vi.fn();
@@ -118,6 +121,16 @@ function resetSessionStore(store: Record<string, unknown>) {
   loadSessionStoreMock.mockReturnValue(store);
 }
 
+const tempDirs: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(
+    tempDirs.splice(0).map(async (dir) => {
+      await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+    }),
+  );
+});
+
 describe("self_settings tool", () => {
   it("refreshes the runtime model registry without mutating the session", async () => {
     resetSessionStore({
@@ -192,7 +205,7 @@ describe("self_settings tool", () => {
     expect(saved.queueCap).toBe(5);
   });
 
-  it("returns a generic denial for non-direct requests", async () => {
+  it("still allows session-level changes for non-direct requests", async () => {
     resetSessionStore({
       main: {
         sessionId: "s1",
@@ -205,10 +218,29 @@ describe("self_settings tool", () => {
       directUserInstruction: false,
     });
     const result = await tool.execute("call2", { model: "anthropic/claude-sonnet-4-5" });
+    const details = result.details as { ok?: boolean };
+    expect(details.ok).toBe(true);
+    expect(updateSessionStoreMock).toHaveBeenCalled();
+  });
+
+  it("returns a generic denial for non-direct system-level requests", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({
+      agentSessionKey: "main",
+      directUserInstruction: false,
+    });
+    const result = await tool.execute("call2b", { heartbeatEvery: "30m" });
     const details = result.details as { ok?: boolean; denied?: boolean };
     expect(details.ok).toBe(false);
     expect(details.denied).toBe(true);
     expect(updateSessionStoreMock).not.toHaveBeenCalled();
+    expect(writeConfigFileMock).not.toHaveBeenCalled();
   });
 
   it("returns a generic denial when elevated changes are not allowed", async () => {
@@ -433,5 +465,135 @@ describe("self_settings tool", () => {
         externalCliAvailable: ["codex", "claude"],
       }),
     );
+  });
+
+  it("updates shared heartbeat settings through config", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({ agentSessionKey: "main" });
+    const result = await tool.execute("call9", {
+      heartbeatEvery: "45m",
+      heartbeatModel: "ollama/qwen2.5:3b",
+      heartbeatTarget: "telegram",
+      heartbeatActiveHoursStart: "09:00",
+      heartbeatActiveHoursEnd: "22:00",
+      heartbeatIncludeReasoning: true,
+    });
+    const text = getTextContent(result);
+    const details = result.details as {
+      ok?: boolean;
+      sharedConfig?: {
+        heartbeatEvery?: string;
+        heartbeatModel?: string;
+        heartbeatTarget?: string;
+        heartbeatActiveHoursStart?: string;
+        heartbeatActiveHoursEnd?: string;
+        heartbeatIncludeReasoning?: boolean;
+      };
+    };
+
+    expect(details.ok).toBe(true);
+    expect(text).toContain("Updated shared heartbeat settings");
+    expect(writeConfigFileMock).toHaveBeenCalledTimes(1);
+    expect(details.sharedConfig).toEqual(
+      expect.objectContaining({
+        heartbeatEvery: "45m",
+        heartbeatModel: "ollama/qwen2.5:3b",
+        heartbeatTarget: "telegram",
+        heartbeatActiveHoursStart: "09:00",
+        heartbeatActiveHoursEnd: "22:00",
+        heartbeatIncludeReasoning: true,
+      }),
+    );
+  });
+
+  it("rewrites HEARTBEAT.md through the self settings tool", async () => {
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-self-settings-heartbeat-"));
+    tempDirs.push(workspaceDir);
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({
+      agentSessionKey: "main",
+      config: {
+        session: { mainKey: "main", scope: "per-sender" },
+        agents: {
+          defaults: {
+            workspace: workspaceDir,
+            model: { primary: "anthropic/claude-opus-4-5" },
+            models: {},
+          },
+        },
+      } as never,
+    });
+
+    const result = await tool.execute("call10", {
+      heartbeatFileAction: "replace",
+      heartbeatFileContent: "# HEARTBEAT.md\n\n- Check inbox\n",
+    });
+    const text = getTextContent(result);
+    const details = result.details as {
+      ok?: boolean;
+      files?: {
+        heartbeat?: {
+          action?: string;
+          path?: string;
+          size?: number;
+        };
+      };
+    };
+
+    expect(details.ok).toBe(true);
+    expect(text).toContain("Updated HEARTBEAT.md: replace.");
+    expect(writeConfigFileMock).not.toHaveBeenCalled();
+    expect(details.files?.heartbeat?.action).toBe("replace");
+
+    const saved = await fs.readFile(path.join(workspaceDir, "HEARTBEAT.md"), "utf-8");
+    expect(saved).toContain("- Check inbox");
+  });
+
+  it("appends to HEARTBEAT.md through the self settings tool", async () => {
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-self-settings-heartbeat-"));
+    tempDirs.push(workspaceDir);
+    await fs.writeFile(path.join(workspaceDir, "HEARTBEAT.md"), "# HEARTBEAT.md\n", "utf-8");
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({
+      agentSessionKey: "main",
+      config: {
+        session: { mainKey: "main", scope: "per-sender" },
+        agents: {
+          defaults: {
+            workspace: workspaceDir,
+            model: { primary: "anthropic/claude-opus-4-5" },
+            models: {},
+          },
+        },
+      } as never,
+    });
+
+    const result = await tool.execute("call11", {
+      heartbeatFileAction: "append",
+      heartbeatFileContent: "- Check blockers\n",
+    });
+    const details = result.details as { ok?: boolean };
+    expect(details.ok).toBe(true);
+
+    const saved = await fs.readFile(path.join(workspaceDir, "HEARTBEAT.md"), "utf-8");
+    expect(saved).toContain("# HEARTBEAT.md\n- Check blockers\n");
   });
 });

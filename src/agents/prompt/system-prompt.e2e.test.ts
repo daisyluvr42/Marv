@@ -283,14 +283,28 @@ describe("buildAgentSystemPrompt", () => {
       "available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     );
     expect(prompt).toContain("self_settings");
-    expect(prompt).toContain("restricted shared deep-memory and memory-search settings");
+    expect(prompt).toContain("heartbeat behavior and HEARTBEAT.md maintenance");
     expect(prompt).toContain(
       "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
     );
     expect(prompt).toContain("Do not guess or switch models before checking.");
     expect(prompt).toContain("change your own settings or behavior, use self_settings");
-    expect(prompt).toContain("shared memory-search defaults");
-    expect(prompt).toContain("local memory embedding endpoints and optional reranker settings");
+    expect(prompt).toContain("Session-level and task-level self adjustments may use self_settings");
+    expect(prompt).toContain("heartbeat settings, HEARTBEAT.md, and external CLI");
+  });
+
+  it("includes heartbeat autonomy guardrails when heartbeat is configured", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      toolNames: ["self_settings"],
+      heartbeatPrompt: "Read HEARTBEAT.md and check for blockers.",
+    });
+
+    expect(prompt).toContain("## Heartbeats");
+    expect(prompt).toContain("Read HEARTBEAT.md and check for blockers.");
+    expect(prompt).toContain(
+      "low-risk task actions and HEARTBEAT.md maintenance are allowed when directly helpful",
+    );
   });
 
   // The system prompt intentionally does NOT include the current date/time.
