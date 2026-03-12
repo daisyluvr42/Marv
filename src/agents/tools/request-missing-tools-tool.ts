@@ -151,11 +151,13 @@ export function createRequestMissingToolsTool(opts?: {
           synthesisHint: synthesisEnabled
             ? {
                 guidance:
-                  "No existing skill matches. Create an ad-hoc solution: " +
-                  "(1) Identify needed capability and required binaries/libraries. " +
-                  "(2) Write a script via `write` (prefer Python/Bash). " +
-                  "(3) Execute with `exec` to verify. " +
-                  "(4) If successful, persist as a managed skill via " +
+                  "No existing skill matches. If you found a good software/library but it lacks a CLI, " +
+                  "wrap it into a managed CLI profile: " +
+                  "(1) Identify the best-fit software and its callable surface (script, SDK, or API). " +
+                  "(2) Write a wrapper script via `write` (prefer Python/Bash) with stable arguments and optional `--json` output. " +
+                  "(3) Register it with `cli_synthesize`. " +
+                  "(4) Run `cli_verify` and then use it through `cli_invoke`. " +
+                  "(5) If you only need a reusable skill instead of a managed CLI, you can still persist a script via " +
                   "`bun src/agents/tools/tool-synthesis.ts persist --name <name> --description <desc> --script <path>`.",
               }
             : null,

@@ -39,6 +39,7 @@ const TOOL_DISPLAY_CONFIG = TOOL_DISPLAY_JSON as ToolDisplayConfig;
 const FALLBACK = TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" };
 const TOOL_MAP = TOOL_DISPLAY_CONFIG.tools ?? {};
 const DETAIL_LABEL_OVERRIDES: Record<string, string> = {
+  profileId: "profile",
   agentId: "agent",
   sessionKey: "session",
   targetId: "target",

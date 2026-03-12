@@ -19,7 +19,15 @@ export const TOOL_GROUPS: Record<string, string[]> = {
   // Basic workspace/file tools
   "group:fs": ["read", "write", "edit", "apply_patch"],
   // Host/runtime execution tools
-  "group:runtime": ["exec", "process", "external_cli"],
+  "group:runtime": [
+    "exec",
+    "process",
+    "external_cli",
+    "cli_profiles",
+    "cli_invoke",
+    "cli_synthesize",
+    "cli_verify",
+  ],
   // Session management tools
   "group:sessions": [
     "sessions_list",
@@ -65,6 +73,10 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "web_fetch",
     "image",
     "external_cli",
+    "cli_profiles",
+    "cli_invoke",
+    "cli_synthesize",
+    "cli_verify",
   ],
 };
 

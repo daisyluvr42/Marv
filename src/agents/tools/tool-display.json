@@ -177,6 +177,33 @@
       "title": "External CLI",
       "detailKeys": ["cli", "kind", "workdir"]
     },
+    "cli_profiles": {
+      "emoji": "🧱",
+      "title": "CLI Profiles",
+      "actions": {
+        "list": { "label": "list" },
+        "inspect": { "label": "inspect", "detailKeys": ["profileId"] },
+        "enable": { "label": "enable", "detailKeys": ["profileId"] },
+        "disable": { "label": "disable", "detailKeys": ["profileId"] },
+        "quarantine": { "label": "quarantine", "detailKeys": ["profileId"] },
+        "retire": { "label": "retire", "detailKeys": ["profileId"] }
+      }
+    },
+    "cli_invoke": {
+      "emoji": "🧪",
+      "title": "CLI Invoke",
+      "detailKeys": ["profileId", "workdir", "kind"]
+    },
+    "cli_synthesize": {
+      "emoji": "🛠️",
+      "title": "CLI Synthesize",
+      "detailKeys": ["id", "scriptPath", "command", "tier"]
+    },
+    "cli_verify": {
+      "emoji": "✅",
+      "title": "CLI Verify",
+      "detailKeys": ["profileId", "activate"]
+    },
     "message": {
       "emoji": "✉️",
       "title": "Message",

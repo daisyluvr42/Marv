@@ -7,6 +7,10 @@ import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import { createAgentsListTool } from "./agents-list-tool.js";
 import { createBrowserTool } from "./browser-tool.js";
 import { createCanvasTool } from "./canvas-tool.js";
+import { createCliInvokeTool } from "./cli-invoke-tool.js";
+import { createCliProfilesTool } from "./cli-profiles-tool.js";
+import { createCliSynthesizeTool } from "./cli-synthesize-tool.js";
+import { createCliVerifyTool } from "./cli-verify-tool.js";
 import type { AnyAgentTool } from "./common.js";
 import { createCronTool } from "./cron-tool.js";
 import { createExternalCliTool } from "./external-cli-tool.js";
@@ -105,6 +109,25 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     workspaceDir,
     sandboxed: options?.sandboxed,
   });
+  const cliProfilesTool = createCliProfilesTool({
+    config: options?.config,
+    sandboxed: options?.sandboxed,
+  });
+  const cliInvokeTool = createCliInvokeTool({
+    config: options?.config,
+    workspaceDir,
+    sandboxed: options?.sandboxed,
+  });
+  const cliSynthesizeTool = createCliSynthesizeTool({
+    config: options?.config,
+    workspaceDir,
+    sandboxed: options?.sandboxed,
+  });
+  const cliVerifyTool = createCliVerifyTool({
+    config: options?.config,
+    workspaceDir,
+    sandboxed: options?.sandboxed,
+  });
   const messageTool = options?.disableMessageTool
     ? null
     : createMessageTool({
@@ -138,6 +161,10 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       agentSessionKey: options?.agentSessionKey,
     }),
     ...(externalCliTool ? [externalCliTool] : []),
+    ...(cliProfilesTool ? [cliProfilesTool] : []),
+    ...(cliInvokeTool ? [cliInvokeTool] : []),
+    ...(cliSynthesizeTool ? [cliSynthesizeTool] : []),
+    ...(cliVerifyTool ? [cliVerifyTool] : []),
     ...(proactiveBufferTool ? [proactiveBufferTool] : []),
     ...(messageTool ? [messageTool] : []),
     createTtsTool({

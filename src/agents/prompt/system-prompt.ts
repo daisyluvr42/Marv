@@ -219,6 +219,19 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
       "- When reading a file returns a MIME type hint (binary/unknown format), follow this chain: (1) call `request_missing_tools` with the MIME type as the capability description, (2) if no skill is found, write an ad-hoc script using the suggested approach, (3) test it, then persist it.",
     );
   }
+  if (params.availableTools.has("cli_profiles")) {
+    lines.push(
+      "- Before synthesizing a new CLI tool, check `cli_profiles` to see whether a managed CLI profile for that capability already exists.",
+    );
+  }
+  if (params.availableTools.has("cli_synthesize")) {
+    lines.push(
+      "- If the best-fit software surface lacks a usable CLI, you can hand-craft a wrapper and register it with `cli_synthesize`, then validate it with `cli_verify` and call it with `cli_invoke`.",
+    );
+    lines.push(
+      "- Prefer a narrow script wrapper first. Only build a richer multi-command CLI when the capability will clearly be reused.",
+    );
+  }
   if (params.availableTools.has("request_escalation")) {
     lines.push(
       "- For risky operations requiring higher privileges, call `request_escalation` with requested level, reason, and scope before retrying.",
@@ -339,6 +352,12 @@ export function buildAgentSystemPrompt(params: {
     gateway: "Restart, apply config, or run updates on the running Marv process",
     external_cli:
       "Delegate a difficult task to a stronger local external AI CLI (explicit fallback; ask/store available brands first if not configured)",
+    cli_profiles:
+      "List, inspect, enable, disable, quarantine, or retire managed synthesized CLI profiles",
+    cli_invoke: "Invoke a managed synthesized CLI profile",
+    cli_synthesize:
+      "Register a new managed CLI profile from a wrapper script or command so it can be reused as a tool",
+    cli_verify: "Verify a managed synthesized CLI profile and optionally activate it",
     agents_list: "List agent ids allowed for sessions_spawn",
     sessions_list: "List other sessions (incl. sub-agents) with filters/last",
     sessions_history: "Fetch history for another session/sub-agent",
@@ -375,6 +394,10 @@ export function buildAgentSystemPrompt(params: {
     "message",
     "gateway",
     "external_cli",
+    "cli_profiles",
+    "cli_invoke",
+    "cli_synthesize",
+    "cli_verify",
     "agents_list",
     "sessions_list",
     "sessions_history",
