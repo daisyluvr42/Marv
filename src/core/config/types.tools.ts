@@ -117,6 +117,30 @@ export type LinkToolsConfig = {
   models?: LinkModelConfig[];
 };
 
+export type ExternalCliAdapterId = "codex" | "claude" | "aider";
+
+export type ExternalCliOverrideConfig = {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  model?: string;
+};
+
+export type ExternalCliToolsConfig = {
+  /** Enable explicit fallback delegation to external local AI CLIs. Default: false. */
+  enabled?: boolean;
+  /** Remembered list of external CLI brands available on this machine. */
+  availableCli?: ExternalCliAdapterId[];
+  /** Preferred default external CLI brand when the user does not specify one. */
+  defaultCli?: ExternalCliAdapterId;
+  /** Default timeout (seconds) for external CLI runs. */
+  timeoutSeconds?: number;
+  /** Default git diff capture behavior for coding tasks. */
+  captureGitDiffDefault?: boolean;
+  /** Per-CLI command, args, env, and model overrides. */
+  overrides?: Partial<Record<ExternalCliAdapterId, ExternalCliOverrideConfig>>;
+};
+
 export type MediaToolsConfig = {
   /** Shared model list applied across image/audio/video. */
   models?: MediaUnderstandingModelConfig[];
@@ -539,6 +563,8 @@ export type ToolsConfig = {
   fs?: FsToolsConfig;
   /** Runtime loop detection for repetitive/ stuck tool-call patterns. */
   loopDetection?: ToolLoopDetectionConfig;
+  /** External local AI CLI fallback settings. */
+  externalCli?: ExternalCliToolsConfig;
   /** Sub-agent tool policy defaults (deny wins). */
   subagents?: {
     /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */

@@ -9,6 +9,7 @@ import { createBrowserTool } from "./browser-tool.js";
 import { createCanvasTool } from "./canvas-tool.js";
 import type { AnyAgentTool } from "./common.js";
 import { createCronTool } from "./cron-tool.js";
+import { createExternalCliTool } from "./external-cli-tool.js";
 import { createGatewayTool } from "./gateway-tool.js";
 import { createImageTool } from "./image-tool.js";
 import { createMessageTool } from "./message-tool.js";
@@ -99,6 +100,11 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     config: options?.config,
     sandboxed: options?.sandboxed,
   });
+  const externalCliTool = createExternalCliTool({
+    config: options?.config,
+    workspaceDir,
+    sandboxed: options?.sandboxed,
+  });
   const messageTool = options?.disableMessageTool
     ? null
     : createMessageTool({
@@ -131,6 +137,7 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     createCronTool({
       agentSessionKey: options?.agentSessionKey,
     }),
+    ...(externalCliTool ? [externalCliTool] : []),
     ...(proactiveBufferTool ? [proactiveBufferTool] : []),
     ...(messageTool ? [messageTool] : []),
     createTtsTool({

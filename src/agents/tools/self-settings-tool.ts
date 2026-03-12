@@ -28,6 +28,7 @@ import {
 } from "../model/runtime-model-registry.js";
 import type { AnyAgentTool } from "./common.js";
 import { readNumberParam, readStringParam, ToolInputError } from "./common.js";
+import { normalizeExternalCliId } from "./external-cli-adapters.js";
 
 const SelfSettingsToolSchema = Type.Object(
   {
@@ -73,6 +74,9 @@ const SelfSettingsToolSchema = Type.Object(
     memorySearchRerankerApiKey: Type.Optional(Type.String()),
     memorySearchRerankerMaxCandidates: Type.Optional(Type.Number({ minimum: 1 })),
     memorySearchRerankerFtsFirst: Type.Optional(Type.Boolean()),
+    externalCliEnabled: Type.Optional(Type.Boolean()),
+    externalCliDefault: Type.Optional(Type.String()),
+    externalCliAvailableBrands: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 );
@@ -220,6 +224,44 @@ function normalizeAuthProfile(raw: string | undefined): string | null | undefine
   return trimmed;
 }
 
+function normalizeExternalCliDefault(
+  raw: string | undefined,
+): "codex" | "claude" | "aider" | null | undefined {
+  const normalized = normalizePatchString(raw);
+  if (normalized == null) {
+    return normalized;
+  }
+  return normalizeExternalCliId(normalized) ?? undefined;
+}
+
+function normalizeExternalCliAvailableBrands(
+  raw: string | undefined,
+): Array<"codex" | "claude" | "aider"> | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return [];
+  }
+  const parts = trimmed
+    .split(/[,\n]/g)
+    .flatMap((part) => part.split(/\s+/g))
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const out: Array<"codex" | "claude" | "aider"> = [];
+  const seen = new Set<string>();
+  for (const part of parts) {
+    const normalized = normalizeExternalCliId(part);
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}
+
 function buildElevatedMsgContext(opts: {
   agentChannel?: GatewayMessageChannel;
   agentAccountId?: string;
@@ -343,7 +385,7 @@ export function createSelfSettingsTool(opts?: {
     label: "Self Settings",
     name: "self_settings",
     description:
-      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory and memory-search settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, managed deep-consolidation settings, or shared memory-search embedding/reranker defaults.",
+      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory, shared memory-search, and external CLI fallback settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, managed deep-consolidation settings, shared memory-search embedding/reranker defaults, or external CLI availability/default preferences.",
     parameters: SelfSettingsToolSchema,
     execute: async (_toolCallId, args) => {
       if (!opts?.agentSessionKey?.trim()) {
@@ -430,6 +472,14 @@ export function createSelfSettingsTool(opts?: {
         "memorySearchRerankerMaxCandidates",
       );
       const memorySearchRerankerFtsFirst = readBooleanParam(params, "memorySearchRerankerFtsFirst");
+      const externalCliEnabled = readBooleanParam(params, "externalCliEnabled");
+      const externalCliDefault = normalizeExternalCliDefault(
+        readStringParam(params, "externalCliDefault"),
+      );
+      const externalCliAvailableBrandsRaw = readStringParam(params, "externalCliAvailableBrands");
+      const externalCliAvailableBrands = normalizeExternalCliAvailableBrands(
+        externalCliAvailableBrandsRaw,
+      );
       const hasDeepMemoryConfigChange =
         deepMemoryEnabled !== undefined ||
         deepMemorySchedule !== undefined ||
@@ -457,6 +507,10 @@ export function createSelfSettingsTool(opts?: {
         memorySearchRerankerApiKey !== undefined ||
         memorySearchRerankerMaxCandidates !== undefined ||
         memorySearchRerankerFtsFirst !== undefined;
+      const hasExternalCliConfigChange =
+        externalCliEnabled !== undefined ||
+        readStringParam(params, "externalCliDefault") !== undefined ||
+        externalCliAvailableBrandsRaw !== undefined;
 
       if (
         !sessionAction &&
@@ -477,7 +531,8 @@ export function createSelfSettingsTool(opts?: {
         queueDrop === undefined &&
         modelRegistryAction === undefined &&
         !hasDeepMemoryConfigChange &&
-        !hasMemorySearchConfigChange
+        !hasMemorySearchConfigChange &&
+        !hasExternalCliConfigChange
       ) {
         throw new ToolInputError("at least one setting change is required");
       }
@@ -497,6 +552,23 @@ export function createSelfSettingsTool(opts?: {
       if (
         readStringParam(params, "memorySearchFallback") !== undefined &&
         memorySearchFallback === undefined
+      ) {
+        return buildInvalidResult();
+      }
+      if (
+        readStringParam(params, "externalCliDefault") !== undefined &&
+        externalCliDefault === undefined
+      ) {
+        return buildInvalidResult();
+      }
+      if (externalCliAvailableBrandsRaw !== undefined && externalCliAvailableBrands?.length === 0) {
+        return buildInvalidResult();
+      }
+      if (
+        externalCliDefault &&
+        externalCliAvailableBrands &&
+        externalCliAvailableBrands.length > 0 &&
+        !externalCliAvailableBrands.includes(externalCliDefault)
       ) {
         return buildInvalidResult();
       }
@@ -538,6 +610,7 @@ export function createSelfSettingsTool(opts?: {
 
       const sharedDeepMemoryLabels: string[] = [];
       const sharedMemorySearchLabels: string[] = [];
+      const sharedExternalCliLabels: string[] = [];
       let nextConfig = cfg;
       let hasSharedConfigChange = false;
       if (hasDeepMemoryConfigChange) {
@@ -796,6 +869,47 @@ export function createSelfSettingsTool(opts?: {
           );
         }
       }
+      if (hasExternalCliConfigChange) {
+        const nextExternalCli = {
+          ...nextConfig.tools?.externalCli,
+        } as Record<string, unknown>;
+        if (externalCliEnabled !== undefined) {
+          nextExternalCli.enabled = externalCliEnabled;
+        }
+        if (externalCliDefault !== undefined) {
+          if (externalCliDefault === null) {
+            delete nextExternalCli.defaultCli;
+          } else {
+            nextExternalCli.defaultCli = externalCliDefault;
+          }
+        }
+        if (externalCliAvailableBrands !== undefined) {
+          nextExternalCli.availableCli = externalCliAvailableBrands;
+        }
+
+        nextConfig = {
+          ...nextConfig,
+          tools: {
+            ...nextConfig.tools,
+            externalCli: nextExternalCli,
+          },
+        };
+        hasSharedConfigChange = true;
+
+        if (externalCliEnabled !== undefined) {
+          sharedExternalCliLabels.push(
+            `external CLI fallback ${externalCliEnabled ? "enabled" : "disabled"}`,
+          );
+        }
+        if (externalCliDefault !== undefined) {
+          sharedExternalCliLabels.push(`external CLI default ${externalCliDefault ?? "default"}`);
+        }
+        if (externalCliAvailableBrands !== undefined) {
+          sharedExternalCliLabels.push(
+            `external CLI brands ${externalCliAvailableBrands.join(", ")}`,
+          );
+        }
+      }
       if (hasSharedConfigChange) {
         try {
           await writeConfigFile(nextConfig);
@@ -968,6 +1082,9 @@ export function createSelfSettingsTool(opts?: {
         sharedMemorySearchLabels.length > 0
           ? `Updated shared memory-search settings: ${sharedMemorySearchLabels.join("; ")}.`
           : null,
+        sharedExternalCliLabels.length > 0
+          ? `Updated shared external-CLI settings: ${sharedExternalCliLabels.join("; ")}.`
+          : null,
       ].filter((value): value is string => Boolean(value));
 
       return {
@@ -1047,6 +1164,9 @@ export function createSelfSettingsTool(opts?: {
                   nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.maxCandidates,
                 memorySearchRerankerFtsFirst:
                   nextConfig.agents?.defaults?.memorySearch?.query?.hybrid?.reranker?.ftsFirst,
+                externalCliEnabled: nextConfig.tools?.externalCli?.enabled,
+                externalCliDefault: nextConfig.tools?.externalCli?.defaultCli,
+                externalCliAvailable: nextConfig.tools?.externalCli?.availableCli,
               }
             : undefined,
         },

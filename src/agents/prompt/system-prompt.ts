@@ -112,7 +112,7 @@ function buildSelfManagementSection(params: { isMinimal: boolean; availableTools
       "When the user directly asks you to change your own settings or behavior, use self_settings.",
     );
     lines.push(
-      "self_settings can update restricted shared deep-memory and shared memory-search defaults, including local memory embedding endpoints and optional reranker settings.",
+      "self_settings can update restricted shared deep-memory and shared memory-search defaults, including local memory embedding endpoints, optional reranker settings, and external CLI fallback preferences.",
     );
   }
   if (lines.length === 0) {
@@ -227,6 +227,17 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
       "- When `request_escalation` returns `approvalId`/`requestId` plus `taskId`, treat `approvalId` as the canonical approval handle. `taskId` is scope metadata and only a compatibility alias.",
     );
   }
+  if (params.availableTools.has("external_cli")) {
+    lines.push(
+      "- If a difficult task, especially a coding task, is better handled by a stronger local AI CLI, or your current result quality is below the expected bar, consider delegating with `external_cli`.",
+    );
+    lines.push(
+      "- If external CLI fallback is enabled but you do not yet know which brands are installed on this machine, ask the user in natural language, then store the answer with `self_settings` before retrying.",
+    );
+    lines.push(
+      "- If `external_cli` returns `quota_exhausted`, continue from the existing partial work instead of starting over.",
+    );
+  }
   if (lines.length === 0) {
     return [];
   }
@@ -326,6 +337,8 @@ export function buildAgentSystemPrompt(params: {
     cron: "Manage cron jobs and reminders (include recent context in reminder text; write systemEvent as user-facing reminder text)",
     message: "Send messages and channel actions",
     gateway: "Restart, apply config, or run updates on the running Marv process",
+    external_cli:
+      "Delegate a difficult task to a stronger local external AI CLI (explicit fallback; ask/store available brands first if not configured)",
     agents_list: "List agent ids allowed for sessions_spawn",
     sessions_list: "List other sessions (incl. sub-agents) with filters/last",
     sessions_history: "Fetch history for another session/sub-agent",
@@ -361,6 +374,7 @@ export function buildAgentSystemPrompt(params: {
     "cron",
     "message",
     "gateway",
+    "external_cli",
     "agents_list",
     "sessions_list",
     "sessions_history",

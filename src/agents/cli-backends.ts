@@ -11,7 +11,7 @@ export type ResolvedCliBackend = {
   config: CliBackendConfig;
 };
 
-const CLAUDE_MODEL_ALIASES: Record<string, string> = {
+export const CLAUDE_MODEL_ALIASES: Record<string, string> = {
   opus: "opus",
   "opus-4.6": "opus",
   "opus-4.5": "opus",

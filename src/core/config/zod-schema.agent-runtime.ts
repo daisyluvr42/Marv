@@ -404,6 +404,41 @@ const ToolLoopDetectionSchema = z
   })
   .optional();
 
+const ExternalCliIdSchema = z.enum(["codex", "claude", "aider"]);
+
+const ExternalCliOverrideSchema = z
+  .object({
+    command: z.string().optional(),
+    args: z.array(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
+    model: z.string().optional(),
+  })
+  .strict();
+
+const ExternalCliSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    availableCli: z.array(ExternalCliIdSchema).optional(),
+    defaultCli: ExternalCliIdSchema.optional(),
+    timeoutSeconds: z.number().int().positive().optional(),
+    captureGitDiffDefault: z.boolean().optional(),
+    overrides: z.record(ExternalCliIdSchema, ExternalCliOverrideSchema).optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.defaultCli && value.availableCli && value.availableCli.length > 0) {
+      if (!value.availableCli.includes(value.defaultCli)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["defaultCli"],
+          message:
+            "tools.externalCli.defaultCli must also appear in tools.externalCli.availableCli.",
+        });
+      }
+    }
+  })
+  .optional();
+
 export const AgentSandboxSchema = z
   .object({
     mode: z.union([z.literal("off"), z.literal("non-main"), z.literal("all")]).optional(),
@@ -659,6 +694,7 @@ export const ToolsSchema = z
       .strict()
       .optional(),
     loopDetection: ToolLoopDetectionSchema,
+    externalCli: ExternalCliSchema,
     message: z
       .object({
         allowCrossContextSend: z.boolean().optional(),

@@ -398,4 +398,40 @@ describe("self_settings tool", () => {
     expect(details.invalid).toBe(true);
     expect(writeConfigFileMock).not.toHaveBeenCalled();
   });
+
+  it("updates shared external CLI fallback settings through config", async () => {
+    resetSessionStore({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+      },
+    });
+
+    const tool = createSelfSettingsTool({ agentSessionKey: "main" });
+    const result = await tool.execute("call8", {
+      externalCliEnabled: true,
+      externalCliAvailableBrands: "codex, claude",
+      externalCliDefault: "codex",
+    });
+    const text = getTextContent(result);
+    const details = result.details as {
+      ok?: boolean;
+      sharedConfig?: {
+        externalCliEnabled?: boolean;
+        externalCliDefault?: string;
+        externalCliAvailable?: string[];
+      };
+    };
+
+    expect(details.ok).toBe(true);
+    expect(text).toContain("Updated shared external-CLI settings");
+    expect(writeConfigFileMock).toHaveBeenCalledTimes(1);
+    expect(details.sharedConfig).toEqual(
+      expect.objectContaining({
+        externalCliEnabled: true,
+        externalCliDefault: "codex",
+        externalCliAvailable: ["codex", "claude"],
+      }),
+    );
+  });
 });

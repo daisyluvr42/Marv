@@ -19,7 +19,7 @@ export const TOOL_GROUPS: Record<string, string[]> = {
   // Basic workspace/file tools
   "group:fs": ["read", "write", "edit", "apply_patch"],
   // Host/runtime execution tools
-  "group:runtime": ["exec", "process"],
+  "group:runtime": ["exec", "process", "external_cli"],
   // Session management tools
   "group:sessions": [
     "sessions_list",
@@ -64,6 +64,7 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "web_search",
     "web_fetch",
     "image",
+    "external_cli",
   ],
 };
 

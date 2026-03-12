@@ -167,6 +167,11 @@
         "restart": { "label": "restart", "detailKeys": ["reason", "delayMs"] }
       }
     },
+    "external_cli": {
+      "emoji": "🤖",
+      "title": "External CLI",
+      "detailKeys": ["cli", "kind", "workdir"]
+    },
     "message": {
       "emoji": "✉️",
       "title": "Message",
