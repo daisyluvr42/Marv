@@ -11,6 +11,8 @@ export type { BrowserTab };
 export type ProfileRuntimeState = {
   profile: ResolvedBrowserProfile;
   running: RunningChrome | null;
+  /** Explicit tab pin for single-agent workflows when callers omit targetId. */
+  pinnedTargetId?: string | null;
   /** Sticky tab selection when callers omit targetId (keeps snapshot+act consistent). */
   lastTargetId?: string | null;
 };
@@ -25,6 +27,9 @@ export type BrowserServerState = {
 type BrowserProfileActions = {
   ensureBrowserAvailable: () => Promise<void>;
   ensureTabAvailable: (targetId?: string) => Promise<BrowserTab>;
+  getPinnedTargetId: () => string | null;
+  pinTab: (targetId?: string) => Promise<BrowserTab>;
+  unpinTab: () => Promise<{ ok: true }>;
   isHttpReachable: (timeoutMs?: number) => Promise<boolean>;
   isReachable: (timeoutMs?: number) => Promise<boolean>;
   listTabs: () => Promise<BrowserTab[]>;

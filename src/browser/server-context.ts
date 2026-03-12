@@ -82,7 +82,12 @@ function createProfileContext(
     const current = state();
     let profileState = current.profiles.get(profile.name);
     if (!profileState) {
-      profileState = { profile, running: null, lastTargetId: null };
+      profileState = {
+        profile,
+        running: null,
+        pinnedTargetId: null,
+        lastTargetId: null,
+      };
       current.profiles.set(profile.name, profileState);
     }
     return profileState;
@@ -127,6 +132,24 @@ function createProfileContext(
         type: t.type,
       }))
       .filter((t) => Boolean(t.targetId));
+  };
+
+  const listCandidateTabs = async (): Promise<BrowserTab[]> => {
+    const tabs = await listTabs();
+    return profile.driver === "extension" || !profile.cdpIsLoopback
+      ? tabs
+      : tabs.filter((t) => Boolean(t.wsUrl));
+  };
+
+  const resolveCandidateById = (candidates: BrowserTab[], raw: string) => {
+    const resolved = resolveTargetIdFromTabs(raw, candidates);
+    if (!resolved.ok) {
+      if (resolved.reason === "ambiguous") {
+        return "AMBIGUOUS" as const;
+      }
+      return null;
+    }
+    return candidates.find((t) => t.targetId === resolved.targetId) ?? null;
   };
 
   const openTab = async (url: string): Promise<BrowserTab> => {
@@ -365,28 +388,19 @@ function createProfileContext(
       await openTab("about:blank");
     }
 
-    const tabs = await listTabs();
-    // For remote profiles using Playwright's persistent connection, we don't need wsUrl
-    // because we access pages directly through Playwright, not via individual WebSocket URLs.
-    const candidates =
-      profile.driver === "extension" || !profile.cdpIsLoopback
-        ? tabs
-        : tabs.filter((t) => Boolean(t.wsUrl));
-
-    const resolveById = (raw: string) => {
-      const resolved = resolveTargetIdFromTabs(raw, candidates);
-      if (!resolved.ok) {
-        if (resolved.reason === "ambiguous") {
-          return "AMBIGUOUS" as const;
-        }
-        return null;
-      }
-      return candidates.find((t) => t.targetId === resolved.targetId) ?? null;
-    };
+    const candidates = await listCandidateTabs();
 
     const pickDefault = () => {
+      const pinned = profileState.pinnedTargetId?.trim() || "";
+      const pinnedResolved = pinned ? resolveCandidateById(candidates, pinned) : null;
+      if (pinnedResolved && pinnedResolved !== "AMBIGUOUS") {
+        return pinnedResolved;
+      }
+      if (!pinnedResolved && pinned) {
+        profileState.pinnedTargetId = null;
+      }
       const last = profileState.lastTargetId?.trim() || "";
-      const lastResolved = last ? resolveById(last) : null;
+      const lastResolved = last ? resolveCandidateById(candidates, last) : null;
       if (lastResolved && lastResolved !== "AMBIGUOUS") {
         return lastResolved;
       }
@@ -395,7 +409,7 @@ function createProfileContext(
       return page ?? candidates.at(0) ?? null;
     };
 
-    let chosen = targetId ? resolveById(targetId) : pickDefault();
+    let chosen = targetId ? resolveCandidateById(candidates, targetId) : pickDefault();
     if (!chosen && profile.driver === "extension" && candidates.length === 1) {
       // If an agent passes a stale/foreign targetId but we only have a single attached tab,
       // recover by using that tab instead of failing hard.
@@ -410,6 +424,24 @@ function createProfileContext(
     }
     profileState.lastTargetId = chosen.targetId;
     return chosen;
+  };
+
+  const getPinnedTargetId = () => {
+    return getProfileState().pinnedTargetId?.trim() || null;
+  };
+
+  const pinTab = async (targetId?: string): Promise<BrowserTab> => {
+    const chosen = await ensureTabAvailable(targetId);
+    const profileState = getProfileState();
+    profileState.pinnedTargetId = chosen.targetId;
+    profileState.lastTargetId = chosen.targetId;
+    return chosen;
+  };
+
+  const unpinTab = async (): Promise<{ ok: true }> => {
+    const profileState = getProfileState();
+    profileState.pinnedTargetId = null;
+    return { ok: true };
   };
 
   const focusTab = async (targetId: string): Promise<void> => {
@@ -462,11 +494,25 @@ function createProfileContext(
           cdpUrl: profile.cdpUrl,
           targetId: resolved.targetId,
         });
+        const profileState = getProfileState();
+        if (profileState.pinnedTargetId === resolved.targetId) {
+          profileState.pinnedTargetId = null;
+        }
+        if (profileState.lastTargetId === resolved.targetId) {
+          profileState.lastTargetId = null;
+        }
         return;
       }
     }
 
     await fetchOk(appendCdpPath(profile.cdpUrl, `/json/close/${resolved.targetId}`));
+    const profileState = getProfileState();
+    if (profileState.pinnedTargetId === resolved.targetId) {
+      profileState.pinnedTargetId = null;
+    }
+    if (profileState.lastTargetId === resolved.targetId) {
+      profileState.lastTargetId = null;
+    }
   };
 
   const stopRunningBrowser = async (): Promise<{ stopped: boolean }> => {
@@ -532,6 +578,9 @@ function createProfileContext(
     profile,
     ensureBrowserAvailable,
     ensureTabAvailable,
+    getPinnedTargetId,
+    pinTab,
+    unpinTab,
     isHttpReachable,
     isReachable,
     listTabs,
@@ -652,6 +701,9 @@ export function createBrowserRouteContext(opts: ContextOptions): BrowserRouteCon
     // Legacy methods delegate to default profile
     ensureBrowserAvailable: () => getDefaultContext().ensureBrowserAvailable(),
     ensureTabAvailable: (targetId) => getDefaultContext().ensureTabAvailable(targetId),
+    getPinnedTargetId: () => getDefaultContext().getPinnedTargetId(),
+    pinTab: (targetId) => getDefaultContext().pinTab(targetId),
+    unpinTab: () => getDefaultContext().unpinTab(),
     isHttpReachable: (timeoutMs) => getDefaultContext().isHttpReachable(timeoutMs),
     isReachable: (timeoutMs) => getDefaultContext().isReachable(timeoutMs),
     listTabs: () => getDefaultContext().listTabs(),

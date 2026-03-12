@@ -111,6 +111,31 @@ export function registerBrowserTabRoutes(app: BrowserRouteRegistrar, ctx: Browse
     });
   });
 
+  app.get("/tabs/pin", async (req, res) => {
+    await withTabsProfileRoute({
+      req,
+      res,
+      ctx,
+      run: async (profileCtx) => {
+        const pinnedTargetId = profileCtx.getPinnedTargetId();
+        if (!pinnedTargetId) {
+          return res.json({ ok: true, pinnedTargetId: null, tab: null });
+        }
+        const reachable = await profileCtx.isReachable(300);
+        if (!reachable) {
+          return res.json({ ok: true, pinnedTargetId, tab: null });
+        }
+        const tabs = await profileCtx.listTabs();
+        const tab = tabs.find((entry) => entry.targetId === pinnedTargetId) ?? null;
+        if (!tab) {
+          await profileCtx.unpinTab();
+          return res.json({ ok: true, pinnedTargetId: null, tab: null });
+        }
+        res.json({ ok: true, pinnedTargetId, tab });
+      },
+    });
+  });
+
   app.post("/tabs/open", async (req, res) => {
     const url = toStringOrEmpty((req.body as { url?: unknown })?.url);
     if (!url) {
@@ -129,6 +154,20 @@ export function registerBrowserTabRoutes(app: BrowserRouteRegistrar, ctx: Browse
     });
   });
 
+  app.post("/tabs/pin", async (req, res) => {
+    const targetId = toStringOrEmpty((req.body as { targetId?: unknown })?.targetId) || undefined;
+    await withTabsProfileRoute({
+      req,
+      res,
+      ctx,
+      mapTabError: true,
+      run: async (profileCtx) => {
+        const tab = await profileCtx.pinTab(targetId);
+        res.json({ ok: true, pinnedTargetId: tab.targetId, tab });
+      },
+    });
+  });
+
   app.post("/tabs/focus", async (req, res) => {
     const targetId = parseRequiredTargetId(res, (req.body as { targetId?: unknown })?.targetId);
     if (!targetId) {
@@ -141,6 +180,18 @@ export function registerBrowserTabRoutes(app: BrowserRouteRegistrar, ctx: Browse
       targetId,
       mutate: async (profileCtx, id) => {
         await profileCtx.focusTab(id);
+      },
+    });
+  });
+
+  app.delete("/tabs/pin", async (req, res) => {
+    await withTabsProfileRoute({
+      req,
+      res,
+      ctx,
+      run: async (profileCtx) => {
+        await profileCtx.unpinTab();
+        res.json({ ok: true, pinnedTargetId: null });
       },
     });
   });

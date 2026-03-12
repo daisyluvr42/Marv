@@ -26,6 +26,7 @@ export {
   cookiesSetViaPlaywright,
   downloadViaPlaywright,
   dragViaPlaywright,
+  extractTextViaPlaywright,
   emulateMediaViaPlaywright,
   evaluateViaPlaywright,
   fillFormViaPlaywright,

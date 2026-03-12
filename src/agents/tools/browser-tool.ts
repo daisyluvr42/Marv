@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import {
   browserAct,
   browserArmDialog,
+  browserExtractText,
   browserArmFileChooser,
   browserConsoleMessages,
   browserNavigate,
@@ -12,12 +13,15 @@ import {
   browserCloseTab,
   browserFocusTab,
   browserOpenTab,
+  browserPinTab,
+  browserPinnedTab,
   browserProfiles,
   browserSnapshot,
   browserStart,
   browserStatus,
   browserStop,
   browserTabs,
+  browserUnpinTab,
 } from "../../browser/client.js";
 import { resolveBrowserConfig } from "../../browser/config.js";
 import { DEFAULT_AI_SNAPSHOT_MAX_CHARS } from "../../browser/constants.js";
@@ -39,6 +43,28 @@ function wrapBrowserExternalJson(params: {
   const wrappedText = wrapExternalContent(extractedText, {
     source: "browser",
     includeWarning: params.includeWarning ?? true,
+  });
+  return {
+    wrappedText,
+    safeDetails: {
+      ok: true,
+      externalContent: {
+        untrusted: true,
+        source: "browser",
+        kind: params.kind,
+        wrapped: true,
+      },
+    },
+  };
+}
+
+function wrapBrowserExternalText(params: { kind: "text"; text: string }): {
+  wrappedText: string;
+  safeDetails: Record<string, unknown>;
+} {
+  const wrappedText = wrapExternalContent(params.text, {
+    source: "browser",
+    includeWarning: true,
   });
   return {
     wrappedText,
@@ -229,14 +255,17 @@ export function createBrowserTool(opts?: {
     label: "Browser",
     name: "browser",
     description: [
-      "Control the browser via Marv's browser control server (status/start/stop/profiles/tabs/open/snapshot/screenshot/actions).",
+      "Control the browser via Marv's browser control server (status/start/stop/profiles/tabs/open/pin/snapshot/text/screenshot/actions).",
       'Profiles: use profile="chrome" for Chrome extension relay takeover (your existing Chrome tabs). Use profile="marv" for the isolated marv-managed browser (legacy profile="marv" is still supported).',
       'If the user mentions the Chrome extension / Browser Relay / toolbar button / “attach tab”, ALWAYS use profile="chrome" (do not ask which profile).',
       'When a node-hosted browser proxy is available, the tool may auto-route to it. Pin a node with node=<id|name> or target="node".',
       "Chrome extension relay needs an attached tab: user must click the Marv Browser Relay toolbar icon on the tab (badge ON). If no tab is connected, ask them to attach it.",
-      "When using refs from snapshot (e.g. e12), keep the same tab: prefer passing targetId from the snapshot response into subsequent actions (act/click/type/etc).",
+      "When using refs from snapshot (e.g. e12), keep the same tab: prefer passing targetId from the snapshot response into subsequent actions (act/click/type/etc), or pin the tab for the current browser profile.",
+      "For long workflows on one page or tab, use action=pin after open/snapshot so later actions stay on that tab even if tab order changes.",
+      "Use action=text to read rendered or logged-in page content. Prefer it over act:evaluate when you just need page text.",
       'For stable, self-resolving refs across calls, use snapshot with refs="aria" (Playwright aria-ref ids). Default refs="role" are role+name-based.',
-      "Use snapshot+act for UI automation. Avoid act:wait by default; use only in exceptional cases when no reliable UI state exists.",
+      "Use snapshot+act for UI automation. act:wait supports timeMs, text, textGone, selector, url, loadState, and fn.",
+      "Recommended loop: open/navigate -> snapshot -> pin if needed -> act -> wait -> snapshot or text.",
       `target selects browser location (sandbox|host|node). Default: ${targetDefault}.`,
       hostHint,
     ].join(" "),
@@ -396,6 +425,40 @@ export function createBrowserTool(opts?: {
           }
           return jsonResult(await browserOpenTab(baseUrl, targetUrl, { profile }));
         }
+        case "pin": {
+          const targetId = readStringParam(params, "targetId");
+          if (proxyRequest) {
+            const result = await proxyRequest({
+              method: "POST",
+              path: "/tabs/pin",
+              profile,
+              body: { targetId },
+            });
+            return jsonResult(result);
+          }
+          return jsonResult(await browserPinTab(baseUrl, { targetId, profile }));
+        }
+        case "unpin":
+          if (proxyRequest) {
+            const result = await proxyRequest({
+              method: "DELETE",
+              path: "/tabs/pin",
+              profile,
+            });
+            return jsonResult(result);
+          }
+          return jsonResult(await browserUnpinTab(baseUrl, { profile }));
+        case "pinned":
+          if (proxyRequest) {
+            return jsonResult(
+              await proxyRequest({
+                method: "GET",
+                path: "/tabs/pin",
+                profile,
+              }),
+            );
+          }
+          return jsonResult(await browserPinnedTab(baseUrl, { profile }));
         case "focus": {
           const targetId = readStringParam(params, "targetId", {
             required: true,
@@ -577,6 +640,51 @@ export function createBrowserTool(opts?: {
               },
             };
           }
+        }
+        case "text": {
+          const targetId = readStringParam(params, "targetId");
+          const ref = readStringParam(params, "ref");
+          const maxChars =
+            typeof params.maxChars === "number" && Number.isFinite(params.maxChars)
+              ? Math.floor(params.maxChars)
+              : undefined;
+          const timeoutMs =
+            typeof params.timeoutMs === "number" && Number.isFinite(params.timeoutMs)
+              ? Math.floor(params.timeoutMs)
+              : undefined;
+          const result = proxyRequest
+            ? ((await proxyRequest({
+                method: "GET",
+                path: "/text",
+                profile,
+                query: {
+                  targetId,
+                  ref,
+                  maxChars,
+                  timeoutMs,
+                },
+              })) as Awaited<ReturnType<typeof browserExtractText>>)
+            : await browserExtractText(baseUrl, {
+                targetId,
+                ref,
+                maxChars,
+                timeoutMs,
+                profile,
+              });
+          const wrapped = wrapBrowserExternalText({
+            kind: "text",
+            text: result.text,
+          });
+          return {
+            content: [{ type: "text", text: wrapped.wrappedText }],
+            details: {
+              ...wrapped.safeDetails,
+              targetId: result.targetId,
+              url: result.url,
+              title: result.title,
+              truncated: result.truncated,
+            },
+          };
         }
         case "screenshot": {
           const targetId = readStringParam(params, "targetId");

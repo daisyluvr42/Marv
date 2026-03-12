@@ -74,6 +74,31 @@ describe("browser control server", () => {
         timeMs: 5,
         text: undefined,
         textGone: undefined,
+        selector: undefined,
+        url: undefined,
+        loadState: undefined,
+        fn: undefined,
+        timeoutMs: undefined,
+      });
+
+      const waitForUrl = await postJson<{ ok: boolean }>(`${base}/act`, {
+        kind: "wait",
+        url: "**/dashboard",
+        loadState: "networkidle",
+        timeoutMs: 3210,
+      });
+      expect(waitForUrl.ok).toBe(true);
+      expect(pwMocks.waitForViaPlaywright).toHaveBeenCalledWith({
+        cdpUrl: state.cdpBaseUrl,
+        targetId: "abcd1234",
+        timeMs: undefined,
+        text: undefined,
+        textGone: undefined,
+        selector: undefined,
+        url: "**/dashboard",
+        loadState: "networkidle",
+        fn: undefined,
+        timeoutMs: 3210,
       });
 
       const evalRes = await postJson<{ ok: boolean; result?: string }>(`${base}/act`, {
@@ -184,6 +209,44 @@ describe("browser control server", () => {
     };
     expect(consoleRes.ok).toBe(true);
     expect(Array.isArray(consoleRes.messages)).toBe(true);
+
+    const pin = await postJson<{
+      ok: boolean;
+      pinnedTargetId?: string | null;
+      tab?: { targetId: string };
+    }>(`${base}/tabs/pin`, {});
+    expect(pin.ok).toBe(true);
+    expect(pin.pinnedTargetId).toBe("abcd1234");
+    expect(pin.tab?.targetId).toBe("abcd1234");
+
+    const pinned = (await realFetch(`${base}/tabs/pin`).then((r) => r.json())) as {
+      ok: boolean;
+      pinnedTargetId?: string | null;
+      tab?: { targetId: string } | null;
+    };
+    expect(pinned.ok).toBe(true);
+    expect(pinned.pinnedTargetId).toBe("abcd1234");
+
+    const text = (await realFetch(`${base}/text?maxChars=42`).then((r) => r.json())) as {
+      ok: boolean;
+      text?: string;
+      title?: string;
+      targetId?: string;
+    };
+    expect(text.ok).toBe(true);
+    expect(text.text).toBe("Hello from the page");
+    expect(text.title).toBe("Example");
+    expect(text.targetId).toBe("abcd1234");
+    expect(pwMocks.extractTextViaPlaywright).toHaveBeenCalledWith({
+      cdpUrl: state.cdpBaseUrl,
+      targetId: "abcd1234",
+      ref: undefined,
+      maxChars: 42,
+      timeoutMs: undefined,
+    });
+
+    const unpin = await realFetch(`${base}/tabs/pin`, { method: "DELETE" }).then((r) => r.json());
+    expect(unpin).toMatchObject({ ok: true, pinnedTargetId: null });
 
     const pdf = await postJson<{ ok: boolean; path?: string }>(`${base}/pdf`, {});
     expect(pdf.ok).toBe(true);

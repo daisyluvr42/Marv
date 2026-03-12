@@ -80,6 +80,13 @@ const pwMocks = vi.hoisted(() => ({
     path: "/tmp/report.pdf",
   })),
   dragViaPlaywright: vi.fn(async () => {}),
+  extractTextViaPlaywright: vi.fn(async () => ({
+    targetId: "abcd1234",
+    url: "https://example.com",
+    title: "Example",
+    text: "Hello from the page",
+    truncated: false,
+  })),
   evaluateViaPlaywright: vi.fn(async () => "ok"),
   fillFormViaPlaywright: vi.fn(async () => {}),
   getConsoleMessagesViaPlaywright: vi.fn(async () => []),

@@ -570,12 +570,13 @@ For Linux-specific issues (especially snap Chromium), see
 
 The agent gets **one tool** for browser automation:
 
-- `browser` — status/start/stop/tabs/open/focus/close/snapshot/screenshot/navigate/act
+- `browser` — status/start/stop/tabs/open/pin/focus/close/snapshot/text/screenshot/navigate/act
 
 How it maps:
 
 - `browser snapshot` returns a stable UI tree (AI or ARIA).
 - `browser act` uses the snapshot `ref` IDs to click/type/drag/select.
+- `browser text` extracts rendered page text from the current tab or a `ref`.
 - `browser screenshot` captures pixels (full page or element).
 - `browser` accepts:
   - `profile` to choose a named browser profile (marv, chrome, or remote CDP).
@@ -585,3 +586,31 @@ How it maps:
   - If a browser-capable node is connected, the tool may auto-route to it unless you pin `target="host"` or `target="node"`.
 
 This keeps the agent deterministic and avoids brittle selectors.
+
+### Recommended single-agent workflow
+
+For long browser tasks, the most reliable loop is:
+
+1. `open` or `navigate`
+2. `snapshot`
+3. `pin` if later steps must stay on the same tab
+4. `act`
+5. `act` with `kind="wait"` if navigation or async UI work is expected
+6. `snapshot` again for structure, or `text` if you need readable page content
+
+Guidance:
+
+- Prefer `snapshot` + `act` over raw selectors.
+- Prefer `text` over `evaluate` when the goal is "read what is on the page".
+- Use `pin` after the first good snapshot when tab order may change.
+- Use `act kind="wait"` with `text`, `selector`, `url`, or `loadState` after actions that trigger navigation or SPA updates.
+
+### When to use `text`
+
+Use `browser text` when:
+
+- the page is JS-rendered and `web_fetch` cannot see the final content
+- the page requires login and you need the visible text
+- you want a readable summary of the current page or a specific `ref`
+
+Use `web_fetch` instead when the page is public and a simple HTTP fetch is enough.

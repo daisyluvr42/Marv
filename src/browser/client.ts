@@ -47,6 +47,12 @@ export type BrowserTab = {
   type?: string;
 };
 
+export type BrowserPinnedTabStatus = {
+  ok: true;
+  pinnedTargetId: string | null;
+  tab: BrowserTab | null;
+};
+
 export type SnapshotAriaNode = {
   ref: string;
   role: string;
@@ -225,6 +231,43 @@ export async function browserOpenTab(
     body: JSON.stringify({ url }),
     timeoutMs: 15000,
   });
+}
+
+export async function browserPinnedTab(
+  baseUrl?: string,
+  opts?: { profile?: string },
+): Promise<BrowserPinnedTabStatus> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson<BrowserPinnedTabStatus>(withBaseUrl(baseUrl, `/tabs/pin${q}`), {
+    timeoutMs: 3000,
+  });
+}
+
+export async function browserPinTab(
+  baseUrl: string | undefined,
+  opts?: { targetId?: string; profile?: string },
+): Promise<BrowserPinnedTabStatus> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson<BrowserPinnedTabStatus>(withBaseUrl(baseUrl, `/tabs/pin${q}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetId: opts?.targetId }),
+    timeoutMs: 5000,
+  });
+}
+
+export async function browserUnpinTab(
+  baseUrl: string | undefined,
+  opts?: { profile?: string },
+): Promise<Pick<BrowserPinnedTabStatus, "ok" | "pinnedTargetId">> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson<Pick<BrowserPinnedTabStatus, "ok" | "pinnedTargetId">>(
+    withBaseUrl(baseUrl, `/tabs/pin${q}`),
+    {
+      method: "DELETE",
+      timeoutMs: 5000,
+    },
+  );
 }
 
 export async function browserFocusTab(

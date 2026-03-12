@@ -4,6 +4,16 @@ const browserClientMocks = vi.hoisted(() => ({
   browserCloseTab: vi.fn(async (..._args: unknown[]) => ({})),
   browserFocusTab: vi.fn(async (..._args: unknown[]) => ({})),
   browserOpenTab: vi.fn(async (..._args: unknown[]) => ({})),
+  browserPinTab: vi.fn(async (..._args: unknown[]) => ({
+    ok: true,
+    pinnedTargetId: "t1",
+    tab: { targetId: "t1", title: "Pinned", url: "https://example.com" },
+  })),
+  browserPinnedTab: vi.fn(async (..._args: unknown[]) => ({
+    ok: true,
+    pinnedTargetId: "t1",
+    tab: { targetId: "t1", title: "Pinned", url: "https://example.com" },
+  })),
   browserProfiles: vi.fn(
     async (..._args: unknown[]): Promise<Array<Record<string, unknown>>> => [],
   ),
@@ -26,12 +36,24 @@ const browserClientMocks = vi.hoisted(() => ({
   })),
   browserStop: vi.fn(async (..._args: unknown[]) => ({})),
   browserTabs: vi.fn(async (..._args: unknown[]): Promise<Array<Record<string, unknown>>> => []),
+  browserUnpinTab: vi.fn(async (..._args: unknown[]) => ({
+    ok: true,
+    pinnedTargetId: null,
+  })),
 }));
 vi.mock("../../browser/client.js", () => browserClientMocks);
 
 const browserActionsMocks = vi.hoisted(() => ({
   browserAct: vi.fn(async () => ({ ok: true })),
   browserArmDialog: vi.fn(async () => ({ ok: true })),
+  browserExtractText: vi.fn(async () => ({
+    ok: true,
+    targetId: "t1",
+    url: "https://example.com",
+    title: "Example",
+    text: "Page body",
+    truncated: false,
+  })),
   browserArmFileChooser: vi.fn(async () => ({ ok: true })),
   browserConsoleMessages: vi.fn(async () => ({
     ok: true,
@@ -271,6 +293,65 @@ describe("browser tool snapshot maxChars", () => {
       expect.objectContaining({ profile: "chrome" }),
     );
     expect(gatewayMocks.callGatewayTool).not.toHaveBeenCalled();
+  });
+
+  it("pins a tab through the browser client", async () => {
+    const tool = createBrowserTool();
+    await tool.execute?.("call-1", { action: "pin", targetId: "tab-7" });
+
+    expect(browserClientMocks.browserPinTab).toHaveBeenCalledWith(undefined, {
+      targetId: "tab-7",
+      profile: undefined,
+    });
+  });
+
+  it("extracts rendered browser text", async () => {
+    const tool = createBrowserTool();
+    const result = await tool.execute?.("call-1", {
+      action: "text",
+      targetId: "tab-7",
+      maxChars: 500,
+    });
+
+    expect(browserActionsMocks.browserExtractText).toHaveBeenCalledWith(undefined, {
+      targetId: "tab-7",
+      ref: undefined,
+      maxChars: 500,
+      timeoutMs: undefined,
+      profile: undefined,
+    });
+    expect(result?.details).toMatchObject({
+      targetId: "t1",
+      title: "Example",
+      url: "https://example.com",
+      truncated: false,
+    });
+  });
+
+  it("passes richer wait arguments through act", async () => {
+    const tool = createBrowserTool();
+    await tool.execute?.("call-1", {
+      action: "act",
+      request: {
+        kind: "wait",
+        url: "**/dashboard",
+        loadState: "networkidle",
+        selector: ".ready",
+        timeoutMs: 4321,
+      },
+    });
+
+    expect(browserActionsMocks.browserAct).toHaveBeenCalledWith(
+      undefined,
+      {
+        kind: "wait",
+        url: "**/dashboard",
+        loadState: "networkidle",
+        selector: ".ready",
+        timeoutMs: 4321,
+      },
+      { profile: undefined },
+    );
   });
 });
 

@@ -69,12 +69,16 @@
         "stop": { "label": "stop" },
         "tabs": { "label": "tabs" },
         "open": { "label": "open", "detailKeys": ["targetUrl"] },
+        "pin": { "label": "pin", "detailKeys": ["targetId"] },
+        "unpin": { "label": "unpin" },
+        "pinned": { "label": "pinned" },
         "focus": { "label": "focus", "detailKeys": ["targetId"] },
         "close": { "label": "close", "detailKeys": ["targetId"] },
         "snapshot": {
           "label": "snapshot",
           "detailKeys": ["targetUrl", "targetId", "ref", "element", "format"]
         },
+        "text": { "label": "text", "detailKeys": ["targetId", "ref", "maxChars"] },
         "screenshot": {
           "label": "screenshot",
           "detailKeys": ["targetUrl", "targetId", "ref", "element"]
@@ -100,7 +104,8 @@
             "request.ref",
             "request.selector",
             "request.text",
-            "request.value"
+            "request.url",
+            "request.loadState"
           ]
         }
       }

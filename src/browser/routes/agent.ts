@@ -3,6 +3,7 @@ import { registerBrowserAgentActRoutes } from "./agent.act.js";
 import { registerBrowserAgentDebugRoutes } from "./agent.debug.js";
 import { registerBrowserAgentSnapshotRoutes } from "./agent.snapshot.js";
 import { registerBrowserAgentStorageRoutes } from "./agent.storage.js";
+import { registerBrowserAgentTextRoutes } from "./agent.text.js";
 import type { BrowserRouteRegistrar } from "./types.js";
 
 export function registerBrowserAgentRoutes(app: BrowserRouteRegistrar, ctx: BrowserRouteContext) {
@@ -10,4 +11,5 @@ export function registerBrowserAgentRoutes(app: BrowserRouteRegistrar, ctx: Brow
   registerBrowserAgentActRoutes(app, ctx);
   registerBrowserAgentDebugRoutes(app, ctx);
   registerBrowserAgentStorageRoutes(app, ctx);
+  registerBrowserAgentTextRoutes(app, ctx);
 }

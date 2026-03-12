@@ -387,6 +387,70 @@ export async function scrollIntoViewViaPlaywright(opts: {
   }
 }
 
+function normalizeExtractedText(raw: string) {
+  return raw
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export async function extractTextViaPlaywright(opts: {
+  cdpUrl: string;
+  targetId?: string;
+  ref?: string;
+  maxChars?: number;
+  timeoutMs?: number;
+}): Promise<{
+  targetId: string;
+  url: string;
+  title: string;
+  text: string;
+  truncated: boolean;
+}> {
+  const page = await getPageForTargetId(opts);
+  ensurePageState(page);
+  restoreRoleRefsForTarget({ cdpUrl: opts.cdpUrl, targetId: opts.targetId, page });
+  const timeout = normalizeTimeoutMs(opts.timeoutMs, 20_000);
+  const maxChars =
+    typeof opts.maxChars === "number" && Number.isFinite(opts.maxChars) && opts.maxChars > 0
+      ? Math.max(200, Math.floor(opts.maxChars))
+      : 20_000;
+
+  const title = await page.title().catch(() => "");
+  const url = page.url();
+
+  let rawText = "";
+  if (opts.ref) {
+    const ref = requireRef(opts.ref);
+    try {
+      rawText = await refLocator(page, ref).innerText({ timeout });
+    } catch (err) {
+      throw toAIFriendlyError(err, ref);
+    }
+  } else {
+    rawText = await page.evaluate(() => {
+      const root =
+        document.querySelector("main") ??
+        document.querySelector("article") ??
+        document.querySelector('[role="main"]') ??
+        document.body;
+      return String(root?.innerText ?? root?.textContent ?? "");
+    });
+  }
+
+  const normalized = normalizeExtractedText(rawText);
+  const truncated = normalized.length > maxChars;
+  return {
+    targetId: opts.targetId ?? "",
+    url,
+    title,
+    text: truncated ? normalized.slice(0, maxChars) : normalized,
+    truncated,
+  };
+}
+
 export async function waitForViaPlaywright(opts: {
   cdpUrl: string;
   targetId?: string;

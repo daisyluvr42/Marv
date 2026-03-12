@@ -82,6 +82,15 @@ export type BrowserActResponse = {
   result?: unknown;
 };
 
+export type BrowserTextResult = {
+  ok: true;
+  targetId: string;
+  url: string;
+  title: string;
+  text: string;
+  truncated: boolean;
+};
+
 export type BrowserDownloadPayload = {
   url: string;
   suggestedFilename: string;
@@ -230,6 +239,39 @@ export async function browserAct(
     body: JSON.stringify(req),
     timeoutMs: 20000,
   });
+}
+
+export async function browserExtractText(
+  baseUrl: string | undefined,
+  opts: {
+    targetId?: string;
+    ref?: string;
+    maxChars?: number;
+    timeoutMs?: number;
+    profile?: string;
+  } = {},
+): Promise<BrowserTextResult> {
+  const q = buildProfileQuery(opts.profile);
+  const query = new URLSearchParams();
+  if (opts.targetId) {
+    query.set("targetId", opts.targetId);
+  }
+  if (opts.ref) {
+    query.set("ref", opts.ref);
+  }
+  if (typeof opts.maxChars === "number" && Number.isFinite(opts.maxChars)) {
+    query.set("maxChars", String(Math.floor(opts.maxChars)));
+  }
+  if (typeof opts.timeoutMs === "number" && Number.isFinite(opts.timeoutMs)) {
+    query.set("timeoutMs", String(Math.floor(opts.timeoutMs)));
+  }
+  const suffix = query.toString();
+  return await fetchBrowserJson<BrowserTextResult>(
+    withBaseUrl(baseUrl, `/text${q}${suffix ? `${q ? "&" : "?"}${suffix}` : ""}`),
+    {
+      timeoutMs: 20000,
+    },
+  );
 }
 
 export async function browserScreenshotAction(

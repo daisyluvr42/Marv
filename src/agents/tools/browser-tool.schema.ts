@@ -13,6 +13,7 @@ const BROWSER_ACT_KINDS = [
   "wait",
   "evaluate",
   "close",
+  "scrollIntoView",
 ] as const;
 
 const BROWSER_TOOL_ACTIONS = [
@@ -22,9 +23,13 @@ const BROWSER_TOOL_ACTIONS = [
   "profiles",
   "tabs",
   "open",
+  "pin",
+  "unpin",
+  "pinned",
   "focus",
   "close",
   "snapshot",
+  "text",
   "screenshot",
   "navigate",
   "console",
@@ -39,6 +44,7 @@ const BROWSER_TARGETS = ["sandbox", "host", "node"] as const;
 const BROWSER_SNAPSHOT_FORMATS = ["aria", "ai"] as const;
 const BROWSER_SNAPSHOT_MODES = ["efficient"] as const;
 const BROWSER_SNAPSHOT_REFS = ["role", "aria"] as const;
+const BROWSER_WAIT_LOAD_STATES = ["load", "domcontentloaded", "networkidle"] as const;
 
 const BROWSER_IMAGE_TYPES = ["png", "jpeg"] as const;
 
@@ -60,6 +66,7 @@ const BrowserActSchema = Type.Object({
   slowly: Type.Optional(Type.Boolean()),
   // press
   key: Type.Optional(Type.String()),
+  delayMs: Type.Optional(Type.Number()),
   // drag
   startRef: Type.Optional(Type.String()),
   endRef: Type.Optional(Type.String()),
@@ -70,9 +77,12 @@ const BrowserActSchema = Type.Object({
   // resize
   width: Type.Optional(Type.Number()),
   height: Type.Optional(Type.Number()),
-  // wait
+  // wait (reuses shared `text` field)
   timeMs: Type.Optional(Type.Number()),
   textGone: Type.Optional(Type.String()),
+  selector: Type.Optional(Type.String()),
+  url: Type.Optional(Type.String()),
+  loadState: optionalStringEnum(BROWSER_WAIT_LOAD_STATES),
   // evaluate
   fn: Type.Optional(Type.String()),
 });
