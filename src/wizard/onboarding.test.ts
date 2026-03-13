@@ -276,6 +276,13 @@ function parseWizardMetricsLog(runtime: RuntimeEnv): {
   return { interactions, total };
 }
 
+function getWizardNoteTitles(prompter: WizardPrompter): string[] {
+  const note = prompter.note as ReturnType<typeof vi.fn>;
+  return note.mock.calls
+    .map((call) => call[1])
+    .filter((title): title is string => typeof title === "string");
+}
+
 describe("runOnboardingWizard", () => {
   let suiteRoot = "";
   let suiteCase = 0;
@@ -587,7 +594,7 @@ describe("runOnboardingWizard", () => {
 
       expect(parseWizardMetricsLog(runtime)).toEqual({
         interactions: 0,
-        total: 5,
+        total: 9,
       });
     } finally {
       if (prev === undefined) {
@@ -635,8 +642,8 @@ describe("runOnboardingWizard", () => {
 
       const metrics = parseWizardMetricsLog(runtime);
       expect(metrics.interactions).toBe(1);
-      expect(metrics.total).toBeGreaterThanOrEqual(5);
-      expect(metrics.total).toBeLessThanOrEqual(6);
+      expect(metrics.total).toBeGreaterThanOrEqual(9);
+      expect(metrics.total).toBeLessThanOrEqual(10);
     } finally {
       if (prev === undefined) {
         delete process.env.MARV_WIZARD_METRICS;
@@ -782,6 +789,35 @@ describe("runOnboardingWizard", () => {
           maxTokens: 16,
         }),
       }),
+    );
+  });
+
+  it("announces the staged local flow in order", async () => {
+    const prompter = createWizardPrompter();
+    const runtime = createRuntime();
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        authChoice: "skip",
+        installDaemon: false,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(getWizardNoteTitles(prompter)).toEqual(
+      expect.arrayContaining([
+        "Stage 1 - Environment and risk",
+        "Stage 2 - Model-first activation",
+        "Stage 3 - Structured setup",
+        "Stage 4 - Review and activation",
+      ]),
     );
   });
 

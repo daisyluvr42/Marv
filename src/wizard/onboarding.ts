@@ -20,6 +20,11 @@ import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
 import { formatWizardMetrics, instrumentWizardPrompter } from "./metrics.js";
+import {
+  buildWizardStagePlan,
+  createWizardStageController,
+  presentWizardStage,
+} from "./onboarding.stages.js";
 import type { QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
 import { WizardCancelledError, type WizardPrompter } from "./prompts.js";
 
@@ -164,6 +169,22 @@ export async function runOnboardingWizard(
   try {
     onboardHelpers.printWizardHeader(runtime);
     await prompter.intro("Marv onboarding");
+    const explicitFlowRaw = opts.flow?.trim();
+    const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;
+    if (
+      normalizedExplicitFlow &&
+      normalizedExplicitFlow !== "quickstart" &&
+      normalizedExplicitFlow !== "advanced"
+    ) {
+      runtime.error("Invalid --flow (use quickstart, manual, or advanced).");
+      runtime.exit(1);
+      return;
+    }
+    const explicitFlow: WizardFlow | undefined =
+      normalizedExplicitFlow === "quickstart" || normalizedExplicitFlow === "advanced"
+        ? normalizedExplicitFlow
+        : undefined;
+    await presentWizardStage(prompter, "environment", { flow: explicitFlow });
     await requireRiskAcknowledgement({ opts, prompter });
 
     const snapshot = await readConfigFileSnapshot();
@@ -191,21 +212,6 @@ export async function runOnboardingWizard(
 
     const quickstartHint = `Configure details later via ${formatCliCommand("marv configure")}.`;
     const manualHint = "Configure port, network, Tailscale, and auth options.";
-    const explicitFlowRaw = opts.flow?.trim();
-    const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;
-    if (
-      normalizedExplicitFlow &&
-      normalizedExplicitFlow !== "quickstart" &&
-      normalizedExplicitFlow !== "advanced"
-    ) {
-      runtime.error("Invalid --flow (use quickstart, manual, or advanced).");
-      runtime.exit(1);
-      return;
-    }
-    const explicitFlow: WizardFlow | undefined =
-      normalizedExplicitFlow === "quickstart" || normalizedExplicitFlow === "advanced"
-        ? normalizedExplicitFlow
-        : undefined;
     let flow: WizardFlow =
       explicitFlow ??
       (await prompter.select({
@@ -428,11 +434,18 @@ export async function runOnboardingWizard(
               },
             ],
           })) as OnboardMode));
+    const stageController = createWizardStageController({
+      prompter,
+      plan: buildWizardStagePlan({ mode }),
+      initialStage: "environment",
+    });
 
     if (mode === "remote") {
+      await stageController.enter("setup", { flow, mode });
       const { promptRemoteGatewayConfig } = await import("../commands/onboard-remote.js");
       const { logConfigUpdated } = await import("../core/config/logging.js");
       let nextConfig = await promptRemoteGatewayConfig(baseConfig, prompter);
+      await stageController.enter("review", { flow, mode });
       nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
       await writeConfigFile(nextConfig);
       logConfigUpdated(runtime);
@@ -447,6 +460,11 @@ export async function runOnboardingWizard(
     let settings;
 
     if (reuseExistingLocalSetup) {
+      await stageController.enter("model", {
+        flow,
+        mode,
+        reuseExistingLocalSetup,
+      });
       await prompter.note(
         "Reusing your existing local model, workspace, gateway, and channel settings.",
         "Using existing setup",
@@ -462,6 +480,7 @@ export async function runOnboardingWizard(
       };
       await validateConfiguredModelEarly({ config: nextConfig, prompter });
     } else {
+      await stageController.enter("model", { flow, mode });
       const { ensureAuthProfileStore } = await import("../agents/auth-profiles.js");
       const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");
       const { promptCustomApiConfig } = await import("../commands/onboard-custom.js");
@@ -525,6 +544,7 @@ export async function runOnboardingWizard(
         await validateConfiguredModelEarly({ config: nextConfig, prompter });
       }
 
+      await stageController.enter("setup", { flow, mode });
       const workspaceInput =
         opts.workspace ??
         (flow === "quickstart"
@@ -580,6 +600,14 @@ export async function runOnboardingWizard(
       }
     }
 
+    if (reuseExistingLocalSetup) {
+      await stageController.enter("setup", {
+        flow,
+        mode,
+        reuseExistingLocalSetup,
+      });
+    }
+
     await writeConfigFile(nextConfig);
     const { logConfigUpdated } = await import("../core/config/logging.js");
     logConfigUpdated(runtime);
@@ -608,6 +636,7 @@ export async function runOnboardingWizard(
     nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });
     await writeConfigFile(nextConfig);
 
+    await stageController.enter("review", { flow, mode });
     const { finalizeOnboardingWizard } = await import("./onboarding.finalize.js");
     const { launchedTui } = await finalizeOnboardingWizard({
       flow,
