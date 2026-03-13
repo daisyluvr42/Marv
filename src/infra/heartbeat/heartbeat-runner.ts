@@ -1200,7 +1200,7 @@ function resolveHeartbeatRunModeVisibility(
     useIndicator: boolean;
   },
   reason: HeartbeatReasonKind,
-): SpecialRunMode["visibility"] {
+): Extract<SpecialRunMode, { kind: "heartbeat" }>["visibility"] {
   if (visibility.showOk || visibility.showAlerts) {
     return "broadcast";
   }
