@@ -1,7 +1,19 @@
 import { Command } from "commander";
 import { describe, expect, it } from "vitest";
+import { BROWSER_CLI_COMMAND_POLICIES } from "./browser-cli.js";
 
 describe("browser CLI --browser-profile flag", () => {
+  it("exports read-only browser command policies next to the browser CLI family", () => {
+    expect(BROWSER_CLI_COMMAND_POLICIES).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "browser:status", sideEffect: "none" }),
+        expect.objectContaining({ key: "browser:console", sideEffect: "none" }),
+        expect.objectContaining({ key: "browser:errors", sideEffect: "none" }),
+        expect.objectContaining({ key: "browser:requests", sideEffect: "none" }),
+      ]),
+    );
+  });
+
   it("parses --browser-profile from parent command options", () => {
     const program = new Command();
     program.name("test");

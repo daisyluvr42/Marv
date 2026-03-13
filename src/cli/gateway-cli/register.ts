@@ -12,7 +12,9 @@ import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { formatTokenCount, formatUsd } from "../../utils/usage-format.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
 import { inheritOptionFromParent } from "../command-options.js";
+import { defineCommandPolicies } from "../command-policy.js";
 import { addGatewayServiceCommands } from "../daemon-cli.js";
+import { defineGatewayServiceCommandPolicies } from "../daemon-cli/register-service-commands.js";
 import { formatHelpExamples } from "../help-format.js";
 import { withProgress } from "../progress.js";
 import { callGatewayCli, gatewayCallOpts } from "./call.js";
@@ -25,6 +27,34 @@ import {
   renderBeaconLines,
 } from "./discover.js";
 import { addGatewayRunCommand } from "./run.js";
+
+export const GATEWAY_CLI_COMMAND_POLICIES = [
+  ...defineGatewayServiceCommandPolicies("gateway"),
+  ...defineCommandPolicies("gateway", [
+    {
+      path: "probe",
+      cliBootstrap: "skip",
+      sideEffect: "none",
+      configValidity: "allow-invalid",
+    },
+    {
+      path: "health",
+      cliBootstrap: "skip",
+      sideEffect: "none",
+      configValidity: "allow-invalid",
+    },
+    {
+      path: "discover",
+      cliBootstrap: "skip",
+      sideEffect: "none",
+      configValidity: "allow-invalid",
+    },
+    {
+      path: "call",
+      configValidity: "allow-invalid",
+    },
+  ]),
+];
 
 function runGatewayCommand(action: () => Promise<void>, label?: string) {
   return runCommandWithRuntime(defaultRuntime, action, (err) => {

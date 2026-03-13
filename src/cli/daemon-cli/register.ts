@@ -1,7 +1,12 @@
 import type { Command } from "commander";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
-import { addGatewayServiceCommands } from "./register-service-commands.js";
+import {
+  addGatewayServiceCommands,
+  defineGatewayServiceCommandPolicies,
+} from "./register-service-commands.js";
+
+export const DAEMON_CLI_COMMAND_POLICIES = defineGatewayServiceCommandPolicies("daemon");
 
 export function registerDaemonCli(program: Command) {
   const daemon = program

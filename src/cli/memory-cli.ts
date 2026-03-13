@@ -24,8 +24,17 @@ import { formatDocsLink } from "../terminal/links.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
 import { shortenHomeInString, shortenHomePath } from "../utils.js";
 import { formatErrorMessage, withManager } from "./cli-utils.js";
+import { defineCommandPolicies } from "./command-policy.js";
 import { formatHelpExamples } from "./help-format.js";
 import { withProgress, withProgressTotals } from "./progress.js";
+
+export const MEMORY_CLI_COMMAND_POLICIES = defineCommandPolicies("memory", [
+  {
+    path: "status",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 type MemoryCommandOptions = {
   agent?: string;

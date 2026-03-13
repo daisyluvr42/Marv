@@ -3,8 +3,22 @@ import { danger } from "../globals.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
+import { defineCommandPolicies } from "./command-policy.js";
 import type { GatewayRpcOpts } from "./gateway-rpc.js";
 import { addGatewayClientOptions, callGatewayFromCli } from "./gateway-rpc.js";
+
+export const SYSTEM_CLI_COMMAND_POLICIES = defineCommandPolicies("system", [
+  {
+    path: "presence",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "heartbeat:last",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 type SystemEventOpts = GatewayRpcOpts & { text?: string; mode?: string; json?: boolean };
 

@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import { inheritOptionFromParent } from "../command-options.js";
+import { defineCommandPolicies } from "../command-policy.js";
 import {
   runDaemonInstall,
   runDaemonRestart,
@@ -9,6 +10,37 @@ import {
   runDaemonUninstall,
 } from "./runners.js";
 import type { DaemonInstallOptions, GatewayRpcOpts } from "./types.js";
+
+export function defineGatewayServiceCommandPolicies(namespace: "daemon" | "gateway") {
+  return defineCommandPolicies(namespace, [
+    {
+      path: "status",
+      cliBootstrap: "skip",
+      sideEffect: "none",
+      configValidity: namespace === "gateway" ? "allow-invalid" : undefined,
+    },
+    {
+      path: "install",
+      configValidity: namespace === "gateway" ? "allow-invalid" : undefined,
+    },
+    {
+      path: "uninstall",
+      configValidity: namespace === "gateway" ? "allow-invalid" : undefined,
+    },
+    {
+      path: "start",
+      configValidity: namespace === "gateway" ? "allow-invalid" : undefined,
+    },
+    {
+      path: "stop",
+      configValidity: namespace === "gateway" ? "allow-invalid" : undefined,
+    },
+    {
+      path: "restart",
+      configValidity: namespace === "gateway" ? "allow-invalid" : undefined,
+    },
+  ]);
+}
 
 function resolveInstallOptions(
   cmdOpts: DaemonInstallOptions,

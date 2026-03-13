@@ -13,9 +13,17 @@ import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
 import { hasExplicitOptions } from "../command-options.js";
+import { defineCommandPolicies } from "../command-policy.js";
 import { createDefaultDeps } from "../deps.js";
 import { formatHelpExamples } from "../help-format.js";
 import { collectOption } from "./helpers.js";
+
+export const AGENT_CLI_COMMAND_POLICIES = defineCommandPolicies("", [
+  {
+    path: "agent",
+    sideEffect: "none",
+  },
+]);
 
 export function registerAgentCommands(program: Command, args: { agentChannelOptions: string }) {
   program

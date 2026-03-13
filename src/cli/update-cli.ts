@@ -3,6 +3,7 @@ import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
 import { inheritOptionFromParent } from "./command-options.js";
+import { defineCommandPolicies } from "./command-policy.js";
 import { formatHelpExamples } from "./help-format.js";
 import { updateRollbackCommand } from "./update-cli/rollback.js";
 import {
@@ -22,6 +23,14 @@ export type {
   UpdateStatusOptions,
   UpdateWizardOptions,
 };
+
+export const UPDATE_CLI_COMMAND_POLICIES = defineCommandPolicies("update", [
+  {
+    path: "status",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 function inheritedUpdateJson(command?: Command): boolean {
   return Boolean(inheritOptionFromParent<boolean>(command, "json"));

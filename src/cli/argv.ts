@@ -1,78 +1,30 @@
+import { CLI_DEFINITION_COMMAND_POLICIES } from "./command-policies.js";
+import {
+  selectCommandPolicyEntries,
+  type CommandCliBootstrap,
+  type CommandConfigValidity,
+  type CommandSideEffect,
+} from "./command-policy.js";
+
 const HELP_FLAGS = new Set(["-h", "--help"]);
 const VERSION_FLAGS = new Set(["-v", "-V", "--version"]);
 const FLAG_TERMINATOR = "--";
-const COMMAND_CLI_BOOTSTRAP = new Map<string, CommandCliBootstrap>([
-  ["status", "skip"],
-  ["health", "skip"],
-  ["sessions", "skip"],
-  ["logs", "skip"],
-  ["config:get", "skip"],
-  ["config:unset", "skip"],
-  ["config:validate", "skip"],
-  ["gateway:status", "skip"],
-  ["gateway:probe", "skip"],
-  ["gateway:health", "skip"],
-  ["gateway:discover", "skip"],
-  ["models:list", "skip"],
-  ["models:status", "skip"],
-  ["memory:status", "skip"],
-  ["browser:status", "skip"],
-  ["browser:console", "skip"],
-  ["browser:errors", "skip"],
-  ["browser:requests", "skip"],
-  ["daemon:status", "skip"],
-  ["update:status", "skip"],
-  ["system:presence", "skip"],
-  ["system:heartbeat:last", "skip"],
-]);
-const COMMAND_SIDE_EFFECTS = new Map<string, CommandSideEffect>([
-  ["logs", "none"],
-  ["status", "none"],
-  ["health", "none"],
-  ["sessions", "none"],
-  ["config:get", "none"],
-  ["config:validate", "none"],
-  ["config:unset", "none"],
-  ["gateway:status", "none"],
-  ["gateway:probe", "none"],
-  ["gateway:health", "none"],
-  ["gateway:discover", "none"],
-  ["models:list", "none"],
-  ["models:status", "none"],
-  ["memory:status", "none"],
-  ["browser:status", "none"],
-  ["browser:console", "none"],
-  ["browser:errors", "none"],
-  ["browser:requests", "none"],
-  ["daemon:status", "none"],
-  ["update:status", "none"],
-  ["system:presence", "none"],
-  ["system:heartbeat:last", "none"],
-  ["agent", "none"],
-]);
+const COMMAND_CLI_BOOTSTRAP = new Map<string, CommandCliBootstrap>(
+  selectCommandPolicyEntries(CLI_DEFINITION_COMMAND_POLICIES, "cliBootstrap"),
+);
+const COMMAND_SIDE_EFFECTS = new Map<string, CommandSideEffect>(
+  selectCommandPolicyEntries(CLI_DEFINITION_COMMAND_POLICIES, "sideEffect"),
+);
 const COMMAND_CONFIG_VALIDITY = new Map<string, CommandConfigValidity>([
   ["doctor", "allow-invalid"],
-  ["logs", "allow-invalid"],
-  ["health", "allow-invalid"],
   ["help", "allow-invalid"],
-  ["status", "allow-invalid"],
-  ["config:get", "allow-invalid"],
-  ["config:validate", "allow-invalid"],
-  ["gateway:status", "allow-invalid"],
-  ["gateway:probe", "allow-invalid"],
-  ["gateway:health", "allow-invalid"],
-  ["gateway:discover", "allow-invalid"],
-  ["gateway:call", "allow-invalid"],
-  ["gateway:install", "allow-invalid"],
-  ["gateway:uninstall", "allow-invalid"],
-  ["gateway:start", "allow-invalid"],
-  ["gateway:stop", "allow-invalid"],
-  ["gateway:restart", "allow-invalid"],
+  ...selectCommandPolicyEntries(CLI_DEFINITION_COMMAND_POLICIES, "configValidity"),
 ]);
-
-export type CommandCliBootstrap = "skip" | "require";
-export type CommandSideEffect = "none" | "state-migrate";
-export type CommandConfigValidity = "require-valid" | "allow-invalid";
+export type {
+  CommandCliBootstrap,
+  CommandConfigValidity,
+  CommandSideEffect,
+} from "./command-policy.js";
 
 export function hasHelpOrVersion(argv: string[]): boolean {
   return argv.some((arg) => HELP_FLAGS.has(arg) || VERSION_FLAGS.has(arg));

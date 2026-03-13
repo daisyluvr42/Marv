@@ -12,6 +12,15 @@ import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
 import { callBrowserRequest, type BrowserParentOpts } from "./browser-cli-shared.js";
 import { runCommandWithRuntime } from "./cli-utils.js";
+import { defineCommandPolicies } from "./command-policy.js";
+
+export const BROWSER_MANAGE_COMMAND_POLICIES = defineCommandPolicies("browser", [
+  {
+    path: "status",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 async function fetchBrowserStatus(
   parent: BrowserParentOpts,

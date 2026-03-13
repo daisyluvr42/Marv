@@ -30,6 +30,20 @@ import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
 import { resolveOptionFromCommand, runCommandWithRuntime } from "./cli-utils.js";
+import { defineCommandPolicies } from "./command-policy.js";
+
+export const MODELS_CLI_COMMAND_POLICIES = defineCommandPolicies("models", [
+  {
+    path: "list",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "status",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 function runModelsCommand(action: () => Promise<void>) {
   return runCommandWithRuntime(defaultRuntime, action);

@@ -7,8 +7,29 @@ import { defaultRuntime } from "../../runtime.js";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
+import { defineCommandPolicies } from "../command-policy.js";
 import { formatHelpExamples } from "../help-format.js";
 import { parsePositiveIntOrUndefined } from "./helpers.js";
+
+export const STATUS_HEALTH_SESSIONS_COMMAND_POLICIES = defineCommandPolicies("", [
+  {
+    path: "status",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+    configValidity: "allow-invalid",
+  },
+  {
+    path: "health",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+    configValidity: "allow-invalid",
+  },
+  {
+    path: "sessions",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 function resolveVerbose(opts: { verbose?: boolean; debug?: boolean }): boolean {
   return Boolean(opts.verbose || opts.debug);

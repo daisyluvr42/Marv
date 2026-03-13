@@ -8,7 +8,17 @@ import { clearActiveProgressLine } from "../terminal/progress-line.js";
 import { createSafeStreamWriter } from "../terminal/stream-writer.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
 import { formatCliCommand } from "./command-format.js";
+import { defineCommandPolicies } from "./command-policy.js";
 import { addGatewayClientOptions, callGatewayFromCli } from "./gateway-rpc.js";
+
+export const LOGS_CLI_COMMAND_POLICIES = defineCommandPolicies("", [
+  {
+    path: "logs",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+    configValidity: "allow-invalid",
+  },
+]);
 
 type LogsTailPayload = {
   file?: string;

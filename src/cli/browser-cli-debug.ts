@@ -4,6 +4,20 @@ import { defaultRuntime } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
 import { callBrowserRequest, type BrowserParentOpts } from "./browser-cli-shared.js";
 import { runCommandWithRuntime } from "./cli-utils.js";
+import { defineCommandPolicies } from "./command-policy.js";
+
+export const BROWSER_DEBUG_COMMAND_POLICIES = defineCommandPolicies("browser", [
+  {
+    path: "errors",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "requests",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+]);
 
 function runBrowserDebug(action: () => Promise<void>) {
   return runCommandWithRuntime(defaultRuntime, action, (err) => {

@@ -8,6 +8,27 @@ import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
 import { shortenHomePath } from "../utils.js";
 import { formatCliCommand } from "./command-format.js";
+import { defineCommandPolicies } from "./command-policy.js";
+
+export const CONFIG_CLI_COMMAND_POLICIES = defineCommandPolicies("config", [
+  {
+    path: "get",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+    configValidity: "allow-invalid",
+  },
+  {
+    path: "unset",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "validate",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+    configValidity: "allow-invalid",
+  },
+]);
 
 type PathSegment = string;
 
