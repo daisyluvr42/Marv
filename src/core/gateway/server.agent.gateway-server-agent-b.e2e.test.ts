@@ -8,6 +8,7 @@ import { BARE_SESSION_RESET_PROMPT } from "../../auto-reply/reply/session-reset-
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
+import { GATEWAY_CLIENT_CAPS } from "./protocol/client-info.js";
 import { setRegistry } from "./server.agent.gateway-server-agent.mocks.js";
 import { createRegistry } from "./server.e2e-registry-helpers.js";
 import {
@@ -411,5 +412,96 @@ describe("gateway server agent", () => {
     expect(payload.runId).toBe("run-auto-1");
 
     webchatWs.close();
+  });
+
+  test("agent tool events stream to CLI clients with tool-events capability", async () => {
+    const cliWs = new WebSocket(`ws://127.0.0.1:${port}`);
+    await new Promise<void>((resolve) => cliWs.once("open", resolve));
+    await connectOk(cliWs, {
+      client: {
+        id: GATEWAY_CLIENT_NAMES.CLI,
+        version: "1.0.0",
+        platform: "test",
+        mode: GATEWAY_CLIENT_MODES.CLI,
+      },
+      caps: [GATEWAY_CLIENT_CAPS.TOOL_EVENTS],
+    });
+
+    const reqId = "ag-cli-tool";
+    const runId = "idem-agent-cli-tool";
+    const acceptedP = onceMessage(
+      cliWs,
+      (o) => o.type === "res" && o.id === reqId && o.payload?.status === "accepted",
+    );
+    const toolEventP = onceMessage(
+      cliWs,
+      (o) => {
+        if (o.type !== "event" || o.event !== "agent") {
+          return false;
+        }
+        const payload = o.payload as
+          | {
+              runId?: unknown;
+              stream?: unknown;
+              data?: { phase?: unknown; name?: unknown; result?: unknown; partialResult?: unknown };
+            }
+          | undefined;
+        return payload?.runId === runId && payload.stream === "tool";
+      },
+      8000,
+    );
+
+    cliWs.send(
+      JSON.stringify({
+        type: "req",
+        id: reqId,
+        method: "agent",
+        params: {
+          message: "trace tool events",
+          sessionKey: "main",
+          idempotencyKey: runId,
+        },
+      }),
+    );
+
+    await acceptedP;
+
+    emitAgentEvent({
+      runId,
+      stream: "tool",
+      data: {
+        phase: "result",
+        name: "read",
+        toolCallId: "tool-1",
+        result: { content: [{ type: "text", text: "secret" }] },
+        partialResult: { content: [{ type: "text", text: "partial" }] },
+      },
+    });
+
+    const evt = await toolEventP;
+    const payload = evt.payload as {
+      runId: string;
+      stream: string;
+      sessionKey?: string;
+      data?: {
+        phase?: string;
+        name?: string;
+        toolCallId?: string;
+        result?: unknown;
+        partialResult?: unknown;
+      };
+    };
+    expect(payload.runId).toBe(runId);
+    expect(payload.stream).toBe("tool");
+    expect(payload.sessionKey).toBeDefined();
+    expect(payload.data).toMatchObject({
+      phase: "result",
+      name: "read",
+      toolCallId: "tool-1",
+    });
+    expect(payload.data?.result).toBeUndefined();
+    expect(payload.data?.partialResult).toBeUndefined();
+
+    cliWs.close();
   });
 });
