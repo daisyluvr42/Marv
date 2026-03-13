@@ -107,6 +107,39 @@ describe("trigger handling", () => {
     });
   });
 
+  it("uses heartbeat model override when heartbeat semantics come from runMode", async () => {
+    await withTempHome(async (home) => {
+      const runEmbeddedPiAgentMock = mockEmbeddedOkPayload();
+      const cfg = makeCfg(home);
+      await writeStoredModelOverride(cfg);
+      cfg.agents = {
+        ...cfg.agents,
+        defaults: {
+          ...cfg.agents?.defaults,
+          heartbeat: { model: "anthropic/claude-haiku-4-5-20251001" },
+        },
+      };
+
+      await getReplyFromConfig(
+        BASE_MESSAGE,
+        {
+          runMode: {
+            kind: "heartbeat",
+            reason: "cron",
+            ackToken: HEARTBEAT_TOKEN,
+            maxAckChars: 300,
+            visibility: "hidden",
+          },
+        },
+        cfg,
+      );
+
+      const call = runEmbeddedPiAgentMock.mock.calls[0]?.[0];
+      expect(call?.provider).toBe("anthropic");
+      expect(call?.model).toBe("claude-haiku-4-5-20251001");
+    });
+  });
+
   it("suppresses HEARTBEAT_OK replies outside heartbeat runs", async () => {
     await withTempHome(async (home) => {
       const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();

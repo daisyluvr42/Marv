@@ -217,7 +217,10 @@ export { logAckFailure, logInboundDrop, logTypingFailure } from "../channels/log
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
 export type { NormalizedLocation } from "../channels/location.js";
 export { formatLocationText, toLocationContext } from "../channels/location.js";
-export { resolveControlCommandGate } from "../channels/command-gating.js";
+export {
+  CHANNEL_POLICY_CONTRACT_VERSION,
+  resolveControlCommandGate,
+} from "../channels/command-gating.js";
 export {
   resolveBlueBubblesGroupRequireMention,
   resolveDiscordGroupRequireMention,

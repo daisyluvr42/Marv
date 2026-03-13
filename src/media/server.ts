@@ -1,5 +1,7 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import type { Server } from "node:http";
+import path from "node:path";
 import express, { type Express } from "express";
 import { danger } from "../globals.js";
 import { SafeOpenError, openFileWithinRoot } from "../infra/fs-safe.js";
@@ -11,6 +13,8 @@ const DEFAULT_TTL_MS = 2 * 60 * 1000;
 const MAX_MEDIA_ID_CHARS = 200;
 const MEDIA_ID_PATTERN = /^[\p{L}\p{N}._-]+$/u;
 const MAX_MEDIA_BYTES = MEDIA_MAX_BYTES;
+const HEALTH_PATH = "/media/__health";
+const HEALTH_TOKEN_FILE = ".server-token";
 
 const isValidMediaId = (id: string) => {
   if (!id) {
@@ -31,6 +35,15 @@ export function attachMediaRoutes(
   _runtime: RuntimeEnv = defaultRuntime,
 ) {
   const mediaDir = getMediaDir();
+
+  app.get(HEALTH_PATH, async (_req, res) => {
+    const token = await readMediaServerToken().catch(() => null);
+    if (!token) {
+      res.status(503).json({ ok: false });
+      return;
+    }
+    res.json({ ok: true, token });
+  });
 
   app.get("/media/:id", async (req, res) => {
     const id = req.params.id;
@@ -100,6 +113,7 @@ export async function startMediaServer(
   runtime: RuntimeEnv = defaultRuntime,
 ): Promise<Server> {
   const app = express();
+  await writeMediaServerToken(crypto.randomUUID());
   attachMediaRoutes(app, ttlMs, runtime);
   return await new Promise((resolve, reject) => {
     const server = app.listen(port, "127.0.0.1");
@@ -109,4 +123,48 @@ export async function startMediaServer(
       reject(err);
     });
   });
+}
+
+export function getMediaServerHealthPath() {
+  return HEALTH_PATH;
+}
+
+export async function readMediaServerToken(): Promise<string | null> {
+  const token = await fs.readFile(pathJoinMediaDir(HEALTH_TOKEN_FILE), "utf8").catch(() => null);
+  const trimmed = token?.trim();
+  return trimmed ? trimmed : null;
+}
+
+export async function probeMediaServerIdentity(
+  port: number,
+  expectedToken: string,
+): Promise<boolean> {
+  if (!expectedToken.trim()) {
+    return false;
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1_000);
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}${HEALTH_PATH}`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      return false;
+    }
+    const payload = (await res.json().catch(() => null)) as { token?: unknown } | null;
+    return payload?.token === expectedToken;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function writeMediaServerToken(token: string): Promise<void> {
+  await fs.mkdir(getMediaDir(), { recursive: true, mode: 0o700 });
+  await fs.writeFile(pathJoinMediaDir(HEALTH_TOKEN_FILE), token, { mode: 0o600 });
+}
+
+function pathJoinMediaDir(file: string): string {
+  return path.join(getMediaDir(), file);
 }

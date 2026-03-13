@@ -1,15 +1,16 @@
 export function extractLastJsonObject(raw: string): unknown {
   const trimmed = raw.trim();
-  const start = trimmed.lastIndexOf("{");
-  if (start === -1) {
-    return null;
+  for (let start = trimmed.length - 1; start >= 0; start -= 1) {
+    if (trimmed[start] !== "{") {
+      continue;
+    }
+    try {
+      return JSON.parse(trimmed.slice(start));
+    } catch {
+      continue;
+    }
   }
-  const slice = trimmed.slice(start);
-  try {
-    return JSON.parse(slice);
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function extractGeminiResponse(raw: string): string | null {

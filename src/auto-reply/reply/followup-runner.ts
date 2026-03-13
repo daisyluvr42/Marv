@@ -11,6 +11,7 @@ import { defaultRuntime } from "../../runtime.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import type { OriginatingChannelType } from "../templating.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
+import { isHeartbeatRun, resolveReplyAckBehavior } from "../types.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveRunAuthProfile } from "./agent-runner-utils.js";
 import type { FollowupRun } from "./queue.js";
@@ -51,8 +52,9 @@ export function createFollowupRunner(params: {
   const typingSignals = createTypingSignaler({
     typing,
     mode: typingMode,
-    isHeartbeat: opts?.isHeartbeat === true,
+    isHeartbeat: isHeartbeatRun(opts),
   });
+  const ackBehavior = resolveReplyAckBehavior(opts);
 
   /**
    * Sends followup payloads, routing to the originating channel if set.
@@ -118,6 +120,7 @@ export function createFollowupRunner(params: {
         registerAgentRunContext(runId, {
           sessionKey: queued.run.sessionKey,
           verboseLevel: queued.run.verboseLevel,
+          runModeKind: "followup",
         });
       }
       let autoCompactionCompleted = false;
@@ -221,10 +224,15 @@ export function createFollowupRunner(params: {
       }
       const sanitizedPayloads = payloadArray.flatMap((payload) => {
         const text = payload.text;
-        if (!text || !text.includes("HEARTBEAT_OK")) {
+        const ackToken = ackBehavior?.token ?? "HEARTBEAT_OK";
+        if (!text || !text.includes(ackToken)) {
           return [payload];
         }
-        const stripped = stripHeartbeatToken(text, { mode: "message" });
+        const stripped = stripHeartbeatToken(text, {
+          mode: "message",
+          token: ackBehavior?.token,
+          maxAckChars: ackBehavior?.maxAckChars,
+        });
         const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
         if (stripped.shouldSkip && !hasMedia) {
           return [];

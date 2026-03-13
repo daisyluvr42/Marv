@@ -176,4 +176,41 @@ describe("buildInboundMediaNote", () => {
     // No transcription = keep audio attachment as fallback
     expect(note).toBe("[media attached: /tmp/voice.ogg (audio/ogg)]");
   });
+
+  it("prefers multimodal routing prompt media when available", () => {
+    const note = buildInboundMediaNote({
+      MediaPaths: ["/tmp/legacy.png"],
+      MultimodalRouting: {
+        promptMedia: [
+          {
+            attachmentIndex: 0,
+            kind: "image",
+            source: "native",
+            path: "/tmp/routed.png",
+            url: "https://example.com/routed.png",
+            contentType: "image/png",
+          },
+        ],
+        derivedText: {},
+        decisions: [],
+        settled: true,
+      },
+    });
+    expect(note).toBe(
+      "[media attached: /tmp/routed.png (image/png) | https://example.com/routed.png]",
+    );
+  });
+
+  it("respects an empty multimodal routing contract as an intentional suppression", () => {
+    const note = buildInboundMediaNote({
+      MediaPaths: ["/tmp/a.png"],
+      MultimodalRouting: {
+        promptMedia: [],
+        derivedText: {},
+        decisions: [],
+        settled: true,
+      },
+    });
+    expect(note).toBeUndefined();
+  });
 });

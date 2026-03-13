@@ -3,6 +3,7 @@ import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
 import type { SkillCommandSpec } from "../agents/skills.js";
 import type { MarvConfig } from "../core/config/types.js";
 import { escapeRegExp } from "../utils.js";
+import { renderKnownCommandArgs } from "./commands-args.js";
 import { getChatCommands, getNativeCommandSurfaces } from "./commands-registry.data.js";
 import type {
   ChatCommandDefinition,
@@ -272,6 +273,10 @@ export function serializeCommandArgs(
   }
   if (command.formatArgs) {
     return command.formatArgs(args.values);
+  }
+  const contractRendered = renderKnownCommandArgs(command.key, args.values);
+  if (contractRendered) {
+    return contractRendered;
   }
   return formatPositionalArgs(command.args, args.values);
 }

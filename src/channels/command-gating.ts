@@ -1,3 +1,5 @@
+export const CHANNEL_POLICY_CONTRACT_VERSION = 1;
+
 export type CommandAuthorizer = {
   configured: boolean;
   allowed: boolean;

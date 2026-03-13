@@ -39,6 +39,7 @@ import {
   type VerboseLevel,
 } from "../thinking.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
+import { isHeartbeatRun } from "../types.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
@@ -227,7 +228,7 @@ export async function runPreparedReply(
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
   const isGroupChat = sessionCtx.ChatType === "group";
   const wasMentioned = ctx.WasMentioned === true;
-  const isHeartbeat = opts?.isHeartbeat === true;
+  const isHeartbeat = isHeartbeatRun(opts);
   const typingMode = resolveTypingMode({
     configured: sessionCfg?.typingMode ?? agentCfg?.typingMode,
     isGroupChat,
@@ -310,8 +311,13 @@ export async function runPreparedReply(
     ? baseBodyFinal
     : [inboundUserContext, baseBodyFinal].filter(Boolean).join("\n\n");
   const baseBodyTrimmed = baseBodyForPrompt.trim();
+  const hasPromptMediaAttachment = Boolean(
+    (ctx.MultimodalRouting?.promptMedia ?? ctx.PromptMedia ?? []).length > 0,
+  );
   const hasMediaAttachment = Boolean(
-    sessionCtx.MediaPath || (sessionCtx.MediaPaths && sessionCtx.MediaPaths.length > 0),
+    hasPromptMediaAttachment ||
+    sessionCtx.MediaPath ||
+    (sessionCtx.MediaPaths && sessionCtx.MediaPaths.length > 0),
   );
   if (!baseBodyTrimmed && !hasMediaAttachment) {
     await typing.onReplyStart();

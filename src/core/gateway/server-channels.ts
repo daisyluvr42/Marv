@@ -5,7 +5,7 @@ import {
   listChannelPlugins,
 } from "../../channels/plugins/index.js";
 import type { ChannelAccountSnapshot } from "../../channels/plugins/types.js";
-import { type BackoffPolicy, computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
+import { computeBackoff, resolveBackoffPolicy, sleepWithAbort } from "../../infra/backoff.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { resetDirectoryCache } from "../../infra/outbound/target-resolver.js";
 import type { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -13,12 +13,7 @@ import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { MarvConfig } from "../config/config.js";
 
-const CHANNEL_RESTART_POLICY: BackoffPolicy = {
-  initialMs: 5_000,
-  maxMs: 5 * 60_000,
-  factor: 2,
-  jitter: 0.1,
-};
+const CHANNEL_RESTART_POLICY = resolveBackoffPolicy("channelRestart");
 const MAX_RESTART_ATTEMPTS = 10;
 
 export type ChannelRuntimeSnapshot = {

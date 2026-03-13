@@ -81,4 +81,5 @@ export {
   type AllowlistMatch,
   type AllowlistMatchSource,
 } from "./allowlist-match.js";
+export { CHANNEL_POLICY_CONTRACT_VERSION } from "../command-gating.js";
 export type { ChannelId, ChannelPlugin } from "./types.js";

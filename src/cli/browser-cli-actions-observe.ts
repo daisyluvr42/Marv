@@ -12,6 +12,30 @@ function runBrowserObserve(action: () => Promise<void>) {
   });
 }
 
+type ConsoleMessageShape = {
+  timestamp?: string;
+  type?: string;
+  text?: string;
+  location?: {
+    url?: string;
+    lineNumber?: number;
+    columnNumber?: number;
+  };
+};
+
+function formatConsoleMessage(message: unknown) {
+  if (!message || typeof message !== "object") {
+    return JSON.stringify(message);
+  }
+  const typed = message as ConsoleMessageShape;
+  const location = typed.location?.url
+    ? ` @ ${typed.location.url}${typeof typed.location.lineNumber === "number" ? `:${typed.location.lineNumber}` : ""}${typeof typed.location.columnNumber === "number" ? `:${typed.location.columnNumber}` : ""}`
+    : "";
+  const prefix = [typed.timestamp, typed.type].filter(Boolean).join(" ");
+  const text = typed.text?.trim() || JSON.stringify(message);
+  return `${prefix}${prefix ? " " : ""}${text}${location}`;
+}
+
 export function registerBrowserActionObserveCommands(
   browser: Command,
   parentOpts: (cmd: Command) => BrowserParentOpts,
@@ -42,7 +66,13 @@ export function registerBrowserActionObserveCommands(
           defaultRuntime.log(JSON.stringify(result, null, 2));
           return;
         }
-        defaultRuntime.log(JSON.stringify(result.messages, null, 2));
+        if (!result.messages.length) {
+          defaultRuntime.log("No console messages.");
+          return;
+        }
+        defaultRuntime.log(
+          result.messages.map((message) => formatConsoleMessage(message)).join("\n"),
+        );
       });
     });
 

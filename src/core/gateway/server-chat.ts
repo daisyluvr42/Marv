@@ -1,6 +1,10 @@
 import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
-import { type AgentEventPayload, getAgentRunContext } from "../../infra/agent-events.js";
+import {
+  type AgentEventPayload,
+  getAgentRunContext,
+  isHeartbeatRunContext,
+} from "../../infra/agent-events.js";
 import { resolveHeartbeatVisibility } from "../../infra/heartbeat/heartbeat-visibility.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionEntry } from "./session-utils.js";
@@ -12,7 +16,7 @@ import { formatForLog } from "./ws-log.js";
  */
 function shouldSuppressHeartbeatBroadcast(runId: string): boolean {
   const runContext = getAgentRunContext(runId);
-  if (!runContext?.isHeartbeat) {
+  if (!isHeartbeatRunContext(runContext)) {
     return false;
   }
 

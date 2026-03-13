@@ -1,3 +1,4 @@
+import { renderCommandArgs, type CommandArgRenderer } from "../contracts/command-render.js";
 import type { CommandArgValues } from "./commands-registry.types.js";
 
 export type CommandArgsFormatter = (values: CommandArgValues) => string | undefined;
@@ -128,3 +129,21 @@ export const COMMAND_ARG_FORMATTERS: Record<string, CommandArgsFormatter> = {
   queue: formatQueueArgs,
   exec: formatExecArgs,
 };
+
+export const COMMAND_ARG_RENDERERS: Record<string, CommandArgRenderer> = Object.fromEntries(
+  Object.entries(COMMAND_ARG_FORMATTERS).map(([name, formatter]) => [
+    name,
+    ({ values }) => formatter(values),
+  ]),
+) as Record<string, CommandArgRenderer>;
+
+export function renderKnownCommandArgs(
+  commandName: string,
+  values: CommandArgValues,
+): string | undefined {
+  return renderCommandArgs({
+    commandName,
+    values,
+    renderers: COMMAND_ARG_RENDERERS,
+  });
+}

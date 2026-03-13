@@ -38,6 +38,18 @@ describe("ensureConfigReady", () => {
     vi.resetModules();
     const { ensureConfigReady } = await import("./config-guard.js");
     await ensureConfigReady({ runtime: makeRuntime() as never, commandPath: ["status"] });
+    await ensureConfigReady({
+      runtime: makeRuntime() as never,
+      commandPath: ["config", "validate"],
+    });
+    await ensureConfigReady({
+      runtime: makeRuntime() as never,
+      commandPath: ["gateway", "status"],
+    });
+    await ensureConfigReady({
+      runtime: makeRuntime() as never,
+      commandPath: ["system", "heartbeat", "last"],
+    });
     expect(loadAndMaybeMigrateDoctorConfigMock).not.toHaveBeenCalled();
   });
 
@@ -46,5 +58,48 @@ describe("ensureConfigReady", () => {
     const { ensureConfigReady } = await import("./config-guard.js");
     await ensureConfigReady({ runtime: makeRuntime() as never, commandPath: ["message"] });
     expect(loadAndMaybeMigrateDoctorConfigMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows invalid config for declaratively whitelisted gateway probes", async () => {
+    vi.resetModules();
+    readConfigFileSnapshotMock.mockResolvedValue({
+      ...makeSnapshot(),
+      exists: true,
+      valid: false,
+      issues: [{ path: "gateway.port", message: "bad" }],
+    });
+    const runtime = makeRuntime();
+    const { ensureConfigReady } = await import("./config-guard.js");
+    await ensureConfigReady({ runtime: runtime as never, commandPath: ["gateway", "probe"] });
+    expect(runtime.exit).not.toHaveBeenCalled();
+  });
+
+  it("allows invalid config for config inspection and validation commands", async () => {
+    vi.resetModules();
+    readConfigFileSnapshotMock.mockResolvedValue({
+      ...makeSnapshot(),
+      exists: true,
+      valid: false,
+      issues: [{ path: "gateway.port", message: "bad" }],
+    });
+    const runtime = makeRuntime();
+    const { ensureConfigReady } = await import("./config-guard.js");
+    await ensureConfigReady({ runtime: runtime as never, commandPath: ["config", "get"] });
+    await ensureConfigReady({ runtime: runtime as never, commandPath: ["config", "validate"] });
+    expect(runtime.exit).not.toHaveBeenCalled();
+  });
+
+  it("still blocks invalid config for commands that require a valid config", async () => {
+    vi.resetModules();
+    readConfigFileSnapshotMock.mockResolvedValue({
+      ...makeSnapshot(),
+      exists: true,
+      valid: false,
+      issues: [{ path: "gateway.port", message: "bad" }],
+    });
+    const runtime = makeRuntime();
+    const { ensureConfigReady } = await import("./config-guard.js");
+    await ensureConfigReady({ runtime: runtime as never, commandPath: ["message", "send"] });
+    expect(runtime.exit).toHaveBeenCalledWith(1);
   });
 });

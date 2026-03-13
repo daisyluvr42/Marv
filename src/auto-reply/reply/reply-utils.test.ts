@@ -114,6 +114,17 @@ describe("normalizeReplyPayload", () => {
     expect(normalized).toBeNull();
     expect(reasons).toEqual(["empty"]);
   });
+
+  it("strips custom heartbeat tokens when configured", () => {
+    const normalized = normalizeReplyPayload(
+      { text: "MAINT_OK all good" },
+      {
+        heartbeatToken: "MAINT_OK",
+      },
+    );
+
+    expect(normalized?.text).toBe("all good");
+  });
 });
 
 describe("typing controller", () => {

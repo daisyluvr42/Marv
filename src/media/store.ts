@@ -5,6 +5,7 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+import type { MediaRefLifecycle, MediaRefScope, StoredMediaRef } from "../contracts/media-ref.js";
 import { resolvePinnedHostname } from "../infra/net/ssrf.js";
 import { resolveConfigDir } from "../utils.js";
 import { detectMime, extensionForMime } from "./mime.js";
@@ -13,6 +14,7 @@ const resolveMediaDir = () => path.join(resolveConfigDir(), "media");
 export const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB default
 const MAX_BYTES = MEDIA_MAX_BYTES;
 const DEFAULT_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const MEDIA_SERVER_TOKEN_FILE = ".server-token";
 type RequestImpl = typeof httpRequest;
 type ResolvePinnedHostnameImpl = typeof resolvePinnedHostname;
 
@@ -97,6 +99,9 @@ export async function cleanOldMedia(ttlMs = DEFAULT_TTL_MS) {
         if (!stat || !stat.isFile()) {
           return;
         }
+        if (entry === MEDIA_SERVER_TOKEN_FILE) {
+          return;
+        }
         if (now - stat.mtimeMs > ttlMs) {
           await fs.rm(full).catch(() => {});
         }
@@ -113,6 +118,9 @@ export async function cleanOldMedia(ttlMs = DEFAULT_TTL_MS) {
       }
       if (stat.isDirectory()) {
         await removeExpiredFilesInDir(full);
+        return;
+      }
+      if (file === MEDIA_SERVER_TOKEN_FILE) {
         return;
       }
       if (stat.isFile() && now - stat.mtimeMs > ttlMs) {
@@ -200,36 +208,66 @@ async function downloadToFile(
   });
 }
 
-export type SavedMedia = {
-  id: string;
-  path: string;
-  size: number;
-  contentType?: string;
+export type SavedMedia = StoredMediaRef;
+
+type SaveMediaMetadata = {
+  scope?: MediaRefScope;
+  lifecycle?: MediaRefLifecycle;
 };
+
+function resolveStoredMediaMetadata(
+  subdir: string,
+  metadata?: SaveMediaMetadata,
+): Required<SaveMediaMetadata> {
+  const normalizedSubdir = subdir.trim().toLowerCase();
+  const inferredScope =
+    normalizedSubdir === "inbound"
+      ? "inbound"
+      : normalizedSubdir === "outbound"
+        ? "outbound"
+        : normalizedSubdir === "browser"
+          ? "browser"
+          : normalizedSubdir.startsWith("plugin")
+            ? "plugin"
+            : "transient";
+  const inferredLifecycle =
+    normalizedSubdir === "outbound" ? "hosted" : normalizedSubdir ? "session" : "transient";
+  return {
+    scope: metadata?.scope ?? inferredScope,
+    lifecycle: metadata?.lifecycle ?? inferredLifecycle,
+  };
+}
 
 export async function saveMediaSource(
   source: string,
   headers?: Record<string, string>,
   subdir = "",
+  metadata?: SaveMediaMetadata,
 ): Promise<SavedMedia> {
   const baseDir = resolveMediaDir();
   const dir = subdir ? path.join(baseDir, subdir) : baseDir;
+  const mediaMetadata = resolveStoredMediaMetadata(subdir, metadata);
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   await cleanOldMedia();
   const baseId = crypto.randomUUID();
   if (looksLikeUrl(source)) {
     const tempDest = path.join(dir, `${baseId}.tmp`);
-    const { headerMime, sniffBuffer, size } = await downloadToFile(source, tempDest, headers);
-    const mime = await detectMime({
-      buffer: sniffBuffer,
-      headerMime,
-      filePath: source,
-    });
-    const ext = extensionForMime(mime) ?? path.extname(new URL(source).pathname);
-    const id = ext ? `${baseId}${ext}` : baseId;
-    const finalDest = path.join(dir, id);
-    await fs.rename(tempDest, finalDest);
-    return { id, path: finalDest, size, contentType: mime };
+    try {
+      const { headerMime, sniffBuffer, size } = await downloadToFile(source, tempDest, headers);
+      const mime = await detectMime({
+        buffer: sniffBuffer,
+        headerMime,
+        filePath: source,
+      });
+      const ext = extensionForMime(mime) ?? path.extname(new URL(source).pathname);
+      const id = ext ? `${baseId}${ext}` : baseId;
+      const finalDest = path.join(dir, id);
+      await fs.rename(tempDest, finalDest);
+      return { id, path: finalDest, size, contentType: mime, ...mediaMetadata };
+    } catch (err) {
+      await fs.rm(tempDest, { force: true }).catch(() => {});
+      throw err;
+    }
   }
   // local path
   const stat = await fs.stat(source);
@@ -245,7 +283,7 @@ export async function saveMediaSource(
   const id = ext ? `${baseId}${ext}` : baseId;
   const dest = path.join(dir, id);
   await fs.writeFile(dest, buffer, { mode: 0o600 });
-  return { id, path: dest, size: stat.size, contentType: mime };
+  return { id, path: dest, size: stat.size, contentType: mime, ...mediaMetadata };
 }
 
 export async function saveMediaBuffer(
@@ -254,11 +292,13 @@ export async function saveMediaBuffer(
   subdir = "inbound",
   maxBytes = MAX_BYTES,
   originalFilename?: string,
+  metadata?: SaveMediaMetadata,
 ): Promise<SavedMedia> {
   if (buffer.byteLength > maxBytes) {
     throw new Error(`Media exceeds ${(maxBytes / (1024 * 1024)).toFixed(0)}MB limit`);
   }
   const dir = path.join(resolveMediaDir(), subdir);
+  const mediaMetadata = resolveStoredMediaMetadata(subdir, metadata);
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   const uuid = crypto.randomUUID();
   const headerExt = extensionForMime(contentType?.split(";")[0]?.trim() ?? undefined);
@@ -278,5 +318,5 @@ export async function saveMediaBuffer(
 
   const dest = path.join(dir, id);
   await fs.writeFile(dest, buffer, { mode: 0o600 });
-  return { id, path: dest, size: buffer.byteLength, contentType: mime };
+  return { id, path: dest, size: buffer.byteLength, contentType: mime, ...mediaMetadata };
 }

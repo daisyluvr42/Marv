@@ -113,7 +113,12 @@ describe("shouldEnsureCliPath", () => {
     expect(shouldEnsureCliPath(["node", "marv", "status"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "marv", "sessions", "--json"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "marv", "config", "get", "update"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "marv", "config", "validate"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "marv", "models", "status", "--json"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "marv", "memory", "status"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "marv", "browser", "console"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "marv", "system", "heartbeat", "last"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "marv", "update", "status"])).toBe(false);
   });
 
   it("keeps path bootstrap for mutating or unknown commands", () => {

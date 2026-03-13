@@ -22,6 +22,7 @@ import type { ReplyPayload } from "../../auto-reply/types.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelHeartbeatDeps } from "../../channels/plugins/types.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
+import type { SpecialRunMode } from "../../contracts/run-mode.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import {
@@ -56,7 +57,7 @@ import {
   isExecCompletionEvent,
 } from "./heartbeat-events-filter.js";
 import { emitHeartbeatEvent, resolveIndicatorType } from "./heartbeat-events.js";
-import { resolveHeartbeatReasonKind } from "./heartbeat-reason.js";
+import { resolveHeartbeatReasonKind, type HeartbeatReasonKind } from "./heartbeat-reason.js";
 import { resolveHeartbeatVisibility } from "./heartbeat-visibility.js";
 import {
   type HeartbeatRunResult,
@@ -697,9 +698,16 @@ export async function runHeartbeatOnce(opts: {
 
     const heartbeatModelOverride = heartbeat?.model?.trim() || undefined;
     const suppressToolErrorWarnings = heartbeat?.suppressToolErrorWarnings === true;
+    const ackMaxChars = resolveHeartbeatAckMaxChars(cfg, heartbeat);
+    const runMode = buildHeartbeatRunMode({
+      reason: opts.reason,
+      ackToken: HEARTBEAT_TOKEN,
+      maxAckChars: ackMaxChars,
+      visibility,
+    });
     const replyOpts = heartbeatModelOverride
-      ? { isHeartbeat: true, heartbeatModelOverride, suppressToolErrorWarnings }
-      : { isHeartbeat: true, suppressToolErrorWarnings };
+      ? { isHeartbeat: true, runMode, heartbeatModelOverride, suppressToolErrorWarnings }
+      : { isHeartbeat: true, runMode, suppressToolErrorWarnings };
     const replyResult = await getReplyFromConfig(ctx, replyOpts, cfg);
     const replyPayload = resolveHeartbeatReplyPayload(replyResult);
     const includeReasoning = heartbeat?.includeReasoning === true;
@@ -731,7 +739,6 @@ export async function runHeartbeatOnce(opts: {
       return { status: "ran", durationMs: Date.now() - startedAt };
     }
 
-    const ackMaxChars = resolveHeartbeatAckMaxChars(cfg, heartbeat);
     const normalized = normalizeHeartbeatReply(replyPayload, responsePrefix, ackMaxChars);
     // For exec completion events, don't skip even if the response looks like HEARTBEAT_OK.
     // The model should be responding with exec results, not ack tokens.
@@ -1164,4 +1171,46 @@ export function startHeartbeatRunner(opts: {
   opts.abortSignal?.addEventListener("abort", cleanup, { once: true });
 
   return { stop: cleanup, updateConfig };
+}
+
+function buildHeartbeatRunMode(params: {
+  reason?: string;
+  ackToken: string;
+  maxAckChars: number;
+  visibility: {
+    showOk: boolean;
+    showAlerts: boolean;
+    useIndicator: boolean;
+  };
+}): SpecialRunMode {
+  const reason = resolveHeartbeatReasonKind(params.reason);
+  return {
+    kind: "heartbeat",
+    reason,
+    ackToken: params.ackToken,
+    maxAckChars: params.maxAckChars,
+    visibility: resolveHeartbeatRunModeVisibility(params.visibility, reason),
+  };
+}
+
+function resolveHeartbeatRunModeVisibility(
+  visibility: {
+    showOk: boolean;
+    showAlerts: boolean;
+    useIndicator: boolean;
+  },
+  reason: HeartbeatReasonKind,
+): SpecialRunMode["visibility"] {
+  if (visibility.showOk || visibility.showAlerts) {
+    return "broadcast";
+  }
+  if (
+    visibility.useIndicator ||
+    reason === "exec-event" ||
+    reason === "cron" ||
+    reason === "wake"
+  ) {
+    return "log";
+  }
+  return "hidden";
 }

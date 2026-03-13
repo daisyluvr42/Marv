@@ -7,10 +7,19 @@ const mocks = vi.hoisted(() => ({
   getTailnetHostname: vi.fn(),
   ensurePortAvailable: vi.fn(),
   startMediaServer: vi.fn(),
+  readMediaServerToken: vi.fn(),
+  probeMediaServerIdentity: vi.fn(),
   logInfo: vi.fn(),
 }));
-const { saveMediaSource, getTailnetHostname, ensurePortAvailable, startMediaServer, logInfo } =
-  mocks;
+const {
+  saveMediaSource,
+  getTailnetHostname,
+  ensurePortAvailable,
+  startMediaServer,
+  readMediaServerToken,
+  probeMediaServerIdentity,
+  logInfo,
+} = mocks;
 
 vi.mock("./store.js", () => ({ saveMediaSource }));
 vi.mock("../infra/tailscale.js", () => ({ getTailnetHostname }));
@@ -18,7 +27,11 @@ vi.mock("../infra/ports.js", async () => {
   const actual = await vi.importActual<typeof import("../infra/ports.js")>("../infra/ports.js");
   return { ensurePortAvailable, PortInUseError: actual.PortInUseError };
 });
-vi.mock("./server.js", () => ({ startMediaServer }));
+vi.mock("./server.js", () => ({
+  startMediaServer,
+  readMediaServerToken,
+  probeMediaServerIdentity,
+}));
 vi.mock("../logger.js", async () => {
   const actual = await vi.importActual<typeof import("../logger.js")>("../logger.js");
   return { ...actual, logInfo };
@@ -64,6 +77,10 @@ describe("ensureMediaHosted", () => {
       startServer: true,
       port: 1234,
     });
+    expect(saveMediaSource).toHaveBeenCalledWith("/tmp/file2", undefined, "outbound", {
+      scope: "outbound",
+      lifecycle: "hosted",
+    });
     expect(startMediaServer).toHaveBeenCalledWith(1234, expect.any(Number), expect.anything());
     expect(logInfo).toHaveBeenCalled();
     expect(result).toEqual({
@@ -81,6 +98,8 @@ describe("ensureMediaHosted", () => {
     });
     getTailnetHostname.mockResolvedValue("tail.net");
     ensurePortAvailable.mockRejectedValue(new PortInUseError(3000, "proc"));
+    readMediaServerToken.mockResolvedValue("token-1");
+    probeMediaServerIdentity.mockResolvedValue(true);
 
     const result = await ensureMediaHosted("/tmp/file3", {
       startServer: false,
@@ -88,5 +107,28 @@ describe("ensureMediaHosted", () => {
     });
     expect(startMediaServer).not.toHaveBeenCalled();
     expect(result.url).toBe("https://tail.net/media/id3");
+  });
+
+  it("rejects foreign listeners already using the media port", async () => {
+    saveMediaSource.mockResolvedValue({
+      id: "id4",
+      path: "/tmp/file4",
+      size: 7,
+    });
+    getTailnetHostname.mockResolvedValue("tail.net");
+    ensurePortAvailable.mockRejectedValue(new PortInUseError(3000, "proc"));
+    readMediaServerToken.mockResolvedValue("token-1");
+    probeMediaServerIdentity.mockResolvedValue(false);
+    const rmSpy = vi.spyOn(fs, "rm").mockResolvedValue(undefined);
+
+    await expect(
+      ensureMediaHosted("/tmp/file4", {
+        startServer: false,
+        port: 3000,
+      }),
+    ).rejects.toThrow("not the current Marv media host");
+
+    expect(rmSpy).toHaveBeenCalledWith("/tmp/file4");
+    rmSpy.mockRestore();
   });
 });

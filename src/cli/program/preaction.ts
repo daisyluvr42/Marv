@@ -29,7 +29,7 @@ export function registerPreActionHooks(program: Command, programVersion: string)
     if (hasHelpOrVersion(argv)) {
       return;
     }
-    const commandPath = getCommandPath(argv, 2);
+    const commandPath = getCommandPath(argv, 3);
     const hideBanner =
       isTruthyEnvValue(process.env.MARV_HIDE_BANNER) ||
       commandPath[0] === "update" ||

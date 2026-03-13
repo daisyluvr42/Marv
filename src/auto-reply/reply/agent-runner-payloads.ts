@@ -3,7 +3,7 @@ import { logVerbose } from "../../globals.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import type { OriginatingChannelType } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
-import type { ReplyPayload } from "../types.js";
+import { resolveReplyAckBehavior, type GetReplyOptions, type ReplyPayload } from "../types.js";
 import { formatBunFetchSocketError, isBunFetchSocketError } from "./agent-runner-utils.js";
 import { createBlockReplyPayloadKey, type BlockReplyPipeline } from "./block-reply-pipeline.js";
 import { normalizeReplyPayloadDirectives } from "./reply-delivery.js";
@@ -18,6 +18,7 @@ import {
 export function buildReplyPayloads(params: {
   payloads: ReplyPayload[];
   isHeartbeat: boolean;
+  opts?: Pick<GetReplyOptions, "runMode" | "isHeartbeat">;
   didLogHeartbeatStrip: boolean;
   blockStreamingEnabled: boolean;
   blockReplyPipeline: BlockReplyPipeline | null;
@@ -36,19 +37,25 @@ export function buildReplyPayloads(params: {
   accountId?: string;
 }): { replyPayloads: ReplyPayload[]; didLogHeartbeatStrip: boolean } {
   let didLogHeartbeatStrip = params.didLogHeartbeatStrip;
+  const ackBehavior = resolveReplyAckBehavior(params.opts);
   const sanitizedPayloads = params.isHeartbeat
     ? params.payloads
     : params.payloads.flatMap((payload) => {
         let text = payload.text;
+        const ackToken = ackBehavior?.token ?? "HEARTBEAT_OK";
 
         if (payload.isError && text && isBunFetchSocketError(text)) {
           text = formatBunFetchSocketError(text);
         }
 
-        if (!text || !text.includes("HEARTBEAT_OK")) {
+        if (!text || !text.includes(ackToken)) {
           return [{ ...payload, text }];
         }
-        const stripped = stripHeartbeatToken(text, { mode: "message" });
+        const stripped = stripHeartbeatToken(text, {
+          mode: "message",
+          token: ackBehavior?.token,
+          maxAckChars: ackBehavior?.maxAckChars,
+        });
         if (stripped.didStrip && !didLogHeartbeatStrip) {
           didLogHeartbeatStrip = true;
           logVerbose("Stripped stray HEARTBEAT_OK token from reply");

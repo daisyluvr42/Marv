@@ -21,6 +21,7 @@ import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import type { OriginatingChannelType, TemplateContext } from "../templating.js";
 import { resolveResponseUsageMode, type VerboseLevel } from "../thinking.js";
+import { isHeartbeatRun } from "../types.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runAgentTurnWithFallback } from "./agent-runner-execution.js";
 import {
@@ -151,7 +152,7 @@ export async function runReplyAgent(params: {
   const activeSessionStore = sessionStore;
   let activeIsNewSession = isNewSession;
 
-  const isHeartbeat = opts?.isHeartbeat === true;
+  const isHeartbeat = isHeartbeatRun(opts);
   const typingSignals = createTypingSignaler({
     typing,
     mode: typingMode,
@@ -446,6 +447,7 @@ export async function runReplyAgent(params: {
     const payloadResult = buildReplyPayloads({
       payloads: payloadArray,
       isHeartbeat,
+      opts,
       didLogHeartbeatStrip,
       blockStreamingEnabled,
       blockReplyPipeline,

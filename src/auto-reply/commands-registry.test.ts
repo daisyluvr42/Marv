@@ -230,6 +230,27 @@ describe("commands registry args", () => {
     );
   });
 
+  it("falls back to shared command renderers when a command omits local formatArgs", () => {
+    const command: ChatCommandDefinition = {
+      key: "config",
+      description: "config",
+      textAliases: [],
+      scope: "both",
+      argsParsing: "positional",
+      args: [
+        { name: "action", description: "action", type: "string" },
+        { name: "path", description: "path", type: "string" },
+        { name: "value", description: "value", type: "string", captureRemaining: true },
+      ],
+    };
+
+    expect(
+      serializeCommandArgs(command, {
+        values: { action: "set", path: "gateway.mode", value: "local" },
+      }),
+    ).toBe("set gateway.mode=local");
+  });
+
   it("resolves auto arg menus when missing a choice arg", () => {
     const command = createUsageModeCommand();
 

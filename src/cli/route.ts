@@ -27,7 +27,7 @@ export async function tryRouteCli(argv: string[]): Promise<boolean> {
     return false;
   }
 
-  const path = getCommandPath(argv, 2);
+  const path = getCommandPath(argv, 3);
   if (!path[0]) {
     return false;
   }

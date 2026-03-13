@@ -265,6 +265,41 @@ describe("gateway agent handler", () => {
     expect(capturedEntry?.claudeCliSessionId).toBeUndefined();
   });
 
+  it("registers canonical user run context for gateway agent runs", async () => {
+    mocks.loadSessionEntry.mockReturnValue({
+      cfg: {
+        session: { mainKey: "work" },
+        agents: { list: [{ id: "main", default: true }] },
+      },
+      storePath: "/tmp/sessions.json",
+      entry: {
+        sessionId: "existing-session-id",
+        updatedAt: Date.now(),
+      },
+      canonicalKey: "agent:main:work",
+    });
+    mocks.updateSessionStore.mockResolvedValue(undefined);
+    mocks.agentCommand.mockResolvedValue({
+      payloads: [{ text: "ok" }],
+      meta: { durationMs: 100 },
+    });
+
+    await invokeAgent(
+      {
+        message: "test",
+        agentId: "main",
+        sessionKey: "main",
+        idempotencyKey: "test-idem-run-context",
+      },
+      { reqId: "run-context-1" },
+    );
+
+    expect(mocks.registerAgentRunContext).toHaveBeenCalledWith("test-idem-run-context", {
+      sessionKey: "agent:main:work",
+      runModeKind: "user",
+    });
+  });
+
   it("prunes legacy main alias keys when writing a canonical session entry", async () => {
     mocks.loadSessionEntry.mockReturnValue({
       cfg: {

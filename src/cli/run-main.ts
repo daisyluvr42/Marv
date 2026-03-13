@@ -8,7 +8,12 @@ import { ensureMarvCliOnPath } from "../infra/path-env.js";
 import { assertSupportedRuntime } from "../infra/runtime-guard.js";
 import { installUnhandledRejectionHandler } from "../infra/unhandled-rejections.js";
 import { enableConsoleCapture } from "../logging.js";
-import { getCommandPath, getPrimaryCommand, hasHelpOrVersion } from "./argv.js";
+import {
+  getCommandPath,
+  getPrimaryCommand,
+  hasHelpOrVersion,
+  resolveCommandCliBootstrapFromPath,
+} from "./argv.js";
 import { tryRouteCli } from "./route.js";
 import { normalizeWindowsArgv } from "./windows-argv.js";
 
@@ -45,20 +50,7 @@ export function shouldEnsureCliPath(argv: string[]): boolean {
   if (hasHelpOrVersion(argv)) {
     return false;
   }
-  const [primary, secondary] = getCommandPath(argv, 2);
-  if (!primary) {
-    return true;
-  }
-  if (primary === "status" || primary === "health" || primary === "sessions") {
-    return false;
-  }
-  if (primary === "config" && (secondary === "get" || secondary === "unset")) {
-    return false;
-  }
-  if (primary === "models" && (secondary === "list" || secondary === "status")) {
-    return false;
-  }
-  return true;
+  return resolveCommandCliBootstrapFromPath(getCommandPath(argv, 3)) === "require";
 }
 
 export async function runCli(argv: string[] = process.argv) {

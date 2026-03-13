@@ -1,6 +1,10 @@
 import path from "node:path";
 import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
 import type { MsgContext } from "../auto-reply/templating.js";
+import {
+  buildCompatibilityPromptMedia,
+  type MediaPromptCompatibility,
+} from "../contracts/index.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import {
@@ -33,11 +37,17 @@ import type {
 export type ApplyMediaUnderstandingResult = {
   outputs: MediaUnderstandingOutput[];
   decisions: MediaUnderstandingDecision[];
+  routing: MediaPromptCompatibility;
   appliedImage: boolean;
   appliedAudio: boolean;
   appliedVideo: boolean;
   appliedFile: boolean;
 };
+
+type MediaRoutingShadowSnapshot = Pick<
+  MediaPromptCompatibility,
+  "promptMedia" | "derivedText" | "decisions" | "settled"
+>;
 
 const CAPABILITY_ORDER: MediaUnderstandingCapability[] = ["image", "audio", "video"];
 const EXTRA_TEXT_MIMES = [
@@ -330,6 +340,32 @@ function isBinaryMediaMime(mime?: string): boolean {
   return false;
 }
 
+export function detectMediaRoutingShadowMismatches(params: {
+  expected: MediaRoutingShadowSnapshot;
+  actual: MediaRoutingShadowSnapshot;
+}): string[] {
+  const mismatches: string[] = [];
+  const fields: Array<keyof MediaRoutingShadowSnapshot> = [
+    "promptMedia",
+    "derivedText",
+    "decisions",
+    "settled",
+  ];
+  for (const field of fields) {
+    if (JSON.stringify(params.expected[field]) !== JSON.stringify(params.actual[field])) {
+      mismatches.push(String(field));
+    }
+  }
+  return mismatches;
+}
+
+export function assertMediaRoutingShadowClean(mismatches: string[]) {
+  if (mismatches.length === 0 || process.env.MARV_MEDIA_ROUTING_SHADOW_ASSERT !== "1") {
+    return;
+  }
+  throw new Error(`media-understanding: routing shadow mismatch fields=${mismatches.join(",")}`);
+}
+
 async function extractFileBlocks(params: {
   attachments: ReturnType<typeof normalizeMediaAttachments>;
   cache: ReturnType<typeof createMediaAttachmentCache>;
@@ -541,6 +577,58 @@ export async function applyMediaUnderstanding(params: {
     if (fileBlocks.length > 0) {
       ctx.Body = appendFileBlocks(ctx.Body, fileBlocks);
     }
+    const routing: MediaPromptCompatibility = {
+      promptMedia: buildCompatibilityPromptMedia({
+        mediaPath: ctx.MediaPath,
+        mediaPaths: ctx.MediaPaths,
+        mediaUrl: ctx.MediaUrl,
+        mediaUrls: ctx.MediaUrls,
+        mediaType: ctx.MediaType,
+        mediaTypes: ctx.MediaTypes,
+        transcript: ctx.Transcript,
+        mediaUnderstanding: ctx.MediaUnderstanding,
+        mediaUnderstandingDecisions: ctx.MediaUnderstandingDecisions,
+      }),
+      derivedText: {
+        transcript: ctx.Transcript?.trim() || undefined,
+        mediaOutputs: outputs.length > 0 ? [...outputs] : undefined,
+        fileBlocks: fileBlocks.length > 0 ? [...fileBlocks] : undefined,
+      },
+      decisions: [...decisions],
+      settled: true,
+    };
+    if (process.env.MARV_MEDIA_ROUTING_SHADOW === "1") {
+      const expectedShadow: MediaRoutingShadowSnapshot = {
+        promptMedia: buildCompatibilityPromptMedia({
+          mediaPath: ctx.MediaPath,
+          mediaPaths: ctx.MediaPaths,
+          mediaUrl: ctx.MediaUrl,
+          mediaUrls: ctx.MediaUrls,
+          mediaType: ctx.MediaType,
+          mediaTypes: ctx.MediaTypes,
+          transcript: ctx.Transcript,
+          mediaUnderstanding: ctx.MediaUnderstanding,
+          mediaUnderstandingDecisions: ctx.MediaUnderstandingDecisions,
+        }),
+        derivedText: {
+          transcript: ctx.Transcript?.trim() || undefined,
+          mediaOutputs: outputs.length > 0 ? [...outputs] : undefined,
+          fileBlocks: fileBlocks.length > 0 ? [...fileBlocks] : undefined,
+        },
+        decisions: [...decisions],
+        settled: true,
+      };
+      const mismatches = detectMediaRoutingShadowMismatches({
+        expected: expectedShadow,
+        actual: routing,
+      });
+      if (mismatches.length > 0) {
+        logVerbose(`media-understanding: routing shadow mismatch fields=${mismatches.join(",")}`);
+      }
+      assertMediaRoutingShadowClean(mismatches);
+    }
+    ctx.PromptMedia = routing.promptMedia;
+    ctx.MultimodalRouting = routing;
     if (outputs.length > 0 || fileBlocks.length > 0) {
       finalizeInboundContext(ctx, {
         forceBodyForAgent: true,
@@ -551,6 +639,7 @@ export async function applyMediaUnderstanding(params: {
     return {
       outputs,
       decisions,
+      routing,
       appliedImage: outputs.some((output) => output.kind === "image.description"),
       appliedAudio: outputs.some((output) => output.kind === "audio.transcription"),
       appliedVideo: outputs.some((output) => output.kind === "video.description"),

@@ -1,20 +1,44 @@
 import { describe, expect, test } from "vitest";
 import {
+  AGENT_EVENT_CONTRACT_VERSION,
+  AGENT_EVENT_CONTEXT_FIELDS,
+  AGENT_EVENT_REQUIRED_FIELDS,
+  AGENT_EVENT_STREAMS,
   clearAgentRunContext,
   emitAgentEvent,
   getAgentRunContext,
+  isHeartbeatRunContext,
   onAgentEvent,
   registerAgentRunContext,
   resetAgentRunContextForTest,
 } from "./agent-events.js";
 
 describe("agent-events sequencing", () => {
+  test("exports a stable contract version and core stream list", () => {
+    expect(AGENT_EVENT_CONTRACT_VERSION).toBe(1);
+    expect(AGENT_EVENT_REQUIRED_FIELDS).toEqual(["runId", "seq", "stream", "ts", "data"]);
+    expect(AGENT_EVENT_STREAMS).toEqual(["lifecycle", "tool", "assistant", "error", "compaction"]);
+    expect(AGENT_EVENT_CONTEXT_FIELDS).toEqual([
+      "sessionKey",
+      "verboseLevel",
+      "isHeartbeat",
+      "runModeKind",
+    ]);
+  });
+
   test("stores and clears run context", async () => {
     resetAgentRunContextForTest();
     registerAgentRunContext("run-1", { sessionKey: "main" });
     expect(getAgentRunContext("run-1")?.sessionKey).toBe("main");
     clearAgentRunContext("run-1");
     expect(getAgentRunContext("run-1")).toBeUndefined();
+  });
+
+  test("recognizes heartbeat semantics from runModeKind or legacy heartbeat flag", () => {
+    expect(isHeartbeatRunContext(undefined)).toBe(false);
+    expect(isHeartbeatRunContext({ isHeartbeat: true })).toBe(true);
+    expect(isHeartbeatRunContext({ runModeKind: "heartbeat" })).toBe(true);
+    expect(isHeartbeatRunContext({ isHeartbeat: false, runModeKind: "user" })).toBe(false);
   });
 
   test("maintains monotonic seq per runId", async () => {
@@ -60,5 +84,53 @@ describe("agent-events sequencing", () => {
     stop();
 
     expect(phases).toEqual(["start", "end"]);
+  });
+
+  test("enriches emitted payloads with registered run context", async () => {
+    resetAgentRunContextForTest();
+    registerAgentRunContext("run-ctx", {
+      sessionKey: "session-ctx",
+      verboseLevel: "on",
+      isHeartbeat: true,
+      runModeKind: "heartbeat",
+    });
+    const seen: Array<{
+      sessionKey?: string;
+      context?: {
+        sessionKey?: string;
+        verboseLevel?: string;
+        isHeartbeat?: boolean;
+        runModeKind?: string;
+      };
+    }> = [];
+    const stop = onAgentEvent((evt) => {
+      if (evt.runId === "run-ctx") {
+        seen.push({
+          sessionKey: evt.sessionKey,
+          context: evt.context as {
+            sessionKey?: string;
+            verboseLevel?: string;
+            isHeartbeat?: boolean;
+            runModeKind?: string;
+          },
+        });
+      }
+    });
+
+    emitAgentEvent({ runId: "run-ctx", stream: "assistant", data: { text: "hello" } });
+
+    stop();
+
+    expect(seen).toEqual([
+      {
+        sessionKey: "session-ctx",
+        context: {
+          sessionKey: "session-ctx",
+          verboseLevel: "on",
+          isHeartbeat: true,
+          runModeKind: "heartbeat",
+        },
+      },
+    ]);
   });
 });

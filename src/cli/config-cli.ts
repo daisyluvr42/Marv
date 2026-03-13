@@ -202,9 +202,12 @@ function unsetAtPath(root: Record<string, unknown>, path: PathSegment[]): boolea
   return true;
 }
 
-async function loadValidConfig(runtime: RuntimeEnv = defaultRuntime) {
+async function loadConfigSnapshot(
+  runtime: RuntimeEnv = defaultRuntime,
+  options?: { allowInvalid?: boolean },
+) {
   const snapshot = await readConfigFileSnapshot();
-  if (snapshot.valid) {
+  if (snapshot.valid || options?.allowInvalid) {
     return snapshot;
   }
   runtime.error(`Config invalid at ${shortenHomePath(snapshot.path)}.`);
@@ -228,12 +231,25 @@ export async function runConfigGet(opts: { path: string; json?: boolean; runtime
   const runtime = opts.runtime ?? defaultRuntime;
   try {
     const parsedPath = parseRequiredPath(opts.path);
-    const snapshot = await loadValidConfig(runtime);
-    const res = getAtPath(snapshot.config, parsedPath);
+    const snapshot = await loadConfigSnapshot(runtime, { allowInvalid: true });
+    const source =
+      snapshot.valid && snapshot.config
+        ? snapshot.config
+        : typeof snapshot.resolved === "object" && snapshot.resolved
+          ? snapshot.resolved
+          : snapshot.parsed;
+    const res = getAtPath(source, parsedPath);
     if (!res.found) {
       runtime.error(danger(`Config path not found: ${opts.path}`));
       runtime.exit(1);
       return;
+    }
+    if (!snapshot.valid) {
+      runtime.error(
+        info(
+          `Config is invalid at ${shortenHomePath(snapshot.path)}. Showing the stored value anyway.`,
+        ),
+      );
     }
     if (opts.json) {
       runtime.log(JSON.stringify(res.value ?? null, null, 2));
@@ -258,7 +274,7 @@ export async function runConfigUnset(opts: { path: string; runtime?: RuntimeEnv 
   const runtime = opts.runtime ?? defaultRuntime;
   try {
     const parsedPath = parseRequiredPath(opts.path);
-    const snapshot = await loadValidConfig(runtime);
+    const snapshot = await loadConfigSnapshot(runtime);
     // Use snapshot.resolved (config after $include and ${ENV} resolution, but BEFORE runtime defaults)
     // instead of snapshot.config (runtime-merged with defaults).
     // This prevents runtime defaults from leaking into the written config file (issue #6070)
@@ -280,7 +296,7 @@ export async function runConfigUnset(opts: { path: string; runtime?: RuntimeEnv 
 export async function runConfigValidate(opts: { json?: boolean; runtime?: RuntimeEnv } = {}) {
   const runtime = opts.runtime ?? defaultRuntime;
   try {
-    const snapshot = await readConfigFileSnapshot();
+    const snapshot = await loadConfigSnapshot(runtime, { allowInvalid: true });
 
     if (!snapshot.exists) {
       if (opts.json) {
@@ -410,7 +426,7 @@ export function registerConfigCli(program: Command) {
           throw new Error("Path is empty.");
         }
         const parsedValue = parseValue(value, opts);
-        const snapshot = await loadValidConfig();
+        const snapshot = await loadConfigSnapshot();
         // Use snapshot.resolved (config after $include and ${ENV} resolution, but BEFORE runtime defaults)
         // instead of snapshot.config (runtime-merged with defaults).
         // This prevents runtime defaults from leaking into the written config file (issue #6070)

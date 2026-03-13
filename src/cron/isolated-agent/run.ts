@@ -445,6 +445,7 @@ export async function runCronIsolatedAgentTurn(params: {
     registerAgentRunContext(cronSession.sessionEntry.sessionId, {
       sessionKey: agentSessionKey,
       verboseLevel: resolvedVerboseLevel,
+      runModeKind: "proactive",
     });
     const messageChannel = resolvedDelivery.channel;
     const runtimePlan = resolveRuntimeModelPlan({

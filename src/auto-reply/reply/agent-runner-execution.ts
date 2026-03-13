@@ -29,7 +29,12 @@ import { stripHeartbeatToken } from "../heartbeat.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
-import type { GetReplyOptions, ReplyPayload } from "../types.js";
+import {
+  resolveReplyAckBehavior,
+  resolveReplyRunMode,
+  type GetReplyOptions,
+  type ReplyPayload,
+} from "../types.js";
 import {
   buildEmbeddedRunBaseParams,
   buildEmbeddedRunContexts,
@@ -86,6 +91,8 @@ export async function runAgentTurnWithFallback(params: {
   let autoCompactionCompleted = false;
   // Track payloads sent directly (not via pipeline) during tool flush to avoid duplicates.
   const directlySentBlockKeys = new Set<string>();
+  const ackBehavior = resolveReplyAckBehavior(params.opts);
+  const runMode = resolveReplyRunMode(params.opts);
 
   const runId = params.opts?.runId ?? crypto.randomUUID();
   params.opts?.onAgentRunStart?.(runId);
@@ -94,6 +101,7 @@ export async function runAgentTurnWithFallback(params: {
       sessionKey: params.sessionKey,
       verboseLevel: params.resolvedVerboseLevel,
       isHeartbeat: params.isHeartbeat,
+      runModeKind: runMode.kind,
     });
   }
   let runResult: Awaited<ReturnType<typeof runEmbeddedPiAgent>>;
@@ -108,13 +116,16 @@ export async function runAgentTurnWithFallback(params: {
         params.followupRun.run.reasoningLevel === "stream" && params.opts?.onReasoningStream
       );
       const normalizeStreamingText = (payload: ReplyPayload): { text?: string; skip: boolean } => {
+        const ackToken = ackBehavior?.token ?? "HEARTBEAT_OK";
         if (!allowPartialStream) {
           return { skip: true };
         }
         let text = payload.text;
-        if (!params.isHeartbeat && text?.includes("HEARTBEAT_OK")) {
+        if (!params.isHeartbeat && text?.includes(ackToken)) {
           const stripped = stripHeartbeatToken(text, {
             mode: "message",
+            token: ackBehavior?.token,
+            maxAckChars: ackBehavior?.maxAckChars,
           });
           if (stripped.didStrip && !didLogHeartbeatStrip) {
             didLogHeartbeatStrip = true;

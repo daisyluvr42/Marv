@@ -2,7 +2,7 @@ import { type RunOptions, run } from "@grammyjs/runner";
 import { resolveAgentMaxConcurrent } from "../../core/config/agent-limits.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
-import { computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
+import { computeBackoff, resolveBackoffPolicy, sleepWithAbort } from "../../infra/backoff.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { formatDurationPrecise } from "../../infra/format-time/format-duration.js";
 import { registerUnhandledRejectionHandler } from "../../infra/unhandled-rejections.js";
@@ -51,12 +51,7 @@ export function createTelegramRunnerOptions(cfg: MarvConfig): RunOptions<unknown
   };
 }
 
-const TELEGRAM_POLL_RESTART_POLICY = {
-  initialMs: 2000,
-  maxMs: 30_000,
-  factor: 1.8,
-  jitter: 0.25,
-};
+const TELEGRAM_POLL_RESTART_POLICY = resolveBackoffPolicy("runnerReconnect");
 
 const isGetUpdatesConflict = (err: unknown) => {
   if (!err || typeof err !== "object") {

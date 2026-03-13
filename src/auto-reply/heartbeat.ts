@@ -59,57 +59,9 @@ export function resolveHeartbeatPrompt(raw?: string): string {
 
 export type StripHeartbeatMode = "heartbeat" | "message";
 
-function stripTokenAtEdges(raw: string): { text: string; didStrip: boolean } {
-  let text = raw.trim();
-  if (!text) {
-    return { text: "", didStrip: false };
-  }
-
-  const token = HEARTBEAT_TOKEN;
-  const tokenAtEndWithOptionalTrailingPunctuation = new RegExp(
-    `${escapeRegExp(token)}[^\\w]{0,4}$`,
-  );
-  if (!text.includes(token)) {
-    return { text, didStrip: false };
-  }
-
-  let didStrip = false;
-  let changed = true;
-  while (changed) {
-    changed = false;
-    const next = text.trim();
-    if (next.startsWith(token)) {
-      const after = next.slice(token.length).trimStart();
-      text = after;
-      didStrip = true;
-      changed = true;
-      continue;
-    }
-    // Strip the token when it appears at the end of the text.
-    // Also strip up to 4 trailing non-word characters the model may have appended
-    // (e.g. ".", "!!!", "---"). Keep trailing punctuation only when real
-    // sentence text exists before the token.
-    if (tokenAtEndWithOptionalTrailingPunctuation.test(next)) {
-      const idx = next.lastIndexOf(token);
-      const before = next.slice(0, idx).trimEnd();
-      if (!before) {
-        text = "";
-      } else {
-        const after = next.slice(idx + token.length).trimStart();
-        text = `${before}${after}`.trimEnd();
-      }
-      didStrip = true;
-      changed = true;
-    }
-  }
-
-  const collapsed = text.replace(/\s+/g, " ").trim();
-  return { text: collapsed, didStrip };
-}
-
 export function stripHeartbeatToken(
   raw?: string,
-  opts: { mode?: StripHeartbeatMode; maxAckChars?: number } = {},
+  opts: { mode?: StripHeartbeatMode; maxAckChars?: number; token?: string } = {},
 ) {
   if (!raw) {
     return { shouldSkip: true, text: "", didStrip: false };
@@ -120,6 +72,8 @@ export function stripHeartbeatToken(
   }
 
   const mode: StripHeartbeatMode = opts.mode ?? "message";
+  const token =
+    typeof opts.token === "string" && opts.token.trim() ? opts.token.trim() : HEARTBEAT_TOKEN;
   const maxAckCharsRaw = opts.maxAckChars;
   const parsedAckChars =
     typeof maxAckCharsRaw === "string" ? Number(maxAckCharsRaw) : maxAckCharsRaw;
@@ -143,13 +97,55 @@ export function stripHeartbeatToken(
       .replace(/[*`~_]+$/, "");
 
   const trimmedNormalized = stripMarkup(trimmed);
-  const hasToken = trimmed.includes(HEARTBEAT_TOKEN) || trimmedNormalized.includes(HEARTBEAT_TOKEN);
+  const hasToken = trimmed.includes(token) || trimmedNormalized.includes(token);
   if (!hasToken) {
     return { shouldSkip: false, text: trimmed, didStrip: false };
   }
 
-  const strippedOriginal = stripTokenAtEdges(trimmed);
-  const strippedNormalized = stripTokenAtEdges(trimmedNormalized);
+  const stripTokenAtEdgesForToken = (value: string) => {
+    let text = value.trim();
+    if (!text) {
+      return { text: "", didStrip: false };
+    }
+
+    const tokenAtEndWithOptionalTrailingPunctuation = new RegExp(
+      `${escapeRegExp(token)}[^\\w]{0,4}$`,
+    );
+    if (!text.includes(token)) {
+      return { text, didStrip: false };
+    }
+
+    let didStrip = false;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const next = text.trim();
+      if (next.startsWith(token)) {
+        const after = next.slice(token.length).trimStart();
+        text = after;
+        didStrip = true;
+        changed = true;
+        continue;
+      }
+      if (tokenAtEndWithOptionalTrailingPunctuation.test(next)) {
+        const idx = next.lastIndexOf(token);
+        const before = next.slice(0, idx).trimEnd();
+        if (!before) {
+          text = "";
+        } else {
+          const after = next.slice(idx + token.length).trimStart();
+          text = `${before}${after}`.trimEnd();
+        }
+        didStrip = true;
+        changed = true;
+      }
+    }
+
+    const collapsed = text.replace(/\s+/g, " ").trim();
+    return { text: collapsed, didStrip };
+  };
+  const strippedOriginal = stripTokenAtEdgesForToken(trimmed);
+  const strippedNormalized = stripTokenAtEdgesForToken(trimmedNormalized);
   const picked =
     strippedOriginal.didStrip && strippedOriginal.text ? strippedOriginal : strippedNormalized;
   if (!picked.didStrip) {

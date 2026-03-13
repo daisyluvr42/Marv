@@ -204,4 +204,28 @@ describe("config cli", () => {
       expect(output).toContain('"gateway.port"');
     });
   });
+
+  describe("config get with invalid config", () => {
+    it("still shows stored values for inspection when the config is invalid", async () => {
+      mockReadConfigFileSnapshot.mockResolvedValueOnce({
+        path: "/tmp/marv.json",
+        exists: true,
+        raw: JSON.stringify({ gateway: { port: "oops" } }),
+        parsed: { gateway: { port: "oops" } },
+        resolved: { gateway: { port: "oops" } },
+        valid: false,
+        config: {},
+        issues: [{ path: "gateway.port", message: "Expected number, received string" }],
+        warnings: [],
+        legacyIssues: [],
+      } as ConfigFileSnapshot);
+
+      await runConfigCommand(["config", "get", "gateway.port"]);
+
+      expect(mockError).toHaveBeenCalledWith(
+        expect.stringContaining("Showing the stored value anyway"),
+      );
+      expect(mockLog).toHaveBeenCalledWith("oops");
+    });
+  });
 });

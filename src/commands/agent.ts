@@ -308,6 +308,7 @@ export async function agentCommand(
       registerAgentRunContext(runId, {
         sessionKey,
         verboseLevel: resolvedVerboseLevel,
+        runModeKind: "user",
       });
     }
 

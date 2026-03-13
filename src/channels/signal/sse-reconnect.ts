@@ -1,15 +1,10 @@
 import { logVerbose, shouldLogVerbose } from "../../globals.js";
 import type { BackoffPolicy } from "../../infra/backoff.js";
-import { computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
+import { computeBackoff, resolveBackoffPolicy, sleepWithAbort } from "../../infra/backoff.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { type SignalSseEvent, streamSignalEvents } from "./client.js";
 
-const DEFAULT_RECONNECT_POLICY: BackoffPolicy = {
-  initialMs: 1_000,
-  maxMs: 10_000,
-  factor: 2,
-  jitter: 0.2,
-};
+const DEFAULT_RECONNECT_POLICY = resolveBackoffPolicy("signalSseReconnect");
 
 type RunSignalSseLoopParams = {
   baseUrl: string;

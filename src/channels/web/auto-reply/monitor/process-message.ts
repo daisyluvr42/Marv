@@ -23,7 +23,6 @@ import {
 import { logVerbose, shouldLogVerbose } from "../../../../globals.js";
 import type { getChildLogger } from "../../../../logging.js";
 import { getAgentScopedMediaLocalRoots } from "../../../../media/local-roots.js";
-import { readChannelAllowFromStore } from "../../../../pairing/pairing-store.js";
 import type { resolveAgentRoute } from "../../../../routing/resolve-route.js";
 import { jidToE164, normalizeE164 } from "../../../../utils.js";
 import { toLocationContext } from "../../../location.js";
@@ -35,6 +34,7 @@ import { whatsappInboundLog, whatsappOutboundLog } from "../loggers.js";
 import type { WebInboundMsg } from "../types.js";
 import { elide } from "../util.js";
 import { maybeSendAckReaction } from "./ack-reaction.js";
+import { resolveWhatsAppCommandAuthorized } from "./command-authorized.js";
 import { formatGroupMembers } from "./group-members.js";
 import { trackBackgroundTask, updateLastRouteInBackground } from "./last-route.js";
 import { buildInboundLine } from "./message-line.js";
@@ -46,67 +46,6 @@ export type GroupHistoryEntry = {
   id?: string;
   senderJid?: string;
 };
-
-function normalizeAllowFromE164(values: Array<string | number> | undefined): string[] {
-  const list = Array.isArray(values) ? values : [];
-  return list
-    .map((entry) => String(entry).trim())
-    .filter((entry) => entry && entry !== "*")
-    .map((entry) => normalizeE164(entry))
-    .filter((entry): entry is string => Boolean(entry));
-}
-
-async function resolveWhatsAppCommandAuthorized(params: {
-  cfg: ReturnType<typeof loadConfig>;
-  msg: WebInboundMsg;
-}): Promise<boolean> {
-  const useAccessGroups = params.cfg.commands?.useAccessGroups !== false;
-  if (!useAccessGroups) {
-    return true;
-  }
-
-  const isGroup = params.msg.chatType === "group";
-  const senderE164 = normalizeE164(
-    isGroup ? (params.msg.senderE164 ?? "") : (params.msg.senderE164 ?? params.msg.from ?? ""),
-  );
-  if (!senderE164) {
-    return false;
-  }
-
-  const configuredAllowFrom = params.cfg.channels?.whatsapp?.allowFrom ?? [];
-  const configuredGroupAllowFrom =
-    params.cfg.channels?.whatsapp?.groupAllowFrom ??
-    (configuredAllowFrom.length > 0 ? configuredAllowFrom : undefined);
-
-  if (isGroup) {
-    if (!configuredGroupAllowFrom || configuredGroupAllowFrom.length === 0) {
-      return false;
-    }
-    if (configuredGroupAllowFrom.some((v) => String(v).trim() === "*")) {
-      return true;
-    }
-    return normalizeAllowFromE164(configuredGroupAllowFrom).includes(senderE164);
-  }
-
-  const storeAllowFrom = await readChannelAllowFromStore(
-    "whatsapp",
-    process.env,
-    params.msg.accountId,
-  ).catch(() => []);
-  const combinedAllowFrom = Array.from(
-    new Set([...(configuredAllowFrom ?? []), ...storeAllowFrom]),
-  );
-  const allowFrom =
-    combinedAllowFrom.length > 0
-      ? combinedAllowFrom
-      : params.msg.selfE164
-        ? [params.msg.selfE164]
-        : [];
-  if (allowFrom.some((v) => String(v).trim() === "*")) {
-    return true;
-  }
-  return normalizeAllowFromE164(allowFrom).includes(senderE164);
-}
 
 export async function processMessage(params: {
   cfg: ReturnType<typeof loadConfig>;

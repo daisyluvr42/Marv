@@ -88,4 +88,31 @@ describe("getReplyFromConfig typing (heartbeat)", () => {
       expect(onReplyStart).not.toHaveBeenCalled();
     });
   });
+
+  it("does not start typing when heartbeat semantics come from runMode", async () => {
+    await withTempHome(async (home) => {
+      runEmbeddedPiAgentMock.mockResolvedValueOnce({
+        payloads: [{ text: "ok" }],
+        meta: {},
+      });
+      const onReplyStart = vi.fn();
+
+      await getReplyFromConfig(
+        { Body: "hi", From: "+1000", To: "+2000", Provider: "whatsapp" },
+        {
+          onReplyStart,
+          runMode: {
+            kind: "heartbeat",
+            reason: "cron",
+            ackToken: "HEARTBEAT_OK",
+            maxAckChars: 300,
+            visibility: "hidden",
+          },
+        },
+        makeReplyConfig(home) as unknown as MarvConfig,
+      );
+
+      expect(onReplyStart).not.toHaveBeenCalled();
+    });
+  });
 });

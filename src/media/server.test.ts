@@ -16,7 +16,7 @@ vi.mock("./store.js", async (importOriginal) => {
   };
 });
 
-const { startMediaServer } = await import("./server.js");
+const { readMediaServerToken, startMediaServer } = await import("./server.js");
 const { MEDIA_MAX_BYTES } = await import("./store.js");
 
 async function waitForFileRemoval(filePath: string, maxTicks = 1000) {
@@ -54,6 +54,15 @@ describe("media server", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("hello");
     await waitForFileRemoval(file);
+  });
+
+  it("exposes a stable health token for host identity checks", async () => {
+    const token = await readMediaServerToken();
+    expect(token).toBeTruthy();
+
+    const res = await fetch(`http://127.0.0.1:${port}/media/__health`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, token });
   });
 
   it("expires old media", async () => {

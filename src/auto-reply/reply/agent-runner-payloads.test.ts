@@ -43,4 +43,23 @@ describe("buildReplyPayloads media filter integration", () => {
     // Text filter removes the payload entirely (text matched), so nothing remains.
     expect(replyPayloads).toHaveLength(0);
   });
+
+  it("strips custom heartbeat ack tokens based on runMode", () => {
+    const { replyPayloads } = buildReplyPayloads({
+      ...baseParams,
+      opts: {
+        runMode: {
+          kind: "heartbeat",
+          reason: "maintenance",
+          ackToken: "MAINT_OK",
+          maxAckChars: 120,
+          visibility: "hidden",
+        },
+      },
+      payloads: [{ text: "MAINT_OK cleaned" }],
+    });
+
+    expect(replyPayloads).toHaveLength(1);
+    expect(replyPayloads[0]?.text).toBe("cleaned");
+  });
 });

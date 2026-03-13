@@ -24,6 +24,14 @@ import type { TypingController } from "./typing.js";
 type AgentDefaults = NonNullable<MarvConfig["agents"]>["defaults"];
 type ExecOverrides = Pick<ExecToolDefaults, "host" | "security" | "ask" | "node">;
 
+function hasPromptImages(ctx: MsgContext): boolean {
+  return (
+    (ctx.MultimodalRouting?.promptMedia ?? []).some((entry) => entry.kind === "image") ||
+    (ctx.MediaPaths?.length ?? 0) > 0 ||
+    (ctx.MediaUrls?.length ?? 0) > 0
+  );
+}
+
 export type ReplyDirectiveContinuation = {
   commandSource: string;
   command: ReturnType<typeof buildCommandContext>;
@@ -385,7 +393,7 @@ export async function resolveReplyDirectives(params: {
     provider,
     model,
     hasModelDirective: directives.hasModelDirective,
-    hasImages: (ctx.MediaPaths?.length ?? 0) > 0 || (ctx.MediaUrls?.length ?? 0) > 0,
+    hasImages: hasPromptImages(ctx),
     hasResolvedHeartbeatModelOverride,
   });
   provider = modelState.provider;

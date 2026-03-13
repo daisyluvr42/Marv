@@ -1,5 +1,7 @@
 import type { ImageContent } from "@mariozechner/pi-ai";
+import type { SpecialRunMode } from "../contracts/run-mode.js";
 import type { TypingController } from "./reply/typing.js";
+import { HEARTBEAT_TOKEN } from "./tokens.js";
 
 export type BlockReplyContext = {
   abortSignal?: AbortSignal;
@@ -26,6 +28,7 @@ export type GetReplyOptions = {
   /** Called when the typing controller cleans up (e.g., run ended with NO_REPLY). */
   onTypingCleanup?: () => void;
   onTypingController?: (typing: TypingController) => void;
+  runMode?: SpecialRunMode;
   isHeartbeat?: boolean;
   /** Resolved heartbeat model override (provider/model string from merged per-agent config). */
   heartbeatModelOverride?: string;
@@ -54,6 +57,42 @@ export type GetReplyOptions = {
   /** Override agent timeout in seconds (0 = no timeout). Threads through to resolveAgentTimeoutMs. */
   timeoutOverrideSeconds?: number;
 };
+
+export function resolveReplyRunMode(opts?: Pick<GetReplyOptions, "runMode" | "isHeartbeat">) {
+  if (opts?.runMode) {
+    return opts.runMode;
+  }
+  if (opts?.isHeartbeat) {
+    return {
+      kind: "heartbeat",
+      reason: "other",
+      ackToken: "HEARTBEAT_OK",
+      maxAckChars: 300,
+      visibility: "hidden",
+    } satisfies SpecialRunMode;
+  }
+  return { kind: "user" } satisfies SpecialRunMode;
+}
+
+export function isHeartbeatRun(opts?: Pick<GetReplyOptions, "runMode" | "isHeartbeat">): boolean {
+  return resolveReplyRunMode(opts).kind === "heartbeat";
+}
+
+export function resolveReplyAckBehavior(opts?: Pick<GetReplyOptions, "runMode" | "isHeartbeat">): {
+  token: string;
+  mode: "heartbeat" | "message";
+  maxAckChars?: number;
+} | null {
+  const runMode = resolveReplyRunMode(opts);
+  if (runMode.kind !== "heartbeat") {
+    return null;
+  }
+  return {
+    token: runMode.ackToken?.trim() || HEARTBEAT_TOKEN,
+    mode: "heartbeat",
+    maxAckChars: runMode.maxAckChars,
+  };
+}
 
 export type ReplyPayload = {
   text?: string;

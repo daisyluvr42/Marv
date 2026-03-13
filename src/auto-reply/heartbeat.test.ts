@@ -163,6 +163,16 @@ describe("stripHeartbeatToken", () => {
       didStrip: true,
     });
   });
+
+  it("supports custom ack tokens for non-heartbeat special runs", () => {
+    expect(stripHeartbeatToken("MAINT_OK all set", { mode: "message", token: "MAINT_OK" })).toEqual(
+      {
+        shouldSkip: false,
+        text: "all set",
+        didStrip: true,
+      },
+    );
+  });
 });
 
 describe("isHeartbeatContentEffectivelyEmpty", () => {

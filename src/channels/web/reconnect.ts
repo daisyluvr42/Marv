@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { BackoffPolicy } from "../../infra/backoff.js";
-import { computeBackoff, sleepWithAbort } from "../../infra/backoff.js";
+import { computeBackoff, resolveBackoffPolicy, sleepWithAbort } from "../../infra/backoff.js";
 import { clamp } from "../../utils.js";
 
 export type ReconnectPolicy = BackoffPolicy & {
@@ -10,10 +10,7 @@ export type ReconnectPolicy = BackoffPolicy & {
 
 export const DEFAULT_HEARTBEAT_SECONDS = 60;
 export const DEFAULT_RECONNECT_POLICY: ReconnectPolicy = {
-  initialMs: 2_000,
-  maxMs: 30_000,
-  factor: 1.8,
-  jitter: 0.25,
+  ...resolveBackoffPolicy("runnerReconnect"),
   maxAttempts: 12,
 };
 

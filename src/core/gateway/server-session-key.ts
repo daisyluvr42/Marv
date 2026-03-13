@@ -15,7 +15,7 @@ export function resolveSessionKeyForRun(runId: string) {
   const storeKey = found?.[0];
   if (storeKey) {
     const sessionKey = toAgentRequestSessionKey(storeKey) ?? storeKey;
-    registerAgentRunContext(runId, { sessionKey });
+    registerAgentRunContext(runId, { sessionKey, runModeKind: "user" });
     return sessionKey;
   }
   return undefined;

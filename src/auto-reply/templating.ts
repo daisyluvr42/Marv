@@ -1,5 +1,7 @@
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { StickerMetadata } from "../channels/telegram/bot/types.js";
+import type { PromptMediaRef } from "../contracts/media-ref.js";
+import type { MediaPromptCompatibility } from "../contracts/multimodal-routing.js";
 import type {
   MediaUnderstandingDecision,
   MediaUnderstandingOutput,
@@ -87,6 +89,8 @@ export type MsgContext = {
   /** Remote host for SCP when media lives on a different machine (e.g., marv@192.168.64.3). */
   MediaRemoteHost?: string;
   Transcript?: string;
+  PromptMedia?: PromptMediaRef[];
+  MultimodalRouting?: MediaPromptCompatibility;
   MediaUnderstanding?: MediaUnderstandingOutput[];
   MediaUnderstandingDecisions?: MediaUnderstandingDecision[];
   LinkUnderstanding?: string[];

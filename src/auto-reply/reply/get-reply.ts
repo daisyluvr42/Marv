@@ -15,12 +15,14 @@ import { defaultRuntime } from "../../runtime.js";
 import { resolveCommandAuthorization } from "../command-auth.js";
 import type { MsgContext } from "../templating.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
+import { isHeartbeatRun } from "../types.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { resolveDefaultModel } from "./directive-handling.js";
 import { resolveReplyDirectives } from "./get-reply-directives.js";
 import { handleInlineActions } from "./get-reply-inline-actions.js";
 import { runPreparedReply } from "./get-reply-run.js";
 import { finalizeInboundContext } from "./inbound-context.js";
+import { loadPromptMediaImages } from "./prompt-media-images.js";
 import { applyResetModelOverride } from "./session-reset-model.js";
 import { initSessionState } from "./session.js";
 import { stageSandboxMedia } from "./stage-sandbox-media.js";
@@ -49,6 +51,14 @@ function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): st
   }
   const agentSet = new Set(agent);
   return channel.filter((name) => agentSet.has(name));
+}
+
+function hasPromptImages(ctx: MsgContext): boolean {
+  return (
+    (ctx.MultimodalRouting?.promptMedia ?? []).some((entry) => entry.kind === "image") ||
+    (ctx.MediaPaths?.length ?? 0) > 0 ||
+    (ctx.MediaUrls?.length ?? 0) > 0
+  );
 }
 
 export async function getReplyFromConfig(
@@ -80,7 +90,7 @@ export async function getReplyFromConfig(
   let provider = defaultProvider;
   let model = defaultModel;
   let hasResolvedHeartbeatModelOverride = false;
-  if (opts?.isHeartbeat) {
+  if (isHeartbeatRun(opts)) {
     // Prefer the resolved per-agent heartbeat model passed from the heartbeat runner,
     // fall back to the global defaults heartbeat model for backward compatibility.
     const heartbeatRaw =
@@ -101,10 +111,10 @@ export async function getReplyFromConfig(
 
   // Auto-routing: classify message complexity and override model (skip for heartbeats).
   let autoRoutingThinking: string | undefined;
-  if (!opts?.isHeartbeat) {
+  if (!isHeartbeatRun(opts)) {
     const autoRoutingResult = await resolveAutoRouting({
       prompt: ctx.Body ?? "",
-      hasImages: (ctx.MediaPaths?.length ?? 0) > 0 || (ctx.MediaUrls?.length ?? 0) > 0,
+      hasImages: hasPromptImages(ctx),
       config: cfg,
       agentId,
       defaultProvider: provider,
@@ -310,6 +320,16 @@ export async function getReplyFromConfig(
     workspaceDir,
   });
 
+  const inboundImages = await loadPromptMediaImages({
+    ctx,
+    workspaceDir,
+    existingImages: resolvedOpts?.images,
+  });
+  const runReplyOpts =
+    inboundImages !== resolvedOpts?.images
+      ? { ...resolvedOpts, images: inboundImages }
+      : resolvedOpts;
+
   return runPreparedReply({
     ctx,
     sessionCtx,
@@ -340,7 +360,7 @@ export async function getReplyFromConfig(
     perMessageQueueMode,
     perMessageQueueOptions,
     typing,
-    opts: resolvedOpts,
+    opts: runReplyOpts,
     defaultProvider,
     defaultModel,
     timeoutMs,

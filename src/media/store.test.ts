@@ -61,6 +61,8 @@ describe("media store", () => {
       const savedStat = await fs.stat(saved.path);
       expect(savedStat.size).toBe(buf.length);
       expect(saved.contentType).toBe("text/plain");
+      expect(saved.scope).toBe("inbound");
+      expect(saved.lifecycle).toBe("session");
       expect(saved.path.endsWith(".txt")).toBe(true);
 
       const jpeg = await sharp({
@@ -84,6 +86,8 @@ describe("media store", () => {
       await fs.writeFile(srcFile, "local file");
       const saved = await store.saveMediaSource(srcFile);
       expect(saved.size).toBe(10);
+      expect(saved.scope).toBe("transient");
+      expect(saved.lifecycle).toBe("transient");
       const savedStat = await fs.stat(saved.path);
       expect(savedStat.isFile()).toBe(true);
       expect(path.extname(saved.path)).toBe(".txt");
@@ -108,6 +112,24 @@ describe("media store", () => {
       await expect(fs.stat(saved.path)).rejects.toThrow();
       const inboundStat = await fs.stat(inboundDir);
       expect(inboundStat.isDirectory()).toBe(true);
+    });
+  });
+
+  it("allows explicit scope and lifecycle overrides", async () => {
+    await withTempStore(async (store) => {
+      const saved = await store.saveMediaBuffer(
+        Buffer.from("x"),
+        "text/plain",
+        "browser",
+        1024,
+        undefined,
+        {
+          scope: "browser",
+          lifecycle: "transient",
+        },
+      );
+      expect(saved.scope).toBe("browser");
+      expect(saved.lifecycle).toBe("transient");
     });
   });
 

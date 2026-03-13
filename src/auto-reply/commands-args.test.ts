@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMMAND_ARG_FORMATTERS } from "./commands-args.js";
+import { COMMAND_ARG_FORMATTERS, renderKnownCommandArgs } from "./commands-args.js";
 import type { CommandArgValues } from "./commands-registry.types.js";
 
 function formatArgs(key: keyof typeof COMMAND_ARG_FORMATTERS, values: Record<string, unknown>) {
@@ -45,5 +45,12 @@ describe("COMMAND_ARG_FORMATTERS", () => {
         drop: Symbol("tail"),
       }),
     ).toBe("fifo debounce:10 cap:2 drop:Symbol(tail)");
+  });
+
+  it("renders known command args through the shared contract helper", () => {
+    expect(renderKnownCommandArgs("config", { action: "show" } as CommandArgValues)).toBe("show");
+    expect(renderKnownCommandArgs("unknown", { action: "show" } as CommandArgValues)).toBe(
+      undefined,
+    );
   });
 });

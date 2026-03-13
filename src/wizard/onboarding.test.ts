@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_BOOTSTRAP_FILENAME } from "../agents/workspace.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runOnboardingWizard } from "./onboarding.js";
@@ -14,6 +14,30 @@ const resolvePreferredProviderForAuthChoice = vi.hoisted(() => vi.fn(() => "open
 const warnIfModelConfigLooksOff = vi.hoisted(() => vi.fn(async () => {}));
 const applyPrimaryModel = vi.hoisted(() => vi.fn((cfg) => cfg));
 const promptDefaultModel = vi.hoisted(() => vi.fn(async () => ({ config: null, model: null })));
+const runAuthProbes = vi.hoisted(() =>
+  vi.fn(async () => ({
+    startedAt: 0,
+    finishedAt: 1,
+    durationMs: 1,
+    totalTargets: 1,
+    options: {
+      provider: "openai",
+      timeoutMs: 8000,
+      concurrency: 1,
+      maxTokens: 16,
+    },
+    results: [
+      {
+        provider: "openai",
+        model: "openai/gpt-5.2",
+        label: "default",
+        source: "env",
+        status: "ok",
+      },
+    ],
+  })),
+);
+const describeProbeSummary = vi.hoisted(() => vi.fn(() => "Probed 1 target in 1ms"));
 const promptCustomApiConfig = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
 const configureGatewayForOnboarding = vi.hoisted(() =>
   vi.fn(async (args) => ({
@@ -112,6 +136,11 @@ vi.mock("../commands/auth-choice.js", () => ({
 vi.mock("../commands/model-picker.js", () => ({
   applyPrimaryModel,
   promptDefaultModel,
+}));
+
+vi.mock("../commands/models/list.probe.js", () => ({
+  runAuthProbes,
+  describeProbeSummary,
 }));
 
 vi.mock("../commands/onboard-custom.js", () => ({
@@ -229,6 +258,24 @@ function createRuntime(opts?: { throwsOnExit?: boolean }): RuntimeEnv {
   };
 }
 
+function parseWizardMetricsLog(runtime: RuntimeEnv): {
+  interactions: number;
+  total: number;
+} {
+  const calls = (runtime.log as ReturnType<typeof vi.fn>).mock.calls;
+  const line = calls
+    .map((call) => call[0])
+    .find(
+      (entry): entry is string => typeof entry === "string" && entry.includes("Wizard metrics:"),
+    );
+  if (!line) {
+    throw new Error("Wizard metrics log not found");
+  }
+  const interactions = Number(line.match(/interactions=(\d+)/)?.[1] ?? "NaN");
+  const total = Number(line.match(/total=(\d+)/)?.[1] ?? "NaN");
+  return { interactions, total };
+}
+
 describe("runOnboardingWizard", () => {
   let suiteRoot = "";
   let suiteCase = 0;
@@ -241,6 +288,79 @@ describe("runOnboardingWizard", () => {
     await fs.rm(suiteRoot, { recursive: true, force: true });
     suiteRoot = "";
     suiteCase = 0;
+  });
+
+  beforeEach(() => {
+    promptAuthChoiceGrouped.mockReset();
+    promptAuthChoiceGrouped.mockResolvedValue("skip");
+    applyAuthChoice.mockReset();
+    applyAuthChoice.mockImplementation(async (args) => ({ config: args.config }));
+    applyPrimaryModel.mockReset();
+    applyPrimaryModel.mockImplementation((cfg) => cfg);
+    promptDefaultModel.mockReset();
+    promptDefaultModel.mockResolvedValue({ config: null, model: null });
+    configureGatewayForOnboarding.mockReset();
+    configureGatewayForOnboarding.mockImplementation(async (args) => ({
+      nextConfig: args.nextConfig,
+      settings: {
+        port: args.localPort ?? 18789,
+        bind: "loopback",
+        authMode: "token",
+        gatewayToken: "test-token",
+        tailscaleMode: "off",
+        tailscaleResetOnExit: false,
+      },
+    }));
+    runAuthProbes.mockReset();
+    runAuthProbes.mockResolvedValue({
+      startedAt: 0,
+      finishedAt: 1,
+      durationMs: 1,
+      totalTargets: 1,
+      options: {
+        provider: "openai",
+        timeoutMs: 8000,
+        concurrency: 1,
+        maxTokens: 16,
+      },
+      results: [
+        {
+          provider: "openai",
+          model: "openai/gpt-5.2",
+          label: "default",
+          source: "env",
+          status: "ok",
+        },
+      ],
+    });
+    describeProbeSummary.mockReset();
+    describeProbeSummary.mockReturnValue("Probed 1 target in 1ms");
+    setupSkills.mockReset();
+    setupSkills.mockImplementation(async (cfg) => cfg);
+    setupInternalHooks.mockReset();
+    setupInternalHooks.mockImplementation(async (cfg) => cfg);
+    ensureWorkspaceAndSessions.mockReset();
+    ensureWorkspaceAndSessions.mockImplementation(async () => {});
+    writeConfigFile.mockReset();
+    writeConfigFile.mockImplementation(async () => {});
+    readConfigFileSnapshot.mockReset();
+    readConfigFileSnapshot.mockResolvedValue({
+      path: "/tmp/.marv/marv.json",
+      exists: false,
+      raw: null,
+      parsed: {},
+      resolved: {},
+      valid: true,
+      config: {},
+      issues: [],
+      warnings: [],
+      legacyIssues: [],
+    });
+    healthCommand.mockReset();
+    healthCommand.mockImplementation(async () => {});
+    runTui.mockReset();
+    runTui.mockImplementation(async () => {});
+    finalizeOnboardingWizard.mockClear();
   });
 
   async function makeCaseDir(prefix: string): Promise<string> {
@@ -407,5 +527,399 @@ describe("runOnboardingWizard", () => {
         process.env.BRAVE_API_KEY = prevBraveKey;
       }
     }
+  });
+
+  it("logs wizard metrics when instrumentation is enabled", async () => {
+    const prev = process.env.MARV_WIZARD_METRICS;
+    process.env.MARV_WIZARD_METRICS = "1";
+
+    try {
+      const prompter = createWizardPrompter();
+      const runtime = createRuntime();
+
+      await runOnboardingWizard(
+        {
+          acceptRisk: true,
+          flow: "quickstart",
+          authChoice: "skip",
+          installDaemon: false,
+          skipProviders: true,
+          skipSkills: true,
+          skipHealth: true,
+          skipUi: true,
+        },
+        runtime,
+        prompter,
+      );
+
+      expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Wizard metrics:"));
+    } finally {
+      if (prev === undefined) {
+        delete process.env.MARV_WIZARD_METRICS;
+      } else {
+        process.env.MARV_WIZARD_METRICS = prev;
+      }
+    }
+  });
+
+  it("keeps the fully skipped quickstart path at zero interactive steps", async () => {
+    const prev = process.env.MARV_WIZARD_METRICS;
+    process.env.MARV_WIZARD_METRICS = "1";
+
+    try {
+      const prompter = createWizardPrompter();
+      const runtime = createRuntime();
+
+      await runOnboardingWizard(
+        {
+          acceptRisk: true,
+          flow: "quickstart",
+          authChoice: "skip",
+          installDaemon: false,
+          skipProviders: true,
+          skipSkills: true,
+          skipHealth: true,
+          skipUi: true,
+        },
+        runtime,
+        prompter,
+      );
+
+      expect(parseWizardMetricsLog(runtime)).toEqual({
+        interactions: 0,
+        total: 5,
+      });
+    } finally {
+      if (prev === undefined) {
+        delete process.env.MARV_WIZARD_METRICS;
+      } else {
+        process.env.MARV_WIZARD_METRICS = prev;
+      }
+    }
+  });
+
+  it("keeps the TUI hatch path within a one-step interaction budget", async () => {
+    const prev = process.env.MARV_WIZARD_METRICS;
+    process.env.MARV_WIZARD_METRICS = "1";
+
+    try {
+      runTui.mockClear();
+      const workspaceDir = await makeCaseDir("metrics-workspace-");
+      await fs.writeFile(path.join(workspaceDir, DEFAULT_BOOTSTRAP_FILENAME), "{}");
+
+      const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
+        if (opts.message === "How do you want to hatch your bot?") {
+          return "tui";
+        }
+        return "quickstart";
+      }) as unknown as WizardPrompter["select"];
+
+      const prompter = createWizardPrompter({ select });
+      const runtime = createRuntime();
+
+      await runOnboardingWizard(
+        {
+          acceptRisk: true,
+          flow: "quickstart",
+          mode: "local",
+          workspace: workspaceDir,
+          authChoice: "skip",
+          skipProviders: true,
+          skipSkills: true,
+          skipHealth: true,
+          installDaemon: false,
+        },
+        runtime,
+        prompter,
+      );
+
+      const metrics = parseWizardMetricsLog(runtime);
+      expect(metrics.interactions).toBe(1);
+      expect(metrics.total).toBeGreaterThanOrEqual(5);
+      expect(metrics.total).toBeLessThanOrEqual(6);
+    } finally {
+      if (prev === undefined) {
+        delete process.env.MARV_WIZARD_METRICS;
+      } else {
+        process.env.MARV_WIZARD_METRICS = prev;
+      }
+    }
+  });
+
+  it("resolves model setup before asking for the local workspace path", async () => {
+    const events: string[] = [];
+    promptAuthChoiceGrouped.mockImplementationOnce(async () => {
+      events.push("auth");
+      return "skip";
+    });
+    promptDefaultModel.mockImplementationOnce(async () => {
+      events.push("model");
+      return { config: null, model: null };
+    });
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Onboarding mode") {
+        return "advanced";
+      }
+      if (params.message === "What do you want to set up?") {
+        return "local";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async (params) => {
+      if (params.message === "Workspace directory") {
+        events.push("workspace");
+      }
+      return "/tmp/model-first-workspace";
+    });
+
+    const prompter = createWizardPrompter({ select, text });
+    const runtime = createRuntime();
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(events).toEqual(["auth", "model", "workspace"]);
+  });
+
+  it("validates a configured model before prompting for the local workspace path", async () => {
+    const events: string[] = [];
+    promptAuthChoiceGrouped.mockImplementationOnce(async () => {
+      events.push("auth");
+      return "setup-token";
+    });
+    promptDefaultModel.mockImplementationOnce(async () => {
+      events.push("model");
+      return { config: null, model: "openai/gpt-5.2" };
+    });
+    applyPrimaryModel.mockImplementationOnce((cfg, model) => {
+      events.push("apply-model");
+      return {
+        ...cfg,
+        agents: {
+          ...cfg?.agents,
+          defaults: {
+            ...cfg?.agents?.defaults,
+            model: { primary: model },
+          },
+        },
+      };
+    });
+    runAuthProbes.mockImplementationOnce(async () => {
+      events.push("probe");
+      return {
+        startedAt: 0,
+        finishedAt: 1,
+        durationMs: 1,
+        totalTargets: 1,
+        options: {
+          provider: "openai",
+          timeoutMs: 8000,
+          concurrency: 1,
+          maxTokens: 16,
+        },
+        results: [
+          {
+            provider: "openai",
+            model: "openai/gpt-5.2",
+            label: "default",
+            source: "env",
+            status: "ok",
+          },
+        ],
+      };
+    });
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Onboarding mode") {
+        return "advanced";
+      }
+      if (params.message === "What do you want to set up?") {
+        return "local";
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async (params) => {
+      if (params.message === "Workspace directory") {
+        events.push("workspace");
+      }
+      return "/tmp/model-validated-workspace";
+    });
+
+    const prompter = createWizardPrompter({ select, text });
+    const runtime = createRuntime();
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(events).toEqual(["auth", "model", "apply-model", "probe", "workspace"]);
+    expect(runAuthProbes).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providers: ["openai"],
+        modelCandidates: ["openai/gpt-5.2"],
+        options: expect.objectContaining({
+          provider: "openai",
+          timeoutMs: 8000,
+          concurrency: 1,
+          maxTokens: 16,
+        }),
+      }),
+    );
+  });
+
+  it("keeps the advanced reconfiguration path within the measured interaction budget", async () => {
+    const prev = process.env.MARV_WIZARD_METRICS;
+    process.env.MARV_WIZARD_METRICS = "1";
+
+    try {
+      promptAuthChoiceGrouped.mockResolvedValueOnce("setup-token");
+      promptDefaultModel.mockResolvedValueOnce({ config: null, model: "openai/gpt-5.2" });
+      applyPrimaryModel.mockImplementationOnce((cfg, model) => ({
+        ...cfg,
+        agents: {
+          ...cfg?.agents,
+          defaults: {
+            ...cfg?.agents?.defaults,
+            model: { primary: model },
+          },
+        },
+      }));
+      readConfigFileSnapshot.mockResolvedValueOnce({
+        path: "/tmp/.marv/marv.json",
+        exists: true,
+        raw: "{}",
+        parsed: {},
+        resolved: {},
+        valid: true,
+        config: {
+          agents: { defaults: { workspace: "/tmp/existing-workspace" } },
+        },
+        issues: [],
+        warnings: [],
+        legacyIssues: [],
+      });
+
+      const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+        if (params.message === "Onboarding mode") {
+          return "advanced";
+        }
+        if (params.message === "Config handling") {
+          return "modify";
+        }
+        if (params.message === "What do you want to set up?") {
+          return "local";
+        }
+        return "quickstart";
+      }) as unknown as WizardPrompter["select"];
+      const text: WizardPrompter["text"] = vi.fn(async () => "/tmp/existing-workspace");
+
+      const prompter = createWizardPrompter({ select, text });
+      const runtime = createRuntime();
+
+      await runOnboardingWizard(
+        {
+          acceptRisk: true,
+          skipProviders: true,
+          skipSkills: true,
+          skipHealth: true,
+          skipUi: true,
+        },
+        runtime,
+        prompter,
+      );
+
+      const metrics = parseWizardMetricsLog(runtime);
+      expect(metrics.interactions).toBeLessThanOrEqual(5);
+      expect(metrics.total).toBeGreaterThanOrEqual(metrics.interactions);
+    } finally {
+      if (prev === undefined) {
+        delete process.env.MARV_WIZARD_METRICS;
+      } else {
+        process.env.MARV_WIZARD_METRICS = prev;
+      }
+    }
+  });
+
+  it("reuses existing local setup without re-prompting for model or workspace details", async () => {
+    readConfigFileSnapshot.mockResolvedValueOnce({
+      path: "/tmp/.marv/marv.json",
+      exists: true,
+      raw: "{}",
+      parsed: {},
+      resolved: {},
+      valid: true,
+      config: {
+        agents: {
+          defaults: {
+            workspace: "/tmp/existing-workspace",
+            model: { primary: "openai/gpt-5.2" },
+          },
+        },
+        gateway: {
+          port: 18789,
+          bind: "loopback",
+          auth: { mode: "token", token: "existing-token" },
+        },
+      },
+      issues: [],
+      warnings: [],
+      legacyIssues: [],
+    });
+
+    const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      if (params.message === "Onboarding mode") {
+        return "advanced";
+      }
+      if (params.message === "Config handling") {
+        return "keep";
+      }
+      if (params.message === "What do you want to set up?") {
+        throw new Error("setup target prompt should be skipped");
+      }
+      return "quickstart";
+    }) as unknown as WizardPrompter["select"];
+    const text: WizardPrompter["text"] = vi.fn(async () => {
+      throw new Error("workspace prompt should be skipped");
+    });
+
+    const prompter = createWizardPrompter({ select, text });
+    const runtime = createRuntime();
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        skipProviders: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(promptAuthChoiceGrouped).not.toHaveBeenCalled();
+    expect(promptDefaultModel).not.toHaveBeenCalled();
+    expect(configureGatewayForOnboarding).not.toHaveBeenCalled();
+    expect(setupSkills).not.toHaveBeenCalled();
+    expect(setupInternalHooks).not.toHaveBeenCalled();
+    expect(runAuthProbes).toHaveBeenCalledOnce();
   });
 });

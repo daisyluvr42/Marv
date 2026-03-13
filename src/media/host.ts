@@ -4,7 +4,7 @@ import { ensurePortAvailable, PortInUseError } from "../infra/ports.js";
 import { getTailnetHostname } from "../infra/tailscale.js";
 import { logInfo } from "../logger.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import { startMediaServer } from "./server.js";
+import { probeMediaServerIdentity, readMediaServerToken, startMediaServer } from "./server.js";
 import { saveMediaSource } from "./store.js";
 
 const DEFAULT_PORT = 42873;
@@ -29,7 +29,10 @@ export async function ensureMediaHosted(
   const port = opts.port ?? DEFAULT_PORT;
   const runtime = opts.runtime ?? defaultRuntime;
 
-  const saved = await saveMediaSource(source);
+  const saved = await saveMediaSource(source, undefined, "outbound", {
+    scope: "outbound",
+    lifecycle: "hosted",
+  });
   const hostname = await getTailnetHostname();
 
   // Decide whether we must start a media server.
@@ -48,6 +51,16 @@ export async function ensureMediaHosted(
         runtime,
       );
       mediaServer.unref?.();
+    }
+  }
+  if (!needsServerStart) {
+    const token = await readMediaServerToken();
+    const hostedByCurrentConfig = token ? await probeMediaServerIdentity(port, token) : false;
+    if (!hostedByCurrentConfig) {
+      await fs.rm(saved.path).catch(() => {});
+      throw new Error(
+        `Port ${port} is already in use, but the listener is not the current Marv media host.`,
+      );
     }
   }
 

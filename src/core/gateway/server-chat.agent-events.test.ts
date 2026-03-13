@@ -122,6 +122,35 @@ describe("agent event handler", () => {
     nowSpy?.mockRestore();
   });
 
+  it("suppresses webchat delta broadcast when heartbeat semantics come from runModeKind", () => {
+    const { broadcast, nodeSendToSession, chatRunState, handler, nowSpy } = createHarness({
+      now: 2_100,
+    });
+    chatRunState.registry.add("run-heartbeat-kind", {
+      sessionKey: "session-heartbeat",
+      clientRunId: "run-heartbeat-kind",
+    });
+    registerAgentRunContext("run-heartbeat-kind", {
+      sessionKey: "session-heartbeat",
+      runModeKind: "heartbeat",
+    });
+
+    handler({
+      runId: "run-heartbeat-kind",
+      seq: 1,
+      stream: "assistant",
+      ts: Date.now(),
+      data: { text: "heartbeat reply" },
+    });
+
+    const chatCalls = broadcast.mock.calls.filter(([event]) => event === "chat");
+    expect(chatCalls).toHaveLength(0);
+    const sessionChatCalls = nodeSendToSession.mock.calls.filter(([, event]) => event === "chat");
+    expect(sessionChatCalls).toHaveLength(1);
+    resetAgentRunContextForTest();
+    nowSpy?.mockRestore();
+  });
+
   it("cleans up agent run sequence tracking when lifecycle completes", () => {
     const { agentRunSeq, chatRunState, handler, nowSpy } = createHarness({ now: 2_500 });
     chatRunState.registry.add("run-cleanup", {

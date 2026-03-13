@@ -155,6 +155,10 @@ describe("applyMediaUnderstanding", () => {
       commandBody: "transcribed text",
     });
     expect((ctx as unknown as { BodyForAgent?: string }).BodyForAgent).toBe(ctx.Body);
+    expect(result.routing.promptMedia).toEqual([]);
+    expect(result.routing.derivedText.transcript).toBe("transcribed text");
+    expect(ctx.PromptMedia).toEqual([]);
+    expect(ctx.MultimodalRouting?.derivedText.transcript).toBe("transcribed text");
   });
 
   it("skips file blocks for text-like audio when transcription succeeds", async () => {

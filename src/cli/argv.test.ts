@@ -3,11 +3,14 @@ import {
   buildParseArgv,
   getFlagValue,
   getCommandPath,
+  resolveCommandCliBootstrapFromPath,
+  resolveCommandConfigValidityFromPath,
   getPrimaryCommand,
   getPositiveIntFlagValue,
   getVerboseFlag,
   hasHelpOrVersion,
   hasFlag,
+  resolveCommandSideEffectFromPath,
   shouldMigrateState,
   shouldMigrateStateFromPath,
 } from "./argv.js";
@@ -22,6 +25,11 @@ describe("argv helpers", () => {
   it("extracts command path ignoring flags and terminator", () => {
     expect(getCommandPath(["node", "marv", "status", "--json"], 2)).toEqual(["status"]);
     expect(getCommandPath(["node", "marv", "agents", "list"], 2)).toEqual(["agents", "list"]);
+    expect(getCommandPath(["node", "marv", "system", "heartbeat", "last"], 3)).toEqual([
+      "system",
+      "heartbeat",
+      "last",
+    ]);
     expect(getCommandPath(["node", "marv", "status", "--", "ignored"], 2)).toEqual(["status"]);
   });
 
@@ -138,8 +146,18 @@ describe("argv helpers", () => {
     expect(shouldMigrateState(["node", "marv", "status"])).toBe(false);
     expect(shouldMigrateState(["node", "marv", "health"])).toBe(false);
     expect(shouldMigrateState(["node", "marv", "sessions"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "logs"])).toBe(false);
     expect(shouldMigrateState(["node", "marv", "config", "get", "update"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "config", "validate"])).toBe(false);
     expect(shouldMigrateState(["node", "marv", "config", "unset", "update"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "gateway", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "gateway", "probe"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "browser", "console"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "update", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "daemon", "status"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "system", "presence"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "system", "heartbeat", "last"])).toBe(false);
+    expect(shouldMigrateState(["node", "marv", "system", "heartbeat", "enable"])).toBe(true);
     expect(shouldMigrateState(["node", "marv", "models", "list"])).toBe(false);
     expect(shouldMigrateState(["node", "marv", "models", "status"])).toBe(false);
     expect(shouldMigrateState(["node", "marv", "memory", "status"])).toBe(false);
@@ -150,8 +168,47 @@ describe("argv helpers", () => {
 
   it("reuses command path for migrate state decisions", () => {
     expect(shouldMigrateStateFromPath(["status"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["logs"])).toBe(false);
     expect(shouldMigrateStateFromPath(["config", "get"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["config", "validate"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["gateway", "health"])).toBe(false);
+    expect(shouldMigrateStateFromPath(["system", "heartbeat", "last"])).toBe(false);
     expect(shouldMigrateStateFromPath(["models", "status"])).toBe(false);
     expect(shouldMigrateStateFromPath(["agents", "list"])).toBe(true);
+  });
+
+  it("resolves side effects declaratively from command paths", () => {
+    expect(resolveCommandSideEffectFromPath(["status"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["logs"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["config", "get"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["config", "validate"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["gateway", "discover"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["browser", "errors"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["system", "heartbeat", "last"])).toBe("none");
+    expect(resolveCommandSideEffectFromPath(["system", "heartbeat", "enable"])).toBe(
+      "state-migrate",
+    );
+    expect(resolveCommandSideEffectFromPath(["message", "send"])).toBe("state-migrate");
+    expect(resolveCommandSideEffectFromPath([])).toBe("state-migrate");
+  });
+
+  it("resolves invalid-config allowance declaratively from command paths", () => {
+    expect(resolveCommandConfigValidityFromPath(["status"])).toBe("allow-invalid");
+    expect(resolveCommandConfigValidityFromPath(["config", "get"])).toBe("allow-invalid");
+    expect(resolveCommandConfigValidityFromPath(["config", "validate"])).toBe("allow-invalid");
+    expect(resolveCommandConfigValidityFromPath(["gateway", "probe"])).toBe("allow-invalid");
+    expect(resolveCommandConfigValidityFromPath(["message", "send"])).toBe("require-valid");
+    expect(resolveCommandConfigValidityFromPath([])).toBe("require-valid");
+  });
+
+  it("resolves CLI path bootstrap policy declaratively from command paths", () => {
+    expect(resolveCommandCliBootstrapFromPath(["status"])).toBe("skip");
+    expect(resolveCommandCliBootstrapFromPath(["config", "validate"])).toBe("skip");
+    expect(resolveCommandCliBootstrapFromPath(["memory", "status"])).toBe("skip");
+    expect(resolveCommandCliBootstrapFromPath(["browser", "console"])).toBe("skip");
+    expect(resolveCommandCliBootstrapFromPath(["system", "heartbeat", "last"])).toBe("skip");
+    expect(resolveCommandCliBootstrapFromPath(["system", "heartbeat", "enable"])).toBe("require");
+    expect(resolveCommandCliBootstrapFromPath(["message", "send"])).toBe("require");
+    expect(resolveCommandCliBootstrapFromPath([])).toBe("require");
   });
 });

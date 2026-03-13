@@ -3,22 +3,8 @@ import { readConfigFileSnapshot } from "../../core/config/config.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { shortenHomePath } from "../../utils.js";
-import { shouldMigrateStateFromPath } from "../argv.js";
+import { resolveCommandConfigValidityFromPath, shouldMigrateStateFromPath } from "../argv.js";
 import { formatCliCommand } from "../command-format.js";
-
-const ALLOWED_INVALID_COMMANDS = new Set(["doctor", "logs", "health", "help", "status"]);
-const ALLOWED_INVALID_GATEWAY_SUBCOMMANDS = new Set([
-  "status",
-  "probe",
-  "health",
-  "discover",
-  "call",
-  "install",
-  "uninstall",
-  "start",
-  "stop",
-  "restart",
-]);
 let didRunDoctorConfigFlow = false;
 let configSnapshotPromise: Promise<Awaited<ReturnType<typeof readConfigFileSnapshot>>> | null =
   null;
@@ -50,14 +36,7 @@ export async function ensureConfigReady(params: {
   }
 
   const snapshot = await getConfigSnapshot();
-  const commandName = commandPath[0];
-  const subcommandName = commandPath[1];
-  const allowInvalid = commandName
-    ? ALLOWED_INVALID_COMMANDS.has(commandName) ||
-      (commandName === "gateway" &&
-        subcommandName &&
-        ALLOWED_INVALID_GATEWAY_SUBCOMMANDS.has(subcommandName))
-    : false;
+  const allowInvalid = resolveCommandConfigValidityFromPath(commandPath) === "allow-invalid";
   const issues = snapshot.exists && !snapshot.valid ? formatConfigIssues(snapshot.issues) : [];
   const legacyIssues =
     snapshot.legacyIssues.length > 0

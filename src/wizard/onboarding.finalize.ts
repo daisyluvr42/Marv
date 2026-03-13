@@ -12,6 +12,7 @@ import {
 } from "../commands/daemon-runtime.js";
 import { formatHealthCheckFailure } from "../commands/health-format.js";
 import { healthCommand } from "../commands/health.js";
+import { resolvePrimaryModel } from "../commands/model-default.js";
 import {
   detectBrowserOpenSupport,
   formatControlUiSshHint,
@@ -21,7 +22,8 @@ import {
   resolveControlUiLinks,
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
-import type { MarvConfig } from "../core/config/config.js";
+import { writeConfigFile, type MarvConfig } from "../core/config/config.js";
+import { logConfigUpdated } from "../core/config/logging.js";
 import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import { resolveGatewayService } from "../infra/daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../infra/daemon/systemd.js";
@@ -32,6 +34,11 @@ import { resolveUserPath } from "../utils.js";
 import { setupOnboardingShellCompletion } from "./onboarding.completion.js";
 import type { GatewayWizardSettings, WizardFlow } from "./onboarding.types.js";
 import type { WizardPrompter } from "./prompts.js";
+import {
+  applyWizardRevision,
+  describeSupportedWizardRevisions,
+  promptWizardRevisionFallback,
+} from "./revision.js";
 
 type FinalizeOnboardingOptions = {
   flow: WizardFlow;
@@ -44,10 +51,54 @@ type FinalizeOnboardingOptions = {
   runtime: RuntimeEnv;
 };
 
+function listOnboardingCapabilities(params: { nextConfig: MarvConfig; channelsEnabled: number }) {
+  const capabilities: string[] = [];
+  const controlUiEnabled = params.nextConfig.gateway?.controlUi?.enabled ?? true;
+  if (controlUiEnabled) {
+    capabilities.push("Control UI");
+  }
+  const webSearchKey = (params.nextConfig.tools?.web?.search?.apiKey ?? "").trim();
+  const webSearchEnv = (process.env.BRAVE_API_KEY ?? "").trim();
+  if (webSearchKey || webSearchEnv) {
+    capabilities.push("Web search");
+  }
+  if (params.channelsEnabled > 0) {
+    capabilities.push(
+      `${params.channelsEnabled} chat channel${params.channelsEnabled === 1 ? "" : "s"} configured`,
+    );
+  }
+  return capabilities;
+}
+
+export function formatOnboardingSetupSummary(params: {
+  nextConfig: MarvConfig;
+  workspaceDir: string;
+  settings: GatewayWizardSettings;
+}) {
+  const primaryModel = resolvePrimaryModel(params.nextConfig.agents?.defaults?.model);
+  const channelsEnabled = Object.entries(params.nextConfig.channels ?? {}).filter(
+    ([, value]) => value && typeof value === "object",
+  ).length;
+  const capabilities = listOnboardingCapabilities({
+    nextConfig: params.nextConfig,
+    channelsEnabled,
+  });
+  const summaryLines = [
+    "Setup summary:",
+    `Primary model: ${primaryModel?.trim() || "not configured yet"}`,
+    `Workspace: ${resolveUserPath(params.workspaceDir)}`,
+    `Gateway: ${params.settings.bind}:${params.settings.port} (${params.settings.authMode})`,
+    `Tailscale: ${params.settings.tailscaleMode}`,
+    `Capabilities: ${capabilities.join(", ") || "Core local setup"}`,
+  ];
+  return summaryLines.join("\n");
+}
+
 export async function finalizeOnboardingWizard(
   options: FinalizeOnboardingOptions,
 ): Promise<{ launchedTui: boolean }> {
-  const { flow, opts, baseConfig, nextConfig, settings, prompter, runtime } = options;
+  const { flow, opts, baseConfig, prompter, runtime } = options;
+  let { nextConfig, settings, workspaceDir } = options;
 
   const withWizardProgress = async <T>(
     label: string,
@@ -240,139 +291,243 @@ export async function finalizeOnboardingWizard(
 
   const controlUiBasePath =
     nextConfig.gateway?.controlUi?.basePath ?? baseConfig.gateway?.controlUi?.basePath;
-  const links = resolveControlUiLinks({
-    bind: settings.bind,
-    port: settings.port,
-    customBindHost: settings.customBindHost,
-    basePath: controlUiBasePath,
-  });
-  const authedUrl =
-    settings.authMode === "token" && settings.gatewayToken
-      ? `${links.httpUrl}#token=${encodeURIComponent(settings.gatewayToken)}`
-      : links.httpUrl;
-  const gatewayProbe = await probeGatewayReachable({
-    url: links.wsUrl,
-    token: settings.authMode === "token" ? settings.gatewayToken : undefined,
-    password: settings.authMode === "password" ? nextConfig.gateway?.auth?.password : "",
-  });
-  const gatewayStatusLine = gatewayProbe.ok
-    ? "Gateway: reachable"
-    : `Gateway: not detected${gatewayProbe.detail ? ` (${gatewayProbe.detail})` : ""}`;
-  const bootstrapPath = path.join(
-    resolveUserPath(options.workspaceDir),
-    DEFAULT_BOOTSTRAP_FILENAME,
-  );
-  const hasBootstrap = await fs
-    .access(bootstrapPath)
-    .then(() => true)
-    .catch(() => false);
-
-  await prompter.note(
-    [
-      `Web UI: ${links.httpUrl}`,
-      settings.authMode === "token" && settings.gatewayToken
-        ? `Web UI (with token): ${authedUrl}`
-        : undefined,
-      `Gateway WS: ${links.wsUrl}`,
-      gatewayStatusLine,
-      "Docs: /web/control-ui",
-    ]
-      .filter(Boolean)
-      .join("\n"),
-    "Control UI",
-  );
-
   let controlUiOpened = false;
   let controlUiOpenHint: string | undefined;
   let seededInBackground = false;
-  let hatchChoice: "tui" | "web" | "later" | null = null;
+  let hatchChoice: "tui" | "web" | "later" | "revise" | null = null;
   let launchedTui = false;
 
-  if (!opts.skipUi && gatewayProbe.ok) {
-    if (hasBootstrap) {
-      await prompter.note(
-        [
-          "This is the defining action that makes your agent you.",
-          "Please take your time.",
-          "The more you tell it, the better the experience will be.",
-          'We will send: "Wake up, my friend!"',
-        ].join("\n"),
-        "Start TUI (best option!)",
-      );
-    }
-
-    await prompter.note(
-      [
-        "Gateway token: shared auth for the Gateway + Control UI.",
-        "Stored in: ~/.marv/marv.json (gateway.auth.token) or MARV_GATEWAY_TOKEN.",
-        `View token: ${formatCliCommand("marv config get gateway.auth.token")}`,
-        `Generate token: ${formatCliCommand("marv doctor --generate-gateway-token")}`,
-        "Web UI stores a copy in this browser's localStorage (marv.control.settings.v1; legacy key also supported).",
-        `Open the dashboard anytime: ${formatCliCommand("marv dashboard --no-open")}`,
-        "If prompted: paste the token into Control UI settings (or use the tokenized dashboard URL).",
-      ].join("\n"),
-      "Token",
-    );
-
-    hatchChoice = await prompter.select({
-      message: "How do you want to hatch your bot?",
-      options: [
-        { value: "tui", label: "Hatch in TUI (recommended)" },
-        { value: "web", label: "Open the Web UI" },
-        { value: "later", label: "Do this later" },
-      ],
-      initialValue: "tui",
-    });
-
-    if (hatchChoice === "tui") {
-      restoreTerminalState("pre-onboarding tui", { resumeStdinIfPaused: true });
-      await runTui({
+  if (opts.skipUi) {
+    await prompter.note("Skipping Control UI/TUI prompts.", "Control UI");
+  } else {
+    // Keep the default interaction budget stable: revision support lives behind the
+    // existing post-setup choice instead of adding a new mandatory prompt.
+    while (true) {
+      const links = resolveControlUiLinks({
+        bind: settings.bind,
+        port: settings.port,
+        customBindHost: settings.customBindHost,
+        basePath: controlUiBasePath,
+      });
+      const authedUrl =
+        settings.authMode === "token" && settings.gatewayToken
+          ? `${links.httpUrl}#token=${encodeURIComponent(settings.gatewayToken)}`
+          : links.httpUrl;
+      const gatewayProbe = await probeGatewayReachable({
         url: links.wsUrl,
         token: settings.authMode === "token" ? settings.gatewayToken : undefined,
         password: settings.authMode === "password" ? nextConfig.gateway?.auth?.password : "",
-        // Safety: onboarding TUI should not auto-deliver to lastProvider/lastTo.
-        deliver: false,
-        message: hasBootstrap ? "Wake up, my friend!" : undefined,
       });
-      launchedTui = true;
-    } else if (hatchChoice === "web") {
-      const browserSupport = await detectBrowserOpenSupport();
-      if (browserSupport.ok) {
-        controlUiOpened = await openUrl(authedUrl);
-        if (!controlUiOpened) {
+      const gatewayStatusLine = gatewayProbe.ok
+        ? "Gateway: reachable"
+        : `Gateway: not detected${gatewayProbe.detail ? ` (${gatewayProbe.detail})` : ""}`;
+      const bootstrapPath = path.join(resolveUserPath(workspaceDir), DEFAULT_BOOTSTRAP_FILENAME);
+      const hasBootstrap = await fs
+        .access(bootstrapPath)
+        .then(() => true)
+        .catch(() => false);
+
+      await prompter.note(
+        [
+          formatOnboardingSetupSummary({
+            nextConfig,
+            workspaceDir,
+            settings,
+          }),
+          "",
+          `Web UI: ${links.httpUrl}`,
+          settings.authMode === "token" && settings.gatewayToken
+            ? `Web UI (with token): ${authedUrl}`
+            : undefined,
+          `Gateway WS: ${links.wsUrl}`,
+          gatewayStatusLine,
+          "Docs: /web/control-ui",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        "Control UI",
+      );
+
+      if (gatewayProbe.ok) {
+        if (hasBootstrap) {
+          await prompter.note(
+            [
+              "This is the defining action that makes your agent you.",
+              "Please take your time.",
+              "The more you tell it, the better the experience will be.",
+              'We will send: "Wake up, my friend!"',
+            ].join("\n"),
+            "Start TUI (best option!)",
+          );
+        }
+
+        await prompter.note(
+          [
+            "Gateway token: shared auth for the Gateway + Control UI.",
+            "Stored in: ~/.marv/marv.json (gateway.auth.token) or MARV_GATEWAY_TOKEN.",
+            `View token: ${formatCliCommand("marv config get gateway.auth.token")}`,
+            `Generate token: ${formatCliCommand("marv doctor --generate-gateway-token")}`,
+            "Web UI stores a copy in this browser's localStorage (marv.control.settings.v1; legacy key also supported).",
+            `Open the dashboard anytime: ${formatCliCommand("marv dashboard --no-open")}`,
+            "If prompted: paste the token into Control UI settings (or use the tokenized dashboard URL).",
+          ].join("\n"),
+          "Token",
+        );
+      }
+
+      hatchChoice = gatewayProbe.ok
+        ? await prompter.select({
+            message: "How do you want to hatch your bot?",
+            options: [
+              { value: "tui", label: "Hatch in TUI (recommended)" },
+              { value: "web", label: "Open the Web UI" },
+              { value: "revise", label: "Revise setup" },
+              { value: "later", label: "Do this later" },
+            ],
+            initialValue: "tui",
+          })
+        : await prompter.select({
+            message: "Gateway is not reachable yet. What do you want to do next?",
+            options: [
+              { value: "revise", label: "Revise setup" },
+              { value: "later", label: "Do this later" },
+            ],
+            initialValue: "revise",
+          });
+
+      if (hatchChoice === "revise") {
+        const revisionInput = await prompter.text({
+          message: "What would you like to change?",
+          placeholder: "e.g. switch default model to openai/gpt-5.2",
+        });
+        const revision = await applyWizardRevision({
+          input: revisionInput,
+          nextConfig,
+          settings,
+          prompter,
+        });
+        if (!revision.recognized) {
+          await prompter.note(describeSupportedWizardRevisions(), "Supported setup changes");
+          const fallbackRevision = await promptWizardRevisionFallback({
+            nextConfig,
+            settings,
+            prompter,
+          });
+          if (!fallbackRevision) {
+            await prompter.note("No setup changes applied.", "Setup unchanged");
+            continue;
+          }
+          if (!fallbackRevision.changed) {
+            await prompter.note(
+              fallbackRevision.notes.join("\n") ||
+                "That request does not change the current setup.",
+              "Setup unchanged",
+            );
+            continue;
+          }
+          nextConfig = fallbackRevision.nextConfig;
+          settings = fallbackRevision.settings;
+          await writeConfigFile(nextConfig);
+          logConfigUpdated(runtime);
+          if (fallbackRevision.restartGateway) {
+            const service = resolveGatewayService();
+            if (await service.isLoaded({ env: process.env })) {
+              await withWizardProgress(
+                "Gateway service",
+                { doneMessage: "Gateway service restarted." },
+                async (progress) => {
+                  progress.update("Restarting Gateway service…");
+                  await service.restart({
+                    env: process.env,
+                    stdout: process.stdout,
+                  });
+                },
+              );
+            }
+          }
+          await prompter.note(fallbackRevision.notes.join("\n"), "Setup updated");
+          continue;
+        }
+        if (!revision.changed) {
+          await prompter.note(
+            revision.notes.join("\n") || "That request does not change the current setup.",
+            "Setup unchanged",
+          );
+          continue;
+        }
+        nextConfig = revision.nextConfig;
+        settings = revision.settings;
+        await writeConfigFile(nextConfig);
+        logConfigUpdated(runtime);
+        if (revision.restartGateway) {
+          const service = resolveGatewayService();
+          if (await service.isLoaded({ env: process.env })) {
+            await withWizardProgress(
+              "Gateway service",
+              { doneMessage: "Gateway service restarted." },
+              async (progress) => {
+                progress.update("Restarting Gateway service…");
+                await service.restart({
+                  env: process.env,
+                  stdout: process.stdout,
+                });
+              },
+            );
+          }
+        }
+        await prompter.note(revision.notes.join("\n"), "Setup updated");
+        continue;
+      }
+
+      if (hatchChoice === "tui") {
+        restoreTerminalState("pre-onboarding tui", { resumeStdinIfPaused: true });
+        await runTui({
+          url: links.wsUrl,
+          token: settings.authMode === "token" ? settings.gatewayToken : undefined,
+          password: settings.authMode === "password" ? nextConfig.gateway?.auth?.password : "",
+          // Safety: onboarding TUI should not auto-deliver to lastProvider/lastTo.
+          deliver: false,
+          message: hasBootstrap ? "Wake up, my friend!" : undefined,
+        });
+        launchedTui = true;
+      } else if (hatchChoice === "web") {
+        const browserSupport = await detectBrowserOpenSupport();
+        if (browserSupport.ok) {
+          controlUiOpened = await openUrl(authedUrl);
+          if (!controlUiOpened) {
+            controlUiOpenHint = formatControlUiSshHint({
+              port: settings.port,
+              basePath: controlUiBasePath,
+              token: settings.authMode === "token" ? settings.gatewayToken : undefined,
+            });
+          }
+        } else {
           controlUiOpenHint = formatControlUiSshHint({
             port: settings.port,
             basePath: controlUiBasePath,
             token: settings.authMode === "token" ? settings.gatewayToken : undefined,
           });
         }
+        await prompter.note(
+          [
+            `Dashboard link (with token): ${authedUrl}`,
+            controlUiOpened
+              ? "Opened in your browser. Keep that tab to control Marv."
+              : "Copy/paste this URL in a browser on this machine to control Marv.",
+            controlUiOpenHint,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          "Dashboard ready",
+        );
       } else {
-        controlUiOpenHint = formatControlUiSshHint({
-          port: settings.port,
-          basePath: controlUiBasePath,
-          token: settings.authMode === "token" ? settings.gatewayToken : undefined,
-        });
+        await prompter.note(
+          `When you're ready: ${formatCliCommand("marv dashboard --no-open")}`,
+          "Later",
+        );
       }
-      await prompter.note(
-        [
-          `Dashboard link (with token): ${authedUrl}`,
-          controlUiOpened
-            ? "Opened in your browser. Keep that tab to control Marv."
-            : "Copy/paste this URL in a browser on this machine to control Marv.",
-          controlUiOpenHint,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        "Dashboard ready",
-      );
-    } else {
-      await prompter.note(
-        `When you're ready: ${formatCliCommand("marv dashboard --no-open")}`,
-        "Later",
-      );
+      break;
     }
-  } else if (opts.skipUi) {
-    await prompter.note("Skipping Control UI/TUI prompts.", "Control UI");
   }
 
   await prompter.note(

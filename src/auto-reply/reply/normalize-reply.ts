@@ -1,5 +1,6 @@
 import { sanitizeUserFacingText } from "../../agents/runner/pi-embedded-helpers.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
+import type { StripHeartbeatMode } from "../heartbeat.js";
 import { HEARTBEAT_TOKEN, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { hasLineDirectives, parseLineDirectives } from "./line-directives.js";
@@ -16,6 +17,9 @@ export type NormalizeReplyOptions = {
   responsePrefixContext?: ResponsePrefixContext;
   onHeartbeatStrip?: () => void;
   stripHeartbeat?: boolean;
+  heartbeatToken?: string;
+  heartbeatMode?: StripHeartbeatMode;
+  heartbeatMaxChars?: number;
   silentToken?: string;
   onSkip?: (reason: NormalizeReplySkipReason) => void;
 };
@@ -49,8 +53,13 @@ export function normalizeReplyPayload(
   }
 
   const shouldStripHeartbeat = opts.stripHeartbeat ?? true;
-  if (shouldStripHeartbeat && text?.includes(HEARTBEAT_TOKEN)) {
-    const stripped = stripHeartbeatToken(text, { mode: "message" });
+  const heartbeatToken = opts.heartbeatToken?.trim() || HEARTBEAT_TOKEN;
+  if (shouldStripHeartbeat && text?.includes(heartbeatToken)) {
+    const stripped = stripHeartbeatToken(text, {
+      mode: opts.heartbeatMode ?? "message",
+      token: heartbeatToken,
+      maxAckChars: opts.heartbeatMaxChars,
+    });
     if (stripped.didStrip) {
       opts.onHeartbeatStrip?.();
     }

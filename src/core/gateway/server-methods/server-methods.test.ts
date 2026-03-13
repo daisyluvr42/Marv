@@ -4,7 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { emitAgentEvent } from "../../../infra/agent-events.js";
+import {
+  emitAgentEvent,
+  registerAgentRunContext,
+  resetAgentRunContextForTest,
+} from "../../../infra/agent-events.js";
 import { formatZonedTimestamp } from "../../../infra/format-time/format-datetime.js";
 import { resetLogger, setLoggerOverride } from "../../../logging.js";
 import { ExecApprovalManager } from "../exec-approval-manager.js";
@@ -21,6 +25,10 @@ vi.mock("../../../commands/status.js", () => ({
 }));
 
 describe("waitForAgentJob", () => {
+  beforeEach(() => {
+    resetAgentRunContextForTest();
+  });
+
   it("maps lifecycle end events with aborted=true to timeout", async () => {
     const runId = `run-timeout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const waitPromise = waitForAgentJob({ runId, timeoutMs: 1_000 });
@@ -51,6 +59,26 @@ describe("waitForAgentJob", () => {
     expect(snapshot?.status).toBe("ok");
     expect(snapshot?.startedAt).toBe(300);
     expect(snapshot?.endedAt).toBe(400);
+  });
+
+  it("keeps operator wait snapshots stable when lifecycle events carry newer run context metadata", async () => {
+    const runId = `run-context-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    registerAgentRunContext(runId, {
+      sessionKey: "agent:main:main",
+      runModeKind: "user",
+      verboseLevel: "on",
+    });
+
+    const waitPromise = waitForAgentJob({ runId, timeoutMs: 1_000 });
+
+    emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "start", startedAt: 500 } });
+    emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "end", endedAt: 650 } });
+
+    const snapshot = await waitPromise;
+    expect(snapshot).not.toBeNull();
+    expect(snapshot?.status).toBe("ok");
+    expect(snapshot?.startedAt).toBe(500);
+    expect(snapshot?.endedAt).toBe(650);
   });
 });
 

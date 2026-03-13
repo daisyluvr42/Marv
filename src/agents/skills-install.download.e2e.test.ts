@@ -128,6 +128,41 @@ describe("installSkill download extraction safety", () => {
     }
   });
 
+  it("rejects zip entries that use Windows drive paths", async () => {
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-skills-install-"));
+    try {
+      const stateDir = setTempStateDir(workspaceDir);
+      const targetDir = path.join(stateDir, "tools", "zip-drive", "target");
+      const outsideWritePath = path.join(targetDir, "evil.txt");
+      const url = "https://example.invalid/evil-drive.zip";
+
+      const zip = new JSZip();
+      zip.file("C:/evil.txt", "pwnd");
+      const buffer = await zip.generateAsync({ type: "nodebuffer" });
+
+      fetchWithSsrFGuardMock.mockResolvedValue({
+        response: new Response(new Uint8Array(buffer), { status: 200 }),
+        release: async () => undefined,
+      });
+
+      await writeDownloadSkill({
+        workspaceDir,
+        name: "zip-drive",
+        installId: "dl",
+        url,
+        archive: "zip",
+        targetDir,
+      });
+
+      const result = await installSkill({ workspaceDir, skillName: "zip-drive", installId: "dl" });
+      expect(result.ok).toBe(false);
+      expect(result.stderr).toContain("drive path");
+      expect(await fileExists(outsideWritePath)).toBe(false);
+    } finally {
+      await fs.rm(workspaceDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  });
+
   it("rejects tar.gz traversal", async () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-skills-install-"));
     try {

@@ -6,7 +6,7 @@ import JSZip from "jszip";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinnedLookup } from "../infra/net/ssrf.js";
 import { captureEnv } from "../test-utils/env.js";
-import { saveMediaSource, setMediaStoreNetworkDepsForTest } from "./store.js";
+import { getMediaDir, saveMediaSource, setMediaStoreNetworkDepsForTest } from "./store.js";
 
 const HOME = path.join(os.tmpdir(), "marv-home-redirect");
 const mockRequest = vi.fn();
@@ -143,5 +143,25 @@ describe("media store redirects", () => {
       "Redirect loop or missing Location header",
     );
     expect(mockRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes temp files when a download fails after writing data", async () => {
+    mockRequest.mockImplementationOnce((_url, _opts, cb) => {
+      const { req, res } = createMockHttpExchange();
+      res.statusCode = 200;
+      res.headers = { "content-type": "text/plain" };
+      setImmediate(() => {
+        cb(res as unknown);
+        res.write("partial");
+        res.destroy(new Error("socket closed"));
+      });
+      return req;
+    });
+
+    await expect(saveMediaSource("https://example.com/broken")).rejects.toThrow("socket closed");
+
+    const mediaDir = getMediaDir();
+    const entries = await fs.readdir(mediaDir).catch(() => []);
+    expect(entries.filter((entry) => entry.endsWith(".tmp"))).toEqual([]);
   });
 });

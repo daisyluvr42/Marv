@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  CHANNEL_POLICY_CONTRACT_VERSION,
   resolveCommandAuthorizedFromAuthorizers,
   resolveControlCommandGate,
 } from "./command-gating.js";
+
+describe("channel policy contract", () => {
+  it("exposes a stable shared contract version", () => {
+    expect(CHANNEL_POLICY_CONTRACT_VERSION).toBe(1);
+  });
+});
 
 describe("resolveCommandAuthorizedFromAuthorizers", () => {
   it("denies when useAccessGroups is enabled and no authorizer is configured", () => {

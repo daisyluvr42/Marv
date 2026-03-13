@@ -26,6 +26,22 @@ function resolveDebugQuery(params: {
   };
 }
 
+function formatBrowserRequestLine(request: {
+  timestamp: string;
+  method: string;
+  status?: number;
+  ok?: boolean;
+  url: string;
+  failureText?: string;
+  resourceType?: string;
+}) {
+  const status = typeof request.status === "number" ? ` ${request.status}` : "";
+  const ok = request.ok === true ? " ok" : request.ok === false ? " fail" : "";
+  const resourceType = request.resourceType ? ` [${request.resourceType}]` : "";
+  const fail = request.failureText ? ` (${request.failureText})` : "";
+  return `${request.timestamp} ${request.method}${status}${ok}${resourceType} ${request.url}${fail}`;
+}
+
 export function registerBrowserDebugCommands(
   browser: Command,
   parentOpts: (cmd: Command) => BrowserParentOpts,
@@ -118,6 +134,7 @@ export function registerBrowserDebugCommands(
             ok?: boolean;
             url: string;
             failureText?: string;
+            resourceType?: string;
           }>;
         }>(
           parent,
@@ -142,14 +159,7 @@ export function registerBrowserDebugCommands(
           return;
         }
         defaultRuntime.log(
-          result.requests
-            .map((r) => {
-              const status = typeof r.status === "number" ? ` ${r.status}` : "";
-              const ok = r.ok === true ? " ok" : r.ok === false ? " fail" : "";
-              const fail = r.failureText ? ` (${r.failureText})` : "";
-              return `${r.timestamp} ${r.method}${status}${ok} ${r.url}${fail}`;
-            })
-            .join("\n"),
+          result.requests.map((request) => formatBrowserRequestLine(request)).join("\n"),
         );
       });
     });

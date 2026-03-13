@@ -455,7 +455,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         });
         bestEffortDeliver = true;
       }
-      registerAgentRunContext(idem, { sessionKey: canonicalSessionKey });
+      registerAgentRunContext(idem, { sessionKey: canonicalSessionKey, runModeKind: "user" });
     }
 
     const runId = idem;
