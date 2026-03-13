@@ -2,6 +2,9 @@ export type { CommandArgRenderer, CommandRenderContext } from "./command-render.
 export { renderCommandArgs } from "./command-render.js";
 export type {
   HostedMediaRef,
+  MediaStorageHandle,
+  MediaStoragePreset,
+  MediaStorageTarget,
   MediaRefLifecycle,
   MediaRefScope,
   PromptMediaKind,

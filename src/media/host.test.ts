@@ -77,10 +77,7 @@ describe("ensureMediaHosted", () => {
       startServer: true,
       port: 1234,
     });
-    expect(saveMediaSource).toHaveBeenCalledWith("/tmp/file2", undefined, "outbound", {
-      scope: "outbound",
-      lifecycle: "hosted",
-    });
+    expect(saveMediaSource).toHaveBeenCalledWith("/tmp/file2", undefined, "hosted");
     expect(startMediaServer).toHaveBeenCalledWith(1234, expect.any(Number), expect.anything());
     expect(logInfo).toHaveBeenCalled();
     expect(result).toEqual({

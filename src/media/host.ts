@@ -29,10 +29,7 @@ export async function ensureMediaHosted(
   const port = opts.port ?? DEFAULT_PORT;
   const runtime = opts.runtime ?? defaultRuntime;
 
-  const saved = await saveMediaSource(source, undefined, "outbound", {
-    scope: "outbound",
-    lifecycle: "hosted",
-  });
+  const saved = await saveMediaSource(source, undefined, "hosted");
   const hostname = await getTailnetHostname();
 
   // Decide whether we must start a media server.

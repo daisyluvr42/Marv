@@ -115,7 +115,7 @@ describe("media store", () => {
     });
   });
 
-  it("allows explicit scope and lifecycle overrides", async () => {
+  it("keeps browser captures session-scoped under the browser subdir", async () => {
     await withTempStore(async (store) => {
       const saved = await store.saveMediaBuffer(
         Buffer.from("x"),
@@ -123,13 +123,50 @@ describe("media store", () => {
         "browser",
         1024,
         undefined,
-        {
-          scope: "browser",
-          lifecycle: "transient",
-        },
       );
       expect(saved.scope).toBe("browser");
-      expect(saved.lifecycle).toBe("transient");
+      expect(saved.lifecycle).toBe("session");
+      expect(path.dirname(saved.path)).toContain(`${path.sep}browser`);
+    });
+  });
+
+  it("keeps outbound staging separate from hosted media", async () => {
+    await withTempStore(async (store, home) => {
+      const sourcePath = path.join(home, "outbound.txt");
+      await fs.writeFile(sourcePath, "ship it");
+
+      const staged = await store.saveMediaBuffer(Buffer.from("queued"), "text/plain", "outbound");
+      const hosted = await store.saveMediaSource(sourcePath, undefined, "hosted");
+
+      expect(staged.scope).toBe("outbound");
+      expect(staged.lifecycle).toBe("session");
+      expect(path.dirname(staged.path)).toContain(`${path.sep}outbound`);
+
+      expect(hosted.scope).toBe("outbound");
+      expect(hosted.lifecycle).toBe("hosted");
+      expect(path.dirname(hosted.path)).toBe(store.getMediaDir());
+    });
+  });
+
+  it("stores plugin media under a constrained plugin subdir", async () => {
+    await withTempStore(async (store) => {
+      const saved = await store.saveMediaBuffer(Buffer.from("plugin"), "text/plain", {
+        pluginId: "matrix",
+      });
+
+      expect(saved.scope).toBe("plugin");
+      expect(saved.lifecycle).toBe("session");
+      expect(saved.path).toContain(`${path.sep}plugin${path.sep}matrix${path.sep}`);
+    });
+  });
+
+  it("rejects unsafe plugin media targets", async () => {
+    await withTempStore(async (store) => {
+      await expect(
+        store.saveMediaBuffer(Buffer.from("plugin"), "text/plain", {
+          pluginId: "../escape",
+        }),
+      ).rejects.toThrow('Invalid plugin media target "../escape"');
     });
   });
 

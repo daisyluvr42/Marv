@@ -8,7 +8,6 @@ import { createPinnedLookup } from "../infra/net/ssrf.js";
 import { captureEnv } from "../test-utils/env.js";
 import { getMediaDir, saveMediaSource, setMediaStoreNetworkDepsForTest } from "./store.js";
 
-const HOME = path.join(os.tmpdir(), "marv-home-redirect");
 const mockRequest = vi.fn();
 
 function createMockHttpExchange() {
@@ -31,11 +30,12 @@ function createMockHttpExchange() {
 
 describe("media store redirects", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
+  let home = "";
 
   beforeAll(async () => {
     envSnapshot = captureEnv(["MARV_STATE_DIR"]);
-    await fs.rm(HOME, { recursive: true, force: true });
-    process.env.MARV_STATE_DIR = HOME;
+    home = await fs.mkdtemp(path.join(os.tmpdir(), "marv-home-redirect-"));
+    process.env.MARV_STATE_DIR = home;
   });
 
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe("media store redirects", () => {
   });
 
   afterAll(async () => {
-    await fs.rm(HOME, { recursive: true, force: true });
+    await fs.rm(home, { recursive: true, force: true });
     envSnapshot.restore();
     setMediaStoreNetworkDepsForTest();
     vi.clearAllMocks();

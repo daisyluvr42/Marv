@@ -5,7 +5,12 @@ import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
-import type { MediaRefLifecycle, MediaRefScope, StoredMediaRef } from "../contracts/media-ref.js";
+import type {
+  MediaStorageHandle,
+  MediaStoragePreset,
+  MediaStorageTarget,
+  StoredMediaRef,
+} from "../contracts/media-ref.js";
 import { resolvePinnedHostname } from "../infra/net/ssrf.js";
 import { resolveConfigDir } from "../utils.js";
 import { detectMime, extensionForMime } from "./mime.js";
@@ -210,43 +215,95 @@ async function downloadToFile(
 
 export type SavedMedia = StoredMediaRef;
 
-type SaveMediaMetadata = {
-  scope?: MediaRefScope;
-  lifecycle?: MediaRefLifecycle;
+const MEDIA_STORAGE_PRESETS: Record<MediaStoragePreset, MediaStorageTarget> = {
+  transient: {
+    kind: "transient",
+    subdir: "",
+    scope: "transient",
+    lifecycle: "transient",
+  },
+  inbound: {
+    kind: "inbound",
+    subdir: "inbound",
+    scope: "inbound",
+    lifecycle: "session",
+  },
+  outbound: {
+    kind: "outbound",
+    subdir: "outbound",
+    scope: "outbound",
+    lifecycle: "session",
+  },
+  browser: {
+    kind: "browser",
+    subdir: "browser",
+    scope: "browser",
+    lifecycle: "session",
+  },
+  hosted: {
+    kind: "hosted",
+    subdir: "",
+    scope: "outbound",
+    lifecycle: "hosted",
+  },
 };
 
-function resolveStoredMediaMetadata(
-  subdir: string,
-  metadata?: SaveMediaMetadata,
-): Required<SaveMediaMetadata> {
-  const normalizedSubdir = subdir.trim().toLowerCase();
-  const inferredScope =
-    normalizedSubdir === "inbound"
-      ? "inbound"
-      : normalizedSubdir === "outbound"
-        ? "outbound"
-        : normalizedSubdir === "browser"
-          ? "browser"
-          : normalizedSubdir.startsWith("plugin")
-            ? "plugin"
-            : "transient";
-  const inferredLifecycle =
-    normalizedSubdir === "outbound" ? "hosted" : normalizedSubdir ? "session" : "transient";
+function normalizeMediaPluginId(pluginId: string): string {
+  const normalized = pluginId.trim().toLowerCase();
+  if (!normalized) {
+    throw new Error("Plugin media target requires a non-empty plugin id");
+  }
+  if (
+    normalized === "." ||
+    normalized === ".." ||
+    normalized.includes("/") ||
+    normalized.includes("\\")
+  ) {
+    throw new Error(`Invalid plugin media target "${pluginId}"`);
+  }
+  if (!/^[a-z0-9._-]+$/i.test(normalized)) {
+    throw new Error(`Invalid plugin media target "${pluginId}"`);
+  }
+  return normalized;
+}
+
+export function resolveMediaStorageTarget(
+  handle: MediaStorageHandle | undefined,
+  defaultPreset: MediaStoragePreset,
+): MediaStorageTarget {
+  if (handle === undefined) {
+    return MEDIA_STORAGE_PRESETS[defaultPreset];
+  }
+  if (typeof handle === "string") {
+    return MEDIA_STORAGE_PRESETS[handle];
+  }
+  const pluginId = normalizeMediaPluginId(handle.pluginId);
   return {
-    scope: metadata?.scope ?? inferredScope,
-    lifecycle: metadata?.lifecycle ?? inferredLifecycle,
+    kind: "plugin",
+    pluginId,
+    subdir: `plugin/${pluginId}`,
+    scope: "plugin",
+    lifecycle: "session",
+  };
+}
+
+function toStoredMediaMetadata(
+  target: MediaStorageTarget,
+): Pick<SavedMedia, "scope" | "lifecycle"> {
+  return {
+    scope: target.scope,
+    lifecycle: target.lifecycle,
   };
 }
 
 export async function saveMediaSource(
   source: string,
   headers?: Record<string, string>,
-  subdir = "",
-  metadata?: SaveMediaMetadata,
+  storage?: MediaStorageHandle,
 ): Promise<SavedMedia> {
+  const storageTarget = resolveMediaStorageTarget(storage, "transient");
   const baseDir = resolveMediaDir();
-  const dir = subdir ? path.join(baseDir, subdir) : baseDir;
-  const mediaMetadata = resolveStoredMediaMetadata(subdir, metadata);
+  const dir = storageTarget.subdir ? path.join(baseDir, storageTarget.subdir) : baseDir;
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   await cleanOldMedia();
   const baseId = crypto.randomUUID();
@@ -263,7 +320,13 @@ export async function saveMediaSource(
       const id = ext ? `${baseId}${ext}` : baseId;
       const finalDest = path.join(dir, id);
       await fs.rename(tempDest, finalDest);
-      return { id, path: finalDest, size, contentType: mime, ...mediaMetadata };
+      return {
+        id,
+        path: finalDest,
+        size,
+        contentType: mime,
+        ...toStoredMediaMetadata(storageTarget),
+      };
     } catch (err) {
       await fs.rm(tempDest, { force: true }).catch(() => {});
       throw err;
@@ -283,22 +346,29 @@ export async function saveMediaSource(
   const id = ext ? `${baseId}${ext}` : baseId;
   const dest = path.join(dir, id);
   await fs.writeFile(dest, buffer, { mode: 0o600 });
-  return { id, path: dest, size: stat.size, contentType: mime, ...mediaMetadata };
+  return {
+    id,
+    path: dest,
+    size: stat.size,
+    contentType: mime,
+    ...toStoredMediaMetadata(storageTarget),
+  };
 }
 
 export async function saveMediaBuffer(
   buffer: Buffer,
   contentType?: string,
-  subdir = "inbound",
+  storage?: MediaStorageHandle,
   maxBytes = MAX_BYTES,
   originalFilename?: string,
-  metadata?: SaveMediaMetadata,
 ): Promise<SavedMedia> {
   if (buffer.byteLength > maxBytes) {
     throw new Error(`Media exceeds ${(maxBytes / (1024 * 1024)).toFixed(0)}MB limit`);
   }
-  const dir = path.join(resolveMediaDir(), subdir);
-  const mediaMetadata = resolveStoredMediaMetadata(subdir, metadata);
+  const storageTarget = resolveMediaStorageTarget(storage, "inbound");
+  const dir = storageTarget.subdir
+    ? path.join(resolveMediaDir(), storageTarget.subdir)
+    : resolveMediaDir();
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   const uuid = crypto.randomUUID();
   const headerExt = extensionForMime(contentType?.split(";")[0]?.trim() ?? undefined);
@@ -318,5 +388,11 @@ export async function saveMediaBuffer(
 
   const dest = path.join(dir, id);
   await fs.writeFile(dest, buffer, { mode: 0o600 });
-  return { id, path: dest, size: buffer.byteLength, contentType: mime, ...mediaMetadata };
+  return {
+    id,
+    path: dest,
+    size: buffer.byteLength,
+    contentType: mime,
+    ...toStoredMediaMetadata(storageTarget),
+  };
 }
