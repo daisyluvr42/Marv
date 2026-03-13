@@ -18,6 +18,9 @@
     "target": "es2023",
     "useDefineForClassFields": false,
     "paths": {
+      "agentmarv/plugin-sdk": ["./src/plugin-sdk/index.ts"],
+      "agentmarv/plugin-sdk/*": ["./src/plugin-sdk/*.ts"],
+      "agentmarv/plugin-sdk/account-id": ["./src/plugin-sdk/account-id.ts"],
       "marv/plugin-sdk": ["./src/plugin-sdk/index.ts"],
       "marv/plugin-sdk/*": ["./src/plugin-sdk/*.ts"],
       "marv/plugin-sdk/account-id": ["./src/plugin-sdk/account-id.ts"]

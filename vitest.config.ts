@@ -60,6 +60,14 @@ const sharedProjectTest = {
 
 const pluginSdkAliases = [
   {
+    find: "agentmarv/plugin-sdk/account-id",
+    replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
+  },
+  {
+    find: "agentmarv/plugin-sdk",
+    replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),
+  },
+  {
     find: "marv/plugin-sdk/account-id",
     replacement: path.join(repoRoot, "src", "plugin-sdk", "account-id.ts"),
   },
