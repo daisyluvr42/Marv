@@ -10,10 +10,12 @@ import {
   resolveTelegramAccount,
 } from "../../telegram/accounts.js";
 import { fetchTelegramChatId } from "../../telegram/api.js";
+import { probeTelegram } from "../../telegram/probe.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
 const channel = "telegram" as const;
+const TELEGRAM_ONBOARDING_PROBE_TIMEOUT_MS = 8_000;
 
 function setTelegramDmPolicy(cfg: MarvConfig, dmPolicy: DmPolicy) {
   const allowFrom =
@@ -56,6 +58,160 @@ async function noteTelegramUserIdHelp(prompter: WizardPrompter): Promise<void> {
     ].join("\n"),
     "Telegram user id",
   );
+}
+
+function formatTelegramProbeError(params: {
+  error?: string | null;
+  status?: number | null;
+}): string {
+  if (params.error?.trim()) {
+    return params.error.trim();
+  }
+  if (typeof params.status === "number") {
+    return `HTTP ${params.status}`;
+  }
+  return "unknown Telegram API error";
+}
+
+async function validateTelegramBotToken(params: {
+  token: string;
+  prompter: WizardPrompter;
+  sourceLabel: string;
+}): Promise<{ ok: true; username?: string | null } | { ok: false; error: string }> {
+  const progress = params.prompter.progress("Telegram");
+  try {
+    progress.update(`Validating ${params.sourceLabel}…`);
+    const probe = await probeTelegram(params.token, TELEGRAM_ONBOARDING_PROBE_TIMEOUT_MS);
+    if (!probe.ok) {
+      return {
+        ok: false,
+        error: formatTelegramProbeError({
+          error: probe.error,
+          status: probe.status,
+        }),
+      };
+    }
+    return { ok: true, username: probe.bot?.username ?? null };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    progress.stop();
+  }
+}
+
+async function promptValidatedTelegramBotToken(params: {
+  prompter: WizardPrompter;
+  initialValue?: string;
+  invalidReason?: string;
+}): Promise<string> {
+  let initialValue = params.initialValue;
+  let invalidReason = params.invalidReason;
+  while (true) {
+    if (invalidReason) {
+      await params.prompter.note(
+        `Telegram bot token invalid: ${invalidReason}. Please re-enter it.`,
+        "Telegram",
+      );
+    }
+    const token = String(
+      await params.prompter.text({
+        message: "Enter Telegram bot token",
+        initialValue,
+        validate: (value) => (value?.trim() ? undefined : "Required"),
+      }),
+    ).trim();
+    const validation = await validateTelegramBotToken({
+      token,
+      prompter: params.prompter,
+      sourceLabel: "Telegram bot token",
+    });
+    if (validation.ok) {
+      if (validation.username) {
+        await params.prompter.note(`Validated Telegram bot @${validation.username}.`, "Telegram");
+      } else {
+        await params.prompter.note("Validated Telegram bot token.", "Telegram");
+      }
+      return token;
+    }
+    initialValue = token;
+    invalidReason = validation.error;
+  }
+}
+
+function clearDefaultAccountTokenOverrides(cfg: MarvConfig) {
+  const defaultAccount = cfg.channels?.telegram?.accounts?.[DEFAULT_ACCOUNT_ID];
+  if (!defaultAccount) {
+    return cfg.channels?.telegram?.accounts;
+  }
+  return {
+    ...cfg.channels?.telegram?.accounts,
+    [DEFAULT_ACCOUNT_ID]: {
+      ...defaultAccount,
+      botToken: undefined,
+      tokenFile: undefined,
+    },
+  };
+}
+
+function setTelegramManualToken(params: {
+  cfg: MarvConfig;
+  accountId: string;
+  token: string;
+}): MarvConfig {
+  if (params.accountId === DEFAULT_ACCOUNT_ID) {
+    return {
+      ...params.cfg,
+      channels: {
+        ...params.cfg.channels,
+        telegram: {
+          ...params.cfg.channels?.telegram,
+          enabled: true,
+          botToken: params.token,
+          tokenFile: undefined,
+          accounts: clearDefaultAccountTokenOverrides(params.cfg),
+        },
+      },
+    };
+  }
+
+  return {
+    ...params.cfg,
+    channels: {
+      ...params.cfg.channels,
+      telegram: {
+        ...params.cfg.channels?.telegram,
+        enabled: true,
+        accounts: {
+          ...params.cfg.channels?.telegram?.accounts,
+          [params.accountId]: {
+            ...params.cfg.channels?.telegram?.accounts?.[params.accountId],
+            enabled: params.cfg.channels?.telegram?.accounts?.[params.accountId]?.enabled ?? true,
+            botToken: params.token,
+            tokenFile: undefined,
+          },
+        },
+      },
+    },
+  };
+}
+
+function setTelegramEnvTokenSource(cfg: MarvConfig): MarvConfig {
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      telegram: {
+        ...cfg.channels?.telegram,
+        enabled: true,
+        botToken: undefined,
+        tokenFile: undefined,
+        accounts: clearDefaultAccountTokenOverrides(cfg),
+      },
+    },
+  };
 }
 
 async function promptTelegramAllowFrom(params: {
@@ -224,94 +380,91 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
     });
     const accountConfigured = Boolean(resolvedAccount.token);
     const allowEnv = telegramAccountId === DEFAULT_ACCOUNT_ID;
-    const canUseEnv = allowEnv && Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim());
     const hasConfigToken = Boolean(
       resolvedAccount.config.botToken || resolvedAccount.config.tokenFile,
     );
+    const envToken = allowEnv ? process.env.TELEGRAM_BOT_TOKEN?.trim() : "";
+    const canUseEnv = Boolean(envToken) && !hasConfigToken;
 
     let token: string | null = null;
     if (!accountConfigured) {
       await noteTelegramTokenHelp(prompter);
     }
-    if (canUseEnv && !resolvedAccount.config.botToken) {
+    if (canUseEnv) {
       const keepEnv = await prompter.confirm({
         message: "TELEGRAM_BOT_TOKEN detected. Use env var?",
         initialValue: true,
       });
       if (keepEnv) {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            telegram: {
-              ...next.channels?.telegram,
-              enabled: true,
-            },
-          },
-        };
+        const validation = await validateTelegramBotToken({
+          token: envToken ?? "",
+          prompter,
+          sourceLabel: "TELEGRAM_BOT_TOKEN",
+        });
+        if (validation.ok) {
+          next = setTelegramEnvTokenSource(next);
+          if (validation.username) {
+            await prompter.note(
+              `Validated TELEGRAM_BOT_TOKEN for @${validation.username}.`,
+              "Telegram",
+            );
+          } else {
+            await prompter.note("Validated TELEGRAM_BOT_TOKEN.", "Telegram");
+          }
+        } else {
+          token = await promptValidatedTelegramBotToken({
+            prompter,
+            invalidReason: `TELEGRAM_BOT_TOKEN failed validation: ${validation.error}`,
+          });
+        }
       } else {
-        token = String(
-          await prompter.text({
-            message: "Enter Telegram bot token",
-            validate: (value) => (value?.trim() ? undefined : "Required"),
-          }),
-        ).trim();
+        token = await promptValidatedTelegramBotToken({ prompter });
       }
     } else if (hasConfigToken) {
       const keep = await prompter.confirm({
         message: "Telegram token already configured. Keep it?",
         initialValue: true,
       });
-      if (!keep) {
-        token = String(
-          await prompter.text({
-            message: "Enter Telegram bot token",
-            validate: (value) => (value?.trim() ? undefined : "Required"),
-          }),
-        ).trim();
+      if (keep) {
+        const sourceLabel =
+          resolvedAccount.tokenSource === "tokenFile"
+            ? "configured Telegram token file"
+            : "configured Telegram token";
+        const validation = await validateTelegramBotToken({
+          token: resolvedAccount.token,
+          prompter,
+          sourceLabel,
+        });
+        if (!validation.ok) {
+          token = await promptValidatedTelegramBotToken({
+            prompter,
+            invalidReason: `${sourceLabel} failed validation: ${validation.error}`,
+          });
+        }
+      } else {
+        token = await promptValidatedTelegramBotToken({ prompter });
       }
     } else {
-      token = String(
-        await prompter.text({
-          message: "Enter Telegram bot token",
-          validate: (value) => (value?.trim() ? undefined : "Required"),
-        }),
-      ).trim();
+      token = await promptValidatedTelegramBotToken({ prompter });
     }
 
     if (token) {
-      if (telegramAccountId === DEFAULT_ACCOUNT_ID) {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            telegram: {
-              ...next.channels?.telegram,
-              enabled: true,
-              botToken: token,
-            },
-          },
-        };
-      } else {
-        next = {
-          ...next,
-          channels: {
-            ...next.channels,
-            telegram: {
-              ...next.channels?.telegram,
-              enabled: true,
-              accounts: {
-                ...next.channels?.telegram?.accounts,
-                [telegramAccountId]: {
-                  ...next.channels?.telegram?.accounts?.[telegramAccountId],
-                  enabled: next.channels?.telegram?.accounts?.[telegramAccountId]?.enabled ?? true,
-                  botToken: token,
-                },
-              },
-            },
-          },
-        };
-      }
+      next = setTelegramManualToken({
+        cfg: next,
+        accountId: telegramAccountId,
+        token,
+      });
+    }
+
+    if (!forceAllowFrom) {
+      await prompter.note(
+        [
+          "Telegram token is valid.",
+          "Direct chats still default to pairing until you open or allowlist DM access.",
+          `Check later: ${formatCliCommand("marv channels status --probe")}`,
+        ].join("\n"),
+        "Telegram",
+      );
     }
 
     if (forceAllowFrom) {
