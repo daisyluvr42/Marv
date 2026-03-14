@@ -106,7 +106,7 @@ describe("applyExtraParamsToAgent", () => {
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.headers).toEqual({
-      "HTTP-Referer": "https://marv.ai",
+      "HTTP-Referer": "https://github.com/daisyluvr42/Marv",
       "X-Title": "Marv",
       "X-Custom": "1",
     });

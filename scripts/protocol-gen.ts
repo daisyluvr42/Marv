@@ -14,7 +14,7 @@ async function writeJsonSchema() {
 
   const rootSchema = {
     $schema: "http://json-schema.org/draft-07/schema#",
-    $id: "https://marv.ai/protocol.schema.json",
+    $id: "https://raw.githubusercontent.com/daisyluvr42/Marv/main/dist/protocol.schema.json",
     title: "Marv Gateway Protocol",
     description: "Handshake, request/response, and event frames for the Gateway WebSocket.",
     oneOf: [

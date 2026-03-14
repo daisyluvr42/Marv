@@ -1,6 +1,6 @@
 # Changelog
 
-Docs: https://marv.ai
+Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
 ## 2026.3.14
 
@@ -2025,7 +2025,7 @@ Thanks @AlexMikhalev, @CoreyH, @John-Rood, @KrauseFx, @MaudeBot, @Nachx639, @Nic
 - Agents: add pre-compaction memory flush config (`agents.defaults.compaction.*`) with a soft threshold + system prompt.
 - Config: add `$include` directive for modular config files. (#731) — thanks @pasogott.
 - Build: set pnpm minimum release age to 2880 minutes (2 days). (#718) — thanks @dan-dr.
-- macOS: prompt to install the global `marv` CLI when missing in local mode; install via `marv.ai/install-cli.sh` (no onboarding) and use external launchd/CLI instead of the embedded gateway runtime.
+- macOS: prompt to install the global `marv` CLI when missing in local mode; install via `marv.bot/install-cli.sh` (no onboarding) and use external launchd/CLI instead of the embedded gateway runtime.
 - Docs: add gog calendar event color IDs from `gog calendar colors`. (#715) — thanks @mjrussell.
 - Cron/CLI: add `--model` flag to cron add/edit commands. (#711) — thanks @mjrussell.
 - Cron/CLI: trim model overrides on cron edits and document main-session guidance. (#711) — thanks @mjrussell.
@@ -2040,7 +2040,7 @@ Thanks @AlexMikhalev, @CoreyH, @John-Rood, @KrauseFx, @MaudeBot, @Nachx639, @Nic
 
 - Postinstall: replace `git apply` with builtin JS patcher (works npm/pnpm/bun; no git dependency) plus regression tests.
 - Postinstall: skip pnpm patch fallback when the new patcher is active.
-- Installer tests: add root+non-root docker smokes, CI workflow to fetch marv.ai scripts and run install sh/cli with onboarding skipped.
+- Installer tests: add root+non-root docker smokes, CI workflow to fetch marv.bot install scripts and run install sh/cli with onboarding skipped.
 - Installer UX: support `CLAWDBOT_NO_ONBOARD=1` for non-interactive installs; fix npm prefix on Linux and auto-install git.
 - Installer UX: add `install.sh --help` with flags/env and git install hint.
 - Installer UX: add `--install-method git|npm` and auto-detect source checkouts (prompt to update git checkout vs migrate to npm).

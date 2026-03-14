@@ -10,7 +10,7 @@
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
 - Plugins: install runs `npm install --omit=dev` in plugin dir; runtime deps must live in `dependencies`. Avoid `workspace:*` in `dependencies` (npm install breaks); put `marv` in `devDependencies` or `peerDependencies` instead (runtime resolves `marv/plugin-sdk` via jiti alias).
-- Installers served from `https://marv.ai/*`: live in the sibling repo `../marv.ai` (`public/install.sh`, `public/install-cli.sh`, `public/install.ps1`).
+- Installer URLs in docs, tests, and automation should match `https://marv.bot/install.sh`, `https://marv.bot/install-cli.sh`, and `https://marv.bot/install.ps1`.
 - Messaging channels: always consider **all** built-in + extension channels when refactoring shared logic (routing, allowlists, pairing, command gating, onboarding, docs).
   - Core channel docs: `docs/channels/`
   - Core channel code: `src/telegram`, `src/discord`, `src/slack`, `src/signal`, `src/imessage`, `src/web` (WhatsApp web), `src/channels`, `src/routing`

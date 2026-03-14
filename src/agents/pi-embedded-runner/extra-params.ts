@@ -5,7 +5,7 @@ import type { MarvConfig } from "../../core/config/config.js";
 import { log } from "./logger.js";
 
 const OPENROUTER_APP_HEADERS: Record<string, string> = {
-  "HTTP-Referer": "https://marv.ai",
+  "HTTP-Referer": "https://github.com/daisyluvr42/Marv",
   "X-Title": "Marv",
 };
 const ANTHROPIC_CONTEXT_1M_BETA = "context-1m-2025-08-07";

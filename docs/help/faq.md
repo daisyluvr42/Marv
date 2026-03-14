@@ -1011,7 +1011,7 @@ Advantages:
 - **Always-on Gateway** (run on a VPS, interact from anywhere)
 - **Nodes** for local browser/screen/camera/exec
 
-Showcase: [https://marv.ai/showcase](https://marv.ai/showcase)
+Showcase: [/start/showcase](/start/showcase)
 
 ## Skills and automation
 

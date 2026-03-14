@@ -37,12 +37,12 @@ x-i18n:
     <Tabs>
       <Tab title="macOS/Linux">
         ```bash
-        curl -fsSL https://marv.ai/install.sh | bash
+        curl -fsSL https://marv.bot/install.sh | bash
         ```
       </Tab>
       <Tab title="Windows (PowerShell)">
         ```powershell
-        iwr -useb https://marv.ai/install.ps1 | iex
+        iwr -useb https://marv.bot/install.ps1 | iex
         ```
       </Tab>
     </Tabs>

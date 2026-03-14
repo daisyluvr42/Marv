@@ -28,6 +28,7 @@ import { ensureControlUiAssetsBuilt } from "../infra/control-ui-assets.js";
 import { resolveGatewayService } from "../infra/daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../infra/daemon/systemd.js";
 import type { RuntimeEnv } from "../runtime.js";
+import { formatDocsLink } from "../terminal/links.js";
 import { restoreTerminalState } from "../terminal/restore.js";
 import { runTui } from "../tui/tui.js";
 import { resolveUserPath } from "../utils.js";
@@ -608,10 +609,7 @@ export async function finalizeOnboardingWizard(
     "Web search (optional)",
   );
 
-  await prompter.note(
-    'What now: https://marv.ai/showcase ("What People Are Building").',
-    "What now",
-  );
+  await prompter.note(`What now: ${formatDocsLink("/start/showcase", "showcase")}`, "What now");
 
   await prompter.outro(
     controlUiOpened

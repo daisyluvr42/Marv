@@ -1,6 +1,6 @@
 # Marv Security & Trust
 
-**Live:** [trust.marv.ai](https://trust.marv.ai)
+**Live:** [daisyluvr42/trust](https://github.com/daisyluvr42/trust)
 
 ## Documents
 
@@ -9,7 +9,7 @@
 
 ## Reporting Vulnerabilities
 
-See the [Trust page](https://trust.marv.ai) for full reporting instructions covering all repos.
+Use [Marv Security Advisories](https://github.com/daisyluvr42/Marv/security/advisories/new) for private vulnerability reports.
 
 ## Contact
 

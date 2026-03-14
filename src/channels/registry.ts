@@ -23,7 +23,7 @@ export const DEFAULT_CHAT_CHANNEL: ChatChannelId = "whatsapp";
 
 export type ChatChannelMeta = ChannelMeta;
 
-const WEBSITE_URL = "https://marv.ai";
+const WEBSITE_URL = "https://github.com/daisyluvr42/Marv";
 
 const CHAT_CHANNEL_META: Record<ChatChannelId, ChannelMeta> = {
   telegram: {

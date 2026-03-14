@@ -478,7 +478,7 @@ async function runPerplexitySearch(params: {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${params.apiKey}`,
-      "HTTP-Referer": "https://marv.ai",
+      "HTTP-Referer": "https://github.com/daisyluvr42/Marv",
       "X-Title": "Marv Web Search",
     },
     body: JSON.stringify(body),

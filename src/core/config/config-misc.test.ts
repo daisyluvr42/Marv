@@ -14,11 +14,13 @@ import { MarvSchema } from "./zod-schema.js";
 describe("$schema key in config (#14998)", () => {
   it("accepts config with $schema string", () => {
     const result = MarvSchema.safeParse({
-      $schema: "https://marv.ai/config.json",
+      $schema: "https://raw.githubusercontent.com/daisyluvr42/Marv/main/dist/protocol.schema.json",
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.$schema).toBe("https://marv.ai/config.json");
+      expect(result.data.$schema).toBe(
+        "https://raw.githubusercontent.com/daisyluvr42/Marv/main/dist/protocol.schema.json",
+      );
     }
   });
 

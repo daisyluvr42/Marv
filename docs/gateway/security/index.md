@@ -876,6 +876,6 @@ Commit the updated `.secrets.baseline` once it reflects the intended state.
 
 Found a vulnerability in Marv? Please report responsibly:
 
-1. Email: [security@marv.ai](mailto:security@marv.ai)
+1. Open a private report: [GitHub Security Advisories](https://github.com/daisyluvr42/Marv/security/advisories/new)
 2. Don't post publicly until fixed
 3. We'll credit you (unless you prefer anonymity)
