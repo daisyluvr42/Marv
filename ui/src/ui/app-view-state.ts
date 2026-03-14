@@ -5,7 +5,13 @@ import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.js";
 import type { SkillMessage } from "./controllers/skills.js";
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.js";
-import type { Tab } from "./navigation.js";
+import type {
+  AgentsSection,
+  OperationsSection,
+  SettingsSection,
+  Tab,
+  WorkspaceSection,
+} from "./navigation.js";
 import type { UiSettings } from "./storage.js";
 import type { ThemeTransitionContext } from "./theme-transition.js";
 import type { ThemeMode } from "./theme.js";
@@ -50,6 +56,10 @@ export type AppViewState = {
   settings: UiSettings;
   password: string;
   tab: Tab;
+  operationsSection: OperationsSection;
+  agentsSection: AgentsSection;
+  workspaceSection: WorkspaceSection;
+  settingsSection: SettingsSection;
   onboarding: boolean;
   basePath: string;
   connected: boolean;
@@ -276,6 +286,10 @@ export type AppViewState = {
   connect: () => void;
   forgetTrustedDevice: () => void;
   setTab: (tab: Tab) => void;
+  selectOperationsSection: (section: OperationsSection) => void;
+  selectAgentsSection: (section: AgentsSection) => void;
+  selectWorkspaceSection: (section: WorkspaceSection) => void;
+  selectSettingsSection: (section: SettingsSection) => void;
   setTheme: (theme: ThemeMode, context?: ThemeTransitionContext) => void;
   applySettings: (next: UiSettings) => void;
   loadOverview: () => Promise<void>;

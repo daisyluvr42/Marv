@@ -15,11 +15,12 @@ function nextFrame() {
 }
 
 describe("control UI routing", () => {
-  it("hydrates the tab from the location", async () => {
+  it("hydrates parent tabs and operation sections from the location", async () => {
     const app = mountApp("/sessions");
     await app.updateComplete;
 
-    expect(app.tab).toBe("sessions");
+    expect(app.tab).toBe("operations");
+    expect(app.operationsSection).toBe("sessions");
     expect(window.location.pathname).toBe("/sessions");
   });
 
@@ -28,7 +29,8 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.basePath).toBe("/ui");
-    expect(app.tab).toBe("cron");
+    expect(app.tab).toBe("operations");
+    expect(app.operationsSection).toBe("cron");
     expect(window.location.pathname).toBe("/ui/cron");
   });
 
@@ -37,7 +39,8 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.basePath).toBe("/apps/marv");
-    expect(app.tab).toBe("cron");
+    expect(app.tab).toBe("operations");
+    expect(app.operationsSection).toBe("cron");
     expect(window.location.pathname).toBe("/apps/marv/cron");
   });
 
@@ -45,7 +48,8 @@ describe("control UI routing", () => {
     const app = mountApp("/projects");
     await app.updateComplete;
 
-    expect(app.tab).toBe("projects");
+    expect(app.tab).toBe("workspace");
+    expect(app.workspaceSection).toBe("projects");
     expect(window.location.pathname).toBe("/projects");
   });
 
@@ -55,7 +59,8 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.basePath).toBe("/marv");
-    expect(app.tab).toBe("sessions");
+    expect(app.tab).toBe("operations");
+    expect(app.operationsSection).toBe("sessions");
     expect(window.location.pathname).toBe("/marv/sessions");
   });
 
@@ -173,7 +178,7 @@ describe("control UI routing", () => {
   });
 
   it("hydrates token from URL params even when settings already set", async () => {
-    localStorage.setItem("marv.control.settings.v1", JSON.stringify({ token: "existing-token" }));
+    localStorage.setItem("marv.control.settings.v2", JSON.stringify({ token: "existing-token" }));
     const app = mountApp("/ui/overview?token=abc123");
     await app.updateComplete;
 

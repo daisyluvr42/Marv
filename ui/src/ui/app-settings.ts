@@ -29,12 +29,21 @@ import { loadSkills } from "./controllers/skills.js";
 import { loadWorkspaceSummary } from "./controllers/workspace-summary.js";
 import {
   inferBasePathFromPathname,
-  isWorkspaceTab,
+  isDebugView,
+  isLogsView,
   normalizeBasePath,
   normalizePath,
+  pathForAgentsSection,
+  pathForOperationsSection,
+  pathForSettingsSection,
   pathForTab,
-  tabFromPath,
+  pathForWorkspaceSection,
+  resolveRoute,
+  type AgentsSection,
+  type OperationsSection,
+  type SettingsSection,
   type Tab,
+  type WorkspaceSection,
 } from "./navigation.js";
 import { saveSettings, type UiSettings } from "./storage.js";
 import { startThemeTransition, type ThemeTransitionContext } from "./theme-transition.js";
@@ -49,6 +58,10 @@ type SettingsHost = {
   applySessionKey: string;
   sessionKey: string;
   tab: Tab;
+  operationsSection: OperationsSection;
+  agentsSection: AgentsSection;
+  workspaceSection: WorkspaceSection;
+  settingsSection: SettingsSection;
   connected: boolean;
   chatHasAutoScrolled: boolean;
   logsAtBottom: boolean;
@@ -63,12 +76,54 @@ type SettingsHost = {
   pendingGatewayUrl?: string | null;
 };
 
+function updatePollingForActiveView(host: SettingsHost) {
+  if (isLogsView(host.tab, host.operationsSection)) {
+    startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
+  } else {
+    stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
+  }
+  if (isDebugView(host.tab, host.operationsSection)) {
+    startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
+  } else {
+    stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
+  }
+}
+
+function applySectionSettings(host: SettingsHost) {
+  applySettings(host, {
+    ...host.settings,
+    operationsSection: host.operationsSection,
+    agentsSection: host.agentsSection,
+    workspaceSection: host.workspaceSection,
+    settingsSection: host.settingsSection,
+  });
+}
+
+function pathForCurrentView(host: SettingsHost) {
+  switch (host.tab) {
+    case "operations":
+      return pathForOperationsSection(host.operationsSection, host.basePath);
+    case "agents":
+      return pathForAgentsSection(host.agentsSection, host.basePath);
+    case "workspace":
+      return pathForWorkspaceSection(host.workspaceSection, host.basePath);
+    case "settings":
+      return pathForSettingsSection(host.settingsSection, host.basePath);
+    default:
+      return pathForTab(host.tab, host.basePath);
+  }
+}
+
 export function applySettings(host: SettingsHost, next: UiSettings) {
   const normalized = {
     ...next,
     lastActiveSessionKey: next.lastActiveSessionKey?.trim() || next.sessionKey.trim() || "main",
   };
   host.settings = normalized;
+  host.operationsSection = normalized.operationsSection;
+  host.agentsSection = normalized.agentsSection;
+  host.workspaceSection = normalized.workspaceSection;
+  host.settingsSection = normalized.settingsSection;
   saveSettings(normalized);
   if (next.theme !== host.theme) {
     host.theme = next.theme;
@@ -113,7 +168,6 @@ export function applySettingsFromUrl(host: SettingsHost) {
   }
 
   if (passwordRaw != null) {
-    // Never hydrate password from URL params; strip only.
     params.delete("password");
     hashParams.delete("password");
     shouldCleanUrl = true;
@@ -157,18 +211,45 @@ export function setTab(host: SettingsHost, next: Tab) {
   if (next === "chat") {
     host.chatHasAutoScrolled = false;
   }
-  if (next === "logs") {
-    startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
-  } else {
-    stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
-  }
-  if (next === "debug") {
-    startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
-  } else {
-    stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
-  }
+  updatePollingForActiveView(host);
   void refreshActiveTab(host);
   syncUrlWithTab(host, next, false);
+}
+
+export function selectOperationsSection(host: SettingsHost, next: OperationsSection) {
+  host.tab = "operations";
+  host.operationsSection = next;
+  applySectionSettings(host);
+  updatePollingForActiveView(host);
+  void refreshActiveTab(host);
+  syncUrlWithCurrentView(host, false);
+}
+
+export function selectAgentsSection(host: SettingsHost, next: AgentsSection) {
+  host.tab = "agents";
+  host.agentsSection = next;
+  applySectionSettings(host);
+  updatePollingForActiveView(host);
+  void refreshActiveTab(host);
+  syncUrlWithCurrentView(host, false);
+}
+
+export function selectWorkspaceSection(host: SettingsHost, next: WorkspaceSection) {
+  host.tab = "workspace";
+  host.workspaceSection = next;
+  applySectionSettings(host);
+  updatePollingForActiveView(host);
+  void refreshActiveTab(host);
+  syncUrlWithCurrentView(host, false);
+}
+
+export function selectSettingsSection(host: SettingsHost, next: SettingsSection) {
+  host.tab = "settings";
+  host.settingsSection = next;
+  applySectionSettings(host);
+  updatePollingForActiveView(host);
+  void refreshActiveTab(host);
+  syncUrlWithCurrentView(host, false);
 }
 
 export function setTheme(host: SettingsHost, next: ThemeMode, context?: ThemeTransitionContext) {
@@ -186,48 +267,81 @@ export function setTheme(host: SettingsHost, next: ThemeMode, context?: ThemeTra
 }
 
 export async function refreshActiveTab(host: SettingsHost) {
-  if (isWorkspaceTab(host.tab)) {
-    await loadWorkspaceSummary(host as unknown as Parameters<typeof loadWorkspaceSummary>[0]);
-  }
   if (host.tab === "overview") {
     await loadOverview(host);
+    return;
   }
   if (host.tab === "channels") {
     await loadChannelsTab(host);
+    return;
   }
-  if (host.tab === "instances") {
-    await loadPresence(host as unknown as MarvApp);
-  }
-  if (host.tab === "sessions") {
-    await loadSessions(host as unknown as MarvApp);
-  }
-  if (host.tab === "cron") {
-    await loadCron(host);
-  }
-  if (host.tab === "projects") {
-    await loadWorkspaceProjects(host as unknown as Parameters<typeof loadWorkspaceProjects>[0]);
-  }
-  if (host.tab === "calendar") {
-    await loadWorkspaceCalendar(host as unknown as Parameters<typeof loadWorkspaceCalendar>[0]);
-  }
-  if (host.tab === "memory") {
-    if (
-      "workspaceMemoryQuery" in host &&
-      typeof host.workspaceMemoryQuery === "string" &&
-      host.workspaceMemoryQuery.trim()
-    ) {
-      await searchWorkspaceMemory(host as unknown as Parameters<typeof searchWorkspaceMemory>[0]);
-    } else {
-      await loadWorkspaceMemory(host as unknown as Parameters<typeof loadWorkspaceMemory>[0]);
+  if (host.tab === "operations") {
+    if (host.operationsSection === "instances") {
+      await loadPresence(host as unknown as MarvApp);
+      return;
     }
+    if (host.operationsSection === "sessions") {
+      await loadSessions(host as unknown as MarvApp);
+      return;
+    }
+    if (host.operationsSection === "cron") {
+      await loadCron(host);
+      return;
+    }
+    if (host.operationsSection === "usage") {
+      return;
+    }
+    if (host.operationsSection === "debug") {
+      await loadDebug(host as unknown as MarvApp);
+      host.eventLog = host.eventLogBuffer;
+      return;
+    }
+    if (host.operationsSection === "logs") {
+      host.logsAtBottom = true;
+      await loadLogs(host as unknown as MarvApp, { reset: true });
+      scheduleLogsScroll(host as unknown as Parameters<typeof scheduleLogsScroll>[0], true);
+    }
+    return;
   }
-  if (host.tab === "documents") {
-    await loadWorkspaceDocuments(host as unknown as Parameters<typeof loadWorkspaceDocuments>[0]);
-  }
-  if (host.tab === "skills") {
-    await loadSkills(host as unknown as MarvApp);
+  if (host.tab === "workspace") {
+    await loadWorkspaceSummary(host as unknown as Parameters<typeof loadWorkspaceSummary>[0]);
+    if (host.workspaceSection === "projects") {
+      await loadWorkspaceProjects(host as unknown as Parameters<typeof loadWorkspaceProjects>[0]);
+      return;
+    }
+    if (host.workspaceSection === "calendar") {
+      await loadWorkspaceCalendar(host as unknown as Parameters<typeof loadWorkspaceCalendar>[0]);
+      return;
+    }
+    if (host.workspaceSection === "memory") {
+      if (
+        "workspaceMemoryQuery" in host &&
+        typeof host.workspaceMemoryQuery === "string" &&
+        host.workspaceMemoryQuery.trim()
+      ) {
+        await searchWorkspaceMemory(host as unknown as Parameters<typeof searchWorkspaceMemory>[0]);
+      } else {
+        await loadWorkspaceMemory(host as unknown as Parameters<typeof loadWorkspaceMemory>[0]);
+      }
+      return;
+    }
+    if (host.workspaceSection === "documents") {
+      await loadWorkspaceDocuments(host as unknown as Parameters<typeof loadWorkspaceDocuments>[0]);
+    }
+    return;
   }
   if (host.tab === "agents") {
+    if (host.agentsSection === "skills") {
+      await loadSkills(host as unknown as MarvApp);
+      return;
+    }
+    if (host.agentsSection === "nodes") {
+      await loadNodes(host as unknown as MarvApp);
+      await loadDevices(host as unknown as MarvApp);
+      await loadConfig(host as unknown as MarvApp);
+      await loadExecApprovals(host as unknown as MarvApp);
+      return;
+    }
     await loadAgents(host as unknown as MarvApp);
     await loadConfig(host as unknown as MarvApp);
     const agentIds = host.agentsList?.agents?.map((entry) => entry.id) ?? [];
@@ -248,12 +362,7 @@ export async function refreshActiveTab(host: SettingsHost) {
         void loadCron(host);
       }
     }
-  }
-  if (host.tab === "nodes") {
-    await loadNodes(host as unknown as MarvApp);
-    await loadDevices(host as unknown as MarvApp);
-    await loadConfig(host as unknown as MarvApp);
-    await loadExecApprovals(host as unknown as MarvApp);
+    return;
   }
   if (host.tab === "chat") {
     await refreshChat(host as unknown as Parameters<typeof refreshChat>[0]);
@@ -261,19 +370,11 @@ export async function refreshActiveTab(host: SettingsHost) {
       host as unknown as Parameters<typeof scheduleChatScroll>[0],
       !host.chatHasAutoScrolled,
     );
+    return;
   }
-  if (host.tab === "config") {
+  if (host.tab === "settings") {
     await loadConfigSchema(host as unknown as MarvApp);
     await loadConfig(host as unknown as MarvApp);
-  }
-  if (host.tab === "debug") {
-    await loadDebug(host as unknown as MarvApp);
-    host.eventLog = host.eventLogBuffer;
-  }
-  if (host.tab === "logs") {
-    host.logsAtBottom = true;
-    await loadLogs(host as unknown as MarvApp, { reset: true });
-    scheduleLogsScroll(host as unknown as Parameters<typeof scheduleLogsScroll>[0], true);
   }
 }
 
@@ -344,16 +445,23 @@ export function syncTabWithLocation(host: SettingsHost, replace: boolean) {
   if (typeof window === "undefined") {
     return;
   }
-  const resolved = tabFromPath(window.location.pathname, host.basePath) ?? "chat";
+  const resolved = resolveRoute(window.location.pathname, host.basePath) ?? {
+    tab: "overview" as const,
+    operationsSection: host.settings.operationsSection,
+    agentsSection: host.settings.agentsSection,
+    workspaceSection: host.settings.workspaceSection,
+    settingsSection: host.settings.settingsSection,
+    path: "/overview",
+  };
   setTabFromRoute(host, resolved);
-  syncUrlWithTab(host, resolved, replace);
+  syncUrlWithCurrentView(host, replace, resolved.path);
 }
 
 export function onPopState(host: SettingsHost) {
   if (typeof window === "undefined") {
     return;
   }
-  const resolved = tabFromPath(window.location.pathname, host.basePath);
+  const resolved = resolveRoute(window.location.pathname, host.basePath);
   if (!resolved) {
     return;
   }
@@ -372,37 +480,52 @@ export function onPopState(host: SettingsHost) {
   setTabFromRoute(host, resolved);
 }
 
-export function setTabFromRoute(host: SettingsHost, next: Tab) {
-  if (host.tab !== next) {
-    host.tab = next;
-  }
-  if (next === "chat") {
+export function setTabFromRoute(
+  host: SettingsHost,
+  next: {
+    tab: Tab;
+    operationsSection: OperationsSection;
+    agentsSection: AgentsSection;
+    workspaceSection: WorkspaceSection;
+    settingsSection: SettingsSection;
+  },
+) {
+  host.tab = next.tab;
+  host.operationsSection = next.operationsSection;
+  host.agentsSection = next.agentsSection;
+  host.workspaceSection = next.workspaceSection;
+  host.settingsSection = next.settingsSection;
+  host.settings = {
+    ...host.settings,
+    operationsSection: next.operationsSection,
+    agentsSection: next.agentsSection,
+    workspaceSection: next.workspaceSection,
+    settingsSection: next.settingsSection,
+  };
+  if (next.tab === "chat") {
     host.chatHasAutoScrolled = false;
   }
-  if (next === "logs") {
-    startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
-  } else {
-    stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
-  }
-  if (next === "debug") {
-    startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
-  } else {
-    stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
-  }
+  updatePollingForActiveView(host);
   if (host.connected) {
     void refreshActiveTab(host);
   }
 }
 
-export function syncUrlWithTab(host: SettingsHost, tab: Tab, replace: boolean) {
+export function syncUrlWithCurrentView(
+  host: SettingsHost,
+  replace: boolean,
+  pathOverride?: string,
+) {
   if (typeof window === "undefined") {
     return;
   }
-  const targetPath = normalizePath(pathForTab(tab, host.basePath));
+  const targetPath = normalizePath(
+    pathOverride ? `${normalizeBasePath(host.basePath)}${pathOverride}` : pathForCurrentView(host),
+  );
   const currentPath = normalizePath(window.location.pathname);
   const url = new URL(window.location.href);
 
-  if (tab === "chat" && host.sessionKey) {
+  if (host.tab === "chat" && host.sessionKey) {
     url.searchParams.set("session", host.sessionKey);
   } else {
     url.searchParams.delete("session");
@@ -412,6 +535,24 @@ export function syncUrlWithTab(host: SettingsHost, tab: Tab, replace: boolean) {
     url.pathname = targetPath;
   }
 
+  if (replace) {
+    window.history.replaceState({}, "", url.toString());
+  } else {
+    window.history.pushState({}, "", url.toString());
+  }
+}
+
+export function syncUrlWithTab(host: SettingsHost, tab: Tab, replace: boolean) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.pathname = normalizePath(pathForTab(tab, host.basePath));
+  if (tab === "chat" && host.sessionKey) {
+    url.searchParams.set("session", host.sessionKey);
+  } else {
+    url.searchParams.delete("session");
+  }
   if (replace) {
     window.history.replaceState({}, "", url.toString());
   } else {

@@ -18,13 +18,20 @@ const createHost = (tab: Tab): SettingsHost => ({
     chatShowThinking: true,
     splitRatio: 0.6,
     navCollapsed: false,
-    navGroupsCollapsed: {},
+    operationsSection: "sessions",
+    agentsSection: "agents",
+    workspaceSection: "projects",
+    settingsSection: "config",
   },
   theme: "system",
   themeResolved: "dark",
   applySessionKey: "main",
   sessionKey: "main",
   tab,
+  operationsSection: "sessions",
+  agentsSection: "agents",
+  workspaceSection: "projects",
+  settingsSection: "config",
   connected: false,
   chatHasAutoScrolled: false,
   logsAtBottom: false,
@@ -46,25 +53,49 @@ describe("setTabFromRoute", () => {
     vi.useRealTimers();
   });
 
-  it("starts and stops log polling based on the tab", () => {
+  it("starts and stops log polling based on the active operations section", () => {
     const host = createHost("chat");
 
-    setTabFromRoute(host, "logs");
+    setTabFromRoute(host, {
+      tab: "operations",
+      operationsSection: "logs",
+      agentsSection: "agents",
+      workspaceSection: "projects",
+      settingsSection: "config",
+    });
     expect(host.logsPollInterval).not.toBeNull();
     expect(host.debugPollInterval).toBeNull();
 
-    setTabFromRoute(host, "chat");
+    setTabFromRoute(host, {
+      tab: "chat",
+      operationsSection: "sessions",
+      agentsSection: "agents",
+      workspaceSection: "projects",
+      settingsSection: "config",
+    });
     expect(host.logsPollInterval).toBeNull();
   });
 
-  it("starts and stops debug polling based on the tab", () => {
+  it("starts and stops debug polling based on the active operations section", () => {
     const host = createHost("chat");
 
-    setTabFromRoute(host, "debug");
+    setTabFromRoute(host, {
+      tab: "operations",
+      operationsSection: "debug",
+      agentsSection: "agents",
+      workspaceSection: "projects",
+      settingsSection: "config",
+    });
     expect(host.debugPollInterval).not.toBeNull();
     expect(host.logsPollInterval).toBeNull();
 
-    setTabFromRoute(host, "chat");
+    setTabFromRoute(host, {
+      tab: "chat",
+      operationsSection: "sessions",
+      agentsSection: "agents",
+      workspaceSection: "projects",
+      settingsSection: "config",
+    });
     expect(host.debugPollInterval).toBeNull();
   });
 });

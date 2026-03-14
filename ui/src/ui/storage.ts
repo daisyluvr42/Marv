@@ -1,6 +1,12 @@
-const KEY = "marv.control.settings.v1";
+const KEY = "marv.control.settings.v2";
 
 import { isSupportedLocale } from "../i18n/index.js";
+import type {
+  AgentsSection,
+  OperationsSection,
+  SettingsSection,
+  WorkspaceSection,
+} from "./navigation.js";
 import type { ThemeMode } from "./theme.js";
 
 export type UiSettings = {
@@ -13,7 +19,10 @@ export type UiSettings = {
   chatShowThinking: boolean;
   splitRatio: number; // Sidebar split ratio (0.4 to 0.7, default 0.6)
   navCollapsed: boolean; // Collapsible sidebar state
-  navGroupsCollapsed: Record<string, boolean>; // Which nav groups are collapsed
+  operationsSection: OperationsSection;
+  agentsSection: AgentsSection;
+  workspaceSection: WorkspaceSection;
+  settingsSection: SettingsSection;
   locale?: string;
 };
 
@@ -33,7 +42,10 @@ export function loadSettings(): UiSettings {
     chatShowThinking: true,
     splitRatio: 0.6,
     navCollapsed: false,
-    navGroupsCollapsed: {},
+    operationsSection: "sessions",
+    agentsSection: "agents",
+    workspaceSection: "projects",
+    settingsSection: "config",
   };
 
   try {
@@ -77,10 +89,30 @@ export function loadSettings(): UiSettings {
           : defaults.splitRatio,
       navCollapsed:
         typeof parsed.navCollapsed === "boolean" ? parsed.navCollapsed : defaults.navCollapsed,
-      navGroupsCollapsed:
-        typeof parsed.navGroupsCollapsed === "object" && parsed.navGroupsCollapsed !== null
-          ? parsed.navGroupsCollapsed
-          : defaults.navGroupsCollapsed,
+      operationsSection:
+        parsed.operationsSection === "sessions" ||
+        parsed.operationsSection === "instances" ||
+        parsed.operationsSection === "usage" ||
+        parsed.operationsSection === "cron" ||
+        parsed.operationsSection === "logs" ||
+        parsed.operationsSection === "debug"
+          ? parsed.operationsSection
+          : defaults.operationsSection,
+      agentsSection:
+        parsed.agentsSection === "agents" ||
+        parsed.agentsSection === "skills" ||
+        parsed.agentsSection === "nodes"
+          ? parsed.agentsSection
+          : defaults.agentsSection,
+      workspaceSection:
+        parsed.workspaceSection === "projects" ||
+        parsed.workspaceSection === "memory" ||
+        parsed.workspaceSection === "documents" ||
+        parsed.workspaceSection === "calendar"
+          ? parsed.workspaceSection
+          : defaults.workspaceSection,
+      settingsSection:
+        parsed.settingsSection === "config" ? parsed.settingsSection : defaults.settingsSection,
       locale: isSupportedLocale(parsed.locale) ? parsed.locale : undefined,
     };
   } catch {
@@ -98,7 +130,10 @@ export function saveSettings(next: UiSettings) {
     chatShowThinking: next.chatShowThinking,
     splitRatio: next.splitRatio,
     navCollapsed: next.navCollapsed,
-    navGroupsCollapsed: next.navGroupsCollapsed,
+    operationsSection: next.operationsSection,
+    agentsSection: next.agentsSection,
+    workspaceSection: next.workspaceSection,
+    settingsSection: next.settingsSection,
     locale: next.locale,
   };
   localStorage.setItem(KEY, JSON.stringify(persisted));

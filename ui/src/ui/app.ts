@@ -40,7 +40,11 @@ import {
   applySettings as applySettingsInternal,
   loadCron as loadCronInternal,
   loadOverview as loadOverviewInternal,
+  selectAgentsSection as selectAgentsSectionInternal,
+  selectOperationsSection as selectOperationsSectionInternal,
+  selectSettingsSection as selectSettingsSectionInternal,
   setTab as setTabInternal,
+  selectWorkspaceSection as selectWorkspaceSectionInternal,
   setTheme as setThemeInternal,
   onPopState as onPopStateInternal,
 } from "./app-settings.js";
@@ -58,7 +62,13 @@ import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exe
 import type { SkillMessage } from "./controllers/skills.js";
 import { getRecentDateRange } from "./controllers/workspace-date.js";
 import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.js";
-import type { Tab } from "./navigation.js";
+import type {
+  AgentsSection,
+  OperationsSection,
+  SettingsSection,
+  Tab,
+  WorkspaceSection,
+} from "./navigation.js";
 import { loadSettings, type UiSettings } from "./storage.js";
 import type { ResolvedTheme, ThemeMode } from "./theme.js";
 import { forgetTrustedDevice as forgetTrustedDeviceInternal } from "./trusted-device.js";
@@ -128,7 +138,11 @@ export class MarvApp extends LitElement {
     }
   }
   @state() password = "";
-  @state() tab: Tab = "chat";
+  @state() tab: Tab = "overview";
+  @state() operationsSection: OperationsSection = this.settings.operationsSection;
+  @state() agentsSection: AgentsSection = this.settings.agentsSection;
+  @state() workspaceSection: WorkspaceSection = this.settings.workspaceSection;
+  @state() settingsSection: SettingsSection = this.settings.settingsSection;
   @state() onboarding = resolveOnboardingMode();
   @state() connected = false;
   @state() theme: ThemeMode = this.settings.theme ?? "system";
@@ -482,6 +496,34 @@ export class MarvApp extends LitElement {
 
   setTab(next: Tab) {
     setTabInternal(this as unknown as Parameters<typeof setTabInternal>[0], next);
+  }
+
+  selectOperationsSection(next: OperationsSection) {
+    selectOperationsSectionInternal(
+      this as unknown as Parameters<typeof selectOperationsSectionInternal>[0],
+      next,
+    );
+  }
+
+  selectAgentsSection(next: AgentsSection) {
+    selectAgentsSectionInternal(
+      this as unknown as Parameters<typeof selectAgentsSectionInternal>[0],
+      next,
+    );
+  }
+
+  selectWorkspaceSection(next: WorkspaceSection) {
+    selectWorkspaceSectionInternal(
+      this as unknown as Parameters<typeof selectWorkspaceSectionInternal>[0],
+      next,
+    );
+  }
+
+  selectSettingsSection(next: SettingsSection) {
+    selectSettingsSectionInternal(
+      this as unknown as Parameters<typeof selectSettingsSectionInternal>[0],
+      next,
+    );
   }
 
   setTheme(next: ThemeMode, context?: Parameters<typeof setThemeInternal>[2]) {

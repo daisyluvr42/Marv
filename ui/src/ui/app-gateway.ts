@@ -25,7 +25,7 @@ import { loadNodes } from "./controllers/nodes.js";
 import { loadSessions } from "./controllers/sessions.js";
 import type { GatewayEventFrame, GatewayHelloOk } from "./gateway.js";
 import { GatewayBrowserClient } from "./gateway.js";
-import type { Tab } from "./navigation.js";
+import { isDebugView, type OperationsSection, type Tab } from "./navigation.js";
 import type { UiSettings } from "./storage.js";
 import type { AgentsListResult, PresenceEntry, HealthSnapshot, StatusSummary } from "./types.js";
 
@@ -40,6 +40,7 @@ type GatewayHost = {
   eventLogBuffer: EventLogEntry[];
   eventLog: EventLogEntry[];
   tab: Tab;
+  operationsSection: OperationsSection;
   presenceEntries: PresenceEntry[];
   presenceError: string | null;
   presenceStatus: StatusSummary | null;
@@ -197,7 +198,7 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
     { ts: Date.now(), event: evt.event, payload: evt.payload },
     ...host.eventLogBuffer,
   ].slice(0, 250);
-  if (host.tab === "debug") {
+  if (isDebugView(host.tab, host.operationsSection)) {
     host.eventLog = host.eventLogBuffer;
   }
 
@@ -250,7 +251,7 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
     return;
   }
 
-  if (evt.event === "cron" && host.tab === "cron") {
+  if (evt.event === "cron" && host.tab === "operations" && host.operationsSection === "cron") {
     void loadCron(host as unknown as Parameters<typeof loadCron>[0]);
   }
 

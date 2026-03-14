@@ -23,7 +23,7 @@ describe("trusted device lifecycle", () => {
     vi.resetModules();
     installStorageMock();
     localStorage.setItem(
-      "marv.control.settings.v1",
+      "marv.control.settings.v2",
       JSON.stringify({
         gatewayUrl: "ws://127.0.0.1:18789",
         sessionKey: "main",
@@ -68,7 +68,10 @@ describe("trusted device lifecycle", () => {
         chatShowThinking: true,
         splitRatio: 0.6,
         navCollapsed: false,
-        navGroupsCollapsed: {},
+        operationsSection: "sessions",
+        agentsSection: "agents",
+        workspaceSection: "projects",
+        settingsSection: "config",
       },
       password: "secret",
       hello: { auth: { deviceToken: "device-token" } },
@@ -85,7 +88,10 @@ describe("trusted device lifecycle", () => {
         chatShowThinking: boolean;
         splitRatio: number;
         navCollapsed: boolean;
-        navGroupsCollapsed: Record<string, boolean>;
+        operationsSection: "sessions" | "instances" | "usage" | "cron" | "logs" | "debug";
+        agentsSection: "agents" | "skills" | "nodes";
+        workspaceSection: "projects" | "memory" | "documents" | "calendar";
+        settingsSection: "config";
       }) {
         this.settings = next;
       },

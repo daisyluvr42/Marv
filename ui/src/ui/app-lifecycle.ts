@@ -17,11 +17,12 @@ import {
   syncThemeWithSettings,
 } from "./app-settings.js";
 import { loadControlUiBootstrapConfig } from "./controllers/control-ui-bootstrap.js";
-import type { Tab } from "./navigation.js";
+import { isDebugView, isLogsView, type OperationsSection, type Tab } from "./navigation.js";
 
 type LifecycleHost = {
   basePath: string;
   tab: Tab;
+  operationsSection?: OperationsSection;
   assistantName: string;
   assistantAvatar: string | null;
   assistantAgentId: string | null;
@@ -48,10 +49,10 @@ export function handleConnected(host: LifecycleHost) {
   window.addEventListener("popstate", host.popStateHandler);
   connectGateway(host as unknown as Parameters<typeof connectGateway>[0]);
   startNodesPolling(host as unknown as Parameters<typeof startNodesPolling>[0]);
-  if (host.tab === "logs") {
+  if (isLogsView(host.tab, host.operationsSection ?? "sessions")) {
     startLogsPolling(host as unknown as Parameters<typeof startLogsPolling>[0]);
   }
-  if (host.tab === "debug") {
+  if (isDebugView(host.tab, host.operationsSection ?? "sessions")) {
     startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
   }
 }
@@ -91,8 +92,11 @@ export function handleUpdated(host: LifecycleHost, changed: Map<PropertyKey, unk
     );
   }
   if (
-    host.tab === "logs" &&
-    (changed.has("logsEntries") || changed.has("logsAutoFollow") || changed.has("tab"))
+    isLogsView(host.tab, host.operationsSection ?? "sessions") &&
+    (changed.has("logsEntries") ||
+      changed.has("logsAutoFollow") ||
+      changed.has("tab") ||
+      changed.has("operationsSection"))
   ) {
     if (host.logsAutoFollow && host.logsAtBottom) {
       scheduleLogsScroll(

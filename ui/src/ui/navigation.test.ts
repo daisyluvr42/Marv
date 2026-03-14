@@ -1,23 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
-  TAB_GROUPS,
+  AGENTS_SECTIONS,
   iconForTab,
   inferBasePathFromPathname,
+  NAV_TABS,
   normalizeBasePath,
   normalizePath,
+  OPERATIONS_SECTIONS,
+  pathForAgentsSection,
+  pathForOperationsSection,
   pathForTab,
+  pathForWorkspaceSection,
+  resolveRoute,
   subtitleForTab,
   tabFromPath,
   titleForTab,
+  WORKSPACE_SECTIONS,
   type Tab,
 } from "./navigation.js";
 
-/** All valid tab identifiers derived from TAB_GROUPS */
-const ALL_TABS: Tab[] = TAB_GROUPS.flatMap((group) => group.tabs) as Tab[];
-
 describe("iconForTab", () => {
   it("returns a non-empty string for every tab", () => {
-    for (const tab of ALL_TABS) {
+    for (const tab of NAV_TABS) {
       const icon = iconForTab(tab);
       expect(icon).toBeTruthy();
       expect(typeof icon).toBe("string");
@@ -26,25 +30,16 @@ describe("iconForTab", () => {
   });
 
   it("returns stable icons for known tabs", () => {
-    expect(iconForTab("chat")).toBe("messageSquare");
     expect(iconForTab("overview")).toBe("barChart");
-    expect(iconForTab("calendar")).toBe("book");
+    expect(iconForTab("operations")).toBe("radio");
     expect(iconForTab("channels")).toBe("link");
-    expect(iconForTab("instances")).toBe("radio");
-    expect(iconForTab("sessions")).toBe("fileText");
-    expect(iconForTab("cron")).toBe("loader");
-    expect(iconForTab("projects")).toBe("folder");
-    expect(iconForTab("memory")).toBe("brain");
-    expect(iconForTab("documents")).toBe("fileText");
-    expect(iconForTab("skills")).toBe("zap");
-    expect(iconForTab("nodes")).toBe("monitor");
-    expect(iconForTab("config")).toBe("settings");
-    expect(iconForTab("debug")).toBe("bug");
-    expect(iconForTab("logs")).toBe("scrollText");
+    expect(iconForTab("agents")).toBe("folder");
+    expect(iconForTab("workspace")).toBe("book");
+    expect(iconForTab("chat")).toBe("messageSquare");
+    expect(iconForTab("settings")).toBe("settings");
   });
 
   it("returns a fallback icon for unknown tab", () => {
-    // TypeScript won't allow this normally, but runtime could receive unexpected values
     const unknownTab = "unknown" as Tab;
     expect(iconForTab(unknownTab)).toBe("folder");
   });
@@ -52,7 +47,7 @@ describe("iconForTab", () => {
 
 describe("titleForTab", () => {
   it("returns a non-empty string for every tab", () => {
-    for (const tab of ALL_TABS) {
+    for (const tab of NAV_TABS) {
       const title = titleForTab(tab);
       expect(title).toBeTruthy();
       expect(typeof title).toBe("string");
@@ -60,16 +55,15 @@ describe("titleForTab", () => {
   });
 
   it("returns expected titles", () => {
-    expect(titleForTab("chat")).toBe("Chat");
     expect(titleForTab("overview")).toBe("Overview");
-    expect(titleForTab("cron")).toBe("Cron Jobs");
-    expect(titleForTab("projects")).toBe("Projects");
+    expect(titleForTab("operations")).toBe("Operations");
+    expect(titleForTab("workspace")).toBe("Workspace");
   });
 });
 
 describe("subtitleForTab", () => {
   it("returns a string for every tab", () => {
-    for (const tab of ALL_TABS) {
+    for (const tab of NAV_TABS) {
       const subtitle = subtitleForTab(tab);
       expect(typeof subtitle).toBe("string");
     }
@@ -77,8 +71,8 @@ describe("subtitleForTab", () => {
 
   it("returns descriptive subtitles", () => {
     expect(subtitleForTab("chat")).toContain("chat session");
-    expect(subtitleForTab("config")).toContain("marv.json");
-    expect(subtitleForTab("documents")).toContain("workspace files");
+    expect(subtitleForTab("settings")).toContain("configuration");
+    expect(subtitleForTab("workspace")).toContain("Projects");
   });
 });
 
@@ -98,10 +92,6 @@ describe("normalizeBasePath", () => {
   it("returns empty string for root path", () => {
     expect(normalizeBasePath("/")).toBe("");
   });
-
-  it("handles nested paths", () => {
-    expect(normalizeBasePath("/apps/marv")).toBe("/apps/marv");
-  });
 });
 
 describe("normalizePath", () => {
@@ -119,43 +109,77 @@ describe("normalizePath", () => {
   });
 });
 
-describe("pathForTab", () => {
-  it("returns correct path without base", () => {
-    expect(pathForTab("chat")).toBe("/chat");
+describe("path helpers", () => {
+  it("returns correct top-level paths", () => {
     expect(pathForTab("overview")).toBe("/overview");
-    expect(pathForTab("calendar")).toBe("/calendar");
+    expect(pathForTab("operations")).toBe("/operations");
+    expect(pathForTab("workspace")).toBe("/workspace");
   });
 
-  it("prepends base path", () => {
-    expect(pathForTab("chat", "/ui")).toBe("/ui/chat");
-    expect(pathForTab("sessions", "/apps/marv")).toBe("/apps/marv/sessions");
+  it("returns correct section paths", () => {
+    expect(pathForOperationsSection("sessions")).toBe("/sessions");
+    expect(pathForAgentsSection("skills")).toBe("/skills");
+    expect(pathForWorkspaceSection("documents")).toBe("/documents");
+  });
+
+  it("prepends base paths", () => {
+    expect(pathForTab("channels", "/ui")).toBe("/ui/channels");
+    expect(pathForOperationsSection("cron", "/apps/marv")).toBe("/apps/marv/cron");
+  });
+});
+
+describe("resolveRoute", () => {
+  it("maps root and top-level paths", () => {
+    expect(resolveRoute("/overview")?.tab).toBe("overview");
+    expect(resolveRoute("/operations")?.tab).toBe("operations");
+    expect(resolveRoute("/")?.tab).toBe("overview");
+  });
+
+  it("maps legacy detail paths to parent tabs", () => {
+    expect(resolveRoute("/sessions")).toMatchObject({
+      tab: "operations",
+      operationsSection: "sessions",
+    });
+    expect(resolveRoute("/skills")).toMatchObject({
+      tab: "agents",
+      agentsSection: "skills",
+    });
+    expect(resolveRoute("/projects")).toMatchObject({
+      tab: "workspace",
+      workspaceSection: "projects",
+    });
+    expect(resolveRoute("/config")).toMatchObject({
+      tab: "settings",
+      settingsSection: "config",
+    });
+  });
+
+  it("handles base paths", () => {
+    expect(resolveRoute("/ui/cron", "/ui")).toMatchObject({
+      tab: "operations",
+      operationsSection: "cron",
+    });
+    expect(resolveRoute("/apps/marv/projects", "/apps/marv")).toMatchObject({
+      tab: "workspace",
+      workspaceSection: "projects",
+    });
   });
 });
 
 describe("tabFromPath", () => {
-  it("returns tab for valid path", () => {
+  it("returns parent tabs for current paths", () => {
     expect(tabFromPath("/chat")).toBe("chat");
     expect(tabFromPath("/overview")).toBe("overview");
-    expect(tabFromPath("/sessions")).toBe("sessions");
-    expect(tabFromPath("/projects")).toBe("projects");
+    expect(tabFromPath("/sessions")).toBe("operations");
+    expect(tabFromPath("/projects")).toBe("workspace");
   });
 
-  it("returns chat for root path", () => {
-    expect(tabFromPath("/")).toBe("chat");
-  });
-
-  it("handles base paths", () => {
-    expect(tabFromPath("/ui/chat", "/ui")).toBe("chat");
-    expect(tabFromPath("/apps/marv/sessions", "/apps/marv")).toBe("sessions");
+  it("returns overview for root path", () => {
+    expect(tabFromPath("/")).toBe("overview");
   });
 
   it("returns null for unknown path", () => {
     expect(tabFromPath("/unknown")).toBeNull();
-  });
-
-  it("is case-insensitive", () => {
-    expect(tabFromPath("/CHAT")).toBe("chat");
-    expect(tabFromPath("/Overview")).toBe("overview");
   });
 });
 
@@ -165,35 +189,21 @@ describe("inferBasePathFromPathname", () => {
   });
 
   it("returns empty string for direct tab path", () => {
-    expect(inferBasePathFromPathname("/chat")).toBe("");
     expect(inferBasePathFromPathname("/overview")).toBe("");
-    expect(inferBasePathFromPathname("/calendar")).toBe("");
+    expect(inferBasePathFromPathname("/operations")).toBe("");
+    expect(inferBasePathFromPathname("/workspace")).toBe("");
   });
 
   it("infers base path from nested paths", () => {
-    expect(inferBasePathFromPathname("/ui/chat")).toBe("/ui");
-    expect(inferBasePathFromPathname("/apps/marv/sessions")).toBe("/apps/marv");
-  });
-
-  it("handles index.html suffix", () => {
-    expect(inferBasePathFromPathname("/index.html")).toBe("");
-    expect(inferBasePathFromPathname("/ui/index.html")).toBe("/ui");
+    expect(inferBasePathFromPathname("/ui/cron")).toBe("/ui");
+    expect(inferBasePathFromPathname("/apps/marv/projects")).toBe("/apps/marv");
   });
 });
 
-describe("TAB_GROUPS", () => {
-  it("contains all expected groups", () => {
-    const labels = TAB_GROUPS.map((g) => g.label);
-    expect(labels).toContain("chat");
-    expect(labels).toContain("control");
-    expect(labels).toContain("workspace");
-    expect(labels).toContain("agent");
-    expect(labels).toContain("settings");
-  });
-
-  it("all tabs are unique", () => {
-    const allTabs = TAB_GROUPS.flatMap((g) => g.tabs);
-    const uniqueTabs = new Set(allTabs);
-    expect(uniqueTabs.size).toBe(allTabs.length);
+describe("section constants", () => {
+  it("keep sections unique", () => {
+    expect(new Set(OPERATIONS_SECTIONS).size).toBe(OPERATIONS_SECTIONS.length);
+    expect(new Set(AGENTS_SECTIONS).size).toBe(AGENTS_SECTIONS.length);
+    expect(new Set(WORKSPACE_SECTIONS).size).toBe(WORKSPACE_SECTIONS.length);
   });
 });

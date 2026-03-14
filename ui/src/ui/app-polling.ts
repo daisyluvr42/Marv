@@ -2,12 +2,14 @@ import type { MarvApp } from "./app.js";
 import { loadDebug } from "./controllers/debug.js";
 import { loadLogs } from "./controllers/logs.js";
 import { loadNodes } from "./controllers/nodes.js";
+import { isDebugView, isLogsView, type OperationsSection, type Tab } from "./navigation.js";
 
 type PollingHost = {
   nodesPollInterval: number | null;
   logsPollInterval: number | null;
   debugPollInterval: number | null;
-  tab: string;
+  tab: Tab;
+  operationsSection?: OperationsSection;
 };
 
 export function startNodesPolling(host: PollingHost) {
@@ -33,7 +35,7 @@ export function startLogsPolling(host: PollingHost) {
     return;
   }
   host.logsPollInterval = window.setInterval(() => {
-    if (host.tab !== "logs") {
+    if (!isLogsView(host.tab, host.operationsSection ?? "sessions")) {
       return;
     }
     void loadLogs(host as unknown as MarvApp, { quiet: true });
@@ -53,7 +55,7 @@ export function startDebugPolling(host: PollingHost) {
     return;
   }
   host.debugPollInterval = window.setInterval(() => {
-    if (host.tab !== "debug") {
+    if (!isDebugView(host.tab, host.operationsSection ?? "sessions")) {
       return;
     }
     void loadDebug(host as unknown as MarvApp);

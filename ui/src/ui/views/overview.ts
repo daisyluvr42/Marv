@@ -2,6 +2,7 @@ import { html } from "lit";
 import { t, i18n, type Locale } from "../../i18n/index.js";
 import { formatRelativeTimestamp, formatDurationHuman } from "../format.js";
 import type { GatewayHelloOk } from "../gateway.js";
+import type { OperationsSection, Tab } from "../navigation.js";
 import { formatNextRun } from "../presenter.js";
 import type { UiSettings } from "../storage.js";
 import type {
@@ -33,6 +34,8 @@ export type OverviewProps = {
   onConnect: () => void;
   onForgetDevice: () => void;
   onRefresh: () => void;
+  onOpenOperationsSection: (section: OperationsSection) => void;
+  onOpenTab: (tab: Tab) => void;
 };
 
 export function renderOverview(props: OverviewProps) {
@@ -158,9 +161,100 @@ export function renderOverview(props: OverviewProps) {
   })();
 
   const currentLocale = i18n.getLocale();
+  const attentionText = props.lastError ?? t("overview.attention.healthy");
+  const healthLabel = props.connected ? t("common.ok") : t("common.offline");
+  const quickLinks = [
+    {
+      label: t("overview.quickLinks.sessions"),
+      action: () => props.onOpenOperationsSection("sessions"),
+    },
+    {
+      label: t("overview.quickLinks.usage"),
+      action: () => props.onOpenOperationsSection("usage"),
+    },
+    {
+      label: t("overview.quickLinks.cron"),
+      action: () => props.onOpenOperationsSection("cron"),
+    },
+    {
+      label: t("overview.quickLinks.channels"),
+      action: () => props.onOpenTab("channels"),
+    },
+    {
+      label: t("overview.quickLinks.agents"),
+      action: () => props.onOpenTab("agents"),
+    },
+    {
+      label: t("overview.quickLinks.workspace"),
+      action: () => props.onOpenTab("workspace"),
+    },
+    {
+      label: t("overview.quickLinks.settings"),
+      action: () => props.onOpenTab("settings"),
+    },
+    {
+      label: t("overview.quickLinks.chat"),
+      action: () => props.onOpenTab("chat"),
+    },
+  ];
 
   return html`
-    <section class="grid grid-cols-2">
+    <section class="grid grid-cols-3">
+      <div class="card">
+        <div class="card-title">${t("overview.summary.title")}</div>
+        <div class="card-sub">${t("overview.summary.subtitle")}</div>
+        <div class="stat-grid" style="margin-top: 16px;">
+          <div class="stat">
+            <div class="stat-label">${t("overview.summary.status")}</div>
+            <div class="stat-value ${props.connected ? "ok" : "warn"}">${healthLabel}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.snapshot.uptime")}</div>
+            <div class="stat-value">${uptime}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.summary.sessions")}</div>
+            <div class="stat-value">${props.sessionsCount ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.summary.instances")}</div>
+            <div class="stat-value">${props.presenceCount}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.summary.cron")}</div>
+            <div class="stat-value">${formatBoolean(props.cronEnabled)}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.summary.nextWake")}</div>
+            <div class="stat-value">${formatNextRun(props.cronNext)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("overview.attention.title")}</div>
+        <div class="card-sub">${t("overview.attention.subtitle")}</div>
+        <div class="callout ${props.lastError ? "danger" : ""}" style="margin-top: 16px;">
+          ${attentionText}
+          ${authHint ?? ""}
+          ${insecureContextHint ?? ""}
+        </div>
+        <div class="row" style="margin-top: 14px; flex-wrap: wrap;">
+          <button class="btn btn--sm" @click=${() => props.onOpenTab("channels")}>
+            ${t("overview.attention.channels")}
+          </button>
+          <button class="btn btn--sm" @click=${() => props.onOpenOperationsSection("logs")}>
+            ${t("overview.attention.logs")}
+          </button>
+          <button class="btn btn--sm" @click=${() => props.onOpenTab("settings")}>
+            ${t("overview.attention.config")}
+          </button>
+          <button class="btn btn--sm" @click=${() => props.onOpenTab("chat")}>
+            ${t("overview.attention.chat")}
+          </button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">${t("overview.access.title")}</div>
         <div class="card-sub">${t("overview.access.subtitle")}</div>
@@ -244,49 +338,9 @@ export function renderOverview(props: OverviewProps) {
         </div>
         <div class="muted" style="margin-top: 10px">${deviceStatus}</div>
       </div>
-
-      <div class="card">
-        <div class="card-title">${t("overview.snapshot.title")}</div>
-        <div class="card-sub">${t("overview.snapshot.subtitle")}</div>
-        <div class="stat-grid" style="margin-top: 16px;">
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.status")}</div>
-            <div class="stat-value ${props.connected ? "ok" : "warn"}">
-              ${props.connected ? t("common.ok") : t("common.offline")}
-            </div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.uptime")}</div>
-            <div class="stat-value">${uptime}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.tickInterval")}</div>
-            <div class="stat-value">${tick}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">${t("overview.snapshot.lastChannelsRefresh")}</div>
-            <div class="stat-value">
-              ${props.lastChannelsRefresh ? formatRelativeTimestamp(props.lastChannelsRefresh) : t("common.na")}
-            </div>
-          </div>
-        </div>
-        ${
-          props.lastError
-            ? html`<div class="callout danger" style="margin-top: 14px;">
-              <div>${props.lastError}</div>
-              ${authHint ?? ""}
-              ${insecureContextHint ?? ""}
-            </div>`
-            : html`
-                <div class="callout" style="margin-top: 14px">
-                  ${t("overview.snapshot.channelsHint")}
-                </div>
-              `
-        }
-      </div>
     </section>
 
-    <section class="grid grid-cols-3" style="margin-top: 18px;">
+    <section class="grid grid-cols-4" style="margin-top: 18px;">
       <div class="card stat-card">
         <div class="stat-label">${t("overview.stats.instances")}</div>
         <div class="stat-value">${props.presenceCount}</div>
@@ -303,6 +357,13 @@ export function renderOverview(props: OverviewProps) {
           ${props.cronEnabled == null ? t("common.na") : props.cronEnabled ? t("common.enabled") : t("common.disabled")}
         </div>
         <div class="muted">${t("overview.stats.cronNext", { time: formatNextRun(props.cronNext) })}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">${t("overview.snapshot.lastChannelsRefresh")}</div>
+        <div class="stat-value">
+          ${props.lastChannelsRefresh ? formatRelativeTimestamp(props.lastChannelsRefresh) : t("common.na")}
+        </div>
+        <div class="muted">${t("overview.snapshot.channelsHint")}</div>
       </div>
     </section>
 
@@ -412,6 +473,25 @@ export function renderOverview(props: OverviewProps) {
             ? html`<div class="muted" style="margin-top: 8px">${t("overview.advanced.loading")}</div>`
             : ""
         }
+      </div>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <div class="row" style="justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div class="card-title">${t("overview.quickLinks.title")}</div>
+          <div class="card-sub">${t("overview.quickLinks.subtitle")}</div>
+        </div>
+        <div class="muted">${t("overview.snapshot.tickInterval")}: ${tick}</div>
+      </div>
+      <div class="section-rail__items" style="margin-top: 14px;">
+        ${quickLinks.map(
+          (item) => html`
+            <button class="section-chip" @click=${item.action}>
+              <span class="section-chip__title">${item.label}</span>
+            </button>
+          `,
+        )}
       </div>
     </section>
 

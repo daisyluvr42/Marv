@@ -58,11 +58,18 @@ import {
 } from "./controllers/skills.js";
 import { icons } from "./icons.js";
 import {
-  isWorkspaceTab,
+  AGENTS_SECTIONS,
   normalizeBasePath,
-  TAB_GROUPS,
+  NAV_TABS,
+  OPERATIONS_SECTIONS,
+  SETTINGS_SECTIONS,
   subtitleForTab,
+  titleForAgentsSection,
+  titleForOperationsSection,
+  titleForSettingsSection,
   titleForTab,
+  titleForWorkspaceSection,
+  WORKSPACE_SECTIONS,
 } from "./navigation.js";
 import { renderAgents } from "./views/agents.js";
 import { renderCalendar } from "./views/calendar.js";
@@ -103,6 +110,40 @@ function resolveAssistantAvatarUrl(state: AppViewState): string | undefined {
   return identity?.avatarUrl;
 }
 
+type SectionItem<T extends string> = {
+  key: T;
+  label: string;
+  description: string;
+};
+
+function renderSectionRail<T extends string>(
+  title: string,
+  items: SectionItem<T>[],
+  active: T,
+  onSelect: (key: T) => void,
+) {
+  return html`
+    <section class="section-rail">
+      <div class="section-rail__header">
+        <div class="section-rail__title">${title}</div>
+      </div>
+      <div class="section-rail__items">
+        ${items.map(
+          (item) => html`
+            <button
+              class="section-chip ${item.key === active ? "active" : ""}"
+              @click=${() => onSelect(item.key)}
+            >
+              <span class="section-chip__title">${item.label}</span>
+              <span class="section-chip__desc">${item.description}</span>
+            </button>
+          `,
+        )}
+      </div>
+    </section>
+  `;
+}
+
 export function renderApp(state: AppViewState) {
   const presenceCount = state.presenceEntries.length;
   const sessionsCount = state.sessionsResult?.count ?? null;
@@ -121,6 +162,84 @@ export function renderApp(state: AppViewState) {
     state.agentsList?.defaultId ??
     state.agentsList?.agents?.[0]?.id ??
     null;
+  const operationsSections: SectionItem<(typeof OPERATIONS_SECTIONS)[number]>[] = [
+    {
+      key: "sessions",
+      label: titleForOperationsSection("sessions"),
+      description: "Session keys, overrides, and active work.",
+    },
+    {
+      key: "instances",
+      label: titleForOperationsSection("instances"),
+      description: "Connected clients, nodes, and recent presence.",
+    },
+    {
+      key: "usage",
+      label: titleForOperationsSection("usage"),
+      description: "Token burn, cost, and throughput patterns.",
+    },
+    {
+      key: "cron",
+      label: titleForOperationsSection("cron"),
+      description: "Scheduled jobs, wakeups, and run history.",
+    },
+    {
+      key: "logs",
+      label: titleForOperationsSection("logs"),
+      description: "Live gateway logs for fast fault isolation.",
+    },
+    {
+      key: "debug",
+      label: titleForOperationsSection("debug"),
+      description: "Snapshots, events, and manual RPC inspection.",
+    },
+  ];
+  const agentsSections: SectionItem<(typeof AGENTS_SECTIONS)[number]>[] = [
+    {
+      key: "agents",
+      label: titleForAgentsSection("agents"),
+      description: "Agent workspaces, files, tools, and models.",
+    },
+    {
+      key: "skills",
+      label: titleForAgentsSection("skills"),
+      description: "Installed skills, keys, and enablement.",
+    },
+    {
+      key: "nodes",
+      label: titleForAgentsSection("nodes"),
+      description: "Paired devices, exec bindings, and approvals.",
+    },
+  ];
+  const workspaceSections: SectionItem<(typeof WORKSPACE_SECTIONS)[number]>[] = [
+    {
+      key: "projects",
+      label: titleForWorkspaceSection("projects"),
+      description: "Session activity, costs, and recent work threads.",
+    },
+    {
+      key: "memory",
+      label: titleForWorkspaceSection("memory"),
+      description: "Soul memory search and recent recall artifacts.",
+    },
+    {
+      key: "documents",
+      label: titleForWorkspaceSection("documents"),
+      description: "Generated files and recent workspace documents.",
+    },
+    {
+      key: "calendar",
+      label: titleForWorkspaceSection("calendar"),
+      description: "Daily activity and timeline snapshots.",
+    },
+  ];
+  const settingsSections: SectionItem<(typeof SETTINGS_SECTIONS)[number]>[] = [
+    {
+      key: "config",
+      label: titleForSettingsSection("config"),
+      description: "Edit and apply the gateway config safely.",
+    },
+  ];
 
   return html`
     <div class="shell ${isChat ? "shell--chat" : ""} ${chatFocus ? "shell--chat-focus" : ""} ${state.settings.navCollapsed ? "shell--nav-collapsed" : ""} ${state.onboarding ? "shell--onboarding" : ""}">
@@ -144,7 +263,7 @@ export function renderApp(state: AppViewState) {
             </div>
             <div class="brand-text">
               <div class="brand-title">MARV</div>
-              <div class="brand-sub">Gateway Dashboard</div>
+              <div class="brand-sub">Operations Console</div>
             </div>
           </div>
         </div>
@@ -158,32 +277,14 @@ export function renderApp(state: AppViewState) {
         </div>
       </header>
       <aside class="nav ${state.settings.navCollapsed ? "nav--collapsed" : ""}">
-        ${TAB_GROUPS.map((group) => {
-          const isGroupCollapsed = state.settings.navGroupsCollapsed[group.label] ?? false;
-          const hasActiveTab = group.tabs.some((tab) => tab === state.tab);
-          return html`
-            <div class="nav-group ${isGroupCollapsed && !hasActiveTab ? "nav-group--collapsed" : ""}">
-              <button
-                class="nav-label"
-                @click=${() => {
-                  const next = { ...state.settings.navGroupsCollapsed };
-                  next[group.label] = !isGroupCollapsed;
-                  state.applySettings({
-                    ...state.settings,
-                    navGroupsCollapsed: next,
-                  });
-                }}
-                aria-expanded=${!isGroupCollapsed}
-              >
-                <span class="nav-label__text">${t(`nav.${group.label}`)}</span>
-                <span class="nav-label__chevron">${isGroupCollapsed ? "+" : "−"}</span>
-              </button>
-              <div class="nav-group__items">
-                ${group.tabs.map((tab) => renderTab(state, tab))}
-              </div>
-            </div>
-          `;
-        })}
+        <div class="nav-group">
+          <div class="nav-label nav-label--static">
+            <span class="nav-label__text">Console</span>
+          </div>
+          <div class="nav-group__items">
+            ${NAV_TABS.map((tab) => renderTab(state, tab))}
+          </div>
+        </div>
         <div class="nav-group nav-group--links">
           <div class="nav-label nav-label--static">
             <span class="nav-label__text">${t("common.resources")}</span>
@@ -205,8 +306,8 @@ export function renderApp(state: AppViewState) {
       <main class="content ${isChat ? "content--chat" : ""}">
         <section class="content-header">
           <div>
-            ${state.tab === "usage" ? nothing : html`<div class="page-title">${titleForTab(state.tab)}</div>`}
-            ${state.tab === "usage" ? nothing : html`<div class="page-sub">${subtitleForTab(state.tab)}</div>`}
+            <div class="page-title">${titleForTab(state.tab)}</div>
+            <div class="page-sub">${subtitleForTab(state.tab)}</div>
           </div>
           <div class="page-meta">
             ${state.lastError ? html`<div class="pill danger">${state.lastError}</div>` : nothing}
@@ -215,12 +316,47 @@ export function renderApp(state: AppViewState) {
         </section>
 
         ${
-          isWorkspaceTab(state.tab)
-            ? renderWorkspaceSummary({
+          state.tab === "operations"
+            ? renderSectionRail(
+                "Operations",
+                operationsSections,
+                state.operationsSection,
+                (section) => state.selectOperationsSection(section),
+              )
+            : nothing
+        }
+
+        ${
+          state.tab === "agents"
+            ? renderSectionRail("Agent Surfaces", agentsSections, state.agentsSection, (section) =>
+                state.selectAgentsSection(section),
+              )
+            : nothing
+        }
+
+        ${
+          state.tab === "workspace"
+            ? html`
+              ${renderSectionRail(
+                "Workspace",
+                workspaceSections,
+                state.workspaceSection,
+                (section) => state.selectWorkspaceSection(section),
+              )}
+              ${renderWorkspaceSummary({
                 loading: state.workspaceSummaryLoading,
                 error: state.workspaceSummaryError,
                 summary: state.workspaceSummary,
-              })
+              })}
+            `
+            : nothing
+        }
+
+        ${
+          state.tab === "settings"
+            ? renderSectionRail("Settings", settingsSections, state.settingsSection, (section) =>
+                state.selectSettingsSection(section),
+              )
             : nothing
         }
 
@@ -261,6 +397,8 @@ export function renderApp(state: AppViewState) {
                 onConnect: () => state.connect(),
                 onForgetDevice: () => state.forgetTrustedDevice(),
                 onRefresh: () => state.loadOverview(),
+                onOpenOperationsSection: (section) => state.selectOperationsSection(section),
+                onOpenTab: (tab) => state.setTab(tab),
               })
             : nothing
         }
@@ -305,7 +443,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "instances"
+          state.tab === "operations" && state.operationsSection === "instances"
             ? renderInstances({
                 loading: state.presenceLoading,
                 entries: state.presenceEntries,
@@ -317,7 +455,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "sessions"
+          state.tab === "operations" && state.operationsSection === "sessions"
             ? renderSessions({
                 loading: state.sessionsLoading,
                 result: state.sessionsResult,
@@ -340,10 +478,14 @@ export function renderApp(state: AppViewState) {
             : nothing
         }
 
-        ${renderUsageTab(state)}
+        ${
+          state.tab === "operations" && state.operationsSection === "usage"
+            ? renderUsageTab(state)
+            : nothing
+        }
 
         ${
-          state.tab === "cron"
+          state.tab === "operations" && state.operationsSection === "cron"
             ? renderCron({
                 basePath: state.basePath,
                 loading: state.cronLoading,
@@ -372,7 +514,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "projects"
+          state.tab === "workspace" && state.workspaceSection === "projects"
             ? renderProjects({
                 loading: state.workspaceProjectsLoading,
                 error: state.workspaceProjectsError,
@@ -395,7 +537,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "calendar"
+          state.tab === "workspace" && state.workspaceSection === "calendar"
             ? renderCalendar({
                 loading: state.workspaceCalendarLoading,
                 error: state.workspaceCalendarError,
@@ -410,7 +552,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "memory"
+          state.tab === "workspace" && state.workspaceSection === "memory"
             ? renderMemory({
                 loading: state.workspaceMemoryLoading,
                 error: state.workspaceMemoryError,
@@ -437,7 +579,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "documents"
+          state.tab === "workspace" && state.workspaceSection === "documents"
             ? renderDocuments({
                 loading: state.workspaceDocumentsLoading,
                 error: state.workspaceDocumentsError,
@@ -460,7 +602,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "agents"
+          state.tab === "agents" && state.agentsSection === "agents"
             ? renderAgents({
                 loading: state.agentsLoading,
                 error: state.agentsError,
@@ -808,7 +950,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "skills"
+          state.tab === "agents" && state.agentsSection === "skills"
             ? renderSkills({
                 loading: state.skillsLoading,
                 report: state.skillsReport,
@@ -829,7 +971,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "nodes"
+          state.tab === "agents" && state.agentsSection === "nodes"
             ? renderNodes({
                 loading: state.nodesLoading,
                 nodes: state.nodes,
@@ -987,7 +1129,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "config"
+          state.tab === "settings" && state.settingsSection === "config"
             ? renderConfig({
                 raw: state.configRaw,
                 originalRaw: state.configRawOriginal,
@@ -1027,7 +1169,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "debug"
+          state.tab === "operations" && state.operationsSection === "debug"
             ? renderDebug({
                 loading: state.debugLoading,
                 status: state.debugStatus,
@@ -1048,7 +1190,7 @@ export function renderApp(state: AppViewState) {
         }
 
         ${
-          state.tab === "logs"
+          state.tab === "operations" && state.operationsSection === "logs"
             ? renderLogs({
                 loading: state.logsLoading,
                 error: state.logsError,

@@ -10,7 +10,10 @@ type UiSettings = {
   chatShowThinking: boolean;
   splitRatio: number;
   navCollapsed: boolean;
-  navGroupsCollapsed: Record<string, boolean>;
+  operationsSection: "sessions" | "instances" | "usage" | "cron" | "logs" | "debug";
+  agentsSection: "agents" | "skills" | "nodes";
+  workspaceSection: "projects" | "memory" | "documents" | "calendar";
+  settingsSection: "config";
   locale?: string;
 };
 
@@ -44,7 +47,10 @@ function createSettings(overrides: Partial<UiSettings> = {}): UiSettings {
     chatShowThinking: true,
     splitRatio: 0.6,
     navCollapsed: false,
-    navGroupsCollapsed: {},
+    operationsSection: "sessions",
+    agentsSection: "agents",
+    workspaceSection: "projects",
+    settingsSection: "config",
     ...overrides,
   };
 }
@@ -59,7 +65,7 @@ describe("storage", () => {
     const { saveSettings } = await import("./storage.js");
     saveSettings(createSettings());
 
-    const raw = localStorage.getItem("marv.control.settings.v1");
+    const raw = localStorage.getItem("marv.control.settings.v2");
     expect(raw).not.toBeNull();
     expect(raw).not.toContain("bootstrap-token");
   });
@@ -67,7 +73,7 @@ describe("storage", () => {
   it("ignores legacy stored shared tokens when loading settings", async () => {
     const { loadSettings } = await import("./storage.js");
     localStorage.setItem(
-      "marv.control.settings.v1",
+      "marv.control.settings.v2",
       JSON.stringify({
         gatewayUrl: "ws://127.0.0.1:18789",
         token: "legacy-token",

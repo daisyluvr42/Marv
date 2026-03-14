@@ -1,58 +1,159 @@
 import { t } from "../i18n/index.js";
 import type { IconName } from "./icons.js";
 
-export const TAB_GROUPS = [
-  { label: "chat", tabs: ["chat"] },
-  {
-    label: "control",
-    tabs: ["overview", "channels", "instances", "sessions", "usage", "cron"],
-  },
-  { label: "workspace", tabs: ["calendar", "projects", "memory", "documents"] },
-  { label: "agent", tabs: ["agents", "skills", "nodes"] },
-  { label: "settings", tabs: ["config", "debug", "logs"] },
+export const NAV_TABS = [
+  "overview",
+  "operations",
+  "channels",
+  "agents",
+  "workspace",
+  "chat",
+  "settings",
 ] as const;
 
-export type Tab =
-  | "agents"
-  | "calendar"
-  | "overview"
-  | "channels"
-  | "instances"
-  | "sessions"
-  | "usage"
-  | "cron"
-  | "projects"
-  | "memory"
-  | "documents"
-  | "skills"
-  | "nodes"
-  | "chat"
-  | "config"
-  | "debug"
-  | "logs";
+export type Tab = (typeof NAV_TABS)[number];
+
+export const OPERATIONS_SECTIONS = [
+  "sessions",
+  "instances",
+  "usage",
+  "cron",
+  "logs",
+  "debug",
+] as const;
+export type OperationsSection = (typeof OPERATIONS_SECTIONS)[number];
+
+export const AGENTS_SECTIONS = ["agents", "skills", "nodes"] as const;
+export type AgentsSection = (typeof AGENTS_SECTIONS)[number];
+
+export const WORKSPACE_SECTIONS = ["projects", "memory", "documents", "calendar"] as const;
+export type WorkspaceSection = (typeof WORKSPACE_SECTIONS)[number];
+
+export const SETTINGS_SECTIONS = ["config"] as const;
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
+
+export type RouteState = {
+  tab: Tab;
+  operationsSection: OperationsSection;
+  agentsSection: AgentsSection;
+  workspaceSection: WorkspaceSection;
+  settingsSection: SettingsSection;
+  path: string;
+};
+
+const DEFAULT_ROUTE_STATE: RouteState = {
+  tab: "overview",
+  operationsSection: "sessions",
+  agentsSection: "agents",
+  workspaceSection: "projects",
+  settingsSection: "config",
+  path: "/overview",
+};
 
 const TAB_PATHS: Record<Tab, string> = {
-  agents: "/agents",
-  calendar: "/calendar",
   overview: "/overview",
+  operations: "/operations",
   channels: "/channels",
-  instances: "/instances",
+  agents: "/agents",
+  workspace: "/workspace",
+  chat: "/chat",
+  settings: "/settings",
+};
+
+const OPERATIONS_SECTION_PATHS: Record<OperationsSection, string> = {
   sessions: "/sessions",
+  instances: "/instances",
   usage: "/usage",
   cron: "/cron",
+  logs: "/logs",
+  debug: "/debug",
+};
+
+const AGENTS_SECTION_PATHS: Record<AgentsSection, string> = {
+  agents: "/agents",
+  skills: "/skills",
+  nodes: "/nodes",
+};
+
+const WORKSPACE_SECTION_PATHS: Record<WorkspaceSection, string> = {
   projects: "/projects",
   memory: "/memory",
   documents: "/documents",
-  skills: "/skills",
-  nodes: "/nodes",
-  chat: "/chat",
-  config: "/config",
-  debug: "/debug",
-  logs: "/logs",
+  calendar: "/calendar",
 };
 
-const PATH_TO_TAB = new Map(Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab as Tab]));
-const WORKSPACE_TABS = new Set<Tab>(["calendar", "projects", "memory", "documents"]);
+const SETTINGS_SECTION_PATHS: Record<SettingsSection, string> = {
+  config: "/config",
+};
+
+const PATH_TO_ROUTE = new Map<string, RouteState>([
+  ["/", DEFAULT_ROUTE_STATE],
+  ["/index.html", DEFAULT_ROUTE_STATE],
+  ["/overview", { ...DEFAULT_ROUTE_STATE, tab: "overview", path: "/overview" }],
+  ["/operations", { ...DEFAULT_ROUTE_STATE, tab: "operations", path: "/operations" }],
+  ["/channels", { ...DEFAULT_ROUTE_STATE, tab: "channels", path: "/channels" }],
+  ["/agents", { ...DEFAULT_ROUTE_STATE, tab: "agents", agentsSection: "agents", path: "/agents" }],
+  [
+    "/workspace",
+    { ...DEFAULT_ROUTE_STATE, tab: "workspace", workspaceSection: "projects", path: "/workspace" },
+  ],
+  ["/chat", { ...DEFAULT_ROUTE_STATE, tab: "chat", path: "/chat" }],
+  [
+    "/settings",
+    { ...DEFAULT_ROUTE_STATE, tab: "settings", settingsSection: "config", path: "/settings" },
+  ],
+  [
+    "/sessions",
+    { ...DEFAULT_ROUTE_STATE, tab: "operations", operationsSection: "sessions", path: "/sessions" },
+  ],
+  [
+    "/instances",
+    {
+      ...DEFAULT_ROUTE_STATE,
+      tab: "operations",
+      operationsSection: "instances",
+      path: "/instances",
+    },
+  ],
+  [
+    "/usage",
+    { ...DEFAULT_ROUTE_STATE, tab: "operations", operationsSection: "usage", path: "/usage" },
+  ],
+  [
+    "/cron",
+    { ...DEFAULT_ROUTE_STATE, tab: "operations", operationsSection: "cron", path: "/cron" },
+  ],
+  [
+    "/logs",
+    { ...DEFAULT_ROUTE_STATE, tab: "operations", operationsSection: "logs", path: "/logs" },
+  ],
+  [
+    "/debug",
+    { ...DEFAULT_ROUTE_STATE, tab: "operations", operationsSection: "debug", path: "/debug" },
+  ],
+  ["/skills", { ...DEFAULT_ROUTE_STATE, tab: "agents", agentsSection: "skills", path: "/skills" }],
+  ["/nodes", { ...DEFAULT_ROUTE_STATE, tab: "agents", agentsSection: "nodes", path: "/nodes" }],
+  [
+    "/projects",
+    { ...DEFAULT_ROUTE_STATE, tab: "workspace", workspaceSection: "projects", path: "/projects" },
+  ],
+  [
+    "/memory",
+    { ...DEFAULT_ROUTE_STATE, tab: "workspace", workspaceSection: "memory", path: "/memory" },
+  ],
+  [
+    "/documents",
+    { ...DEFAULT_ROUTE_STATE, tab: "workspace", workspaceSection: "documents", path: "/documents" },
+  ],
+  [
+    "/calendar",
+    { ...DEFAULT_ROUTE_STATE, tab: "workspace", workspaceSection: "calendar", path: "/calendar" },
+  ],
+  [
+    "/config",
+    { ...DEFAULT_ROUTE_STATE, tab: "settings", settingsSection: "config", path: "/config" },
+  ],
+]);
 
 export function normalizeBasePath(basePath: string): string {
   if (!basePath) {
@@ -91,7 +192,35 @@ export function pathForTab(tab: Tab, basePath = ""): string {
   return base ? `${base}${path}` : path;
 }
 
+export function pathForOperationsSection(section: OperationsSection, basePath = ""): string {
+  const base = normalizeBasePath(basePath);
+  const path = OPERATIONS_SECTION_PATHS[section];
+  return base ? `${base}${path}` : path;
+}
+
+export function pathForAgentsSection(section: AgentsSection, basePath = ""): string {
+  const base = normalizeBasePath(basePath);
+  const path = AGENTS_SECTION_PATHS[section];
+  return base ? `${base}${path}` : path;
+}
+
+export function pathForWorkspaceSection(section: WorkspaceSection, basePath = ""): string {
+  const base = normalizeBasePath(basePath);
+  const path = WORKSPACE_SECTION_PATHS[section];
+  return base ? `${base}${path}` : path;
+}
+
+export function pathForSettingsSection(section: SettingsSection, basePath = ""): string {
+  const base = normalizeBasePath(basePath);
+  const path = SETTINGS_SECTION_PATHS[section];
+  return base ? `${base}${path}` : path;
+}
+
 export function tabFromPath(pathname: string, basePath = ""): Tab | null {
+  return resolveRoute(pathname, basePath)?.tab ?? null;
+}
+
+export function resolveRoute(pathname: string, basePath = ""): RouteState | null {
   const base = normalizeBasePath(basePath);
   let path = pathname || "/";
   if (base) {
@@ -105,10 +234,7 @@ export function tabFromPath(pathname: string, basePath = ""): Tab | null {
   if (normalized.endsWith("/index.html")) {
     normalized = "/";
   }
-  if (normalized === "/") {
-    return "chat";
-  }
-  return PATH_TO_TAB.get(normalized) ?? null;
+  return PATH_TO_ROUTE.get(normalized) ?? null;
 }
 
 export function inferBasePathFromPathname(pathname: string): string {
@@ -125,7 +251,7 @@ export function inferBasePathFromPathname(pathname: string): string {
   }
   for (let i = 0; i < segments.length; i++) {
     const candidate = `/${segments.slice(i).join("/")}`.toLowerCase();
-    if (PATH_TO_TAB.has(candidate)) {
+    if (PATH_TO_ROUTE.has(candidate)) {
       const prefix = segments.slice(0, i);
       return prefix.length ? `/${prefix.join("/")}` : "";
     }
@@ -135,40 +261,20 @@ export function inferBasePathFromPathname(pathname: string): string {
 
 export function iconForTab(tab: Tab): IconName {
   switch (tab) {
+    case "overview":
+      return "barChart";
+    case "operations":
+      return "radio";
+    case "channels":
+      return "link";
     case "agents":
       return "folder";
-    case "calendar":
+    case "workspace":
       return "book";
     case "chat":
       return "messageSquare";
-    case "overview":
-      return "barChart";
-    case "channels":
-      return "link";
-    case "instances":
-      return "radio";
-    case "sessions":
-      return "fileText";
-    case "usage":
-      return "barChart";
-    case "cron":
-      return "loader";
-    case "projects":
-      return "folder";
-    case "memory":
-      return "brain";
-    case "documents":
-      return "fileText";
-    case "skills":
-      return "zap";
-    case "nodes":
-      return "monitor";
-    case "config":
+    case "settings":
       return "settings";
-    case "debug":
-      return "bug";
-    case "logs":
-      return "scrollText";
     default:
       return "folder";
   }
@@ -182,6 +288,34 @@ export function subtitleForTab(tab: Tab) {
   return t(`subtitles.${tab}`);
 }
 
+export function titleForOperationsSection(section: OperationsSection) {
+  return t(`operationsSections.${section}`);
+}
+
+export function titleForAgentsSection(section: AgentsSection) {
+  return t(`agentsSections.${section}`);
+}
+
+export function titleForWorkspaceSection(section: WorkspaceSection) {
+  return t(`workspaceSections.${section}`);
+}
+
+export function titleForSettingsSection(section: SettingsSection) {
+  return t(`settingsSections.${section}`);
+}
+
 export function isWorkspaceTab(tab: Tab): boolean {
-  return WORKSPACE_TABS.has(tab);
+  return tab === "workspace";
+}
+
+export function isLogsView(tab: Tab, operationsSection: OperationsSection): boolean {
+  return tab === "operations" && operationsSection === "logs";
+}
+
+export function isDebugView(tab: Tab, operationsSection: OperationsSection): boolean {
+  return tab === "operations" && operationsSection === "debug";
+}
+
+export function isCronView(tab: Tab, operationsSection: OperationsSection): boolean {
+  return tab === "operations" && operationsSection === "cron";
 }
