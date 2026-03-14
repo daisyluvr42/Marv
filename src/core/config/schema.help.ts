@@ -178,7 +178,8 @@ export const FIELD_HELP: Record<string, string> = {
   "agents.defaults.envelopeTimestamp":
     'Include absolute timestamps in message envelopes ("on" or "off").',
   "agents.defaults.envelopeElapsed": 'Include elapsed time in message envelopes ("on" or "off").',
-  "agents.defaults.models": "Configured model catalog (keys are full provider/model IDs).",
+  "models.metadata":
+    "Per-model metadata keyed by full provider/model IDs (aliases and provider-specific params).",
   "agents.defaults.memorySearch":
     "Hybrid recall over structured soul memory with optional legacy MEMORY.md/memory/*.md indexing (per-agent overrides supported).",
   "agents.defaults.memorySearch.sources":

@@ -79,10 +79,10 @@ export function applyZaiProviderConfig(
   const modelId = params?.modelId?.trim() || ZAI_DEFAULT_MODEL_ID;
   const modelRef = `zai/${modelId}`;
 
-  const models = { ...cfg.agents?.defaults?.models };
-  models[modelRef] = {
-    ...models[modelRef],
-    alias: models[modelRef]?.alias ?? "GLM",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[modelRef] = {
+    ...modelMetadata[modelRef],
+    alias: modelMetadata[modelRef]?.alias ?? "GLM",
   };
 
   const providers = { ...cfg.models?.providers };
@@ -125,7 +125,7 @@ export function applyZaiProviderConfig(
     models: mergedModels.length > 0 ? mergedModels : defaultModels,
   };
 
-  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models, providers });
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { modelMetadata, providers });
 }
 
 export function applyZaiConfig(
@@ -139,20 +139,17 @@ export function applyZaiConfig(
 }
 
 export function applyOpenrouterProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[OPENROUTER_DEFAULT_MODEL_REF] = {
-    ...models[OPENROUTER_DEFAULT_MODEL_REF],
-    alias: models[OPENROUTER_DEFAULT_MODEL_REF]?.alias ?? "OpenRouter",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[OPENROUTER_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[OPENROUTER_DEFAULT_MODEL_REF],
+    alias: modelMetadata[OPENROUTER_DEFAULT_MODEL_REF]?.alias ?? "OpenRouter",
   };
 
   return {
     ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
-      },
+    models: {
+      ...cfg.models,
+      metadata: modelMetadata,
     },
   };
 }
@@ -171,16 +168,16 @@ export function applyMoonshotProviderConfigCn(cfg: MarvConfig): MarvConfig {
 }
 
 function applyMoonshotProviderConfigWithBaseUrl(cfg: MarvConfig, baseUrl: string): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[MOONSHOT_DEFAULT_MODEL_REF] = {
-    ...models[MOONSHOT_DEFAULT_MODEL_REF],
-    alias: models[MOONSHOT_DEFAULT_MODEL_REF]?.alias ?? "Kimi",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[MOONSHOT_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[MOONSHOT_DEFAULT_MODEL_REF],
+    alias: modelMetadata[MOONSHOT_DEFAULT_MODEL_REF]?.alias ?? "Kimi",
   };
 
   const defaultModel = buildMoonshotModelDefinition();
 
   return applyProviderConfigWithDefaultModel(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "moonshot",
     api: "openai-completions",
     baseUrl,
@@ -200,20 +197,17 @@ export function applyMoonshotConfigCn(cfg: MarvConfig): MarvConfig {
 }
 
 export function applyKimiCodeProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[KIMI_CODING_MODEL_REF] = {
-    ...models[KIMI_CODING_MODEL_REF],
-    alias: models[KIMI_CODING_MODEL_REF]?.alias ?? "Kimi K2.5",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[KIMI_CODING_MODEL_REF] = {
+    ...modelMetadata[KIMI_CODING_MODEL_REF],
+    alias: modelMetadata[KIMI_CODING_MODEL_REF]?.alias ?? "Kimi K2.5",
   };
 
   return {
     ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
-      },
+    models: {
+      ...cfg.models,
+      metadata: modelMetadata,
     },
   };
 }
@@ -224,10 +218,10 @@ export function applyKimiCodeConfig(cfg: MarvConfig): MarvConfig {
 }
 
 export function applySyntheticProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[SYNTHETIC_DEFAULT_MODEL_REF] = {
-    ...models[SYNTHETIC_DEFAULT_MODEL_REF],
-    alias: models[SYNTHETIC_DEFAULT_MODEL_REF]?.alias ?? "MiniMax M2.1",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[SYNTHETIC_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[SYNTHETIC_DEFAULT_MODEL_REF],
+    alias: modelMetadata[SYNTHETIC_DEFAULT_MODEL_REF]?.alias ?? "MiniMax M2.1",
   };
 
   const providers = { ...cfg.models?.providers };
@@ -254,7 +248,7 @@ export function applySyntheticProviderConfig(cfg: MarvConfig): MarvConfig {
     models: mergedModels.length > 0 ? mergedModels : syntheticModels,
   };
 
-  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models, providers });
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { modelMetadata, providers });
 }
 
 export function applySyntheticConfig(cfg: MarvConfig): MarvConfig {
@@ -263,15 +257,15 @@ export function applySyntheticConfig(cfg: MarvConfig): MarvConfig {
 }
 
 export function applyXiaomiProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[XIAOMI_DEFAULT_MODEL_REF] = {
-    ...models[XIAOMI_DEFAULT_MODEL_REF],
-    alias: models[XIAOMI_DEFAULT_MODEL_REF]?.alias ?? "Xiaomi",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[XIAOMI_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[XIAOMI_DEFAULT_MODEL_REF],
+    alias: modelMetadata[XIAOMI_DEFAULT_MODEL_REF]?.alias ?? "Xiaomi",
   };
   const defaultProvider = buildXiaomiProvider();
   const resolvedApi = defaultProvider.api ?? "openai-completions";
   return applyProviderConfigWithDefaultModels(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "xiaomi",
     api: resolvedApi,
     baseUrl: defaultProvider.baseUrl,
@@ -290,15 +284,15 @@ export function applyXiaomiConfig(cfg: MarvConfig): MarvConfig {
  * Registers Venice models and sets up the provider, but preserves existing model selection.
  */
 export function applyVeniceProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[VENICE_DEFAULT_MODEL_REF] = {
-    ...models[VENICE_DEFAULT_MODEL_REF],
-    alias: models[VENICE_DEFAULT_MODEL_REF]?.alias ?? "Llama 3.3 70B",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[VENICE_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[VENICE_DEFAULT_MODEL_REF],
+    alias: modelMetadata[VENICE_DEFAULT_MODEL_REF]?.alias ?? "Llama 3.3 70B",
   };
 
   const veniceModels = VENICE_MODEL_CATALOG.map(buildVeniceModelDefinition);
   return applyProviderConfigWithModelCatalog(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "venice",
     api: "openai-completions",
     baseUrl: VENICE_BASE_URL,
@@ -320,15 +314,15 @@ export function applyVeniceConfig(cfg: MarvConfig): MarvConfig {
  * Registers Together models and sets up the provider, but preserves existing model selection.
  */
 export function applyTogetherProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[TOGETHER_DEFAULT_MODEL_REF] = {
-    ...models[TOGETHER_DEFAULT_MODEL_REF],
-    alias: models[TOGETHER_DEFAULT_MODEL_REF]?.alias ?? "Together AI",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[TOGETHER_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[TOGETHER_DEFAULT_MODEL_REF],
+    alias: modelMetadata[TOGETHER_DEFAULT_MODEL_REF]?.alias ?? "Together AI",
   };
 
   const togetherModels = TOGETHER_MODEL_CATALOG.map(buildTogetherModelDefinition);
   return applyProviderConfigWithModelCatalog(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "together",
     api: "openai-completions",
     baseUrl: TOGETHER_BASE_URL,
@@ -349,15 +343,15 @@ export function applyTogetherConfig(cfg: MarvConfig): MarvConfig {
  * Apply Hugging Face (Inference Providers) provider configuration without changing the default model.
  */
 export function applyHuggingfaceProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[HUGGINGFACE_DEFAULT_MODEL_REF] = {
-    ...models[HUGGINGFACE_DEFAULT_MODEL_REF],
-    alias: models[HUGGINGFACE_DEFAULT_MODEL_REF]?.alias ?? "Hugging Face",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[HUGGINGFACE_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[HUGGINGFACE_DEFAULT_MODEL_REF],
+    alias: modelMetadata[HUGGINGFACE_DEFAULT_MODEL_REF]?.alias ?? "Hugging Face",
   };
 
   const hfModels = HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition);
   return applyProviderConfigWithModelCatalog(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "huggingface",
     api: "openai-completions",
     baseUrl: HUGGINGFACE_BASE_URL,
@@ -374,16 +368,16 @@ export function applyHuggingfaceConfig(cfg: MarvConfig): MarvConfig {
 }
 
 export function applyXaiProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[XAI_DEFAULT_MODEL_REF] = {
-    ...models[XAI_DEFAULT_MODEL_REF],
-    alias: models[XAI_DEFAULT_MODEL_REF]?.alias ?? "Grok",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[XAI_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[XAI_DEFAULT_MODEL_REF],
+    alias: modelMetadata[XAI_DEFAULT_MODEL_REF]?.alias ?? "Grok",
   };
 
   const defaultModel = buildXaiModelDefinition();
 
   return applyProviderConfigWithDefaultModel(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "xai",
     api: "openai-completions",
     baseUrl: XAI_BASE_URL,
@@ -447,10 +441,10 @@ export function applyAuthProfileConfig(
 }
 
 export function applyQianfanProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[QIANFAN_DEFAULT_MODEL_REF] = {
-    ...models[QIANFAN_DEFAULT_MODEL_REF],
-    alias: models[QIANFAN_DEFAULT_MODEL_REF]?.alias ?? "QIANFAN",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[QIANFAN_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[QIANFAN_DEFAULT_MODEL_REF],
+    alias: modelMetadata[QIANFAN_DEFAULT_MODEL_REF]?.alias ?? "QIANFAN",
   };
   const defaultProvider = buildQianfanProvider();
   const existingProvider = cfg.models?.providers?.qianfan as
@@ -468,7 +462,7 @@ export function applyQianfanProviderConfig(cfg: MarvConfig): MarvConfig {
       : "openai-completions";
 
   return applyProviderConfigWithDefaultModels(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "qianfan",
     api: resolvedApi,
     baseUrl: resolvedBaseUrl,

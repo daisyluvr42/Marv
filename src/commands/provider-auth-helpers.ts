@@ -59,9 +59,6 @@ export function mergeConfigPatch<T>(base: T, patch: unknown): T {
 }
 
 export function applyDefaultModel(cfg: MarvConfig, model: string): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[model] = models[model] ?? {};
-
   const existingModel = cfg.agents?.defaults?.model;
   return {
     ...cfg,
@@ -69,7 +66,6 @@ export function applyDefaultModel(cfg: MarvConfig, model: string): MarvConfig {
       ...cfg.agents,
       defaults: {
         ...cfg.agents?.defaults,
-        models,
         model: {
           ...(existingModel && typeof existingModel === "object" && "fallbacks" in existingModel
             ? { fallbacks: (existingModel as { fallbacks?: string[] }).fallbacks }

@@ -183,7 +183,7 @@ export async function resolveReplyDirectives(params: {
     ),
   );
 
-  const rawAliases = Object.values(cfg.agents?.defaults?.models ?? {})
+  const rawAliases = Object.values(cfg.models?.metadata ?? {})
     .map((entry) => entry.alias?.trim())
     .filter((alias): alias is string => Boolean(alias))
     .filter((alias) => !reservedCommands.has(alias.toLowerCase()));

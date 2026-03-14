@@ -254,27 +254,26 @@ export function applyModelDefaults(cfg: MarvConfig): MarvConfig {
   }
 
   const existingAgent = nextCfg.agents?.defaults;
-  if (!existingAgent) {
+  const existingMetadata = nextCfg.models?.metadata ?? {};
+  if (!existingAgent && Object.keys(existingMetadata).length === 0) {
     return mutated ? nextCfg : cfg;
   }
-  const existingModels = existingAgent.models ?? {};
-  if (Object.keys(existingModels).length === 0) {
-    return mutated ? nextCfg : cfg;
-  }
-
-  const nextModels: Record<string, { alias?: string }> = {
-    ...existingModels,
+  const nextMetadata: Record<string, { alias?: string }> = {
+    ...existingMetadata,
   };
+  if (Object.keys(nextMetadata).length === 0) {
+    return mutated ? nextCfg : cfg;
+  }
 
   for (const [alias, target] of Object.entries(DEFAULT_MODEL_ALIASES)) {
-    const entry = nextModels[target];
+    const entry = nextMetadata[target];
     if (!entry) {
       continue;
     }
     if (entry.alias !== undefined) {
       continue;
     }
-    nextModels[target] = { ...entry, alias };
+    nextMetadata[target] = { ...entry, alias };
     mutated = true;
   }
 
@@ -284,9 +283,9 @@ export function applyModelDefaults(cfg: MarvConfig): MarvConfig {
 
   return {
     ...nextCfg,
-    agents: {
-      ...nextCfg.agents,
-      defaults: { ...existingAgent, models: nextModels },
+    models: {
+      ...nextCfg.models,
+      metadata: nextMetadata,
     },
   };
 }
@@ -364,6 +363,7 @@ export function applyContextPruningDefaults(cfg: MarvConfig): MarvConfig {
   const nextDefaults = { ...defaults };
   const contextPruning = defaults.contextPruning ?? {};
   const heartbeat = defaults.heartbeat ?? {};
+  let nextMetadata = cfg.models?.metadata ? { ...cfg.models.metadata } : undefined;
 
   if (defaults.contextPruning?.mode === undefined) {
     nextDefaults.contextPruning = {
@@ -383,10 +383,10 @@ export function applyContextPruningDefaults(cfg: MarvConfig): MarvConfig {
   }
 
   if (authMode === "api_key") {
-    const nextModels = defaults.models ? { ...defaults.models } : {};
-    let modelsMutated = false;
+    nextMetadata = nextMetadata ? { ...nextMetadata } : {};
+    let metadataMutated = false;
 
-    for (const [key, entry] of Object.entries(nextModels)) {
+    for (const [key, entry] of Object.entries(nextMetadata)) {
       const parsed = parseModelRef(key, "anthropic");
       if (!parsed || parsed.provider !== "anthropic") {
         continue;
@@ -396,11 +396,11 @@ export function applyContextPruningDefaults(cfg: MarvConfig): MarvConfig {
       if (typeof params.cacheRetention === "string") {
         continue;
       }
-      nextModels[key] = {
+      nextMetadata[key] = {
         ...(current as Record<string, unknown>),
         params: { ...params, cacheRetention: "short" },
       };
-      modelsMutated = true;
+      metadataMutated = true;
     }
 
     const primary = resolvePrimaryModelRef(defaults.model?.primary ?? undefined);
@@ -408,21 +408,20 @@ export function applyContextPruningDefaults(cfg: MarvConfig): MarvConfig {
       const parsedPrimary = parseModelRef(primary, "anthropic");
       if (parsedPrimary?.provider === "anthropic") {
         const key = `${parsedPrimary.provider}/${parsedPrimary.model}`;
-        const entry = nextModels[key];
+        const entry = nextMetadata[key];
         const current = entry ?? {};
         const params = (current as { params?: Record<string, unknown> }).params ?? {};
         if (typeof params.cacheRetention !== "string") {
-          nextModels[key] = {
+          nextMetadata[key] = {
             ...(current as Record<string, unknown>),
             params: { ...params, cacheRetention: "short" },
           };
-          modelsMutated = true;
+          metadataMutated = true;
         }
       }
     }
 
-    if (modelsMutated) {
-      nextDefaults.models = nextModels;
+    if (metadataMutated) {
       mutated = true;
     }
   }
@@ -433,6 +432,7 @@ export function applyContextPruningDefaults(cfg: MarvConfig): MarvConfig {
 
   return {
     ...cfg,
+    ...(nextMetadata ? { models: { ...cfg.models, metadata: nextMetadata } } : undefined),
     agents: {
       ...cfg.agents,
       defaults: nextDefaults,

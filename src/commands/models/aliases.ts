@@ -14,7 +14,7 @@ export async function modelsAliasesListCommand(
 ) {
   ensureFlagCompatibility(opts);
   const cfg = loadConfig();
-  const models = cfg.agents?.defaults?.models ?? {};
+  const models = cfg.models?.metadata ?? {};
   const aliases = Object.entries(models).reduce<Record<string, string>>(
     (acc, [modelKey, entry]) => {
       const alias = entry?.alias?.trim();
@@ -56,7 +56,7 @@ export async function modelsAliasesAddCommand(
   const resolved = resolveModelTarget({ raw: modelRaw, cfg: loadConfig() });
   const _updated = await updateConfig((cfg) => {
     const modelKey = `${resolved.provider}/${resolved.model}`;
-    const nextModels = { ...cfg.agents?.defaults?.models };
+    const nextModels = { ...cfg.models?.metadata };
     for (const [key, entry] of Object.entries(nextModels)) {
       const existing = entry?.alias?.trim();
       if (existing && existing === alias && key !== modelKey) {
@@ -67,12 +67,9 @@ export async function modelsAliasesAddCommand(
     nextModels[modelKey] = { ...existing, alias };
     return {
       ...cfg,
-      agents: {
-        ...cfg.agents,
-        defaults: {
-          ...cfg.agents?.defaults,
-          models: nextModels,
-        },
+      models: {
+        ...cfg.models,
+        metadata: nextModels,
       },
     };
   });
@@ -84,7 +81,7 @@ export async function modelsAliasesAddCommand(
 export async function modelsAliasesRemoveCommand(aliasRaw: string, runtime: RuntimeEnv) {
   const alias = normalizeAlias(aliasRaw);
   const updated = await updateConfig((cfg) => {
-    const nextModels = { ...cfg.agents?.defaults?.models };
+    const nextModels = { ...cfg.models?.metadata };
     let found = false;
     for (const [key, entry] of Object.entries(nextModels)) {
       if (entry?.alias?.trim() === alias) {
@@ -98,20 +95,17 @@ export async function modelsAliasesRemoveCommand(aliasRaw: string, runtime: Runt
     }
     return {
       ...cfg,
-      agents: {
-        ...cfg.agents,
-        defaults: {
-          ...cfg.agents?.defaults,
-          models: nextModels,
-        },
+      models: {
+        ...cfg.models,
+        metadata: nextModels,
       },
     };
   });
 
   logConfigUpdated(runtime);
   if (
-    !updated.agents?.defaults?.models ||
-    Object.values(updated.agents.defaults.models).every((entry) => !entry?.alias?.trim())
+    !updated.models?.metadata ||
+    Object.values(updated.models.metadata).every((entry) => !entry?.alias?.trim())
   ) {
     runtime.log("No aliases configured.");
   }

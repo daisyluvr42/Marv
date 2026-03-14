@@ -78,7 +78,7 @@ export async function modelsStatusCommand(
 
   const resolvedLabel = `${resolved.provider}/${resolved.model}`;
   const defaultLabel = resolvedLabel;
-  const aliases = Object.entries(cfg.agents?.defaults?.models ?? {}).reduce<Record<string, string>>(
+  const aliases = Object.entries(cfg.models?.metadata ?? {}).reduce<Record<string, string>>(
     (acc, [key, entry]) => {
       const alias = typeof entry?.alias === "string" ? entry.alias.trim() : undefined;
       if (alias) {
@@ -88,7 +88,7 @@ export async function modelsStatusCommand(
     },
     {},
   );
-  const allowed = Object.keys(cfg.agents?.defaults?.models ?? {});
+  const allowed = Object.keys(cfg.models?.metadata ?? {});
 
   const store = ensureAuthProfileStore(agentDir);
   const modelsPath = path.join(agentDir, "models.json");

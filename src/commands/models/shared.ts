@@ -3,7 +3,6 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import {
   buildModelAliasIndex,
   modelKey,
-  parseModelRef,
   resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
@@ -114,19 +113,6 @@ export function resolveModelKeysFromEntries(params: {
     .map((entry) => modelKey(entry.ref.provider, entry.ref.model));
 }
 
-export function buildAllowlistSet(cfg: MarvConfig): Set<string> {
-  const allowed = new Set<string>();
-  const models = cfg.agents?.defaults?.models ?? {};
-  for (const raw of Object.keys(models)) {
-    const parsed = parseModelRef(String(raw ?? ""), DEFAULT_PROVIDER);
-    if (!parsed) {
-      continue;
-    }
-    allowed.add(modelKey(parsed.provider, parsed.model));
-  }
-  return allowed;
-}
-
 export function normalizeAlias(alias: string): string {
   const trimmed = alias.trim();
   if (!trimmed) {
@@ -180,11 +166,6 @@ export function applyDefaultModelPrimaryUpdate(params: {
   const resolved = resolveModelTarget({ raw: params.modelRaw, cfg: params.cfg });
   const key = `${resolved.provider}/${resolved.model}`;
 
-  const nextModels = { ...params.cfg.agents?.defaults?.models };
-  if (!nextModels[key]) {
-    nextModels[key] = {};
-  }
-
   const defaults = params.cfg.agents?.defaults ?? {};
   const existing = (defaults as Record<string, unknown>)[params.field] as
     | PrimaryFallbackConfig
@@ -197,7 +178,6 @@ export function applyDefaultModelPrimaryUpdate(params: {
       defaults: {
         ...defaults,
         [params.field]: mergePrimaryFallbackConfig(existing, { primary: key }),
-        models: nextModels,
       },
     },
   };

@@ -1,27 +1,19 @@
 import type { MarvConfig } from "../core/config/config.js";
-import { ensureModelAllowlistEntry } from "./model-allowlist.js";
 
 export const OPENAI_DEFAULT_MODEL = "openai/gpt-5.1-codex";
 
 export function applyOpenAIProviderConfig(cfg: MarvConfig): MarvConfig {
-  const next = ensureModelAllowlistEntry({
-    cfg,
-    modelRef: OPENAI_DEFAULT_MODEL,
-  });
-  const models = { ...next.agents?.defaults?.models };
-  models[OPENAI_DEFAULT_MODEL] = {
-    ...models[OPENAI_DEFAULT_MODEL],
-    alias: models[OPENAI_DEFAULT_MODEL]?.alias ?? "GPT",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[OPENAI_DEFAULT_MODEL] = {
+    ...modelMetadata[OPENAI_DEFAULT_MODEL],
+    alias: modelMetadata[OPENAI_DEFAULT_MODEL]?.alias ?? "GPT",
   };
 
   return {
-    ...next,
-    agents: {
-      ...next.agents,
-      defaults: {
-        ...next.agents?.defaults,
-        models,
-      },
+    ...cfg,
+    models: {
+      ...cfg.models,
+      metadata: modelMetadata,
     },
   };
 }

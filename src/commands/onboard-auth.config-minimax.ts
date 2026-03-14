@@ -19,14 +19,14 @@ import {
 } from "./onboard-auth.models.js";
 
 export function applyMinimaxProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models["anthropic/claude-opus-4-6"] = {
-    ...models["anthropic/claude-opus-4-6"],
-    alias: models["anthropic/claude-opus-4-6"]?.alias ?? "Opus",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata["anthropic/claude-opus-4-6"] = {
+    ...modelMetadata["anthropic/claude-opus-4-6"],
+    alias: modelMetadata["anthropic/claude-opus-4-6"]?.alias ?? "Opus",
   };
-  models["lmstudio/minimax-m2.1-gs32"] = {
-    ...models["lmstudio/minimax-m2.1-gs32"],
-    alias: models["lmstudio/minimax-m2.1-gs32"]?.alias ?? "Minimax",
+  modelMetadata["lmstudio/minimax-m2.1-gs32"] = {
+    ...modelMetadata["lmstudio/minimax-m2.1-gs32"],
+    alias: modelMetadata["lmstudio/minimax-m2.1-gs32"]?.alias ?? "Minimax",
   };
 
   const providers = { ...cfg.models?.providers };
@@ -48,17 +48,17 @@ export function applyMinimaxProviderConfig(cfg: MarvConfig): MarvConfig {
     };
   }
 
-  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models, providers });
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { modelMetadata, providers });
 }
 
 export function applyMinimaxHostedProviderConfig(
   cfg: MarvConfig,
   params?: { baseUrl?: string },
 ): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[MINIMAX_HOSTED_MODEL_REF] = {
-    ...models[MINIMAX_HOSTED_MODEL_REF],
-    alias: models[MINIMAX_HOSTED_MODEL_REF]?.alias ?? "Minimax",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[MINIMAX_HOSTED_MODEL_REF] = {
+    ...modelMetadata[MINIMAX_HOSTED_MODEL_REF],
+    alias: modelMetadata[MINIMAX_HOSTED_MODEL_REF]?.alias ?? "Minimax",
   };
 
   const providers = { ...cfg.models?.providers };
@@ -80,7 +80,7 @@ export function applyMinimaxHostedProviderConfig(
     models: mergedModels.length > 0 ? mergedModels : [hostedModel],
   };
 
-  return applyOnboardAuthAgentModelsAndProviders(cfg, { agentModels: models, providers });
+  return applyOnboardAuthAgentModelsAndProviders(cfg, { modelMetadata, providers });
 }
 
 export function applyMinimaxConfig(cfg: MarvConfig): MarvConfig {
@@ -184,24 +184,17 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
     models: mergedModels.length > 0 ? mergedModels : [apiModel],
   };
 
-  const models = { ...cfg.agents?.defaults?.models };
   const modelRef = `${params.providerId}/${params.modelId}`;
-  models[modelRef] = {
-    ...models[modelRef],
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[modelRef] = {
+    ...modelMetadata[modelRef],
     alias: "Minimax",
   };
 
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
-      },
-    },
-    models: { mode: cfg.models?.mode ?? "merge", providers },
-  };
+  return applyOnboardAuthAgentModelsAndProviders(cfg, {
+    modelMetadata,
+    providers,
+  });
 }
 
 function applyMinimaxApiConfigWithBaseUrl(

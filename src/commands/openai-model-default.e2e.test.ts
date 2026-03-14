@@ -20,6 +20,11 @@ import {
   OPENCODE_ZEN_DEFAULT_MODEL,
 } from "./opencode-zen-model-default.js";
 
+const loadModelCatalog = vi.hoisted(() => vi.fn(async () => []));
+vi.mock("../agents/model/model-catalog.js", () => ({
+  loadModelCatalog,
+}));
+
 function makePrompter(): WizardPrompter {
   return {
     intro: async () => {},
@@ -47,8 +52,20 @@ function expectConfigUnchanged(applied: { changed: boolean; next: MarvConfig }, 
 }
 
 describe("applyDefaultModelChoice", () => {
-  it("ensures allowlist entry exists when returning an agent override", async () => {
+  it("syncs provider selections when returning an agent override", async () => {
     const defaultModel = "vercel-ai-gateway/anthropic/claude-opus-4.6";
+    loadModelCatalog.mockResolvedValueOnce([
+      {
+        provider: "vercel-ai-gateway",
+        id: "anthropic/claude-opus-4.6",
+        name: "Claude Opus 4.6",
+      },
+      {
+        provider: "vercel-ai-gateway",
+        id: "openai/gpt-5.4",
+        name: "GPT-5.4",
+      },
+    ]);
     const noteAgentModel = vi.fn(async () => {});
     const applied = await applyDefaultModelChoice({
       config: {},
@@ -63,11 +80,18 @@ describe("applyDefaultModelChoice", () => {
 
     expect(noteAgentModel).toHaveBeenCalledWith(defaultModel);
     expect(applied.agentModelOverride).toBe(defaultModel);
-    expect(applied.config.agents?.defaults?.models?.[defaultModel]).toEqual({});
+    expect(applied.config.models?.selections?.["vercel-ai-gateway"]).toContain(defaultModel);
   });
 
-  it("adds canonical allowlist key for anthropic aliases", async () => {
+  it("adds canonical provider selections for anthropic aliases", async () => {
     const defaultModel = "anthropic/opus-4.6";
+    loadModelCatalog.mockResolvedValueOnce([
+      {
+        provider: "anthropic",
+        id: "claude-opus-4-6",
+        name: "Claude Opus 4.6",
+      },
+    ]);
     const applied = await applyDefaultModelChoice({
       config: {},
       setDefaultModel: false,
@@ -78,8 +102,7 @@ describe("applyDefaultModelChoice", () => {
       prompter: makePrompter(),
     });
 
-    expect(applied.config.agents?.defaults?.models?.[defaultModel]).toEqual({});
-    expect(applied.config.agents?.defaults?.models?.["anthropic/claude-opus-4-6"]).toEqual({});
+    expect(applied.config.models?.selections?.anthropic).toContain("anthropic/claude-opus-4-6");
   });
 
   it("uses applyDefaultConfig path when setDefaultModel is true", async () => {
@@ -131,22 +154,20 @@ describe("applyGoogleGeminiModelDefault", () => {
 });
 
 describe("applyOpenAIProviderConfig", () => {
-  it("adds allowlist entry for default model", () => {
+  it("adds metadata entry for default model", () => {
     const next = applyOpenAIProviderConfig({});
-    expect(Object.keys(next.agents?.defaults?.models ?? {})).toContain(OPENAI_DEFAULT_MODEL);
+    expect(Object.keys(next.models?.metadata ?? {})).toContain(OPENAI_DEFAULT_MODEL);
   });
 
   it("preserves existing alias for default model", () => {
     const next = applyOpenAIProviderConfig({
-      agents: {
-        defaults: {
-          models: {
-            [OPENAI_DEFAULT_MODEL]: { alias: "My GPT" },
-          },
+      models: {
+        metadata: {
+          [OPENAI_DEFAULT_MODEL]: { alias: "My GPT" },
         },
       },
     });
-    expect(next.agents?.defaults?.models?.[OPENAI_DEFAULT_MODEL]?.alias).toBe("My GPT");
+    expect(next.models?.metadata?.[OPENAI_DEFAULT_MODEL]?.alias).toBe("My GPT");
   });
 });
 

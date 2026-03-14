@@ -83,7 +83,7 @@ export function resolveConfiguredEntries(cfg: MarvConfig) {
     addEntry(resolved.ref, `img-fallback#${idx + 1}`);
   });
 
-  for (const key of Object.keys(cfg.agents?.defaults?.models ?? {})) {
+  for (const key of Object.keys(cfg.models?.metadata ?? {})) {
     const parsed = parseModelRef(String(key ?? ""), DEFAULT_PROVIDER);
     if (!parsed) {
       continue;

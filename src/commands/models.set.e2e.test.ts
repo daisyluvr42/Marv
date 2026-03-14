@@ -38,7 +38,6 @@ function expectWrittenPrimaryModel(model: string) {
   expect(written.agents).toEqual({
     defaults: {
       model: { primary: model },
-      models: { [model]: {} },
     },
   });
 }
@@ -71,7 +70,6 @@ describe("models set + fallbacks", () => {
     expect(written.agents).toEqual({
       defaults: {
         model: { fallbacks: ["zai/glm-4.7"] },
-        models: { "zai/glm-4.7": {} },
       },
     });
   });

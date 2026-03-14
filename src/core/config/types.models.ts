@@ -23,6 +23,12 @@ export type ModelCompatConfig = {
 
 export type ModelProviderAuthMode = "api-key" | "aws-sdk" | "oauth" | "token";
 
+export type ModelMetadataConfig = {
+  alias?: string;
+  /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
+  params?: Record<string, unknown>;
+};
+
 export type ConfiguredModelLocation = "local" | "cloud";
 export type ConfiguredModelTier = "low" | "standard" | "high";
 
@@ -74,6 +80,7 @@ export type BedrockDiscoveryConfig = {
 export type ModelsConfig = {
   mode?: "merge" | "replace";
   catalog?: Record<string, ConfiguredModelCatalogEntry>;
+  metadata?: Record<string, ModelMetadataConfig>;
   selections?: Record<string, string[]>;
   providers?: Record<string, ModelProviderConfig>;
   bedrockDiscovery?: BedrockDiscoveryConfig;

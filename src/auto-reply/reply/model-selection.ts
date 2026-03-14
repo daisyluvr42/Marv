@@ -323,7 +323,9 @@ export async function createModelSelectionState(params: {
     },
   });
 
-  const hasAllowlist = agentCfg?.models && Object.keys(agentCfg.models).length > 0;
+  const hasModelMetadata = Boolean(
+    cfg.models?.metadata && Object.keys(cfg.models.metadata).length > 0,
+  );
   const initialStoredOverride = resolveStoredModelOverride({
     sessionEntry,
     sessionStore,
@@ -331,7 +333,7 @@ export async function createModelSelectionState(params: {
     parentSessionKey,
   });
   const hasStoredOverride = Boolean(initialStoredOverride);
-  const needsModelCatalog = params.hasModelDirective || hasAllowlist || hasStoredOverride;
+  const needsModelCatalog = params.hasModelDirective || hasModelMetadata || hasStoredOverride;
 
   let allowedModelKeys = new Set<string>();
   let allowedModelCatalog: ModelCatalog = [];

@@ -9,6 +9,10 @@ import {
   normalizeProviderId,
   resolveConfiguredModelRef,
 } from "../agents/model/model-selection.js";
+import {
+  replaceSelectedModelRefsByProvider,
+  resolveSelectedModelRefs,
+} from "../agents/model/model-selections.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
 import { formatTokenK } from "./models/shared.js";
@@ -85,10 +89,7 @@ function resolveConfiguredModelRaw(cfg: MarvConfig): string {
 }
 
 function resolveConfiguredModelKeys(cfg: MarvConfig): string[] {
-  const models = cfg.agents?.defaults?.models ?? {};
-  return Object.keys(models)
-    .map((key) => String(key ?? "").trim())
-    .filter((key) => key.length > 0);
+  return [...resolveSelectedModelRefs({ cfg, defaultProvider: DEFAULT_PROVIDER })];
 }
 
 function normalizeModelKeys(values: string[]): string[] {
@@ -382,8 +383,7 @@ export async function promptModelAllowlist(params: {
   if (catalog.length === 0 && allowedKeys.length === 0) {
     const raw = await params.prompter.text({
       message:
-        params.message ??
-        "Allowlist models (comma-separated provider/model; blank to keep current)",
+        params.message ?? "Picker models (comma-separated provider/model; blank to keep current)",
       initialValue: existingKeys.join(", "),
       placeholder: `${OPENAI_CODEX_DEFAULT_MODEL}, anthropic/claude-opus-4-6`,
     });
@@ -445,7 +445,7 @@ export async function promptModelAllowlist(params: {
     return { models: [] };
   }
   const confirmClear = await params.prompter.confirm({
-    message: "Clear the model allowlist? (shows all models)",
+    message: "Clear the picker model selections? (shows all models)",
     initialValue: false,
   });
   if (!confirmClear) {
@@ -457,7 +457,6 @@ export async function promptModelAllowlist(params: {
 export function applyPrimaryModel(cfg: MarvConfig, model: string): MarvConfig {
   const defaults = cfg.agents?.defaults;
   const existingModel = defaults?.model;
-  const existingModels = defaults?.models;
   const fallbacks =
     typeof existingModel === "object" && existingModel !== null && "fallbacks" in existingModel
       ? (existingModel as { fallbacks?: string[] }).fallbacks
@@ -472,48 +471,18 @@ export function applyPrimaryModel(cfg: MarvConfig, model: string): MarvConfig {
           ...(fallbacks ? { fallbacks } : undefined),
           primary: model,
         },
-        models: {
-          ...existingModels,
-          [model]: existingModels?.[model] ?? {},
-        },
       },
     },
   };
 }
 
 export function applyModelAllowlist(cfg: MarvConfig, models: string[]): MarvConfig {
-  const defaults = cfg.agents?.defaults;
   const normalized = normalizeModelKeys(models);
-  if (normalized.length === 0) {
-    if (!defaults?.models) {
-      return cfg;
-    }
-    const { models: _ignored, ...restDefaults } = defaults;
-    return {
-      ...cfg,
-      agents: {
-        ...cfg.agents,
-        defaults: restDefaults,
-      },
-    };
-  }
-
-  const existingModels = defaults?.models ?? {};
-  const nextModels: Record<string, { alias?: string }> = {};
-  for (const key of normalized) {
-    nextModels[key] = existingModels[key] ?? {};
-  }
-
-  return {
-    ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...defaults,
-        models: nextModels,
-      },
-    },
-  };
+  return replaceSelectedModelRefsByProvider({
+    cfg,
+    refs: normalized,
+    defaultProvider: DEFAULT_PROVIDER,
+  });
 }
 
 export function applyModelFallbacksFromSelection(cfg: MarvConfig, selection: string[]): MarvConfig {

@@ -108,12 +108,11 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["agent", "allowedModels"],
-    message: "agent.allowedModels was replaced by agents.defaults.models (auto-migrated on load).",
+    message: "agent.allowedModels was removed; use model selections and model pools instead.",
   },
   {
     path: ["agent", "modelAliases"],
-    message:
-      "agent.modelAliases was replaced by agents.defaults.models.*.alias (auto-migrated on load).",
+    message: "agent.modelAliases was replaced by models.metadata.*.alias (auto-migrated on load).",
   },
   {
     path: ["agent", "modelFallbacks"],

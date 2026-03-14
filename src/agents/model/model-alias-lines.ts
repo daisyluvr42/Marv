@@ -1,7 +1,7 @@
 import type { MarvConfig } from "../../core/config/config.js";
 
 export function buildModelAliasLines(cfg?: MarvConfig) {
-  const models = cfg?.agents?.defaults?.models ?? {};
+  const models = cfg?.models?.metadata ?? {};
   const entries: Array<{ alias: string; model: string }> = [];
   for (const [keyRaw, entryRaw] of Object.entries(models)) {
     const model = String(keyRaw ?? "").trim();

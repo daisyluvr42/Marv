@@ -33,15 +33,17 @@ function makeKimiSubagentCfg(params: {
   defaultsSubagentModel?: string;
 }): MarvConfig {
   return {
+    models: {
+      metadata: {
+        "anthropic/claude-sonnet-4-6": { alias: "default" },
+      },
+    },
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-sonnet-4-6" },
         subagents: params.defaultsSubagentModel
           ? { model: params.defaultsSubagentModel }
           : undefined,
-        models: {
-          "anthropic/claude-sonnet-4-6": { alias: "default" },
-        },
       },
       list: [
         {
@@ -390,9 +392,18 @@ describe("gateway sessions patch", () => {
   });
 
   test("allows target agent own model for subagent session even when missing from global allowlist", async () => {
-    const cfg = makeKimiSubagentCfg({
-      agentPrimaryModel: "synthetic/hf:moonshotai/Kimi-K2.5",
-    });
+    const cfg = {
+      models: {
+        metadata: {
+          "synthetic/hf:moonshotai/Kimi-K2.5": { alias: "default" },
+        },
+      },
+      agents: {
+        defaults: {
+          model: { primary: "synthetic/hf:moonshotai/Kimi-K2.5" },
+        },
+      },
+    } as MarvConfig;
 
     const entry = await applySubagentModelPatch(cfg);
     // Selected model matches the target agent default, so no override is stored.

@@ -72,3 +72,113 @@ export function resolveSelectedModelRefs(params: {
 
   return refs;
 }
+
+function normalizeModelRefsForSelection(
+  refs: readonly string[],
+  defaultProvider: string,
+): string[] {
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+  for (const rawRef of refs) {
+    const parsed = parseModelRef(String(rawRef ?? ""), defaultProvider);
+    if (!parsed) {
+      continue;
+    }
+    const ref = `${parsed.provider}/${parsed.model}`;
+    if (seen.has(ref)) {
+      continue;
+    }
+    seen.add(ref);
+    normalized.push(ref);
+  }
+  return normalized;
+}
+
+function groupModelRefsByProvider(params: {
+  refs: readonly string[];
+  defaultProvider: string;
+}): Record<string, string[]> {
+  const grouped = new Map<string, string[]>();
+  for (const ref of normalizeModelRefsForSelection(params.refs, params.defaultProvider)) {
+    const parsed = parseModelRef(ref, params.defaultProvider);
+    if (!parsed) {
+      continue;
+    }
+    const provider = parsed.provider;
+    const existing = grouped.get(provider);
+    if (existing) {
+      existing.push(ref);
+      continue;
+    }
+    grouped.set(provider, [ref]);
+  }
+
+  return Object.fromEntries(grouped);
+}
+
+export function setSelectedModelRefsForSource(params: {
+  cfg: MarvConfig;
+  sourceKey: string;
+  refs: readonly string[];
+  defaultProvider: string;
+}): MarvConfig {
+  const sourceKey = params.sourceKey.trim();
+  if (!sourceKey) {
+    return params.cfg;
+  }
+  const nextRefs = normalizeModelRefsForSelection(params.refs, params.defaultProvider);
+  const nextSelections = { ...params.cfg.models?.selections };
+  if (nextRefs.length > 0) {
+    nextSelections[sourceKey] = nextRefs;
+  } else {
+    delete nextSelections[sourceKey];
+  }
+
+  return {
+    ...params.cfg,
+    models: {
+      ...params.cfg.models,
+      selections: Object.keys(nextSelections).length > 0 ? nextSelections : undefined,
+    },
+  };
+}
+
+export function syncProviderSelectionsFromProviderConfig(params: {
+  cfg: MarvConfig;
+  providerId: string;
+  defaultProvider?: string;
+}): MarvConfig {
+  const providerId = params.providerId.trim();
+  if (!providerId) {
+    return params.cfg;
+  }
+  const refs =
+    params.cfg.models?.providers?.[providerId]?.models?.map(
+      (model) => `${providerId}/${model.id}`,
+    ) ?? [];
+  return setSelectedModelRefsForSource({
+    cfg: params.cfg,
+    sourceKey: providerId,
+    refs,
+    defaultProvider: params.defaultProvider ?? providerId,
+  });
+}
+
+export function replaceSelectedModelRefsByProvider(params: {
+  cfg: MarvConfig;
+  refs: readonly string[];
+  defaultProvider: string;
+}): MarvConfig {
+  const grouped = groupModelRefsByProvider({
+    refs: params.refs,
+    defaultProvider: params.defaultProvider,
+  });
+
+  return {
+    ...params.cfg,
+    models: {
+      ...params.cfg.models,
+      selections: Object.keys(grouped).length > 0 ? grouped : undefined,
+    },
+  };
+}

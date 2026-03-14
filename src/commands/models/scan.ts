@@ -286,17 +286,6 @@ export async function modelsScanCommand(
   }
 
   const _updated = await updateConfig((cfg) => {
-    const nextModels = { ...cfg.agents?.defaults?.models };
-    for (const entry of selected) {
-      if (!nextModels[entry]) {
-        nextModels[entry] = {};
-      }
-    }
-    for (const entry of selectedImages) {
-      if (!nextModels[entry]) {
-        nextModels[entry] = {};
-      }
-    }
     const existingImageModel = cfg.agents?.defaults?.imageModel as
       | { primary?: string; fallbacks?: string[] }
       | undefined;
@@ -319,7 +308,6 @@ export async function modelsScanCommand(
         ...(opts.setDefault ? { primary: selected[0] } : {}),
       },
       ...(nextImageModel ? { imageModel: nextImageModel } : {}),
-      models: nextModels,
     } satisfies NonNullable<NonNullable<typeof cfg.agents>["defaults"]>;
     return {
       ...cfg,

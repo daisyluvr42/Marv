@@ -17,7 +17,7 @@ import { isLikelyContextOverflowError } from "../runner/pi-embedded-helpers.js";
 import { markRuntimeModelFailure, markRuntimeModelReady } from "./model-availability-state.js";
 import { resolveRuntimeModelPlan } from "./model-pool.js";
 import {
-  buildConfiguredAllowlistKeys,
+  buildConfiguredSelectionKeys,
   modelKey,
   normalizeModelRef,
   parseModelRef,
@@ -165,7 +165,7 @@ function resolveFallbackCandidates(params: {
   const providerRaw = String(params.provider ?? "").trim() || defaultProvider;
   const modelRaw = String(params.model ?? "").trim() || defaultModel;
   const normalizedPrimary = normalizeModelRef(providerRaw, modelRaw);
-  const allowlist = buildConfiguredAllowlistKeys({
+  const allowlist = buildConfiguredSelectionKeys({
     cfg: params.cfg,
     defaultProvider,
   });

@@ -539,16 +539,13 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   if (alias) {
     config = {
       ...config,
-      agents: {
-        ...config.agents,
-        defaults: {
-          ...config.agents?.defaults,
-          models: {
-            ...config.agents?.defaults?.models,
-            [modelRef]: {
-              ...config.agents?.defaults?.models?.[modelRef],
-              alias,
-            },
+      models: {
+        ...config.models,
+        metadata: {
+          ...config.models?.metadata,
+          [modelRef]: {
+            ...config.models?.metadata?.[modelRef],
+            alias,
           },
         },
       },

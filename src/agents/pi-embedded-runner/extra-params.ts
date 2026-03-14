@@ -27,7 +27,7 @@ export function resolveExtraParams(params: {
   modelId: string;
 }): Record<string, unknown> | undefined {
   const modelKey = `${params.provider}/${params.modelId}`;
-  const modelConfig = params.cfg?.agents?.defaults?.models?.[modelKey];
+  const modelConfig = params.cfg?.models?.metadata?.[modelKey];
   return modelConfig?.params ? { ...modelConfig.params } : undefined;
 }
 

@@ -37,10 +37,10 @@ function buildLitellmModelDefinition(): {
 }
 
 export function applyLitellmProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[LITELLM_DEFAULT_MODEL_REF] = {
-    ...models[LITELLM_DEFAULT_MODEL_REF],
-    alias: models[LITELLM_DEFAULT_MODEL_REF]?.alias ?? "LiteLLM",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[LITELLM_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[LITELLM_DEFAULT_MODEL_REF],
+    alias: modelMetadata[LITELLM_DEFAULT_MODEL_REF]?.alias ?? "LiteLLM",
   };
 
   const defaultModel = buildLitellmModelDefinition();
@@ -50,7 +50,7 @@ export function applyLitellmProviderConfig(cfg: MarvConfig): MarvConfig {
     typeof existingProvider?.baseUrl === "string" ? existingProvider.baseUrl.trim() : "";
 
   return applyProviderConfigWithDefaultModel(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "litellm",
     api: "openai-completions",
     baseUrl: resolvedBaseUrl || LITELLM_BASE_URL,

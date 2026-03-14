@@ -109,8 +109,8 @@ export async function buildModelsProviderData(cfg: MarvConfig): Promise<ModelsPr
     addRawModelRef(ref);
   }
 
-  // Include config-only allowlist keys that aren't in the curated catalog.
-  for (const raw of Object.keys(cfg.agents?.defaults?.models ?? {})) {
+  // Include metadata-only refs that aren't in the curated catalog.
+  for (const raw of Object.keys(cfg.models?.metadata ?? {})) {
     addRawModelRef(raw);
   }
 

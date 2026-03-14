@@ -185,30 +185,17 @@ export function normalizeModelSelection(value: unknown): string | undefined {
   return undefined;
 }
 
-export function resolveAllowlistModelKey(raw: string, defaultProvider: string): string | null {
-  const parsed = parseModelRef(raw, defaultProvider);
-  if (!parsed) {
-    return null;
-  }
-  return modelKey(parsed.provider, parsed.model);
-}
-
-export function buildConfiguredAllowlistKeys(params: {
+export function buildConfiguredSelectionKeys(params: {
   cfg: MarvConfig | undefined;
   defaultProvider: string;
 }): Set<string> | null {
-  const rawAllowlist = Object.keys(params.cfg?.agents?.defaults?.models ?? {});
-  if (rawAllowlist.length === 0) {
+  if (!params.cfg) {
     return null;
   }
-
-  const keys = new Set<string>();
-  for (const raw of rawAllowlist) {
-    const key = resolveAllowlistModelKey(String(raw ?? ""), params.defaultProvider);
-    if (key) {
-      keys.add(key);
-    }
-  }
+  const keys = resolveSelectedModelRefs({
+    cfg: params.cfg,
+    defaultProvider: params.defaultProvider,
+  });
   return keys.size > 0 ? keys : null;
 }
 
@@ -219,7 +206,7 @@ export function buildModelAliasIndex(params: {
   const byAlias = new Map<string, { alias: string; ref: ModelRef }>();
   const byKey = new Map<string, string[]>();
 
-  const rawModels = params.cfg.agents?.defaults?.models ?? {};
+  const rawModels = params.cfg.models?.metadata ?? {};
   for (const [keyRaw, entryRaw] of Object.entries(rawModels)) {
     const parsed = parseModelRef(String(keyRaw ?? ""), params.defaultProvider);
     if (!parsed) {
@@ -268,6 +255,22 @@ export function resolveConfiguredModelRef(params: {
   defaultProvider: string;
   defaultModel: string;
 }): ModelRef {
+  const configuredPrimary = normalizeModelSelection(params.cfg.agents?.defaults?.model);
+  if (configuredPrimary) {
+    const configuredProvider = configuredPrimary.includes("/")
+      ? params.defaultProvider
+      : inferProviderForBareModel(configuredPrimary, params.defaultProvider);
+    const parsed = parseModelRef(configuredPrimary, configuredProvider);
+    if (parsed) {
+      if (!configuredPrimary.includes("/") && configuredProvider !== params.defaultProvider) {
+        console.warn(
+          `Falling back to "${parsed.provider}/${parsed.model}" because "${configuredPrimary}" did not include a provider prefix.`,
+        );
+      }
+      return parsed;
+    }
+  }
+
   const selectedRefs = resolveSelectedModelRefs({
     cfg: params.cfg,
     defaultProvider: params.defaultProvider,
@@ -330,21 +333,6 @@ export function resolveConfiguredModelRef(params: {
     });
   if (refs.length > 0) {
     return refs[0];
-  }
-  const configuredPrimary = normalizeModelSelection(params.cfg.agents?.defaults?.model);
-  if (configuredPrimary) {
-    const configuredProvider = configuredPrimary.includes("/")
-      ? params.defaultProvider
-      : inferProviderForBareModel(configuredPrimary, params.defaultProvider);
-    const parsed = parseModelRef(configuredPrimary, configuredProvider);
-    if (parsed) {
-      if (!configuredPrimary.includes("/") && configuredProvider !== params.defaultProvider) {
-        console.warn(
-          `Falling back to "${parsed.provider}/${parsed.model}" because "${configuredPrimary}" did not include a provider prefix.`,
-        );
-      }
-      return parsed;
-    }
   }
   return { provider: params.defaultProvider, model: params.defaultModel };
 }
@@ -473,69 +461,53 @@ export function buildAllowedModelSet(params: {
   allowedCatalog: ModelCatalogEntry[];
   allowedKeys: Set<string>;
 } {
-  const rawAllowlist = (() => {
-    const modelMap = params.cfg.agents?.defaults?.models ?? {};
-    return Object.keys(modelMap);
-  })();
   const selectedRefs = resolveSelectedModelRefs({
     cfg: params.cfg,
     defaultProvider: params.defaultProvider,
   });
-  if (selectedRefs.size > 0) {
-    const selectedKeys = new Set(selectedRefs);
-    const allowedCatalog = params.catalog.filter((entry) =>
-      selectedKeys.has(modelKey(entry.provider, entry.id)),
-    );
-    if (params.defaultModel?.trim()) {
-      const defaultRef = parseModelRef(params.defaultModel, params.defaultProvider);
-      if (defaultRef) {
-        selectedKeys.add(modelKey(defaultRef.provider, defaultRef.model));
-      }
-    }
-    return {
-      allowAny: false,
-      allowedCatalog,
-      allowedKeys: selectedKeys,
-    };
-  }
-  const allowAny = rawAllowlist.length === 0;
+  const configuredProviders = new Set<string>([
+    ...Object.keys(params.cfg.models?.providers ?? {}).map((provider) =>
+      normalizeProviderId(provider),
+    ),
+    ...Object.values(params.cfg.auth?.profiles ?? {})
+      .map((profile) => normalizeProviderId(String(profile?.provider ?? "")))
+      .filter(Boolean),
+  ]);
   const defaultModel = params.defaultModel?.trim();
   const defaultRef =
     defaultModel && params.defaultProvider
       ? parseModelRef(defaultModel, params.defaultProvider)
       : null;
   const defaultKey = defaultRef ? modelKey(defaultRef.provider, defaultRef.model) : undefined;
-  const catalogKeys = new Set(params.catalog.map((entry) => modelKey(entry.provider, entry.id)));
+  const allowedKeys = new Set<string>();
+  if (selectedRefs.size > 0) {
+    for (const ref of selectedRefs) {
+      allowedKeys.add(ref);
+    }
+  } else {
+    for (const entry of params.catalog) {
+      if (configuredProviders.has(normalizeProviderId(entry.provider))) {
+        allowedKeys.add(modelKey(entry.provider, entry.id));
+      }
+    }
+    for (const [provider, config] of Object.entries(params.cfg.models?.providers ?? {})) {
+      for (const model of config.models ?? []) {
+        const parsed = normalizeModelRef(provider, model.id);
+        allowedKeys.add(modelKey(parsed.provider, parsed.model));
+      }
+    }
+  }
 
-  if (allowAny) {
+  if (allowedKeys.size === 0) {
+    const allKeys = new Set(params.catalog.map((entry) => modelKey(entry.provider, entry.id)));
     if (defaultKey) {
-      catalogKeys.add(defaultKey);
+      allKeys.add(defaultKey);
     }
     return {
       allowAny: true,
       allowedCatalog: params.catalog,
-      allowedKeys: catalogKeys,
+      allowedKeys: allKeys,
     };
-  }
-
-  const allowedKeys = new Set<string>();
-  const configuredProviders = (params.cfg.models?.providers ?? {}) as Record<string, unknown>;
-  for (const raw of rawAllowlist) {
-    const parsed = parseModelRef(String(raw), params.defaultProvider);
-    if (!parsed) {
-      continue;
-    }
-    const key = modelKey(parsed.provider, parsed.model);
-    const providerKey = normalizeProviderId(parsed.provider);
-    if (isCliProvider(parsed.provider, params.cfg)) {
-      allowedKeys.add(key);
-    } else if (catalogKeys.has(key)) {
-      allowedKeys.add(key);
-    } else if (configuredProviders[providerKey] != null) {
-      // Explicitly configured providers should be allowlist-able even when
-      // they don't exist in the curated model catalog.
-      allowedKeys.add(key);
-    }
   }
 
   if (defaultKey) {
@@ -545,17 +517,6 @@ export function buildAllowedModelSet(params: {
   const allowedCatalog = params.catalog.filter((entry) =>
     allowedKeys.has(modelKey(entry.provider, entry.id)),
   );
-
-  if (allowedCatalog.length === 0 && allowedKeys.size === 0) {
-    if (defaultKey) {
-      catalogKeys.add(defaultKey);
-    }
-    return {
-      allowAny: true,
-      allowedCatalog: params.catalog,
-      allowedKeys: catalogKeys,
-    };
-  }
 
   return { allowAny: false, allowedCatalog, allowedKeys };
 }

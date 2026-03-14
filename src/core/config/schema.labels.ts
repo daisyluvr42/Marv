@@ -276,7 +276,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "auth.cooldowns.billingBackoffHoursByProvider": "Billing Backoff Overrides",
   "auth.cooldowns.billingMaxHours": "Billing Backoff Cap (hours)",
   "auth.cooldowns.failureWindowHours": "Failover Window (hours)",
-  "agents.defaults.models": "Models",
+  "models.metadata": "Model Metadata",
   "agents.defaults.modelPool": "Default Model Pool",
   "agents.modelPools": "Model Pools",
   "agents.defaults.imageModel.primary": "Image Model",

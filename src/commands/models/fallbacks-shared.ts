@@ -26,7 +26,7 @@ function getFallbacks(cfg: MarvConfig, key: DefaultsFallbackKey): string[] {
 
 function patchDefaultsFallbacks(
   cfg: MarvConfig,
-  params: { key: DefaultsFallbackKey; fallbacks: string[]; models?: Record<string, unknown> },
+  params: { key: DefaultsFallbackKey; fallbacks: string[] },
 ): MarvConfig {
   const existing = cfg.agents?.defaults?.[params.key] as unknown as
     | PrimaryFallbackConfig
@@ -38,7 +38,6 @@ function patchDefaultsFallbacks(
       defaults: {
         ...cfg.agents?.defaults,
         [params.key]: mergePrimaryFallbackConfig(existing, { fallbacks: params.fallbacks }),
-        ...(params.models ? { models: params.models as never } : undefined),
       },
     },
   };
@@ -86,10 +85,6 @@ export async function addFallbackCommand(
   const updated = await updateConfig((cfg) => {
     const resolved = resolveModelTarget({ raw: modelRaw, cfg });
     const targetKey = modelKey(resolved.provider, resolved.model);
-    const nextModels = { ...cfg.agents?.defaults?.models } as Record<string, unknown>;
-    if (!nextModels[targetKey]) {
-      nextModels[targetKey] = {};
-    }
     const existing = getFallbacks(cfg, params.key);
     const existingKeys = resolveModelKeysFromEntries({ cfg, entries: existing });
     if (existingKeys.includes(targetKey)) {
@@ -99,7 +94,6 @@ export async function addFallbackCommand(
     return patchDefaultsFallbacks(cfg, {
       key: params.key,
       fallbacks: [...existing, targetKey],
-      models: nextModels,
     });
   });
 

@@ -11,7 +11,6 @@ import {
 import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
-import { ensureModelAllowlistEntry } from "./model-allowlist.js";
 import {
   applyAuthProfileConfig,
   applyHuggingfaceProviderConfig,
@@ -124,7 +123,7 @@ export async function applyAuthChoiceHuggingface(
     applyDefaultConfig: (config) => {
       const withProvider = applyHuggingfaceProviderConfig(config);
       const existingModel = withProvider.agents?.defaults?.model;
-      const withPrimary = {
+      return {
         ...withProvider,
         agents: {
           ...withProvider.agents,
@@ -141,10 +140,6 @@ export async function applyAuthChoiceHuggingface(
           },
         },
       };
-      return ensureModelAllowlistEntry({
-        cfg: withPrimary,
-        modelRef: selectedModelRef,
-      });
     },
     applyProviderConfig: applyHuggingfaceProviderConfig,
     noteDefault: selectedModelRef,

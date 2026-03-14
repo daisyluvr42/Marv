@@ -185,37 +185,33 @@ describe("promptModelAllowlist", () => {
 });
 
 describe("applyModelAllowlist", () => {
-  it("preserves existing entries for selected models", () => {
+  it("replaces selections with the selected model refs", () => {
     const config = {
-      agents: {
-        defaults: {
-          models: {
-            "openai/gpt-5.2": { alias: "gpt" },
-            "anthropic/claude-opus-4-5": { alias: "opus" },
-          },
+      models: {
+        selections: {
+          openai: ["openai/gpt-5.2"],
+          anthropic: ["anthropic/claude-opus-4-5"],
         },
       },
     } as MarvConfig;
 
     const next = applyModelAllowlist(config, ["openai/gpt-5.2"]);
-    expect(next.agents?.defaults?.models).toEqual({
-      "openai/gpt-5.2": { alias: "gpt" },
+    expect(next.models?.selections).toEqual({
+      openai: ["openai/gpt-5.2"],
     });
   });
 
-  it("clears the allowlist when no models remain", () => {
+  it("clears the selections when no models remain", () => {
     const config = {
-      agents: {
-        defaults: {
-          models: {
-            "openai/gpt-5.2": { alias: "gpt" },
-          },
+      models: {
+        selections: {
+          openai: ["openai/gpt-5.2"],
         },
       },
     } as MarvConfig;
 
     const next = applyModelAllowlist(config, []);
-    expect(next.agents?.defaults?.models).toBeUndefined();
+    expect(next.models?.selections).toBeUndefined();
   });
 });
 

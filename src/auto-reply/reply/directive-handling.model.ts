@@ -114,7 +114,7 @@ function buildModelPickerCatalog(params: {
       }
     }
 
-    for (const raw of Object.keys(params.cfg.agents?.defaults?.models ?? {})) {
+    for (const raw of Object.keys(params.cfg.models?.metadata ?? {})) {
       pushRaw(raw);
     }
 
@@ -143,23 +143,6 @@ function buildModelPickerCatalog(params: {
     });
   }
 
-  const hasAllowlist = Object.keys(params.cfg.agents?.defaults?.models ?? {}).length > 0;
-  if (!hasAllowlist) {
-    for (const entry of params.allowedModelCatalog) {
-      push({
-        provider: entry.provider,
-        id: entry.id ?? "",
-        name: entry.name,
-      });
-    }
-    for (const entry of buildConfiguredCatalog()) {
-      push(entry);
-    }
-    return out;
-  }
-
-  // Prefer catalog entries (when available), but always merge in config-only
-  // allowlist entries. This keeps custom providers/models visible in /model.
   for (const entry of params.allowedModelCatalog) {
     push({
       provider: entry.provider,
@@ -168,24 +151,10 @@ function buildModelPickerCatalog(params: {
     });
   }
 
-  // Merge any configured allowlist keys that the catalog doesn't know about.
-  for (const raw of Object.keys(params.cfg.agents?.defaults?.models ?? {})) {
-    const resolved = resolveModelRefFromString({
-      raw: String(raw),
-      defaultProvider: params.defaultProvider,
-      aliasIndex: params.aliasIndex,
-    });
-    if (!resolved) {
-      continue;
-    }
-    push({
-      provider: resolved.ref.provider,
-      id: resolved.ref.model,
-      name: resolved.ref.model,
-    });
+  for (const entry of buildConfiguredCatalog()) {
+    push(entry);
   }
 
-  // Ensure the configured default is always present (even when no allowlist).
   if (resolvedDefault.model) {
     push({
       provider: resolvedDefault.provider,

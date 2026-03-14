@@ -50,14 +50,6 @@ export type AutoRoutingConfig = {
   thresholds?: AutoRoutingThresholds;
 };
 
-export type AgentModelEntryConfig = {
-  alias?: string;
-  /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
-  params?: Record<string, unknown>;
-  /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
-  streaming?: boolean;
-};
-
 export type AgentModelListConfig = {
   primary?: string;
   fallbacks?: string[];
@@ -201,8 +193,6 @@ export type AgentDefaultsConfig = {
   modelPools?: Record<string, ModelPoolConfig>;
   /** Optional image-capable model and fallbacks (provider/model). */
   imageModel?: AgentModelListConfig;
-  /** Model catalog with optional aliases (full provider/model keys). */
-  models?: Record<string, AgentModelEntryConfig>;
   /** Agent working directory (preferred). Used as the default cwd for agent runs. */
   workspace?: string;
   /** Optional main-agent state directory override. */

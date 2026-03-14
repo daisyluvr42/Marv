@@ -115,6 +115,17 @@ export const ModelsConfigSchema = z
   .object({
     mode: z.union([z.literal("merge"), z.literal("replace")]).optional(),
     catalog: z.record(z.string(), ConfiguredModelCatalogEntrySchema).optional(),
+    metadata: z
+      .record(
+        z.string(),
+        z
+          .object({
+            alias: z.string().optional(),
+            params: z.record(z.string(), z.unknown()).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
     selections: z.record(z.string(), z.array(z.string())).optional(),
     providers: z.record(z.string(), ModelProviderSchema).optional(),
     bedrockDiscovery: BedrockDiscoverySchema,

@@ -13,20 +13,17 @@ import {
 } from "./onboard-auth.credentials.js";
 
 export function applyVercelAiGatewayProviderConfig(cfg: MarvConfig): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF] = {
-    ...models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF],
-    alias: models[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF]?.alias ?? "Vercel AI Gateway",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF],
+    alias: modelMetadata[VERCEL_AI_GATEWAY_DEFAULT_MODEL_REF]?.alias ?? "Vercel AI Gateway",
   };
 
   return {
     ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
-      },
+    models: {
+      ...cfg.models,
+      metadata: modelMetadata,
     },
   };
 }
@@ -35,10 +32,10 @@ export function applyCloudflareAiGatewayProviderConfig(
   cfg: MarvConfig,
   params?: { accountId?: string; gatewayId?: string },
 ): MarvConfig {
-  const models = { ...cfg.agents?.defaults?.models };
-  models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF] = {
-    ...models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF],
-    alias: models[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF]?.alias ?? "Cloudflare AI Gateway",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF],
+    alias: modelMetadata[CLOUDFLARE_AI_GATEWAY_DEFAULT_MODEL_REF]?.alias ?? "Cloudflare AI Gateway",
   };
 
   const defaultModel = buildCloudflareAiGatewayModelDefinition();
@@ -58,18 +55,15 @@ export function applyCloudflareAiGatewayProviderConfig(
   if (!baseUrl) {
     return {
       ...cfg,
-      agents: {
-        ...cfg.agents,
-        defaults: {
-          ...cfg.agents?.defaults,
-          models,
-        },
+      models: {
+        ...cfg.models,
+        metadata: modelMetadata,
       },
     };
   }
 
   return applyProviderConfigWithDefaultModel(cfg, {
-    agentModels: models,
+    modelMetadata,
     providerId: "cloudflare-ai-gateway",
     api: "anthropic-messages",
     baseUrl,

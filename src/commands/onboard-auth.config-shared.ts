@@ -1,7 +1,8 @@
+import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections.js";
 import type { MarvConfig } from "../core/config/config.js";
-import type { AgentModelEntryConfig } from "../core/config/types.agent-defaults.js";
 import type {
   ModelApi,
+  ModelMetadataConfig,
   ModelDefinitionConfig,
   ModelProviderConfig,
 } from "../core/config/types.models.js";
@@ -20,21 +21,17 @@ function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined
 export function applyOnboardAuthAgentModelsAndProviders(
   cfg: MarvConfig,
   params: {
-    agentModels: Record<string, AgentModelEntryConfig>;
+    modelMetadata: Record<string, ModelMetadataConfig>;
     providers: Record<string, ModelProviderConfig>;
   },
 ): MarvConfig {
   return {
     ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models: params.agentModels,
-      },
-    },
     models: {
       mode: cfg.models?.mode ?? "merge",
+      ...cfg.models,
+      metadata: params.modelMetadata,
+      selections: cfg.models?.selections,
       providers: params.providers,
     },
   };
@@ -60,7 +57,7 @@ export function applyAgentDefaultModelPrimary(cfg: MarvConfig, primary: string):
 export function applyProviderConfigWithDefaultModels(
   cfg: MarvConfig,
   params: {
-    agentModels: Record<string, AgentModelEntryConfig>;
+    modelMetadata: Record<string, ModelMetadataConfig>;
     providerId: string;
     api: ModelApi;
     baseUrl: string;
@@ -94,16 +91,19 @@ export function applyProviderConfigWithDefaultModels(
     fallbackModels: defaultModels,
   });
 
-  return applyOnboardAuthAgentModelsAndProviders(cfg, {
-    agentModels: params.agentModels,
-    providers,
+  return syncProviderSelectionsFromProviderConfig({
+    cfg: applyOnboardAuthAgentModelsAndProviders(cfg, {
+      modelMetadata: params.modelMetadata,
+      providers,
+    }),
+    providerId: params.providerId,
   });
 }
 
 export function applyProviderConfigWithDefaultModel(
   cfg: MarvConfig,
   params: {
-    agentModels: Record<string, AgentModelEntryConfig>;
+    modelMetadata: Record<string, ModelMetadataConfig>;
     providerId: string;
     api: ModelApi;
     baseUrl: string;
@@ -112,7 +112,7 @@ export function applyProviderConfigWithDefaultModel(
   },
 ): MarvConfig {
   return applyProviderConfigWithDefaultModels(cfg, {
-    agentModels: params.agentModels,
+    modelMetadata: params.modelMetadata,
     providerId: params.providerId,
     api: params.api,
     baseUrl: params.baseUrl,
@@ -124,7 +124,7 @@ export function applyProviderConfigWithDefaultModel(
 export function applyProviderConfigWithModelCatalog(
   cfg: MarvConfig,
   params: {
-    agentModels: Record<string, AgentModelEntryConfig>;
+    modelMetadata: Record<string, ModelMetadataConfig>;
     providerId: string;
     api: ModelApi;
     baseUrl: string;
@@ -155,9 +155,12 @@ export function applyProviderConfigWithModelCatalog(
     fallbackModels: catalogModels,
   });
 
-  return applyOnboardAuthAgentModelsAndProviders(cfg, {
-    agentModels: params.agentModels,
-    providers,
+  return syncProviderSelectionsFromProviderConfig({
+    cfg: applyOnboardAuthAgentModelsAndProviders(cfg, {
+      modelMetadata: params.modelMetadata,
+      providers,
+    }),
+    providerId: params.providerId,
   });
 }
 

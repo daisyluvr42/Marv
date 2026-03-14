@@ -179,6 +179,33 @@ describe("model-selection", () => {
       });
       expect(result).toEqual({ provider: "openai", model: "gpt-4" });
     });
+
+    it("prefers explicit primary over sorted selection candidates", () => {
+      const cfg = {
+        models: {
+          selections: {
+            anthropic: ["anthropic/claude-opus-4-6", "anthropic/claude-sonnet-4-6"],
+          },
+          catalog: {
+            "anthropic/claude-opus-4-6": { tier: "high", priority: 20 },
+            "anthropic/claude-sonnet-4-6": { tier: "standard", priority: 10 },
+          },
+        },
+        agents: {
+          defaults: {
+            model: { primary: "anthropic/claude-opus-4-6" },
+          },
+        },
+      } as MarvConfig;
+
+      const result = resolveConfiguredModelRef({
+        cfg,
+        defaultProvider: "openai",
+        defaultModel: "gpt-4",
+      });
+
+      expect(result).toEqual({ provider: "anthropic", model: "claude-opus-4-6" });
+    });
   });
 
   describe("resolveSubagentRoleModelSelection", () => {

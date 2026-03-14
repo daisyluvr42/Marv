@@ -3,21 +3,17 @@ import type { MarvConfig } from "../core/config/config.js";
 import { applyAgentDefaultModelPrimary } from "./onboard-auth.config-shared.js";
 
 export function applyOpencodeZenProviderConfig(cfg: MarvConfig): MarvConfig {
-  // Use the built-in opencode provider from pi-ai; only seed the allowlist alias.
-  const models = { ...cfg.agents?.defaults?.models };
-  models[OPENCODE_ZEN_DEFAULT_MODEL_REF] = {
-    ...models[OPENCODE_ZEN_DEFAULT_MODEL_REF],
-    alias: models[OPENCODE_ZEN_DEFAULT_MODEL_REF]?.alias ?? "Opus",
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[OPENCODE_ZEN_DEFAULT_MODEL_REF] = {
+    ...modelMetadata[OPENCODE_ZEN_DEFAULT_MODEL_REF],
+    alias: modelMetadata[OPENCODE_ZEN_DEFAULT_MODEL_REF]?.alias ?? "Opus",
   };
 
   return {
     ...cfg,
-    agents: {
-      ...cfg.agents,
-      defaults: {
-        ...cfg.agents?.defaults,
-        models,
-      },
+    models: {
+      ...cfg.models,
+      metadata: modelMetadata,
     },
   };
 }

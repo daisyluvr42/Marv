@@ -48,9 +48,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
       const legacyModel = typeof agent.model === "string" ? String(agent.model) : undefined;
       const legacyImageModel =
         typeof agent.imageModel === "string" ? String(agent.imageModel) : undefined;
-      const legacyAllowed = Array.isArray(agent.allowedModels)
-        ? (agent.allowedModels as unknown[]).map(String)
-        : [];
       const legacyModelFallbacks = Array.isArray(agent.modelFallbacks)
         ? (agent.modelFallbacks as unknown[]).map(String)
         : [];
@@ -65,7 +62,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
       const hasLegacy =
         legacyModel ||
         legacyImageModel ||
-        legacyAllowed.length > 0 ||
         legacyModelFallbacks.length > 0 ||
         legacyImageModelFallbacks.length > 0 ||
         Object.keys(legacyAliases).length > 0;
@@ -73,10 +69,12 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
         return;
       }
 
-      const models =
-        agent.models && typeof agent.models === "object"
-          ? (agent.models as Record<string, unknown>)
+      const rootModels = ensureRecord(raw, "models");
+      const metadata =
+        rootModels.metadata && typeof rootModels.metadata === "object"
+          ? (rootModels.metadata as Record<string, unknown>)
           : {};
+      rootModels.metadata = metadata;
 
       const ensureModel = (rawKey?: string) => {
         if (typeof rawKey !== "string") {
@@ -86,16 +84,13 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
         if (!key) {
           return;
         }
-        if (!models[key]) {
-          models[key] = {};
+        if (!metadata[key]) {
+          metadata[key] = {};
         }
       };
 
       ensureModel(legacyModel);
       ensureModel(legacyImageModel);
-      for (const key of legacyAllowed) {
-        ensureModel(key);
-      }
       for (const key of legacyModelFallbacks) {
         ensureModel(key);
       }
@@ -118,12 +113,12 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
           continue;
         }
         const entry =
-          models[target] && typeof models[target] === "object"
-            ? (models[target] as Record<string, unknown>)
+          metadata[target] && typeof metadata[target] === "object"
+            ? (metadata[target] as Record<string, unknown>)
             : {};
         if (!("alias" in entry)) {
           entry.alias = alias;
-          models[target] = entry;
+          metadata[target] = entry;
         }
       }
 
@@ -171,8 +166,6 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
         };
       }
 
-      agent.models = models;
-
       if (legacyModel !== undefined) {
         changes.push(`Migrated ${label}.model string → ${label}.model.primary.`);
       }
@@ -185,11 +178,8 @@ export const LEGACY_CONFIG_MIGRATIONS_PART_2: LegacyConfigMigration[] = [
       if (legacyImageModelFallbacks.length > 0) {
         changes.push(`Migrated ${label}.imageModelFallbacks → ${label}.imageModel.fallbacks.`);
       }
-      if (legacyAllowed.length > 0) {
-        changes.push(`Migrated ${label}.allowedModels → ${label}.models.`);
-      }
       if (Object.keys(legacyAliases).length > 0) {
-        changes.push(`Migrated ${label}.modelAliases → ${label}.models.*.alias.`);
+        changes.push("Migrated agent.modelAliases → models.metadata.*.alias.");
       }
 
       delete agent.allowedModels;
