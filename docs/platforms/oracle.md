@@ -99,7 +99,7 @@ tailscale status
 ## 5) Install Marv
 
 ```bash
-curl -fsSL https://marv.ai/install.sh | bash
+curl -fsSL https://marv.bot/install.sh | bash
 source ~/.bashrc
 ```
 
