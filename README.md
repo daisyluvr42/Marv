@@ -74,20 +74,73 @@ Chat Channels / WebChat / Nodes
 
 ## 快速开始
 
-### 1) 克隆项目
+### 先选安装方式
+
+| 方式       | 适合场景                                     | 关键命令                          |
+| ---------- | -------------------------------------------- | --------------------------------- |
+| 全局安装   | 生产部署、远程机器、只想稳定运行 CLI/Gateway | `npm install -g agentmarv@latest` |
+| 从源码部署 | 开发、调试、需要修改代码或跟踪主分支         | `git clone ... && pnpm install`   |
+
+不要把两种方式混在一起用。
+
+- 如果你是在仓库目录里运行，就是“从源码部署”，必须先 `pnpm install`。
+- 如果你只是想在机器上运行 Marv，不需要仓库源码，优先用“全局安装”。
+- 在源码仓库里执行 `npm install`、`npm install --omit=dev`，或者只拷一部分 `node_modules`，都可能导致 `tsx`、`@homebridge/ciao`、Control UI 资源缺失，进而让 `gateway` 或 `tui` 启动失败。
+
+### 方式 A: 全局安装（推荐部署）
+
+适合长期运行的服务器、远程机器和普通使用者。
+
+1. 安装 Node.js `>=22.12.0`
+2. 全局安装 CLI
+3. 运行 onboarding
+4. 验证 gateway / dashboard / tui
+
+```bash
+npm install -g agentmarv@latest
+marv onboard --install-daemon
+marv gateway status
+marv dashboard
+marv tui
+```
+
+如果你不想装成后台服务，也可以直接前台运行：
+
+```bash
+marv gateway run --bind loopback --port 18789
+```
+
+适用原则：
+
+- 你不需要修改 Marv 源码
+- 你希望升级路径简单，后续直接 `npm i -g agentmarv@latest`
+- 你不想让部署依赖仓库里的 devDependencies 和前端构建链路
+
+### 方式 B: 从源码部署（开发/调试）
+
+适合要修改代码、调试 gateway/TUI、验证主分支改动的人。
+
+1. 克隆项目
 
 ```bash
 git clone https://github.com/daisyluvr42/Marv.git
 cd Marv
 ```
 
-### 2) 安装依赖
+2. 用 `pnpm` 安装完整依赖
 
 ```bash
 pnpm install
 ```
 
-### 3) 初始化并启动
+3. 构建 CLI 和 Control UI 资源
+
+```bash
+pnpm ui:build
+pnpm build
+```
+
+4. 初始化并启动
 
 ```bash
 pnpm marv onboard --install-daemon
@@ -95,10 +148,50 @@ pnpm marv gateway status
 pnpm marv dashboard
 ```
 
-### 4) 前台运行（调试）
+### 前台运行（调试）
 
 ```bash
 pnpm marv gateway run --port 18789 --verbose
+```
+
+如果你只想在仓库内直接运行，不做全局 link，也可以始终使用 `pnpm marv ...`：
+
+```bash
+pnpm marv gateway run --bind loopback --port 18789
+pnpm marv tui
+```
+
+源码部署的几个关键规则：
+
+- 只用 `pnpm install`，不要在仓库根目录用 `npm install`
+- 缺 `tsx`、`@homebridge/ciao`、Control UI 资源，第一反应就是重新跑 `pnpm install && pnpm ui:build && pnpm build`
+- 在源码仓库里运行 `marv`/`tui`/`gateway`，本质上依赖的是仓库自己的完整工作区依赖，不是简化过的生产依赖
+
+### 常见故障快修
+
+如果你在源码部署的机器上看到这些报错：
+
+- `Cannot find package 'tsx'`
+- `Cannot find package '@homebridge/ciao'`
+- `Control UI assets missing`
+- `Control UI build failed`
+
+直接执行：
+
+```bash
+rm -rf node_modules package-lock.json
+corepack enable
+pnpm install
+pnpm ui:build
+pnpm build
+pnpm marv gateway run --bind loopback --port 18789
+```
+
+如果你其实并不需要源码运行，换成全局安装通常更稳：
+
+```bash
+npm install -g agentmarv@latest
+marv onboard --install-daemon
 ```
 
 ## 本地部署

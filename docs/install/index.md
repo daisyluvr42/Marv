@@ -70,13 +70,31 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
   </Accordion>
 
   <Accordion title="npm / pnpm" icon="package">
-    If you already have Node 22+ and prefer to manage the install yourself:
+    If you already have Node 22+ and want the simplest machine-local install, use a global package install. This is the best choice for most servers, remote machines, and single-user deployments.
+
+    <Tip>
+    Choose this path if you want to run Marv, not modify Marv. You do not need the Git checkout, TypeScript source tree, or repo devDependencies.
+    </Tip>
 
     <Tabs>
       <Tab title="npm">
         ```bash
         npm install -g agentmarv@latest
         marv onboard --install-daemon
+        ```
+
+        Verify the install:
+
+        ```bash
+        marv gateway status
+        marv dashboard
+        marv tui
+        ```
+
+        Run in the foreground instead of a service:
+
+        ```bash
+        marv gateway run --bind loopback --port 18789
         ```
 
         <Accordion title="sharp build errors?">
@@ -96,44 +114,119 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
         marv onboard --install-daemon
         ```
 
+        Verify the install:
+
+        ```bash
+        marv gateway status
+        marv dashboard
+        marv tui
+        ```
+
         <Note>
         pnpm requires explicit approval for packages with build scripts. After the first install shows the "Ignored build scripts" warning, run `pnpm approve-builds -g` and select the listed packages.
         </Note>
       </Tab>
     </Tabs>
 
+    Common fit for global installs:
+
+    - VPS or cloud machine running a single Marv instance
+    - Local machine where you want upgrades to stay simple
+    - Deployments where you do not want source-only tooling such as `tsx` or UI build dependencies
+
+    Common update path:
+
+    ```bash
+    npm install -g agentmarv@latest
+    ```
+
   </Accordion>
 
   <Accordion title="From source" icon="github">
-    For contributors or anyone who wants to run from a local checkout.
+    For contributors, local development, debugging, or anyone who needs to run from a Git checkout.
+
+    <Warning>
+    A source checkout is not the same as a global install. Do not run `npm install` in the repo root. Use `pnpm install` so workspace packages, `tsx`, and the UI build pipeline are installed correctly.
+    </Warning>
 
     <Steps>
-      <Step title="Clone and build">
-        Clone the [Marv repo]() and build:
+      <Step title="Clone the repo">
+        Clone the [Marv repo](https://github.com/daisyluvr42/Marv) and enter the checkout:
 
         ```bash
         git clone https://github.com/daisyluvr42/Marv.git
-        cd marv
+        cd Marv
+        ```
+      </Step>
+      <Step title="Install workspace dependencies">
+        Install the full workspace with pnpm:
+
+        ```bash
         pnpm install
+        ```
+      </Step>
+      <Step title="Build the CLI and Control UI assets">
+        Build both the TypeScript output and the browser UI:
+
+        ```bash
         pnpm ui:build
         pnpm build
         ```
       </Step>
-      <Step title="Link the CLI">
-        Make the `marv` command available globally:
+      <Step title="Choose how you want to run commands">
+        Option A: stay inside the repo and use the workspace command:
+
+        ```bash
+        pnpm marv gateway run --bind loopback --port 18789
+        pnpm marv tui
+        ```
+
+        Option B: make `marv` available globally from the checkout:
 
         ```bash
         pnpm link --global
         ```
 
-        Alternatively, skip the link and run commands via `pnpm marv ...` from inside the repo.
+        Then run:
+
+        ```bash
+        marv onboard --install-daemon
+        marv gateway status
+        marv tui
+        ```
       </Step>
       <Step title="Run onboarding">
+        If you did not link globally, run onboarding from the repo:
+
+        ```bash
+        pnpm marv onboard --install-daemon
+        ```
+
+        If you linked globally, this works too:
+
         ```bash
         marv onboard --install-daemon
         ```
       </Step>
     </Steps>
+
+    Source-checkout troubleshooting:
+
+    - If you see `Cannot find package 'tsx'`, rerun `pnpm install`.
+    - If you see `Cannot find package '@homebridge/ciao'`, rerun `pnpm install`.
+    - If you see `Control UI assets missing` or `Control UI build failed`, run `pnpm ui:build` and then `pnpm build`.
+    - If you accidentally ran `npm install` in the repo root, remove `node_modules` and `package-lock.json`, then reinstall with `pnpm install`.
+
+    Fast repair sequence:
+
+    ```bash
+    rm -rf node_modules package-lock.json
+    corepack enable
+    pnpm install
+    pnpm ui:build
+    pnpm build
+    pnpm marv gateway run --bind loopback --port 18789
+    ```
 
     For deeper development workflows, see [Setup](/start/setup).
 
