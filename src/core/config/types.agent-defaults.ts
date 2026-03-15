@@ -182,6 +182,12 @@ export type SubagentPresetConfig = {
   };
 };
 
+export type AgentP0Config = {
+  soul?: string;
+  identity?: string;
+  user?: string;
+};
+
 export type AgentDefaultsConfig = {
   /** Durable configured top-level agent name. Runtime still uses agent id "main". */
   name?: string;
@@ -258,6 +264,8 @@ export type AgentDefaultsConfig = {
   blockStreamingCoalesce?: BlockStreamingCoalesceConfig;
   /** Human-like delay between block replies. */
   humanDelay?: HumanDelayConfig;
+  /** Structured P0 memory projected into SOUL.md / IDENTITY.md / USER.md. */
+  p0?: AgentP0Config;
   /** Durable assistant identity for the main agent. */
   identity?: IdentityConfig;
   /** Durable group-chat settings for the main agent. */

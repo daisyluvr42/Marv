@@ -27,6 +27,11 @@ describe("documentsHandlers", () => {
     vi.clearAllMocks();
     workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-docs-"));
     await fs.writeFile(path.join(workspaceDir, "NOTES.md"), "# Notes\nhello workspace\n", "utf8");
+    await fs.writeFile(
+      path.join(workspaceDir, "SOUL.md"),
+      "# Soul\nshould stay under Agent\n",
+      "utf8",
+    );
     await fs.mkdir(path.join(workspaceDir, "reports"), { recursive: true });
     await fs.writeFile(
       path.join(workspaceDir, "reports", "daily.txt"),
@@ -68,6 +73,10 @@ describe("documentsHandlers", () => {
       }),
       undefined,
     );
+    const payload = respond.mock.calls[0]?.[1] as {
+      items: Array<{ relativePath: string }>;
+    };
+    expect(payload.items.some((entry) => entry.relativePath === "SOUL.md")).toBe(false);
   });
 
   it("reads a document by rootId and relative path", async () => {

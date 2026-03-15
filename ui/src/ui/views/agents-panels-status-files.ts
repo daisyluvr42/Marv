@@ -16,6 +16,8 @@ import type {
 } from "../types.js";
 import { formatBytes, type AgentContext } from "./agents-utils.js";
 
+const P0_FILE_NAMES = new Set(["SOUL.md", "IDENTITY.md", "USER.md"]);
+
 function renderAgentContextCard(context: AgentContext, subtitle: string) {
   return html`
     <section class="card">
@@ -458,6 +460,132 @@ export function renderAgentFiles(params: {
                                 `
                               : nothing
                           }
+                          <label class="field" style="margin-top: 12px;">
+                            <span>Content</span>
+                            <textarea
+                              .value=${draft}
+                              @input=${(e: Event) =>
+                                params.onFileDraftChange(
+                                  activeEntry.name,
+                                  (e.target as HTMLTextAreaElement).value,
+                                )}
+                            ></textarea>
+                          </label>
+                        `
+                  }
+                </div>
+              </div>
+            `
+      }
+    </section>
+  `;
+}
+
+export function renderAgentP0(params: {
+  agentId: string;
+  agentFilesList: AgentsFilesListResult | null;
+  agentFilesLoading: boolean;
+  agentFilesError: string | null;
+  agentFileActive: string | null;
+  agentFileContents: Record<string, string>;
+  agentFileDrafts: Record<string, string>;
+  agentFileSaving: boolean;
+  onLoadFiles: (agentId: string) => void;
+  onSelectFile: (name: string) => void;
+  onFileDraftChange: (name: string, content: string) => void;
+  onFileReset: (name: string) => void;
+  onFileSave: (name: string) => void;
+}) {
+  const list = params.agentFilesList?.agentId === params.agentId ? params.agentFilesList : null;
+  const files = (list?.files ?? []).filter((file) => P0_FILE_NAMES.has(file.name));
+  const defaultActive = files[0]?.name ?? null;
+  const active =
+    params.agentFileActive && P0_FILE_NAMES.has(params.agentFileActive)
+      ? params.agentFileActive
+      : defaultActive;
+  const activeEntry = active ? (files.find((file) => file.name === active) ?? null) : null;
+  const baseContent = active ? (params.agentFileContents[active] ?? "") : "";
+  const draft = active ? (params.agentFileDrafts[active] ?? baseContent) : "";
+  const isDirty = active ? draft !== baseContent : false;
+
+  return html`
+    <section class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div>
+          <div class="card-title">P0 Memory</div>
+          <div class="card-sub">Strong persona, identity, and stable user preference memory.</div>
+        </div>
+        <button
+          class="btn btn--sm"
+          ?disabled=${params.agentFilesLoading}
+          @click=${() => params.onLoadFiles(params.agentId)}
+        >
+          ${params.agentFilesLoading ? "Loading…" : "Refresh"}
+        </button>
+      </div>
+      ${
+        list
+          ? html`<div class="muted mono" style="margin-top: 8px;">Workspace: ${list.workspace}</div>`
+          : nothing
+      }
+      ${
+        params.agentFilesError
+          ? html`<div class="callout danger" style="margin-top: 12px;">${params.agentFilesError}</div>`
+          : nothing
+      }
+      <div class="callout info" style="margin-top: 12px;">
+        P0 Soul is a strong constraint for persona and principles. P0 Identity guides self-description
+        and speaking style. P0 User stores stable preferences, not transient state.
+      </div>
+      ${
+        !list
+          ? html`
+              <div class="callout info" style="margin-top: 12px">
+                Load the agent P0 files to edit the external P0 layer.
+              </div>
+            `
+          : html`
+              <div class="agent-files-grid" style="margin-top: 16px;">
+                <div class="agent-files-list">
+                  ${
+                    files.length === 0
+                      ? html`
+                          <div class="muted">No P0 files found.</div>
+                        `
+                      : files.map((file) =>
+                          renderAgentFileRow(file, active, () => params.onSelectFile(file.name)),
+                        )
+                  }
+                </div>
+                <div class="agent-files-editor">
+                  ${
+                    !activeEntry
+                      ? html`
+                          <div class="muted">Select Soul, Identity, or User to edit.</div>
+                        `
+                      : html`
+                          <div class="agent-file-header">
+                            <div>
+                              <div class="agent-file-title mono">${activeEntry.name}</div>
+                              <div class="agent-file-sub mono">${activeEntry.path}</div>
+                            </div>
+                            <div class="agent-file-actions">
+                              <button
+                                class="btn btn--sm"
+                                ?disabled=${!isDirty}
+                                @click=${() => params.onFileReset(activeEntry.name)}
+                              >
+                                Reset
+                              </button>
+                              <button
+                                class="btn btn--sm primary"
+                                ?disabled=${params.agentFileSaving || !isDirty}
+                                @click=${() => params.onFileSave(activeEntry.name)}
+                              >
+                                ${params.agentFileSaving ? "Saving…" : "Save"}
+                              </button>
+                            </div>
+                          </div>
                           <label class="field" style="margin-top: 12px;">
                             <span>Content</span>
                             <textarea

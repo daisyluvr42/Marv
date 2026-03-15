@@ -1,3 +1,4 @@
+import { setAgentP0Sections } from "../../agents/p0.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveGatewayPort, writeConfigFile } from "../../core/config/config.js";
@@ -37,6 +38,11 @@ export async function runNonInteractiveOnboardingLocal(params: {
   });
 
   let nextConfig: MarvConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+  nextConfig = setAgentP0Sections(nextConfig, {
+    soul: opts.p0Soul,
+    identity: opts.p0Identity,
+    user: opts.p0User,
+  });
 
   const inferredAuthChoice = inferAuthChoiceFromFlags(opts);
   if (!opts.authChoice && inferredAuthChoice.matches.length > 1) {

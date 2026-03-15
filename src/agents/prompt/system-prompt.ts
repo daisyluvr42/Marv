@@ -736,6 +736,10 @@ export function buildAgentSystemPrompt(params: {
     });
     const recalledPathSet = new Set(recalledContextFiles.map((file) => file.path));
     const projectContextFiles = validContextFiles.filter((file) => !recalledPathSet.has(file.path));
+    const hasP0Soul = projectContextFiles.some((file) => file.path.trim() === "P0 Soul");
+    const hasP0Identity = projectContextFiles.some((file) => file.path.trim() === "P0 Identity");
+    const hasP0User = projectContextFiles.some((file) => file.path.trim() === "P0 User");
+    const hasP0Context = hasP0Soul || hasP0Identity || hasP0User;
     const hasSoulFile = projectContextFiles.some((file) => {
       const normalizedPath = file.path.trim().replace(/\\/g, "/");
       const baseName = normalizedPath.split("/").pop() ?? normalizedPath;
@@ -743,7 +747,27 @@ export function buildAgentSystemPrompt(params: {
     });
     if (projectContextFiles.length > 0) {
       lines.push("# Project Context", "", "The following project context files have been loaded:");
-      if (hasSoulFile) {
+      if (hasP0Context) {
+        lines.push(
+          "P0 guides tone, identity, and behavioral boundaries.",
+          "P0 does not override task facts, tool results, file contents, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
+        );
+        if (hasP0Soul) {
+          lines.push(
+            "P0 Soul is a strong constraint for persona, principles, and behavior boundaries. If a request conflicts with it, refuse or redirect while staying in character.",
+          );
+        }
+        if (hasP0Identity) {
+          lines.push(
+            "P0 Identity is a strong constraint for self-description and speaking style, but it must not distort task facts or technical details.",
+          );
+        }
+        if (hasP0User) {
+          lines.push(
+            "P0 User captures stable user preferences only, not transient state. Current explicit user requests can temporarily override it.",
+          );
+        }
+      } else if (hasSoulFile) {
         lines.push(
           "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
         );

@@ -439,6 +439,31 @@ describe("buildAgentSystemPrompt", () => {
     );
   });
 
+  it("adds explicit P0 guidance when structured P0 context is present", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      contextFiles: [
+        { path: "P0 Soul", content: "Be kind." },
+        { path: "P0 Identity", content: "You are Marv." },
+        { path: "P0 User", content: "User prefers concise Chinese." },
+      ],
+    });
+
+    expect(prompt).toContain("P0 guides tone, identity, and behavioral boundaries.");
+    expect(prompt).toContain(
+      "P0 does not override task facts, tool results, file contents, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
+    );
+    expect(prompt).toContain(
+      "P0 Soul is a strong constraint for persona, principles, and behavior boundaries. If a request conflicts with it, refuse or redirect while staying in character.",
+    );
+    expect(prompt).toContain(
+      "P0 Identity is a strong constraint for self-description and speaking style, but it must not distort task facts or technical details.",
+    );
+    expect(prompt).toContain(
+      "P0 User captures stable user preferences only, not transient state. Current explicit user requests can temporarily override it.",
+    );
+  });
+
   it("summarizes the message tool when available", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/marv",

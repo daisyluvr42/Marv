@@ -150,7 +150,7 @@ export type AppViewState = {
   agentModelsLoading: boolean;
   agentModels: import("./types.js").GatewayModelChoice[];
   agentsSelectedId: string | null;
-  agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+  agentsPanel: "overview" | "p0" | "files" | "tools" | "skills" | "channels" | "cron";
   agentFilesLoading: boolean;
   agentFilesError: string | null;
   agentFilesList: AgentsFilesListResult | null;

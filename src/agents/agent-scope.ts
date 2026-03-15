@@ -25,6 +25,7 @@ type ResolvedAgentConfig = {
   skills?: AgentDefaults["skills"];
   memorySearch?: AgentDefaults["memorySearch"];
   humanDelay?: AgentDefaults["humanDelay"];
+  p0?: AgentDefaults["p0"];
   heartbeat?: AgentDefaults["heartbeat"];
   identity?: AgentDefaults["identity"];
   groupChat?: AgentDefaults["groupChat"];
@@ -94,6 +95,7 @@ function resolveMainAgentConfig(cfg: MarvConfig): ResolvedAgentConfig | undefine
     skills: Array.isArray(defaults.skills) ? defaults.skills : undefined,
     memorySearch: defaults.memorySearch,
     humanDelay: defaults.humanDelay,
+    p0: defaults.p0,
     heartbeat: defaults.heartbeat,
     identity: defaults.identity,
     groupChat: defaults.groupChat,

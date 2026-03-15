@@ -241,7 +241,7 @@ export class MarvApp extends LitElement {
   @state() agentModelsLoading = false;
   @state() agentModels: GatewayModelChoice[] = [];
   @state() agentsSelectedId: string | null = null;
-  @state() agentsPanel: "overview" | "files" | "tools" | "skills" | "channels" | "cron" =
+  @state() agentsPanel: "overview" | "p0" | "files" | "tools" | "skills" | "channels" | "cron" =
     "overview";
   @state() agentFilesLoading = false;
   @state() agentFilesError: string | null = null;

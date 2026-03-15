@@ -1,5 +1,7 @@
+import { Command } from "commander";
 import { describe, expect, it } from "vitest";
 import {
+  commandMatchesPrimary,
   rewriteUpdateFlagArgv,
   shouldEnsureCliPath,
   shouldRegisterPrimarySubcommand,
@@ -124,5 +126,16 @@ describe("shouldEnsureCliPath", () => {
   it("keeps path bootstrap for mutating or unknown commands", () => {
     expect(shouldEnsureCliPath(["node", "marv", "message", "send"])).toBe(true);
     expect(shouldEnsureCliPath(["node", "marv", "voicecall", "status"])).toBe(true);
+  });
+});
+
+describe("commandMatchesPrimary", () => {
+  it("treats commander aliases as builtin matches", () => {
+    const program = new Command();
+    const mem = program.command("mem").alias("memory");
+
+    expect(commandMatchesPrimary(mem, "mem")).toBe(true);
+    expect(commandMatchesPrimary(mem, "memory")).toBe(true);
+    expect(commandMatchesPrimary(mem, "agent")).toBe(false);
   });
 });

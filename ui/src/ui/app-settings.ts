@@ -7,6 +7,7 @@ import {
 } from "./app-polling.js";
 import { scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.js";
 import type { MarvApp } from "./app.js";
+import { loadAgentFiles } from "./controllers/agent-files.js";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.js";
 import { loadAgentSkills } from "./controllers/agent-skills.js";
 import { loadAgents } from "./controllers/agents.js";
@@ -70,7 +71,7 @@ type SettingsHost = {
   basePath: string;
   agentsList?: AgentsListResult | null;
   agentsSelectedId?: string | null;
-  agentsPanel?: "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+  agentsPanel?: "overview" | "p0" | "files" | "tools" | "skills" | "channels" | "cron";
   themeMedia: MediaQueryList | null;
   themeMediaHandler: ((event: MediaQueryListEvent) => void) | null;
   pendingGatewayUrl?: string | null;
@@ -354,6 +355,9 @@ export async function refreshActiveTab(host: SettingsHost) {
       void loadAgentIdentity(host as unknown as MarvApp, agentId);
       if (host.agentsPanel === "skills") {
         void loadAgentSkills(host as unknown as MarvApp, agentId);
+      }
+      if (host.agentsPanel === "p0" || host.agentsPanel === "files") {
+        void loadAgentFiles(host as unknown as MarvApp, agentId);
       }
       if (host.agentsPanel === "channels") {
         void loadChannels(host as unknown as MarvApp, false);

@@ -1,5 +1,6 @@
 import type { MarvConfig } from "../core/config/config.js";
 import { applyBootstrapHookOverrides } from "./bootstrap-hooks.js";
+import { buildP0ContextFiles, hasConfiguredAgentP0, isP0FileName } from "./p0.js";
 import type { EmbeddedContextFile } from "./runner/pi-embedded-helpers.js";
 import {
   buildBootstrapContextFiles,
@@ -108,10 +109,15 @@ export async function resolveBootstrapContextForRun(params: {
     filteredBootstrapFiles,
     autoRecallEnabled,
   );
-  const contextFiles = buildBootstrapContextFiles(transformedBootstrapFiles, {
+  const p0ContextFiles = params.config ? buildP0ContextFiles(params.config) : [];
+  const contextSourceFiles =
+    params.config && hasConfiguredAgentP0(params.config)
+      ? transformedBootstrapFiles.filter((file) => !isP0FileName(file.name))
+      : transformedBootstrapFiles;
+  const contextFiles = buildBootstrapContextFiles(contextSourceFiles, {
     maxChars: resolveBootstrapMaxChars(params.config),
     totalMaxChars: resolveBootstrapTotalMaxChars(params.config),
     warn: params.warn,
   });
-  return { bootstrapFiles, contextFiles };
+  return { bootstrapFiles, contextFiles: [...p0ContextFiles, ...contextFiles] };
 }

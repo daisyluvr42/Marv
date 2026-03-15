@@ -4,6 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import {
+  memoryP0SectionCommand,
+  memoryP0ShowCommand,
+  memoryP0SyncCommand,
+} from "../commands/memory-p0.js";
 import { loadConfig } from "../core/config/config.js";
 import { resolveStateDir } from "../core/config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../core/config/sessions/paths.js";
@@ -44,6 +49,14 @@ type MemoryCommandOptions = {
   force?: boolean;
   verbose?: boolean;
 };
+
+function resolveParentJsonFlag(command: Command | undefined): boolean {
+  const parent = command?.parent;
+  if (!parent || typeof parent.opts !== "function") {
+    return false;
+  }
+  return Boolean(parent.opts().json);
+}
 
 type MemoryManager = NonNullable<MemorySearchManagerResult["manager"]>;
 type MemoryManagerPurpose = Parameters<typeof getMemorySearchManager>[0]["purpose"];
@@ -564,18 +577,109 @@ export async function runMemoryStatus(opts: MemoryCommandOptions) {
 
 export function registerMemoryCli(program: Command) {
   const memory = program
-    .command("memory")
+    .command("mem")
+    .alias("memory")
     .description("Search, inspect, and reindex memory files")
     .addHelpText(
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
+          ["marv mem p0", "Show the P0 soul, identity, and user memory layers."],
+          ['marv mem p0 soul "Stay warm and polite."', "Update P0 Soul inline."],
           ["marv memory status", "Show index and provider status."],
           ["marv memory index --force", "Force a full reindex."],
           ['marv memory search --query "deployment notes"', "Search indexed memory entries."],
           ["marv memory status --json", "Output machine-readable JSON."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs: /cli/memory")}\n`,
     );
+
+  const p0 = memory
+    .command("p0")
+    .description("Show or update the structured P0 memory layer")
+    .enablePositionalOptions()
+    .option("--json", "Print JSON")
+    .action(async (opts: { json?: boolean }) => {
+      await memoryP0ShowCommand({ json: Boolean(opts.json) }, defaultRuntime);
+    });
+
+  p0.command("soul [value]")
+    .description("Show or update P0 Soul")
+    .option("--file <path>", "Read content from a file")
+    .option("--clear", "Clear this P0 section", false)
+    .option("--json", "Print JSON")
+    .action(
+      async (
+        value: string | undefined,
+        opts: { file?: string; clear?: boolean; json?: boolean },
+        command: Command,
+      ) => {
+        await memoryP0SectionCommand(
+          "soul",
+          value,
+          {
+            file: opts.file,
+            clear: Boolean(opts.clear),
+            json: Boolean(opts.json) || resolveParentJsonFlag(command),
+          },
+          defaultRuntime,
+        );
+      },
+    );
+
+  p0.command("identity [value]")
+    .description("Show or update P0 Identity")
+    .option("--file <path>", "Read content from a file")
+    .option("--clear", "Clear this P0 section", false)
+    .option("--json", "Print JSON")
+    .action(
+      async (
+        value: string | undefined,
+        opts: { file?: string; clear?: boolean; json?: boolean },
+        command: Command,
+      ) => {
+        await memoryP0SectionCommand(
+          "identity",
+          value,
+          {
+            file: opts.file,
+            clear: Boolean(opts.clear),
+            json: Boolean(opts.json) || resolveParentJsonFlag(command),
+          },
+          defaultRuntime,
+        );
+      },
+    );
+
+  p0.command("user [value]")
+    .description("Show or update P0 User")
+    .option("--file <path>", "Read content from a file")
+    .option("--clear", "Clear this P0 section", false)
+    .option("--json", "Print JSON")
+    .action(
+      async (
+        value: string | undefined,
+        opts: { file?: string; clear?: boolean; json?: boolean },
+        command: Command,
+      ) => {
+        await memoryP0SectionCommand(
+          "user",
+          value,
+          {
+            file: opts.file,
+            clear: Boolean(opts.clear),
+            json: Boolean(opts.json) || resolveParentJsonFlag(command),
+          },
+          defaultRuntime,
+        );
+      },
+    );
+
+  p0.command("sync")
+    .description("Import SOUL.md / IDENTITY.md / USER.md back into structured P0")
+    .option("--json", "Print JSON")
+    .action(async (opts: { json?: boolean }) => {
+      await memoryP0SyncCommand({ json: Boolean(opts.json) }, defaultRuntime);
+    });
 
   memory
     .command("status")

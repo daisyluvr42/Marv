@@ -49,6 +49,14 @@ describe("command-registry", () => {
     const names = getCoreCliCommandNames();
     expect(names).toContain("agent");
     expect(names).toContain("agents");
+    expect(names).toContain("mem");
+    expect(names).toContain("memory");
+  });
+
+  it("registerCoreCliByName resolves memory alias to the mem entry", async () => {
+    const program = new Command();
+
+    expect(await registerCoreCliByName(program, testProgramContext, "memory")).toBe(true);
   });
 
   it("registerCoreCliByName resolves agents to the agent entry", async () => {

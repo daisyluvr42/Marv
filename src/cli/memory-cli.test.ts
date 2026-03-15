@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const getMemorySearchManager = vi.fn();
 const loadConfig = vi.fn(() => ({}));
 const resolveDefaultAgentId = vi.fn(() => "main");
+const memoryP0ShowCommand = vi.fn(async () => {});
+const memoryP0SectionCommand = vi.fn(async () => {});
 
 vi.mock("../memory/index.js", () => ({
   getMemorySearchManager,
@@ -18,6 +20,12 @@ vi.mock("../core/config/config.js", () => ({
 
 vi.mock("../agents/agent-scope.js", () => ({
   resolveDefaultAgentId,
+}));
+
+vi.mock("../commands/memory-p0.js", () => ({
+  memoryP0ShowCommand,
+  memoryP0SectionCommand,
+  memoryP0SyncCommand: vi.fn(async () => {}),
 }));
 
 afterEach(async () => {
@@ -54,12 +62,12 @@ describe("memory cli", () => {
     getMemorySearchManager.mockResolvedValueOnce({ manager });
   }
 
-  async function runMemoryCli(args: string[]) {
+  async function runMemoryCli(args: string[], command = "memory") {
     const { registerMemoryCli } = await import("./memory-cli.js");
     const program = new Command();
     program.name("test");
     registerMemoryCli(program);
-    await program.parseAsync(["memory", ...args], { from: "user" });
+    await program.parseAsync([command, ...args], { from: "user" });
   }
 
   it("prints vector status when available", async () => {
@@ -94,6 +102,23 @@ describe("memory cli", () => {
       expect.stringContaining("Embedding cache: enabled (123 entries)"),
     );
     expect(close).toHaveBeenCalled();
+  });
+
+  it("accepts the mem alias for P0 commands", async () => {
+    await runMemoryCli(["p0", "--json"], "mem");
+
+    expect(memoryP0ShowCommand).toHaveBeenCalledWith({ json: true }, expect.anything());
+  });
+
+  it("passes section-local json flags through to P0 subcommands", async () => {
+    await runMemoryCli(["p0", "soul", "--json"], "mem");
+
+    expect(memoryP0SectionCommand).toHaveBeenCalledWith(
+      "soul",
+      undefined,
+      expect.objectContaining({ json: true }),
+      expect.anything(),
+    );
   });
 
   it("prints vector error when unavailable", async () => {

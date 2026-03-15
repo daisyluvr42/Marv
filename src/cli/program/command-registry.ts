@@ -17,6 +17,7 @@ export type CommandRegistration = {
 
 type CoreCliCommandDescriptor = {
   name: string;
+  aliases?: string[];
   description: string;
   hasSubcommands: boolean;
 };
@@ -32,6 +33,10 @@ const shouldRegisterCorePrimaryOnly = (argv: string[]) => {
   }
   return true;
 };
+
+function commandMatchesName(command: CoreCliCommandDescriptor, name: string) {
+  return command.name === name || command.aliases?.includes(name) === true;
+}
 
 // Note for humans and agents:
 // If you update the list of commands, also check whether they have subcommands
@@ -135,7 +140,8 @@ const coreEntries: CoreCliEntry[] = [
   {
     commands: [
       {
-        name: "memory",
+        name: "mem",
+        aliases: ["memory"],
         description: "Search and reindex memory files",
         hasSubcommands: true,
       },
@@ -242,6 +248,13 @@ function collectCoreCliCommandNames(predicate?: (command: CoreCliCommandDescript
       }
       seen.add(command.name);
       names.push(command.name);
+      for (const alias of command.aliases ?? []) {
+        if (seen.has(alias)) {
+          continue;
+        }
+        seen.add(alias);
+        names.push(alias);
+      }
     }
   }
   return names;
@@ -281,6 +294,9 @@ function registerLazyCoreCommand(
   command: CoreCliCommandDescriptor,
 ) {
   const placeholder = program.command(command.name).description(command.description);
+  for (const alias of command.aliases ?? []) {
+    placeholder.alias(alias);
+  }
   placeholder.allowUnknownOption(true);
   placeholder.allowExcessArguments(true);
   placeholder.action(async (...actionArgs) => {
@@ -297,7 +313,7 @@ export async function registerCoreCliByName(
   argv: string[] = process.argv,
 ): Promise<boolean> {
   const entry = coreEntries.find((candidate) =>
-    candidate.commands.some((cmd) => cmd.name === name),
+    candidate.commands.some((cmd) => commandMatchesName(cmd, name)),
   );
   if (!entry) {
     return false;
@@ -312,10 +328,10 @@ export function registerCoreCliCommands(program: Command, ctx: ProgramContext, a
   const primary = getPrimaryCommand(argv);
   if (primary && shouldRegisterCorePrimaryOnly(argv)) {
     const entry = coreEntries.find((candidate) =>
-      candidate.commands.some((cmd) => cmd.name === primary),
+      candidate.commands.some((cmd) => commandMatchesName(cmd, primary)),
     );
     if (entry) {
-      const cmd = entry.commands.find((c) => c.name === primary);
+      const cmd = entry.commands.find((c) => commandMatchesName(c, primary));
       if (cmd) {
         registerLazyCoreCommand(program, ctx, entry, cmd);
       }

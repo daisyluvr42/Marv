@@ -1,5 +1,6 @@
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import type { Command } from "commander";
 import { loadDotEnv } from "../infra/dotenv.js";
 import { normalizeEnv } from "../infra/env.js";
 import { formatUncaughtError } from "../infra/errors.js";
@@ -53,6 +54,10 @@ export function shouldEnsureCliPath(argv: string[]): boolean {
   return resolveCommandCliBootstrapFromPath(getCommandPath(argv, 3)) === "require";
 }
 
+export function commandMatchesPrimary(command: Command, primary: string): boolean {
+  return command.name() === primary || command.aliases().includes(primary);
+}
+
 export async function runCli(argv: string[] = process.argv) {
   const normalizedArgv = normalizeWindowsArgv(argv);
   loadDotEnv({ quiet: true });
@@ -99,7 +104,7 @@ export async function runCli(argv: string[] = process.argv) {
   }
 
   const hasBuiltinPrimary =
-    primary !== null && program.commands.some((command) => command.name() === primary);
+    primary !== null && program.commands.some((command) => commandMatchesPrimary(command, primary));
   const shouldSkipPluginRegistration = shouldSkipPluginCommandRegistration({
     argv: parseArgv,
     primary,

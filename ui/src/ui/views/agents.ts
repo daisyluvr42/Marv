@@ -11,6 +11,7 @@ import type {
 } from "../types.js";
 import {
   renderAgentFiles,
+  renderAgentP0,
   renderAgentChannels,
   renderAgentCron,
 } from "./agents-panels-status-files.js";
@@ -29,7 +30,7 @@ import {
   resolveModelPrimary,
 } from "./agents-utils.js";
 
-export type AgentsPanel = "overview" | "files" | "tools" | "skills" | "channels" | "cron";
+export type AgentsPanel = "overview" | "p0" | "files" | "tools" | "skills" | "channels" | "cron";
 
 export type AgentsProps = {
   loading: boolean;
@@ -189,6 +190,25 @@ export function renderAgents(props: AgentsProps) {
                     : nothing
                 }
                 ${
+                  props.activePanel === "p0"
+                    ? renderAgentP0({
+                        agentId: selectedAgent.id,
+                        agentFilesList: props.agentFilesList,
+                        agentFilesLoading: props.agentFilesLoading,
+                        agentFilesError: props.agentFilesError,
+                        agentFileActive: props.agentFileActive,
+                        agentFileContents: props.agentFileContents,
+                        agentFileDrafts: props.agentFileDrafts,
+                        agentFileSaving: props.agentFileSaving,
+                        onLoadFiles: props.onLoadFiles,
+                        onSelectFile: props.onSelectFile,
+                        onFileDraftChange: props.onFileDraftChange,
+                        onFileReset: props.onFileReset,
+                        onFileSave: props.onFileSave,
+                      })
+                    : nothing
+                }
+                ${
                   props.activePanel === "files"
                     ? renderAgentFiles({
                         agentId: selectedAgent.id,
@@ -319,6 +339,7 @@ function renderAgentHeader(
 function renderAgentTabs(active: AgentsPanel, onSelect: (panel: AgentsPanel) => void) {
   const tabs: Array<{ id: AgentsPanel; label: string }> = [
     { id: "overview", label: "Overview" },
+    { id: "p0", label: "P0 Memory" },
     { id: "files", label: "Files" },
     { id: "tools", label: "Tools" },
     { id: "skills", label: "Skills" },

@@ -67,6 +67,14 @@ const SubagentPresetSchema = z
   })
   .strict();
 
+const AgentP0Schema = z
+  .object({
+    soul: z.string().optional(),
+    identity: z.string().optional(),
+    user: z.string().optional(),
+  })
+  .strict();
+
 export const AgentDefaultsSchema = z
   .object({
     name: z.string().optional(),
@@ -171,6 +179,7 @@ export const AgentDefaultsSchema = z
     blockStreamingChunk: BlockStreamingChunkSchema.optional(),
     blockStreamingCoalesce: BlockStreamingCoalesceSchema.optional(),
     humanDelay: HumanDelaySchema.optional(),
+    p0: AgentP0Schema.optional(),
     identity: IdentitySchema.optional(),
     groupChat: GroupChatSchema.optional(),
     timeoutSeconds: z.number().int().positive().optional(),

@@ -660,7 +660,7 @@ export function renderApp(state: AppViewState) {
                   state.agentSkillsError = null;
                   state.agentSkillsAgentId = null;
                   void loadAgentIdentity(state, agentId);
-                  if (state.agentsPanel === "files") {
+                  if (state.agentsPanel === "p0" || state.agentsPanel === "files") {
                     void loadAgentFiles(state, agentId);
                   }
                   if (state.agentsPanel === "skills") {
@@ -669,7 +669,7 @@ export function renderApp(state: AppViewState) {
                 },
                 onSelectPanel: (panel) => {
                   state.agentsPanel = panel;
-                  if (panel === "files" && resolvedAgentId) {
+                  if ((panel === "p0" || panel === "files") && resolvedAgentId) {
                     if (state.agentFilesList?.agentId !== resolvedAgentId) {
                       state.agentFilesList = null;
                       state.agentFilesError = null;

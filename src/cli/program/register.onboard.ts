@@ -53,6 +53,9 @@ export function registerOnboardCommand(program: Command) {
       () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/onboard", "docs: /cli/onboard")}\n`,
     )
     .option("--workspace <dir>", "Agent workspace directory (default: ~/.marv/workspace)")
+    .option("--p0-soul <text>", "Initial P0 Soul content")
+    .option("--p0-identity <text>", "Initial P0 Identity content")
+    .option("--p0-user <text>", "Initial P0 User content")
     .option("--reset", "Reset config + credentials + sessions + workspace before running wizard")
     .option("--non-interactive", "Run without prompts", false)
     .option(
@@ -119,6 +122,9 @@ export function registerOnboardCommand(program: Command) {
       await onboardCommand(
         {
           workspace: opts.workspace as string | undefined,
+          p0Soul: opts.p0Soul as string | undefined,
+          p0Identity: opts.p0Identity as string | undefined,
+          p0User: opts.p0User as string | undefined,
           nonInteractive: Boolean(opts.nonInteractive),
           acceptRisk: Boolean(opts.acceptRisk),
           flow: opts.flow as "quickstart" | "advanced" | "manual" | undefined,

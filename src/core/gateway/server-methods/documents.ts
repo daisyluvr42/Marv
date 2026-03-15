@@ -3,6 +3,7 @@ import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
+import { isP0FileName } from "../../../agents/p0.js";
 import { normalizeAgentId } from "../../../routing/session-key.js";
 import { loadConfig } from "../../config/config.js";
 import {
@@ -171,6 +172,9 @@ async function scanWorkspaceRoot(root: WorkspaceRoot): Promise<DocumentEntry[]> 
         continue;
       }
       const filePath = path.join(currentDir, name);
+      if (isP0FileName(name)) {
+        continue;
+      }
       if (!isTextDocument(filePath)) {
         continue;
       }
