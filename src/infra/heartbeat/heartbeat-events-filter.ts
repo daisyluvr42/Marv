@@ -18,7 +18,9 @@ export function buildCronEventPrompt(pendingEvents: string[]): string {
   );
 }
 
-const HEARTBEAT_OK_PREFIX = HEARTBEAT_TOKEN.toLowerCase();
+function getHeartbeatOkPrefix(): string {
+  return HEARTBEAT_TOKEN.toLowerCase();
+}
 
 // Detect heartbeat-specific noise so cron reminders don't trigger on non-reminder events.
 function isHeartbeatAckEvent(evt: string): boolean {
@@ -27,10 +29,11 @@ function isHeartbeatAckEvent(evt: string): boolean {
     return false;
   }
   const lower = trimmed.toLowerCase();
-  if (!lower.startsWith(HEARTBEAT_OK_PREFIX)) {
+  const heartbeatOkPrefix = getHeartbeatOkPrefix();
+  if (!lower.startsWith(heartbeatOkPrefix)) {
     return false;
   }
-  const suffix = lower.slice(HEARTBEAT_OK_PREFIX.length);
+  const suffix = lower.slice(heartbeatOkPrefix.length);
   if (suffix.length === 0) {
     return true;
   }

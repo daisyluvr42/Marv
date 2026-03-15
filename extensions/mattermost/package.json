@@ -1,6 +1,6 @@
 {
   "name": "@marv/mattermost",
-  "version": "2026.3.14",
+  "version": "2026.3.15",
   "private": true,
   "description": "Marv Mattermost channel plugin",
   "type": "module",

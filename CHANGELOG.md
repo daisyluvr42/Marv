@@ -2,6 +2,21 @@
 
 Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
+## 2026.3.15
+
+### Changes
+
+- Web UI: reshape the web control surface into an operations-first console with a cleaner sidebar, a real overview page, and clearer sections for operations, channels, agents, workspace, chat, and settings.
+- Models/Auth: replace the legacy `agents.defaults.models` flow with runtime selections plus model metadata, so newly configured providers can contribute discovered models without awkward allowlist plumbing.
+- Telegram/Onboarding: validate bot tokens during onboarding and require a retry when Telegram rejects the token, while clarifying follow-up DM access setup.
+- Install/Docs: clarify source-vs-global deployment guidance, remove stale installer links, and refresh release/install documentation around the current project URLs.
+
+### Fixes
+
+- Build/CLI: fix release-build startup initialization cycles so the compiled `dist` CLI boots cleanly again instead of failing before command execution.
+- Models/TUI: keep explicit primary-model choices stable in model resolution and TUI displays instead of drifting to the first default candidate.
+- Release notes: replace inherited upstream-style 2026.3.14 notes with this project's actual shipped changes.
+
 ## 2026.3.14
 
 ### Changes

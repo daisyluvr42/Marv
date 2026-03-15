@@ -1,6 +1,6 @@
 {
   "name": "@marv/nextcloud-talk",
-  "version": "2026.3.14",
+  "version": "2026.3.15",
   "description": "Marv Nextcloud Talk channel plugin",
   "type": "module",
   "devDependencies": {

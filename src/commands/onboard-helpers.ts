@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { inspect } from "node:util";
 import { cancel, isCancel } from "@clack/prompts";
-import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../agents/workspace.js";
+import { ensureAgentWorkspace, resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import { getCliBannerArtLines } from "../cli/banner-art.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { CONFIG_PATH } from "../core/config/config.js";
@@ -446,7 +446,10 @@ function summarizeError(err: unknown): string {
   return line.length > 120 ? `${line.slice(0, 119)}…` : line;
 }
 
-export const DEFAULT_WORKSPACE = DEFAULT_AGENT_WORKSPACE_DIR;
+// Resolve lazily from the workspace helper instead of re-exporting the
+// precomputed constant. This avoids a bundled startup-time init cycle while
+// preserving the same default path semantics.
+export const DEFAULT_WORKSPACE = resolveDefaultAgentWorkspaceDir();
 
 export function resolveControlUiLinks(params: {
   port: number;
