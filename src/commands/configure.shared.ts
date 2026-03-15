@@ -9,7 +9,9 @@ import { stylePromptHint, stylePromptMessage, stylePromptTitle } from "../termin
 
 export const CONFIGURE_WIZARD_SECTIONS = [
   "workspace",
+  "agent",
   "model",
+  "memory",
   "web",
   "gateway",
   "daemon",
@@ -51,7 +53,13 @@ export const CONFIGURE_SECTION_OPTIONS: Array<{
   hint: string;
 }> = [
   { value: "workspace", label: "Workspace", hint: "Set workspace + sessions" },
+  { value: "agent", label: "Agent", hint: "Define P0 soul, identity, and user memory" },
   { value: "model", label: "Model", hint: "Pick provider + credentials" },
+  {
+    value: "memory",
+    label: "Memory",
+    hint: "Configure embedding + reranking for memory search",
+  },
   { value: "web", label: "Web tools", hint: "Configure Brave search + fetch" },
   { value: "gateway", label: "Gateway", hint: "Port, bind, auth, tailscale" },
   {

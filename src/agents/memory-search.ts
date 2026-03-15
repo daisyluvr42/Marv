@@ -10,7 +10,7 @@ export type ResolvedMemorySearchConfig = {
   dimensions?: number;
   sources: Array<"memory" | "sessions">;
   extraPaths: string[];
-  provider: "openai" | "local" | "gemini" | "voyage" | "auto";
+  provider: "openai" | "local" | "gemini" | "voyage" | "script" | "auto";
   remote?: {
     baseUrl?: string;
     apiKey?: string;
@@ -26,7 +26,7 @@ export type ResolvedMemorySearchConfig = {
   experimental: {
     sessionMemory: boolean;
   };
-  fallback: "openai" | "gemini" | "local" | "voyage" | "none";
+  fallback: "openai" | "gemini" | "local" | "voyage" | "script" | "none";
   model: string;
   local: {
     modelPath?: string;

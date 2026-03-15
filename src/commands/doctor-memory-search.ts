@@ -24,6 +24,9 @@ export async function noteMemorySearchHealth(cfg: MarvConfig): Promise<void> {
 
   // If a specific provider is configured (not "auto"), check only that one.
   if (resolved.provider !== "auto") {
+    if (resolved.provider === "script") {
+      return; // script provider always works, no external dependencies
+    }
     if (resolved.provider === "local") {
       if (hasLocalEmbeddings(resolved.local)) {
         return; // local model file exists

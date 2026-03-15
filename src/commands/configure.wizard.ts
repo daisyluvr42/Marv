@@ -1,3 +1,4 @@
+import { setAgentP0Sections } from "../agents/p0.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { MarvConfig } from "../core/config/config.js";
 import {
@@ -17,6 +18,7 @@ import { removeChannelConfigWizard } from "./configure.channels.js";
 import { maybeInstallDaemon } from "./configure.daemon.js";
 import { promptAuthConfig } from "./configure.gateway-auth.js";
 import { promptGatewayConfig } from "./configure.gateway.js";
+import { promptMemorySearchConfig } from "./configure.memory.js";
 import type {
   ChannelsWizardMode,
   ConfigureWizardParams,
@@ -210,6 +212,43 @@ async function promptWebToolsConfig(
   };
 }
 
+async function promptAgentP0Config(
+  nextConfig: MarvConfig,
+  runtime: RuntimeEnv,
+): Promise<MarvConfig> {
+  const current = nextConfig.agents?.defaults?.p0 ?? {};
+  const soul = guardCancel(
+    await text({
+      message: "P0 Soul",
+      placeholder: "Stable persona and principles",
+      initialValue: current.soul ?? "",
+    }),
+    runtime,
+  );
+  const identity = guardCancel(
+    await text({
+      message: "P0 Identity",
+      placeholder: "Stable self-description",
+      initialValue: current.identity ?? "",
+    }),
+    runtime,
+  );
+  const user = guardCancel(
+    await text({
+      message: "P0 User",
+      placeholder: "Stable user preferences only, not transient state",
+      initialValue: current.user ?? "",
+    }),
+    runtime,
+  );
+
+  return setAgentP0Sections(nextConfig, {
+    soul: String(soul ?? ""),
+    identity: String(identity ?? ""),
+    user: String(user ?? ""),
+  });
+}
+
 export async function runConfigureWizard(
   opts: ConfigureWizardParams,
   runtime: RuntimeEnv = defaultRuntime,
@@ -393,8 +432,16 @@ export async function runConfigureWizard(
         await configureWorkspace();
       }
 
+      if (selected.includes("agent")) {
+        nextConfig = await promptAgentP0Config(nextConfig, runtime);
+      }
+
       if (selected.includes("model")) {
         nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+      }
+
+      if (selected.includes("memory")) {
+        nextConfig = await promptMemorySearchConfig(nextConfig, runtime);
       }
 
       if (selected.includes("web")) {
@@ -446,8 +493,18 @@ export async function runConfigureWizard(
           await persistConfig();
         }
 
+        if (choice === "agent") {
+          nextConfig = await promptAgentP0Config(nextConfig, runtime);
+          await persistConfig();
+        }
+
         if (choice === "model") {
           nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+          await persistConfig();
+        }
+
+        if (choice === "memory") {
+          nextConfig = await promptMemorySearchConfig(nextConfig, runtime);
           await persistConfig();
         }
 

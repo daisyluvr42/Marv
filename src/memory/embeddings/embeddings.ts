@@ -5,6 +5,7 @@ import { formatErrorMessage } from "../../infra/errors.js";
 import { resolveUserPath } from "../../utils.js";
 import { createGeminiEmbeddingProvider, type GeminiEmbeddingClient } from "./embeddings-gemini.js";
 import { createOpenAiEmbeddingProvider, type OpenAiEmbeddingClient } from "./embeddings-openai.js";
+import { createScriptEmbeddingProvider } from "./embeddings-script.js";
 import { createVoyageEmbeddingProvider, type VoyageEmbeddingClient } from "./embeddings-voyage.js";
 import { importNodeLlamaCpp } from "./node-llama.js";
 
@@ -30,7 +31,7 @@ export type EmbeddingProvider = {
   embedBatch: (texts: string[]) => Promise<number[][]>;
 };
 
-export type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage";
+export type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage" | "script";
 export type EmbeddingProviderRequest = EmbeddingProviderId | "auto";
 export type EmbeddingProviderFallback = EmbeddingProviderId | "none";
 
@@ -144,6 +145,10 @@ export async function createEmbeddingProvider(
   const fallback = options.fallback;
 
   const createProvider = async (id: EmbeddingProviderId) => {
+    if (id === "script") {
+      const provider = createScriptEmbeddingProvider();
+      return { provider };
+    }
     if (id === "local") {
       const provider = await createLocalEmbeddingProvider(options);
       return { provider };
@@ -161,7 +166,9 @@ export async function createEmbeddingProvider(
   };
 
   const formatPrimaryError = (err: unknown, provider: EmbeddingProviderId) =>
-    provider === "local" ? formatLocalSetupError(err) : formatErrorMessage(err);
+    provider === "local" || provider === "script"
+      ? formatLocalSetupError(err)
+      : formatErrorMessage(err);
 
   if (requestedProvider === "auto") {
     const missingKeyErrors: string[] = [];
@@ -191,7 +198,19 @@ export async function createEmbeddingProvider(
       }
     }
 
-    // All providers failed due to missing API keys - return null provider for FTS-only mode
+    // All remote + local providers failed — fall back to script embedding
+    try {
+      const script = await createProvider("script");
+      return {
+        ...script,
+        requestedProvider,
+        fallbackFrom: "openai",
+        fallbackReason: "No remote API keys found; using local script embeddings.",
+      };
+    } catch {
+      // Script should never fail, but handle gracefully
+    }
+
     const details = [...missingKeyErrors, localError].filter(Boolean) as string[];
     const reason = details.length > 0 ? details.join("\n\n") : "No embeddings provider available.";
     return {

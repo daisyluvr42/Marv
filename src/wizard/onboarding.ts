@@ -1,5 +1,6 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { parseModelRef } from "../agents/model/model-selection.js";
+import { setAgentP0Sections } from "../agents/p0.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolvePrimaryModel } from "../commands/model-default.js";
 import { describeProbeSummary, runAuthProbes } from "../commands/models/list.probe.js";
@@ -156,6 +157,34 @@ function inferExistingOnboardMode(config: MarvConfig): OnboardMode | undefined {
     return "remote";
   }
   return undefined;
+}
+
+async function promptAgentP0ForOnboarding(params: {
+  config: MarvConfig;
+  opts: OnboardOptions;
+  prompter: WizardPrompter;
+}): Promise<MarvConfig> {
+  const current = params.config.agents?.defaults?.p0 ?? {};
+  const soul = await params.prompter.text({
+    message: "P0 Soul",
+    placeholder: "Stable persona and principles",
+    initialValue: params.opts.p0Soul ?? current.soul ?? "",
+  });
+  const identity = await params.prompter.text({
+    message: "P0 Identity",
+    placeholder: "Stable self-description",
+    initialValue: params.opts.p0Identity ?? current.identity ?? "",
+  });
+  const user = await params.prompter.text({
+    message: "P0 User",
+    placeholder: "Stable user preferences only, not transient state",
+    initialValue: params.opts.p0User ?? current.user ?? "",
+  });
+  return setAgentP0Sections(params.config, {
+    soul: String(soul ?? ""),
+    identity: String(identity ?? ""),
+    user: String(user ?? ""),
+  });
 }
 
 export async function runOnboardingWizard(
@@ -559,6 +588,20 @@ export async function runOnboardingWizard(
 
       const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
       nextConfig = applyOnboardingLocalWorkspaceConfig(nextConfig, workspaceDir);
+      nextConfig = await promptAgentP0ForOnboarding({
+        config: nextConfig,
+        opts,
+        prompter,
+      });
+
+      // Memory search (embedding + reranking) setup.
+      if (flow !== "quickstart") {
+        const { promptMemorySearchForOnboarding } = await import("../commands/configure.memory.js");
+        nextConfig = await promptMemorySearchForOnboarding({
+          config: nextConfig,
+          prompter,
+        });
+      }
 
       // Auto model routing (advanced/guided flows only).
       if (flow !== "quickstart") {
