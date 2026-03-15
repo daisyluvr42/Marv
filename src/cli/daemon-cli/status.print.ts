@@ -60,6 +60,7 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   const spacer = () => defaultRuntime.log("");
 
   const { service, rpc, extraServices } = status;
+  const foregroundReachable = Boolean(rpc?.ok && service.runtime?.missingUnit);
   const serviceStatus = service.loaded
     ? okText(service.loadedText)
     : warnText(service.notLoadedText);
@@ -72,12 +73,12 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
   if (service.command?.programArguments?.length) {
     defaultRuntime.log(
-      `${label("Command:")} ${infoText(service.command.programArguments.join(" "))}`,
+      `${label(foregroundReachable || !service.loaded ? "Last known command:" : "Command:")} ${infoText(service.command.programArguments.join(" "))}`,
     );
   }
   if (service.command?.sourcePath) {
     defaultRuntime.log(
-      `${label("Service file:")} ${infoText(shortenHomePath(service.command.sourcePath))}`,
+      `${label(foregroundReachable || !service.loaded ? "Last known service file:" : "Service file:")} ${infoText(shortenHomePath(service.command.sourcePath))}`,
     );
   }
   if (service.command?.workingDirectory) {
@@ -164,10 +165,14 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     spacer();
   }
 
-  const runtimeLine = formatRuntimeStatus(service.runtime);
+  const runtimeLine = foregroundReachable
+    ? "foreground instance reachable (no managed service installed)"
+    : formatRuntimeStatus(service.runtime);
   if (runtimeLine) {
     const runtimeColor = resolveRuntimeStatusColor(service.runtime?.status);
-    defaultRuntime.log(`${label("Runtime:")} ${colorize(rich, runtimeColor, runtimeLine)}`);
+    defaultRuntime.log(
+      `${label("Runtime:")} ${foregroundReachable ? warnText(runtimeLine) : colorize(rich, runtimeColor, runtimeLine)}`,
+    );
   }
 
   if (rpc && !rpc.ok && service.loaded && service.runtime?.status === "running") {
@@ -204,9 +209,18 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   if (service.runtime?.missingUnit) {
-    defaultRuntime.error(errorText("Service unit not found."));
-    for (const hint of renderRuntimeHints(service.runtime)) {
-      defaultRuntime.error(errorText(hint));
+    if (foregroundReachable) {
+      defaultRuntime.log(warnText("Managed service not installed."));
+      defaultRuntime.log(
+        warnText(
+          `A foreground/local gateway instance is reachable now. Install the service only if you want auto-start: ${formatCliCommand("marv gateway install")}`,
+        ),
+      );
+    } else {
+      defaultRuntime.error(errorText("Service unit not found."));
+      for (const hint of renderRuntimeHints(service.runtime)) {
+        defaultRuntime.error(errorText(hint));
+      }
     }
   } else if (service.loaded && service.runtime?.status === "stopped") {
     defaultRuntime.error(

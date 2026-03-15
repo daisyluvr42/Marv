@@ -2,8 +2,10 @@
 set -euo pipefail
 
 INSTALL_URL="${MARV_INSTALL_URL:-https://marv.bot/install.sh}"
-DEFAULT_PACKAGE="marv"
+DEFAULT_PACKAGE="agentmarv"
+DEFAULT_CLI="marv"
 PACKAGE_NAME="${MARV_INSTALL_PACKAGE:-$DEFAULT_PACKAGE}"
+CLI_NAME="${MARV_INSTALL_CLI_NAME:-$DEFAULT_CLI}"
 
 echo "==> Pre-flight: ensure git absent"
 if command -v git >/dev/null; then
@@ -26,14 +28,12 @@ if [[ -n "$EXPECTED_VERSION" ]]; then
 else
   LATEST_VERSION="$(npm view "$PACKAGE_NAME" version)"
 fi
-CLI_NAME="$PACKAGE_NAME"
 CMD_PATH="$(command -v "$CLI_NAME" || true)"
-if [[ -z "$CMD_PATH" && -x "$HOME/.npm-global/bin/$PACKAGE_NAME" ]]; then
-  CLI_NAME="$PACKAGE_NAME"
-  CMD_PATH="$HOME/.npm-global/bin/$PACKAGE_NAME"
+if [[ -z "$CMD_PATH" && -x "$HOME/.npm-global/bin/$CLI_NAME" ]]; then
+  CMD_PATH="$HOME/.npm-global/bin/$CLI_NAME"
 fi
 if [[ -z "$CMD_PATH" ]]; then
-  echo "$PACKAGE_NAME is not on PATH" >&2
+  echo "$CLI_NAME is not on PATH" >&2
   exit 1
 fi
 echo "==> Verify CLI installed: $CLI_NAME"

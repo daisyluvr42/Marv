@@ -72,11 +72,15 @@ export function ensureExplicitGatewayAuth(params: {
   auth: ExplicitGatewayAuth;
   errorHint: string;
   configPath?: string;
+  allowConfigFallback?: boolean;
 }): void {
   if (!params.urlOverride) {
     return;
   }
   if (params.auth.token || params.auth.password) {
+    return;
+  }
+  if (params.allowConfigFallback) {
     return;
   }
   const message = [
@@ -87,6 +91,29 @@ export function ensureExplicitGatewayAuth(params: {
     .filter(Boolean)
     .join("\n");
   throw new Error(message);
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  return (
+    normalized === "127.0.0.1" ||
+    normalized === "localhost" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
+}
+
+function isSafeLocalGatewayUrl(urlOverride: string, config: MarvConfig): boolean {
+  try {
+    const parsed = new URL(urlOverride);
+    if (!isLoopbackHostname(parsed.hostname)) {
+      return false;
+    }
+    const configuredPort = String(resolveGatewayPort(config));
+    return !parsed.port || parsed.port === configuredPort;
+  } catch {
+    return false;
+  }
 }
 
 export function buildGatewayConnectionDetails(
@@ -165,11 +192,16 @@ export async function callGateway<T = Record<string, unknown>>(
   const urlOverride =
     typeof opts.url === "string" && opts.url.trim().length > 0 ? opts.url.trim() : undefined;
   const explicitAuth = resolveExplicitGatewayAuth({ token: opts.token, password: opts.password });
+  const allowLocalAuthFallback =
+    typeof urlOverride === "string" ? isSafeLocalGatewayUrl(urlOverride, config) : false;
   ensureExplicitGatewayAuth({
     urlOverride,
     auth: explicitAuth,
-    errorHint: "Fix: pass --token or --password (or gatewayToken in tools).",
+    errorHint: allowLocalAuthFallback
+      ? "Fix: pass --token or --password, or keep using the local loopback config."
+      : "Fix: pass --token or --password (or gatewayToken in tools).",
     configPath: opts.configPath ?? resolveConfigPath(process.env, resolveStateDir(process.env)),
+    allowConfigFallback: allowLocalAuthFallback,
   });
   const remoteUrl =
     typeof remote?.url === "string" && remote.url.trim().length > 0 ? remote.url.trim() : undefined;
@@ -207,7 +239,7 @@ export async function callGateway<T = Record<string, unknown>>(
     (tlsRuntime?.enabled ? tlsRuntime.fingerprintSha256 : undefined);
   const token =
     explicitAuth.token ||
-    (!urlOverride
+    (!urlOverride || allowLocalAuthFallback
       ? isRemoteMode
         ? typeof remote?.token === "string" && remote.token.trim().length > 0
           ? remote.token.trim()
@@ -221,7 +253,7 @@ export async function callGateway<T = Record<string, unknown>>(
       : undefined);
   const password =
     explicitAuth.password ||
-    (!urlOverride
+    (!urlOverride || allowLocalAuthFallback
       ? process.env.MARV_GATEWAY_PASSWORD?.trim() ||
         process.env.MARV_GATEWAY_PASSWORD?.trim() ||
         process.env.CLAWDBOT_GATEWAY_PASSWORD?.trim() ||

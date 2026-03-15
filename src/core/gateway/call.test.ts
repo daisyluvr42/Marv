@@ -367,6 +367,21 @@ describe("callGateway url override auth requirements", () => {
       callGateway({ method: "health", url: "wss://override.example/ws" }),
     ).rejects.toThrow("explicit credentials");
   });
+
+  it("allows local config auth for loopback url overrides", async () => {
+    loadConfig.mockReturnValue({
+      gateway: {
+        mode: "local",
+        bind: "loopback",
+        auth: { token: "local-token", password: "local-password" },
+      },
+    });
+
+    await callGateway({ method: "health", url: "ws://127.0.0.1:18789" });
+
+    expect(lastClientOptions?.token).toBe("local-token");
+    expect(lastClientOptions?.password).toBe("local-password");
+  });
 });
 
 describe("callGateway password resolution", () => {

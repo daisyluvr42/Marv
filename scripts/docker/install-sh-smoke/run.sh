@@ -4,8 +4,10 @@ set -euo pipefail
 INSTALL_URL="${MARV_INSTALL_URL:-https://marv.bot/install.sh}"
 SMOKE_PREVIOUS_VERSION="${MARV_INSTALL_SMOKE_PREVIOUS:-}"
 SKIP_PREVIOUS="${MARV_INSTALL_SMOKE_SKIP_PREVIOUS:-0}"
-DEFAULT_PACKAGE="marv"
+DEFAULT_PACKAGE="agentmarv"
+DEFAULT_CLI="marv"
 PACKAGE_NAME="${MARV_INSTALL_PACKAGE:-$DEFAULT_PACKAGE}"
+CLI_NAME="${MARV_INSTALL_CLI_NAME:-$DEFAULT_CLI}"
 
 echo "==> Resolve npm versions"
 LATEST_VERSION="$(npm view "$PACKAGE_NAME" version)"
@@ -51,9 +53,8 @@ echo "==> Run official installer one-liner"
 curl -fsSL "$INSTALL_URL" | bash
 
 echo "==> Verify installed version"
-CLI_NAME="$PACKAGE_NAME"
 if ! command -v "$CLI_NAME" >/dev/null 2>&1; then
-  echo "ERROR: $PACKAGE_NAME is not on PATH" >&2
+  echo "ERROR: $CLI_NAME is not on PATH" >&2
   exit 1
 fi
 if [[ -n "${MARV_INSTALL_LATEST_OUT:-}" ]]; then

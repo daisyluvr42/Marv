@@ -145,6 +145,9 @@
 
 - Vocabulary: "makeup" = "mac app".
 - Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
+- Planning/design/implementation docs requested during tasks must be written under the repo-local `Plan/` directory, not under `docs/` or `docs/plans/`, unless the user explicitly asks for documentation-site content.
+- If a task produces a temporary plan/design note for operator review, treat `Plan/` as the canonical destination by default.
+- Files under `Plan/` are local operator notes by default: keep them on disk, but do not commit or push them unless the user explicitly asks to version them.
 - When adding a new `AGENTS.md` anywhere in the repo, also add a `CLAUDE.md` symlink pointing to it (example: `ln -s AGENTS.md CLAUDE.md`).
 - Signal: "update fly" => `fly ssh console -a flawd-bot -C "bash -lc 'cd /data/clawd/marv && git pull --rebase origin main'"` then `fly machines restart e825232f34d058 -a flawd-bot`.
 - When working on a GitHub Issue or PR, print the full URL at the end of the task.
