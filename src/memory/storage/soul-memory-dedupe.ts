@@ -40,6 +40,7 @@ export function dedupeSoulMemories(params: {
   similarityThreshold?: number;
   maxItems?: number;
   nowMs?: number;
+  p3CompactionEnabled?: boolean;
 }): SoulMemoryDedupeResult {
   const threshold = clamp(params.similarityThreshold ?? 0.9, 0.5, 1);
   const maxItems = Number.isFinite(params.maxItems)
@@ -48,7 +49,7 @@ export function dedupeSoulMemories(params: {
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
   const db = openSoulMemoryDb(params.agentId);
   try {
-    const items = loadMemoryItems(db, maxItems);
+    const items = loadMemoryItems(db, maxItems, params.p3CompactionEnabled ?? false);
     if (items.length < 2) {
       return { mergedPairs: 0, removedIds: [] };
     }
@@ -231,11 +232,19 @@ function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-function loadMemoryItems(db: DatabaseSync, limit: number): MutableMemoryItem[] {
+function loadMemoryItems(
+  db: DatabaseSync,
+  limit: number,
+  excludeP3Episodic: boolean,
+): MutableMemoryItem[] {
+  // When P3 compaction is enabled, exclude P3 episodic items from dedupe
+  const whereClause = excludeP3Episodic
+    ? " WHERE NOT (tier = 'P3' AND (memory_type = 'episodic' OR memory_type IS NULL)) "
+    : " ";
   const rows = db
     .prepare(
       "SELECT id, scope_type, scope_id, kind, content, confidence, tier, reinforcement_count, created_at " +
-        "FROM memory_items ORDER BY created_at ASC LIMIT ?",
+        `FROM memory_items${whereClause}ORDER BY created_at ASC LIMIT ?`,
     )
     .all(limit) as MemoryRow[];
   return rows.map((row) => ({

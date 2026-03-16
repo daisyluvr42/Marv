@@ -83,7 +83,8 @@ const SOUL_MEMORY_VEC_TABLE = "memory_items_vec";
 const SOUL_MEMORY_ENTITY_TABLE = "memory_item_entities";
 const MEMORY_ITEM_SELECT_COLUMNS =
   "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
-  "record_kind, summary, metadata_json, created_at, last_accessed_at, reinforcement_count, last_reinforced_at";
+  "record_kind, summary, metadata_json, created_at, last_accessed_at, reinforcement_count, last_reinforced_at, " +
+  "memory_type, valid_from, valid_until, source_detail, is_compacted, semantic_key";
 const SOUL_ARCHIVE_TABLE = "memory_archive";
 const SOUL_ARCHIVE_FTS_TABLE = "memory_archive_fts";
 const RRF_RANK_CONSTANT = 40;
@@ -187,6 +188,13 @@ type MemoryItemRow = {
   last_accessed_at: number | null;
   reinforcement_count: number;
   last_reinforced_at: number | null;
+  // P3 compaction fields
+  memory_type: string | null;
+  valid_from: number | null;
+  valid_until: number | null;
+  source_detail: string | null;
+  is_compacted: number | null;
+  semantic_key: string | null;
 };
 
 type ArchiveRow = {
@@ -225,6 +233,9 @@ export type SoulMemoryScope = {
   weight: number;
 };
 
+export type SoulMemoryType = "episodic" | "semantic";
+export type SoulMemorySourceDetail = "explicit" | "inferred" | "system";
+
 export type SoulMemoryItem = {
   id: string;
   scopeType: string;
@@ -241,6 +252,13 @@ export type SoulMemoryItem = {
   lastAccessedAt: number | null;
   reinforcementCount: number;
   lastReinforcedAt: number | null;
+  // P3 compaction fields
+  memoryType: SoulMemoryType;
+  validFrom: number | null;
+  validUntil: number | null;
+  sourceDetail: SoulMemorySourceDetail;
+  isCompacted: boolean;
+  semanticKey: string | null;
 };
 
 export type SoulArchiveEvent = {
@@ -332,6 +350,25 @@ export type SoulMemoryConfig = {
   referenceBoostWeight?: number;
   referenceMaxBoost?: number;
   referenceSeedTopKMultiplier?: number;
+  p3Compaction?: {
+    enabled?: boolean;
+    minClusterSize?: number;
+    similarityMin?: number;
+    similarityMax?: number;
+    archiveAgeDays?: number;
+    orphanAgeDays?: number;
+    compactedDiscount?: number;
+  };
+};
+
+export type ResolvedP3CompactionConfig = {
+  enabled: boolean;
+  minClusterSize: number;
+  similarityMin: number;
+  similarityMax: number;
+  archiveAgeDays: number;
+  orphanAgeDays: number;
+  compactedDiscount: number;
 };
 
 type ResolvedSoulMemoryConfig = {
@@ -364,6 +401,7 @@ type ResolvedSoulMemoryConfig = {
   referenceBoostWeight: number;
   referenceMaxBoost: number;
   referenceSeedTopKMultiplier: number;
+  p3Compaction: ResolvedP3CompactionConfig;
 };
 
 export function buildSoulMemoryPath(itemId: string): string {
@@ -482,11 +520,13 @@ export function writeSoulMemory(params: {
     const embeddingVec = embedText(content);
     const embedding = JSON.stringify(embeddingVec);
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
+    const sourceDetail = deriveSourceDetail(normalizedSource);
     db.prepare(
       "INSERT INTO memory_items (" +
         "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, record_kind, summary, metadata_json, " +
-        "created_at, last_accessed_at, reinforcement_count, last_reinforced_at" +
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?)",
+        "created_at, last_accessed_at, reinforcement_count, last_reinforced_at, " +
+        "memory_type, source_detail" +
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, 'episodic', ?)",
     ).run(
       id,
       scopeType,
@@ -502,6 +542,7 @@ export function writeSoulMemory(params: {
       metadataJson,
       nowMs,
       nowMs,
+      sourceDetail,
     );
     upsertItemEntities(db, id, content);
     upsertItemReferences(db, id, content, nowMs);
@@ -916,8 +957,17 @@ export function querySoulMemoryMulti(params: {
       const salienceReinforcement = reinforcementFactor;
       const salienceScore = salienceDecay * salienceReinforcement;
       const tierMultiplier = tierPriorityFactor(candidate.item.tier, soulConfig);
+      // Discount compacted episodic items so semantic distillations rank higher
+      const compactedFactor =
+        candidate.item.isCompacted && candidate.item.memoryType === "episodic"
+          ? soulConfig.p3Compaction.compactedDiscount
+          : 1;
       const score = clamp(
-        tierMultiplier * candidate.item.confidence * similarityScore * salienceScore,
+        tierMultiplier *
+          compactedFactor *
+          candidate.item.confidence *
+          similarityScore *
+          salienceScore,
         0,
         1.5,
       );
@@ -1295,6 +1345,13 @@ function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
   ensureMemoryItemsColumn(db, "record_kind", "TEXT NOT NULL DEFAULT 'experience'");
   ensureMemoryItemsColumn(db, "summary", "TEXT");
   ensureMemoryItemsColumn(db, "metadata_json", "TEXT");
+  // P3 compaction columns
+  ensureMemoryItemsColumn(db, "memory_type", "TEXT NOT NULL DEFAULT 'episodic'");
+  ensureMemoryItemsColumn(db, "valid_from", "INTEGER");
+  ensureMemoryItemsColumn(db, "valid_until", "INTEGER");
+  ensureMemoryItemsColumn(db, "source_detail", "TEXT NOT NULL DEFAULT 'inferred'");
+  ensureMemoryItemsColumn(db, "is_compacted", "INTEGER NOT NULL DEFAULT 0");
+  ensureMemoryItemsColumn(db, "semantic_key", "TEXT");
   db.exec(
     "UPDATE memory_items SET reinforcement_count = 1 " +
       "WHERE reinforcement_count IS NULL OR reinforcement_count < 1",
@@ -1309,6 +1366,36 @@ function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_tier ON memory_items (tier);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_source ON memory_items (source);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_record_kind ON memory_items (record_kind);");
+  // P3 compaction indexes
+  db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_items (memory_type) WHERE tier = 'P3';",
+  );
+  db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_memory_compacted ON memory_items (is_compacted) " +
+      "WHERE tier = 'P3' AND memory_type = 'episodic';",
+  );
+  db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_memory_semantic_key ON memory_items (semantic_key) " +
+      "WHERE memory_type = 'semantic' AND valid_until IS NULL;",
+  );
+  // Memory lineage table (append-only, not managed by upsertItemReferences)
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS memory_lineage (" +
+      "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+      "source_id TEXT NOT NULL, " +
+      "target_id TEXT NOT NULL, " +
+      "edge_type TEXT NOT NULL, " +
+      "created_at INTEGER NOT NULL" +
+      ");",
+  );
+  db.exec(
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_lineage_edge ON memory_lineage (source_id, target_id, edge_type);",
+  );
+  db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_lineage_target ON memory_lineage (target_id, edge_type);",
+  );
+  // Backfill source_detail from source column for existing rows
+  backfillSourceDetail(db);
   db.exec(
     `CREATE TABLE IF NOT EXISTS ${SOUL_MEMORY_SCOPE_HITS_TABLE} (` +
       "memory_id TEXT NOT NULL, " +
@@ -1387,6 +1474,28 @@ function ensureMemoryItemsColumn(db: DatabaseSync, column: string, definition: s
     return;
   }
   db.exec(`ALTER TABLE memory_items ADD COLUMN ${column} ${definition}`);
+}
+
+/** One-time backfill: derive source_detail from existing source column. */
+function backfillSourceDetail(db: DatabaseSync): void {
+  // Only run if there are rows still at default 'inferred' that should be 'explicit' or 'system'
+  const needsBackfill = db
+    .prepare(
+      "SELECT COUNT(*) as cnt FROM memory_items " +
+        "WHERE source_detail = 'inferred' AND source IN ('manual_log', 'core_preference', 'migration')",
+    )
+    .get() as { cnt: number } | undefined;
+  if (!needsBackfill || needsBackfill.cnt === 0) {
+    return;
+  }
+  db.exec(
+    "UPDATE memory_items SET source_detail = 'explicit' " +
+      "WHERE source IN ('manual_log', 'core_preference') AND source_detail = 'inferred'",
+  );
+  db.exec(
+    "UPDATE memory_items SET source_detail = 'system' " +
+      "WHERE source = 'migration' AND source_detail = 'inferred'",
+  );
 }
 
 function ensureSoulMemoryFts(db: DatabaseSync): void {
@@ -1823,6 +1932,33 @@ function buildEpisodeMetadata(rows: MemoryItemRow[], sessionKey: string): Record
   };
 }
 
+function deriveSourceDetail(source: SoulMemorySource): SoulMemorySourceDetail {
+  if (source === SOURCE_MANUAL_LOG || source === SOURCE_CORE_PREFERENCE) {
+    return "explicit";
+  }
+  if (source === SOURCE_MIGRATION) {
+    return "system";
+  }
+  return "inferred";
+}
+
+function normalizeMemoryType(value: string | null | undefined): SoulMemoryType {
+  if (value === "semantic") {
+    return "semantic";
+  }
+  return "episodic";
+}
+
+function normalizeSourceDetail(value: string | null | undefined): SoulMemorySourceDetail {
+  if (value === "explicit") {
+    return "explicit";
+  }
+  if (value === "system") {
+    return "system";
+  }
+  return "inferred";
+}
+
 function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
   const reinforcementCount = Math.max(1, Math.floor(Number(row.reinforcement_count ?? 1)));
   return {
@@ -1841,6 +1977,12 @@ function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
     lastAccessedAt: row.last_accessed_at == null ? null : Number(row.last_accessed_at),
     reinforcementCount,
     lastReinforcedAt: row.last_reinforced_at == null ? null : Number(row.last_reinforced_at),
+    memoryType: normalizeMemoryType(row.memory_type),
+    validFrom: row.valid_from == null ? null : Number(row.valid_from),
+    validUntil: row.valid_until == null ? null : Number(row.valid_until),
+    sourceDetail: normalizeSourceDetail(row.source_detail),
+    isCompacted: (row.is_compacted ?? 0) === 1,
+    semanticKey: row.semantic_key == null ? null : String(row.semantic_key),
   };
 }
 
@@ -2008,6 +2150,22 @@ function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConf
       1,
       10,
     ),
+    p3Compaction: resolveP3CompactionConfig(config.p3Compaction),
+  };
+}
+
+function resolveP3CompactionConfig(
+  raw?: SoulMemoryConfig["p3Compaction"],
+): ResolvedP3CompactionConfig {
+  const cfg = raw ?? {};
+  return {
+    enabled: cfg.enabled ?? false,
+    minClusterSize: resolveBoundedInteger(cfg.minClusterSize, 3, 2, 20),
+    similarityMin: resolveBoundedNumber(cfg.similarityMin, 0.45, 0, 1),
+    similarityMax: resolveBoundedNumber(cfg.similarityMax, 0.85, 0, 1),
+    archiveAgeDays: resolveBoundedInteger(cfg.archiveAgeDays, 30, 1),
+    orphanAgeDays: resolveBoundedInteger(cfg.orphanAgeDays, 60, 1),
+    compactedDiscount: resolveBoundedNumber(cfg.compactedDiscount, 0.5, 0, 1),
   };
 }
 
@@ -2654,6 +2812,10 @@ export function promoteSoulMemories(params: {
       if (item.tier !== TIER_P2) {
         continue;
       }
+      // Only promote semantic memories when compaction is enabled
+      if (soulConfig.p3Compaction.enabled && item.memoryType === "episodic") {
+        continue;
+      }
       const hitSummary = scopeHitSummary.get(item.id);
       const distinctScopeHits = hitSummary?.distinctScopeHits ?? 0;
       if (distinctScopeHits < soulConfig.p2ToP1MinScopeCount) {
@@ -2751,6 +2913,10 @@ export function applySoulMemoryConfidenceDecay(params: {
     if (params.scopeId?.trim()) {
       clauses.push("scope_id = ?");
       values.push(normalizeScopeValue(params.scopeId));
+    }
+    // When P3 compaction is enabled, skip P3 items entirely (compaction manages their lifecycle)
+    if (soulConfig.p3Compaction.enabled) {
+      clauses.push("tier != 'P3'");
     }
     const where = clauses.length > 0 ? ` WHERE ${clauses.join(" AND ")}` : "";
     const rows = db

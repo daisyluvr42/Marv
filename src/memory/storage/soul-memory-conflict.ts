@@ -491,6 +491,13 @@ function ensureConflictSchema(db: DatabaseSync): void {
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_memory_conflicts_pair ON memory_conflicts (memory_id_a, memory_id_b, resolved_at);",
   );
+  // Add resolution_strategy column for P3 compaction conflict handling
+  const cols = db.prepare("PRAGMA table_info(memory_conflicts)").all() as Array<{ name?: string }>;
+  if (!cols.some((c) => c.name === "resolution_strategy")) {
+    db.exec(
+      "ALTER TABLE memory_conflicts ADD COLUMN resolution_strategy TEXT NOT NULL DEFAULT 'auto'",
+    );
+  }
 }
 
 function openSoulMemoryDb(agentId: string): DatabaseSync {

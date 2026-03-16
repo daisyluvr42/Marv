@@ -1,6 +1,7 @@
 import { listAgentIds } from "../../agents/agent-scope.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
+import { compactP3Episodic } from "./soul-memory-compaction.js";
 import { detectSoulMemoryConflicts, type SoulMemoryConflict } from "./soul-memory-conflict.js";
 import { consolidateSoulMemories } from "./soul-memory-consolidation.js";
 import { dedupeSoulMemories } from "./soul-memory-dedupe.js";
@@ -20,6 +21,9 @@ export type SoulMemoryMaintenancePerAgent = {
   deduplicationMergedPairs: number;
   deduplicationRemoved: number;
   consolidationGeneralized: number;
+  compactionClusters: number;
+  compactionEpisodic: number;
+  compactionArchived: number;
   conflictsDetected: number;
   error?: string;
 };
@@ -35,6 +39,9 @@ export type SoulMemoryMaintenanceReport = {
     deduplicationMergedPairs: number;
     deduplicationRemoved: number;
     consolidationGeneralized: number;
+    compactionClusters: number;
+    compactionEpisodic: number;
+    compactionArchived: number;
     conflictsDetected: number;
   };
   deduplication: {
@@ -95,6 +102,9 @@ export function runSoulMemoryMaintenance(params: {
   let deduplicationMergedPairs = 0;
   let deduplicationRemoved = 0;
   let consolidationGeneralized = 0;
+  let compactionClusters = 0;
+  let compactionEpisodic = 0;
+  let compactionArchived = 0;
   let conflictsDetected = 0;
   const dedupRemovedIds: string[] = [];
   const consolidatedIds: string[] = [];
@@ -113,13 +123,37 @@ export function runSoulMemoryMaintenance(params: {
         nowMs,
         soulConfig,
       });
+      const p3CompactionEnabled = soulConfig?.p3Compaction?.enabled === true;
       const dedupe = dedupeSoulMemories({
         agentId,
+        p3CompactionEnabled,
       });
       const consolidation = consolidateSoulMemories({
         agentId,
         nowMs,
       });
+      // P3 compaction: cluster episodic -> semantic, archive compacted footage
+      const compaction = p3CompactionEnabled
+        ? compactP3Episodic({
+            agentId,
+            config: {
+              enabled: true,
+              minClusterSize: soulConfig?.p3Compaction?.minClusterSize ?? 3,
+              similarityMin: soulConfig?.p3Compaction?.similarityMin ?? 0.45,
+              similarityMax: soulConfig?.p3Compaction?.similarityMax ?? 0.85,
+              archiveAgeDays: soulConfig?.p3Compaction?.archiveAgeDays ?? 30,
+              orphanAgeDays: soulConfig?.p3Compaction?.orphanAgeDays ?? 60,
+              compactedDiscount: soulConfig?.p3Compaction?.compactedDiscount ?? 0.5,
+            },
+            nowMs,
+          })
+        : {
+            compactedClusters: 0,
+            compactedEpisodic: 0,
+            archivedCompacted: 0,
+            archivedOrphans: 0,
+            semanticIds: [],
+          };
       const conflictResult = detectSoulMemoryConflicts({
         agentId,
         nowMs,
@@ -134,6 +168,9 @@ export function runSoulMemoryMaintenance(params: {
         deduplicationMergedPairs: dedupe.mergedPairs,
         deduplicationRemoved: dedupe.removedIds.length,
         consolidationGeneralized: consolidation.generalizedCount,
+        compactionClusters: compaction.compactedClusters,
+        compactionEpisodic: compaction.compactedEpisodic,
+        compactionArchived: compaction.archivedCompacted + compaction.archivedOrphans,
         conflictsDetected: conflictResult.inserted,
       };
       agents.push(entry);
@@ -146,6 +183,9 @@ export function runSoulMemoryMaintenance(params: {
       deduplicationMergedPairs += entry.deduplicationMergedPairs;
       deduplicationRemoved += entry.deduplicationRemoved;
       consolidationGeneralized += entry.consolidationGeneralized;
+      compactionClusters += entry.compactionClusters;
+      compactionEpisodic += entry.compactionEpisodic;
+      compactionArchived += entry.compactionArchived;
       conflictsDetected += entry.conflictsDetected;
       dedupRemovedIds.push(...dedupe.removedIds);
       consolidatedIds.push(...consolidation.consolidatedIds);
@@ -162,6 +202,9 @@ export function runSoulMemoryMaintenance(params: {
         deduplicationMergedPairs: 0,
         deduplicationRemoved: 0,
         consolidationGeneralized: 0,
+        compactionClusters: 0,
+        compactionEpisodic: 0,
+        compactionArchived: 0,
         conflictsDetected: 0,
         error: err instanceof Error ? err.message : String(err),
       });
@@ -179,6 +222,9 @@ export function runSoulMemoryMaintenance(params: {
       deduplicationMergedPairs,
       deduplicationRemoved,
       consolidationGeneralized,
+      compactionClusters,
+      compactionEpisodic,
+      compactionArchived,
       conflictsDetected,
     },
     deduplication: {
@@ -206,6 +252,8 @@ export function formatSoulMemoryMaintenanceSummary(report: SoulMemoryMaintenance
     `pendingP0=${report.totals.pendingP0Approvals}, ` +
     `deduped=${report.totals.deduplicationMergedPairs}, ` +
     `generalized=${report.totals.consolidationGeneralized}, ` +
+    `compacted=${report.totals.compactionClusters}/${report.totals.compactionEpisodic}, ` +
+    `archived=${report.totals.compactionArchived}, ` +
     `conflicts=${report.totals.conflictsDetected}`
   );
 }

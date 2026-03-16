@@ -265,6 +265,7 @@ function normalizeText(value: string): string {
 function loadMemoryItems(db: DatabaseSync, limit: number): ConsolidationItem[] {
   const rows = db
     .prepare(
+      // P3 episodic excluded: consolidation only applies to P1/P2 semantic knowledge
       "SELECT id, scope_type, scope_id, kind, content, tier, record_kind " +
         "FROM memory_items WHERE tier IN ('P1', 'P2') AND record_kind IN ('experience', 'soul') " +
         "ORDER BY created_at DESC LIMIT ?",
