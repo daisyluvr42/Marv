@@ -424,7 +424,7 @@ Rules of thumb:
 
 ### 0.4.1) mDNS/Bonjour discovery (information disclosure)
 
-The Gateway broadcasts its presence via mDNS (`_marv-gw._tcp` on port 5353) for local device discovery. In full mode, this includes TXT records that may expose operational details:
+The Gateway broadcasts its presence via mDNS (`_marvbot._tcp` on port 5353) for local device discovery. In full mode, this includes TXT records that may expose operational details:
 
 - `cliPath`: full filesystem path to the CLI binary (reveals username and install location)
 - `sshPort`: advertises SSH availability on the host

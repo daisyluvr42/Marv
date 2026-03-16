@@ -21,7 +21,7 @@ boundary. You can keep the same discovery UX by switching to **unicast DNS‑SD*
 High‑level steps:
 
 1. Run a DNS server on the gateway host (reachable over Tailnet).
-2. Publish DNS‑SD records for `_marv-gw._tcp` under a dedicated zone
+2. Publish DNS‑SD records for `_marvbot._tcp` under a dedicated zone
    (example: `marv.internal.`).
 3. Configure Tailscale **split DNS** so your chosen domain resolves via that
    DNS server for clients (including iOS).
@@ -52,8 +52,8 @@ This installs CoreDNS and configures it to:
 Validate from a tailnet‑connected machine:
 
 ```bash
-dns-sd -B _marv-gw._tcp marv.internal.
-dig @<TAILNET_IPV4> -p 53 _marv-gw._tcp.marv.internal PTR +short
+dns-sd -B _marvbot._tcp marv.internal.
+dig @<TAILNET_IPV4> -p 53 _marvbot._tcp.marv.internal PTR +short
 ```
 
 ### Tailscale DNS settings
@@ -64,7 +64,7 @@ In the Tailscale admin console:
 - Add split DNS so your discovery domain uses that nameserver.
 
 Once clients accept tailnet DNS, iOS nodes can browse
-`_marv-gw._tcp` in your discovery domain without multicast.
+`_marvbot._tcp` in your discovery domain without multicast.
 
 ### Gateway listener security (recommended)
 
@@ -78,11 +78,11 @@ For tailnet‑only setups:
 
 ## What advertises
 
-Only the Gateway advertises `_marv-gw._tcp`.
+Only the Gateway advertises `_marvbot._tcp`.
 
 ## Service types
 
-- `_marv-gw._tcp` — gateway transport beacon (used by macOS/iOS/Android nodes).
+- `_marvbot._tcp` — gateway transport beacon (used by macOS/iOS/Android nodes).
 
 ## TXT keys (non‑secret hints)
 
@@ -114,13 +114,13 @@ Useful built‑in tools:
 - Browse instances:
 
   ```bash
-  dns-sd -B _marv-gw._tcp local.
+  dns-sd -B _marvbot._tcp local.
   ```
 
 - Resolve one instance (replace `<instance>`):
 
   ```bash
-  dns-sd -L "<instance>" _marv-gw._tcp local.
+  dns-sd -L "<instance>" _marvbot._tcp local.
   ```
 
 If browsing works but resolving fails, you’re usually hitting a LAN policy or
@@ -137,7 +137,7 @@ The Gateway writes a rolling log file (printed on startup as
 
 ## Debugging on iOS node
 
-The iOS node uses `NWBrowser` to discover `_marv-gw._tcp`.
+The iOS node uses `NWBrowser` to discover `_marvbot._tcp`.
 
 To capture logs:
 

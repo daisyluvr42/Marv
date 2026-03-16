@@ -108,6 +108,7 @@ export async function startGatewayBonjourAdvertiser(
   const displayName = prettifyInstanceName(instanceName);
 
   const txtBase: Record<string, string> = {
+    project: "marv",
     role: "gateway",
     gatewayPort: String(opts.gatewayPort),
     lanHost: `${hostname}.local`,
@@ -145,7 +146,7 @@ export async function startGatewayBonjourAdvertiser(
 
   const gateway = responder.createService({
     name: safeServiceName(instanceName),
-    type: "marv-gw",
+    type: "marvbot",
     protocol: Protocol.TCP,
     port: opts.gatewayPort,
     domain: "local",

@@ -166,7 +166,7 @@ Notes:
 
 ## Discover gateways (Bonjour)
 
-`gateway discover` scans for Gateway beacons (`_marv-gw._tcp`).
+`gateway discover` scans for Gateway beacons (`_marvbot._tcp`).
 
 - Multicast DNS-SD: `local.`
 - Unicast DNS-SD (Wide-Area Bonjour): choose a domain (example: `marv.internal.`) and set up split DNS + a DNS server; see [/gateway/bonjour](/gateway/bonjour)

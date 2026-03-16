@@ -145,7 +145,7 @@ function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string 
     records.push(`${hostLabel} IN AAAA ${opts.tailnetIPv6}`);
   }
 
-  for (const serviceType of ["_marv-gw._tcp", "_marv-gw._tcp"]) {
+  for (const serviceType of ["_marvbot._tcp"]) {
     records.push(`${serviceType} IN PTR ${instanceLabel}.${serviceType}`);
     records.push(`${instanceLabel}.${serviceType} IN SRV 0 0 ${opts.gatewayPort} ${hostLabel}`);
     records.push(`${instanceLabel}.${serviceType} IN TXT ${txt.map(txtQuote).join(" ")}`);

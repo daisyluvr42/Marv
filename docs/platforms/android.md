@@ -56,7 +56,7 @@ For tailnet-only setups (recommended for Vienna ⇄ London), bind the gateway to
 From the gateway machine:
 
 ```bash
-dns-sd -B _marv-gw._tcp local.
+dns-sd -B _marvbot._tcp local.
 ```
 
 More debugging notes: [Bonjour](/gateway/bonjour).
@@ -65,7 +65,7 @@ More debugging notes: [Bonjour](/gateway/bonjour).
 
 Android NSD/mDNS discovery won’t cross networks. If your Android node and the gateway are on different networks but connected via Tailscale, use Wide-Area Bonjour / unicast DNS-SD instead:
 
-1. Set up a DNS-SD zone (example `marv.internal.`) on the gateway host and publish `_marv-gw._tcp` records.
+1. Set up a DNS-SD zone (example `marv.internal.`) on the gateway host and publish `_marvbot._tcp` records.
 2. Configure Tailscale split DNS for your chosen domain pointing at that DNS server.
 
 Details and example CoreDNS config: [Bonjour](/gateway/bonjour).
