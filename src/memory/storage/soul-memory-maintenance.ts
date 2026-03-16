@@ -24,6 +24,8 @@ export type SoulMemoryMaintenancePerAgent = {
   compactionClusters: number;
   compactionEpisodic: number;
   compactionArchived: number;
+  compactionEvolved: number;
+  compactionEvolutionConflicts: number;
   conflictsDetected: number;
   error?: string;
 };
@@ -42,6 +44,8 @@ export type SoulMemoryMaintenanceReport = {
     compactionClusters: number;
     compactionEpisodic: number;
     compactionArchived: number;
+    compactionEvolved: number;
+    compactionEvolutionConflicts: number;
     conflictsDetected: number;
   };
   deduplication: {
@@ -105,6 +109,8 @@ export function runSoulMemoryMaintenance(params: {
   let compactionClusters = 0;
   let compactionEpisodic = 0;
   let compactionArchived = 0;
+  let compactionEvolved = 0;
+  let compactionEvolutionConflicts = 0;
   let conflictsDetected = 0;
   const dedupRemovedIds: string[] = [];
   const consolidatedIds: string[] = [];
@@ -153,6 +159,8 @@ export function runSoulMemoryMaintenance(params: {
             archivedCompacted: 0,
             archivedOrphans: 0,
             semanticIds: [],
+            evolvedSemantics: 0,
+            evolutionConflicts: 0,
           };
       const conflictResult = detectSoulMemoryConflicts({
         agentId,
@@ -171,6 +179,8 @@ export function runSoulMemoryMaintenance(params: {
         compactionClusters: compaction.compactedClusters,
         compactionEpisodic: compaction.compactedEpisodic,
         compactionArchived: compaction.archivedCompacted + compaction.archivedOrphans,
+        compactionEvolved: compaction.evolvedSemantics,
+        compactionEvolutionConflicts: compaction.evolutionConflicts,
         conflictsDetected: conflictResult.inserted,
       };
       agents.push(entry);
@@ -186,6 +196,8 @@ export function runSoulMemoryMaintenance(params: {
       compactionClusters += entry.compactionClusters;
       compactionEpisodic += entry.compactionEpisodic;
       compactionArchived += entry.compactionArchived;
+      compactionEvolved += entry.compactionEvolved;
+      compactionEvolutionConflicts += entry.compactionEvolutionConflicts;
       conflictsDetected += entry.conflictsDetected;
       dedupRemovedIds.push(...dedupe.removedIds);
       consolidatedIds.push(...consolidation.consolidatedIds);
@@ -205,6 +217,8 @@ export function runSoulMemoryMaintenance(params: {
         compactionClusters: 0,
         compactionEpisodic: 0,
         compactionArchived: 0,
+        compactionEvolved: 0,
+        compactionEvolutionConflicts: 0,
         conflictsDetected: 0,
         error: err instanceof Error ? err.message : String(err),
       });
@@ -225,6 +239,8 @@ export function runSoulMemoryMaintenance(params: {
       compactionClusters,
       compactionEpisodic,
       compactionArchived,
+      compactionEvolved,
+      compactionEvolutionConflicts,
       conflictsDetected,
     },
     deduplication: {
@@ -253,6 +269,8 @@ export function formatSoulMemoryMaintenanceSummary(report: SoulMemoryMaintenance
     `deduped=${report.totals.deduplicationMergedPairs}, ` +
     `generalized=${report.totals.consolidationGeneralized}, ` +
     `compacted=${report.totals.compactionClusters}/${report.totals.compactionEpisodic}, ` +
+    `evolved=${report.totals.compactionEvolved}, ` +
+    `evo_conflicts=${report.totals.compactionEvolutionConflicts}, ` +
     `archived=${report.totals.compactionArchived}, ` +
     `conflicts=${report.totals.conflictsDetected}`
   );

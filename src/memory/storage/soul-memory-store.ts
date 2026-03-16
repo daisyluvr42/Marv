@@ -303,6 +303,8 @@ export type SoulMemoryQueryResult = SoulMemoryItem & {
   referenceBoost: number;
   references: string[];
   ageDays: number;
+  /** IDs of unresolved memory_conflicts involving this item. Empty if none. */
+  conflictIds: string[];
 };
 
 export type SoulMemoryPromotionCandidate = SoulMemoryItem & {
@@ -793,6 +795,9 @@ export function querySoulMemoryMulti(params: {
   ttlDays?: number;
   nowMs?: number;
   soulConfig?: SoulMemoryConfig;
+  /** Point-in-time query: only return semantic nodes valid at this timestamp.
+   *  When omitted, retired semantics (valid_until IS NOT NULL) are excluded. */
+  temporalMs?: number;
 }): SoulMemoryQueryResult[] {
   const topK = Math.max(0, Math.floor(params.topK));
   if (topK <= 0) {
@@ -811,6 +816,9 @@ export function querySoulMemoryMulti(params: {
     ? Math.max(0, Math.floor(params.ttlDays as number))
     : 0;
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
+  const temporalMs = Number.isFinite(params.temporalMs)
+    ? Math.floor(params.temporalMs as number)
+    : null;
   const soulConfig = resolveSoulMemoryConfig(params.soulConfig);
   const queryVec = embedText(cleanedQuery);
   const activeScopeKeySet = new Set<string>(
@@ -866,6 +874,28 @@ export function querySoulMemoryMulti(params: {
       const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
       if (ttlDays > 0 && ageDays > ttlDays && item.tier !== TIER_P0) {
         continue;
+      }
+
+      // Temporal filtering for semantic evolution
+      if (item.memoryType === "semantic") {
+        if (item.validUntil != null) {
+          // Retired semantic
+          if (temporalMs != null) {
+            // Point-in-time: include only if valid at that moment
+            const from = item.validFrom ?? 0;
+            if (temporalMs < from || temporalMs >= item.validUntil) {
+              continue;
+            }
+          } else {
+            // Default: exclude retired semantics
+            continue;
+          }
+        } else if (temporalMs != null && item.validFrom != null) {
+          // Active semantic with a known birth time: exclude if it didn't exist yet
+          if (temporalMs < item.validFrom) {
+            continue;
+          }
+        }
       }
 
       const decayFactor = clarityDecayFactor(item.tier, ageDays, soulConfig);
@@ -993,6 +1023,7 @@ export function querySoulMemoryMulti(params: {
         referenceBoost: 0,
         references: [],
         ageDays: candidate.ageDays,
+        conflictIds: [],
       };
       scoredById.set(candidate.item.id, result);
     }
@@ -1029,6 +1060,10 @@ export function querySoulMemoryMulti(params: {
     }
     reinforceRetrievedItems(db, ranked, nowMs);
     recordScopeHits(db, ranked, activeScopeId, nowMs);
+
+    // Annotate results with unresolved conflict IDs
+    annotateConflictIds(db, ranked);
+
     return ranked;
   } finally {
     db.close();
@@ -2208,6 +2243,49 @@ function normalizeScopeValue(value: string): string {
 
 function normalizeText(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/**
+ * Batch-annotate query results with unresolved conflict IDs from memory_conflicts.
+ * Lightweight: single query, no scoring impact.
+ */
+function annotateConflictIds(db: DatabaseSync, results: SoulMemoryQueryResult[]): void {
+  if (results.length === 0) {
+    return;
+  }
+  // Check if memory_conflicts table exists
+  const tableCheck = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='memory_conflicts' LIMIT 1",
+    )
+    .get() as { name?: string } | undefined;
+  if (!tableCheck?.name) {
+    return;
+  }
+  const ids = results.map((r) => r.id);
+  const placeholders = ids.map(() => "?").join(", ");
+  type ConflictHit = { id: string; memory_id_a: string; memory_id_b: string };
+  const rows = db
+    .prepare(
+      "SELECT id, memory_id_a, memory_id_b FROM memory_conflicts " +
+        `WHERE resolved_at IS NULL AND (memory_id_a IN (${placeholders}) OR memory_id_b IN (${placeholders}))`,
+    )
+    .all(...ids, ...ids) as ConflictHit[];
+  if (rows.length === 0) {
+    return;
+  }
+  // Build map: memory_id -> conflict IDs
+  const conflictMap = new Map<string, string[]>();
+  for (const row of rows) {
+    for (const mid of [row.memory_id_a, row.memory_id_b]) {
+      const list = conflictMap.get(mid) ?? [];
+      list.push(row.id);
+      conflictMap.set(mid, list);
+    }
+  }
+  for (const result of results) {
+    result.conflictIds = conflictMap.get(result.id) ?? [];
+  }
 }
 
 function clamp(value: number, min: number, max: number): number {

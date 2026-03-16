@@ -29,6 +29,10 @@ export type P3CompactionResult = {
   archivedOrphans: number;
   /** IDs of newly created semantic memories. */
   semanticIds: string[];
+  /** Number of semantic nodes evolved (old retired, new created). */
+  evolvedSemantics: number;
+  /** Number of evolution conflicts deferred to user (inferred evidence vs existing). */
+  evolutionConflicts: number;
 };
 
 type EpisodicRow = {
@@ -158,6 +162,8 @@ export function compactP3Episodic(params: {
       archivedCompacted: 0,
       archivedOrphans: 0,
       semanticIds: [],
+      evolvedSemantics: 0,
+      evolutionConflicts: 0,
     };
   }
 
@@ -187,6 +193,21 @@ function runCompaction(
   nowMs: number,
   summarizeCluster?: (items: ConsolidationItem[]) => string,
 ): Omit<P3CompactionResult, "archivedCompacted" | "archivedOrphans"> {
+  // Ensure conflict table exists for evolution conflict insertion
+  ensureConflictSchemaCompact(db);
+
+  const retireSemanticStmt = db.prepare("UPDATE memory_items SET valid_until = ? WHERE id = ?");
+  const insertSupersedesStmt = db.prepare(
+    "INSERT OR IGNORE INTO memory_lineage (source_id, target_id, edge_type, created_at) " +
+      "VALUES (?, ?, 'supersedes', ?)",
+  );
+  const insertConflictStmt = db.prepare(
+    "INSERT OR IGNORE INTO memory_conflicts (" +
+      "id, memory_id_a, memory_id_b, content_a, content_b, conflict_reason, " +
+      "detected_at, resolved_at, resolution, resolved_by, resolution_strategy" +
+      ") VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 'ask_user')",
+  );
+
   // Load uncompacted P3 episodic items
   const rows = db
     .prepare(
@@ -197,7 +218,13 @@ function runCompaction(
     .all() as EpisodicRow[];
 
   if (rows.length < config.minClusterSize) {
-    return { compactedClusters: 0, compactedEpisodic: 0, semanticIds: [] };
+    return {
+      compactedClusters: 0,
+      compactedEpisodic: 0,
+      semanticIds: [],
+      evolvedSemantics: 0,
+      evolutionConflicts: 0,
+    };
   }
 
   // Convert to ConsolidationItem for clustering
@@ -214,6 +241,8 @@ function runCompaction(
   const grouped = groupByScopeAndKind(items);
   let compactedClusters = 0;
   let compactedEpisodic = 0;
+  let evolvedSemantics = 0;
+  let evolutionConflicts = 0;
   const semanticIds: string[] = [];
 
   const markCompactedStmt = db.prepare("UPDATE memory_items SET is_compacted = 1 WHERE id = ?");
@@ -251,16 +280,41 @@ function runCompaction(
         head.scopeId,
       );
 
-      // Check if active semantic with same key already exists (v1: skip if so)
+      // Check if active semantic with same key already exists
+      let existingSemanticId: string | null = null;
       if (semanticKey) {
         const existing = db
           .prepare(
-            "SELECT id FROM memory_items WHERE semantic_key = ? AND memory_type = 'semantic' " +
+            "SELECT id, content FROM memory_items WHERE semantic_key = ? AND memory_type = 'semantic' " +
               "AND valid_until IS NULL LIMIT 1",
           )
-          .get(semanticKey) as { id: string } | undefined;
+          .get(semanticKey) as { id: string; content: string } | undefined;
         if (existing) {
-          continue; // v1: skip evolution, handled in v2
+          // Determine dominant source_detail in this cluster
+          const dominantDetail = dominantSourceDetail(cluster, rows);
+          if (dominantDetail !== "explicit") {
+            // Inferred evidence: mark conflict for user confirmation, skip evolution
+            insertConflictStmt.run(
+              `mcf_evo_${crypto.randomUUID().replace(/-/g, "")}`,
+              existing.id,
+              cluster.map((c) => c.id).join(","),
+              existing.content,
+              cluster
+                .map((c) => c.content)
+                .slice(0, 3)
+                .join("; "),
+              "evolution conflict: new inferred evidence contradicts existing semantic",
+              nowMs,
+            );
+            evolutionConflicts++;
+            // Still mark episodic as compacted (they were consumed)
+            for (const member of cluster) {
+              markCompactedStmt.run(member.id);
+            }
+            compactedEpisodic += cluster.length;
+            continue;
+          }
+          existingSemanticId = existing.id;
         }
       }
 
@@ -285,6 +339,7 @@ function runCompaction(
         metadata: {
           compactedFrom: cluster.map((c) => c.id),
           compactionSource: "p3_compaction",
+          ...(existingSemanticId ? { supersedes: existingSemanticId } : {}),
         },
         nowMs,
       });
@@ -299,6 +354,13 @@ function runCompaction(
           "valid_from = ?, semantic_key = ? WHERE id = ?",
       ).run(nowMs, semanticKey, semanticItem.id);
 
+      // Evolution: retire old semantic and write supersedes lineage
+      if (existingSemanticId) {
+        retireSemanticStmt.run(nowMs, existingSemanticId);
+        insertSupersedesStmt.run(semanticItem.id, existingSemanticId, nowMs);
+        evolvedSemantics++;
+      }
+
       // Mark source episodic items as compacted + write lineage
       for (const member of cluster) {
         markCompactedStmt.run(member.id);
@@ -311,7 +373,13 @@ function runCompaction(
     }
   }
 
-  return { compactedClusters, compactedEpisodic, semanticIds };
+  return {
+    compactedClusters,
+    compactedEpisodic,
+    semanticIds,
+    evolvedSemantics,
+    evolutionConflicts,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -517,6 +585,24 @@ function tokenize(text: string): Set<string> {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Determine the dominant source_detail across a cluster's episodic items.
+ * If any item has explicit source_detail, the cluster is considered explicit.
+ */
+function dominantSourceDetail(
+  cluster: ConsolidationItem[],
+  allRows: EpisodicRow[],
+): "explicit" | "inferred" | "system" {
+  const rowById = new Map(allRows.map((r) => [String(r.id), r]));
+  for (const item of cluster) {
+    const row = rowById.get(item.id);
+    if (row && String(row.source_detail).trim().toLowerCase() === "explicit") {
+      return "explicit";
+    }
+  }
+  return "inferred";
+}
+
 function buildHeuristicSummary(items: ConsolidationItem[]): string {
   const snippets = items
     .slice(0, 3)
@@ -558,4 +644,24 @@ function openSoulMemoryDb(agentId: string): DatabaseSync {
   fsSync.mkdirSync(path.dirname(dbPath), { recursive: true });
   const { DatabaseSync } = requireNodeSqlite();
   return new DatabaseSync(dbPath);
+}
+
+// Minimal conflict schema bootstrap for evolution conflict insertion.
+// Full schema is managed by soul-memory-conflict.ts; this just ensures the table exists.
+function ensureConflictSchemaCompact(db: DatabaseSync): void {
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS memory_conflicts (" +
+      "id TEXT PRIMARY KEY, " +
+      "memory_id_a TEXT NOT NULL, " +
+      "memory_id_b TEXT NOT NULL, " +
+      "content_a TEXT NOT NULL, " +
+      "content_b TEXT NOT NULL, " +
+      "conflict_reason TEXT NOT NULL, " +
+      "detected_at INTEGER NOT NULL, " +
+      "resolved_at INTEGER, " +
+      "resolution TEXT, " +
+      "resolved_by TEXT, " +
+      "resolution_strategy TEXT NOT NULL DEFAULT 'auto'" +
+      ");",
+  );
 }

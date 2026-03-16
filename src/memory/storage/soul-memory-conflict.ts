@@ -25,6 +25,7 @@ type ConflictRow = {
   resolved_at: number | null;
   resolution: string | null;
   resolved_by: string | null;
+  resolution_strategy: string | null;
 };
 
 type MemoryPair = {
@@ -54,6 +55,8 @@ export type SoulMemoryConflictCandidate = {
   ruleBasedConflictReason?: string;
 };
 
+export type SoulMemoryConflictResolutionStrategy = "auto" | "ask_user" | "resolved";
+
 export type SoulMemoryConflict = {
   id: string;
   memoryIdA: string;
@@ -65,6 +68,7 @@ export type SoulMemoryConflict = {
   resolvedAt?: number;
   resolution?: string;
   resolvedBy?: string;
+  resolutionStrategy: SoulMemoryConflictResolutionStrategy;
 };
 
 export type SoulMemoryConflictDetectionResult = {
@@ -212,6 +216,7 @@ export function detectSoulMemoryConflicts(params: {
         contentB: ordered.second === pair.right.id ? pair.right.content : pair.left.content,
         conflictReason,
         detectedAt: nowMs,
+        resolutionStrategy: "auto",
       });
     }
 
@@ -245,7 +250,7 @@ export function listSoulMemoryConflicts(params: {
     const rows = db
       .prepare(
         "SELECT id, memory_id_a, memory_id_b, content_a, content_b, conflict_reason, detected_at, " +
-          "resolved_at, resolution, resolved_by FROM memory_conflicts " +
+          "resolved_at, resolution, resolved_by, resolution_strategy FROM memory_conflicts " +
           `${where} ORDER BY detected_at DESC LIMIT ?`,
       )
       .all(limit) as ConflictRow[];
@@ -260,6 +265,7 @@ export function listSoulMemoryConflicts(params: {
       resolvedAt: row.resolved_at == null ? undefined : Number(row.resolved_at),
       resolution: row.resolution ?? undefined,
       resolvedBy: row.resolved_by ?? undefined,
+      resolutionStrategy: normalizeResolutionStrategy(row.resolution_strategy),
     }));
   } finally {
     db.close();
@@ -511,6 +517,18 @@ function openSoulMemoryDb(agentId: string): DatabaseSync {
 
 function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function normalizeResolutionStrategy(
+  value: string | null | undefined,
+): SoulMemoryConflictResolutionStrategy {
+  const v = String(value ?? "auto")
+    .trim()
+    .toLowerCase();
+  if (v === "ask_user" || v === "resolved") {
+    return v;
+  }
+  return "auto";
 }
 
 function clamp(value: number, min: number, max: number): number {
