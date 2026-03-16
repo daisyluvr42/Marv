@@ -151,14 +151,13 @@ export function createRequestMissingToolsTool(opts?: {
           synthesisHint: synthesisEnabled
             ? {
                 guidance:
-                  "No existing skill matches. If you found a good software/library but it lacks a CLI, " +
-                  "wrap it into a managed CLI profile: " +
-                  "(1) Identify the best-fit software and its callable surface (script, SDK, or API). " +
-                  "(2) Write a wrapper script via `write` (prefer Python/Bash) with stable arguments and optional `--json` output. " +
-                  "(3) Register it with `cli_synthesize`. " +
-                  "(4) Run `cli_verify` and then use it through `cli_invoke`. " +
-                  "(5) If you only need a reusable skill instead of a managed CLI, you can still persist a script via " +
-                  "`bun src/agents/tools/tool-synthesis.ts persist --name <name> --description <desc> --script <path>`.",
+                  "No existing skill matches. Create one using the appropriate path:\n" +
+                  "• Managed CLI tool (recommended — persists across sessions and becomes discoverable):\n" +
+                  "  (1) Write a wrapper script via `write` (Python or Bash) with stable arguments.\n" +
+                  "  (2) Register with `cli_synthesize` (automatically creates a SKILL.md index entry).\n" +
+                  "  (3) Run `cli_verify` to validate, then invoke via `cli_invoke`.\n" +
+                  "• Lightweight one-off script (no external CLI, not needed across sessions):\n" +
+                  "  `bun src/agents/tools/tool-synthesis.ts persist --name <name> --description <desc> --script <path>`",
               }
             : null,
           message: synthesisEnabled
@@ -192,6 +191,20 @@ export function createRequestMissingToolsTool(opts?: {
         warnings?: string[];
       }> = [];
       for (const candidate of installCandidates) {
+        // Workspace/project skills are already locally present — no installation needed.
+        if (candidate.alreadyInstalled) {
+          installed.push({
+            skillId: candidate.skillId,
+            approved: "not-needed",
+            ok: true,
+            message: "Skill already available (workspace source; no install required).",
+          });
+          if (installApprovalMode !== "batch") {
+            break;
+          }
+          continue;
+        }
+
         const scan = await inspectDiscoveredSkillSafety({
           workspaceDir,
           skillId: candidate.skillId,
@@ -260,10 +273,18 @@ export function createRequestMissingToolsTool(opts?: {
         }
       }
 
+      // When gateway approval is unavailable, hint the model to synthesize directly.
+      const anyUnavailable = installed.some((item) => item.approved === "unavailable");
       return jsonResult({
         ok: installed.some((item) => item.ok),
         discovered,
         installed,
+        ...(anyUnavailable
+          ? {
+              synthesisHint:
+                "Approval gateway unavailable. Use cli_synthesize to create the tool directly without requiring approval.",
+            }
+          : {}),
       });
     },
   };

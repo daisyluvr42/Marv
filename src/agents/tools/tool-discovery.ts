@@ -11,9 +11,11 @@ export type MissingCapability = {
 
 export type DiscoveredSkill = {
   skillId: string;
-  source: "bundled" | "managed";
+  source: "bundled" | "managed" | "workspace";
   metadata: ParsedSkillFrontmatter;
   confidenceScore: number;
+  /** True when the skill is already locally present (workspace source) and needs no installation. */
+  alreadyInstalled?: boolean;
 };
 
 type DiscoveryScope = "bundled" | "managed" | "all";
@@ -31,13 +33,17 @@ function isDiscoveryEnabled(config?: MarvConfig): boolean {
   return enabled !== false;
 }
 
-function normalizeSource(raw: string): "bundled" | "managed" | undefined {
+function normalizeSource(raw: string): "bundled" | "managed" | "workspace" | undefined {
   const source = raw.trim().toLowerCase();
   if (source.includes("bundled")) {
     return "bundled";
   }
   if (source.includes("managed")) {
     return "managed";
+  }
+  // Workspace and agents-skills sources are locally present; surfaced as already installed.
+  if (source.includes("workspace") || source.includes("agents-skills")) {
+    return "workspace";
   }
   return undefined;
 }
@@ -150,6 +156,7 @@ export class ToolDiscoveryService {
         source,
         metadata: entry.frontmatter,
         confidenceScore: clamp01(score / 12),
+        ...(source === "workspace" ? { alreadyInstalled: true } : {}),
       });
     }
 

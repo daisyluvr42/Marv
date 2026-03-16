@@ -22,7 +22,7 @@ Interactive onboarding wizard (local or remote Gateway setup).
 ```bash
 marv onboard
 marv onboard --flow quickstart
-marv onboard --flow manual
+marv onboard --flow advanced
 marv onboard --mode remote --remote-url ws://gateway-host:18789
 ```
 
@@ -59,7 +59,7 @@ marv onboard --non-interactive \
 Flow notes:
 
 - `quickstart`: minimal prompts, auto-generates a gateway token.
-- `manual`: full prompts for port/bind/auth (alias of `advanced`).
+- `advanced`: full prompts for port/bind/auth.
 - Fastest first chat: `marv dashboard` (Control UI, no channel setup).
 - Custom Provider: connect any OpenAI or Anthropic compatible endpoint,
   including hosted providers not listed. Use Unknown to auto-detect.

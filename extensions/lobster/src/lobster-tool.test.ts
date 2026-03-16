@@ -33,7 +33,6 @@ function fakeApi(overrides: Partial<MarvPluginApi> = {}): MarvPluginApi {
     registerCli() {},
     registerService() {},
     registerProvider() {},
-    registerHook() {},
     registerHttpRoute() {},
     registerCommand() {},
     on() {},

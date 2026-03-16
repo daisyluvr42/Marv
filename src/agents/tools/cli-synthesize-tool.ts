@@ -2,8 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
+import { CONFIG_DIR } from "../../utils.js";
 import { assertSandboxPath } from "../sandbox/sandbox-paths.js";
 import { optionalStringEnum, stringEnum } from "../schema/typebox.js";
+import { bumpSkillsSnapshotVersion } from "../skills/refresh.js";
 import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import {
   registerManagedCliManifest,
@@ -39,6 +41,14 @@ const CliSynthesizeSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
+function buildCliSkillDocument(manifest: ManagedCliManifest): string {
+  const caps =
+    manifest.capabilities && manifest.capabilities.length > 0
+      ? `\n## Capabilities\n\n${manifest.capabilities.map((c) => `- ${c}`).join("\n")}\n`
+      : "";
+  return `---\nname: ${manifest.id}\ndescription: ${manifest.description}\n---\n\n# ${manifest.name}\n\n${manifest.description}\n\n## Usage\n\nInvoke via \`cli_invoke\` with \`profileId="${manifest.id}"\`.${caps}`;
+}
 
 function buildReadme(manifest: ManagedCliManifest): string {
   const capabilities = manifest.capabilities?.length
@@ -228,6 +238,22 @@ export function createCliSynthesizeTool(options?: {
         state: verification.ok ? (args.activate === false ? "verified" : "active") : "draft",
         verificationError: verification.ok ? "" : verification.message,
       });
+      // Register a SKILL.md index entry so future sessions can discover this tool.
+      if (verification.ok) {
+        try {
+          const skillDir = path.join(CONFIG_DIR, "skills", id);
+          await fs.mkdir(skillDir, { recursive: true });
+          await fs.writeFile(
+            path.join(skillDir, "SKILL.md"),
+            buildCliSkillDocument(manifest),
+            "utf8",
+          );
+          bumpSkillsSnapshotVersion({ reason: "manual" });
+        } catch {
+          // Non-fatal: CLI profile is usable even if the skill index entry fails.
+        }
+      }
+
       return jsonResult({
         ok: verification.ok,
         profileId: id,
