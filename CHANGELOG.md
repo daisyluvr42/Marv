@@ -2,6 +2,21 @@
 
 Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
+## 2026.3.16
+
+### Changes
+
+- Memory: add P3 episodic compaction pipeline that clusters similar footage into distilled P2 semantic knowledge nodes, replacing blind confidence decay with structured knowledge extraction.
+- Memory: add semantic evolution so compacted knowledge updates when new explicit evidence arrives, retiring old versions with full lineage tracking via supersedes edges.
+- Memory: add temporal filtering to search queries, excluding retired semantic nodes by default and supporting point-in-time retrieval via the new `temporalMs` parameter.
+- Memory: add conflict-aware retrieval that annotates search results with unresolved conflict IDs, enabling upstream consumers to surface knowledge contradictions.
+- Memory: add per-item archival with session tag grouping, preserving original footage content and blood lineage metadata instead of merging into lossy episode summaries.
+
+### Fixes
+
+- Memory: prevent orphan P3 episodic items from accumulating indefinitely via a configurable safety valve (orphanAgeDays, default 60 days).
+- Memory: exclude P3 episodic items from dedupe, consolidation, promotion, and confidence decay pipelines when compaction is enabled, preventing cross-pipeline interference.
+
 ## 2026.3.15
 
 ### Changes

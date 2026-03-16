@@ -1,6 +1,6 @@
 {
   "name": "@marv/lobster",
-  "version": "2026.3.15",
+  "version": "2026.3.16",
   "description": "Lobster workflow tool plugin (typed pipelines + resumable approvals)",
   "type": "module",
   "devDependencies": {
