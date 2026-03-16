@@ -7,14 +7,6 @@ import {
 import { resolvePreferredProviderForAuthChoice } from "../auth-choice.preferred-provider.js";
 import type { AuthChoice } from "../onboard-types.js";
 
-const AUTH_CHOICE_METHOD_ALIASES: Record<string, AuthChoice[]> = {
-  "setup-token": ["token"],
-  oauth: ["token"],
-  "claude-cli": ["token"],
-  "codex-cli": ["openai-codex"],
-  "minimax-cloud": ["minimax-api"],
-};
-
 function normalizeMatchValue(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -30,13 +22,6 @@ function normalizeProviderValue(value: string): string {
 function optionMatches(option: AuthChoiceOption, raw: string): boolean {
   const normalizedRaw = normalizeMatchValue(raw);
   if (normalizeMatchValue(option.value) === normalizedRaw) {
-    return true;
-  }
-  if (
-    (AUTH_CHOICE_METHOD_ALIASES[normalizedRaw] ?? []).some(
-      (alias) => normalizeMatchValue(option.value) === normalizeMatchValue(alias),
-    )
-  ) {
     return true;
   }
   if (normalizeMatchValue(option.label) === normalizedRaw) {
@@ -66,7 +51,6 @@ function dedupeOptions(options: AuthChoiceOption[]): AuthChoiceOption[] {
 
 export function listModelsAuthChoiceGroups(): AuthChoiceGroup[] {
   return buildAuthChoiceGroups({
-    store: { version: 1, profiles: {} },
     includeSkip: false,
   }).groups;
 }

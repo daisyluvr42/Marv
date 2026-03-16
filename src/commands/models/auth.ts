@@ -4,7 +4,6 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
-import { ensureAuthProfileStore } from "../../agents/auth-profiles.js";
 import { upsertAuthProfile } from "../../agents/auth-profiles.js";
 import type { AuthProfileCredential } from "../../agents/auth-profiles/types.js";
 import { normalizeProviderId } from "../../agents/model/model-selection.js";
@@ -268,7 +267,6 @@ function buildModelsAuthSetOnboardOptions(params: {
       return { authChoice: "xai-api-key", xaiApiKey: apiKey };
     case "qianfan-api-key":
       return { authChoice: "qianfan-api-key", qianfanApiKey: apiKey };
-    case "minimax-cloud":
     case "minimax-api":
     case "minimax-api-key-cn":
     case "minimax-api-lightning":
@@ -326,9 +324,6 @@ export async function modelsAuthAddCommand(opts: AddOptions, runtime: RuntimeEnv
   if (!authChoice) {
     authChoice = await promptAuthChoiceGrouped({
       prompter,
-      store: ensureAuthProfileStore(agentDir, {
-        allowKeychainPrompt: false,
-      }),
       includeSkip: false,
     });
   }

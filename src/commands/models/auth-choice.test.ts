@@ -36,12 +36,12 @@ describe("resolveModelsAuthChoice", () => {
     expect(result.choice).toBe("gemini-api-key");
   });
 
-  it("accepts legacy auth choice aliases as methods", () => {
+  it("rejects removed legacy auth choice aliases as methods", () => {
     const result = resolveModelsAuthChoice({
       provider: "anthropic",
       method: "setup-token",
     });
-    expect(result.choice).toBe("token");
+    expect(result.choice).toBeNull();
   });
 
   it("resolves a provider with a single matching method", () => {

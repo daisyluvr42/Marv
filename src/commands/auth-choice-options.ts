@@ -1,5 +1,3 @@
-import type { AuthProfileStore } from "../agents/auth-profiles.js";
-import { AUTH_CHOICE_LEGACY_ALIASES_FOR_CLI } from "./auth-choice-legacy.js";
 import type { AuthChoice, AuthChoiceGroupId } from "./onboard-types.js";
 
 export type { AuthChoiceGroupId };
@@ -299,29 +297,18 @@ const BASE_AUTH_CHOICE_OPTIONS: ReadonlyArray<AuthChoiceOption> = [
   { value: "custom-api-key", label: "Custom Provider" },
 ];
 
-export function formatAuthChoiceChoicesForCli(params?: {
-  includeSkip?: boolean;
-  includeLegacyAliases?: boolean;
-}): string {
+export function formatAuthChoiceChoicesForCli(params?: { includeSkip?: boolean }): string {
   const includeSkip = params?.includeSkip ?? true;
-  const includeLegacyAliases = params?.includeLegacyAliases ?? false;
   const values = BASE_AUTH_CHOICE_OPTIONS.map((opt) => opt.value);
 
   if (includeSkip) {
     values.push("skip");
   }
-  if (includeLegacyAliases) {
-    values.push(...AUTH_CHOICE_LEGACY_ALIASES_FOR_CLI);
-  }
 
   return values.join("|");
 }
 
-export function buildAuthChoiceOptions(params: {
-  store: AuthProfileStore;
-  includeSkip: boolean;
-}): AuthChoiceOption[] {
-  void params.store;
+export function buildAuthChoiceOptions(params: { includeSkip: boolean }): AuthChoiceOption[] {
   const options: AuthChoiceOption[] = [...BASE_AUTH_CHOICE_OPTIONS];
 
   if (params.includeSkip) {
@@ -331,12 +318,11 @@ export function buildAuthChoiceOptions(params: {
   return options;
 }
 
-export function buildAuthChoiceGroups(params: { store: AuthProfileStore; includeSkip: boolean }): {
+export function buildAuthChoiceGroups(params: { includeSkip: boolean }): {
   groups: AuthChoiceGroup[];
   skipOption?: AuthChoiceOption;
 } {
   const options = buildAuthChoiceOptions({
-    ...params,
     includeSkip: false,
   });
   const optionByValue = new Map<AuthChoice, AuthChoiceOption>(

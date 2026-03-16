@@ -74,7 +74,7 @@ function buildSetupStageCard(params: WizardStageCardParams): WizardStageCard {
     return {
       title: WIZARD_STAGE_TITLES.setup,
       message: [
-        "We will keep your current workspace, gateway, channels, and hooks intact.",
+        "We will keep your current workspace, gateway, and channels intact.",
         "Only the missing local wiring is refreshed before the final review.",
       ].join("\n"),
     };
@@ -82,7 +82,7 @@ function buildSetupStageCard(params: WizardStageCardParams): WizardStageCard {
   return {
     title: WIZARD_STAGE_TITLES.setup,
     message: [
-      "Now we apply the structured local setup: workspace, routing, gateway, channels, and hooks.",
+      "Now we apply the structured local setup: workspace, routing, gateway, and channels.",
       "QuickStart keeps defaults tight; Manual keeps the advanced switches available.",
     ].join("\n"),
   };

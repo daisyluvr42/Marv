@@ -294,7 +294,6 @@ export async function finalizeOnboardingWizard(
     nextConfig.gateway?.controlUi?.basePath ?? baseConfig.gateway?.controlUi?.basePath;
   let controlUiOpened = false;
   let controlUiOpenHint: string | undefined;
-  let seededInBackground = false;
   let hatchChoice: "tui" | "web" | "later" | "revise" | null = null;
   let launchedTui = false;
 
@@ -543,44 +542,6 @@ export async function finalizeOnboardingWizard(
 
   await setupOnboardingShellCompletion({ flow, prompter });
 
-  const shouldOpenControlUi =
-    !opts.skipUi &&
-    settings.authMode === "token" &&
-    Boolean(settings.gatewayToken) &&
-    hatchChoice === null;
-  if (shouldOpenControlUi) {
-    const browserSupport = await detectBrowserOpenSupport();
-    if (browserSupport.ok) {
-      controlUiOpened = await openUrl(authedUrl);
-      if (!controlUiOpened) {
-        controlUiOpenHint = formatControlUiSshHint({
-          port: settings.port,
-          basePath: controlUiBasePath,
-          token: settings.gatewayToken,
-        });
-      }
-    } else {
-      controlUiOpenHint = formatControlUiSshHint({
-        port: settings.port,
-        basePath: controlUiBasePath,
-        token: settings.gatewayToken,
-      });
-    }
-
-    await prompter.note(
-      [
-        `Dashboard link (with token): ${authedUrl}`,
-        controlUiOpened
-          ? "Opened in your browser. Keep that tab to control Marv."
-          : "Copy/paste this URL in a browser on this machine to control Marv.",
-        controlUiOpenHint,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-      "Dashboard ready",
-    );
-  }
-
   const webSearchKey = (nextConfig.tools?.web?.search?.apiKey ?? "").trim();
   const webSearchEnv = (process.env.BRAVE_API_KEY ?? "").trim();
   const hasWebSearchKey = Boolean(webSearchKey || webSearchEnv);
@@ -614,9 +575,7 @@ export async function finalizeOnboardingWizard(
   await prompter.outro(
     controlUiOpened
       ? "Onboarding complete. Dashboard opened; keep that tab to control Marv."
-      : seededInBackground
-        ? "Onboarding complete. Web UI seeded in the background; open it anytime with the dashboard link above."
-        : "Onboarding complete. Use the dashboard link above to control Marv.",
+      : "Onboarding complete. Use the dashboard link above to control Marv.",
   );
 
   return { launchedTui };

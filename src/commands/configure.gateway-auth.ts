@@ -1,4 +1,3 @@
-import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import type { MarvConfig, GatewayAuthConfig } from "../core/config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
@@ -77,9 +76,6 @@ export async function promptAuthConfig(
 ): Promise<MarvConfig> {
   const authChoice = await promptAuthChoiceGrouped({
     prompter,
-    store: ensureAuthProfileStore(undefined, {
-      allowKeychainPrompt: false,
-    }),
     includeSkip: true,
   });
 
@@ -109,8 +105,7 @@ export async function promptAuthConfig(
     }
   }
 
-  const anthropicOAuth =
-    authChoice === "setup-token" || authChoice === "token" || authChoice === "oauth";
+  const anthropicOAuth = authChoice === "token";
 
   if (authChoice !== "custom-api-key") {
     const allowlistSelection = await promptModelAllowlist({

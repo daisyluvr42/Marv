@@ -14,11 +14,7 @@ const DEFAULT_ANTHROPIC_MODEL = "anthropic/claude-sonnet-4-6";
 export async function applyAuthChoiceAnthropic(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult | null> {
-  if (
-    params.authChoice === "setup-token" ||
-    params.authChoice === "oauth" ||
-    params.authChoice === "token"
-  ) {
+  if (params.authChoice === "token") {
     let nextConfig = params.config;
     await params.prompter.note(
       ["Run `claude setup-token` in your terminal.", "Then paste the generated token below."].join(

@@ -4,7 +4,6 @@ import { assertSupportedRuntime } from "../infra/runtime-guard.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath } from "../utils.js";
-import { isDeprecatedAuthChoice, normalizeLegacyOnboardAuthChoice } from "./auth-choice-legacy.js";
 import { DEFAULT_WORKSPACE, handleReset } from "./onboard-helpers.js";
 import { runInteractiveOnboarding } from "./onboard-interactive.js";
 import { runNonInteractiveOnboarding } from "./onboard-non-interactive.js";
@@ -12,31 +11,7 @@ import type { OnboardOptions } from "./onboard-types.js";
 
 export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv = defaultRuntime) {
   assertSupportedRuntime(runtime);
-  const originalAuthChoice = opts.authChoice;
-  const normalizedAuthChoice = normalizeLegacyOnboardAuthChoice(originalAuthChoice);
-  if (opts.nonInteractive && isDeprecatedAuthChoice(originalAuthChoice)) {
-    runtime.error(
-      [
-        `Auth choice "${String(originalAuthChoice)}" is deprecated.`,
-        'Use "--auth-choice token" (Anthropic setup-token) or "--auth-choice openai-codex".',
-      ].join("\n"),
-    );
-    runtime.exit(1);
-    return;
-  }
-  if (originalAuthChoice === "claude-cli") {
-    runtime.log('Auth choice "claude-cli" is deprecated; using setup-token flow instead.');
-  }
-  if (originalAuthChoice === "codex-cli") {
-    runtime.log('Auth choice "codex-cli" is deprecated; using OpenAI Codex OAuth instead.');
-  }
-  const flow = opts.flow === "manual" ? ("advanced" as const) : opts.flow;
-  const normalizedOpts =
-    normalizedAuthChoice === opts.authChoice && flow === opts.flow
-      ? opts
-      : { ...opts, authChoice: normalizedAuthChoice, flow };
-
-  if (normalizedOpts.nonInteractive && normalizedOpts.acceptRisk !== true) {
+  if (opts.nonInteractive && opts.acceptRisk !== true) {
     runtime.error(
       [
         "Non-interactive onboarding requires explicit risk acknowledgement.",
@@ -48,11 +23,11 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
     return;
   }
 
-  if (normalizedOpts.reset) {
+  if (opts.reset) {
     const snapshot = await readConfigFileSnapshot();
     const baseConfig = snapshot.valid ? snapshot.config : {};
     const workspaceDefault =
-      normalizedOpts.workspace ?? baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE;
+      opts.workspace ?? baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE;
     await handleReset("full", resolveUserPath(workspaceDefault), runtime);
   }
 
@@ -67,12 +42,12 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
     );
   }
 
-  if (normalizedOpts.nonInteractive) {
-    await runNonInteractiveOnboarding(normalizedOpts, runtime);
+  if (opts.nonInteractive) {
+    await runNonInteractiveOnboarding(opts, runtime);
     return;
   }
 
-  await runInteractiveOnboarding(normalizedOpts, runtime);
+  await runInteractiveOnboarding(opts, runtime);
 }
 
 export type { OnboardOptions } from "./onboard-types.js";

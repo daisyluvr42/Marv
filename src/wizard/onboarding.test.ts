@@ -84,7 +84,6 @@ const finalizeOnboardingWizard = vi.hoisted(() =>
 );
 const listChannelPlugins = vi.hoisted(() => vi.fn(() => []));
 const logConfigUpdated = vi.hoisted(() => vi.fn(() => {}));
-const setupInternalHooks = vi.hoisted(() => vi.fn(async (cfg) => cfg));
 
 const setupChannels = vi.hoisted(() => vi.fn(async (cfg) => cfg));
 const setupSkills = vi.hoisted(() => vi.fn(async (cfg) => cfg));
@@ -149,10 +148,6 @@ vi.mock("../commands/onboard-custom.js", () => ({
 
 vi.mock("../commands/health.js", () => ({
   healthCommand,
-}));
-
-vi.mock("../commands/onboard-hooks.js", () => ({
-  setupInternalHooks,
 }));
 
 vi.mock("../core/config/config.js", () => ({
@@ -344,8 +339,6 @@ describe("runOnboardingWizard", () => {
     describeProbeSummary.mockReturnValue("Probed 1 target in 1ms");
     setupSkills.mockReset();
     setupSkills.mockImplementation(async (cfg) => cfg);
-    setupInternalHooks.mockReset();
-    setupInternalHooks.mockImplementation(async (cfg) => cfg);
     ensureWorkspaceAndSessions.mockReset();
     ensureWorkspaceAndSessions.mockImplementation(async () => {});
     writeConfigFile.mockReset();
@@ -403,7 +396,7 @@ describe("runOnboardingWizard", () => {
           flow: "quickstart",
           authChoice: "skip",
           installDaemon: false,
-          skipProviders: true,
+          skipChannels: true,
           skipSkills: true,
           skipHealth: true,
           skipUi: true,
@@ -431,7 +424,7 @@ describe("runOnboardingWizard", () => {
         flow: "quickstart",
         authChoice: "skip",
         installDaemon: false,
-        skipProviders: true,
+        skipChannels: true,
         skipSkills: true,
         skipHealth: true,
         skipUi: true,
@@ -475,7 +468,7 @@ describe("runOnboardingWizard", () => {
         mode: "local",
         workspace: workspaceDir,
         authChoice: "skip",
-        skipProviders: true,
+        skipChannels: true,
         skipSkills: true,
         skipHealth: true,
         installDaemon: false,
@@ -515,7 +508,7 @@ describe("runOnboardingWizard", () => {
           flow: "quickstart",
           authChoice: "skip",
           installDaemon: false,
-          skipProviders: true,
+          skipChannels: true,
           skipSkills: true,
           skipHealth: true,
           skipUi: true,
@@ -550,7 +543,7 @@ describe("runOnboardingWizard", () => {
           flow: "quickstart",
           authChoice: "skip",
           installDaemon: false,
-          skipProviders: true,
+          skipChannels: true,
           skipSkills: true,
           skipHealth: true,
           skipUi: true,
@@ -569,7 +562,7 @@ describe("runOnboardingWizard", () => {
     }
   });
 
-  it("keeps the fully skipped quickstart path at zero interactive steps", async () => {
+  it("keeps the fully skipped quickstart path to the P0 prompt budget", async () => {
     const prev = process.env.MARV_WIZARD_METRICS;
     process.env.MARV_WIZARD_METRICS = "1";
 
@@ -583,7 +576,7 @@ describe("runOnboardingWizard", () => {
           flow: "quickstart",
           authChoice: "skip",
           installDaemon: false,
-          skipProviders: true,
+          skipChannels: true,
           skipSkills: true,
           skipHealth: true,
           skipUi: true,
@@ -593,8 +586,8 @@ describe("runOnboardingWizard", () => {
       );
 
       expect(parseWizardMetricsLog(runtime)).toEqual({
-        interactions: 0,
-        total: 9,
+        interactions: 3,
+        total: 12,
       });
     } finally {
       if (prev === undefined) {
@@ -605,7 +598,7 @@ describe("runOnboardingWizard", () => {
     }
   });
 
-  it("keeps the TUI hatch path within a one-step interaction budget", async () => {
+  it("keeps the TUI hatch path within the quickstart interaction budget", async () => {
     const prev = process.env.MARV_WIZARD_METRICS;
     process.env.MARV_WIZARD_METRICS = "1";
 
@@ -631,7 +624,7 @@ describe("runOnboardingWizard", () => {
           mode: "local",
           workspace: workspaceDir,
           authChoice: "skip",
-          skipProviders: true,
+          skipChannels: true,
           skipSkills: true,
           skipHealth: true,
           installDaemon: false,
@@ -641,9 +634,9 @@ describe("runOnboardingWizard", () => {
       );
 
       const metrics = parseWizardMetricsLog(runtime);
-      expect(metrics.interactions).toBe(1);
-      expect(metrics.total).toBeGreaterThanOrEqual(9);
-      expect(metrics.total).toBeLessThanOrEqual(10);
+      expect(metrics.interactions).toBe(4);
+      expect(metrics.total).toBeGreaterThanOrEqual(12);
+      expect(metrics.total).toBeLessThanOrEqual(13);
     } finally {
       if (prev === undefined) {
         delete process.env.MARV_WIZARD_METRICS;
@@ -686,7 +679,7 @@ describe("runOnboardingWizard", () => {
     await runOnboardingWizard(
       {
         acceptRisk: true,
-        skipProviders: true,
+        skipChannels: true,
         skipSkills: true,
         skipHealth: true,
         skipUi: true,
@@ -702,7 +695,7 @@ describe("runOnboardingWizard", () => {
     const events: string[] = [];
     promptAuthChoiceGrouped.mockImplementationOnce(async () => {
       events.push("auth");
-      return "setup-token";
+      return "token";
     });
     promptDefaultModel.mockImplementationOnce(async () => {
       events.push("model");
@@ -768,7 +761,7 @@ describe("runOnboardingWizard", () => {
     await runOnboardingWizard(
       {
         acceptRisk: true,
-        skipProviders: true,
+        skipChannels: true,
         skipSkills: true,
         skipHealth: true,
         skipUi: true,
@@ -802,7 +795,7 @@ describe("runOnboardingWizard", () => {
         flow: "quickstart",
         authChoice: "skip",
         installDaemon: false,
-        skipProviders: true,
+        skipChannels: true,
         skipSkills: true,
         skipHealth: true,
         skipUi: true,
@@ -826,7 +819,7 @@ describe("runOnboardingWizard", () => {
     process.env.MARV_WIZARD_METRICS = "1";
 
     try {
-      promptAuthChoiceGrouped.mockResolvedValueOnce("setup-token");
+      promptAuthChoiceGrouped.mockResolvedValueOnce("token");
       promptDefaultModel.mockResolvedValueOnce({ config: null, model: "openai/gpt-5.2" });
       applyPrimaryModel.mockImplementationOnce((cfg, model) => ({
         ...cfg,
@@ -873,7 +866,7 @@ describe("runOnboardingWizard", () => {
       await runOnboardingWizard(
         {
           acceptRisk: true,
-          skipProviders: true,
+          skipChannels: true,
           skipSkills: true,
           skipHealth: true,
           skipUi: true,
@@ -883,7 +876,7 @@ describe("runOnboardingWizard", () => {
       );
 
       const metrics = parseWizardMetricsLog(runtime);
-      expect(metrics.interactions).toBeLessThanOrEqual(5);
+      expect(metrics.interactions).toBeLessThanOrEqual(11);
       expect(metrics.total).toBeGreaterThanOrEqual(metrics.interactions);
     } finally {
       if (prev === undefined) {
@@ -942,7 +935,7 @@ describe("runOnboardingWizard", () => {
     await runOnboardingWizard(
       {
         acceptRisk: true,
-        skipProviders: true,
+        skipChannels: true,
         skipSkills: true,
         skipHealth: true,
         skipUi: true,
@@ -955,7 +948,6 @@ describe("runOnboardingWizard", () => {
     expect(promptDefaultModel).not.toHaveBeenCalled();
     expect(configureGatewayForOnboarding).not.toHaveBeenCalled();
     expect(setupSkills).not.toHaveBeenCalled();
-    expect(setupInternalHooks).not.toHaveBeenCalled();
     expect(runAuthProbes).toHaveBeenCalledOnce();
   });
 });

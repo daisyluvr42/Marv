@@ -3,10 +3,6 @@ import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
 export type OnboardMode = "local" | "remote";
 export type AuthChoice =
-  // Legacy alias for `setup-token` (kept for backwards CLI compatibility).
-  | "oauth"
-  | "setup-token"
-  | "claude-cli"
   | "token"
   | "chutes"
   | "vllm"
@@ -23,7 +19,6 @@ export type AuthChoice =
   | "venice-api-key"
   | "together-api-key"
   | "huggingface-api-key"
-  | "codex-cli"
   | "apiKey"
   | "gemini-api-key"
   | "google-antigravity"
@@ -34,7 +29,6 @@ export type AuthChoice =
   | "zai-global"
   | "zai-cn"
   | "xiaomi-api-key"
-  | "minimax-cloud"
   | "minimax"
   | "minimax-api"
   | "minimax-api-key-cn"
@@ -78,13 +72,10 @@ export type GatewayBind = "loopback" | "lan" | "auto" | "custom" | "tailnet";
 export type TailscaleMode = "off" | "serve" | "funnel";
 export type NodeManagerChoice = "npm" | "pnpm" | "bun";
 export type ChannelChoice = ChannelId;
-// Legacy alias (pre-rename).
-export type ProviderChoice = ChannelChoice;
 
 export type OnboardOptions = {
   mode?: OnboardMode;
-  /** "manual" is an alias for "advanced". */
-  flow?: "quickstart" | "advanced" | "manual";
+  flow?: "quickstart" | "advanced";
   workspace?: string;
   p0Soul?: string;
   p0Identity?: string;
@@ -138,8 +129,6 @@ export type OnboardOptions = {
   installDaemon?: boolean;
   daemonRuntime?: GatewayDaemonRuntime;
   skipChannels?: boolean;
-  /** @deprecated Legacy alias for `skipChannels`. */
-  skipProviders?: boolean;
   skipSkills?: boolean;
   skipHealth?: boolean;
   skipUi?: boolean;

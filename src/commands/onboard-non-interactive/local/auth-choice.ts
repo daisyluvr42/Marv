@@ -71,28 +71,6 @@ export async function applyNonInteractiveAuthChoice(params: {
   const { authChoice, opts, runtime, baseConfig, agentDir } = params;
   let nextConfig = params.nextConfig;
 
-  if (authChoice === "claude-cli" || authChoice === "codex-cli") {
-    runtime.error(
-      [
-        `Auth choice "${authChoice}" is deprecated.`,
-        'Use "--auth-choice token" (Anthropic setup-token) or "--auth-choice openai-codex".',
-      ].join("\n"),
-    );
-    runtime.exit(1);
-    return null;
-  }
-
-  if (authChoice === "setup-token") {
-    runtime.error(
-      [
-        'Auth choice "setup-token" requires interactive mode.',
-        'Use "--auth-choice token" with --token and --token-provider anthropic.',
-      ].join("\n"),
-    );
-    runtime.exit(1);
-    return null;
-  }
-
   if (authChoice === "vllm") {
     runtime.error(
       [
@@ -579,7 +557,6 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (
-    authChoice === "minimax-cloud" ||
     authChoice === "minimax-api" ||
     authChoice === "minimax-api-key-cn" ||
     authChoice === "minimax-api-lightning"
@@ -751,7 +728,6 @@ export async function applyNonInteractiveAuthChoice(params: {
   }
 
   if (
-    authChoice === "oauth" ||
     authChoice === "chutes" ||
     authChoice === "openai-codex" ||
     authChoice === "qwen-portal" ||

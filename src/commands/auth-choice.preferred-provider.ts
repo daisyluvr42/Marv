@@ -1,14 +1,10 @@
 import type { AuthChoice } from "./onboard-types.js";
 
 const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
-  oauth: "anthropic",
-  "setup-token": "anthropic",
-  "claude-cli": "anthropic",
   token: "anthropic",
   apiKey: "anthropic",
   vllm: "vllm",
   "openai-codex": "openai-codex",
-  "codex-cli": "openai-codex",
   chutes: "chutes",
   "openai-api-key": "openai",
   "openrouter-api-key": "openrouter",
@@ -32,7 +28,6 @@ const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
   "huggingface-api-key": "huggingface",
   "github-copilot": "github-copilot",
   "copilot-proxy": "copilot-proxy",
-  "minimax-cloud": "minimax",
   "minimax-api": "minimax",
   "minimax-api-key-cn": "minimax-cn",
   "minimax-api-lightning": "minimax",

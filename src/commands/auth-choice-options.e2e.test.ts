@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { AuthProfileStore } from "../agents/auth-profiles.js";
 import {
   buildAuthChoiceGroups,
   buildAuthChoiceOptions,
   formatAuthChoiceChoicesForCli,
 } from "./auth-choice-options.js";
 
-const EMPTY_STORE: AuthProfileStore = { version: 1, profiles: {} };
-
 function getOptions(includeSkip = false) {
   return buildAuthChoiceOptions({
-    store: EMPTY_STORE,
     includeSkip,
   });
 }
@@ -22,7 +18,7 @@ describe("buildAuthChoiceOptions", () => {
     expect(options.find((opt) => opt.value === "github-copilot")).toBeDefined();
   });
 
-  it("includes setup-token option for Anthropic", () => {
+  it("includes Anthropic token option", () => {
     const options = getOptions();
 
     expect(options.some((opt) => opt.value === "token")).toBe(true);
@@ -55,7 +51,6 @@ describe("buildAuthChoiceOptions", () => {
   it("builds cli help choices from the same catalog", () => {
     const options = getOptions(true);
     const cliChoices = formatAuthChoiceChoicesForCli({
-      includeLegacyAliases: false,
       includeSkip: true,
     }).split("|");
 
@@ -64,21 +59,19 @@ describe("buildAuthChoiceOptions", () => {
     }
   });
 
-  it("can include legacy aliases in cli help choices", () => {
+  it("omits removed legacy aliases from cli help choices", () => {
     const cliChoices = formatAuthChoiceChoicesForCli({
-      includeLegacyAliases: true,
       includeSkip: true,
     }).split("|");
 
-    expect(cliChoices).toContain("setup-token");
-    expect(cliChoices).toContain("oauth");
-    expect(cliChoices).toContain("claude-cli");
-    expect(cliChoices).toContain("codex-cli");
+    expect(cliChoices).not.toContain("setup-token");
+    expect(cliChoices).not.toContain("oauth");
+    expect(cliChoices).not.toContain("claude-cli");
+    expect(cliChoices).not.toContain("codex-cli");
   });
 
   it("shows Chutes in grouped provider selection", () => {
     const { groups } = buildAuthChoiceGroups({
-      store: EMPTY_STORE,
       includeSkip: false,
     });
     const chutesGroup = groups.find((group) => group.value === "chutes");

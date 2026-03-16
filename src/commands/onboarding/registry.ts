@@ -20,7 +20,3 @@ export function getChannelOnboardingAdapter(
 export function listChannelOnboardingAdapters(): ChannelOnboardingAdapter[] {
   return Array.from(CHANNEL_ONBOARDING_ADAPTERS().values());
 }
-
-// Legacy aliases (pre-rename).
-export const getProviderOnboardingAdapter = getChannelOnboardingAdapter;
-export const listProviderOnboardingAdapters = listChannelOnboardingAdapters;

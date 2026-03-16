@@ -39,10 +39,7 @@ function resolveInstallDaemonFlag(
   return undefined;
 }
 
-const AUTH_CHOICE_HELP = formatAuthChoiceChoicesForCli({
-  includeLegacyAliases: true,
-  includeSkip: true,
-});
+const AUTH_CHOICE_HELP = formatAuthChoiceChoicesForCli({ includeSkip: true });
 
 export function registerOnboardCommand(program: Command) {
   const command = program
@@ -63,7 +60,7 @@ export function registerOnboardCommand(program: Command) {
       "Acknowledge that agents are powerful and full system access is risky (required for --non-interactive)",
       false,
     )
-    .option("--flow <flow>", "Wizard flow: quickstart|advanced|manual")
+    .option("--flow <flow>", "Wizard flow: quickstart|advanced")
     .option("--mode <mode>", "Wizard mode: local|remote")
     .option("--auth-choice <choice>", `Auth: ${AUTH_CHOICE_HELP}`)
     .option(
@@ -127,7 +124,7 @@ export function registerOnboardCommand(program: Command) {
           p0User: opts.p0User as string | undefined,
           nonInteractive: Boolean(opts.nonInteractive),
           acceptRisk: Boolean(opts.acceptRisk),
-          flow: opts.flow as "quickstart" | "advanced" | "manual" | undefined,
+          flow: opts.flow as "quickstart" | "advanced" | undefined,
           mode: opts.mode as "local" | "remote" | undefined,
           authChoice: opts.authChoice as AuthChoice | undefined,
           tokenProvider: opts.tokenProvider as string | undefined,

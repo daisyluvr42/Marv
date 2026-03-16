@@ -165,23 +165,18 @@ async function promptAgentP0ForOnboarding(params: {
   prompter: WizardPrompter;
 }): Promise<MarvConfig> {
   const current = params.config.agents?.defaults?.p0 ?? {};
-  const soul = await params.prompter.text({
-    message: "P0 Soul",
-    placeholder: "Stable persona and principles",
-    initialValue: params.opts.p0Soul ?? current.soul ?? "",
-  });
   const identity = await params.prompter.text({
-    message: "P0 Identity",
-    placeholder: "Stable self-description",
+    message: "Agent name",
+    placeholder: "What should the agent be called?",
     initialValue: params.opts.p0Identity ?? current.identity ?? "",
   });
   const user = await params.prompter.text({
-    message: "P0 User",
-    placeholder: "Stable user preferences only, not transient state",
+    message: "How should the agent address you?",
+    placeholder: "Your name or preferred nickname",
     initialValue: params.opts.p0User ?? current.user ?? "",
   });
   return setAgentP0Sections(params.config, {
-    soul: String(soul ?? ""),
+    soul: params.opts.p0Soul ?? current.soul,
     identity: String(identity ?? ""),
     user: String(user ?? ""),
   });
@@ -198,21 +193,7 @@ export async function runOnboardingWizard(
   try {
     onboardHelpers.printWizardHeader(runtime);
     await prompter.intro("Marv onboarding");
-    const explicitFlowRaw = opts.flow?.trim();
-    const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;
-    if (
-      normalizedExplicitFlow &&
-      normalizedExplicitFlow !== "quickstart" &&
-      normalizedExplicitFlow !== "advanced"
-    ) {
-      runtime.error("Invalid --flow (use quickstart, manual, or advanced).");
-      runtime.exit(1);
-      return;
-    }
-    const explicitFlow: WizardFlow | undefined =
-      normalizedExplicitFlow === "quickstart" || normalizedExplicitFlow === "advanced"
-        ? normalizedExplicitFlow
-        : undefined;
+    const explicitFlow = opts.flow;
     await presentWizardStage(prompter, "environment", { flow: explicitFlow });
     await requireRiskAcknowledgement({ opts, prompter });
 
@@ -510,22 +491,17 @@ export async function runOnboardingWizard(
       await validateConfiguredModelEarly({ config: nextConfig, prompter });
     } else {
       await stageController.enter("model", { flow, mode });
-      const { ensureAuthProfileStore } = await import("../agents/auth-profiles.js");
       const { promptAuthChoiceGrouped } = await import("../commands/auth-choice-prompt.js");
       const { promptCustomApiConfig } = await import("../commands/onboard-custom.js");
       const { applyAuthChoice, resolvePreferredProviderForAuthChoice, warnIfModelConfigLooksOff } =
         await import("../commands/auth-choice.js");
       const { applyPrimaryModel, promptDefaultModel } = await import("../commands/model-picker.js");
 
-      const authStore = ensureAuthProfileStore(undefined, {
-        allowKeychainPrompt: false,
-      });
       const authChoiceFromPrompt = opts.authChoice === undefined;
       const authChoice =
         opts.authChoice ??
         (await promptAuthChoiceGrouped({
           prompter,
-          store: authStore,
           includeSkip: true,
         }));
 
@@ -622,7 +598,7 @@ export async function runOnboardingWizard(
       nextConfig = gateway.nextConfig;
       settings = gateway.settings;
 
-      if (opts.skipChannels ?? opts.skipProviders) {
+      if (opts.skipChannels) {
         await prompter.note("Skipping channel setup.", "Channels");
       } else {
         const { listChannelPlugins } = await import("../channels/plugins/index.js");
@@ -666,14 +642,6 @@ export async function runOnboardingWizard(
     } else {
       const { setupSkills } = await import("../commands/onboard-skills.js");
       nextConfig = await setupSkills(nextConfig, workspaceDir, runtime, prompter);
-    }
-
-    // Setup hooks (session memory on /new)
-    if (reuseExistingLocalSetup) {
-      await prompter.note("Keeping your existing internal hooks setup.", "Hooks");
-    } else {
-      const { setupInternalHooks } = await import("../commands/onboard-hooks.js");
-      nextConfig = await setupInternalHooks(nextConfig, runtime, prompter);
     }
 
     nextConfig = onboardHelpers.applyWizardMetadata(nextConfig, { command: "onboard", mode });

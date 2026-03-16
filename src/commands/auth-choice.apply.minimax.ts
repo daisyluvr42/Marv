@@ -68,11 +68,7 @@ export async function applyAuthChoiceMiniMax(
     });
   }
 
-  if (
-    params.authChoice === "minimax-cloud" ||
-    params.authChoice === "minimax-api" ||
-    params.authChoice === "minimax-api-lightning"
-  ) {
+  if (params.authChoice === "minimax-api" || params.authChoice === "minimax-api-lightning") {
     const modelId =
       params.authChoice === "minimax-api-lightning" ? "MiniMax-M2.5-Lightning" : "MiniMax-M2.5";
     await ensureMinimaxApiKey({
