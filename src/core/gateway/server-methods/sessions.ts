@@ -4,7 +4,6 @@ import { resolveDefaultAgentId } from "../../../agents/agent-scope.js";
 import { abortEmbeddedPiRun, waitForEmbeddedPiRunEnd } from "../../../agents/runner/pi-embedded.js";
 import { stopSubagentsForRequester } from "../../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../../auto-reply/reply/queue.js";
-import { createInternalHookEvent, triggerInternalHook } from "../../../hooks/internal-hooks.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../../routing/session-key.js";
 import { loadConfig } from "../../config/config.js";
 import {
@@ -283,19 +282,6 @@ export const sessionsHandlers: GatewayRequestHandlers = {
 
     const { cfg, target, storePath } = resolveGatewaySessionTargetFromKey(key);
     const { entry } = loadSessionEntry(key);
-    const commandReason = p.reason === "new" ? "new" : "reset";
-    const hookEvent = createInternalHookEvent(
-      "command",
-      commandReason,
-      target.canonicalKey ?? key,
-      {
-        sessionEntry: entry,
-        previousSessionEntry: entry,
-        commandSource: "gateway:sessions.reset",
-        cfg,
-      },
-    );
-    await triggerInternalHook(hookEvent);
     const sessionId = entry?.sessionId;
     const cleanupError = await ensureSessionRuntimeCleanup({ cfg, key, target, sessionId });
     if (cleanupError) {

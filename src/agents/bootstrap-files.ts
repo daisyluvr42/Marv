@@ -1,5 +1,4 @@
 import type { MarvConfig } from "../core/config/config.js";
-import { applyBootstrapHookOverrides } from "./bootstrap-hooks.js";
 import { buildP0ContextFiles, hasConfiguredAgentP0, isP0FileName } from "./p0.js";
 import type { EmbeddedContextFile } from "./runner/pi-embedded-helpers.js";
 import {
@@ -76,15 +75,7 @@ export async function resolveBootstrapFilesForRun(params: {
     await loadWorkspaceBootstrapFiles(params.workspaceDir),
     sessionKey,
   );
-
-  return applyBootstrapHookOverrides({
-    files: bootstrapFiles,
-    workspaceDir: params.workspaceDir,
-    config: params.config,
-    sessionKey: params.sessionKey,
-    sessionId: params.sessionId,
-    agentId: params.agentId,
-  });
+  return bootstrapFiles;
 }
 
 export async function resolveBootstrapContextForRun(params: {

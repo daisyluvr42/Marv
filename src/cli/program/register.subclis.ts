@@ -172,15 +172,6 @@ const entries: SubCliEntry[] = [
     },
   },
   {
-    name: "hooks",
-    description: "Manage internal agent hooks",
-    hasSubcommands: true,
-    register: async (program) => {
-      const mod = await import("../hooks-cli.js");
-      mod.registerHooksCli(program);
-    },
-  },
-  {
     name: "webhooks",
     description: "Webhook helpers and integrations",
     hasSubcommands: true,

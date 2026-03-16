@@ -1010,7 +1010,6 @@
               {
                 "group": "Automation",
                 "pages": [
-                  "automation/hooks",
                   "automation/cron-jobs",
                   "automation/cron-vs-heartbeat",
                   "automation/troubleshooting",
@@ -1202,7 +1201,6 @@
                   "cli/doctor",
                   "cli/gateway",
                   "cli/health",
-                  "cli/hooks",
                   "cli/logs",
                   "cli/memory",
                   "cli/message",

@@ -10,8 +10,6 @@ import type { createVpsAwareOAuthHandlers } from "../commands/oauth-flow.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { ModelProviderConfig } from "../core/config/types.js";
 import type { GatewayRequestHandler } from "../core/gateway/server-methods/types.js";
-import type { InternalHookHandler } from "../hooks/internal-hooks.js";
-import type { HookEntry } from "../hooks/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
@@ -73,13 +71,6 @@ export type MarvPluginToolOptions = {
   name?: string;
   names?: string[];
   optional?: boolean;
-};
-
-export type MarvPluginHookOptions = {
-  entry?: HookEntry;
-  name?: string;
-  description?: string;
-  register?: boolean;
 };
 
 export type ProviderAuthKind = "oauth" | "api_key" | "token" | "device_code" | "custom";
@@ -247,11 +238,6 @@ export type MarvPluginApi = {
   runtime: PluginRuntime;
   logger: PluginLogger;
   registerTool: (tool: AnyAgentTool | MarvPluginToolFactory, opts?: MarvPluginToolOptions) => void;
-  registerHook: (
-    events: string | string[],
-    handler: InternalHookHandler,
-    opts?: MarvPluginHookOptions,
-  ) => void;
   registerHttpRoute: (params: { path: string; handler: MarvPluginHttpRouteHandler }) => void;
   registerChannel: (registration: MarvPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;

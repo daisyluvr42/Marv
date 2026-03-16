@@ -315,7 +315,6 @@ export function collectAttackSurfaceSummaryFindings(cfg: MarvConfig): SecurityAu
   const group = summarizeGroupPolicy(cfg);
   const elevated = cfg.tools?.elevated?.enabled !== false;
   const webhooksEnabled = cfg.hooks?.enabled === true;
-  const internalHooksEnabled = cfg.hooks?.internal?.enabled === true;
   const browserEnabled = cfg.browser?.enabled ?? true;
 
   const detail =
@@ -324,8 +323,6 @@ export function collectAttackSurfaceSummaryFindings(cfg: MarvConfig): SecurityAu
     `tools.elevated: ${elevated ? "enabled" : "disabled"}` +
     `\n` +
     `hooks.webhooks: ${webhooksEnabled ? "enabled" : "disabled"}` +
-    `\n` +
-    `hooks.internal: ${internalHooksEnabled ? "enabled" : "disabled"}` +
     `\n` +
     `browser control: ${browserEnabled ? "enabled" : "disabled"}`;
 

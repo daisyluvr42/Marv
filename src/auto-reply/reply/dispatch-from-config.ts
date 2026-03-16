@@ -2,7 +2,6 @@ import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
-import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import {
   logMessageProcessed,
@@ -197,7 +196,6 @@ export async function dispatchReplyFromConfig(params: {
       });
   }
 
-  // Bridge to internal hooks (HOOK.md discovery system) - refs #8807
   if (sessionKey) {
     ingestInboundMessageToSoulMemory({
       cfg,
@@ -208,29 +206,6 @@ export async function dispatchReplyFromConfig(params: {
       conversationId,
       messageId: messageIdForHook,
       nowMs: timestamp,
-    });
-    void triggerInternalHook(
-      createInternalHookEvent("message", "received", sessionKey, {
-        from: ctx.From ?? "",
-        content,
-        timestamp,
-        channelId,
-        accountId: ctx.AccountId,
-        conversationId,
-        messageId: messageIdForHook,
-        metadata: {
-          to: ctx.To,
-          provider: ctx.Provider,
-          surface: ctx.Surface,
-          threadId: ctx.MessageThreadId,
-          senderId: ctx.SenderId,
-          senderName: ctx.SenderName,
-          senderUsername: ctx.SenderUsername,
-          senderE164: ctx.SenderE164,
-        },
-      }),
-    ).catch((err) => {
-      logVerbose(`dispatch-from-config: message_received internal hook failed: ${String(err)}`);
     });
   }
 

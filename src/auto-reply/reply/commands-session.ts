@@ -2,7 +2,6 @@ import { abortEmbeddedPiRun } from "../../agents/runner/pi-embedded.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import { updateSessionStore } from "../../core/config/sessions.js";
 import { logVerbose } from "../../globals.js";
-import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { scheduleGatewaySigusr1Restart, triggerMarvRestart } from "../../infra/restart.js";
 import { loadCostUsageSummary, loadSessionCostSummary } from "../../infra/session-cost-usage.js";
 import { formatTokenCount, formatUsd } from "../../utils/usage-format.js";
@@ -323,20 +322,6 @@ export const handleStopCommand: CommandHandler = async (params, allowTextCommand
     storePath: params.storePath,
     abortKey: params.command.abortKey,
   });
-
-  // Trigger internal hook for stop command
-  const hookEvent = createInternalHookEvent(
-    "command",
-    "stop",
-    abortTarget.key ?? params.sessionKey ?? "",
-    {
-      sessionEntry: abortTarget.entry ?? params.sessionEntry,
-      sessionId: abortTarget.sessionId,
-      commandSource: params.command.surface,
-      senderId: params.command.senderId,
-    },
-  );
-  await triggerInternalHook(hookEvent);
 
   const { stopped } = stopSubagentsForRequester({
     cfg: params.cfg,

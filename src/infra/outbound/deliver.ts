@@ -27,7 +27,6 @@ import {
   appendAssistantMessageToSessionTranscript,
   resolveMirroredTranscriptText,
 } from "../../core/config/sessions.js";
-import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { ingestOutboundMessageToSoulMemory } from "../../memory/storage/soul-memory-runtime-ingest.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
@@ -492,18 +491,6 @@ async function deliverOutboundPayloadsCore(
           messageId: params.messageId,
         });
       }
-      void triggerInternalHook(
-        createInternalHookEvent("message", "sent", sessionKeyForInternalHooks, {
-          to,
-          content: params.content,
-          success: params.success,
-          ...(params.error ? { error: params.error } : {}),
-          channelId: channel,
-          accountId: accountId ?? undefined,
-          conversationId: to,
-          messageId: params.messageId,
-        }),
-      ).catch(() => {});
     };
     try {
       throwIfAborted(abortSignal);

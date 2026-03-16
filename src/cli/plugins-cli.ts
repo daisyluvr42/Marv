@@ -305,9 +305,6 @@ export function registerPluginsCli(program: Command) {
       if (plugin.toolNames.length > 0) {
         lines.push(`${theme.muted("Tools:")} ${plugin.toolNames.join(", ")}`);
       }
-      if (plugin.hookNames.length > 0) {
-        lines.push(`${theme.muted("Hooks:")} ${plugin.hookNames.join(", ")}`);
-      }
       if (plugin.gatewayMethods.length > 0) {
         lines.push(`${theme.muted("Gateway methods:")} ${plugin.gatewayMethods.join(", ")}`);
       }

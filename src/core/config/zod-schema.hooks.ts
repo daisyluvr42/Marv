@@ -1,6 +1,5 @@
 import path from "node:path";
 import { z } from "zod";
-import { InstallRecordShape } from "./zod-schema.installs.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
 function isSafeRelativeModulePath(raw: string): boolean {
@@ -27,7 +26,7 @@ function isSafeRelativeModulePath(raw: string): boolean {
   return true;
 }
 
-const SafeRelativeModulePathSchema = z
+export const SafeRelativeModulePathSchema = z
   .string()
   .refine(isSafeRelativeModulePath, "module must be a safe relative path (no absolute paths)");
 
@@ -73,47 +72,6 @@ export const HookMappingSchema = z
       })
       .strict()
       .optional(),
-  })
-  .strict()
-  .optional();
-
-export const InternalHookHandlerSchema = z
-  .object({
-    event: z.string(),
-    module: SafeRelativeModulePathSchema,
-    export: z.string().optional(),
-  })
-  .strict();
-
-const HookConfigSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    env: z.record(z.string(), z.string()).optional(),
-  })
-  // Hook configs are intentionally open-ended (handlers can define their own keys).
-  // Keep enabled/env typed, but allow additional per-hook keys without marking the
-  // whole config invalid (which triggers doctor/best-effort loads).
-  .passthrough();
-
-const HookInstallRecordSchema = z
-  .object({
-    ...InstallRecordShape,
-    hooks: z.array(z.string()).optional(),
-  })
-  .strict();
-
-export const InternalHooksSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    handlers: z.array(InternalHookHandlerSchema).optional(),
-    entries: z.record(z.string(), HookConfigSchema).optional(),
-    load: z
-      .object({
-        extraDirs: z.array(z.string()).optional(),
-      })
-      .strict()
-      .optional(),
-    installs: z.record(z.string(), HookInstallRecordSchema).optional(),
   })
   .strict()
   .optional();

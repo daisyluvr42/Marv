@@ -13,12 +13,6 @@ import { resolveAgentSessionDirs } from "../../agents/session-dirs.js";
 import { cleanStaleLockFiles } from "../../agents/session-write-lock.js";
 import type { CliDeps } from "../../cli/deps.js";
 import { startGmailWatcherWithLogs } from "../../hooks/gmail-watcher-lifecycle.js";
-import {
-  clearInternalHooks,
-  createInternalHookEvent,
-  triggerInternalHook,
-} from "../../hooks/internal-hooks.js";
-import { loadInternalHooks } from "../../hooks/loader.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import type { loadMarvPlugins } from "../../plugins/loader.js";
 import { type PluginServicesHandle, startPluginServices } from "../../plugins/services.js";
@@ -120,20 +114,6 @@ export async function startGatewaySidecars(params: {
     }
   }
 
-  // Load internal hook handlers from configuration and directory discovery.
-  try {
-    // Clear any previously registered hooks to ensure fresh loading
-    clearInternalHooks();
-    const loadedCount = await loadInternalHooks(params.cfg, params.defaultWorkspaceDir);
-    if (loadedCount > 0) {
-      params.logHooks.info(
-        `loaded ${loadedCount} internal hook handler${loadedCount > 1 ? "s" : ""}`,
-      );
-    }
-  } catch (err) {
-    params.logHooks.error(`failed to load hooks: ${String(err)}`);
-  }
-
   // Launch configured channels so gateway replies via the surface the message came from.
   // Tests can opt out via MARV_SKIP_CHANNELS/MARV_SKIP_PROVIDERS (legacy MARV_* also supported).
   const skipChannels =
@@ -151,17 +131,6 @@ export async function startGatewaySidecars(params: {
     params.logChannels.info(
       "skipping channel start (MARV_SKIP_CHANNELS=1 or MARV_SKIP_PROVIDERS=1; legacy MARV_* also supported)",
     );
-  }
-
-  if (params.cfg.hooks?.internal?.enabled) {
-    setTimeout(() => {
-      const hookEvent = createInternalHookEvent("gateway", "startup", "gateway:startup", {
-        cfg: params.cfg,
-        deps: params.deps,
-        workspaceDir: params.defaultWorkspaceDir,
-      });
-      void triggerInternalHook(hookEvent);
-    }, 250);
   }
 
   let pluginServices: PluginServicesHandle | null = null;

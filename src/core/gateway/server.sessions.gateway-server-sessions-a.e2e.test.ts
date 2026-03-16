@@ -20,10 +20,6 @@ const sessionCleanupMocks = vi.hoisted(() => ({
   stopSubagentsForRequester: vi.fn(() => ({ stopped: 0 })),
 }));
 
-const sessionHookMocks = vi.hoisted(() => ({
-  triggerInternalHook: vi.fn(async () => {}),
-}));
-
 vi.mock("../../auto-reply/reply/queue.js", async () => {
   const actual = await vi.importActual<typeof import("../../auto-reply/reply/queue.js")>(
     "../../auto-reply/reply/queue.js",
@@ -41,16 +37,6 @@ vi.mock("../../auto-reply/reply/abort.js", async () => {
   return {
     ...actual,
     stopSubagentsForRequester: sessionCleanupMocks.stopSubagentsForRequester,
-  };
-});
-
-vi.mock("../../hooks/internal-hooks.js", async () => {
-  const actual = await vi.importActual<typeof import("../../hooks/internal-hooks.js")>(
-    "../../hooks/internal-hooks.js",
-  );
-  return {
-    ...actual,
-    triggerInternalHook: sessionHookMocks.triggerInternalHook,
   };
 });
 
@@ -131,7 +117,6 @@ describe("gateway server sessions", () => {
   beforeEach(() => {
     sessionCleanupMocks.clearSessionQueues.mockClear();
     sessionCleanupMocks.stopSubagentsForRequester.mockClear();
-    sessionHookMocks.triggerInternalHook.mockClear();
   });
 
   test("lists and patches session store via sessions.* RPC", async () => {
@@ -650,22 +635,6 @@ describe("gateway server sessions", () => {
       reason: "new",
     });
     expect(reset.ok).toBe(true);
-    expect(sessionHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);
-    const event = (
-      sessionHookMocks.triggerInternalHook.mock.calls as unknown as Array<[unknown]>
-    )[0]?.[0] as { context?: { previousSessionEntry?: unknown } } | undefined;
-    if (!event) {
-      throw new Error("expected session hook event");
-    }
-    expect(event).toMatchObject({
-      type: "command",
-      action: "new",
-      sessionKey: "agent:main:main",
-      context: {
-        commandSource: "gateway:sessions.reset",
-      },
-    });
-    expect(event.context?.previousSessionEntry).toMatchObject({ sessionId: "sess-main" });
     ws.close();
   });
 

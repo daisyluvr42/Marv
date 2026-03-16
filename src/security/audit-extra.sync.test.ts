@@ -4,33 +4,20 @@ import { collectAttackSurfaceSummaryFindings } from "./audit-extra.sync.js";
 import { safeEqualSecret } from "./secret-equal.js";
 
 describe("collectAttackSurfaceSummaryFindings", () => {
-  it("distinguishes external webhooks from internal hooks when only internal hooks are enabled", () => {
+  it("reports webhooks as enabled when configured", () => {
     const cfg: MarvConfig = {
-      hooks: { internal: { enabled: true } },
-    };
-
-    const [finding] = collectAttackSurfaceSummaryFindings(cfg);
-    expect(finding.checkId).toBe("summary.attack_surface");
-    expect(finding.detail).toContain("hooks.webhooks: disabled");
-    expect(finding.detail).toContain("hooks.internal: enabled");
-  });
-
-  it("reports both hook systems as enabled when both are configured", () => {
-    const cfg: MarvConfig = {
-      hooks: { enabled: true, internal: { enabled: true } },
+      hooks: { enabled: true },
     };
 
     const [finding] = collectAttackSurfaceSummaryFindings(cfg);
     expect(finding.detail).toContain("hooks.webhooks: enabled");
-    expect(finding.detail).toContain("hooks.internal: enabled");
   });
 
-  it("reports both hook systems as disabled when neither is configured", () => {
+  it("reports webhooks as disabled when not configured", () => {
     const cfg: MarvConfig = {};
 
     const [finding] = collectAttackSurfaceSummaryFindings(cfg);
     expect(finding.detail).toContain("hooks.webhooks: disabled");
-    expect(finding.detail).toContain("hooks.internal: disabled");
   });
 });
 

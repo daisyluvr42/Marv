@@ -66,16 +66,7 @@ wired end-to-end.
 
 Marv has two hook systems:
 
-- **Internal hooks** (Gateway hooks): event-driven scripts for commands and lifecycle events.
 - **Plugin hooks**: extension points inside the agent/tool lifecycle and gateway pipeline.
-
-### Internal hooks (Gateway hooks)
-
-- **`agent:bootstrap`**: runs while building bootstrap files before the system prompt is finalized.
-  Use this to add/remove bootstrap context files.
-- **Command hooks**: `/new`, `/reset`, `/stop`, and other command events (see Hooks doc).
-
-See [Hooks](/automation/hooks) for setup and examples.
 
 ### Plugin hooks (agent + gateway lifecycle)
 

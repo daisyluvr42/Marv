@@ -1,4 +1,3 @@
-import path from "node:path";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
@@ -6,7 +5,6 @@ import type {
   GatewayRequestHandler,
   GatewayRequestHandlers,
 } from "../core/gateway/server-methods/types.js";
-import { registerInternalHook } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import { resolveUserPath } from "../utils.js";
 import { registerPluginCommand } from "./commands.js";
@@ -18,7 +16,6 @@ import type {
   MarvPluginCliRegistrar,
   MarvPluginCommandDefinition,
   MarvPluginHttpRouteHandler,
-  MarvPluginHookOptions,
   ProviderPlugin,
   MarvPluginService,
   MarvPluginToolContext,
@@ -185,76 +182,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       optional,
       source: record.source,
     });
-  };
-
-  const registerHook = (
-    record: PluginRecord,
-    events: string | string[],
-    handler: Parameters<typeof registerInternalHook>[1],
-    opts: MarvPluginHookOptions | undefined,
-    config: MarvPluginApi["config"],
-  ) => {
-    const eventList = Array.isArray(events) ? events : [events];
-    const normalizedEvents = eventList.map((event) => event.trim()).filter(Boolean);
-    const entry = opts?.entry ?? null;
-    const name = entry?.hook.name ?? opts?.name?.trim();
-    if (!name) {
-      pushDiagnostic({
-        level: "warn",
-        pluginId: record.id,
-        source: record.source,
-        message: "hook registration missing name",
-      });
-      return;
-    }
-
-    const description = entry?.hook.description ?? opts?.description ?? "";
-    const hookEntry: HookEntry = entry
-      ? {
-          ...entry,
-          hook: {
-            ...entry.hook,
-            name,
-            description,
-            source: "marv-plugin",
-            pluginId: record.id,
-          },
-          metadata: {
-            ...entry.metadata,
-            events: normalizedEvents,
-          },
-        }
-      : {
-          hook: {
-            name,
-            description,
-            source: "marv-plugin",
-            pluginId: record.id,
-            filePath: record.source,
-            baseDir: path.dirname(record.source),
-            handlerPath: record.source,
-          },
-          frontmatter: {},
-          metadata: { events: normalizedEvents },
-          invocation: { enabled: true },
-        };
-
-    record.hookNames.push(name);
-    registry.hooks.push({
-      pluginId: record.id,
-      entry: hookEntry,
-      events: normalizedEvents,
-      source: record.source,
-    });
-
-    const hookSystemEnabled = config?.hooks?.internal?.enabled === true;
-    if (!hookSystemEnabled || opts?.register === false) {
-      return;
-    }
-
-    for (const event of normalizedEvents) {
-      registerInternalHook(event, handler);
-    }
   };
 
   const registerGatewayMethod = (
@@ -469,8 +396,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       runtime: registryParams.runtime,
       logger: normalizeLogger(registryParams.logger),
       registerTool: (tool, opts) => registerTool(record, tool, opts),
-      registerHook: (events, handler, opts) =>
-        registerHook(record, events, handler, opts, params.config),
       registerHttpRoute: (params) => registerHttpRoute(record, params),
       registerChannel: (registration) => registerChannel(record, registration),
       registerProvider: (provider) => registerProvider(record, provider),
@@ -494,7 +419,6 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     registerCli,
     registerService,
     registerCommand,
-    registerHook,
     registerTypedHook,
   };
 }

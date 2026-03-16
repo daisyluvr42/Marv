@@ -5,7 +5,7 @@ import { AgentsSchema, AudioSchema, BroadcastSchema } from "./zod-schema.agents.
 import { ApprovalsSchema } from "./zod-schema.approvals.js";
 import { AutonomySchema } from "./zod-schema.autonomy.js";
 import { HexColorSchema, ModelsConfigSchema } from "./zod-schema.core.js";
-import { HookMappingSchema, HooksGmailSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
+import { HookMappingSchema, HooksGmailSchema } from "./zod-schema.hooks.js";
 import { InstallRecordShape } from "./zod-schema.installs.js";
 import { ChannelsSchema } from "./zod-schema.providers.js";
 import { sensitive } from "./zod-schema.sensitive.js";
@@ -427,7 +427,6 @@ export const MarvSchema = z
         transformsDir: z.string().optional(),
         mappings: z.array(HookMappingSchema).optional(),
         gmail: HooksGmailSchema,
-        internal: InternalHooksSchema,
       })
       .strict()
       .optional(),
