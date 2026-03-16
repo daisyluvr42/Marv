@@ -17,6 +17,7 @@ const DEFAULT_CONFIG = {
   archiveAgeDays: 30,
   orphanAgeDays: 60,
   compactedDiscount: 0.5,
+  batchLimit: 1000,
 };
 
 function writeP3(content: string, kind = "preference", recordKind = "fact") {

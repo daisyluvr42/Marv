@@ -360,6 +360,7 @@ export type SoulMemoryConfig = {
     archiveAgeDays?: number;
     orphanAgeDays?: number;
     compactedDiscount?: number;
+    batchLimit?: number;
   };
 };
 
@@ -371,6 +372,8 @@ export type ResolvedP3CompactionConfig = {
   archiveAgeDays: number;
   orphanAgeDays: number;
   compactedDiscount: number;
+  /** Max episodic items to load per compaction run (prevents unbounded memory). */
+  batchLimit: number;
 };
 
 type ResolvedSoulMemoryConfig = {
@@ -2201,6 +2204,7 @@ function resolveP3CompactionConfig(
     archiveAgeDays: resolveBoundedInteger(cfg.archiveAgeDays, 30, 1),
     orphanAgeDays: resolveBoundedInteger(cfg.orphanAgeDays, 60, 1),
     compactedDiscount: resolveBoundedNumber(cfg.compactedDiscount, 0.5, 0, 1),
+    batchLimit: resolveBoundedInteger(cfg.batchLimit, 1000, 50, 10000),
   };
 }
 

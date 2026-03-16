@@ -208,14 +208,15 @@ function runCompaction(
       ") VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 'ask_user')",
   );
 
-  // Load uncompacted P3 episodic items
+  // Load uncompacted P3 episodic items (batch-limited, oldest first for fairness)
   const rows = db
     .prepare(
       "SELECT id, scope_type, scope_id, kind, content, record_kind, source, source_detail, " +
         "confidence, created_at, metadata_json " +
-        "FROM memory_items WHERE tier = 'P3' AND memory_type = 'episodic' AND is_compacted = 0",
+        "FROM memory_items WHERE tier = 'P3' AND memory_type = 'episodic' AND is_compacted = 0 " +
+        "ORDER BY created_at ASC LIMIT ?",
     )
-    .all() as EpisodicRow[];
+    .all(config.batchLimit) as EpisodicRow[];
 
   if (rows.length < config.minClusterSize) {
     return {
