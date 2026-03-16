@@ -1,0 +1,928 @@
+import AppKit
+import Foundation
+import Observation
+import SwiftUI
+
+@MainActor
+final class MenuSessionsInjector: NSObject, NSMenuDelegate {
+    static let shared = MenuSessionsInjector()
+
+    private let tag = 9_415_557
+    private let fallbackWidth: CGFloat = 320
+    private let activeWindowSeconds: TimeInterval = 24 * 60 * 60
+
+    private weak var originalDelegate: NSMenuDelegate?
+    private weak var statusItem: NSStatusItem?
+    private var loadTask: Task<Void, Never>?
+    private var previewTasks: [Task<Void, Never>] = []
+    private var isMenuOpen = false
+    private var lastKnownMenuWidth: CGFloat?
+    private var menuOpenWidth: CGFloat?
+    private var isObservingControlChannel = false
+
+    private var cachedSnapshot: SessionStoreSnapshot?
+    private var cachedErrorText: String?
+    private var cacheUpdatedAt: Date?
+    private let refreshIntervalSeconds: TimeInterval = 12
+    private var cachedUsageSummary: GatewayUsageSummary?
+    private var cachedUsageErrorText: String?
+    private var usageCacheUpdatedAt: Date?
+    private let usageRefreshIntervalSeconds: TimeInterval = 30
+    private var cachedCostSummary: GatewayCostUsageSummary?
+    private var cachedCostErrorText: String?
+    private var costCacheUpdatedAt: Date?
+    private let costRefreshIntervalSeconds: TimeInterval = 45
+    #if DEBUG
+    private var testControlChannelConnected: Bool?
+    #endif
+
+    func install(into statusItem: NSStatusItem) {
+        self.statusItem = statusItem
+        guard let menu = statusItem.menu else { return }
+
+        // Preserve SwiftUI's internal NSMenuDelegate, otherwise it may stop populating menu items.
+        if menu.delegate !== self {
+            self.originalDelegate = menu.delegate
+            menu.delegate = self
+        }
+
+        if self.loadTask == nil {
+            self.loadTask = Task { await self.refreshCache(force: true) }
+        }
+
+        self.startControlChannelObservation()
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        self.originalDelegate?.menuWillOpen?(menu)
+        self.isMenuOpen = true
+        self.menuOpenWidth = self.currentMenuWidth(for: menu)
+
+        self.inject(into: menu)
+
+        // Refresh in background for the next open; keep width stable while open.
+        self.loadTask?.cancel()
+        let forceRefresh = self.cachedSnapshot == nil || self.cachedErrorText != nil
+        self.loadTask = Task { [weak self] in
+            guard let self else { return }
+            await self.refreshCache(force: forceRefresh)
+            await self.refreshUsageCache(force: forceRefresh)
+            await self.refreshCostUsageCache(force: forceRefresh)
+            await MainActor.run {
+                guard self.isMenuOpen else { return }
+                self.inject(into: menu)
+            }
+        }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        self.originalDelegate?.menuDidClose?(menu)
+        self.isMenuOpen = false
+        self.menuOpenWidth = nil
+        self.loadTask?.cancel()
+        self.cancelPreviewTasks()
+    }
+
+    private func startControlChannelObservation() {
+        guard !self.isObservingControlChannel else { return }
+        self.isObservingControlChannel = true
+        self.observeControlChannelState()
+    }
+
+    private func observeControlChannelState() {
+        withObservationTracking {
+            _ = ControlChannel.shared.state
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.handleControlChannelStateChange()
+                self.observeControlChannelState()
+            }
+        }
+    }
+
+    private func handleControlChannelStateChange() {
+        guard self.isMenuOpen, let menu = self.statusItem?.menu else { return }
+        self.loadTask?.cancel()
+        self.loadTask = Task { [weak self, weak menu] in
+            guard let self, let menu else { return }
+            await self.refreshCache(force: true)
+            await self.refreshUsageCache(force: true)
+            await self.refreshCostUsageCache(force: true)
+            await MainActor.run {
+                guard self.isMenuOpen else { return }
+                self.inject(into: menu)
+            }
+        }
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        self.originalDelegate?.menuNeedsUpdate?(menu)
+    }
+
+    func confinementRect(for menu: NSMenu, on screen: NSScreen?) -> NSRect {
+        if let rect = self.originalDelegate?.confinementRect?(for: menu, on: screen) {
+            return rect
+        }
+        return NSRect.zero
+    }
+}
+
+extension MenuSessionsInjector {
+    // MARK: - Injection
+
+    private var mainSessionKey: String {
+        "main"
+    }
+
+    private func inject(into menu: NSMenu) {
+        self.cancelPreviewTasks()
+        // Remove any previous injected items.
+        for item in menu.items where item.tag == self.tag {
+            menu.removeItem(item)
+        }
+
+        guard let insertIndex = self.findInsertIndex(in: menu) else { return }
+        let width = self.initialWidth(for: menu)
+        let isConnected = self.isControlChannelConnected
+        let channelState = ControlChannel.shared.state
+
+        var cursor = insertIndex
+        var headerView: NSView?
+
+        if let snapshot = self.cachedSnapshot {
+            let now = Date()
+            let mainKey = self.mainSessionKey
+            let rows = snapshot.rows.filter { row in
+                if row.key == "main", mainKey != "main" { return false }
+                if row.key == mainKey { return true }
+                guard let updatedAt = row.updatedAt else { return false }
+                return now.timeIntervalSince(updatedAt) <= self.activeWindowSeconds
+            }.sorted { lhs, rhs in
+                if lhs.key == mainKey { return true }
+                if rhs.key == mainKey { return false }
+                return (lhs.updatedAt ?? .distantPast) > (rhs.updatedAt ?? .distantPast)
+            }
+            if !rows.isEmpty {
+                let previewKeys = rows.prefix(20).map(\.key)
+                let task = Task {
+                    await SessionMenuPreviewLoader.prewarm(sessionKeys: previewKeys, maxItems: 10)
+                }
+                self.previewTasks.append(task)
+            }
+
+            let headerItem = NSMenuItem()
+            headerItem.tag = self.tag
+            headerItem.isEnabled = false
+            let statusText = self
+                .cachedErrorText ?? (isConnected ? nil : self.controlChannelStatusText(for: channelState))
+            let hosted = self.makeHostedView(
+                rootView: AnyView(MenuSessionsHeaderView(
+                    count: rows.count,
+                    statusText: statusText)),
+                width: width,
+                highlighted: false)
+            headerItem.view = hosted
+            headerView = hosted
+            menu.insertItem(headerItem, at: cursor)
+            cursor += 1
+
+            if rows.isEmpty {
+                menu.insertItem(
+                    self.makeMessageItem(text: "No active sessions", symbolName: "minus", width: width),
+                    at: cursor)
+                cursor += 1
+            } else {
+                for row in rows {
+                    let item = NSMenuItem()
+                    item.tag = self.tag
+                    item.isEnabled = true
+                    item.submenu = self.buildSubmenu(for: row, storePath: snapshot.storePath)
+                    item.view = self.makeHostedView(
+                        rootView: AnyView(SessionMenuLabelView(row: row, width: width)),
+                        width: width,
+                        highlighted: true)
+                    menu.insertItem(item, at: cursor)
+                    cursor += 1
+                }
+            }
+        } else {
+            let headerItem = NSMenuItem()
+            headerItem.tag = self.tag
+            headerItem.isEnabled = false
+            let statusText = isConnected
+                ? (self.cachedErrorText ?? "Loading sessions…")
+                : self.controlChannelStatusText(for: channelState)
+            let hosted = self.makeHostedView(
+                rootView: AnyView(MenuSessionsHeaderView(
+                    count: 0,
+                    statusText: statusText)),
+                width: width,
+                highlighted: false)
+            headerItem.view = hosted
+            headerView = hosted
+            menu.insertItem(headerItem, at: cursor)
+            cursor += 1
+
+            if !isConnected {
+                menu.insertItem(
+                    self.makeMessageItem(
+                        text: "Connect the gateway to see sessions",
+                        symbolName: "bolt.slash",
+                        width: width),
+                    at: cursor)
+                cursor += 1
+            }
+        }
+
+        cursor = self.insertUsageSection(into: menu, at: cursor, width: width)
+        cursor = self.insertCostUsageSection(into: menu, at: cursor, width: width)
+
+        DispatchQueue.main.async { [weak self, weak headerView] in
+            guard let self, let headerView else { return }
+            self.captureMenuWidthIfAvailable(from: headerView)
+        }
+    }
+
+    private func insertUsageSection(into menu: NSMenu, at cursor: Int, width: CGFloat) -> Int {
+        let rows = self.usageRows
+        if rows.isEmpty {
+            return cursor
+        }
+
+        var cursor = cursor
+
+        if cursor > 0, !menu.items[cursor - 1].isSeparatorItem {
+            let separator = NSMenuItem.separator()
+            separator.tag = self.tag
+            menu.insertItem(separator, at: cursor)
+            cursor += 1
+        }
+
+        let headerItem = NSMenuItem()
+        headerItem.tag = self.tag
+        headerItem.isEnabled = false
+        headerItem.view = self.makeHostedView(
+            rootView: AnyView(MenuUsageHeaderView(
+                count: rows.count)),
+            width: width,
+            highlighted: false)
+        menu.insertItem(headerItem, at: cursor)
+        cursor += 1
+
+        if let selectedProvider = self.selectedUsageProviderId,
+           let primary = rows.first(where: { $0.providerId.lowercased() == selectedProvider }),
+           rows.count > 1
+        {
+            let others = rows.filter { $0.providerId.lowercased() != selectedProvider }
+
+            let item = NSMenuItem()
+            item.tag = self.tag
+            item.isEnabled = true
+            if !others.isEmpty {
+                item.submenu = self.buildUsageOverflowMenu(rows: others, width: width)
+            }
+            item.view = self.makeHostedView(
+                rootView: AnyView(UsageMenuLabelView(row: primary, width: width, showsChevron: !others.isEmpty)),
+                width: width,
+                highlighted: true)
+            menu.insertItem(item, at: cursor)
+            cursor += 1
+
+            return cursor
+        }
+
+        for row in rows {
+            let item = NSMenuItem()
+            item.tag = self.tag
+            item.isEnabled = false
+            item.view = self.makeHostedView(
+                rootView: AnyView(UsageMenuLabelView(row: row, width: width)),
+                width: width,
+                highlighted: false)
+            menu.insertItem(item, at: cursor)
+            cursor += 1
+        }
+
+        return cursor
+    }
+
+    private func insertCostUsageSection(into menu: NSMenu, at cursor: Int, width: CGFloat) -> Int {
+        guard self.isControlChannelConnected else { return cursor }
+        guard let submenu = self.buildCostUsageSubmenu(width: width) else { return cursor }
+        var cursor = cursor
+
+        if cursor > 0, !menu.items[cursor - 1].isSeparatorItem {
+            let separator = NSMenuItem.separator()
+            separator.tag = self.tag
+            menu.insertItem(separator, at: cursor)
+            cursor += 1
+        }
+
+        let item = NSMenuItem(title: "Usage cost (30 days)", action: nil, keyEquivalent: "")
+        item.tag = self.tag
+        item.isEnabled = true
+        item.image = NSImage(systemSymbolName: "chart.bar.xaxis", accessibilityDescription: nil)
+        item.submenu = submenu
+        menu.insertItem(item, at: cursor)
+        cursor += 1
+        return cursor
+    }
+
+    private var selectedUsageProviderId: String? {
+        guard let model = self.cachedSnapshot?.defaults.model.nonEmpty else { return nil }
+        let trimmed = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let slash = trimmed.firstIndex(of: "/") else { return nil }
+        let provider = trimmed[..<slash].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return provider.nonEmpty
+    }
+
+    private var usageRows: [UsageRow] {
+        guard let summary = self.cachedUsageSummary else { return [] }
+        return summary.primaryRows()
+    }
+
+    private func buildUsageOverflowMenu(rows: [UsageRow], width: CGFloat) -> NSMenu {
+        let menu = NSMenu()
+        for row in rows {
+            let item = NSMenuItem()
+            item.tag = self.tag
+            item.isEnabled = false
+            item.view = self.makeHostedView(
+                rootView: AnyView(UsageMenuLabelView(row: row, width: width)),
+                width: width,
+                highlighted: false)
+            menu.addItem(item)
+        }
+        return menu
+    }
+
+    private var isControlChannelConnected: Bool {
+        #if DEBUG
+        if let override = self.testControlChannelConnected { return override }
+        #endif
+        if case .connected = ControlChannel.shared.state { return true }
+        return false
+    }
+
+    private func controlChannelStatusText(for state: ControlChannel.ConnectionState) -> String {
+        switch state {
+        case .connected:
+            "Loading sessions…"
+        case .connecting:
+            "Connecting…"
+        case let .degraded(message):
+            message.nonEmpty ?? "Gateway disconnected"
+        case .disconnected:
+            "Gateway disconnected"
+        }
+    }
+
+    private func buildCostUsageSubmenu(width: CGFloat) -> NSMenu? {
+        if let error = self.cachedCostErrorText, !error.isEmpty, self.cachedCostSummary == nil {
+            let menu = NSMenu()
+            let item = NSMenuItem(title: error, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
+            return menu
+        }
+
+        guard let summary = self.cachedCostSummary else { return nil }
+        guard !summary.daily.isEmpty else { return nil }
+
+        let menu = NSMenu()
+        menu.delegate = self
+
+        let chartView = CostUsageHistoryMenuView(summary: summary, width: width)
+        let hosting = NSHostingView(rootView: AnyView(chartView))
+        let controller = NSHostingController(rootView: AnyView(chartView))
+        let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+        hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
+
+        let chartItem = NSMenuItem()
+        chartItem.view = hosting
+        chartItem.isEnabled = false
+        chartItem.representedObject = "costUsageChart"
+        menu.addItem(chartItem)
+
+        return menu
+    }
+
+    private func makeSessionPreviewItem(
+        sessionKey: String,
+        title: String,
+        width: CGFloat,
+        maxLines: Int) -> NSMenuItem
+    {
+        let item = NSMenuItem()
+        item.tag = self.tag
+        item.isEnabled = false
+        let view = AnyView(
+            SessionMenuPreviewView(
+                width: width,
+                maxLines: maxLines,
+                title: title,
+                items: [],
+                status: .loading)
+                .environment(\.isEnabled, true))
+        let hosted = HighlightedMenuItemHostView(rootView: view, width: width)
+        item.view = hosted
+
+        let task = Task { [weak hosted, weak item] in
+            let snapshot = await SessionMenuPreviewLoader.load(sessionKey: sessionKey, maxItems: 10)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                let nextView = AnyView(
+                    SessionMenuPreviewView(
+                        width: width,
+                        maxLines: maxLines,
+                        title: title,
+                        items: snapshot.items,
+                        status: snapshot.status)
+                        .environment(\.isEnabled, true))
+
+                if let item {
+                    item.view = HighlightedMenuItemHostView(rootView: nextView, width: width)
+                    return
+                }
+
+                guard let hosted else { return }
+                hosted.update(rootView: nextView, width: width)
+            }
+        }
+        self.previewTasks.append(task)
+        return item
+    }
+
+    private func cancelPreviewTasks() {
+        for task in self.previewTasks {
+            task.cancel()
+        }
+        self.previewTasks.removeAll()
+    }
+
+    private func makeMessageItem(text: String, symbolName: String, width: CGFloat, maxLines: Int? = 2) -> NSMenuItem {
+        let view = AnyView(
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: symbolName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 14, alignment: .leading)
+                    .padding(.top, 1)
+
+                Text(text)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(maxLines)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .layoutPriority(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, 18)
+            .padding(.trailing, 12)
+            .padding(.vertical, 6)
+            .frame(width: max(1, width), alignment: .leading))
+
+        let item = NSMenuItem()
+        item.tag = self.tag
+        item.isEnabled = false
+        item.view = self.makeHostedView(rootView: view, width: width, highlighted: false)
+        return item
+    }
+}
+
+extension MenuSessionsInjector {
+    // MARK: - Cache
+
+    private func refreshCache(force: Bool) async {
+        if !force, let updated = self.cacheUpdatedAt, Date().timeIntervalSince(updated) < self.refreshIntervalSeconds {
+            return
+        }
+
+        guard self.isControlChannelConnected else {
+            if self.cachedSnapshot != nil {
+                self.cachedErrorText = "Gateway disconnected (showing cached)"
+            } else {
+                self.cachedErrorText = nil
+            }
+            self.cacheUpdatedAt = Date()
+            return
+        }
+
+        do {
+            self.cachedSnapshot = try await SessionLoader.loadSnapshot(limit: 32)
+            self.cachedErrorText = nil
+            self.cacheUpdatedAt = Date()
+        } catch {
+            self.cachedSnapshot = nil
+            self.cachedErrorText = self.compactError(error)
+            self.cacheUpdatedAt = Date()
+        }
+    }
+
+    private func refreshUsageCache(force: Bool) async {
+        if !force,
+           let updated = self.usageCacheUpdatedAt,
+           Date().timeIntervalSince(updated) < self.usageRefreshIntervalSeconds
+        {
+            return
+        }
+
+        guard self.isControlChannelConnected else {
+            self.usageCacheUpdatedAt = Date()
+            return
+        }
+
+        do {
+            self.cachedUsageSummary = try await UsageLoader.loadSummary()
+        } catch {
+            self.cachedUsageSummary = nil
+            self.cachedUsageErrorText = nil
+        }
+        self.usageCacheUpdatedAt = Date()
+    }
+
+    private func refreshCostUsageCache(force: Bool) async {
+        if !force,
+           let updated = self.costCacheUpdatedAt,
+           Date().timeIntervalSince(updated) < self.costRefreshIntervalSeconds
+        {
+            return
+        }
+
+        guard self.isControlChannelConnected else {
+            self.costCacheUpdatedAt = Date()
+            return
+        }
+
+        do {
+            self.cachedCostSummary = try await CostUsageLoader.loadSummary()
+            self.cachedCostErrorText = nil
+        } catch {
+            self.cachedCostSummary = nil
+            self.cachedCostErrorText = self.compactUsageError(error)
+        }
+        self.costCacheUpdatedAt = Date()
+    }
+
+    private func compactUsageError(_ error: Error) -> String {
+        let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if message.isEmpty { return "Usage unavailable" }
+        if message.count > 90 { return "\(message.prefix(87))…" }
+        return message
+    }
+
+    private func compactError(_ error: Error) -> String {
+        if let loadError = error as? SessionLoadError {
+            switch loadError {
+            case .gatewayUnavailable:
+                return "No connection to gateway"
+            case .decodeFailed:
+                return "Sessions unavailable"
+            }
+        }
+        return "Sessions unavailable"
+    }
+}
+
+extension MenuSessionsInjector {
+    // MARK: - Submenus
+
+    private func buildSubmenu(for row: SessionRow, storePath: String) -> NSMenu {
+        let menu = NSMenu()
+        let width = self.submenuWidth()
+
+        menu.addItem(self.makeSessionPreviewItem(
+            sessionKey: row.key,
+            title: "Recent messages (last 10)",
+            width: width,
+            maxLines: 3))
+
+        let morePreview = NSMenuItem(title: "More preview…", action: nil, keyEquivalent: "")
+        morePreview.submenu = self.buildPreviewSubmenu(sessionKey: row.key, width: width)
+        menu.addItem(morePreview)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let thinking = NSMenuItem(title: "Thinking", action: nil, keyEquivalent: "")
+        thinking.submenu = self.buildThinkingMenu(for: row)
+        menu.addItem(thinking)
+
+        let verbose = NSMenuItem(title: "Verbose", action: nil, keyEquivalent: "")
+        verbose.submenu = self.buildVerboseMenu(for: row)
+        menu.addItem(verbose)
+
+        if AppStateStore.shared.debugPaneEnabled,
+           AppStateStore.shared.connectionMode == .local,
+           let sessionId = row.sessionId,
+           !sessionId.isEmpty
+        {
+            menu.addItem(NSMenuItem.separator())
+            let openLog = NSMenuItem(
+                title: "Open Session Log",
+                action: #selector(self.openSessionLog(_:)),
+                keyEquivalent: "")
+            openLog.target = self
+            openLog.representedObject = [
+                "sessionId": sessionId,
+                "storePath": storePath,
+            ]
+            menu.addItem(openLog)
+        }
+
+        menu.addItem(NSMenuItem.separator())
+
+        let reset = NSMenuItem(title: "Reset Session", action: #selector(self.resetSession(_:)), keyEquivalent: "")
+        reset.target = self
+        reset.representedObject = row.key
+        menu.addItem(reset)
+
+        let compact = NSMenuItem(
+            title: "Compact Session Log",
+            action: #selector(self.compactSession(_:)),
+            keyEquivalent: "")
+        compact.target = self
+        compact.representedObject = row.key
+        menu.addItem(compact)
+
+        if row.key != self.mainSessionKey, row.key != "global" {
+            let del = NSMenuItem(title: "Delete Session", action: #selector(self.deleteSession(_:)), keyEquivalent: "")
+            del.target = self
+            del.representedObject = row.key
+            del.isAlternate = false
+            del.keyEquivalentModifierMask = []
+            menu.addItem(del)
+        }
+
+        return menu
+    }
+
+    private func buildThinkingMenu(for row: SessionRow) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.showsStateColumn = true
+        let levels: [String] = ["off", "minimal", "low", "medium", "high"]
+        let current = levels.contains(row.thinkingLevel ?? "") ? row.thinkingLevel ?? "off" : "off"
+        for level in levels {
+            let title = level.capitalized
+            let item = NSMenuItem(title: title, action: #selector(self.patchThinking(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = [
+                "key": row.key,
+                "value": level as Any,
+            ]
+            item.state = (current == level) ? .on : .off
+            menu.addItem(item)
+        }
+        return menu
+    }
+
+    private func buildVerboseMenu(for row: SessionRow) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.showsStateColumn = true
+        let levels: [String] = ["on", "off"]
+        let current = levels.contains(row.verboseLevel ?? "") ? row.verboseLevel ?? "off" : "off"
+        for level in levels {
+            let title = level.capitalized
+            let item = NSMenuItem(title: title, action: #selector(self.patchVerbose(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = [
+                "key": row.key,
+                "value": level as Any,
+            ]
+            item.state = (current == level) ? .on : .off
+            menu.addItem(item)
+        }
+        return menu
+    }
+
+    private func buildPreviewSubmenu(sessionKey: String, width: CGFloat) -> NSMenu {
+        let menu = NSMenu()
+        menu.addItem(self.makeSessionPreviewItem(
+            sessionKey: sessionKey,
+            title: "Recent messages (expanded)",
+            width: width,
+            maxLines: 8))
+        return menu
+    }
+
+    @objc
+    private func patchThinking(_ sender: NSMenuItem) {
+        guard let dict = sender.representedObject as? [String: Any],
+              let key = dict["key"] as? String
+        else { return }
+        let value = dict["value"] as? String
+        Task {
+            do {
+                try await SessionActions.patchSession(key: key, thinking: .some(value))
+                await self.refreshCache(force: true)
+            } catch {
+                await MainActor.run {
+                    SessionActions.presentError(title: "Update thinking failed", error: error)
+                }
+            }
+        }
+    }
+
+    @objc
+    private func patchVerbose(_ sender: NSMenuItem) {
+        guard let dict = sender.representedObject as? [String: Any],
+              let key = dict["key"] as? String
+        else { return }
+        let value = dict["value"] as? String
+        Task {
+            do {
+                try await SessionActions.patchSession(key: key, verbose: .some(value))
+                await self.refreshCache(force: true)
+            } catch {
+                await MainActor.run {
+                    SessionActions.presentError(title: "Update verbose failed", error: error)
+                }
+            }
+        }
+    }
+
+    @objc
+    private func openSessionLog(_ sender: NSMenuItem) {
+        guard let dict = sender.representedObject as? [String: String],
+              let sessionId = dict["sessionId"],
+              let storePath = dict["storePath"]
+        else { return }
+        SessionActions.openSessionLogInCode(sessionId: sessionId, storePath: storePath)
+    }
+
+    @objc
+    private func resetSession(_ sender: NSMenuItem) {
+        guard let key = sender.representedObject as? String else { return }
+        Task { @MainActor in
+            guard SessionActions.confirmDestructiveAction(
+                title: "Reset session?",
+                message: "Starts a new session id for “\(key)”.",
+                action: "Reset")
+            else { return }
+
+            do {
+                try await SessionActions.resetSession(key: key)
+                await self.refreshCache(force: true)
+            } catch {
+                SessionActions.presentError(title: "Reset failed", error: error)
+            }
+        }
+    }
+
+    @objc
+    private func compactSession(_ sender: NSMenuItem) {
+        guard let key = sender.representedObject as? String else { return }
+        Task { @MainActor in
+            guard SessionActions.confirmDestructiveAction(
+                title: "Compact session log?",
+                message: "Keeps the last 400 lines; archives the old file.",
+                action: "Compact")
+            else { return }
+
+            do {
+                try await SessionActions.compactSession(key: key, maxLines: 400)
+                await self.refreshCache(force: true)
+            } catch {
+                SessionActions.presentError(title: "Compact failed", error: error)
+            }
+        }
+    }
+
+    @objc
+    private func deleteSession(_ sender: NSMenuItem) {
+        guard let key = sender.representedObject as? String else { return }
+        Task { @MainActor in
+            guard SessionActions.confirmDestructiveAction(
+                title: "Delete session?",
+                message: "Deletes the “\(key)” entry and archives its transcript.",
+                action: "Delete")
+            else { return }
+
+            do {
+                try await SessionActions.deleteSession(key: key)
+                await self.refreshCache(force: true)
+            } catch {
+                SessionActions.presentError(title: "Delete failed", error: error)
+            }
+        }
+    }
+
+}
+
+extension MenuSessionsInjector {
+    // MARK: - Width + placement
+
+    private func findInsertIndex(in menu: NSMenu) -> Int? {
+        // Insert right before the separator above "Send Heartbeats".
+        if let idx = menu.items.firstIndex(where: { $0.title == "Send Heartbeats" }) {
+            if let sepIdx = menu.items[..<idx].lastIndex(where: { $0.isSeparatorItem }) {
+                return sepIdx
+            }
+            return idx
+        }
+
+        if let sepIdx = menu.items.firstIndex(where: { $0.isSeparatorItem }) {
+            return sepIdx
+        }
+
+        if menu.items.count >= 1 { return 1 }
+        return menu.items.count
+    }
+
+    private func initialWidth(for menu: NSMenu) -> CGFloat {
+        if let openWidth = self.menuOpenWidth {
+            return max(300, openWidth)
+        }
+        return self.currentMenuWidth(for: menu)
+    }
+
+    private func submenuWidth() -> CGFloat {
+        if let openWidth = self.menuOpenWidth {
+            return max(300, openWidth)
+        }
+        if let cached = self.lastKnownMenuWidth {
+            return max(300, cached)
+        }
+        return self.fallbackWidth
+    }
+
+    private func menuWindowWidth(for menu: NSMenu) -> CGFloat? {
+        var menuWindow: NSWindow?
+        for item in menu.items {
+            if let window = item.view?.window {
+                menuWindow = window
+                break
+            }
+        }
+        guard let width = menuWindow?.contentView?.bounds.width, width > 0 else { return nil }
+        return width
+    }
+
+}
+
+extension MenuSessionsInjector {
+    // MARK: - Views
+
+    private func makeHostedView(rootView: AnyView, width: CGFloat, highlighted: Bool) -> NSView {
+        if highlighted {
+            return HighlightedMenuItemHostView(rootView: rootView, width: width)
+        }
+
+        let hosting = NSHostingView(rootView: rootView)
+        hosting.frame.size.width = max(1, width)
+        let size = hosting.fittingSize
+        hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
+        return hosting
+    }
+
+    private func captureMenuWidthIfAvailable(from view: NSView) {
+        guard !self.isMenuOpen else { return }
+        guard let width = view.window?.contentView?.bounds.width, width > 0 else { return }
+        self.lastKnownMenuWidth = max(300, width)
+    }
+
+    private func currentMenuWidth(for menu: NSMenu) -> CGFloat {
+        if let width = self.menuWindowWidth(for: menu) {
+            return max(300, width)
+        }
+        let candidates: [CGFloat] = [
+            menu.size.width,
+            menu.minimumWidth,
+            self.lastKnownMenuWidth ?? 0,
+            self.fallbackWidth,
+        ]
+        let resolved = candidates.max() ?? self.fallbackWidth
+        return max(300, resolved)
+    }
+}
+
+#if DEBUG
+extension MenuSessionsInjector {
+    func setTestingControlChannelConnected(_ connected: Bool?) {
+        self.testControlChannelConnected = connected
+    }
+
+    func setTestingSnapshot(_ snapshot: SessionStoreSnapshot?, errorText: String? = nil) {
+        self.cachedSnapshot = snapshot
+        self.cachedErrorText = errorText
+        self.cacheUpdatedAt = Date()
+    }
+
+    func setTestingUsageSummary(_ summary: GatewayUsageSummary?, errorText: String? = nil) {
+        self.cachedUsageSummary = summary
+        self.cachedUsageErrorText = errorText
+        self.usageCacheUpdatedAt = Date()
+    }
+
+    func injectForTesting(into menu: NSMenu) {
+        self.inject(into: menu)
+    }
+}
+#endif
