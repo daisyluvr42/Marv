@@ -14,7 +14,6 @@ let package = Package(
         .library(name: "OpenClawChatUI", targets: ["OpenClawChatUI"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/steipete/ElevenLabsKit", exact: "0.1.0"),
         .package(url: "https://github.com/gonzalezreal/textual", exact: "0.3.1"),
     ],
     targets: [
@@ -28,9 +27,13 @@ let package = Package(
             name: "OpenClawKit",
             dependencies: [
                 "OpenClawProtocol",
-                .product(name: "ElevenLabsKit", package: "ElevenLabsKit"),
             ],
             path: "Sources/OpenClawKit",
+            exclude: [
+                "ElevenLabsKitShim.swift",
+                "AudioStreamingProtocols.swift",
+                "TalkPromptBuilder.swift",
+            ],
             resources: [
                 .process("Resources"),
             ],
