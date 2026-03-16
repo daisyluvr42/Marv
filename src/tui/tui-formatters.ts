@@ -1,4 +1,5 @@
 import { formatRawAssistantErrorForUi } from "../agents/runner/pi-embedded-helpers.js";
+import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import { stripAnsi } from "../terminal/ansi.js";
 import { formatTokenCount } from "../utils/usage-format.js";
 
@@ -192,7 +193,7 @@ export function extractContentFromMessage(message: unknown): string {
   const content = record.content;
 
   if (typeof content === "string") {
-    return sanitizeRenderableText(content).trim();
+    return sanitizeRenderableText(stripInboundMetadata(content)).trim();
   }
 
   // Check for error BEFORE returning empty for non-array content
@@ -230,7 +231,7 @@ export function extractContentFromMessage(message: unknown): string {
 
 function extractTextBlocks(content: unknown, opts?: { includeThinking?: boolean }): string {
   if (typeof content === "string") {
-    return sanitizeRenderableText(content).trim();
+    return sanitizeRenderableText(stripInboundMetadata(content)).trim();
   }
   if (!Array.isArray(content)) {
     return "";
