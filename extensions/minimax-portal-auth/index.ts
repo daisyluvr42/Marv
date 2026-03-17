@@ -101,10 +101,7 @@ function createOAuthHandler(region: MiniMaxRegion) {
           },
           agents: {
             defaults: {
-              models: {
-                [modelRef("MiniMax-M2.1")]: { alias: "minimax-m2.1" },
-                [modelRef("MiniMax-M2.5")]: { alias: "minimax-m2.5" },
-              },
+              model: { primary: modelRef(DEFAULT_MODEL) },
             },
           },
         },

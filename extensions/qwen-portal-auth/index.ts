@@ -103,10 +103,7 @@ const qwenPortalPlugin = {
                   },
                   agents: {
                     defaults: {
-                      models: {
-                        "qwen-portal/coder-model": { alias: "qwen" },
-                        "qwen-portal/vision-model": {},
-                      },
+                      model: { primary: DEFAULT_MODEL },
                     },
                   },
                 },

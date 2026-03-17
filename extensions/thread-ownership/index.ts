@@ -5,8 +5,6 @@ type ThreadOwnershipConfig = {
   abTestChannels?: string[];
 };
 
-type AgentEntry = NonNullable<NonNullable<MarvConfig["agents"]>["list"]>[number];
-
 // In-memory set of {channel}:{thread} keys where this agent was @-mentioned.
 // Entries expire after 5 minutes.
 const mentionedThreads = new Map<string, number>();
@@ -22,15 +20,9 @@ function cleanExpiredMentions(): void {
 }
 
 function resolveOwnershipAgent(config: MarvConfig): { id: string; name: string } {
-  const list = Array.isArray(config.agents?.list)
-    ? config.agents.list.filter((entry): entry is AgentEntry =>
-        Boolean(entry && typeof entry === "object"),
-      )
-    : [];
-  const selected = list.find((entry) => entry.default === true) ?? list[0];
+  const selected = config.agents?.defaults;
 
-  const id =
-    typeof selected?.id === "string" && selected.id.trim() ? selected.id.trim() : "unknown";
+  const id = "main";
   const identityName =
     typeof selected?.identity?.name === "string" ? selected.identity.name.trim() : "";
   const fallbackName = typeof selected?.name === "string" ? selected.name.trim() : "";

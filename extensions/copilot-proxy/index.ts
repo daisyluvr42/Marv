@@ -131,9 +131,7 @@ const copilotProxyPlugin = {
                 },
                 agents: {
                   defaults: {
-                    models: Object.fromEntries(
-                      modelIds.map((modelId) => [`copilot-proxy/${modelId}`, {}]),
-                    ),
+                    model: { primary: defaultModelRef },
                   },
                 },
               },

@@ -23,58 +23,14 @@ export async function maybeCreateDynamicAgent(params: {
 }): Promise<MaybeCreateDynamicAgentResult> {
   const { cfg, runtime, senderOpenId, dynamicCfg, log } = params;
 
-  // Check if there's already a binding for this user
-  const existingBindings = cfg.bindings ?? [];
-  const hasBinding = existingBindings.some(
-    (b) =>
-      b.match?.channel === "feishu" &&
-      b.match?.peer?.kind === "direct" &&
-      b.match?.peer?.id === senderOpenId,
-  );
-
-  if (hasBinding) {
+  // With single-agent model, check if defaults already exist
+  const agent = cfg.agents?.defaults;
+  if (agent) {
     return { created: false, updatedCfg: cfg };
-  }
-
-  // Check maxAgents limit if configured
-  if (dynamicCfg.maxAgents !== undefined) {
-    const feishuAgentCount = (cfg.agents?.list ?? []).filter((a) =>
-      a.id.startsWith("feishu-"),
-    ).length;
-    if (feishuAgentCount >= dynamicCfg.maxAgents) {
-      log(
-        `feishu: maxAgents limit (${dynamicCfg.maxAgents}) reached, not creating agent for ${senderOpenId}`,
-      );
-      return { created: false, updatedCfg: cfg };
-    }
   }
 
   // Use full OpenID as agent ID suffix (OpenID format: ou_xxx is already filesystem-safe)
   const agentId = `feishu-${senderOpenId}`;
-
-  // Check if agent already exists (but binding was missing)
-  const existingAgent = (cfg.agents?.list ?? []).find((a) => a.id === agentId);
-  if (existingAgent) {
-    // Agent exists but binding doesn't - just add the binding
-    log(`feishu: agent "${agentId}" exists, adding missing binding for ${senderOpenId}`);
-
-    const updatedCfg: MarvConfig = {
-      ...cfg,
-      bindings: [
-        ...existingBindings,
-        {
-          agentId,
-          match: {
-            channel: "feishu",
-            peer: { kind: "direct", id: senderOpenId },
-          },
-        },
-      ],
-    };
-
-    await runtime.config.writeConfigFile(updatedCfg);
-    return { created: true, updatedCfg, agentId };
-  }
 
   // Resolve path templates with substitutions
   const workspaceTemplate = dynamicCfg.workspaceTemplate ?? "~/.marv/workspace-{agentId}";
@@ -95,23 +51,13 @@ export async function maybeCreateDynamicAgent(params: {
   await fs.promises.mkdir(workspace, { recursive: true });
   await fs.promises.mkdir(agentDir, { recursive: true });
 
-  // Update configuration with new agent and binding
+  // Update configuration with new agent defaults
   const updatedCfg: MarvConfig = {
     ...cfg,
     agents: {
       ...cfg.agents,
-      list: [...(cfg.agents?.list ?? []), { id: agentId, workspace, agentDir }],
+      defaults: { ...cfg.agents?.defaults, workspace, agentDir },
     },
-    bindings: [
-      ...existingBindings,
-      {
-        agentId,
-        match: {
-          channel: "feishu",
-          peer: { kind: "direct", id: senderOpenId },
-        },
-      },
-    ],
   };
 
   // Write updated config using PluginRuntime API

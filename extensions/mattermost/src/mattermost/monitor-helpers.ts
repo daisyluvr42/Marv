@@ -55,19 +55,10 @@ function normalizeAgentId(value: string | undefined | null): string {
   );
 }
 
-type AgentEntry = NonNullable<NonNullable<MarvConfig["agents"]>["list"]>[number];
+type AgentEntry = NonNullable<NonNullable<MarvConfig["agents"]>["defaults"]>;
 
-function listAgents(cfg: MarvConfig): AgentEntry[] {
-  const list = cfg.agents?.list;
-  if (!Array.isArray(list)) {
-    return [];
-  }
-  return list.filter((entry): entry is AgentEntry => Boolean(entry && typeof entry === "object"));
-}
-
-function resolveAgentEntry(cfg: MarvConfig, agentId: string): AgentEntry | undefined {
-  const id = normalizeAgentId(agentId);
-  return listAgents(cfg).find((entry) => normalizeAgentId(entry.id) === id);
+function resolveAgentEntry(cfg: MarvConfig, _agentId: string): AgentEntry | undefined {
+  return cfg.agents?.defaults;
 }
 
 export function resolveIdentityName(cfg: MarvConfig, agentId: string): string | undefined {

@@ -429,7 +429,7 @@ function resolveBotDisplayName(params: {
   if (accountName?.trim()) {
     return accountName.trim();
   }
-  const agent = config.agents?.list?.find((a) => a.id === agentId);
+  const agent = config.agents?.defaults;
   if (agent?.name?.trim()) {
     return agent.name.trim();
   }
