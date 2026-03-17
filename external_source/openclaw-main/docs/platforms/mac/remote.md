@@ -44,7 +44,7 @@ Remote mode supports two transports:
 
 ## Web Chat
 
-- **SSH tunnel**: Web Chat connects to the gateway over the forwarded WebSocket control port (default 18789).
+- **SSH tunnel**: Web Chat connects to the gateway over the forwarded WebSocket control port (default 4242).
 - **Direct (ws/wss)**: Web Chat connects straight to the configured gateway URL.
 - There is no separate WebChat HTTP server anymore.
 

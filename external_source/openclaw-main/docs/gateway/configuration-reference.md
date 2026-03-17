@@ -2027,7 +2027,7 @@ See [Plugins](/tools/plugin).
       // allowedHostnames: ["localhost"],
     },
     profiles: {
-      openclaw: { cdpPort: 18800, color: "#FF4500" },
+      openclaw: { cdpPort: 4253, color: "#FF4500" },
       work: { cdpPort: 18801, color: "#0066CC" },
       remote: { cdpUrl: "http://10.0.0.42:9222", color: "#00AA00" },
     },
@@ -2047,7 +2047,7 @@ See [Plugins](/tools/plugin).
 - In strict mode, use `ssrfPolicy.hostnameAllowlist` and `ssrfPolicy.allowedHostnames` for explicit exceptions.
 - Remote profiles are attach-only (start/stop/reset disabled).
 - Auto-detect order: default browser if Chromium-based → Chrome → Brave → Edge → Chromium → Chrome Canary.
-- Control service: loopback only (port derived from `gateway.port`, default `18791`).
+- Control service: loopback only (port derived from `gateway.port`, default `4244`).
 
 ---
 
@@ -2076,7 +2076,7 @@ See [Plugins](/tools/plugin).
 {
   gateway: {
     mode: "local", // local | remote
-    port: 18789,
+    port: 4242,
     bind: "loopback",
     auth: {
       mode: "token", // none | token | password | trusted-proxy
@@ -2105,7 +2105,7 @@ See [Plugins](/tools/plugin).
       // dangerouslyDisableDeviceAuth: false,
     },
     remote: {
-      url: "ws://gateway.tailnet:18789",
+      url: "ws://gateway.tailnet:4242",
       transport: "ssh", // ssh | direct
       token: "your-token",
       // password: "your-password",
@@ -2126,7 +2126,7 @@ See [Plugins](/tools/plugin).
 <Accordion title="Gateway field details">
 
 - `mode`: `local` (run gateway) or `remote` (connect to remote gateway). Gateway refuses to start unless `local`.
-- `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `OPENCLAW_GATEWAY_PORT` > `gateway.port` > `18789`.
+- `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `OPENCLAW_GATEWAY_PORT` > `gateway.port` > `4242`.
 - `bind`: `auto`, `loopback` (default), `lan` (`0.0.0.0`), `tailnet` (Tailscale IP only), or `custom`.
 - **Auth**: required by default. Non-loopback binds require a shared token/password. Onboarding wizard generates a token by default.
 - `auth.mode: "none"`: explicit no-auth mode. Use only for trusted local loopback setups; this is intentionally not offered by onboarding prompts.
@@ -2242,7 +2242,7 @@ Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
       topic: "projects/<project-id>/topics/gog-gmail-watch",
       subscription: "gog-gmail-watch-push",
       pushToken: "shared-push-token",
-      hookUrl: "http://127.0.0.1:18789/hooks/gmail",
+      hookUrl: "http://127.0.0.1:4242/hooks/gmail",
       includeBody: true,
       maxBytes: 20000,
       renewEveryMinutes: 720,
@@ -2463,7 +2463,7 @@ Current builds no longer include the TCP bridge. Nodes connect over the Gateway 
 {
   "bridge": {
     "enabled": true,
-    "port": 18790,
+    "port": 4243,
     "bind": "tailnet",
     "tls": {
       "enabled": true,
@@ -2541,7 +2541,7 @@ Split config into multiple files:
 ```json5
 // ~/.openclaw/openclaw.json
 {
-  gateway: { port: 18789 },
+  gateway: { port: 4242 },
   agents: { $include: "./agents.json5" },
   broadcast: {
     $include: ["./clients/mueller.json5", "./clients/schmidt.json5"],

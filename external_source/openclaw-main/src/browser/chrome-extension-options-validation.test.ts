@@ -59,7 +59,7 @@ describe("chrome extension options validation", () => {
       action: "status",
       kind: "error",
       message:
-        "Wrong port: this is likely the gateway, not the relay. Use gateway port + 3 (for gateway 18789, relay is 18792).",
+        "Wrong port: this is likely the gateway, not the relay. Use gateway port + 3 (for gateway 4242, relay is 18792).",
     });
   });
 
@@ -72,7 +72,7 @@ describe("chrome extension options validation", () => {
       action: "status",
       kind: "error",
       message:
-        "Wrong port: expected relay /json/version response. Use gateway port + 3 (for gateway 18789, relay is 18792).",
+        "Wrong port: expected relay /json/version response. Use gateway port + 3 (for gateway 4242, relay is 18792).",
     });
   });
 
@@ -98,7 +98,7 @@ describe("chrome extension options validation", () => {
     expect(result).toEqual({
       kind: "error",
       message:
-        "Wrong port: this is not a relay endpoint. Use gateway port + 3 (for gateway 18789, relay is 18792).",
+        "Wrong port: this is not a relay endpoint. Use gateway port + 3 (for gateway 4242, relay is 18792).",
     });
   });
 

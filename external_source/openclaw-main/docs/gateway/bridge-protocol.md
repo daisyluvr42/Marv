@@ -32,7 +32,7 @@ Legacy `bridge.*` config keys are no longer part of the config schema.
 
 - TCP, one JSON object per line (JSONL).
 - Optional TLS (when `bridge.tls.enabled` is true).
-- Legacy default listener port was `18790` (current builds do not start a TCP bridge).
+- Legacy default listener port was `4243` (current builds do not start a TCP bridge).
 
 When TLS is enabled, discovery TXT records include `bridgeTls=1` plus
 `bridgeTlsSha256` as a non-secret hint. Note that Bonjour/mDNS TXT records are

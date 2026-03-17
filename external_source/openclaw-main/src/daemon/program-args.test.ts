@@ -34,14 +34,14 @@ describe("resolveGatewayProgramArguments", () => {
       throw new Error("missing");
     });
 
-    const result = await resolveGatewayProgramArguments({ port: 18789 });
+    const result = await resolveGatewayProgramArguments({ port: 4242 });
 
     expect(result.programArguments).toEqual([
       process.execPath,
       entryPath,
       "gateway",
       "--port",
-      "18789",
+      "4242",
     ]);
   });
 
@@ -58,7 +58,7 @@ describe("resolveGatewayProgramArguments", () => {
     fsMocks.realpath.mockResolvedValue(realpathResolved);
     fsMocks.access.mockResolvedValue(undefined); // Both paths exist
 
-    const result = await resolveGatewayProgramArguments({ port: 18789 });
+    const result = await resolveGatewayProgramArguments({ port: 4242 });
 
     // Should use the symlinked path, not the realpath-resolved versioned path
     expect(result.programArguments[1]).toBe(symlinkPath);
@@ -77,14 +77,14 @@ describe("resolveGatewayProgramArguments", () => {
       throw new Error("missing");
     });
 
-    const result = await resolveGatewayProgramArguments({ port: 18789 });
+    const result = await resolveGatewayProgramArguments({ port: 4242 });
 
     expect(result.programArguments).toEqual([
       process.execPath,
       indexPath,
       "gateway",
       "--port",
-      "18789",
+      "4242",
     ]);
   });
 });

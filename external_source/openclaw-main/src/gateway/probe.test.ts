@@ -42,7 +42,7 @@ const { probeGateway } = await import("./probe.js");
 describe("probeGateway", () => {
   it("connects with operator.read scope", async () => {
     const result = await probeGateway({
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       auth: { token: "secret" },
       timeoutMs: 1_000,
     });

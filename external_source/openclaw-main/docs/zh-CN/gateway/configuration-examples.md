@@ -384,7 +384,7 @@ x-i18n:
       topic: "projects/<project-id>/topics/gog-gmail-watch",
       subscription: "gog-gmail-watch-push",
       pushToken: "shared-push-token",
-      hookUrl: "http://127.0.0.1:18789/hooks/gmail",
+      hookUrl: "http://127.0.0.1:4242/hooks/gmail",
       includeBody: true,
       maxBytes: 20000,
       renewEveryMinutes: 720,
@@ -396,7 +396,7 @@ x-i18n:
   // Gateway 网关 + 网络
   gateway: {
     mode: "local",
-    port: 18789,
+    port: 4242,
     bind: "loopback",
     controlUi: { enabled: true, basePath: "/openclaw" },
     auth: {
@@ -405,7 +405,7 @@ x-i18n:
       allowTailscale: true,
     },
     tailscale: { mode: "serve", resetOnExit: false },
-    remote: { url: "ws://gateway.tailnet:18789", token: "remote-token" },
+    remote: { url: "ws://gateway.tailnet:4242", token: "remote-token" },
     reload: { mode: "hybrid", debounceMs: 300 },
   },
 

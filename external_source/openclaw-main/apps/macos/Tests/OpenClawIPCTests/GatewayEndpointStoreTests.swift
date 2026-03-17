@@ -131,7 +131,7 @@ import Testing
         let root: [String: Any] = [
             "gateway": [
                 "remote": [
-                    "url": " ws://umbrel:18789 ",
+                    "url": " ws://umbrel:4242 ",
                 ],
             ],
         ]
@@ -178,7 +178,7 @@ import Testing
 
     @Test func dashboardURLUsesLocalBasePathInLocalMode() throws {
         let config: GatewayConnection.Config = (
-            url: try #require(URL(string: "ws://127.0.0.1:18789")),
+            url: try #require(URL(string: "ws://127.0.0.1:4242")),
             token: nil,
             password: nil
         )
@@ -187,12 +187,12 @@ import Testing
             for: config,
             mode: .local,
             localBasePath: " control ")
-        #expect(url.absoluteString == "http://127.0.0.1:18789/control/")
+        #expect(url.absoluteString == "http://127.0.0.1:4242/control/")
     }
 
     @Test func dashboardURLSkipsLocalBasePathInRemoteMode() throws {
         let config: GatewayConnection.Config = (
-            url: try #require(URL(string: "ws://gateway.example:18789")),
+            url: try #require(URL(string: "ws://gateway.example:4242")),
             token: nil,
             password: nil
         )
@@ -201,7 +201,7 @@ import Testing
             for: config,
             mode: .remote,
             localBasePath: "/local-ui")
-        #expect(url.absoluteString == "http://gateway.example:18789/")
+        #expect(url.absoluteString == "http://gateway.example:4242/")
     }
 
     @Test func dashboardURLPrefersPathFromConfigURL() throws {
@@ -220,12 +220,12 @@ import Testing
 
     @Test func normalizeGatewayUrlAddsDefaultPortForLoopbackWs() {
         let url = GatewayRemoteConfig.normalizeGatewayUrl("ws://127.0.0.1")
-        #expect(url?.port == 18789)
-        #expect(url?.absoluteString == "ws://127.0.0.1:18789")
+        #expect(url?.port == 4242)
+        #expect(url?.absoluteString == "ws://127.0.0.1:4242")
     }
 
     @Test func normalizeGatewayUrlRejectsNonLoopbackWs() {
-        let url = GatewayRemoteConfig.normalizeGatewayUrl("ws://gateway.example:18789")
+        let url = GatewayRemoteConfig.normalizeGatewayUrl("ws://gateway.example:4242")
         #expect(url == nil)
     }
 

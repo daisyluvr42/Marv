@@ -11,7 +11,7 @@ struct GatewayDiscoveryHelpersTests {
         lanHost: String? = "txt-host.local",
         tailnetDns: String? = "txt-host.ts.net",
         sshPort: Int = 22,
-        gatewayPort: Int? = 18789) -> GatewayDiscoveryModel.DiscoveredGateway
+        gatewayPort: Int? = 4242) -> GatewayDiscoveryModel.DiscoveredGateway
     {
         GatewayDiscoveryModel.DiscoveredGateway(
             displayName: "Gateway",
@@ -30,7 +30,7 @@ struct GatewayDiscoveryHelpersTests {
     @Test func sshTargetUsesResolvedServiceHostOnly() {
         let gateway = self.makeGateway(
             serviceHost: "resolved.example.ts.net",
-            servicePort: 18789,
+            servicePort: 4242,
             sshPort: 2201)
 
         guard let target = GatewayDiscoveryHelpers.sshTarget(for: gateway) else {
@@ -76,13 +76,13 @@ struct GatewayDiscoveryHelpersTests {
 
         let wsGateway = self.makeGateway(
             serviceHost: "resolved.example.ts.net",
-            servicePort: 18789)
-        #expect(GatewayDiscoveryHelpers.directUrl(for: wsGateway) == "wss://resolved.example.ts.net:18789")
+            servicePort: 4242)
+        #expect(GatewayDiscoveryHelpers.directUrl(for: wsGateway) == "wss://resolved.example.ts.net:4242")
 
         let localGateway = self.makeGateway(
             serviceHost: "127.0.0.1",
-            servicePort: 18789)
-        #expect(GatewayDiscoveryHelpers.directUrl(for: localGateway) == "ws://127.0.0.1:18789")
+            servicePort: 4242)
+        #expect(GatewayDiscoveryHelpers.directUrl(for: localGateway) == "ws://127.0.0.1:4242")
     }
 
     @Test func directUrlRejectsTxtOnlyFallback() {

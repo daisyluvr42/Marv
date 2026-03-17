@@ -1,19 +1,19 @@
 /**
  * CDP port allocation for browser profiles.
  *
- * Default port range: 18800-18899 (100 profiles max)
+ * Default port range: 4253-4352 (100 profiles max)
  * Ports are allocated once at profile creation and persisted in config.
  * Multi-instance: callers may pass an explicit range to avoid collisions.
  *
  * Reserved ports (do not use for CDP):
- *   18789 - Gateway WebSocket
- *   18790 - Bridge
- *   18791 - Browser control server
- *   18792-18799 - Reserved for future one-off services (canvas at 18793)
+ *   4242 - Gateway WebSocket
+ *   4243 - Bridge
+ *   4244 - Browser control server
+ *   18792-18799 - Reserved for future one-off services (canvas at 4246)
  */
 
-export const CDP_PORT_RANGE_START = 18800;
-export const CDP_PORT_RANGE_END = 18899;
+export const CDP_PORT_RANGE_START = 4253;
+export const CDP_PORT_RANGE_END = 4352;
 
 export const PROFILE_NAME_REGEX = /^[a-z0-9][a-z0-9-]*$/;
 

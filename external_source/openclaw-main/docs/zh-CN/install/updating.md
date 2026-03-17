@@ -166,7 +166,7 @@ CLI（无论操作系统都适用）：
 openclaw gateway status
 openclaw gateway stop
 openclaw gateway restart
-openclaw gateway --port 18789
+openclaw gateway --port 4242
 openclaw logs --follow
 ```
 

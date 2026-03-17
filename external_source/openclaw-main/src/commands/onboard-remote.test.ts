@@ -41,7 +41,7 @@ describe("promptRemoteGatewayConfig", () => {
         instanceName: "gateway",
         displayName: "Gateway",
         host: "gateway.tailnet.ts.net",
-        port: 18789,
+        port: 4242,
       },
     ]);
 
@@ -60,7 +60,7 @@ describe("promptRemoteGatewayConfig", () => {
 
     const text: WizardPrompter["text"] = vi.fn(async (params) => {
       if (params.message === "Gateway WebSocket URL") {
-        expect(params.initialValue).toBe("wss://gateway.tailnet.ts.net:18789");
+        expect(params.initialValue).toBe("wss://gateway.tailnet.ts.net:4242");
         expect(params.validate?.(String(params.initialValue))).toBeUndefined();
         return String(params.initialValue);
       }
@@ -80,7 +80,7 @@ describe("promptRemoteGatewayConfig", () => {
     const next = await promptRemoteGatewayConfig(cfg, prompter);
 
     expect(next.gateway?.mode).toBe("remote");
-    expect(next.gateway?.remote?.url).toBe("wss://gateway.tailnet.ts.net:18789");
+    expect(next.gateway?.remote?.url).toBe("wss://gateway.tailnet.ts.net:4242");
     expect(next.gateway?.remote?.token).toBe("token-123");
     expect(prompter.note).toHaveBeenCalledWith(
       expect.stringContaining("Direct remote access defaults to TLS."),
@@ -91,10 +91,10 @@ describe("promptRemoteGatewayConfig", () => {
   it("validates insecure ws:// remote URLs and allows loopback ws://", async () => {
     const text: WizardPrompter["text"] = vi.fn(async (params) => {
       if (params.message === "Gateway WebSocket URL") {
-        expect(params.validate?.("ws://10.0.0.8:18789")).toContain("Use wss://");
-        expect(params.validate?.("ws://127.0.0.1:18789")).toBeUndefined();
-        expect(params.validate?.("wss://remote.example.com:18789")).toBeUndefined();
-        return "wss://remote.example.com:18789";
+        expect(params.validate?.("ws://10.0.0.8:4242")).toContain("Use wss://");
+        expect(params.validate?.("ws://127.0.0.1:4242")).toBeUndefined();
+        expect(params.validate?.("wss://remote.example.com:4242")).toBeUndefined();
+        return "wss://remote.example.com:4242";
       }
       return "";
     }) as WizardPrompter["text"];
@@ -116,7 +116,7 @@ describe("promptRemoteGatewayConfig", () => {
     const next = await promptRemoteGatewayConfig(cfg, prompter);
 
     expect(next.gateway?.mode).toBe("remote");
-    expect(next.gateway?.remote?.url).toBe("wss://remote.example.com:18789");
+    expect(next.gateway?.remote?.url).toBe("wss://remote.example.com:4242");
     expect(next.gateway?.remote?.token).toBeUndefined();
   });
 });

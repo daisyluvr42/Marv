@@ -49,13 +49,13 @@ x-i18n:
 ## 运行（前台）
 
 ```bash
-openclaw node run --host <gateway-host> --port 18789
+openclaw node run --host <gateway-host> --port 4242
 ```
 
 选项：
 
 - `--host <host>`：Gateway 网关 WebSocket 主机（默认：`127.0.0.1`）
-- `--port <port>`：Gateway 网关 WebSocket 端口（默认：`18789`）
+- `--port <port>`：Gateway 网关 WebSocket 端口（默认：`4242`）
 - `--tls`：为 Gateway 网关连接使用 TLS
 - `--tls-fingerprint <sha256>`：预期的 TLS 证书指纹（sha256）
 - `--node-id <id>`：覆盖节点 id（清除配对 token）
@@ -66,13 +66,13 @@ openclaw node run --host <gateway-host> --port 18789
 将无头节点主机安装为用户服务。
 
 ```bash
-openclaw node install --host <gateway-host> --port 18789
+openclaw node install --host <gateway-host> --port 4242
 ```
 
 选项：
 
 - `--host <host>`：Gateway 网关 WebSocket 主机（默认：`127.0.0.1`）
-- `--port <port>`：Gateway 网关 WebSocket 端口（默认：`18789`）
+- `--port <port>`：Gateway 网关 WebSocket 端口（默认：`4242`）
 - `--tls`：为 Gateway 网关连接使用 TLS
 - `--tls-fingerprint <sha256>`：预期的 TLS 证书指纹（sha256）
 - `--node-id <id>`：覆盖节点 id（清除配对 token）

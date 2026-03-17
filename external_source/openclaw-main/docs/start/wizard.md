@@ -48,7 +48,7 @@ The wizard starts with **QuickStart** (defaults) vs **Advanced** (full control).
   <Tab title="QuickStart (defaults)">
     - Local gateway (loopback)
     - Workspace default (or existing workspace)
-    - Gateway port **18789**
+    - Gateway port **4242**
     - Gateway auth **Token** (auto‑generated, even on loopback)
     - DM isolation default: local onboarding writes `session.dmScope: "per-channel-peer"` when unset. Details: [CLI Onboarding Reference](/start/wizard-cli-reference#outputs-and-internals)
     - Tailscale exposure **Off**

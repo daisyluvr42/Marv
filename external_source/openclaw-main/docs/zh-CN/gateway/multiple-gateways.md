@@ -34,7 +34,7 @@ x-i18n:
 ```bash
 # main
 openclaw --profile main setup
-openclaw --profile main gateway --port 18789
+openclaw --profile main gateway --port 4242
 
 # rescue
 openclaw --profile rescue setup
@@ -65,7 +65,7 @@ openclaw --profile rescue gateway install
 
 ```bash
 # 主机器人（现有或新建，不带 --profile 参数）
-# 运行在端口 18789 + Chrome CDC/Canvas/... 端口
+# 运行在端口 4242 + Chrome CDC/Canvas/... 端口
 openclaw onboard
 openclaw gateway install
 
@@ -73,7 +73,7 @@ openclaw gateway install
 openclaw --profile rescue onboard
 # 注意：
 # - 工作区名称默认会添加 -rescue 后缀
-# - 端口应至少为 18789 + 20 个端口，
+# - 端口应至少为 4242 + 20 个端口，
 #   最好选择完全不同的基础端口，如 19789，
 # - 其余的新手引导与正常相同
 
@@ -103,7 +103,7 @@ openclaw --profile rescue gateway install
 ```bash
 OPENCLAW_CONFIG_PATH=~/.openclaw/main.json \
 OPENCLAW_STATE_DIR=~/.openclaw-main \
-openclaw gateway --port 18789
+openclaw gateway --port 4242
 
 OPENCLAW_CONFIG_PATH=~/.openclaw/rescue.json \
 OPENCLAW_STATE_DIR=~/.openclaw-rescue \

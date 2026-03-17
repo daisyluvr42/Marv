@@ -32,14 +32,14 @@ describe("inspectGatewayRestart", () => {
     } as unknown as GatewayService;
 
     inspectPortUsage.mockResolvedValue({
-      port: 18789,
+      port: 4242,
       status: "busy",
       listeners: [{ pid: 7001, ppid: 7000, commandLine: "openclaw-gateway" }],
       hints: [],
     });
 
     const { inspectGatewayRestart } = await import("./restart-health.js");
-    const snapshot = await inspectGatewayRestart({ service, port: 18789 });
+    const snapshot = await inspectGatewayRestart({ service, port: 4242 });
 
     expect(snapshot.healthy).toBe(true);
     expect(snapshot.staleGatewayPids).toEqual([]);
@@ -51,14 +51,14 @@ describe("inspectGatewayRestart", () => {
     } as unknown as GatewayService;
 
     inspectPortUsage.mockResolvedValue({
-      port: 18789,
+      port: 4242,
       status: "busy",
       listeners: [{ pid: 9000, ppid: 8999, commandLine: "openclaw-gateway" }],
       hints: [],
     });
 
     const { inspectGatewayRestart } = await import("./restart-health.js");
-    const snapshot = await inspectGatewayRestart({ service, port: 18789 });
+    const snapshot = await inspectGatewayRestart({ service, port: 4242 });
 
     expect(snapshot.healthy).toBe(false);
     expect(snapshot.staleGatewayPids).toEqual([9000]);

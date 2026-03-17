@@ -28,7 +28,7 @@ const runServiceRestart = vi.fn();
 const waitForGatewayHealthyRestart = vi.fn();
 const terminateStaleGatewayPids = vi.fn();
 const renderRestartDiagnostics = vi.fn(() => ["diag: unhealthy runtime"]);
-const resolveGatewayPort = vi.fn(() => 18789);
+const resolveGatewayPort = vi.fn(() => 4242);
 const loadConfig = vi.fn(() => ({}));
 
 vi.mock("../../config/config.js", () => ({
@@ -68,7 +68,7 @@ describe("runDaemonRestart health checks", () => {
     loadConfig.mockClear();
 
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
+      programArguments: ["openclaw", "gateway", "--port", "4242"],
       environment: {},
     });
 
@@ -93,13 +93,13 @@ describe("runDaemonRestart health checks", () => {
       healthy: false,
       staleGatewayPids: [1993],
       runtime: { status: "stopped" },
-      portUsage: { port: 18789, status: "busy", listeners: [], hints: [] },
+      portUsage: { port: 4242, status: "busy", listeners: [], hints: [] },
     };
     const healthy: RestartHealthSnapshot = {
       healthy: true,
       staleGatewayPids: [],
       runtime: { status: "running" },
-      portUsage: { port: 18789, status: "busy", listeners: [], hints: [] },
+      portUsage: { port: 4242, status: "busy", listeners: [], hints: [] },
     };
     waitForGatewayHealthyRestart.mockResolvedValueOnce(unhealthy).mockResolvedValueOnce(healthy);
     terminateStaleGatewayPids.mockResolvedValue([1993]);
@@ -118,7 +118,7 @@ describe("runDaemonRestart health checks", () => {
       healthy: false,
       staleGatewayPids: [],
       runtime: { status: "stopped" },
-      portUsage: { port: 18789, status: "free", listeners: [], hints: [] },
+      portUsage: { port: 4242, status: "free", listeners: [], hints: [] },
     };
     waitForGatewayHealthyRestart.mockResolvedValue(unhealthy);
 

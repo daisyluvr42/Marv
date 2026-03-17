@@ -20,7 +20,7 @@ const configureGatewayForOnboarding = vi.hoisted(() =>
   vi.fn(async (args) => ({
     nextConfig: args.nextConfig,
     settings: {
-      port: args.localPort ?? 18789,
+      port: args.localPort ?? 4242,
       bind: "loopback",
       authMode: "token",
       gatewayToken: "test-token",
@@ -128,8 +128,8 @@ vi.mock("../commands/onboard-hooks.js", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
-  DEFAULT_GATEWAY_PORT: 18789,
-  resolveGatewayPort: () => 18789,
+  DEFAULT_GATEWAY_PORT: 4242,
+  resolveGatewayPort: () => 4242,
   readConfigFileSnapshot,
   writeConfigFile,
 }));
@@ -154,8 +154,8 @@ vi.mock("../commands/onboard-helpers.js", () => ({
   waitForGatewayReachable: vi.fn(async () => {}),
   formatControlUiSshHint: vi.fn(() => "ssh hint"),
   resolveControlUiLinks: vi.fn(() => ({
-    httpUrl: "http://127.0.0.1:18789",
-    wsUrl: "ws://127.0.0.1:18789",
+    httpUrl: "http://127.0.0.1:4242",
+    wsUrl: "ws://127.0.0.1:4242",
   })),
 }));
 

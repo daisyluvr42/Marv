@@ -48,7 +48,7 @@ describe("buildStatusAllReportLines", () => {
         remoteUrlMissing: false,
         sentinel: null,
         lastErr: null,
-        port: 18789,
+        port: 4242,
         portUsage: null,
         tailscaleMode: "off",
         tailscale: {

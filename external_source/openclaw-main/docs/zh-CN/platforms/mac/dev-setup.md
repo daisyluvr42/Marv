@@ -103,7 +103,7 @@ openclaw gateway status
 openclaw gateway stop
 
 # 如果你没有使用 LaunchAgent（开发模式/手动运行），找到监听器：
-lsof -nP -iTCP:18789 -sTCP:LISTEN
+lsof -nP -iTCP:4242 -sTCP:LISTEN
 ```
 
 如果手动运行占用了端口，停止该进程（Ctrl+C）。作为最后手段，杀死你找到的 PID。

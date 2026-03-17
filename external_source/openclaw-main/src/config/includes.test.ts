@@ -372,11 +372,11 @@ describe("real-world config patterns", () => {
           },
         },
         obj: {
-          gateway: { port: 18789 },
+          gateway: { port: 4242 },
           $include: ["./clients/mueller.json", "./clients/schmidt.json"],
         },
         expected: {
-          gateway: { port: 18789 },
+          gateway: { port: 4242 },
           agents: [
             { id: "mueller-screenshot", workspace: "~/clients/mueller/screenshot" },
             { id: "mueller-transcribe", workspace: "~/clients/mueller/transcribe" },
@@ -392,7 +392,7 @@ describe("real-world config patterns", () => {
         name: "modular config structure",
         files: {
           [configPath("gateway.json")]: {
-            gateway: { port: 18789, bind: "loopback" },
+            gateway: { port: 4242, bind: "loopback" },
           },
           [configPath("channels", "whatsapp.json")]: {
             channels: { whatsapp: { dmPolicy: "pairing", allowFrom: ["+49123"] } },
@@ -405,7 +405,7 @@ describe("real-world config patterns", () => {
           $include: ["./gateway.json", "./channels/whatsapp.json", "./agents/defaults.json"],
         },
         expected: {
-          gateway: { port: 18789, bind: "loopback" },
+          gateway: { port: 4242, bind: "loopback" },
           channels: { whatsapp: { dmPolicy: "pairing", allowFrom: ["+49123"] } },
           agents: { defaults: { sandbox: { mode: "all" } } },
         },

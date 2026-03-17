@@ -75,7 +75,7 @@ dig @<TAILNET_IPV4> -p 53 _openclaw-gw._tcp.openclaw.internal PTR +short
 
 ### Gateway 网关监听器安全（推荐）
 
-Gateway 网关 WS 端口（默认 `18789`）默认绑定到 loopback。对于局域网/Tailnet
+Gateway 网关 WS 端口（默认 `4242`）默认绑定到 loopback。对于局域网/Tailnet
 访问，请明确绑定并保持认证启用。
 
 对于仅 Tailnet 的设置：
@@ -101,7 +101,7 @@ Gateway 网关广播小型非机密提示以方便 UI 流程：
 - `gatewayPort=<port>`（Gateway 网关 WS + HTTP）
 - `gatewayTls=1`（仅当 TLS 启用时）
 - `gatewayTlsSha256=<sha256>`（仅当 TLS 启用且指纹可用时）
-- `canvasPort=<port>`（仅当画布主机启用时；默认 `18793`）
+- `canvasPort=<port>`（仅当画布主机启用时；默认 `4246`）
 - `sshPort=<port>`（未覆盖时默认为 22）
 - `transport=gateway`
 - `cliPath=<path>`（可选；可运行的 `openclaw` 入口点的绝对路径）

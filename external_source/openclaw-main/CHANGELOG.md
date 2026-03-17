@@ -146,7 +146,7 @@ Docs: https://docs.openclaw.ai
 - iOS/Talk: prefetch TTS segments and suppress expected speech-cancellation errors for smoother talk playback. (#22833) Thanks @ngutman.
 - Memory/FTS: add Spanish and Portuguese stop-word filtering for query expansion in FTS-only search mode, improving conversational recall for both languages. Thanks @vincentkoc.
 - Memory/FTS: add Japanese-aware query expansion tokenization and stop-word filtering (including mixed-script terms like ASCII + katakana) for FTS-only search mode. Thanks @vincentkoc.
-- Memory/FTS: add Korean stop-word filtering and particle-aware keyword extraction (including mixed Korean/English stems) for query expansion in FTS-only search mode. (#18899) Thanks @ruypang.
+- Memory/FTS: add Korean stop-word filtering and particle-aware keyword extraction (including mixed Korean/English stems) for query expansion in FTS-only search mode. (#4352) Thanks @ruypang.
 - Memory/FTS: add Arabic stop-word filtering for query expansion in FTS-only search mode to reduce conversational filler in Arabic memory searches. Thanks @vincentkoc.
 - Discord/Allowlist: canonicalize resolved Discord allowlist names to IDs and split resolution flow for clearer fail-closed behavior.
 - Channels/Config: unify channel preview streaming config handling with a shared resolver and canonical migration path.
@@ -1845,7 +1845,7 @@ Docs: https://docs.openclaw.ai
 - Gateway: clarify Control UI/WebChat auth error hints for missing tokens. (#1690)
 - Gateway: listen on IPv6 loopback when bound to 127.0.0.1 so localhost webhooks work.
 - Gateway: store lock files in the temp directory to avoid stale locks on persistent volumes. (#1676)
-- macOS: default direct-transport `ws://` URLs to port 18789; document `gateway.remote.transport`. (#1603) Thanks @ngutman.
+- macOS: default direct-transport `ws://` URLs to port 4242; document `gateway.remote.transport`. (#1603) Thanks @ngutman.
 - Tests: cap Vitest workers on CI macOS to reduce timeouts. (#1597) Thanks @rohannagpal.
 - Tests: avoid fake-timer dependency in embedded runner stream mock to reduce CI flakes. (#1597) Thanks @rohannagpal.
 - Tests: increase embedded runner ordering test timeout to reduce CI flakes. (#1597) Thanks @rohannagpal.

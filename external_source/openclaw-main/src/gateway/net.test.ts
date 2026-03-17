@@ -14,9 +14,9 @@ import {
 describe("resolveHostName", () => {
   it("normalizes IPv4/hostname and IPv6 host forms", () => {
     const cases = [
-      { input: "localhost:18789", expected: "localhost" },
-      { input: "127.0.0.1:18789", expected: "127.0.0.1" },
-      { input: "[::1]:18789", expected: "::1" },
+      { input: "localhost:4242", expected: "localhost" },
+      { input: "127.0.0.1:4242", expected: "127.0.0.1" },
+      { input: "[::1]:4242", expected: "::1" },
       { input: "::1", expected: "::1" },
     ] as const;
     for (const testCase of cases) {
@@ -29,9 +29,9 @@ describe("isLocalishHost", () => {
   it("accepts loopback and tailscale serve/funnel host headers", () => {
     const accepted = [
       "localhost",
-      "127.0.0.1:18789",
-      "[::1]:18789",
-      "[::ffff:127.0.0.1]:18789",
+      "127.0.0.1:4242",
+      "[::1]:4242",
+      "[::ffff:127.0.0.1]:4242",
       "gateway.tailnet.ts.net",
     ];
     for (const host of accepted) {
@@ -40,7 +40,7 @@ describe("isLocalishHost", () => {
   });
 
   it("rejects non-local hosts", () => {
-    const rejected = ["example.com", "192.168.1.10", "203.0.113.5:18789"];
+    const rejected = ["example.com", "192.168.1.10", "203.0.113.5:4242"];
     for (const host of rejected) {
       expect(isLocalishHost(host), host).toBe(false);
     }
@@ -352,22 +352,22 @@ describe("isPrivateOrLoopbackAddress", () => {
 describe("isSecureWebSocketUrl", () => {
   it("accepts secure websocket/loopback ws URLs and rejects unsafe inputs", () => {
     const cases = [
-      { input: "wss://127.0.0.1:18789", expected: true },
-      { input: "wss://localhost:18789", expected: true },
-      { input: "wss://remote.example.com:18789", expected: true },
-      { input: "wss://192.168.1.100:18789", expected: true },
-      { input: "ws://127.0.0.1:18789", expected: true },
-      { input: "ws://localhost:18789", expected: true },
-      { input: "ws://[::1]:18789", expected: true },
-      { input: "ws://127.0.0.42:18789", expected: true },
-      { input: "ws://remote.example.com:18789", expected: false },
-      { input: "ws://192.168.1.100:18789", expected: false },
-      { input: "ws://10.0.0.5:18789", expected: false },
-      { input: "ws://100.64.0.1:18789", expected: false },
+      { input: "wss://127.0.0.1:4242", expected: true },
+      { input: "wss://localhost:4242", expected: true },
+      { input: "wss://remote.example.com:4242", expected: true },
+      { input: "wss://192.168.1.100:4242", expected: true },
+      { input: "ws://127.0.0.1:4242", expected: true },
+      { input: "ws://localhost:4242", expected: true },
+      { input: "ws://[::1]:4242", expected: true },
+      { input: "ws://127.0.0.42:4242", expected: true },
+      { input: "ws://remote.example.com:4242", expected: false },
+      { input: "ws://192.168.1.100:4242", expected: false },
+      { input: "ws://10.0.0.5:4242", expected: false },
+      { input: "ws://100.64.0.1:4242", expected: false },
       { input: "not-a-url", expected: false },
       { input: "", expected: false },
-      { input: "http://127.0.0.1:18789", expected: false },
-      { input: "https://127.0.0.1:18789", expected: false },
+      { input: "http://127.0.0.1:4242", expected: false },
+      { input: "https://127.0.0.1:4242", expected: false },
     ] as const;
 
     for (const testCase of cases) {

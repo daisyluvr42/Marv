@@ -317,7 +317,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 openclaw onboard --install-daemon
 ```
 
-向导还可以自动构建 UI 资源。新手引导后，通常在端口 **18789** 上运行 Gateway 网关。
+向导还可以自动构建 UI 资源。新手引导后，通常在端口 **4242** 上运行 Gateway 网关。
 
 从源码安装（贡献者/开发者）：
 
@@ -340,15 +340,15 @@ openclaw onboard
 
 **本地（同一台机器）：**
 
-- 打开 `http://127.0.0.1:18789/`。
+- 打开 `http://127.0.0.1:4242/`。
 - 如果要求认证，运行 `openclaw dashboard` 并使用带令牌的链接（`?token=...`）。
 - 令牌与 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）的值相同，UI 在首次加载后会存储它。
 
 **非本地环境：**
 
 - **Tailscale Serve**（推荐）：保持绑定 loopback，运行 `openclaw gateway --tailscale serve`，打开 `https://<magicdns>/`。如果 `gateway.auth.allowTailscale` 为 `true`，身份标头满足认证要求（无需令牌）。
-- **Tailnet 绑定**：运行 `openclaw gateway --bind tailnet --token "<token>"`，打开 `http://<tailscale-ip>:18789/`，在仪表板设置中粘贴令牌。
-- **SSH 隧道**：`ssh -N -L 18789:127.0.0.1:18789 user@host`，然后从 `openclaw dashboard` 打开 `http://127.0.0.1:18789/?token=...`。
+- **Tailnet 绑定**：运行 `openclaw gateway --bind tailnet --token "<token>"`，打开 `http://<tailscale-ip>:4242/`，在仪表板设置中粘贴令牌。
+- **SSH 隧道**：`ssh -N -L 4242:127.0.0.1:4242 user@host`，然后从 `openclaw dashboard` 打开 `http://127.0.0.1:4242/?token=...`。
 
 参阅[仪表板](/web/dashboard)和 [Web 界面](/web)了解绑定模式和认证详情。
 
@@ -1479,7 +1479,7 @@ SSH 对临时 shell 访问很好，但节点对于持续的智能体工作流和
    - 在 Tailscale 管理控制台中启用 MagicDNS，这样 VPS 有一个稳定的名称。
 4. **使用 tailnet 主机名**
    - SSH：`ssh user@your-vps.tailnet-xxxx.ts.net`
-   - Gateway 网关 WS：`ws://your-vps.tailnet-xxxx.ts.net:18789`
+   - Gateway 网关 WS：`ws://your-vps.tailnet-xxxx.ts.net:4242`
 
 如果你想要无 SSH 的控制 UI，在 VPS 上使用 Tailscale Serve：
 
@@ -2146,7 +2146,7 @@ OpenClaw 两者都支持：
 优先级：
 
 ```
---port > OPENCLAW_GATEWAY_PORT > gateway.port > 默认 18789
+--port > OPENCLAW_GATEWAY_PORT > gateway.port > 默认 4242
 ```
 
 ### 为什么 openclaw gateway status 显示 Runtime: running 但 RPC probe: failed
@@ -2173,7 +2173,7 @@ openclaw gateway install --force
 
 ### "another gateway instance is already listening"是什么意思
 
-OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁（默认 `ws://127.0.0.1:18789`）。如果绑定因 `EADDRINUSE` 失败，它会抛出 `GatewayLockError` 表示另一个实例已在监听。
+OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁（默认 `ws://127.0.0.1:4242`）。如果绑定因 `EADDRINUSE` 失败，它会抛出 `GatewayLockError` 表示另一个实例已在监听。
 
 修复：停止另一个实例，释放端口，或使用 `openclaw gateway --port <port>` 运行。
 
@@ -2186,7 +2186,7 @@ OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁
   gateway: {
     mode: "remote",
     remote: {
-      url: "ws://gateway.tailnet:18789",
+      url: "ws://gateway.tailnet:4242",
       token: "your-token",
       password: "your-password",
     },
@@ -2212,7 +2212,7 @@ OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁
 
 - 最快：`openclaw dashboard`（打印 + 复制带令牌的链接，尝试打开；如果无头则显示 SSH 提示）。
 - 如果你还没有令牌：`openclaw doctor --generate-gateway-token`。
-- 如果是远程，先建隧道：`ssh -N -L 18789:127.0.0.1:18789 user@host` 然后打开 `http://127.0.0.1:18789/?token=...`。
+- 如果是远程，先建隧道：`ssh -N -L 4242:127.0.0.1:4242 user@host` 然后打开 `http://127.0.0.1:4242/?token=...`。
 - 在 Gateway 网关主机上设置 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
 - 在控制 UI 设置中粘贴相同的令牌（或使用一次性 `?token=...` 链接刷新）。
 - 仍然卡住？运行 `openclaw status --all` 并按[故障排除](/gateway/troubleshooting)操作。参阅[仪表板](/web/dashboard)了解认证详情。
@@ -2260,14 +2260,14 @@ Gateway 网关是一个 **WebSocket 服务器**，它期望第一条消息是 `c
 
 快速修复：
 
-1. 使用 WS URL：`ws://<host>:18789`（或 `wss://...` 如果 HTTPS）。
+1. 使用 WS URL：`ws://<host>:4242`（或 `wss://...` 如果 HTTPS）。
 2. 不要在普通浏览器标签页中打开 WS 端口。
 3. 如果认证已启用，在 `connect` 帧中包含令牌/密码。
 
 如果你使用 CLI 或 TUI，URL 应该类似：
 
 ```
-openclaw tui --url ws://<host>:18789 --token <token>
+openclaw tui --url ws://<host>:4242 --token <token>
 ```
 
 协议详情：[Gateway 网关协议](/gateway/protocol)。

@@ -63,7 +63,7 @@ async function runGatewayPrompt(params: {
   authConfigFactory?: (input: Record<string, unknown>) => Record<string, unknown>;
 }) {
   vi.clearAllMocks();
-  mocks.resolveGatewayPort.mockReturnValue(18789);
+  mocks.resolveGatewayPort.mockReturnValue(4242);
   mocks.select.mockImplementation(async () => params.selectQueue.shift());
   mocks.text.mockImplementation(async () => params.textQueue.shift());
   mocks.randomToken.mockReturnValue(params.randomToken ?? "generated-token");
@@ -92,7 +92,7 @@ describe("promptGatewayConfig", () => {
   it("generates a token when the prompt returns undefined", async () => {
     const { result } = await runGatewayPrompt({
       selectQueue: ["loopback", "token", "off"],
-      textQueue: ["18789", undefined],
+      textQueue: ["4242", undefined],
       randomToken: "generated-token",
       authConfigFactory: ({ mode, token, password }) => ({ mode, token, password }),
     });
@@ -102,7 +102,7 @@ describe("promptGatewayConfig", () => {
   it("does not set password to literal 'undefined' when prompt returns undefined", async () => {
     const { call } = await runGatewayPrompt({
       selectQueue: ["loopback", "password", "off"],
-      textQueue: ["18789", undefined],
+      textQueue: ["4242", undefined],
       randomToken: "unused",
       authConfigFactory: ({ mode, token, password }) => ({ mode, token, password }),
     });
@@ -113,7 +113,7 @@ describe("promptGatewayConfig", () => {
   it("prompts for trusted-proxy configuration when trusted-proxy mode selected", async () => {
     const { result, call } = await runTrustedProxyPrompt({
       textQueue: [
-        "18789",
+        "4242",
         "x-forwarded-user",
         "x-forwarded-proto,x-forwarded-host",
         "nick@example.com",
@@ -133,7 +133,7 @@ describe("promptGatewayConfig", () => {
 
   it("handles trusted-proxy with no optional fields", async () => {
     const { result, call } = await runTrustedProxyPrompt({
-      textQueue: ["18789", "x-remote-user", "", "", "10.0.0.1"],
+      textQueue: ["4242", "x-remote-user", "", "", "10.0.0.1"],
     });
 
     expect(call?.mode).toBe("trusted-proxy");
@@ -148,7 +148,7 @@ describe("promptGatewayConfig", () => {
   it("forces tailscale off when trusted-proxy is selected", async () => {
     const { result } = await runTrustedProxyPrompt({
       tailscaleMode: "serve",
-      textQueue: ["18789", "x-forwarded-user", "", "", "10.0.0.1"],
+      textQueue: ["4242", "x-forwarded-user", "", "", "10.0.0.1"],
     });
     expect(result.config.gateway?.bind).toBe("loopback");
     expect(result.config.gateway?.tailscale?.mode).toBe("off");

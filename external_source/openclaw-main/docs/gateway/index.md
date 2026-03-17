@@ -24,9 +24,9 @@ Use this page for day-1 startup and day-2 operations of the Gateway service.
   <Step title="Start the Gateway">
 
 ```bash
-openclaw gateway --port 18789
+openclaw gateway --port 4242
 # debug/trace mirrored to stdio
-openclaw gateway --port 18789 --verbose
+openclaw gateway --port 4242 --verbose
 # force-kill listener on selected port, then start
 openclaw gateway --force
 ```
@@ -71,10 +71,10 @@ Default mode is `gateway.reload.mode="hybrid"`.
 
 ### Port and bind precedence
 
-| Setting      | Resolution order                                              |
-| ------------ | ------------------------------------------------------------- |
-| Gateway port | `--port` → `OPENCLAW_GATEWAY_PORT` → `gateway.port` → `18789` |
-| Bind mode    | CLI/override → `gateway.bind` → `loopback`                    |
+| Setting      | Resolution order                                             |
+| ------------ | ------------------------------------------------------------ |
+| Gateway port | `--port` → `OPENCLAW_GATEWAY_PORT` → `gateway.port` → `4242` |
+| Bind mode    | CLI/override → `gateway.bind` → `loopback`                   |
 
 ### Hot reload modes
 
@@ -104,10 +104,10 @@ Preferred: Tailscale/VPN.
 Fallback: SSH tunnel.
 
 ```bash
-ssh -N -L 18789:127.0.0.1:18789 user@host
+ssh -N -L 4242:127.0.0.1:4242 user@host
 ```
 
-Then connect clients to `ws://127.0.0.1:18789` locally.
+Then connect clients to `ws://127.0.0.1:4242` locally.
 
 <Warning>
 If gateway auth is configured, clients still must send auth (`token`/`password`) even over SSH tunnels.

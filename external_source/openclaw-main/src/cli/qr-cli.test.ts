@@ -86,7 +86,7 @@ describe("registerQrCli", () => {
     await runQr(["--setup-code-only"]);
 
     const expected = encodePairingSetupCode({
-      url: "ws://gateway.local:18789",
+      url: "ws://gateway.local:4242",
       token: "tok",
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);
@@ -123,7 +123,7 @@ describe("registerQrCli", () => {
     await runQr(["--setup-code-only", "--token", "override-token"]);
 
     const expected = encodePairingSetupCode({
-      url: "ws://gateway.local:18789",
+      url: "ws://gateway.local:4242",
       token: "override-token",
     });
     expect(runtime.log).toHaveBeenCalledWith(expected);

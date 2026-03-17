@@ -912,7 +912,7 @@ openclaw models status
 
 子命令：
 
-- `node run --host <gateway-host> --port 18789`
+- `node run --host <gateway-host> --port 4242`
 - `node status`
 - `node install [--host <gateway-host>] [--port <port>] [--tls] [--tls-fingerprint <sha256>] [--node-id <id>] [--display-name <name>] [--runtime <node|bun>] [--force]`
 - `node uninstall`

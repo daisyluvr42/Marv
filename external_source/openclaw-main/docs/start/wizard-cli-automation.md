@@ -22,7 +22,7 @@ openclaw onboard --non-interactive \
   --mode local \
   --auth-choice apiKey \
   --anthropic-api-key "$ANTHROPIC_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback \
   --install-daemon \
   --daemon-runtime node \
@@ -40,7 +40,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice gemini-api-key \
       --gemini-api-key "$GEMINI_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -50,7 +50,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice zai-api-key \
       --zai-api-key "$ZAI_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -60,7 +60,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice ai-gateway-api-key \
       --ai-gateway-api-key "$AI_GATEWAY_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -72,7 +72,7 @@ Add `--json` for a machine-readable summary.
       --cloudflare-ai-gateway-account-id "your-account-id" \
       --cloudflare-ai-gateway-gateway-id "your-gateway-id" \
       --cloudflare-ai-gateway-api-key "$CLOUDFLARE_AI_GATEWAY_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -82,7 +82,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice moonshot-api-key \
       --moonshot-api-key "$MOONSHOT_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -92,7 +92,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice mistral-api-key \
       --mistral-api-key "$MISTRAL_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -102,7 +102,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice synthetic-api-key \
       --synthetic-api-key "$SYNTHETIC_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -112,7 +112,7 @@ Add `--json` for a machine-readable summary.
       --mode local \
       --auth-choice opencode-zen \
       --opencode-zen-api-key "$OPENCODE_API_KEY" \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
   </Accordion>
@@ -126,7 +126,7 @@ Add `--json` for a machine-readable summary.
       --custom-api-key "$CUSTOM_API_KEY" \
       --custom-provider-id "my-custom" \
       --custom-compatibility anthropic \
-      --gateway-port 18789 \
+      --gateway-port 4242 \
       --gateway-bind loopback
     ```
 

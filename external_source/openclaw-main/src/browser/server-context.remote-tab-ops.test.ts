@@ -23,7 +23,7 @@ function makeState(
     port: 0,
     resolved: {
       enabled: true,
-      controlPort: 18791,
+      controlPort: 4244,
       cdpProtocol: profile === "remote" ? "https" : "http",
       cdpHost: profile === "remote" ? "browserless.example" : "127.0.0.1",
       cdpIsLoopback: profile !== "remote",
@@ -43,7 +43,7 @@ function makeState(
           cdpPort: 443,
           color: "#00AA00",
         },
-        openclaw: { cdpPort: 18800, color: "#FF4500" },
+        openclaw: { cdpPort: 4253, color: "#FF4500" },
       },
     },
     profiles: new Map(),
@@ -303,7 +303,7 @@ describe("browser server-context tab selection state", () => {
     expect(opened.targetId).toBe("CREATED");
     expect(state.profiles.get("openclaw")?.lastTargetId).toBe("CREATED");
     expect(createTargetViaCdp).toHaveBeenCalledWith({
-      cdpUrl: "http://127.0.0.1:18800",
+      cdpUrl: "http://127.0.0.1:4253",
       url: "http://127.0.0.1:8080",
       ssrfPolicy: { allowPrivateNetwork: true },
     });

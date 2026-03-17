@@ -18,7 +18,7 @@ Last updated: 2025-12-11
 
 ## Mechanism
 
-- The gateway binds the WebSocket listener (default `ws://127.0.0.1:18789`) immediately on startup using an exclusive TCP listener.
+- The gateway binds the WebSocket listener (default `ws://127.0.0.1:4242`) immediately on startup using an exclusive TCP listener.
 - If the bind fails with `EADDRINUSE`, startup throws `GatewayLockError("another gateway instance is already listening on ws://127.0.0.1:<port>")`.
 - The OS releases the listener automatically on any process exit, including crashes and SIGKILL—no separate lock file or cleanup step is needed.
 - On shutdown the gateway closes the WebSocket server and underlying HTTP server to free the port promptly.

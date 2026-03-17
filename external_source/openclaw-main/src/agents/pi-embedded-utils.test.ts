@@ -31,7 +31,7 @@ describe("extractAssistantText", () => {
   it("strips tool-only Minimax invocation XML from text", () => {
     const cases = [
       `<invoke name="Bash">
-<parameter name="command">netstat -tlnp | grep 18789</parameter>
+<parameter name="command">netstat -tlnp | grep 4242</parameter>
 </invoke>
 </minimax:tool_call>`,
       `<invoke name="Bash">

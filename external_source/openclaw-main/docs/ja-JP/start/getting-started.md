@@ -18,7 +18,7 @@ x-i18n:
 目標：ゼロから最小限のセットアップで最初の動作するチャットを実現する。
 
 <Info>
-最速のチャット方法：Control UIを開く（チャンネル設定は不要）。`openclaw dashboard`を実行してブラウザでチャットするか、<Tooltip headline="Gatewayホスト" tip="OpenClaw Gatewayサービスを実行しているマシン。">Gatewayホスト</Tooltip>で`http://127.0.0.1:18789/`を開きます。
+最速のチャット方法：Control UIを開く（チャンネル設定は不要）。`openclaw dashboard`を実行してブラウザでチャットするか、<Tooltip headline="Gatewayホスト" tip="OpenClaw Gatewayサービスを実行しているマシン。">Gatewayホスト</Tooltip>で`http://127.0.0.1:4242/`を開きます。
 ドキュメント：[Dashboard](/web/dashboard)と[Control UI](/web/control-ui)。
 </Info>
 
@@ -87,7 +87,7 @@ Control UIが読み込まれれば、Gatewayは使用可能な状態です。
     クイックテストやトラブルシューティングに便利です。
 
     ```bash
-    openclaw gateway --port 18789
+    openclaw gateway --port 4242
     ```
 
   </Accordion>

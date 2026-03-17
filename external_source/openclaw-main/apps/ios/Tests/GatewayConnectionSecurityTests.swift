@@ -89,7 +89,7 @@ import Testing
             debugID: "debug",
             lanHost: "test.local",
             tailnetDns: nil,
-            gatewayPort: 18789,
+            gatewayPort: 4242,
             canvasPort: nil,
             tlsEnabled: true,
             tlsFingerprintSha256: nil,
@@ -123,9 +123,9 @@ import Testing
         let appModel = NodeAppModel()
         let controller = GatewayConnectionController(appModel: appModel, startDiscovery: false)
 
-        #expect(controller._test_resolveManualPort(host: "gateway.example.com", port: 0, useTLS: true) == 18789)
+        #expect(controller._test_resolveManualPort(host: "gateway.example.com", port: 0, useTLS: true) == 4242)
         #expect(controller._test_resolveManualPort(host: "device.sample.ts.net", port: 0, useTLS: true) == 443)
         #expect(controller._test_resolveManualPort(host: "device.sample.ts.net.", port: 0, useTLS: true) == 443)
-        #expect(controller._test_resolveManualPort(host: "device.sample.ts.net", port: 18789, useTLS: true) == 18789)
+        #expect(controller._test_resolveManualPort(host: "device.sample.ts.net", port: 4242, useTLS: true) == 4242)
     }
 }

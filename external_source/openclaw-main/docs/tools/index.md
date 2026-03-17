@@ -317,7 +317,7 @@ Common parameters:
 - All actions accept optional `profile` parameter for multi-instance support.
 - When `profile` is omitted, uses `browser.defaultProfile` (defaults to "chrome").
 - Profile names: lowercase alphanumeric + hyphens only (max 64 chars).
-- Port range: 18800-18899 (~100 profiles max).
+- Port range: 4253-4352 (~100 profiles max).
 - Remote profiles are attach-only (no start/stop/reset).
 - If a browser-capable node is connected, the tool may auto-route to it (unless you pin `target`).
 - `snapshot` defaults to `ai` when Playwright is installed; use `aria` for the accessibility tree.
@@ -501,7 +501,7 @@ Notes:
 
 Gateway-backed tools (`canvas`, `nodes`, `cron`):
 
-- `gatewayUrl` (default `ws://127.0.0.1:18789`)
+- `gatewayUrl` (default `ws://127.0.0.1:4242`)
 - `gatewayToken` (if auth enabled)
 - `timeoutMs`
 

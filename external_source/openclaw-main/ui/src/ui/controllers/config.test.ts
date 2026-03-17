@@ -42,7 +42,7 @@ describe("applyConfigSnapshot", () => {
     const state = createState();
     state.configFormMode = "form";
     state.configFormDirty = true;
-    state.configForm = { gateway: { mode: "local", port: 18789 } };
+    state.configForm = { gateway: { mode: "local", port: 4242 } };
     state.configRaw = "{\n}\n";
 
     applyConfigSnapshot(state, {
@@ -53,7 +53,7 @@ describe("applyConfigSnapshot", () => {
     });
 
     expect(state.configRaw).toBe(
-      '{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n',
+      '{\n  "gateway": {\n    "mode": "local",\n    "port": 4242\n  }\n}\n',
     );
   });
 
@@ -111,12 +111,12 @@ describe("updateConfigFormValue", () => {
       raw: "{}",
     };
 
-    updateConfigFormValue(state, ["gateway", "port"], 18789);
+    updateConfigFormValue(state, ["gateway", "port"], 4242);
 
     expect(state.configFormDirty).toBe(true);
     expect(state.configForm).toEqual({
       channels: { telegram: { botToken: "t" } },
-      gateway: { mode: "local", port: 18789 },
+      gateway: { mode: "local", port: 4242 },
     });
   });
 
@@ -129,10 +129,10 @@ describe("updateConfigFormValue", () => {
       raw: "{\n}\n",
     };
 
-    updateConfigFormValue(state, ["gateway", "port"], 18789);
+    updateConfigFormValue(state, ["gateway", "port"], 4242);
 
     expect(state.configRaw).toBe(
-      '{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n',
+      '{\n  "gateway": {\n    "mode": "local",\n    "port": 4242\n  }\n}\n',
     );
   });
 });
@@ -172,7 +172,7 @@ describe("applyConfig", () => {
     state.applySessionKey = "agent:main:web:dm:test";
     state.configFormMode = "form";
     state.configForm = {
-      gateway: { port: "18789", debug: "true" },
+      gateway: { port: "4242", debug: "true" },
     };
     state.configSchema = {
       type: "object",
@@ -200,7 +200,7 @@ describe("applyConfig", () => {
       gateway: { port: unknown; debug: unknown };
     };
     expect(typeof parsed.gateway.port).toBe("number");
-    expect(parsed.gateway.port).toBe(18789);
+    expect(parsed.gateway.port).toBe(4242);
     expect(parsed.gateway.debug).toBe(true);
     expect(params.baseHash).toBe("hash-apply-1");
     expect(params.sessionKey).toBe("agent:main:web:dm:test");
@@ -220,7 +220,7 @@ describe("saveConfig", () => {
     state.client = { request } as unknown as ConfigState["client"];
     state.configFormMode = "form";
     state.configForm = {
-      gateway: { port: "18789", enabled: "false" },
+      gateway: { port: "4242", enabled: "false" },
     };
     state.configSchema = {
       type: "object",
@@ -244,7 +244,7 @@ describe("saveConfig", () => {
       gateway: { port: unknown; enabled: unknown };
     };
     expect(typeof parsed.gateway.port).toBe("number");
-    expect(parsed.gateway.port).toBe(18789);
+    expect(parsed.gateway.port).toBe(4242);
     expect(parsed.gateway.enabled).toBe(false);
     expect(params.baseHash).toBe("hash-save-1");
   });
@@ -261,7 +261,7 @@ describe("saveConfig", () => {
     state.client = { request } as unknown as ConfigState["client"];
     state.configFormMode = "form";
     state.configForm = {
-      gateway: { port: "18789" },
+      gateway: { port: "4242" },
     };
     state.configSchema = "invalid-schema";
     state.configSnapshot = { hash: "hash-save-2" };
@@ -273,7 +273,7 @@ describe("saveConfig", () => {
     const parsed = JSON.parse(params.raw) as {
       gateway: { port: unknown };
     };
-    expect(parsed.gateway.port).toBe("18789");
+    expect(parsed.gateway.port).toBe("4242");
     expect(params.baseHash).toBe("hash-save-2");
   });
 });

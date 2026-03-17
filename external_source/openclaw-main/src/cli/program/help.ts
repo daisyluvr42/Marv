@@ -29,7 +29,7 @@ const EXAMPLES = [
     'openclaw message send --target +15555550123 --message "Hi" --json',
     "Send via your web session and print JSON result.",
   ],
-  ["openclaw gateway --port 18789", "Run the WebSocket Gateway locally."],
+  ["openclaw gateway --port 4242", "Run the WebSocket Gateway locally."],
   ["openclaw --dev gateway", "Run a dev Gateway (isolated state/config) on ws://127.0.0.1:19001."],
   ["openclaw gateway --force", "Kill anything bound to the default gateway port, then start it."],
   ["openclaw gateway ...", "Gateway control via WebSocket."],

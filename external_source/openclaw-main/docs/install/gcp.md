@@ -218,7 +218,7 @@ Create `.env` in the repository root.
 OPENCLAW_IMAGE=openclaw:latest
 OPENCLAW_GATEWAY_TOKEN=change-me-now
 OPENCLAW_GATEWAY_BIND=lan
-OPENCLAW_GATEWAY_PORT=18789
+OPENCLAW_GATEWAY_PORT=4242
 
 OPENCLAW_CONFIG_DIR=/home/$USER/.openclaw
 OPENCLAW_WORKSPACE_DIR=/home/$USER/.openclaw/workspace
@@ -265,7 +265,7 @@ services:
     ports:
       # Recommended: keep the Gateway loopback-only on the VM; access via SSH tunnel.
       # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT}:4242"
     command:
       [
         "node",
@@ -377,7 +377,7 @@ docker compose logs -f openclaw-gateway
 Success:
 
 ```
-[gateway] listening on ws://0.0.0.0:18789
+[gateway] listening on ws://0.0.0.0:4242
 ```
 
 ---
@@ -387,12 +387,12 @@ Success:
 Create an SSH tunnel to forward the Gateway port:
 
 ```bash
-gcloud compute ssh openclaw-gateway --zone=us-central1-a -- -L 18789:127.0.0.1:18789
+gcloud compute ssh openclaw-gateway --zone=us-central1-a -- -L 4242:127.0.0.1:4242
 ```
 
 Open in your browser:
 
-`http://127.0.0.1:18789/`
+`http://127.0.0.1:4242/`
 
 Paste your gateway token.
 

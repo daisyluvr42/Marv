@@ -40,7 +40,7 @@ export type CanvasHostConfig = {
   enabled?: boolean;
   /** Directory to serve (default: ~/.openclaw/workspace/canvas). */
   root?: string;
-  /** HTTP port to listen on (default: 18793). */
+  /** HTTP port to listen on (default: 4246). */
   port?: number;
   /** Enable live-reload file watching + WS reloads (default: true). */
   liveReload?: boolean;
@@ -297,7 +297,7 @@ export type GatewayToolsConfig = {
 };
 
 export type GatewayConfig = {
-  /** Single multiplexed port for Gateway WS + HTTP (default: 18789). */
+  /** Single multiplexed port for Gateway WS + HTTP (default: 4242). */
   port?: number;
   /**
    * Explicit gateway mode. When set to "remote", local gateway start is disabled.

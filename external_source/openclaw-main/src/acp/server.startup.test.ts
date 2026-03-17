@@ -59,7 +59,7 @@ vi.mock("../gateway/auth.js", () => ({
 
 vi.mock("../gateway/call.js", () => ({
   buildGatewayConnectionDetails: () => ({
-    url: "ws://127.0.0.1:18789",
+    url: "ws://127.0.0.1:4242",
   }),
 }));
 

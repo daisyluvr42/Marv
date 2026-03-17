@@ -85,7 +85,7 @@ openclaw channels login
 2. 启动 Gateway 网关（保持运行）：
 
 ```bash
-openclaw gateway --port 18789
+openclaw gateway --port 4242
 ```
 
 3. 在 `~/.openclaw/openclaw.json` 中放置最小配置：

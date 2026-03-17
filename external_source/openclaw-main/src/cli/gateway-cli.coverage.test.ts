@@ -73,7 +73,7 @@ vi.mock("../daemon/service.js", () => ({
 
 vi.mock("../daemon/program-args.js", () => ({
   resolveGatewayProgramArguments: async () => ({
-    programArguments: ["/bin/node", "cli", "gateway", "--port", "18789"],
+    programArguments: ["/bin/node", "cli", "gateway", "--port", "4242"],
   }),
 }));
 
@@ -134,7 +134,7 @@ describe("gateway-cli coverage", () => {
         host: "studio.openclaw.internal",
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",
-        gatewayPort: 18789,
+        gatewayPort: 4242,
         sshPort: 22,
       },
     ]);
@@ -178,7 +178,7 @@ describe("gateway-cli coverage", () => {
     await expectGatewayExit([
       "gateway",
       "--port",
-      "18789",
+      "4242",
       "--token",
       "test-token",
       "--force",
@@ -192,7 +192,7 @@ describe("gateway-cli coverage", () => {
     await expectGatewayExit([
       "gateway",
       "--port",
-      "18789",
+      "4242",
       "--token",
       "test-token",
       "--allow-unconfigured",

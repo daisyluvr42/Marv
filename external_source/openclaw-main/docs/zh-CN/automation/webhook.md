@@ -122,14 +122,14 @@ Gateway 网关可以暴露一个小型 HTTP webhook 端点用于外部触发。
 ## 示例
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/wake \
+curl -X POST http://127.0.0.1:4242/hooks/wake \
   -H 'Authorization: Bearer SECRET' \
   -H 'Content-Type: application/json' \
   -d '{"text":"New email received","mode":"now"}'
 ```
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/agent \
+curl -X POST http://127.0.0.1:4242/hooks/agent \
   -H 'x-openclaw-token: SECRET' \
   -H 'Content-Type: application/json' \
   -d '{"message":"Summarize inbox","name":"Email","wakeMode":"next-heartbeat"}'
@@ -140,7 +140,7 @@ curl -X POST http://127.0.0.1:18789/hooks/agent \
 在智能体请求体（或映射）中添加 `model` 以覆盖该次运行的模型：
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/agent \
+curl -X POST http://127.0.0.1:4242/hooks/agent \
   -H 'x-openclaw-token: SECRET' \
   -H 'Content-Type: application/json' \
   -d '{"message":"Summarize inbox","name":"Email","model":"openai/gpt-5.2-mini"}'
@@ -149,7 +149,7 @@ curl -X POST http://127.0.0.1:18789/hooks/agent \
 如果你启用了 `agents.defaults.models` 限制，请确保覆盖的模型包含在其中。
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/gmail \
+curl -X POST http://127.0.0.1:4242/hooks/gmail \
   -H 'Authorization: Bearer SECRET' \
   -H 'Content-Type: application/json' \
   -d '{"source":"gmail","messages":[{"from":"Ada","subject":"Hello","snippet":"Hi"}]}'

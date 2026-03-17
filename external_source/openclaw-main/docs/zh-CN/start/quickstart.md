@@ -46,7 +46,7 @@ OpenClaw 需要 Node 22 或更新版本。
   </Step>
   <Step title="启动 Gateway 网关">
     ```bash
-    openclaw gateway --port 18789
+    openclaw gateway --port 4242
     ```
   </Step>
 </Steps>

@@ -49,7 +49,7 @@ openclaw gateway run
 
 ### 选项
 
-- `--port <port>`：WebSocket 端口（默认来自配置/环境变量；通常为 `18789`）。
+- `--port <port>`：WebSocket 端口（默认来自配置/环境变量；通常为 `4242`）。
 - `--bind <loopback|lan|tailnet|auto|custom>`：监听器绑定模式。
 - `--auth <token|password>`：认证模式覆盖。
 - `--token <token>`：令牌覆盖（同时为进程设置 `OPENCLAW_GATEWAY_TOKEN`）。
@@ -88,7 +88,7 @@ openclaw gateway run
 ### `gateway health`
 
 ```bash
-openclaw gateway health --url ws://127.0.0.1:18789
+openclaw gateway health --url ws://127.0.0.1:4242
 ```
 
 ### `gateway status`
@@ -181,7 +181,7 @@ openclaw gateway uninstall
 
 - `role`（Gateway 网关角色提示）
 - `transport`（传输提示，例如 `gateway`）
-- `gatewayPort`（WebSocket 端口，通常为 `18789`）
+- `gatewayPort`（WebSocket 端口，通常为 `4242`）
 - `sshPort`（SSH 端口；如果不存在则默认为 `22`）
 - `tailnetDns`（MagicDNS 主机名，如果可用）
 - `gatewayTls` / `gatewayTlsSha256`（TLS 启用 + 证书指纹）

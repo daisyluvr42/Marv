@@ -97,7 +97,7 @@ function parseDigTxt(stdout: string): string[] {
 }
 
 function parseDigSrv(stdout: string): { host: string; port: number } | null {
-  // dig +short SRV: "0 0 18790 host.domain."
+  // dig +short SRV: "0 0 4243 host.domain."
   const line = stdout
     .split("\n")
     .map((l) => l.trim())

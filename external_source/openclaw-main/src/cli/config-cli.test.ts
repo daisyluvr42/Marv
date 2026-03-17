@@ -84,7 +84,7 @@ describe("config cli", () => {
         agents: {
           list: [{ id: "main" }, { id: "oracle", workspace: "~/oracle-workspace" }],
         },
-        gateway: { port: 18789 },
+        gateway: { port: 4242 },
         tools: { allow: ["group:fs"] },
         logging: { level: "debug" },
       };
@@ -104,7 +104,7 @@ describe("config cli", () => {
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = mockWriteConfigFile.mock.calls[0]?.[0];
       expect(written.gateway?.auth).toEqual({ mode: "token" });
-      expect(written.gateway?.port).toBe(18789);
+      expect(written.gateway?.port).toBe(4242);
       expect(written.agents).toEqual(resolved.agents);
       expect(written.tools).toEqual(resolved.tools);
       expect(written.logging).toEqual(resolved.logging);
@@ -113,7 +113,7 @@ describe("config cli", () => {
 
     it("does not inject runtime defaults into the written config", async () => {
       const resolved: OpenClawConfig = {
-        gateway: { port: 18789 },
+        gateway: { port: 4242 },
       };
       const runtimeMerged = {
         ...resolved,
@@ -138,7 +138,7 @@ describe("config cli", () => {
       expect(written).not.toHaveProperty("agents.defaults.maxTokens");
       expect(written).not.toHaveProperty("messages.ackReaction");
       expect(written).not.toHaveProperty("sessions.persistence");
-      expect(written.gateway?.port).toBe(18789);
+      expect(written.gateway?.port).toBe(4242);
       expect(written.gateway?.auth).toEqual({ mode: "token" });
     });
   });
@@ -162,7 +162,7 @@ describe("config cli", () => {
 
   describe("config set parsing flags", () => {
     it("falls back to raw string when parsing fails and strict mode is off", async () => {
-      const resolved: OpenClawConfig = { gateway: { port: 18789 } };
+      const resolved: OpenClawConfig = { gateway: { port: 4242 } };
       setSnapshot(resolved, resolved);
 
       await runConfigCommand(["config", "set", "gateway.auth.mode", "{bad"]);
@@ -237,7 +237,7 @@ describe("config cli", () => {
     it("preserves existing config keys when unsetting a value", async () => {
       const resolved: OpenClawConfig = {
         agents: { list: [{ id: "main" }] },
-        gateway: { port: 18789 },
+        gateway: { port: 4242 },
         tools: {
           profile: "coding",
           alsoAllow: ["agents_list"],

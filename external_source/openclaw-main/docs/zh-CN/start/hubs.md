@@ -24,7 +24,7 @@ x-i18n:
 - [新手引导](/start/onboarding)
 - [向导](/start/wizard)
 - [安装配置](/start/setup)
-- [仪表盘（本地 Gateway 网关）](http://127.0.0.1:18789/)
+- [仪表盘（本地 Gateway 网关）](http://127.0.0.1:4242/)
 - [帮助](/help)
 - [文档目录](/start/docs-directory)
 - [配置](/gateway/configuration)

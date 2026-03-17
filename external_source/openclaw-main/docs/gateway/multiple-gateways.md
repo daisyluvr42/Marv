@@ -27,7 +27,7 @@ Profiles auto-scope `OPENCLAW_STATE_DIR` + `OPENCLAW_CONFIG_PATH` and suffix ser
 ```bash
 # main
 openclaw --profile main setup
-openclaw --profile main gateway --port 18789
+openclaw --profile main gateway --port 4242
 
 # rescue
 openclaw --profile rescue setup
@@ -58,7 +58,7 @@ Port spacing: leave at least 20 ports between base ports so the derived browser/
 
 ```bash
 # Main bot (existing or fresh, without --profile param)
-# Runs on port 18789 + Chrome CDC/Canvas/... Ports
+# Runs on port 4242 + Chrome CDC/Canvas/... Ports
 openclaw onboard
 openclaw gateway install
 
@@ -66,7 +66,7 @@ openclaw gateway install
 openclaw --profile rescue onboard
 # Notes:
 # - workspace name will be postfixed with -rescue per default
-# - Port should be at least 18789 + 20 Ports,
+# - Port should be at least 4242 + 20 Ports,
 #   better choose completely different base port, like 19789,
 # - rest of the onboarding is the same as normal
 
@@ -96,7 +96,7 @@ If you override any of these in config or env, you must keep them unique per ins
 ```bash
 OPENCLAW_CONFIG_PATH=~/.openclaw/main.json \
 OPENCLAW_STATE_DIR=~/.openclaw-main \
-openclaw gateway --port 18789
+openclaw gateway --port 4242
 
 OPENCLAW_CONFIG_PATH=~/.openclaw/rescue.json \
 OPENCLAW_STATE_DIR=~/.openclaw-rescue \

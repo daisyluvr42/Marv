@@ -97,7 +97,7 @@ const mocks = vi.hoisted(() => ({
   logWebSelfId: vi.fn(),
   probeGateway: vi.fn().mockResolvedValue({
     ok: false,
-    url: "ws://127.0.0.1:18789",
+    url: "ws://127.0.0.1:4242",
     connectLatencyMs: null,
     error: "timeout",
     close: null,
@@ -414,7 +414,7 @@ describe("statusCommand", () => {
     try {
       mocks.probeGateway.mockResolvedValueOnce({
         ok: true,
-        url: "ws://127.0.0.1:18789",
+        url: "ws://127.0.0.1:4242",
         connectLatencyMs: 123,
         error: null,
         close: null,
@@ -439,7 +439,7 @@ describe("statusCommand", () => {
   it("surfaces channel runtime errors from the gateway", async () => {
     mocks.probeGateway.mockResolvedValueOnce({
       ok: true,
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       connectLatencyMs: 10,
       error: null,
       close: null,
@@ -483,7 +483,7 @@ describe("statusCommand", () => {
   it("prints requestId-aware recovery guidance when gateway pairing is required", async () => {
     mocks.probeGateway.mockResolvedValueOnce({
       ok: false,
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       connectLatencyMs: null,
       error: "connect failed: pairing required (requestId: req-123)",
       close: { code: 1008, reason: "pairing required (requestId: req-123)" },
@@ -506,7 +506,7 @@ describe("statusCommand", () => {
   it("prints fallback recovery guidance when pairing requestId is unavailable", async () => {
     mocks.probeGateway.mockResolvedValueOnce({
       ok: false,
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       connectLatencyMs: null,
       error: "connect failed: pairing required",
       close: { code: 1008, reason: "connect failed" },
@@ -529,7 +529,7 @@ describe("statusCommand", () => {
   it("does not render unsafe requestId content into approval command hints", async () => {
     mocks.probeGateway.mockResolvedValueOnce({
       ok: false,
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       connectLatencyMs: null,
       error: "connect failed: pairing required (requestId: req-123;rm -rf /)",
       close: { code: 1008, reason: "pairing required (requestId: req-123;rm -rf /)" },
@@ -550,7 +550,7 @@ describe("statusCommand", () => {
   it("extracts requestId from close reason when error text omits it", async () => {
     mocks.probeGateway.mockResolvedValueOnce({
       ok: false,
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       connectLatencyMs: null,
       error: "connect failed: pairing required",
       close: { code: 1008, reason: "pairing required (requestId: req-close-456)" },

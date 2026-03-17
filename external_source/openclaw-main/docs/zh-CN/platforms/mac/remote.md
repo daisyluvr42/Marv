@@ -51,7 +51,7 @@ x-i18n:
 
 ## Web Chat
 
-- **SSH 隧道**：Web Chat 通过转发的 WebSocket 控制端口（默认 18789）连接到 Gateway 网关。
+- **SSH 隧道**：Web Chat 通过转发的 WebSocket 控制端口（默认 4242）连接到 Gateway 网关。
 - **Direct (ws/wss)**：Web Chat 直接连接到配置的 Gateway 网关 URL。
 - 不再有单独的 WebChat HTTP 服务器。
 

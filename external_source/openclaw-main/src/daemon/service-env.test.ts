@@ -263,7 +263,7 @@ describe("buildServiceEnvironment", () => {
   it("sets minimal PATH and gateway vars", () => {
     const env = buildServiceEnvironment({
       env: { HOME: "/home/user" },
-      port: 18789,
+      port: 4242,
       token: "secret",
     });
     expect(env.HOME).toBe("/home/user");
@@ -272,7 +272,7 @@ describe("buildServiceEnvironment", () => {
     } else {
       expect(env.PATH).toContain("/usr/bin");
     }
-    expect(env.OPENCLAW_GATEWAY_PORT).toBe("18789");
+    expect(env.OPENCLAW_GATEWAY_PORT).toBe("4242");
     expect(env.OPENCLAW_GATEWAY_TOKEN).toBe("secret");
     expect(env.OPENCLAW_SERVICE_MARKER).toBe("openclaw");
     expect(env.OPENCLAW_SERVICE_KIND).toBe("gateway");
@@ -286,7 +286,7 @@ describe("buildServiceEnvironment", () => {
   it("forwards TMPDIR from the host environment", () => {
     const env = buildServiceEnvironment({
       env: { HOME: "/home/user", TMPDIR: "/var/folders/xw/abc123/T/" },
-      port: 18789,
+      port: 4242,
     });
     expect(env.TMPDIR).toBe("/var/folders/xw/abc123/T/");
   });
@@ -294,7 +294,7 @@ describe("buildServiceEnvironment", () => {
   it("falls back to os.tmpdir when TMPDIR is not set", () => {
     const env = buildServiceEnvironment({
       env: { HOME: "/home/user" },
-      port: 18789,
+      port: 4242,
     });
     expect(env.TMPDIR).toBe(os.tmpdir());
   });
@@ -302,7 +302,7 @@ describe("buildServiceEnvironment", () => {
   it("uses profile-specific unit and label", () => {
     const env = buildServiceEnvironment({
       env: { HOME: "/home/user", OPENCLAW_PROFILE: "work" },
-      port: 18789,
+      port: 4242,
     });
     expect(env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-work.service");
     if (process.platform === "darwin") {

@@ -44,19 +44,19 @@ describe("extension-relay-auth", () => {
   });
 
   it("derives deterministic relay tokens per port", () => {
-    const tokenA1 = resolveRelayAuthTokenForPort(18790);
-    const tokenA2 = resolveRelayAuthTokenForPort(18790);
-    const tokenB = resolveRelayAuthTokenForPort(18791);
+    const tokenA1 = resolveRelayAuthTokenForPort(4243);
+    const tokenA2 = resolveRelayAuthTokenForPort(4243);
+    const tokenB = resolveRelayAuthTokenForPort(4244);
     expect(tokenA1).toBe(tokenA2);
     expect(tokenA1).not.toBe(tokenB);
     expect(tokenA1).not.toBe(TEST_GATEWAY_TOKEN);
   });
 
   it("accepts both relay-scoped and raw gateway tokens for compatibility", () => {
-    const tokens = resolveRelayAcceptedTokensForPort(18790);
+    const tokens = resolveRelayAcceptedTokensForPort(4243);
     expect(tokens).toContain(TEST_GATEWAY_TOKEN);
     expect(tokens[0]).not.toBe(TEST_GATEWAY_TOKEN);
-    expect(tokens[0]).toBe(resolveRelayAuthTokenForPort(18790));
+    expect(tokens[0]).toBe(resolveRelayAuthTokenForPort(4243));
   });
 
   it("accepts authenticated openclaw relay probe responses", async () => {

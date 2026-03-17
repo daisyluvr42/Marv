@@ -160,9 +160,9 @@ private func restoreKeychain(_ snapshot: [KeychainEntry: String?]) {
         // Simulate a prior manual record that included host/port.
         applyDefaults([
             "gateway.last.host": "10.0.0.99",
-            "gateway.last.port": 18789,
+            "gateway.last.port": 4242,
             "gateway.last.tls": true,
-            "gateway.last.stableID": "manual|10.0.0.99|18789",
+            "gateway.last.stableID": "manual|10.0.0.99|4242",
             "gateway.last.kind": "manual",
         ])
 
@@ -188,12 +188,12 @@ private func restoreKeychain(_ snapshot: [KeychainEntry: String?]) {
         applyDefaults([
             "gateway.last.kind": nil,
             "gateway.last.host": "example.org",
-            "gateway.last.port": 18789,
+            "gateway.last.port": 4242,
             "gateway.last.tls": false,
-            "gateway.last.stableID": "manual|example.org|18789",
+            "gateway.last.stableID": "manual|example.org|4242",
         ])
 
         let loaded = GatewaySettingsStore.loadLastGatewayConnection()
-        #expect(loaded == .manual(host: "example.org", port: 18789, useTLS: false, stableID: "manual|example.org|18789"))
+        #expect(loaded == .manual(host: "example.org", port: 4242, useTLS: false, stableID: "manual|example.org|4242"))
     }
 }

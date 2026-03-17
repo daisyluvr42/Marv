@@ -25,7 +25,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
         sessions: { visibility: "all" },
       },
     }),
-    resolveGatewayPort: () => 18789,
+    resolveGatewayPort: () => 4242,
   };
 });
 

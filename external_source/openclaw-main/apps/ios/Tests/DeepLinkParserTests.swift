@@ -79,21 +79,21 @@ import Testing
 
     @Test func parseGatewayLinkParsesCommonFields() {
         let url = URL(
-            string: "openclaw://gateway?host=openclaw.local&port=18789&tls=1&token=abc&password=def")!
+            string: "openclaw://gateway?host=openclaw.local&port=4242&tls=1&token=abc&password=def")!
         #expect(
             DeepLinkParser.parse(url) == .gateway(
-                .init(host: "openclaw.local", port: 18789, tls: true, token: "abc", password: "def")))
+                .init(host: "openclaw.local", port: 4242, tls: true, token: "abc", password: "def")))
     }
 
     @Test func parseGatewayLinkRejectsInsecureNonLoopbackWs() {
         let url = URL(
-            string: "openclaw://gateway?host=attacker.example&port=18789&tls=0&token=abc")!
+            string: "openclaw://gateway?host=attacker.example&port=4242&tls=0&token=abc")!
         #expect(DeepLinkParser.parse(url) == nil)
     }
 
     @Test func parseGatewayLinkRejectsInsecurePrefixBypassHost() {
         let url = URL(
-            string: "openclaw://gateway?host=127.attacker.example&port=18789&tls=0&token=abc")!
+            string: "openclaw://gateway?host=127.attacker.example&port=4242&tls=0&token=abc")!
         #expect(DeepLinkParser.parse(url) == nil)
     }
 
@@ -138,7 +138,7 @@ import Testing
     }
 
     @Test func parseGatewaySetupCodeRejectsInsecureNonLoopbackWs() {
-        let payload = #"{"url":"ws://attacker.example:18789","token":"tok"}"#
+        let payload = #"{"url":"ws://attacker.example:4242","token":"tok"}"#
         let encoded = Data(payload.utf8)
             .base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
@@ -150,7 +150,7 @@ import Testing
     }
 
     @Test func parseGatewaySetupCodeRejectsInsecurePrefixBypassHost() {
-        let payload = #"{"url":"ws://127.attacker.example:18789","token":"tok"}"#
+        let payload = #"{"url":"ws://127.attacker.example:4242","token":"tok"}"#
         let encoded = Data(payload.utf8)
             .base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
@@ -162,7 +162,7 @@ import Testing
     }
 
     @Test func parseGatewaySetupCodeAllowsLoopbackWs() {
-        let payload = #"{"url":"ws://127.0.0.1:18789","token":"tok"}"#
+        let payload = #"{"url":"ws://127.0.0.1:4242","token":"tok"}"#
         let encoded = Data(payload.utf8)
             .base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
@@ -173,7 +173,7 @@ import Testing
 
         #expect(link == .init(
             host: "127.0.0.1",
-            port: 18789,
+            port: 4242,
             tls: false,
             token: "tok",
             password: nil))

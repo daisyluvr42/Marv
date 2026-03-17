@@ -25,7 +25,7 @@ x-i18n:
 openclaw acp
 
 # Remote Gateway
-openclaw acp --url wss://gateway-host:18789 --token <token>
+openclaw acp --url wss://gateway-host:4242 --token <token>
 
 # Attach to an existing session key
 openclaw acp --session agent:main:main
@@ -46,7 +46,7 @@ openclaw acp --session agent:main:main --reset-session
 openclaw acp client
 
 # Point the spawned bridge at a remote Gateway
-openclaw acp client --server-args --url wss://gateway-host:18789 --token <token>
+openclaw acp client --server-args --url wss://gateway-host:4242 --token <token>
 
 # Override the server command (default: openclaw)
 openclaw acp client --server "node" --server-args openclaw.mjs acp --url ws://127.0.0.1:19001
@@ -63,14 +63,14 @@ openclaw acp client --server "node" --server-args openclaw.mjs acp --url ws://12
 示例配置（持久化）：
 
 ```bash
-openclaw config set gateway.remote.url wss://gateway-host:18789
+openclaw config set gateway.remote.url wss://gateway-host:4242
 openclaw config set gateway.remote.token <token>
 ```
 
 示例直接运行（不写入配置）：
 
 ```bash
-openclaw acp --url wss://gateway-host:18789 --token <token>
+openclaw acp --url wss://gateway-host:4242 --token <token>
 ```
 
 ## 选择智能体
@@ -115,7 +115,7 @@ openclaw acp --session agent:qa:bug-123
       "args": [
         "acp",
         "--url",
-        "wss://gateway-host:18789",
+        "wss://gateway-host:4242",
         "--token",
         "<token>",
         "--session",

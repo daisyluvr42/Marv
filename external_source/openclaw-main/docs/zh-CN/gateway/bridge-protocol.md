@@ -34,7 +34,7 @@ Bridge 协议是一个**旧版**节点传输（TCP JSONL）。新的节点客户
 
 - TCP，每行一个 JSON 对象（JSONL）。
 - 可选 TLS（当 `bridge.tls.enabled` 为 true 时）。
-- 旧版默认监听端口为 `18790`（当前构建不启动 TCP bridge）。
+- 旧版默认监听端口为 `4243`（当前构建不启动 TCP bridge）。
 
 当 TLS 启用时，设备发现 TXT 记录包含 `bridgeTls=1` 加上 `bridgeTlsSha256`，以便节点可以固定证书。
 

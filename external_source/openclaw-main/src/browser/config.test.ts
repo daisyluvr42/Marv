@@ -6,7 +6,7 @@ describe("browser config", () => {
   it("defaults to enabled with loopback defaults and lobster-orange color", () => {
     const resolved = resolveBrowserConfig(undefined);
     expect(resolved.enabled).toBe(true);
-    expect(resolved.controlPort).toBe(18791);
+    expect(resolved.controlPort).toBe(4244);
     expect(resolved.color).toBe("#FF4500");
     expect(shouldStartLocalBrowserServer(resolved)).toBe(true);
     expect(resolved.cdpHost).toBe("127.0.0.1");
@@ -19,8 +19,8 @@ describe("browser config", () => {
 
     const openclaw = resolveProfile(resolved, "openclaw");
     expect(openclaw?.driver).toBe("openclaw");
-    expect(openclaw?.cdpPort).toBe(18800);
-    expect(openclaw?.cdpUrl).toBe("http://127.0.0.1:18800");
+    expect(openclaw?.cdpPort).toBe(4253);
+    expect(openclaw?.cdpUrl).toBe("http://127.0.0.1:4253");
     expect(resolved.remoteCdpTimeoutMs).toBe(1500);
     expect(resolved.remoteCdpHandshakeTimeoutMs).toBe(3000);
   });
@@ -122,7 +122,7 @@ describe("browser config", () => {
   });
 
   it("rejects unsupported protocols", () => {
-    expect(() => resolveBrowserConfig({ cdpUrl: "ws://127.0.0.1:18791" })).toThrow(/must be http/i);
+    expect(() => resolveBrowserConfig({ cdpUrl: "ws://127.0.0.1:4244" })).toThrow(/must be http/i);
   });
 
   it("does not add the built-in chrome extension profile if the derived relay port is already used", () => {

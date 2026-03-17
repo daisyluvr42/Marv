@@ -62,7 +62,7 @@ describe("resolveGatewayRuntimeConfig", () => {
         expectedBindHost: "127.0.0.1",
       },
     ])("allows $name", async ({ cfg, expectedBindHost }) => {
-      const result = await resolveGatewayRuntimeConfig({ cfg, port: 18789 });
+      const result = await resolveGatewayRuntimeConfig({ cfg, port: 4242 });
       expect(result.authMode).toBe("trusted-proxy");
       expect(result.bindHost).toBe(expectedBindHost);
     });
@@ -102,7 +102,7 @@ describe("resolveGatewayRuntimeConfig", () => {
           "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
       },
     ])("rejects $name", async ({ cfg, expectedMessage }) => {
-      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(
+      await expect(resolveGatewayRuntimeConfig({ cfg, port: 4242 })).rejects.toThrow(
         expectedMessage,
       );
     });
@@ -144,7 +144,7 @@ describe("resolveGatewayRuntimeConfig", () => {
         expectedBindHost: "127.0.0.1",
       },
     ])("allows $name", async ({ cfg, expectedAuthMode, expectedBindHost }) => {
-      const result = await resolveGatewayRuntimeConfig({ cfg, port: 18789 });
+      const result = await resolveGatewayRuntimeConfig({ cfg, port: 4242 });
       expect(result.authMode).toBe(expectedAuthMode);
       expect(result.bindHost).toBe(expectedBindHost);
     });
@@ -196,7 +196,7 @@ describe("resolveGatewayRuntimeConfig", () => {
         expectedMessage: "gateway bind=custom requested 192.168.1.100 but resolved 0.0.0.0",
       },
     ])("rejects $name", async ({ cfg, host, expectedMessage }) => {
-      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789, host })).rejects.toThrow(
+      await expect(resolveGatewayRuntimeConfig({ cfg, port: 4242, host })).rejects.toThrow(
         expectedMessage,
       );
     });
@@ -210,7 +210,7 @@ describe("resolveGatewayRuntimeConfig", () => {
               auth: TOKEN_AUTH,
             },
           },
-          port: 18789,
+          port: 4242,
         }),
       ).rejects.toThrow("non-loopback Control UI requires gateway.controlUi.allowedOrigins");
     });
@@ -226,7 +226,7 @@ describe("resolveGatewayRuntimeConfig", () => {
             },
           },
         },
-        port: 18789,
+        port: 4242,
       });
       expect(result.bindHost).toBe("0.0.0.0");
     });
@@ -246,7 +246,7 @@ describe("resolveGatewayRuntimeConfig", () => {
             },
           },
         },
-        port: 18789,
+        port: 4242,
       });
 
       expect(result.strictTransportSecurityHeader).toBe("max-age=31536000; includeSubDomains");
@@ -265,7 +265,7 @@ describe("resolveGatewayRuntimeConfig", () => {
             },
           },
         },
-        port: 18789,
+        port: 4242,
       });
 
       expect(result.strictTransportSecurityHeader).toBeUndefined();

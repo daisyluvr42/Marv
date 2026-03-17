@@ -65,10 +65,10 @@ OpenClaw 仅在请求从 loopback 到达并带有 Tailscale 的 `x-forwarded-for
 
 从另一个 Tailnet 设备连接：
 
-- 控制 UI：`http://<tailscale-ip>:18789/`
-- WebSocket：`ws://<tailscale-ip>:18789`
+- 控制 UI：`http://<tailscale-ip>:4242/`
+- WebSocket：`ws://<tailscale-ip>:4242`
 
-注意：在此模式下 loopback（`http://127.0.0.1:18789`）将**不**工作。
+注意：在此模式下 loopback（`http://127.0.0.1:4242`）将**不**工作。
 
 ### 公共互联网（Funnel + 共享密码）
 

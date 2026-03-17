@@ -146,7 +146,7 @@ systemctl --user status openclaw-gateway
 tailscale serve status
 
 # 测试本地响应
-curl http://localhost:18789
+curl http://localhost:4242
 ```
 
 ## 8) 锁定 VCN 安全
@@ -226,10 +226,10 @@ sudo systemctl disable --now ssh
 
 ```bash
 # 从你的本地机器（通过 Tailscale）
-ssh -L 18789:127.0.0.1:18789 ubuntu@openclaw
+ssh -L 4242:127.0.0.1:4242 ubuntu@openclaw
 ```
 
-然后打开 `http://localhost:18789`。
+然后打开 `http://localhost:4242`。
 
 ---
 
@@ -268,7 +268,7 @@ journalctl --user -u openclaw-gateway -n 50
 tailscale serve status
 
 # 检查 Gateway 网关是否在监听
-curl http://localhost:18789
+curl http://localhost:4242
 
 # 如需要则重启
 systemctl --user restart openclaw-gateway

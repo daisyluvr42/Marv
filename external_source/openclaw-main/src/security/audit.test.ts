@@ -1894,7 +1894,7 @@ describe("security audit", () => {
         name: "probe returns failed result",
         probeGatewayFn: async () => ({
           ok: false,
-          url: "ws://127.0.0.1:18789",
+          url: "ws://127.0.0.1:4242",
           connectLatencyMs: null,
           error: "connect failed",
           close: null,
@@ -2751,7 +2751,7 @@ description: test skill
             gateway: {
               mode: "remote",
               auth: { token: "local-token-should-not-use" },
-              remote: { url: "wss://remote.example.com:18789", token: "remote-token-xyz789" },
+              remote: { url: "wss://remote.example.com:4242", token: "remote-token-xyz789" },
             },
           },
           expectedToken: "remote-token-xyz789",
@@ -2762,7 +2762,7 @@ description: test skill
             gateway: {
               mode: "remote",
               auth: { token: "local-token-should-not-use" },
-              remote: { url: "wss://remote.example.com:18789", token: "remote-token" },
+              remote: { url: "wss://remote.example.com:4242", token: "remote-token" },
             },
           },
           env: { token: "env-token" },
@@ -2807,7 +2807,7 @@ description: test skill
           cfg: {
             gateway: {
               mode: "remote",
-              remote: { url: "wss://remote.example.com:18789", password: "remote-pass" },
+              remote: { url: "wss://remote.example.com:4242", password: "remote-pass" },
             },
           },
           expectedPassword: "remote-pass",
@@ -2817,7 +2817,7 @@ description: test skill
           cfg: {
             gateway: {
               mode: "remote",
-              remote: { url: "wss://remote.example.com:18789", password: "remote-pass" },
+              remote: { url: "wss://remote.example.com:4242", password: "remote-pass" },
             },
           },
           env: { password: "env-pass" },

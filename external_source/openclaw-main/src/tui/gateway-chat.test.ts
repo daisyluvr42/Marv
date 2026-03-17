@@ -18,7 +18,7 @@ describe("resolveGatewayConnection", () => {
     resolveGatewayPort.mockClear();
     pickPrimaryTailnetIPv4.mockClear();
     pickPrimaryLanIPv4.mockClear();
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     pickPrimaryLanIPv4.mockReturnValue(undefined);
     delete process.env.OPENCLAW_GATEWAY_TOKEN;
@@ -75,12 +75,12 @@ describe("resolveGatewayConnection", () => {
     },
   ])("uses loopback host when local bind is $label", ({ bind, setup }) => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     setup();
 
     const result = resolveGatewayConnection({});
 
-    expect(result.url).toBe("ws://127.0.0.1:18800");
+    expect(result.url).toBe("ws://127.0.0.1:4253");
   });
 
   it("uses OPENCLAW_GATEWAY_TOKEN for local mode", () => {

@@ -48,10 +48,10 @@ function mockSnapshot(token = "abc") {
     issues: [],
     legacyIssues: [],
   });
-  resolveGatewayPortMock.mockReturnValue(18789);
+  resolveGatewayPortMock.mockReturnValue(4242);
   resolveControlUiLinksMock.mockReturnValue({
-    httpUrl: "http://127.0.0.1:18789/",
-    wsUrl: "ws://127.0.0.1:18789",
+    httpUrl: "http://127.0.0.1:4242/",
+    wsUrl: "ws://127.0.0.1:4242",
   });
 }
 
@@ -76,13 +76,13 @@ describe("dashboardCommand", () => {
     await dashboardCommand(runtime);
 
     expect(resolveControlUiLinksMock).toHaveBeenCalledWith({
-      port: 18789,
+      port: 4242,
       bind: "loopback",
       customBindHost: undefined,
       basePath: undefined,
     });
-    expect(copyToClipboardMock).toHaveBeenCalledWith("http://127.0.0.1:18789/#token=abc123");
-    expect(openUrlMock).toHaveBeenCalledWith("http://127.0.0.1:18789/#token=abc123");
+    expect(copyToClipboardMock).toHaveBeenCalledWith("http://127.0.0.1:4242/#token=abc123");
+    expect(openUrlMock).toHaveBeenCalledWith("http://127.0.0.1:4242/#token=abc123");
     expect(runtime.log).toHaveBeenCalledWith(
       "Opened in your browser. Keep that tab to control OpenClaw.",
     );

@@ -177,7 +177,7 @@ Discovery 选项：
 ### 控制隧道（Gateway 网关 WebSocket 端口）
 
 - **目的：**健康检查、状态、Web Chat、配置和其他控制平面调用。
-- **本地端口：**Gateway 网关端口（默认 `18789`），始终稳定。
+- **本地端口：**Gateway 网关端口（默认 `4242`），始终稳定。
 - **远程端口：**远程主机上的相同 Gateway 网关端口。
 - **行为：**无随机本地端口；应用复用现有的健康隧道或在需要时重启它。
 - **SSH 形式：**`ssh -N -L <local>:127.0.0.1:<remote>`，带有 BatchMode + ExitOnForwardFailure + keepalive 选项。

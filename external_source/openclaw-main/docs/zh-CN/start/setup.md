@@ -110,7 +110,7 @@ openclaw health
 
 ### 常见陷阱
 
-- **端口错误：** Gateway 网关 WS 默认为 `ws://127.0.0.1:18789`；保持应用 + CLI 在同一端口上。
+- **端口错误：** Gateway 网关 WS 默认为 `ws://127.0.0.1:4242`；保持应用 + CLI 在同一端口上。
 - **状态存储位置：**
   - 凭证：`~/.openclaw/credentials/`
   - 会话：`~/.openclaw/agents/<agentId>/sessions/`
