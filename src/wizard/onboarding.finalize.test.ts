@@ -11,14 +11,14 @@ describe("formatOnboardingSetupSummary", () => {
               model: { primary: "openai/gpt-5.2" },
             },
           },
-        },
-        channels: {
-          telegram: { botToken: "123:ABC" },
-        },
-        tools: {
-          web: {
-            search: {
-              apiKey: "brave-key",
+          channels: {
+            telegram: { botToken: "123:ABC" },
+          },
+          tools: {
+            web: {
+              search: {
+                apiKey: "brave-key",
+              },
             },
           },
         },

@@ -118,7 +118,6 @@ describe("memory index", () => {
             extraPaths: params.extraPaths,
           },
         },
-        list: [{ id: "main", default: true }],
       },
     };
   }

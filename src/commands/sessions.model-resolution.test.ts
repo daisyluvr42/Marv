@@ -46,7 +46,6 @@ describe("sessionsCommand model resolution", () => {
       {
         modelProvider: "openai-codex",
         model: "gpt-5.3-codex",
-        modelOverride: "pi:opus",
       },
       "subagent-1",
     );

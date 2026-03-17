@@ -9,15 +9,8 @@ describe("memory search config", () => {
     const cfg = asConfig({
       agents: {
         defaults: {
-          memorySearch: { enabled: true },
+          memorySearch: { enabled: false },
         },
-        list: [
-          {
-            id: "main",
-            default: true,
-            memorySearch: { enabled: false },
-          },
-        ],
       },
     });
     const resolved = resolveMemorySearchConfig(cfg, "main");
@@ -48,29 +41,14 @@ describe("memory search config", () => {
             model: "text-embedding-3-small",
             store: {
               vector: {
-                enabled: false,
+                enabled: true,
                 extensionPath: "/opt/sqlite-vec.dylib",
               },
             },
-            chunking: { tokens: 500, overlap: 100 },
-            query: { maxResults: 4, minScore: 0.2 },
+            chunking: { tokens: 320, overlap: 100 },
+            query: { maxResults: 8, minScore: 0.2 },
           },
         },
-        list: [
-          {
-            id: "main",
-            default: true,
-            memorySearch: {
-              chunking: { tokens: 320 },
-              query: { maxResults: 8 },
-              store: {
-                vector: {
-                  enabled: true,
-                },
-              },
-            },
-          },
-        ],
       },
     });
     const resolved = resolveMemorySearchConfig(cfg, "main");
@@ -97,26 +75,12 @@ describe("memory search config", () => {
             query: {
               precheck: {
                 enabled: true,
-                rewrite: true,
-                minQueryChars: 8,
+                rewrite: false,
+                minQueryChars: 4,
               },
             },
           },
         },
-        list: [
-          {
-            id: "main",
-            default: true,
-            memorySearch: {
-              query: {
-                precheck: {
-                  rewrite: false,
-                  minQueryChars: 4,
-                },
-              },
-            },
-          },
-        ],
       },
     });
     const resolved = resolveMemorySearchConfig(cfg, "main");
@@ -132,18 +96,9 @@ describe("memory search config", () => {
       agents: {
         defaults: {
           memorySearch: {
-            extraPaths: ["/shared/notes", " docs "],
+            extraPaths: ["/shared/notes", " docs ", "../team-notes"],
           },
         },
-        list: [
-          {
-            id: "main",
-            default: true,
-            memorySearch: {
-              extraPaths: ["/shared/notes", "../team-notes"],
-            },
-          },
-        ],
       },
     });
     const resolved = resolveMemorySearchConfig(cfg, "main");
@@ -228,23 +183,12 @@ describe("memory search config", () => {
           memorySearch: {
             provider: "openai",
             remote: {
-              baseUrl: "https://default.example/v1",
+              baseUrl: "https://agent.example/v1",
               apiKey: "default-key",
               headers: { "X-Default": "on" },
             },
           },
         },
-        list: [
-          {
-            id: "main",
-            default: true,
-            memorySearch: {
-              remote: {
-                baseUrl: "https://agent.example/v1",
-              },
-            },
-          },
-        ],
       },
     });
     const resolved = resolveMemorySearchConfig(cfg, "main");
@@ -269,17 +213,9 @@ describe("memory search config", () => {
           memorySearch: {
             provider: "openai",
             sources: ["memory", "sessions"],
+            experimental: { sessionMemory: false },
           },
         },
-        list: [
-          {
-            id: "main",
-            default: true,
-            memorySearch: {
-              experimental: { sessionMemory: false },
-            },
-          },
-        ],
       },
     });
     const resolved = resolveMemorySearchConfig(cfg, "main");

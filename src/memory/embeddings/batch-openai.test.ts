@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runOpenAiEmbeddingBatches, type OpenAiEmbeddingClient } from "./batch-openai.js";
+import { runOpenAiEmbeddingBatches } from "./batch-openai.js";
+import type { OpenAiEmbeddingClient } from "./embeddings-openai.js";
 
 afterEach(() => {
   vi.unstubAllGlobals();

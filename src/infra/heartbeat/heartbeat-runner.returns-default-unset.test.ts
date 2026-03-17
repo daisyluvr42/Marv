@@ -185,20 +185,9 @@ describe("isHeartbeatEnabledForAgent", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
-        list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
-    expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(false);
-    expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
-  });
-
-  it("falls back to default agent when no explicit heartbeat entries", () => {
-    const cfg: MarvConfig = {
-      agents: {
-        defaults: { heartbeat: { every: "30m" } },
-        list: [{ id: "main" }, { id: "ops" }],
-      },
-    };
+    // In single-agent mode, only "main" agent is enabled
     expect(isHeartbeatEnabledForAgent(cfg, "main")).toBe(true);
     expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(false);
   });
@@ -445,11 +434,11 @@ describe("runHeartbeatOnce", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
-        list: [{ id: "main" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
 
-    const res = await runHeartbeatOnce({ cfg, agentId: "main" });
+    // Non-main agents are always disabled in single-agent mode
+    const res = await runHeartbeatOnce({ cfg, agentId: "ops" });
     expect(res.status).toBe("skipped");
     if (res.status === "skipped") {
       expect(res.reason).toBe("disabled");
@@ -541,21 +530,14 @@ describe("runHeartbeatOnce", () => {
       const cfg: MarvConfig = {
         agents: {
           defaults: {
-            heartbeat: { every: "30m", prompt: "Default prompt" },
+            workspace: tmpDir,
+            heartbeat: { every: "5m", target: "whatsapp", prompt: "Ops check" },
           },
-          list: [
-            { id: "main", default: true },
-            {
-              id: "ops",
-              workspace: tmpDir,
-              heartbeat: { every: "5m", target: "whatsapp", prompt: "Ops check" },
-            },
-          ],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
       };
-      const sessionKey = resolveAgentMainSessionKey({ cfg, agentId: "ops" });
+      const sessionKey = resolveAgentMainSessionKey({ cfg, agentId: "main" });
 
       await fs.writeFile(
         storePath,
@@ -575,7 +557,7 @@ describe("runHeartbeatOnce", () => {
       });
       await runHeartbeatOnce({
         cfg,
-        agentId: "ops",
+        agentId: "main",
         deps: {
           sendWhatsApp,
           getQueueSize: () => 0,
@@ -606,21 +588,14 @@ describe("runHeartbeatOnce", () => {
     const tmpDir = await createCaseDir("hb-templated-store");
     const storeTemplate = path.join(tmpDir, "agents", "{agentId}", "sessions", "sessions.json");
     const replySpy = vi.spyOn(replyModule, "getReplyFromConfig");
-    const agentId = "ops";
+    const agentId = "main";
     try {
       const cfg: MarvConfig = {
         agents: {
           defaults: {
-            heartbeat: { every: "30m", prompt: "Default prompt" },
+            workspace: tmpDir,
+            heartbeat: { every: "5m", target: "whatsapp", prompt: "Ops check" },
           },
-          list: [
-            { id: "main", default: true },
-            {
-              id: agentId,
-              workspace: tmpDir,
-              heartbeat: { every: "5m", target: "whatsapp", prompt: "Ops check" },
-            },
-          ],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storeTemplate },
@@ -1035,7 +1010,6 @@ describe("runHeartbeatOnce", () => {
       const cfg: MarvConfig = {
         agents: {
           defaults: { workspace: tmpDir, heartbeat: { every: "5m" } },
-          list: [{ id: "work", default: true }],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storeTemplate },

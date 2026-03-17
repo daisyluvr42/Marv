@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import "./embeddings/embedding.test-mocks.js";
 import { installEmbeddingManagerFixture } from "./embeddings/embedding-manager.test-harness.js";
 
 const fx = installEmbeddingManagerFixture({
@@ -20,7 +21,6 @@ const fx = installEmbeddingManagerFixture({
           query: { minScore: 0, hybrid: { enabled: false } },
         },
       },
-      list: [{ id: "main", default: true }],
     },
   }),
 });

@@ -12,19 +12,14 @@ describe("sandbox explain helpers", () => {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
+          workspace: "~/marv-work",
+          tools: { sandbox: { tools: { allow: ["write"] } } },
         },
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            tools: { sandbox: { tools: { allow: ["write"] } } },
-          },
-        ],
       },
       tools: { sandbox: { tools: { allow: ["read"], deny: ["browser"] } } },
     };
 
-    const resolved = resolveSandboxConfigForAgent(cfg, "work");
+    const resolved = resolveSandboxConfigForAgent(cfg, "main");
     expect(resolved.tools.allow).toEqual(["write", "image"]);
     expect(resolved.tools.deny).toEqual(["browser"]);
 

@@ -12,9 +12,8 @@ describe("resolveHumanDelayConfig", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
-          humanDelay: { mode: "natural", minMs: 800, maxMs: 1800 },
+          humanDelay: { mode: "custom", minMs: 400, maxMs: 1800 },
         },
-        list: [{ id: "main", humanDelay: { mode: "custom", minMs: 400 } }],
       },
     };
 

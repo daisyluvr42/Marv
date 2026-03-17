@@ -222,10 +222,6 @@ describe("runCronIsolatedAgentTurn", () => {
         {
           agents: {
             defaults: { workspace: path.join(home, "default-workspace") },
-            list: [
-              { id: "main", default: true },
-              { id: "ops", workspace: opsWorkspace },
-            ],
           },
         },
       );
@@ -385,9 +381,6 @@ describe("runCronIsolatedAgentTurn", () => {
           agents: {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
-              models: {
-                "anthropic/claude-opus-4-5": { alias: "Opus" },
-              },
             },
           },
           hooks: {

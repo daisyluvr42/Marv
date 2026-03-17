@@ -154,9 +154,11 @@ describe("models list/status", () => {
       agents: {
         defaults: {
           model,
-          models: {
-            [model]: {},
-          },
+        },
+      },
+      models: {
+        metadata: {
+          [model]: {},
         },
       },
     });

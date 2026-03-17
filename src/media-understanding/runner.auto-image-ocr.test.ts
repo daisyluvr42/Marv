@@ -44,9 +44,6 @@ describe("runCapability auto image OCR", () => {
     mockedRunExec.mockResolvedValue({
       stdout: "Meeting notes\nShip dashboard first",
       stderr: "",
-      exitCode: 0,
-      signal: null,
-      durationMs: 10,
     });
     const ctx: MsgContext = { MediaPath: imagePath, MediaType: "image/png" };
     const media = normalizeMediaAttachments(ctx);

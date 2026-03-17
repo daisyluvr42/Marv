@@ -435,7 +435,7 @@ describe("local embedding normalization", () => {
 });
 
 describe("FTS-only fallback when no provider available", () => {
-  it("returns null provider with reason when auto mode finds no providers", async () => {
+  it("falls back to script provider when auto mode finds no remote providers", async () => {
     vi.mocked(authModule.resolveApiKeyForProvider).mockRejectedValue(
       new Error('No API key found for provider "openai"'),
     );
@@ -447,10 +447,12 @@ describe("FTS-only fallback when no provider available", () => {
       fallback: "none",
     });
 
-    expect(result.provider).toBeNull();
+    expect(result.provider).not.toBeNull();
+    expect(result.provider?.id).toBe("script");
+    expect(result.provider?.model).toBe("hash-vectorizer");
     expect(result.requestedProvider).toBe("auto");
-    expect(result.providerUnavailableReason).toBeDefined();
-    expect(result.providerUnavailableReason).toContain("No API key");
+    expect(result.fallbackFrom).toBe("openai");
+    expect(result.fallbackReason).toContain("script");
   });
 
   it("returns null provider when explicit provider fails with missing API key", async () => {

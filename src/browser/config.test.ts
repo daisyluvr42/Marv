@@ -13,8 +13,8 @@ describe("browser config", () => {
     const profile = resolveProfile(resolved, resolved.defaultProfile);
     expect(profile?.name).toBe("chrome");
     expect(profile?.driver).toBe("extension");
-    expect(profile?.cdpPort).toBe(18792);
-    expect(profile?.cdpUrl).toBe("http://127.0.0.1:18792");
+    expect(profile?.cdpPort).toBe(4245);
+    expect(profile?.cdpUrl).toBe("http://127.0.0.1:4245");
 
     const marv = resolveProfile(resolved, "marv");
     expect(marv?.driver).toBe("marv");
@@ -143,7 +143,7 @@ describe("browser config", () => {
   it("does not add the built-in chrome extension profile if the derived relay port is already used", () => {
     const resolved = resolveBrowserConfig({
       profiles: {
-        marv: { cdpPort: 18792, color: "#FF4500" },
+        marv: { cdpPort: 4245, color: "#FF4500" },
       },
     });
     expect(resolveProfile(resolved, "chrome")).toBe(null);

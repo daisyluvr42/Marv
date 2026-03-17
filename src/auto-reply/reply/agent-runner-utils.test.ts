@@ -35,10 +35,7 @@ function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"
 describe("agent-runner-utils", () => {
   it("resolves model fallback options from run context", () => {
     const run = makeRun({
-      modelCandidates: [
-        { provider: "openai", model: "gpt-4.1" },
-        { provider: "openai", model: "fallback-model" },
-      ],
+      modelCandidates: ["openai/gpt-4.1", "openai/fallback-model"],
     } as Partial<FollowupRun["run"]>);
 
     const resolved = resolveModelFallbackOptions(run);
@@ -48,7 +45,7 @@ describe("agent-runner-utils", () => {
       provider: run.provider,
       model: run.model,
       agentDir: run.agentDir,
-      fallbacksOverride: [{ provider: "openai", model: "fallback-model" }],
+      fallbacksOverride: ["openai/fallback-model"],
     });
   });
 

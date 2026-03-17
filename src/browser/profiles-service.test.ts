@@ -55,9 +55,9 @@ describe("BrowserProfilesService", () => {
     const service = createBrowserProfilesService(ctx);
     const result = await service.createProfile({ name: "work" });
 
-    expect(result.cdpPort).toBe(18801);
+    expect(result.cdpPort).toBe(4254);
     expect(result.isRemote).toBe(false);
-    expect(state.resolved.profiles.work?.cdpPort).toBe(18801);
+    expect(state.resolved.profiles.work?.cdpPort).toBe(4254);
     expect(writeConfigFile).toHaveBeenCalled();
   });
 
@@ -118,7 +118,7 @@ describe("BrowserProfilesService", () => {
   it("deletes local profiles and moves data to Trash", async () => {
     const resolved = resolveBrowserConfig({
       profiles: {
-        work: { cdpPort: 18801, color: "#0066CC" },
+        work: { cdpPort: 4254, color: "#0066CC" },
       },
     });
     const { ctx } = createCtx(resolved);
@@ -128,7 +128,7 @@ describe("BrowserProfilesService", () => {
         defaultProfile: "marv",
         profiles: {
           marv: { cdpPort: 4253, color: "#FF4500" },
-          work: { cdpPort: 18801, color: "#0066CC" },
+          work: { cdpPort: 4254, color: "#0066CC" },
         },
       },
     });

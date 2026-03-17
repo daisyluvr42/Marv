@@ -312,12 +312,6 @@ describe("runEmbeddedPiAgent", () => {
         defaults: {
           workspace: path.join(tempRoot ?? os.tmpdir(), "workspace-fallback-main"),
         },
-        list: [
-          {
-            id: "research",
-            workspace: path.join(tempRoot ?? os.tmpdir(), "workspace-fallback-research"),
-          },
-        ],
       },
     } satisfies MarvConfig;
     await ensureModels(cfg);

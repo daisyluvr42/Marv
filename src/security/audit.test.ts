@@ -658,11 +658,10 @@ describe("security audit", () => {
       agents: {
         defaults: {
           sandbox: {
-            mode: "off",
+            mode: "all",
             docker: { image: "ghcr.io/example/sandbox:latest" },
           },
         },
-        list: [{ id: "ops", sandbox: { mode: "all" } }],
       },
     };
 
@@ -740,18 +739,15 @@ describe("security audit", () => {
     expect(finding?.detail).toContain("system.runx");
   });
 
-  it("flags agent profile overrides when global tools.profile is minimal", async () => {
+  it("does not flag agent profile overrides in single-agent mode", async () => {
     const cfg: MarvConfig = {
       tools: {
         profile: "minimal",
       },
       agents: {
-        list: [
-          {
-            id: "owner",
-            tools: { profile: "full" },
-          },
-        ],
+        defaults: {
+          tools: { profile: "full" },
+        },
       },
     };
 
@@ -761,14 +757,8 @@ describe("security audit", () => {
       includeChannelSecurity: false,
     });
 
-    expect(res.findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          checkId: "tools.profile_minimal_overridden",
-          severity: "warn",
-        }),
-      ]),
-    );
+    // With single-agent model, per-agent profile override checks are removed.
+    expect(res.findings.some((f) => f.checkId === "tools.profile_minimal_overridden")).toBe(false);
   });
 
   it("flags tools.elevated allowFrom wildcard as critical", async () => {

@@ -74,13 +74,11 @@ describe("extra-params: Z.AI tool_stream support", () => {
         id: "glm-5",
       } as Model<"openai-completions">,
       cfg: {
-        agents: {
-          defaults: {
-            models: {
-              "zai/glm-5": {
-                params: {
-                  tool_stream: false,
-                },
+        models: {
+          metadata: {
+            "zai/glm-5": {
+              params: {
+                tool_stream: false,
               },
             },
           },

@@ -7,7 +7,7 @@ describe("thread-ownership plugin", () => {
     pluginConfig: {},
     config: {
       agents: {
-        list: [{ id: "test-agent", default: true, identity: { name: "TestBot" } }],
+        defaults: { identity: { name: "TestBot" } },
       },
     },
     id: "thread-ownership",
@@ -86,7 +86,7 @@ describe("thread-ownership plugin", () => {
         "http://localhost:8750/api/v1/ownership/C123/1234.5678",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ agent_id: "test-agent" }),
+          body: JSON.stringify({ agent_id: "main" }),
         }),
       );
     });

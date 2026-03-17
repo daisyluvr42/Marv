@@ -7,7 +7,31 @@ vi.mock("../auth-profiles.js", () => ({
   ensureAuthProfileStore: vi.fn(),
   getSoonestCooldownExpiry: vi.fn(),
   isProfileInCooldown: vi.fn(),
+  listProfilesForProvider: vi.fn().mockReturnValue([]),
   resolveAuthProfileOrder: vi.fn(),
+}));
+
+// Mock model-pool to avoid deep dependency chain through runtime-model-registry.
+// Return candidates matching the test configs' fallback models.
+vi.mock("./model-pool.js", () => ({
+  resolveRuntimeModelPlan: vi.fn().mockImplementation(({ cfg }: { cfg: unknown }) => {
+    const defaults = (cfg as Record<string, unknown>)?.agents as
+      | Record<string, unknown>
+      | undefined;
+    const model = (defaults?.defaults as Record<string, unknown>)?.model as
+      | { primary?: string; fallbacks?: string[] }
+      | undefined;
+    const fallbacks = model?.fallbacks ?? [];
+    const candidates = fallbacks.map((raw: string) => {
+      const slash = raw.indexOf("/");
+      return {
+        ref: raw,
+        provider: slash > 0 ? raw.slice(0, slash) : "openai",
+        model: slash > 0 ? raw.slice(slash + 1) : raw,
+      };
+    });
+    return { candidates };
+  }),
 }));
 
 import {

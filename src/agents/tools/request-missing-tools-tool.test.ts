@@ -227,7 +227,7 @@ describe("request_missing_tools tool", () => {
     };
 
     expect(details.discovered).toEqual([]);
-    expect(details.synthesisHint?.guidance).toContain("Create an ad-hoc solution");
+    expect(details.synthesisHint?.guidance).toContain("Create one using the appropriate path");
     expect(details.message).toContain("Consider creating an ad-hoc solution");
   });
 

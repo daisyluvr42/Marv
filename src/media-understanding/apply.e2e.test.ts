@@ -93,7 +93,7 @@ async function createAudioCtx(params?: {
   fileName?: string;
   mediaType?: string;
   content?: Buffer | string;
-}) {
+}): Promise<MsgContext> {
   const mediaPath = await createTempMediaFile({
     fileName: params?.fileName ?? "note.ogg",
     content: params?.content ?? Buffer.from([0, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8]),

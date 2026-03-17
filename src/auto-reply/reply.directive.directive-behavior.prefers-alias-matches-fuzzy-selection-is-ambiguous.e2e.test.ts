@@ -54,15 +54,15 @@ describe("directive behavior", () => {
             defaults: {
               model: { primary: "anthropic/claude-opus-4-5" },
               workspace: path.join(home, "marv"),
-              models: {
-                "anthropic/claude-opus-4-5": {},
-                "moonshot/kimi-k2-0905-preview": { alias: "Kimi" },
-                "lmstudio/kimi-k2-0905-preview": {},
-              },
             },
           },
           models: {
             mode: "merge",
+            metadata: {
+              "anthropic/claude-opus-4-5": {},
+              "moonshot/kimi-k2-0905-preview": { alias: "Kimi" },
+              "lmstudio/kimi-k2-0905-preview": {},
+            },
             providers: {
               moonshot: {
                 baseUrl: "https://api.moonshot.ai/v1",

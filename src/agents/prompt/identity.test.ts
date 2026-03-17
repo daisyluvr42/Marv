@@ -6,7 +6,7 @@ describe("resolveAckReaction", () => {
   it("prefers account-level overrides", () => {
     const cfg: MarvConfig = {
       messages: { ackReaction: "👀" },
-      agents: { list: [{ id: "main", identity: { emoji: "✅" } }] },
+      agents: { defaults: { identity: { emoji: "✅" } } },
       channels: {
         slack: {
           ackReaction: "eyes",
@@ -25,7 +25,7 @@ describe("resolveAckReaction", () => {
   it("falls back to channel-level overrides", () => {
     const cfg: MarvConfig = {
       messages: { ackReaction: "👀" },
-      agents: { list: [{ id: "main", identity: { emoji: "✅" } }] },
+      agents: { defaults: { identity: { emoji: "✅" } } },
       channels: {
         slack: {
           ackReaction: "eyes",
@@ -44,7 +44,7 @@ describe("resolveAckReaction", () => {
   it("uses the global ackReaction when channel overrides are missing", () => {
     const cfg: MarvConfig = {
       messages: { ackReaction: "✅" },
-      agents: { list: [{ id: "main", identity: { emoji: "😺" } }] },
+      agents: { defaults: { identity: { emoji: "😺" } } },
     };
 
     expect(resolveAckReaction(cfg, "main", { channel: "discord" })).toBe("✅");
@@ -52,7 +52,7 @@ describe("resolveAckReaction", () => {
 
   it("falls back to the agent identity emoji when global config is unset", () => {
     const cfg: MarvConfig = {
-      agents: { list: [{ id: "main", identity: { emoji: "🔥" } }] },
+      agents: { defaults: { identity: { emoji: "🔥" } } },
     };
 
     expect(resolveAckReaction(cfg, "main", { channel: "discord" })).toBe("🔥");

@@ -85,71 +85,56 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-isolated",
           sandbox: {
             mode: "all",
             scope: "agent",
-            workspaceRoot: "~/.marv/sandboxes",
+            workspaceRoot: "/tmp/isolated-sandboxes",
           },
         },
-        list: [
-          {
-            id: "isolated",
-            workspace: "~/marv-isolated",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-              workspaceRoot: "/tmp/isolated-sandboxes",
-            },
-          },
-        ],
       },
     };
 
-    const context = await resolveContext(cfg, "agent:isolated:main", "/tmp/test-isolated");
+    const context = await resolveContext(cfg, "agent:main:main", "/tmp/test-isolated");
 
     expect(context).toBeDefined();
     expect(context?.workspaceDir).toContain(path.resolve("/tmp/isolated-sandboxes"));
   });
 
   it("should prefer agent config over global for multiple agents", async () => {
-    const cfg: MarvConfig = {
+    const offCfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv",
           sandbox: {
-            mode: "non-main",
-            scope: "session",
+            mode: "off",
           },
         },
-        list: [
-          {
-            id: "main",
-            workspace: "~/marv",
-            sandbox: {
-              mode: "off",
-            },
-          },
-          {
-            id: "family",
-            workspace: "~/marv-family",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-            },
-          },
-        ],
       },
     };
 
     const mainContext = await resolveContext(
-      cfg,
+      offCfg,
       "agent:main:telegram:group:789",
       "/tmp/test-main",
     );
     expect(mainContext).toBeNull();
 
+    const allCfg: MarvConfig = {
+      agents: {
+        defaults: {
+          workspace: "~/marv-family",
+          sandbox: {
+            mode: "all",
+            scope: "agent",
+          },
+        },
+      },
+    };
+
     const familyContext = await resolveContext(
-      cfg,
-      "agent:family:whatsapp:group:123",
+      allCfg,
+      "agent:main:whatsapp:group:123",
       "/tmp/test-family",
     );
     expect(familyContext).toBeDefined();
@@ -160,29 +145,20 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-restricted",
           sandbox: {
             mode: "all",
             scope: "agent",
           },
-        },
-        list: [
-          {
-            id: "restricted",
-            workspace: "~/marv-restricted",
+          tools: {
             sandbox: {
-              mode: "all",
-              scope: "agent",
-            },
-            tools: {
-              sandbox: {
-                tools: {
-                  allow: ["read", "write"],
-                  deny: ["edit"],
-                },
+              tools: {
+                allow: ["read", "write"],
+                deny: ["edit"],
               },
             },
           },
-        ],
+        },
       },
       tools: {
         sandbox: {
@@ -194,7 +170,7 @@ describe("Agent-specific sandbox config", () => {
       },
     };
 
-    const context = await resolveContext(cfg, "agent:restricted:main", "/tmp/test-restricted");
+    const context = await resolveContext(cfg, "agent:main:main", "/tmp/test-restricted");
 
     expect(context).toBeDefined();
     expect(context?.tools).toEqual({
@@ -207,17 +183,12 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv",
           sandbox: {
             mode: "all",
             scope: "agent",
           },
         },
-        list: [
-          {
-            id: "main",
-            workspace: "~/marv",
-          },
-        ],
       },
     };
 
@@ -231,31 +202,19 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-work",
           sandbox: {
             mode: "all",
             scope: "agent",
             docker: {
-              setupCommand: "echo global",
+              setupCommand: "echo work",
             },
           },
         },
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-              docker: {
-                setupCommand: "echo work",
-              },
-            },
-          },
-        ],
       },
     };
 
-    const context = await resolveContext(cfg, "agent:work:main", "/tmp/test-work");
+    const context = await resolveContext(cfg, "agent:main:main", "/tmp/test-work");
 
     expect(context).toBeDefined();
     expect(context?.docker.setupCommand).toBe("echo work");
@@ -266,6 +225,7 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-work",
           sandbox: {
             mode: "all",
             scope: "shared",
@@ -274,23 +234,10 @@ describe("Agent-specific sandbox config", () => {
             },
           },
         },
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            sandbox: {
-              mode: "all",
-              scope: "shared",
-              docker: {
-                setupCommand: "echo work",
-              },
-            },
-          },
-        ],
       },
     };
 
-    const context = await resolveContext(cfg, "agent:work:main", "/tmp/test-work");
+    const context = await resolveContext(cfg, "agent:main:main", "/tmp/test-work");
 
     expect(context).toBeDefined();
     expect(context?.docker.setupCommand).toBe("echo global");
@@ -302,33 +249,20 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-work",
           sandbox: {
             mode: "all",
             scope: "agent",
             docker: {
-              image: "global-image",
-              network: "none",
+              image: "work-image",
+              network: "bridge",
             },
           },
         },
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-              docker: {
-                image: "work-image",
-                network: "bridge",
-              },
-            },
-          },
-        ],
       },
     };
 
-    const context = await resolveContext(cfg, "agent:work:main", "/tmp/test-work");
+    const context = await resolveContext(cfg, "agent:main:main", "/tmp/test-work");
 
     expect(context).toBeDefined();
     expect(context?.docker.image).toBe("work-image");
@@ -339,20 +273,11 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv",
           sandbox: {
-            mode: "all",
-            scope: "agent",
+            mode: "off",
           },
         },
-        list: [
-          {
-            id: "main",
-            workspace: "~/marv",
-            sandbox: {
-              mode: "off",
-            },
-          },
-        ],
       },
     };
 
@@ -365,28 +290,16 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-family",
           sandbox: {
-            mode: "off",
+            mode: "all",
+            scope: "agent",
           },
         },
-        list: [
-          {
-            id: "family",
-            workspace: "~/marv-family",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-            },
-          },
-        ],
       },
     };
 
-    const context = await resolveContext(
-      cfg,
-      "agent:family:whatsapp:group:123",
-      "/tmp/test-family",
-    );
+    const context = await resolveContext(cfg, "agent:main:whatsapp:group:123", "/tmp/test-family");
 
     expect(context).toBeDefined();
     expect(context?.enabled).toBe(true);
@@ -396,28 +309,19 @@ describe("Agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
+          workspace: "~/marv-work",
           sandbox: {
             mode: "all",
-            scope: "session",
+            scope: "agent",
           },
         },
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-            },
-          },
-        ],
       },
     };
 
-    const context = await resolveContext(cfg, "agent:work:slack:channel:456", "/tmp/test-work");
+    const context = await resolveContext(cfg, "agent:main:slack:channel:456", "/tmp/test-work");
 
     expect(context).toBeDefined();
-    expect(context?.containerName).toContain("agent-work");
+    expect(context?.containerName).toContain("agent-main");
   });
 
   it("includes session_status in default sandbox allowlist", async () => {

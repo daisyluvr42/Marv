@@ -21,7 +21,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
     it("resolves 'auto' to identity name at global level", () => {
       const cfg: MarvConfig = {
         agents: {
-          list: [{ id: "main", identity: { name: "TestBot" } }],
+          defaults: { identity: { name: "TestBot" } },
         },
         messages: { responsePrefix: "auto" },
       };
@@ -70,7 +70,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
     it("resolves 'auto' at channel level to identity name", () => {
       const cfg = makeConfig({
         agents: {
-          list: [{ id: "main", identity: { name: "MyBot" } }],
+          defaults: { identity: { name: "MyBot" } },
         },
         channels: {
           whatsapp: { responsePrefix: "auto" },
@@ -174,7 +174,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
     it("resolves 'auto' at account level to identity name", () => {
       const cfg = makeConfig({
         agents: {
-          list: [{ id: "main", identity: { name: "BizBot" } }],
+          defaults: { identity: { name: "BizBot" } },
         },
         channels: {
           whatsapp: {
@@ -231,7 +231,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
   describe("full 4-level cascade", () => {
     const fullCfg = makeConfig({
       agents: {
-        list: [{ id: "main", identity: { name: "TestBot" } }],
+        defaults: { identity: { name: "TestBot" } },
       },
       messages: { responsePrefix: "[L4-Global] " },
       channels: {

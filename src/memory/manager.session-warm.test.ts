@@ -55,7 +55,6 @@ describe("memory manager session warm cache", () => {
             query: { minScore: 0, hybrid: { enabled: false } },
           },
         },
-        list: [{ id: "main", default: true }],
       },
     };
 

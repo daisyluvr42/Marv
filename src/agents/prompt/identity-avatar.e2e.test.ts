@@ -19,13 +19,10 @@ describe("resolveAgentAvatar", () => {
 
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "main",
-            workspace,
-            identity: { avatar: "avatars/main.png" },
-          },
-        ],
+        defaults: {
+          workspace,
+          identity: { avatar: "avatars/main.png" },
+        },
       },
     };
 
@@ -47,13 +44,10 @@ describe("resolveAgentAvatar", () => {
 
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "main",
-            workspace,
-            identity: { avatar: outsidePath },
-          },
-        ],
+        defaults: {
+          workspace,
+          identity: { avatar: outsidePath },
+        },
       },
     };
 
@@ -78,7 +72,7 @@ describe("resolveAgentAvatar", () => {
 
     const cfg: MarvConfig = {
       agents: {
-        list: [{ id: "main", workspace }],
+        defaults: { workspace },
       },
     };
 
@@ -92,19 +86,26 @@ describe("resolveAgentAvatar", () => {
   });
 
   it("accepts remote and data avatars", () => {
-    const cfg: MarvConfig = {
+    const remoteCfg: MarvConfig = {
       agents: {
-        list: [
-          { id: "main", identity: { avatar: "https://example.com/avatar.png" } },
-          { id: "data", identity: { avatar: "data:image/png;base64,aaaa" } },
-        ],
+        defaults: {
+          identity: { avatar: "https://example.com/avatar.png" },
+        },
       },
     };
 
-    const remote = resolveAgentAvatar(cfg, "main");
+    const remote = resolveAgentAvatar(remoteCfg, "main");
     expect(remote.kind).toBe("remote");
 
-    const data = resolveAgentAvatar(cfg, "data");
+    const dataCfg: MarvConfig = {
+      agents: {
+        defaults: {
+          identity: { avatar: "data:image/png;base64,aaaa" },
+        },
+      },
+    };
+
+    const data = resolveAgentAvatar(dataCfg, "main");
     expect(data.kind).toBe("data");
   });
 });

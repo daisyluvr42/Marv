@@ -10,7 +10,6 @@ describe("buildCleanupPlan", () => {
     const cfg = {
       agents: {
         defaults: { workspace: path.join(tmpRoot, "marv-workspace-1") },
-        list: [{ workspace: path.join(tmpRoot, "marv-workspace-2") }],
       },
     };
     const plan = buildCleanupPlan({
@@ -22,9 +21,7 @@ describe("buildCleanupPlan", () => {
 
     expect(plan.configInsideState).toBe(true);
     expect(plan.oauthInsideState).toBe(false);
-    expect(new Set(plan.workspaceDirs)).toEqual(
-      new Set([path.join(tmpRoot, "marv-workspace-1"), path.join(tmpRoot, "marv-workspace-2")]),
-    );
+    expect(new Set(plan.workspaceDirs)).toEqual(new Set([path.join(tmpRoot, "marv-workspace-1")]));
   });
 });
 

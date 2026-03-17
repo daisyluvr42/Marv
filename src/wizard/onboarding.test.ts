@@ -12,8 +12,10 @@ const promptAuthChoiceGrouped = vi.hoisted(() => vi.fn(async () => "skip"));
 const applyAuthChoice = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
 const resolvePreferredProviderForAuthChoice = vi.hoisted(() => vi.fn(() => "openai"));
 const warnIfModelConfigLooksOff = vi.hoisted(() => vi.fn(async () => {}));
-const applyPrimaryModel = vi.hoisted(() => vi.fn((cfg) => cfg));
-const promptDefaultModel = vi.hoisted(() => vi.fn(async () => ({ config: null, model: null })));
+const applyPrimaryModel = vi.hoisted(() => vi.fn((cfg: unknown, _model?: string) => cfg));
+const promptDefaultModel = vi.hoisted(() =>
+  vi.fn(async () => ({ config: undefined as unknown, model: undefined as string | undefined })),
+);
 const runAuthProbes = vi.hoisted(() =>
   vi.fn(async () => ({
     startedAt: 0,
@@ -300,7 +302,7 @@ describe("runOnboardingWizard", () => {
     applyPrimaryModel.mockReset();
     applyPrimaryModel.mockImplementation((cfg) => cfg);
     promptDefaultModel.mockReset();
-    promptDefaultModel.mockResolvedValue({ config: null, model: null });
+    promptDefaultModel.mockResolvedValue({ config: undefined, model: undefined });
     configureGatewayForOnboarding.mockReset();
     configureGatewayForOnboarding.mockImplementation(async (args) => ({
       nextConfig: args.nextConfig,
@@ -586,8 +588,8 @@ describe("runOnboardingWizard", () => {
       );
 
       expect(parseWizardMetricsLog(runtime)).toEqual({
-        interactions: 3,
-        total: 12,
+        interactions: 2,
+        total: 11,
       });
     } finally {
       if (prev === undefined) {
@@ -634,9 +636,9 @@ describe("runOnboardingWizard", () => {
       );
 
       const metrics = parseWizardMetricsLog(runtime);
-      expect(metrics.interactions).toBe(4);
-      expect(metrics.total).toBeGreaterThanOrEqual(12);
-      expect(metrics.total).toBeLessThanOrEqual(13);
+      expect(metrics.interactions).toBe(3);
+      expect(metrics.total).toBeGreaterThanOrEqual(11);
+      expect(metrics.total).toBeLessThanOrEqual(12);
     } finally {
       if (prev === undefined) {
         delete process.env.MARV_WIZARD_METRICS;
@@ -654,7 +656,7 @@ describe("runOnboardingWizard", () => {
     });
     promptDefaultModel.mockImplementationOnce(async () => {
       events.push("model");
-      return { config: null, model: null };
+      return { config: undefined, model: undefined };
     });
 
     const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
@@ -699,9 +701,9 @@ describe("runOnboardingWizard", () => {
     });
     promptDefaultModel.mockImplementationOnce(async () => {
       events.push("model");
-      return { config: null, model: "openai/gpt-5.2" };
+      return { config: undefined, model: "openai/gpt-5.2" };
     });
-    applyPrimaryModel.mockImplementationOnce((cfg, model) => {
+    applyPrimaryModel.mockImplementationOnce((cfg: Record<string, unknown>, model: string) => {
       events.push("apply-model");
       return {
         ...cfg,
@@ -820,8 +822,8 @@ describe("runOnboardingWizard", () => {
 
     try {
       promptAuthChoiceGrouped.mockResolvedValueOnce("token");
-      promptDefaultModel.mockResolvedValueOnce({ config: null, model: "openai/gpt-5.2" });
-      applyPrimaryModel.mockImplementationOnce((cfg, model) => ({
+      promptDefaultModel.mockResolvedValueOnce({ config: undefined, model: "openai/gpt-5.2" });
+      applyPrimaryModel.mockImplementationOnce((cfg: Record<string, unknown>, model: string) => ({
         ...cfg,
         agents: {
           ...cfg?.agents,

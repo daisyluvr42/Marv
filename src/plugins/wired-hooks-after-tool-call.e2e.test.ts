@@ -110,7 +110,9 @@ describe("after_tool_call hook wiring", () => {
     const event = firstCall?.[0] as
       | { toolName?: string; params?: unknown; error?: unknown; durationMs?: unknown }
       | undefined;
-    const context = firstCall?.[1] as { toolName?: string } | undefined;
+    const context = firstCall?.[1] as
+      | { toolName?: string; agentId?: string; sessionKey?: string }
+      | undefined;
     expect(event).toBeDefined();
     expect(context).toBeDefined();
     if (!event || !context) {

@@ -50,7 +50,7 @@ describe("buildReplyPayloads media filter integration", () => {
       opts: {
         runMode: {
           kind: "heartbeat",
-          reason: "maintenance",
+          reason: "manual",
           ackToken: "MAINT_OK",
           maxAckChars: 120,
           visibility: "hidden",

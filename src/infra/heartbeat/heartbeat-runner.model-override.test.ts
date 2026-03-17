@@ -149,28 +149,18 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
       const cfg: MarvConfig = {
         agents: {
           defaults: {
+            workspace: tmpDir,
             heartbeat: {
-              every: "30m",
-              model: "openai/gpt-4o-mini",
+              every: "5m",
+              target: "whatsapp",
+              model: "ollama/llama3.2:1b",
             },
           },
-          list: [
-            { id: "main", default: true },
-            {
-              id: "ops",
-              workspace: tmpDir,
-              heartbeat: {
-                every: "5m",
-                target: "whatsapp",
-                model: "ollama/llama3.2:1b",
-              },
-            },
-          ],
         },
         channels: { whatsapp: { allowFrom: ["*"] } },
         session: { store: storePath },
       };
-      const sessionKey = resolveAgentMainSessionKey({ cfg, agentId: "ops" });
+      const sessionKey = resolveAgentMainSessionKey({ cfg, agentId: "main" });
       await seedSession(sessionKey, { lastChannel: "whatsapp", lastTo: "+1555" });
 
       const replySpy = vi.spyOn(replyModule, "getReplyFromConfig");
@@ -178,7 +168,6 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
 
       await runHeartbeatOnce({
         cfg,
-        agentId: "ops",
         deps: {
           getQueueSize: () => 0,
           nowMs: () => 0,

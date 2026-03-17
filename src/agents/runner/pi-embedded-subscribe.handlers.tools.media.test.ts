@@ -20,6 +20,7 @@ function createMockContext(overrides?: {
     state: {
       toolMetaById: new Map(),
       toolMetas: [],
+      toolExecutionStartById: new Map(),
       toolSummaryById: new Set(),
       pendingMessagingTexts: new Map(),
       pendingMessagingTargets: new Map(),

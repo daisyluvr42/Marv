@@ -17,7 +17,7 @@ describe("resolveAgentConfig", () => {
   it("should return undefined when agent id does not exist", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/marv" }],
+        defaults: { workspace: "~/marv" },
       },
     };
     const result = resolveAgentConfig(cfg, "nonexistent");
@@ -27,15 +27,12 @@ describe("resolveAgentConfig", () => {
   it("should return basic agent config", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "main",
-            name: "Main Agent",
-            workspace: "~/marv",
-            agentDir: "~/.marv/agents/main",
-            model: "anthropic/claude-opus-4",
-          },
-        ],
+        defaults: {
+          name: "Main Agent",
+          workspace: "~/marv",
+          agentDir: "~/.marv/agents/main",
+          model: { primary: "anthropic/claude-opus-4" },
+        },
       },
     };
     const result = resolveAgentConfig(cfg, "main");
@@ -56,39 +53,30 @@ describe("resolveAgentConfig", () => {
     const cfg: MarvConfig = {
       agents: {
         defaults: {
-          modelPool: "default",
+          modelPool: "coding",
         },
-        list: [
-          {
-            id: "linus",
-            modelPool: "coding",
-          },
-        ],
       },
     };
 
-    expect(resolveAgentConfig(cfg, "linus")?.modelPool).toBe("coding");
+    expect(resolveAgentConfig(cfg, "main")?.modelPool).toBe("coding");
   });
 
   it("should return agent-specific sandbox config", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-              perSession: false,
-              workspaceAccess: "ro",
-              workspaceRoot: "~/sandboxes",
-            },
+        defaults: {
+          workspace: "~/marv-work",
+          sandbox: {
+            mode: "all",
+            scope: "agent",
+            perSession: false,
+            workspaceAccess: "ro",
+            workspaceRoot: "~/sandboxes",
           },
-        ],
+        },
       },
     };
-    const result = resolveAgentConfig(cfg, "work");
+    const result = resolveAgentConfig(cfg, "main");
     expect(result?.sandbox).toEqual({
       mode: "all",
       scope: "agent",
@@ -101,23 +89,20 @@ describe("resolveAgentConfig", () => {
   it("should return agent-specific tools config", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "restricted",
-            workspace: "~/marv-restricted",
-            tools: {
-              allow: ["read"],
-              deny: ["exec", "write", "edit"],
-              elevated: {
-                enabled: false,
-                allowFrom: { whatsapp: ["+15555550123"] },
-              },
+        defaults: {
+          workspace: "~/marv-restricted",
+          tools: {
+            allow: ["read"],
+            deny: ["exec", "write", "edit"],
+            elevated: {
+              enabled: false,
+              allowFrom: { whatsapp: ["+15555550123"] },
             },
           },
-        ],
+        },
       },
     };
-    const result = resolveAgentConfig(cfg, "restricted");
+    const result = resolveAgentConfig(cfg, "main");
     expect(result?.tools).toEqual({
       allow: ["read"],
       deny: ["exec", "write", "edit"],
@@ -131,23 +116,20 @@ describe("resolveAgentConfig", () => {
   it("should return both sandbox and tools config", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "family",
-            workspace: "~/marv-family",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-            },
-            tools: {
-              allow: ["read"],
-              deny: ["exec"],
-            },
+        defaults: {
+          workspace: "~/marv-family",
+          sandbox: {
+            mode: "all",
+            scope: "agent",
           },
-        ],
+          tools: {
+            allow: ["read"],
+            deny: ["exec"],
+          },
+        },
       },
     };
-    const result = resolveAgentConfig(cfg, "family");
+    const result = resolveAgentConfig(cfg, "main");
     expect(result?.sandbox?.mode).toBe("all");
     expect(result?.tools?.allow).toEqual(["read"]);
   });
@@ -155,7 +137,7 @@ describe("resolveAgentConfig", () => {
   it("should normalize agent id", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [{ id: "main", workspace: "~/marv" }],
+        defaults: { workspace: "~/marv" },
       },
     };
     // Should normalize to "main" (default)

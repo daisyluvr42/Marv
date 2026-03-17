@@ -76,10 +76,10 @@ const createQmdManagerMock = vi.mocked(QmdMemoryManager.create);
 type SearchManagerResult = Awaited<ReturnType<typeof getMemorySearchManager>>;
 type SearchManager = NonNullable<SearchManagerResult["manager"]>;
 
-function createQmdCfg(agentId: string): MarvConfig {
+function createQmdCfg(_agentId: string): MarvConfig {
   return {
     memory: { backend: "qmd", qmd: {} },
-    agents: { list: [{ id: agentId, default: true, workspace: "/tmp/workspace" }] },
+    agents: { defaults: { workspace: "/tmp/workspace" } },
   };
 }
 

@@ -36,11 +36,7 @@ describe("startHeartbeatRunner", () => {
 
     runner.updateConfig({
       agents: {
-        defaults: { heartbeat: { every: "30m" } },
-        list: [
-          { id: "main", heartbeat: { every: "10m" } },
-          { id: "ops", heartbeat: { every: "15m" } },
-        ],
+        defaults: { heartbeat: { every: "10m" } },
       },
     } as MarvConfig);
 
@@ -49,13 +45,6 @@ describe("startHeartbeatRunner", () => {
     expect(runSpy).toHaveBeenCalledTimes(2);
     expect(runSpy.mock.calls[1]?.[0]).toEqual(
       expect.objectContaining({ agentId: "main", heartbeat: { every: "10m" } }),
-    );
-
-    await vi.advanceTimersByTimeAsync(5 * 60_000 + 1_000);
-
-    expect(runSpy).toHaveBeenCalledTimes(3);
-    expect(runSpy.mock.calls[2]?.[0]).toEqual(
-      expect.objectContaining({ agentId: "ops", heartbeat: { every: "15m" } }),
     );
 
     runner.stop();
@@ -174,10 +163,6 @@ describe("startHeartbeatRunner", () => {
       cfg: {
         agents: {
           defaults: { heartbeat: { every: "30m" } },
-          list: [
-            { id: "main", heartbeat: { every: "30m" } },
-            { id: "ops", heartbeat: { every: "15m" } },
-          ],
         },
       } as MarvConfig,
       runOnce: runSpy,
@@ -185,8 +170,8 @@ describe("startHeartbeatRunner", () => {
 
     requestHeartbeatNow({
       reason: "cron:job-123",
-      agentId: "ops",
-      sessionKey: "agent:ops:discord:channel:alerts",
+      agentId: "main",
+      sessionKey: "agent:main:discord:channel:alerts",
       coalesceMs: 0,
     });
     await vi.advanceTimersByTimeAsync(1);
@@ -194,9 +179,9 @@ describe("startHeartbeatRunner", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
     expect(runSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        agentId: "ops",
+        agentId: "main",
         reason: "cron:job-123",
-        sessionKey: "agent:ops:discord:channel:alerts",
+        sessionKey: "agent:main:discord:channel:alerts",
       }),
     );
 

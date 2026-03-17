@@ -15,7 +15,7 @@ vi.mock("../commands/onboard-helpers.js", async (importActual) => {
 });
 
 vi.mock("../infra/tailscale.js", () => ({
-  findTailscaleBinary: (...args: unknown[]) => mocks.findTailscaleBinary(...args),
+  findTailscaleBinary: (...args: [unknown]) => mocks.findTailscaleBinary(...args),
 }));
 
 import {
@@ -35,7 +35,7 @@ function createPrompter(params?: {
     intro: vi.fn(async () => {}),
     outro: vi.fn(async () => {}),
     note: vi.fn(async () => {}),
-    select: vi.fn(async () => selectQueue.shift()),
+    select: vi.fn(async () => selectQueue.shift()) as WizardPrompter["select"],
     multiselect: vi.fn(async () => []),
     text: vi.fn(async () => queue.shift() as string),
     confirm: vi.fn(async () => false),

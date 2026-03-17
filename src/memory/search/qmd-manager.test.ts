@@ -132,7 +132,7 @@ describe("QmdMemoryManager", () => {
     process.env.MARV_STATE_DIR = stateDir;
     cfg = {
       agents: {
-        list: [{ id: agentId, default: true, workspace: workspaceDir }],
+        defaults: { workspace: workspaceDir },
       },
       memory: {
         backend: "qmd",
@@ -292,16 +292,13 @@ describe("QmdMemoryManager", () => {
   });
 
   it("rebinds sessions collection when existing collection path targets another agent", async () => {
-    const devAgentId = "dev";
+    const devAgentId = "main";
     const devWorkspaceDir = path.join(tmpRoot, "workspace-dev");
     await fs.mkdir(devWorkspaceDir);
     cfg = {
       ...cfg,
       agents: {
-        list: [
-          { id: agentId, default: true, workspace: workspaceDir },
-          { id: devAgentId, workspace: devWorkspaceDir },
-        ],
+        defaults: { workspace: devWorkspaceDir },
       },
       memory: {
         backend: "qmd",
@@ -315,7 +312,7 @@ describe("QmdMemoryManager", () => {
     } as MarvConfig;
 
     const sessionCollectionName = `sessions-${devAgentId}`;
-    const wrongSessionsPath = path.join(stateDir, "agents", agentId, "qmd", "sessions");
+    const wrongSessionsPath = path.join(stateDir, "agents", "stale-agent", "qmd", "sessions");
     spawnMock.mockImplementation((_cmd: string, args: string[]) => {
       if (args[0] === "collection" && args[1] === "list") {
         const child = createMockChild({ autoClose: false });

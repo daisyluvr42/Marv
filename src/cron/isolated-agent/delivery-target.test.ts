@@ -18,7 +18,6 @@ import { resolveDeliveryTarget } from "./delivery-target.js";
 
 function makeCfg(overrides?: Partial<MarvConfig>): MarvConfig {
   return {
-    bindings: [],
     channels: {},
     ...overrides,
   } as MarvConfig;
@@ -50,21 +49,15 @@ async function resolveForAgent(params: {
 }
 
 describe("resolveDeliveryTarget", () => {
-  it("falls back to bound accountId when session has no lastAccountId", async () => {
+  it("returns undefined accountId when session has no lastAccountId and no binding lookup", async () => {
     setMainSessionEntry(undefined);
 
-    const cfg = makeCfg({
-      bindings: [
-        {
-          agentId: "agent-b",
-          match: { channel: "telegram", accountId: "account-b" },
-        },
-      ],
-    });
+    const cfg = makeCfg();
 
     const result = await resolveForAgent({ cfg });
 
-    expect(result.accountId).toBe("account-b");
+    // accountId comes only from session
+    expect(result.accountId).toBeUndefined();
   });
 
   it("preserves session lastAccountId when present", async () => {
@@ -76,63 +69,28 @@ describe("resolveDeliveryTarget", () => {
       lastAccountId: "session-account",
     });
 
-    const cfg = makeCfg({
-      bindings: [
-        {
-          agentId: "agent-b",
-          match: { channel: "telegram", accountId: "account-b" },
-        },
-      ],
-    });
+    const cfg = makeCfg();
 
     const result = await resolveForAgent({ cfg });
 
-    // Session-derived accountId should take precedence over binding
+    // Session-derived accountId should take precedence
     expect(result.accountId).toBe("session-account");
   });
 
   it("returns undefined accountId when no binding and no session", async () => {
     setMainSessionEntry(undefined);
 
-    const cfg = makeCfg({ bindings: [] });
+    const cfg = makeCfg();
 
     const result = await resolveForAgent({ cfg });
 
     expect(result.accountId).toBeUndefined();
   });
 
-  it("selects correct binding when multiple agents have bindings", async () => {
-    setMainSessionEntry(undefined);
-
-    const cfg = makeCfg({
-      bindings: [
-        {
-          agentId: "agent-a",
-          match: { channel: "telegram", accountId: "account-a" },
-        },
-        {
-          agentId: "agent-b",
-          match: { channel: "telegram", accountId: "account-b" },
-        },
-      ],
-    });
-
-    const result = await resolveForAgent({ cfg });
-
-    expect(result.accountId).toBe("account-b");
-  });
-
   it("ignores bindings for different channels", async () => {
     setMainSessionEntry(undefined);
 
-    const cfg = makeCfg({
-      bindings: [
-        {
-          agentId: "agent-b",
-          match: { channel: "discord", accountId: "discord-account" },
-        },
-      ],
-    });
+    const cfg = makeCfg();
 
     const result = await resolveForAgent({ cfg });
 
@@ -148,7 +106,7 @@ describe("resolveDeliveryTarget", () => {
       lastThreadId: "thread-1",
     });
 
-    const result = await resolveForAgent({ cfg: makeCfg({ bindings: [] }) });
+    const result = await resolveForAgent({ cfg: makeCfg() });
     expect(result.threadId).toBeUndefined();
   });
 
@@ -161,7 +119,7 @@ describe("resolveDeliveryTarget", () => {
       lastThreadId: "thread-2",
     });
 
-    const result = await resolveForAgent({ cfg: makeCfg({ bindings: [] }) });
+    const result = await resolveForAgent({ cfg: makeCfg() });
     expect(result.threadId).toBe("thread-2");
   });
 
@@ -170,7 +128,7 @@ describe("resolveDeliveryTarget", () => {
     vi.mocked(resolveMessageChannelSelection).mockRejectedValueOnce(new Error("no selection"));
 
     const result = await resolveForAgent({
-      cfg: makeCfg({ bindings: [] }),
+      cfg: makeCfg(),
       target: { channel: "last", to: undefined },
     });
     expect(result.channel).toBe(DEFAULT_CHAT_CHANNEL);

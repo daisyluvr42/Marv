@@ -12,7 +12,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
   resolveAgentModelFallbacksOverride: vi.fn().mockReturnValue(undefined),
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
-  resolveDefaultAgentId: vi.fn().mockReturnValue("default"),
+  resolveDefaultAgentId: vi.fn().mockReturnValue("main"),
   resolveAgentSkillsFilter: resolveAgentSkillsFilterMock,
 }));
 
@@ -39,6 +39,10 @@ vi.mock("../../agents/model/model-selection.js", () => ({
   resolveConfiguredModelRef: vi.fn().mockReturnValue({ provider: "openai", model: "gpt-4" }),
   resolveHooksGmailModel: vi.fn().mockReturnValue(null),
   resolveThinkingDefault: vi.fn().mockReturnValue(undefined),
+}));
+
+vi.mock("../../agents/model/model-pool.js", () => ({
+  resolveRuntimeModelPlan: vi.fn().mockReturnValue({ candidates: [] }),
 }));
 
 vi.mock("../../agents/model/model-fallback.js", () => ({
@@ -243,8 +247,8 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
 
     const result = await runCronIsolatedAgentTurn(
       makeParams({
-        cfg: { agents: { list: [{ id: "scout", skills: ["meme-factory", "weather"] }] } },
-        agentId: "scout",
+        cfg: { agents: { defaults: { skills: ["meme-factory", "weather"] } } },
+        agentId: "main",
       }),
     );
 
@@ -261,8 +265,8 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
 
     const result = await runCronIsolatedAgentTurn(
       makeParams({
-        cfg: { agents: { list: [{ id: "general" }] } },
-        agentId: "general",
+        cfg: { agents: { defaults: {} } },
+        agentId: "main",
       }),
     );
 
@@ -277,8 +281,8 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
 
     const result = await runCronIsolatedAgentTurn(
       makeParams({
-        cfg: { agents: { list: [{ id: "silent", skills: [] }] } },
-        agentId: "silent",
+        cfg: { agents: { defaults: { skills: [] } } },
+        agentId: "main",
       }),
     );
 
@@ -309,8 +313,8 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
 
     const result = await runCronIsolatedAgentTurn(
       makeParams({
-        cfg: { agents: { list: [{ id: "weather-bot", skills: ["weather"] }] } },
-        agentId: "weather-bot",
+        cfg: { agents: { defaults: { skills: ["weather"] } } },
+        agentId: "main",
       }),
     );
 
@@ -343,8 +347,8 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
 
     const result = await runCronIsolatedAgentTurn(
       makeParams({
-        cfg: { agents: { list: [{ id: "weather-bot", skills: ["weather", "meme-factory"] }] } },
-        agentId: "weather-bot",
+        cfg: { agents: { defaults: { skills: ["weather", "meme-factory"] } } },
+        agentId: "main",
       }),
     );
 
@@ -370,7 +374,7 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
               },
             },
           },
-          agentId: "scout",
+          agentId: "main",
         }),
       );
 
