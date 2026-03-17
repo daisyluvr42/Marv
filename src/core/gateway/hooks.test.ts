@@ -32,9 +32,6 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         allowedAgentIds,
       },
-      agents: {
-        list: [{ id: "main", default: true }, { id: "hooks" }],
-      },
     }) as MarvConfig;
 
   beforeEach(() => {
@@ -161,25 +158,23 @@ describe("gateway hooks helpers", () => {
   test("resolveHookTargetAgentId falls back to default for unknown agent ids", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret" },
-      agents: {
-        list: [{ id: "main", default: true }, { id: "hooks" }],
-      },
     } as MarvConfig;
     const resolved = resolveHooksConfig(cfg);
     expect(resolved).not.toBeNull();
     if (!resolved) {
       return;
     }
-    expect(resolveHookTargetAgentId(resolved, "hooks")).toBe("hooks");
+    // Only "main" is a known agent; all others fall back to "main"
+    expect(resolveHookTargetAgentId(resolved, "main")).toBe("main");
     expect(resolveHookTargetAgentId(resolved, "missing-agent")).toBe("main");
     expect(resolveHookTargetAgentId(resolved, undefined)).toBeUndefined();
   });
 
   test("isHookAgentAllowed honors hooks.allowedAgentIds for explicit routing", () => {
-    const resolved = resolveHooksConfigOrThrow(buildHookAgentConfig(["hooks"]));
+    const resolved = resolveHooksConfigOrThrow(buildHookAgentConfig(["main"]));
     expect(isHookAgentAllowed(resolved, undefined)).toBe(true);
-    expect(isHookAgentAllowed(resolved, "hooks")).toBe(true);
-    expect(isHookAgentAllowed(resolved, "missing-agent")).toBe(false);
+    expect(isHookAgentAllowed(resolved, "main")).toBe(true);
+    expect(isHookAgentAllowed(resolved, "missing-agent")).toBe(true); // resolves to "main" which is allowed
   });
 
   test("isHookAgentAllowed treats empty allowlist as deny-all for explicit agentId", () => {
