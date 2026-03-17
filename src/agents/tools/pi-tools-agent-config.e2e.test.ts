@@ -584,19 +584,13 @@ describe("Agent-specific tool filtering", () => {
         },
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            tools: {
-              exec: {
-                host: "gateway",
-              },
+        defaults: {
+          tools: {
+            exec: {
+              host: "gateway",
             },
           },
-          {
-            id: "helper",
-          },
-        ],
+        },
       },
     };
 
