@@ -54,6 +54,7 @@ describe("handleInlineActions", () => {
         ownerList: [],
         senderIsOwner: false,
         isAuthorizedSender: false,
+        senderRole: "member",
         senderId: undefined,
         abortKey: "whatsapp:+999",
         rawBodyNormalized: "hi",

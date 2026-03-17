@@ -1,9 +1,34 @@
 import type { QueueDropPolicy, QueueMode, QueueModeByProvider } from "./types.queue.js";
+import type { GroupToolPolicyConfig } from "./types.tools.js";
 import type { TtsConfig } from "./types.tts.js";
+
+/** Role of a sender in a group chat relative to the bot owner. */
+export type GroupMemberRole = "owner" | "member";
+
+/** Persona mode for group chat behavior. */
+export type GroupChatPersona = "assistant" | "colleague";
+
+/** Configuration for the smart response strategy (LLM-based auto-engage). */
+export type SmartResponseConfig = {
+  /** Model for the lightweight classifier (defaults to cheapest configured model). */
+  classifierModel?: string;
+  /** Max auto-responses per minute before rate-limiting kicks in (default: 5). */
+  maxAutoResponsesPerMinute?: number;
+  /** Regex patterns that always trigger a response (skip classifier). */
+  alwaysRespondPatterns?: string[];
+};
 
 export type GroupChatConfig = {
   mentionPatterns?: string[];
   historyLimit?: number;
+  /** Persona mode for group chats (default: "assistant"). */
+  persona?: GroupChatPersona;
+  /** Default tool restrictions for non-owner group members. */
+  memberToolPolicy?: GroupToolPolicyConfig;
+  /** Whether non-owner members can run slash commands (default: false). */
+  memberCommandAccess?: boolean;
+  /** Smart response classifier config (used when responseStrategy is "smart"). */
+  smartResponse?: SmartResponseConfig;
 };
 
 export type DmConfig = {

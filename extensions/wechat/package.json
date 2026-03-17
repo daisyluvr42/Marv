@@ -1,0 +1,34 @@
+{
+  "name": "@marv/wechat",
+  "version": "2026.3.17",
+  "description": "Marv WeChat channel plugin (via Wechaty)",
+  "type": "module",
+  "dependencies": {
+    "@sinclair/typebox": "0.34.48",
+    "wechaty": "^1.20.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "agentmarv": "workspace:*"
+  },
+  "marv": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "wechat",
+      "label": "WeChat",
+      "selectionLabel": "WeChat (微信)",
+      "docsPath": "/channels/wechat",
+      "docsLabel": "wechat",
+      "blurb": "WeChat messaging via Wechaty puppet providers.",
+      "order": 37,
+      "quickstartAllowFrom": true
+    },
+    "install": {
+      "npmSpec": "@marv/wechat",
+      "localPath": "extensions/wechat",
+      "defaultChoice": "npm"
+    }
+  }
+}

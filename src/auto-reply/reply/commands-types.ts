@@ -2,6 +2,7 @@ import type { SkillCommandSpec } from "../../agents/skills.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry, SessionScope } from "../../core/config/sessions.js";
+import type { GroupMemberRole } from "../../core/config/types.messages.js";
 import type { MsgContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";
@@ -14,6 +15,8 @@ export type CommandContext = {
   ownerList: string[];
   senderIsOwner: boolean;
   isAuthorizedSender: boolean;
+  /** Group member role — "owner" for bot owner, "member" for everyone else. */
+  senderRole: GroupMemberRole;
   senderId?: string;
   abortKey?: string;
   rawBodyNormalized: string;
@@ -40,7 +43,7 @@ export type HandleCommandsParams = {
   storePath?: string;
   sessionScope?: SessionScope;
   workspaceDir: string;
-  defaultGroupActivation: () => "always" | "mention";
+  defaultGroupActivation: () => "always" | "mention" | "smart";
   resolvedThinkLevel?: ThinkLevel;
   resolvedVerboseLevel: VerboseLevel;
   resolvedReasoningLevel: ReasoningLevel;

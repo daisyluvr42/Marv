@@ -7,7 +7,9 @@ import {
   resolveEmbeddedSessionLane,
 } from "../../agents/runner/pi-embedded.js";
 import type { ExecToolDefaults } from "../../agents/tools/bash-tools.js";
+import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { MarvConfig } from "../../core/config/config.js";
+import { resolveChannelGroupResponseStrategy } from "../../core/config/group-policy.js";
 import {
   resolveGroupSessionKey,
   resolveSessionFilePath,
@@ -45,13 +47,14 @@ import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
 import type { buildCommandContext } from "./commands.js";
 import type { InlineDirectives } from "./directive-handling.js";
-import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
+import { buildGroupChatContext, buildGroupIntro, resolveGroupPersona } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
 import type { createModelSelectionState } from "./model-selection.js";
 import { resolveQueueSettings } from "./queue.js";
 import { routeReply } from "./route-reply.js";
 import { BARE_SESSION_RESET_PROMPT } from "./session-reset-prompt.js";
 import { ensureSkillSnapshot, prependSystemEvents } from "./session-updates.js";
+import { evaluateSmartResponse } from "./smart-response.js";
 import { resolveTypingMode } from "./typing-mode.js";
 import type { TypingController } from "./typing.js";
 import { appendUntrustedContext } from "./untrusted-context.js";
@@ -238,8 +241,55 @@ export async function runPreparedReply(
   const shouldInjectGroupIntro = Boolean(
     isGroupChat && (isFirstTurnInSession || sessionEntry?.groupActivationNeedsSystemIntro),
   );
+  // Resolve group persona (colleague vs assistant) for prompt injection.
+  const groupPersona = isGroupChat
+    ? resolveGroupPersona({
+        cfg,
+        channel: sessionCtx.Provider?.trim(),
+        groupId: sessionEntry?.groupId,
+        accountId: sessionCtx.AccountId,
+      })
+    : undefined;
+  // Smart response gating: skip reply if the smart classifier says so.
+  if (isGroupChat) {
+    const providerId = normalizeChannelId(sessionCtx.Provider?.trim());
+    const responseStrategy = providerId
+      ? resolveChannelGroupResponseStrategy({
+          cfg,
+          channel: providerId,
+          groupId: sessionEntry?.groupId,
+          accountId: sessionCtx.AccountId,
+        })
+      : "mention";
+    if (responseStrategy === "smart") {
+      const isReplyToBot = Boolean(
+        ctx.ReplyToSender &&
+        sessionCtx.To &&
+        ctx.ReplyToSender.trim().toLowerCase() === sessionCtx.To.trim().toLowerCase(),
+      );
+      const smartDecision = evaluateSmartResponse({
+        messageBody: ctx.Body ?? "",
+        wasMentioned,
+        isReplyToBot,
+        botName: agentCfg?.name ?? undefined,
+        senderName: ctx.SenderName ?? ctx.SenderId ?? undefined,
+        recentHistory: ctx.InboundHistory?.map((m) => ({ sender: m.sender, body: m.body })),
+        sessionKey,
+        config: cfg.messages?.groupChat?.smartResponse,
+      });
+      if (smartDecision === "skip") {
+        logVerbose(
+          `Smart response: skipping group message from ${ctx.SenderId ?? "<unknown>"} (classified as not needing response)`,
+        );
+        typing.cleanup();
+        return undefined;
+      }
+    }
+  }
   // Always include persistent group chat context (name, participants, reply guidance)
-  const groupChatContext = isGroupChat ? buildGroupChatContext({ sessionCtx }) : "";
+  const groupChatContext = isGroupChat
+    ? buildGroupChatContext({ sessionCtx, persona: groupPersona })
+    : "";
   // Behavioral intro (activation mode, lurking, etc.) only on first turn / activation needed
   const groupIntro = shouldInjectGroupIntro
     ? buildGroupIntro({
@@ -248,6 +298,8 @@ export async function runPreparedReply(
         sessionEntry,
         defaultActivation,
         silentToken: SILENT_REPLY_TOKEN,
+        persona: groupPersona,
+        senderRole: command.senderRole,
       })
     : "";
   const groupSystemPrompt = sessionCtx.GroupSystemPrompt?.trim() ?? "";

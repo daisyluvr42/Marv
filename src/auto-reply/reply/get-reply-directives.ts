@@ -2,7 +2,9 @@ import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
 import type { ExecToolDefaults } from "../../agents/tools/bash-tools.js";
+import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { MarvConfig } from "../../core/config/config.js";
+import { resolveChannelGroupResponseStrategy } from "../../core/config/group-policy.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import { listChatCommands, shouldHandleTextCommands } from "../commands-registry.js";
 import { listSkillCommandsForWorkspace } from "../skill-commands.js";
@@ -343,7 +345,16 @@ export async function resolveReplyDirectives(params: {
     ctx: sessionCtx,
     groupResolution,
   });
-  const defaultActivation = defaultGroupActivation(requireMention);
+  const providerId = normalizeChannelId(sessionCtx.Provider?.trim());
+  const responseStrategy = providerId
+    ? resolveChannelGroupResponseStrategy({
+        cfg,
+        channel: providerId,
+        groupId: sessionEntry?.groupId,
+        accountId: sessionCtx.AccountId,
+      })
+    : undefined;
+  const defaultActivation = defaultGroupActivation(requireMention, responseStrategy);
   const resolvedThinkLevel =
     directives.thinkLevel ??
     (sessionEntry?.thinkingLevel as ThinkLevel | undefined) ??

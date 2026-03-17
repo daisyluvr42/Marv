@@ -5,10 +5,16 @@ import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./typ
 
 export type GroupPolicyChannel = ChannelId;
 
+export type GroupResponseStrategy = "mention" | "always" | "smart";
+
 export type ChannelGroupConfig = {
   requireMention?: boolean;
   tools?: GroupToolPolicyConfig;
   toolsBySender?: GroupToolPolicyBySenderConfig;
+  /** Per-group persona override (default: inherits from messages.groupChat.persona). */
+  persona?: import("./types.messages.js").GroupChatPersona;
+  /** Per-group response strategy override (default: "mention"). */
+  responseStrategy?: GroupResponseStrategy;
 };
 
 export type ChannelGroupPolicy = {
@@ -179,6 +185,13 @@ export function resolveChannelGroupRequireMention(params: {
 }): boolean {
   const { requireMentionOverride, overrideOrder = "after-config" } = params;
   const { groupConfig, defaultConfig } = resolveChannelGroupPolicy(params);
+
+  // Smart response strategy bypasses mention gating (all messages flow through).
+  const strategy = groupConfig?.responseStrategy ?? defaultConfig?.responseStrategy;
+  if (strategy === "smart") {
+    return false;
+  }
+
   const configMention =
     typeof groupConfig?.requireMention === "boolean"
       ? groupConfig.requireMention
@@ -198,6 +211,19 @@ export function resolveChannelGroupRequireMention(params: {
   return true;
 }
 
+/**
+ * Resolve the effective response strategy for a group.
+ */
+export function resolveChannelGroupResponseStrategy(params: {
+  cfg: MarvConfig;
+  channel: GroupPolicyChannel;
+  groupId?: string | null;
+  accountId?: string | null;
+}): GroupResponseStrategy {
+  const { groupConfig, defaultConfig } = resolveChannelGroupPolicy(params);
+  return groupConfig?.responseStrategy ?? defaultConfig?.responseStrategy ?? "mention";
+}
+
 export function resolveChannelGroupToolsPolicy(
   params: {
     cfg: MarvConfig;
@@ -205,6 +231,8 @@ export function resolveChannelGroupToolsPolicy(
     groupId?: string | null;
     accountId?: string | null;
     groupIdCaseInsensitive?: boolean;
+    /** When true, sender is the bot owner — skip memberToolPolicy fallback. */
+    senderIsOwner?: boolean;
   } & GroupToolPolicySender,
 ): GroupToolPolicyConfig | undefined {
   const { groupConfig, defaultConfig } = resolveChannelGroupPolicy(params);
@@ -233,6 +261,13 @@ export function resolveChannelGroupToolsPolicy(
   }
   if (defaultConfig?.tools) {
     return defaultConfig.tools;
+  }
+  // Fall back to memberToolPolicy for non-owner senders.
+  if (!params.senderIsOwner) {
+    const memberPolicy = params.cfg.messages?.groupChat?.memberToolPolicy;
+    if (memberPolicy) {
+      return memberPolicy;
+    }
   }
   return undefined;
 }

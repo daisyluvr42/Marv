@@ -35,6 +35,7 @@ export function buildCommandContext(params: {
     ownerList: auth.ownerList,
     senderIsOwner: auth.senderIsOwner,
     isAuthorizedSender: auth.isAuthorizedSender,
+    senderRole: auth.senderRole,
     senderId: auth.senderId,
     abortKey,
     rawBodyNormalized,

@@ -3,6 +3,7 @@ import { getChannelDock, listChannelDocks } from "../channels/dock.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
 import type { MarvConfig } from "../core/config/config.js";
+import type { GroupMemberRole } from "../core/config/types.messages.js";
 import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from "../utils/message-channel.js";
 import type { MsgContext } from "./templating.js";
 
@@ -12,6 +13,8 @@ export type CommandAuthorization = {
   senderId?: string;
   senderIsOwner: boolean;
   isAuthorizedSender: boolean;
+  /** Group member role — "owner" for bot owner, "member" for everyone else. */
+  senderRole: GroupMemberRole;
   from?: string;
   to?: string;
 };
@@ -337,6 +340,7 @@ export function resolveCommandAuthorization(params: {
     senderId: senderId || undefined,
     senderIsOwner,
     isAuthorizedSender,
+    senderRole: senderIsOwner ? "owner" : "member",
     from: from || undefined,
     to: to || undefined,
   };
