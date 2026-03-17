@@ -12,24 +12,15 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../config/sessions.js", () => ({
-  resolveMainSessionKey: (params?: {
-    session?: { scope?: string; mainKey?: string };
-    agents?: { list?: Array<{ id?: string; default?: boolean }> };
-  }) => {
+  resolveMainSessionKey: (params?: { session?: { scope?: string; mainKey?: string } }) => {
     if (params?.session?.scope === "global") {
       return "global";
     }
-    const agents = params?.agents?.list ?? [];
-    const rawDefault = agents.find((agent) => agent?.default)?.id ?? agents[0]?.id ?? "main";
-    const agentId =
-      String(rawDefault ?? "main")
-        .trim()
-        .toLowerCase() || "main";
     const mainKeyRaw = String(params?.session?.mainKey ?? "main")
       .trim()
       .toLowerCase();
     const mainKey = mainKeyRaw || "main";
-    return `agent:${agentId}:${mainKey}`;
+    return `agent:main:${mainKey}`;
   },
 }));
 
@@ -191,15 +182,11 @@ const allowAgentsListForMain = () => {
   cfg = {
     ...cfg,
     agents: {
-      list: [
-        {
-          id: "main",
-          default: true,
-          tools: {
-            allow: ["agents_list"],
-          },
+      defaults: {
+        tools: {
+          allow: ["agents_list"],
         },
-      ],
+      },
     },
   };
 };
@@ -278,7 +265,6 @@ describe("POST /tools/invoke", () => {
   it("supports tools.alsoAllow in profile and implicit modes", async () => {
     cfg = {
       ...cfg,
-      agents: { list: [{ id: "main", default: true }] },
       tools: { profile: "minimal", alsoAllow: ["agents_list"] },
     };
 
@@ -318,15 +304,11 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [
-          {
-            id: "main",
-            default: true,
-            tools: {
-              deny: ["agents_list"],
-            },
+        defaults: {
+          tools: {
+            deny: ["agents_list"],
           },
-        ],
+        },
       },
     };
     const denyRes = await invokeAgentsListAuthed({ sessionKey: "main" });
@@ -346,13 +328,9 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [
-          {
-            id: "main",
-            default: true,
-            tools: { allow: ["sessions_spawn"] },
-          },
-        ],
+        defaults: {
+          tools: { allow: ["sessions_spawn"] },
+        },
       },
     };
 
@@ -372,7 +350,7 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [{ id: "main", default: true, tools: { allow: ["sessions_send"] } }],
+        defaults: { tools: { allow: ["sessions_send"] } },
       },
     };
 
@@ -388,7 +366,7 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [{ id: "main", default: true, tools: { allow: ["gateway"] } }],
+        defaults: { tools: { allow: ["gateway"] } },
       },
     };
 
@@ -404,7 +382,7 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [{ id: "main", default: true, tools: { allow: ["gateway"] } }],
+        defaults: { tools: { allow: ["gateway"] } },
       },
       gateway: { tools: { allow: ["gateway"] } },
     };
@@ -425,13 +403,9 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [
-          {
-            id: "main",
-            default: true,
-            tools: { allow: ["exec", "cron", "browser"] },
-          },
-        ],
+        defaults: {
+          tools: { allow: ["exec", "cron", "browser"] },
+        },
       },
     };
 
@@ -448,7 +422,7 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [{ id: "main", default: true, tools: { allow: ["exec"] } }],
+        defaults: { tools: { allow: ["exec"] } },
       },
       gateway: { tools: { allow: ["exec"] } },
     };
@@ -467,7 +441,7 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [{ id: "main", default: true, tools: { allow: ["gateway"] } }],
+        defaults: { tools: { allow: ["gateway"] } },
       },
       gateway: { tools: { allow: ["gateway"], deny: ["gateway"] } },
     };
@@ -484,21 +458,11 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [
-          {
-            id: "main",
-            tools: {
-              deny: ["agents_list"],
-            },
+        defaults: {
+          tools: {
+            allow: ["agents_list"],
           },
-          {
-            id: "ops",
-            default: true,
-            tools: {
-              allow: ["agents_list"],
-            },
-          },
-        ],
+        },
       },
       session: { mainKey: "primary" },
     };
@@ -514,7 +478,7 @@ describe("POST /tools/invoke", () => {
     cfg = {
       ...cfg,
       agents: {
-        list: [{ id: "main", default: true, tools: { allow: ["tools_invoke_test"] } }],
+        defaults: { tools: { allow: ["tools_invoke_test"] } },
       },
     };
 
