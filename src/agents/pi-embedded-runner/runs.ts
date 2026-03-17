@@ -68,7 +68,12 @@ export function getActiveEmbeddedRunCount(): number {
   return ACTIVE_EMBEDDED_RUNS.size;
 }
 
-export function waitForEmbeddedPiRunEnd(sessionId: string, timeoutMs = 15_000): Promise<boolean> {
+export const DEFAULT_EMBEDDED_TIMEOUT_MS = 15_000;
+
+export function waitForEmbeddedPiRunEnd(
+  sessionId: string,
+  timeoutMs = DEFAULT_EMBEDDED_TIMEOUT_MS,
+): Promise<boolean> {
   if (!sessionId || !ACTIVE_EMBEDDED_RUNS.has(sessionId)) {
     return Promise.resolve(true);
   }

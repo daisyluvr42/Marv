@@ -153,7 +153,14 @@ export async function deliverAgentCommandResult(params: {
   }
 
   if (!payloads || payloads.length === 0) {
-    runtime.log("No reply from agent.");
+    // Only log this when the run appears truly empty — otherwise the agent
+    // completed successfully (e.g. subagent results consumed via tool calls)
+    // and the "No reply" message is misleading.
+    const meta = result.meta;
+    const hadActivity = meta && (meta.durationMs > 2000 || meta.stopReason === "tool_calls");
+    if (!hadActivity) {
+      runtime.log("No reply from agent.");
+    }
     return { payloads: [], meta: result.meta };
   }
 

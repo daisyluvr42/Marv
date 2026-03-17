@@ -259,6 +259,17 @@ export async function ensureLoaded(
   const fileMtimeMs = await getFileMtimeMs(state.deps.storePath);
   const loaded = await loadCronStore(state.deps.storePath);
   const jobs = (loaded.jobs ?? []) as unknown as Array<Record<string, unknown>>;
+
+  // Guard against pathological job files that could cause excessive memory
+  // usage during normalization (see openclaw#48948).
+  const MAX_JOBS_LIMIT = 500;
+  if (jobs.length > MAX_JOBS_LIMIT) {
+    state.deps.log?.warn?.(
+      `jobs.json contains ${jobs.length} jobs (limit ${MAX_JOBS_LIMIT}); truncating to prevent memory issues`,
+    );
+    jobs.length = MAX_JOBS_LIMIT;
+  }
+
   let mutated = false;
   for (const raw of jobs) {
     const state = raw.state;

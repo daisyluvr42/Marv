@@ -798,6 +798,15 @@ export async function runMessageAction(
   const gateway = resolveGateway(input);
 
   if (action === "send") {
+    // Strip stale poll fields that models sometimes include with empty defaults
+    // alongside a "send" action — prevents downstream confusion.
+    delete params.pollQuestion;
+    delete params.pollOption;
+    delete params.pollDurationHours;
+    delete params.pollDurationSeconds;
+    delete params.pollMulti;
+    delete params.pollAnonymous;
+    delete params.pollPublic;
     return handleSendAction({
       cfg,
       params,

@@ -1,3 +1,4 @@
+import { DEFAULT_EMBEDDED_TIMEOUT_MS } from "../../agents/pi-embedded-runner/runs.js";
 import {
   abortEmbeddedPiRun,
   compactEmbeddedPiSession,
@@ -66,7 +67,9 @@ export const handleCompactCommand: CommandHandler = async (params) => {
   const sessionId = params.sessionEntry.sessionId;
   if (isEmbeddedPiRunActive(sessionId)) {
     abortEmbeddedPiRun(sessionId);
-    await waitForEmbeddedPiRunEnd(sessionId, 15_000);
+    const embeddedTimeoutMs =
+      params.cfg?.agents?.defaults?.embeddedTimeoutMs ?? DEFAULT_EMBEDDED_TIMEOUT_MS;
+    await waitForEmbeddedPiRunEnd(sessionId, embeddedTimeoutMs);
   }
   const customInstructions = extractCompactInstructions({
     rawBody: params.ctx.CommandBody ?? params.ctx.RawBody ?? params.ctx.Body,

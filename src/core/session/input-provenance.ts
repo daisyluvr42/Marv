@@ -13,6 +13,10 @@ export type InputProvenance = {
   sourceSessionKey?: string;
   sourceChannel?: string;
   sourceTool?: string;
+  /** Original external user id (e.g. E.164, Telegram user id) that initiated the chain. */
+  sourceUserId?: string;
+  /** Display name of the original external user. */
+  sourceUserName?: string;
 };
 
 function normalizeOptionalString(value: unknown): string | undefined {
@@ -42,6 +46,8 @@ export function normalizeInputProvenance(value: unknown): InputProvenance | unde
     sourceSessionKey: normalizeOptionalString(record.sourceSessionKey),
     sourceChannel: normalizeOptionalString(record.sourceChannel),
     sourceTool: normalizeOptionalString(record.sourceTool),
+    sourceUserId: normalizeOptionalString(record.sourceUserId),
+    sourceUserName: normalizeOptionalString(record.sourceUserName),
   };
 }
 

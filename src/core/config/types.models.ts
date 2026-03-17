@@ -2,6 +2,7 @@ export type ModelApi =
   | "openai-completions"
   | "openai-responses"
   | "anthropic-messages"
+  | "azure-openai"
   | "google-generative-ai"
   | "github-copilot"
   | "bedrock-converse-stream"

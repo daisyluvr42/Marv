@@ -873,4 +873,18 @@ export async function runTui(opts: TuiOptions) {
     process.once("SIGINT", finish);
     process.once("SIGTERM", finish);
   });
+
+  // Safety net: ensure the terminal is restored even if pi-tui's stop()
+  // misses keyboard protocol cleanup (kitty keyboard protocol, mouse mode,
+  // alternate screen buffer).  These are no-ops if already reset.
+  if (process.stdout.isTTY) {
+    // Disable kitty keyboard protocol (mode 1), restore normal input
+    process.stdout.write("\x1b[?1u");
+    // Disable mouse tracking
+    process.stdout.write("\x1b[?1000l\x1b[?1003l\x1b[?1006l");
+    // Leave alternate screen buffer
+    process.stdout.write("\x1b[?1049l");
+    // Reset terminal modes
+    process.stdout.write("\x1bc");
+  }
 }

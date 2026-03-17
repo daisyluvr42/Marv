@@ -160,6 +160,11 @@ export async function createGatewayRuntimeState(params: {
     noServer: true,
     maxPayload: MAX_PAYLOAD_BYTES,
   });
+  // Prevent unhandled WSS errors from crashing the gateway process (e.g.
+  // plugin startup race conditions or malformed upgrade requests).
+  wss.on("error", (err) => {
+    params.log.warn(`gateway wss error: ${String(err)}`);
+  });
   for (const server of httpServers) {
     attachGatewayUpgradeHandler({
       httpServer: server,

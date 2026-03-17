@@ -313,13 +313,18 @@ export async function monitorWebChannel(
         whatsappHeartbeatLog.warn(
           `No messages received in ${minutesSinceLastMessage}m - restarting connection`,
         );
-        void closeListener().catch((err) => {
-          logVerbose(`Close listener failed: ${formatError(err)}`);
-        });
+        // Signal close first so the onClose promise resolves and the main loop
+        // can proceed to reconnect, then tear down the listener.  Awaiting
+        // closeListener() before signalClose() used to create a race where the
+        // active-listener map was cleared while the socket was still draining,
+        // causing outbound sends to fail with "No active WhatsApp Web listener".
         listener.signalClose?.({
           status: 499,
           isLoggedOut: false,
           error: "watchdog-timeout",
+        });
+        void closeListener().catch((err) => {
+          logVerbose(`Close listener failed: ${formatError(err)}`);
         });
       }, WATCHDOG_CHECK_MS);
     }

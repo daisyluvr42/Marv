@@ -379,8 +379,17 @@ async function promptCustomApiModelId(prompter: WizardPrompter): Promise<string>
 
 function resolveProviderApi(
   compatibility: CustomApiCompatibility,
-): "openai-completions" | "anthropic-messages" {
-  return compatibility === "anthropic" ? "anthropic-messages" : "openai-completions";
+  baseUrl?: string,
+): "openai-completions" | "anthropic-messages" | "azure-openai" {
+  if (compatibility === "anthropic") {
+    return "anthropic-messages";
+  }
+  // Azure endpoints need the Azure OpenAI API variant which handles
+  // api-version query params and deployment-based routing.
+  if (baseUrl && isAzureUrl(baseUrl)) {
+    return "azure-openai";
+  }
+  return "openai-completions";
 }
 
 function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
@@ -527,7 +536,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
         [providerId]: {
           ...existingProviderRest,
           baseUrl: resolvedBaseUrl,
-          api: resolveProviderApi(params.compatibility),
+          api: resolveProviderApi(params.compatibility, resolvedBaseUrl),
           ...(normalizedApiKey ? { apiKey: normalizedApiKey } : {}),
           models: mergedModels.length > 0 ? mergedModels : [nextModel],
         },

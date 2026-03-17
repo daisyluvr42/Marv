@@ -35,6 +35,10 @@ const SessionsSendToolSchema = Type.Object({
 export function createSessionsSendTool(opts?: {
   agentSessionKey?: string;
   agentChannel?: GatewayMessageChannel;
+  /** Original external user id (e.g. E.164) for cross-session identity propagation. */
+  agentUserId?: string;
+  /** Display name of the original external user. */
+  agentUserName?: string;
   sandboxed?: boolean;
 }): AnyAgentTool {
   return {
@@ -232,6 +236,8 @@ export function createSessionsSendTool(opts?: {
           sourceSessionKey: opts?.agentSessionKey,
           sourceChannel: opts?.agentChannel,
           sourceTool: "sessions_send",
+          sourceUserId: opts?.agentUserId,
+          sourceUserName: opts?.agentUserName,
         },
       };
       const requesterSessionKey = opts?.agentSessionKey;

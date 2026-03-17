@@ -287,6 +287,8 @@ export type AgentDefaultsConfig = {
   /** Durable group-chat settings for the main agent. */
   groupChat?: GroupChatConfig;
   timeoutSeconds?: number;
+  /** Timeout (ms) when waiting for an embedded (in-process) agent run to finish (default: 15000). */
+  embeddedTimeoutMs?: number;
   /** Max inbound media size in MB for agent-visible attachments (text note or future image attach). */
   mediaMaxMb?: number;
   /**

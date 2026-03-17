@@ -1067,6 +1067,8 @@ export const registerTelegramHandlers = ({
     senderId: string;
     senderUsername: string;
     requireConfiguredGroup: boolean;
+    /** Skip sender-level allowFrom checks (e.g. channel_post with no human sender). */
+    skipSenderAllowCheck?: boolean;
     sendOversizeWarning: boolean;
     oversizeLogMessage: string;
     errorMessage: string;
@@ -1109,7 +1111,9 @@ export const registerTelegramHandlers = ({
           senderId: event.senderId,
           senderUsername: event.senderUsername,
           effectiveGroupAllow,
-          hasGroupAllowOverride,
+          // When skipSenderAllowCheck is set (e.g. channel_post), treat as
+          // no override so sender-level allowFrom is not evaluated.
+          hasGroupAllowOverride: event.skipSenderAllowCheck ? false : hasGroupAllowOverride,
           groupConfig,
           topicConfig,
         })
@@ -1192,6 +1196,10 @@ export const registerTelegramHandlers = ({
       chatId,
       isGroup: true,
       isForum: false,
+      // channel_post has no real human sender — sender_chat is the channel
+      // itself.  Pass the chat id as senderId for logging but mark the event
+      // so sender-level allowFrom checks are skipped (they can't be evaluated
+      // without a real user identity).
       senderId:
         post.sender_chat?.id != null
           ? String(post.sender_chat.id)
@@ -1200,6 +1208,7 @@ export const registerTelegramHandlers = ({
             : "",
       senderUsername: post.sender_chat?.username ?? post.from?.username ?? "",
       requireConfiguredGroup: true,
+      skipSenderAllowCheck: true,
       sendOversizeWarning: false,
       oversizeLogMessage: "channel post media exceeds size limit",
       errorMessage: "channel_post handler failed",
