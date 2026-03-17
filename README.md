@@ -337,6 +337,7 @@ pnpm dev            # 开发运行
 
 ## 文档导航
 
+- **操作手册（从 0 到 1）：[/operations](/operations)**
 - 快速上手：[/start/getting-started](/start/getting-started)
 - CLI 参考：[/cli](/cli)
 - Gateway：[/gateway](/gateway)
