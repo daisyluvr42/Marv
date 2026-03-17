@@ -26,12 +26,19 @@ const hoisted = vi.hoisted(() => {
       );
     });
   });
-  return { computeBackoff, sleepWithAbort };
+  const resolveBackoffPolicy = vi.fn(() => ({
+    baseMs: 10,
+    maxMs: 100,
+    factor: 2,
+    jitter: false,
+  }));
+  return { computeBackoff, sleepWithAbort, resolveBackoffPolicy };
 });
 
 vi.mock("../../infra/backoff.js", () => ({
   computeBackoff: hoisted.computeBackoff,
   sleepWithAbort: hoisted.sleepWithAbort,
+  resolveBackoffPolicy: hoisted.resolveBackoffPolicy,
 }));
 
 type TestAccount = {
