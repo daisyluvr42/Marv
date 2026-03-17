@@ -16,6 +16,7 @@ import { createCronTool } from "./cron-tool.js";
 import { createExternalCliTool } from "./external-cli-tool.js";
 import { createGatewayTool } from "./gateway-tool.js";
 import { createImageTool } from "./image-tool.js";
+import { createIosDeployTool } from "./ios-deploy-tool.js";
 import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
 import { createParallelSpawnTool } from "./parallel-spawn-tool.js";
@@ -172,6 +173,7 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       agentChannel: options?.agentChannel,
       config: options?.config,
     }),
+    createIosDeployTool(),
     createGatewayTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,

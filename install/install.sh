@@ -13,6 +13,13 @@ NO_GIT_UPDATE=0
 DRY_RUN=0
 VERBOSE=0
 FORCE_HOME_NPM_PREFIX=0
+# On macOS, default to downloading and launching the Mac app for GUI onboarding.
+if [[ "$OSTYPE" == darwin* ]]; then
+  INSTALL_MAC_APP="${MARV_NO_MAC_APP:+0}"
+  INSTALL_MAC_APP="${INSTALL_MAC_APP:-1}"
+else
+  INSTALL_MAC_APP=0
+fi
 SHARP_IGNORE_GLOBAL_LIBVIPS="${SHARP_IGNORE_GLOBAL_LIBVIPS:-1}"
 
 log() {
@@ -45,6 +52,7 @@ Options:
   --set-npm-prefix            Force npm global prefix to ~/.npm-global when needed
   --no-onboard                Skip `marv onboard --install-daemon`
   --onboard                   Run onboarding after install (default)
+  --no-mac-app                Skip Mac app download; use CLI onboarding on macOS
   --beta                      Shortcut for --version beta
   --dry-run                   Print actions without executing them
   --verbose                   Enable shell tracing
@@ -63,6 +71,7 @@ Env:
   MARV_REPO                   Git repository URL
   MARV_REF                    Git ref
   MARV_NO_ONBOARD=1           Skip onboarding
+  MARV_NO_MAC_APP=1           Skip Mac app download on macOS
   MARV_DRY_RUN=1              Print commands only
   MARV_VERBOSE=1              Enable shell tracing
 USAGE
@@ -224,6 +233,47 @@ ensure_node_22() {
   fi
 }
 
+install_mac_app() {
+  local marv_ver app_plist installed_ver zip_url zip_path
+  marv_ver="$("$CLI_PATH" --version 2>/dev/null | head -1 || true)"
+  if [[ -z "$marv_ver" ]]; then
+    warn "Could not determine Marv version for Mac app download."
+    return 1
+  fi
+
+  # Check if already installed with matching version.
+  app_plist="/Applications/Marv.app/Contents/Info.plist"
+  if [[ -f "$app_plist" ]]; then
+    installed_ver="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_plist" 2>/dev/null || true)"
+    if [[ "$installed_ver" == "$marv_ver" ]]; then
+      log "Marv.app $marv_ver already installed."
+      run open /Applications/Marv.app
+      return 0
+    fi
+    log "Updating Marv.app from $installed_ver to $marv_ver"
+  fi
+
+  zip_url="https://github.com/daisyluvr42/Marv/releases/download/v${marv_ver}/Marv-${marv_ver}.zip"
+  zip_path="${TMPDIR:-/tmp}/Marv-${marv_ver}.zip"
+
+  log "Downloading Marv.app $marv_ver..."
+  if ! curl -fsSL -o "$zip_path" "$zip_url"; then
+    warn "Failed to download Mac app from $zip_url"
+    rm -f "$zip_path"
+    return 1
+  fi
+
+  log "Installing Marv.app to /Applications..."
+  run ditto -xk "$zip_path" /Applications/
+  rm -f "$zip_path"
+  # Remove quarantine so the app launches without Gatekeeper prompt.
+  xattr -dr com.apple.quarantine /Applications/Marv.app 2>/dev/null || true
+
+  log "Launching Marv.app..."
+  run open /Applications/Marv.app
+  return 0
+}
+
 resolve_install_spec() {
   if [[ -n "$PACKAGE_SPEC" ]]; then
     printf '%s' "$PACKAGE_SPEC"
@@ -303,6 +353,10 @@ while [[ $# -gt 0 ]]; do
       RUN_ONBOARD=1
       shift
       ;;
+    --no-mac-app)
+      INSTALL_MAC_APP=0
+      shift
+      ;;
     --dry-run)
       DRY_RUN=1
       shift
@@ -352,6 +406,12 @@ export NPM_CONFIG_AUDIT=false
 run npm install -g "$INSTALL_SPEC"
 
 if [[ "$DRY_RUN" == "1" ]]; then
+  if [[ "$INSTALL_MAC_APP" == "1" ]]; then
+    log "[dry-run] Would download and install Marv.app from GitHub Release"
+    log "[dry-run] Would launch /Applications/Marv.app for GUI onboarding"
+  elif [[ "$RUN_ONBOARD" == "1" ]]; then
+    log "[dry-run] Would run: marv onboard --install-daemon"
+  fi
   log "Dry run complete."
   exit 0
 fi
@@ -365,8 +425,17 @@ log "CLI ready: $CLI_PATH"
 run "$CLI_PATH" --version
 
 if [[ "$RUN_ONBOARD" == "1" ]]; then
-  log "Running onboarding..."
-  run "$CLI_PATH" onboard --install-daemon
+  if [[ "$INSTALL_MAC_APP" == "1" ]]; then
+    if install_mac_app; then
+      log "Marv.app installed and launched. Complete setup in the app."
+    else
+      warn "Mac app download failed; falling back to CLI onboarding."
+      run "$CLI_PATH" onboard --install-daemon
+    fi
+  else
+    log "Running onboarding..."
+    run "$CLI_PATH" onboard --install-daemon
+  fi
 else
   log "Install complete."
   log "Run this when ready:"

@@ -55,6 +55,57 @@ struct ProactiveStatusSnapshot: Decodable, Sendable {
     var lastFlushAt: Double?
 }
 
+// MARK: - Sessions
+
+struct SessionEntry: Decodable, Sendable {
+    var key: String
+    var lastActiveAt: Double?
+    var totalTokens: Int?
+    var label: String?
+}
+
+struct SessionsListResult: Decodable, Sendable {
+    var sessions: [SessionEntry]
+}
+
+// MARK: - Cron
+
+struct CronStatusSnapshot: Decodable, Sendable {
+    var enabled: Bool
+    var jobCount: Int
+    var nextWakeAtMs: Double?
+}
+
+struct CronJob: Decodable, Sendable {
+    var id: String
+    var label: String?
+    var schedule: String?
+    var enabled: Bool
+    var lastRunAt: Double?
+    var nextRunAt: Double?
+    var lastError: String?
+}
+
+struct CronListResult: Decodable, Sendable {
+    var jobs: [CronJob]
+}
+
+// MARK: - Usage / Cost
+
+struct CostDayEntry: Decodable, Sendable {
+    var date: String
+    var totalCost: Double
+    var inputTokens: Int?
+    var outputTokens: Int?
+}
+
+struct CostUsageSummary: Decodable, Sendable {
+    var totalCost: Double
+    var days: [CostDayEntry]?
+}
+
+// MARK: - Dashboard state
+
 @MainActor
 @Observable
 final class DashboardState {
@@ -63,6 +114,10 @@ final class DashboardState {
     var memory: MemoryStatusSnapshot?
     var knowledge: KnowledgeStatusSnapshot?
     var proactive: ProactiveStatusSnapshot?
+    var sessions: SessionsListResult?
+    var cronStatus: CronStatusSnapshot?
+    var cronJobs: CronListResult?
+    var usage: CostUsageSummary?
 
     func resetForDisconnect() {
         self.isLoading = false
@@ -70,5 +125,9 @@ final class DashboardState {
         self.memory = nil
         self.knowledge = nil
         self.proactive = nil
+        self.sessions = nil
+        self.cronStatus = nil
+        self.cronJobs = nil
+        self.usage = nil
     }
 }

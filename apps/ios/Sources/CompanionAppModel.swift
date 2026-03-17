@@ -165,7 +165,46 @@ final class CompanionAppModel {
         } catch {
             self.dashboard.errorText = error.localizedDescription
         }
+        // Non-critical sections: fetch independently so one failure doesn't block others.
+        async let sessionsResult: Void = self.fetchSessions()
+        async let cronResult: Void = self.fetchCron()
+        async let usageResult: Void = self.fetchUsage()
+        _ = await (sessionsResult, cronResult, usageResult)
         self.dashboard.isLoading = false
+    }
+
+    private func fetchSessions() async {
+        do {
+            let params = #"{"includeGlobal":false,"includeUnknown":false,"limit":20}"#
+            self.dashboard.sessions = try await self.requestDecoded("sessions.list", as: SessionsListResult.self, paramsJSON: params)
+        } catch {
+            // Non-critical; silently skip.
+        }
+    }
+
+    private func fetchCron() async {
+        do {
+            self.dashboard.cronStatus = try await self.requestDecoded("cron.status", as: CronStatusSnapshot.self)
+            let params = #"{"includeDisabled":true}"#
+            self.dashboard.cronJobs = try await self.requestDecoded("cron.list", as: CronListResult.self, paramsJSON: params)
+        } catch {
+            // Non-critical.
+        }
+    }
+
+    private func fetchUsage() async {
+        do {
+            // Fetch last 7 days of cost data.
+            let calendar = Calendar.current
+            let now = Date()
+            let start = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+            let fmt = ISO8601DateFormatter()
+            fmt.formatOptions = [.withFullDate]
+            let params = #"{"startDate":"\#(fmt.string(from: start))","endDate":"\#(fmt.string(from: now))"}"#
+            self.dashboard.usage = try await self.requestDecoded("usage.cost", as: CostUsageSummary.self, paramsJSON: params)
+        } catch {
+            // Non-critical.
+        }
     }
 
     func sendTranscript() async {
@@ -271,8 +310,8 @@ final class CompanionAppModel {
         }
     }
 
-    private func requestDecoded<T: Decodable>(_ method: String, as _: T.Type) async throws -> T {
-        let data = try await self.operatorGateway.request(method: method, paramsJSON: nil, timeoutSeconds: 15)
+    private func requestDecoded<T: Decodable>(_ method: String, as _: T.Type, paramsJSON: String? = nil) async throws -> T {
+        let data = try await self.operatorGateway.request(method: method, paramsJSON: paramsJSON, timeoutSeconds: 15)
         return try self.decoder.decode(T.self, from: data)
     }
 
