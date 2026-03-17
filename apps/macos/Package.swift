@@ -57,6 +57,8 @@ let package = Package(
             resources: [
                 .copy("Resources/Marv.icns"),
                 .copy("Resources/DeviceModels"),
+                .copy("Resources/StatusBarIcon.png"),
+                .copy("Resources/StatusBarIcon@2x.png"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),

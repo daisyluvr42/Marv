@@ -30,6 +30,27 @@ struct MarvApp: App {
         HoverHUDController.shared.setSuppressed(self.isMenuPresented || self.isPanelVisible)
     }
 
+    /// Robot head icon rendered as a macOS template image for the menu bar.
+    private static let statusBarIcon: NSImage = {
+        let icon: NSImage
+        if let url2x = Bundle.main.url(forResource: "StatusBarIcon@2x", withExtension: "png"),
+           let img = NSImage(contentsOf: url2x)
+        {
+            img.size = NSSize(width: 16, height: 16)
+            icon = img
+        } else if let url1x = Bundle.main.url(forResource: "StatusBarIcon", withExtension: "png"),
+                  let img = NSImage(contentsOf: url1x)
+        {
+            icon = img
+        } else {
+            // Fallback to SF Symbol if images missing.
+            icon = NSImage(systemSymbolName: "bubble.left.fill", accessibilityDescription: "Marv")
+                ?? NSImage()
+        }
+        icon.isTemplate = true
+        return icon
+    }()
+
     init() {
         MarvLogging.bootstrapIfNeeded()
 
@@ -39,7 +60,13 @@ struct MarvApp: App {
 
     var body: some Scene {
         MenuBarExtra { MenuContent(state: self.state, updater: self.delegate.updaterController) } label: {
-            Image(systemName: self.state.isPaused ? "pause.circle" : (self.isGatewaySleeping ? "moon.fill" : "bubble.left.fill"))
+            if self.state.isPaused {
+                Image(systemName: "pause.circle")
+            } else if self.isGatewaySleeping {
+                Image(systemName: "moon.fill")
+            } else {
+                Image(nsImage: Self.statusBarIcon)
+            }
         }
         .menuBarExtraStyle(.menu)
         .menuBarExtraAccess(isPresented: self.$isMenuPresented) { item in
