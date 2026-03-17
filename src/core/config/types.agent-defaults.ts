@@ -198,6 +198,10 @@ export type AgentP0Config = {
   user?: string;
 };
 
+export type ThinkingModelTier = "low" | "medium" | "high";
+
+export type ThinkingModelsConfig = Partial<Record<ThinkingModelTier, string[]>>;
+
 export type AgentDefaultsConfig = {
   /** Durable configured top-level agent name. Runtime still uses agent id "main". */
   name?: string;
@@ -253,6 +257,8 @@ export type AgentDefaultsConfig = {
   autoRouting?: AutoRoutingConfig;
   /** Default thinking level when no /think directive is present. */
   thinkingDefault?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+  /** Preferred models per thinking-level tier. Agent picks from the matching tier's list first. */
+  thinkingModels?: ThinkingModelsConfig;
   /** Default verbose level when no /verbose directive is present. */
   verboseDefault?: "off" | "on" | "full";
   /** Default elevated level when no /elevated directive is present. */

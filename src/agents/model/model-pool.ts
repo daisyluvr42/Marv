@@ -4,6 +4,8 @@ import type {
   ConfiguredModelLocation,
   ConfiguredModelTier,
   ModelPoolConfig,
+  ThinkingModelTier,
+  ThinkingModelsConfig,
 } from "../../core/config/types.js";
 import { resolveAgentConfig, resolveDefaultAgentId } from "../agent-scope.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
@@ -340,4 +342,56 @@ export function resolveRuntimeModelPlan(params: {
 export function resolveAgentModelPoolName(params: { cfg: MarvConfig; agentId?: string }): string {
   return resolvePoolConfig(params.cfg, params.agentId ?? resolveDefaultAgentId(params.cfg))
     .poolName;
+}
+
+/** Map a ThinkLevel to one of the three thinkingModels tiers. */
+export function resolveThinkingModelTier(
+  level: "off" | "minimal" | "low" | "medium" | "high" | "xhigh",
+): ThinkingModelTier {
+  switch (level) {
+    case "off":
+    case "minimal":
+    case "low":
+      return "low";
+    case "medium":
+      return "medium";
+    case "high":
+    case "xhigh":
+      return "high";
+  }
+}
+
+/**
+ * Reorder pool candidates so that models listed in the matching thinkingModels tier
+ * appear first (in configured order). Remaining candidates keep their original order.
+ * Does not add or remove candidates — purely a preference reorder.
+ */
+export function applyThinkingModelPreferences(params: {
+  candidates: RuntimeConfiguredModel[];
+  thinkingModels?: ThinkingModelsConfig;
+  thinkLevel?: string;
+}): RuntimeConfiguredModel[] {
+  const { candidates, thinkingModels, thinkLevel } = params;
+  if (!thinkingModels || !thinkLevel || candidates.length === 0) {
+    return candidates;
+  }
+  const tier = resolveThinkingModelTier(
+    thinkLevel as "off" | "minimal" | "low" | "medium" | "high" | "xhigh",
+  );
+  const preferredRefs = thinkingModels[tier];
+  if (!preferredRefs || preferredRefs.length === 0) {
+    return candidates;
+  }
+  const priorityMap = new Map(preferredRefs.map((ref, idx) => [ref, idx]));
+  const preferred: RuntimeConfiguredModel[] = [];
+  const rest: RuntimeConfiguredModel[] = [];
+  for (const candidate of candidates) {
+    if (priorityMap.has(candidate.ref)) {
+      preferred.push(candidate);
+    } else {
+      rest.push(candidate);
+    }
+  }
+  preferred.sort((a, b) => (priorityMap.get(a.ref) ?? 0) - (priorityMap.get(b.ref) ?? 0));
+  return [...preferred, ...rest];
 }

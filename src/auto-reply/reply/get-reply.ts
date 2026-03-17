@@ -229,6 +229,7 @@ export async function getReplyFromConfig(
     provider,
     model,
     hasResolvedHeartbeatModelOverride,
+    autoRoutingThinking,
     typing,
     opts: resolvedOpts,
     skillFilter: mergedSkillFilter,

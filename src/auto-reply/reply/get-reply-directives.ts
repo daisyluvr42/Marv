@@ -117,6 +117,7 @@ export async function resolveReplyDirectives(params: {
   provider: string;
   model: string;
   hasResolvedHeartbeatModelOverride: boolean;
+  autoRoutingThinking?: string;
   typing: TypingController;
   opts?: GetReplyOptions;
   skillFilter?: string[];
@@ -390,6 +391,11 @@ export async function resolveReplyDirectives(params: {
     ? resolveBlockStreamingChunking(cfg, sessionCtx.Provider, sessionCtx.AccountId)
     : undefined;
 
+  // Compute early thinking level hint for thinking-level-aware model selection.
+  // autoRoutingThinking (from complexity classifier) takes priority over directives/session/config.
+  const thinkLevelHint =
+    params.autoRoutingThinking ?? resolvedThinkLevel ?? agentCfg?.thinkingDefault;
+
   const modelState = await createModelSelectionState({
     cfg,
     agentId,
@@ -406,6 +412,7 @@ export async function resolveReplyDirectives(params: {
     hasModelDirective: directives.hasModelDirective,
     hasImages: hasPromptImages(ctx),
     hasResolvedHeartbeatModelOverride,
+    thinkLevelHint,
   });
   provider = modelState.provider;
   model = modelState.model;

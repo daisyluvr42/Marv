@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../../core/config/config.js";
-import { resolveRuntimeModelPlan } from "./model-pool.js";
+import type { RuntimeConfiguredModel } from "./model-pool.js";
+import {
+  applyThinkingModelPreferences,
+  resolveRuntimeModelPlan,
+  resolveThinkingModelTier,
+} from "./model-pool.js";
 import { resolveSelectedModelRefs } from "./model-selections.js";
 
 const readRuntimeModelRegistryMock = vi.fn(() => null);
@@ -360,5 +365,127 @@ describe("resolveRuntimeModelPlan", () => {
       "temporary_unavailable",
     );
     expect(plan.candidates.map((entry) => entry.ref)).toEqual(["google/gemini-2.0-flash"]);
+  });
+});
+
+describe("resolveThinkingModelTier", () => {
+  it("maps off/minimal/low to low tier", () => {
+    expect(resolveThinkingModelTier("off")).toBe("low");
+    expect(resolveThinkingModelTier("minimal")).toBe("low");
+    expect(resolveThinkingModelTier("low")).toBe("low");
+  });
+
+  it("maps medium to medium tier", () => {
+    expect(resolveThinkingModelTier("medium")).toBe("medium");
+  });
+
+  it("maps high/xhigh to high tier", () => {
+    expect(resolveThinkingModelTier("high")).toBe("high");
+    expect(resolveThinkingModelTier("xhigh")).toBe("high");
+  });
+});
+
+describe("applyThinkingModelPreferences", () => {
+  const makeCandidate = (ref: string): RuntimeConfiguredModel => ({
+    ref,
+    provider: ref.split("/")[0],
+    model: ref.split("/")[1],
+    location: "cloud",
+    tier: "standard",
+    capabilities: ["text"],
+    priority: 0,
+    enabled: true,
+    available: true,
+    aliases: [],
+  });
+
+  const candidates = [
+    makeCandidate("google/gemini-2.5-flash"),
+    makeCandidate("openai/gpt-4o"),
+    makeCandidate("anthropic/claude-opus-4-6"),
+  ];
+
+  it("returns candidates unchanged when no thinkingModels config", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: undefined,
+      thinkLevel: "high",
+    });
+    expect(result.map((c) => c.ref)).toEqual(candidates.map((c) => c.ref));
+  });
+
+  it("returns candidates unchanged when no thinkLevel", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: { high: ["anthropic/claude-opus-4-6"] },
+      thinkLevel: undefined,
+    });
+    expect(result.map((c) => c.ref)).toEqual(candidates.map((c) => c.ref));
+  });
+
+  it("moves preferred models to front for matching tier", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: { high: ["anthropic/claude-opus-4-6", "openai/gpt-4o"] },
+      thinkLevel: "high",
+    });
+    expect(result.map((c) => c.ref)).toEqual([
+      "anthropic/claude-opus-4-6",
+      "openai/gpt-4o",
+      "google/gemini-2.5-flash",
+    ]);
+  });
+
+  it("preserves order when preferred models are already first", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: { low: ["google/gemini-2.5-flash"] },
+      thinkLevel: "low",
+    });
+    expect(result.map((c) => c.ref)).toEqual([
+      "google/gemini-2.5-flash",
+      "openai/gpt-4o",
+      "anthropic/claude-opus-4-6",
+    ]);
+  });
+
+  it("ignores preferred models not in candidates", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: { medium: ["unknown/model", "openai/gpt-4o"] },
+      thinkLevel: "medium",
+    });
+    expect(result.map((c) => c.ref)).toEqual([
+      "openai/gpt-4o",
+      "google/gemini-2.5-flash",
+      "anthropic/claude-opus-4-6",
+    ]);
+  });
+
+  it("maps xhigh to high tier", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: { high: ["anthropic/claude-opus-4-6"] },
+      thinkLevel: "xhigh",
+    });
+    expect(result[0].ref).toBe("anthropic/claude-opus-4-6");
+  });
+
+  it("returns candidates unchanged when tier has no preferred models", () => {
+    const result = applyThinkingModelPreferences({
+      candidates,
+      thinkingModels: { high: ["anthropic/claude-opus-4-6"] },
+      thinkLevel: "low",
+    });
+    expect(result.map((c) => c.ref)).toEqual(candidates.map((c) => c.ref));
+  });
+
+  it("returns empty array for empty candidates", () => {
+    const result = applyThinkingModelPreferences({
+      candidates: [],
+      thinkingModels: { high: ["anthropic/claude-opus-4-6"] },
+      thinkLevel: "high",
+    });
+    expect(result).toEqual([]);
   });
 });

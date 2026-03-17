@@ -181,6 +181,14 @@ export const AgentDefaultsSchema = z
         z.literal("xhigh"),
       ])
       .optional(),
+    thinkingModels: z
+      .object({
+        low: z.array(z.string()).optional(),
+        medium: z.array(z.string()).optional(),
+        high: z.array(z.string()).optional(),
+      })
+      .strict()
+      .optional(),
     verboseDefault: z.union([z.literal("off"), z.literal("on"), z.literal("full")]).optional(),
     elevatedDefault: z
       .union([z.literal("off"), z.literal("on"), z.literal("ask"), z.literal("full")])

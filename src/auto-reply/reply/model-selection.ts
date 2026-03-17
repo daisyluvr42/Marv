@@ -3,6 +3,7 @@ import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { loadModelCatalog } from "../../agents/model/model-catalog.js";
 import {
+  applyThinkingModelPreferences,
   resolveRuntimeModelPlan,
   type RuntimeConfiguredModel,
   type RuntimeModelCapability,
@@ -296,6 +297,8 @@ export async function createModelSelectionState(params: {
   /** True when heartbeat.model was explicitly resolved for this run.
    *  In that case, skip session-stored overrides so the heartbeat selection wins. */
   hasResolvedHeartbeatModelOverride?: boolean;
+  /** Early thinking level hint for thinking-level-aware model selection. */
+  thinkLevelHint?: string;
 }): Promise<ModelSelectionState> {
   const {
     cfg,
@@ -400,7 +403,12 @@ export async function createModelSelectionState(params: {
       model = storedOverride.model;
     }
   } else {
-    const automaticCandidate = runtimePlan.candidates[0];
+    const reorderedCandidates = applyThinkingModelPreferences({
+      candidates: runtimePlan.candidates,
+      thinkingModels: agentCfg?.thinkingModels,
+      thinkLevel: params.thinkLevelHint,
+    });
+    const automaticCandidate = reorderedCandidates[0];
     if (automaticCandidate) {
       provider = automaticCandidate.provider;
       model = automaticCandidate.model;
