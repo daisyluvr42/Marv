@@ -86,6 +86,7 @@
     "prepare": "command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath git-hooks || exit 0",
     "protocol:check": "pnpm protocol:gen && git diff --exit-code -- dist/protocol.schema.json",
     "protocol:gen": "node --import tsx scripts/protocol-gen.ts",
+    "release": "node --import tsx scripts/release.ts",
     "release:check": "node --import tsx scripts/release-check.ts",
     "start": "node scripts/run-node.mjs",
     "test": "node scripts/test-parallel.mjs",
@@ -116,7 +117,8 @@
     "tui:dev": "MARV_PROFILE=dev CLAWDBOT_PROFILE=dev node scripts/run-node.mjs --dev tui",
     "ui:build": "node scripts/ui.js build",
     "ui:dev": "node scripts/ui.js dev",
-    "ui:install": "node scripts/ui.js install"
+    "ui:install": "node scripts/ui.js install",
+    "version:bump": "node --import tsx scripts/bump-version.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "0.14.1",

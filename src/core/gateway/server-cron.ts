@@ -310,7 +310,11 @@ export function buildGatewayCronService(params: {
         if (!update.available || !update.latestVersion) {
           return { status: "skipped", summary: "Marv is up to date." };
         }
-        if (update.installKind === "git" && runtimeConfig.update?.autoApplyCron === true) {
+        const shouldAutoApply =
+          runtimeConfig.update?.autoApplyCron === true &&
+          (update.installKind === "git" ||
+            (update.installKind === "package" && runtimeConfig.update?.autoApplyNpm === true));
+        if (shouldAutoApply) {
           const root =
             (await resolveMarvPackageRoot({
               moduleUrl: import.meta.url,
@@ -323,6 +327,7 @@ export function buildGatewayCronService(params: {
             argv1: process.argv[1],
             channel: normalizeUpdateChannel(runtimeConfig.update?.channel) ?? undefined,
             approval: runtimeConfig.update?.approval,
+            trustCi: runtimeConfig.update?.trustCi,
           });
           if (updateResult.status === "ok") {
             job.state.lastNotifiedVersion = update.latestVersion;
@@ -341,7 +346,7 @@ export function buildGatewayCronService(params: {
             error: updateResult.status === "error" ? updateResult.reason : undefined,
             summary:
               updateResult.status === "ok"
-                ? `Applied git update ${update.currentVersion} -> ${update.latestVersion}.`
+                ? `Applied ${update.installKind} update ${update.currentVersion} -> ${update.latestVersion}.`
                 : (updateResult.reason ?? formatAvailableUpdateSummary(update)),
           };
         }

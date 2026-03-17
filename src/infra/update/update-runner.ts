@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { type CommandOptions, runCommandWithTimeout } from "../../process/exec.js";
+import { runCommandWithTimeout } from "../../process/exec.js";
 import {
   resolveControlUiDistIndexHealth,
   resolveControlUiDistIndexPathForRoot,
@@ -35,16 +34,23 @@ import {
   detectGlobalInstallManagerForRoot,
   globalInstallArgs,
 } from "./update-global.js";
+import { PREFLIGHT_MAX_COMMITS, runPreflight } from "./update-preflight.js";
+import {
+  type CommandRunner,
+  getGitHeadSha,
+  managerInstallArgs,
+  managerScriptArgs,
+  MAX_LOG_CHARS,
+  rollbackGitCheckout,
+  runStep,
+  type RunStepOptions,
+  type UpdateStepProgress,
+  type UpdateStepResult,
+} from "./update-steps.js";
 
-export type UpdateStepResult = {
-  name: string;
-  command: string;
-  cwd: string;
-  durationMs: number;
-  exitCode: number | null;
-  stdoutTail?: string | null;
-  stderrTail?: string | null;
-};
+// Re-export types that consumers depend on
+export type { UpdateStepResult, UpdateStepProgress, CommandRunner };
+export type { UpdateStepInfo, UpdateStepCompletion } from "./update-steps.js";
 
 export type UpdateRunResult = {
   status: "ok" | "error" | "skipped";
@@ -63,29 +69,6 @@ export type UpdateRunResult = {
   durationMs: number;
 };
 
-type CommandRunner = (
-  argv: string[],
-  options: CommandOptions,
-) => Promise<{ stdout: string; stderr: string; code: number | null }>;
-
-export type UpdateStepInfo = {
-  name: string;
-  command: string;
-  index: number;
-  total: number;
-};
-
-export type UpdateStepCompletion = UpdateStepInfo & {
-  durationMs: number;
-  exitCode: number | null;
-  stderrTail?: string | null;
-};
-
-export type UpdateStepProgress = {
-  onStepStart?: (step: UpdateStepInfo) => void;
-  onStepComplete?: (step: UpdateStepCompletion) => void;
-};
-
 type UpdateRunnerOptions = {
   cwd?: string;
   argv1?: string;
@@ -95,14 +78,15 @@ type UpdateRunnerOptions = {
   timeoutMs?: number;
   runCommand?: CommandRunner;
   progress?: UpdateStepProgress;
+  trustCi?: boolean;
 };
 
 const DEFAULT_TIMEOUT_MS = 20 * 60_000;
-const MAX_LOG_CHARS = 8000;
-const PREFLIGHT_MAX_COMMITS = 10;
 const START_DIRS = ["cwd", "argv1", "process"];
 const DEFAULT_PACKAGE_NAME = "agentmarv";
 const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
+
+// ── Root detection helpers ────────────────────────────────────────────
 
 function normalizeDir(value?: string | null) {
   if (!value) {
@@ -149,6 +133,8 @@ function buildStartDirs(opts: UpdateRunnerOptions): string[] {
   }
   return Array.from(new Set(dirs));
 }
+
+// ── Git helpers ───────────────────────────────────────────────────────
 
 async function readBranchName(
   runCommand: CommandRunner,
@@ -261,78 +247,6 @@ async function isCorePackageRoot(root: string): Promise<boolean> {
   return Boolean(packageName && CORE_PACKAGE_NAMES.has(packageName));
 }
 
-type RunStepOptions = {
-  runCommand: CommandRunner;
-  name: string;
-  argv: string[];
-  cwd: string;
-  timeoutMs: number;
-  env?: NodeJS.ProcessEnv;
-  progress?: UpdateStepProgress;
-  stepIndex: number;
-  totalSteps: number;
-};
-
-async function runStep(opts: RunStepOptions): Promise<UpdateStepResult> {
-  const { runCommand, name, argv, cwd, timeoutMs, env, progress, stepIndex, totalSteps } = opts;
-  const command = argv.join(" ");
-
-  const stepInfo: UpdateStepInfo = {
-    name,
-    command,
-    index: stepIndex,
-    total: totalSteps,
-  };
-
-  progress?.onStepStart?.(stepInfo);
-
-  const started = Date.now();
-  const result = await runCommand(argv, { cwd, timeoutMs, env });
-  const durationMs = Date.now() - started;
-
-  const stderrTail = trimLogTail(result.stderr, MAX_LOG_CHARS);
-
-  progress?.onStepComplete?.({
-    ...stepInfo,
-    durationMs,
-    exitCode: result.code,
-    stderrTail,
-  });
-
-  return {
-    name,
-    command,
-    cwd,
-    durationMs,
-    exitCode: result.code,
-    stdoutTail: trimLogTail(result.stdout, MAX_LOG_CHARS),
-    stderrTail: trimLogTail(result.stderr, MAX_LOG_CHARS),
-  };
-}
-
-function managerScriptArgs(manager: "pnpm" | "bun" | "npm", script: string, args: string[] = []) {
-  if (manager === "pnpm") {
-    return ["pnpm", script, ...args];
-  }
-  if (manager === "bun") {
-    return ["bun", "run", script, ...args];
-  }
-  if (args.length > 0) {
-    return ["npm", "run", script, "--", ...args];
-  }
-  return ["npm", "run", script];
-}
-
-function managerInstallArgs(manager: "pnpm" | "bun" | "npm") {
-  if (manager === "pnpm") {
-    return ["pnpm", "install"];
-  }
-  if (manager === "bun") {
-    return ["bun", "install"];
-  }
-  return ["npm", "install"];
-}
-
 function normalizeTag(tag?: string) {
   const trimmed = tag?.trim();
   if (!trimmed) {
@@ -344,105 +258,11 @@ function normalizeTag(tag?: string) {
   return trimmed;
 }
 
-async function getGitHeadSha(
-  runCommand: CommandRunner,
-  root: string,
-  timeoutMs: number,
-): Promise<string | null> {
-  const res = await runCommand(["git", "-C", root, "rev-parse", "HEAD"], {
-    cwd: root,
-    timeoutMs,
-  }).catch(() => null);
-  if (!res || res.code !== 0) {
-    return null;
-  }
-  const sha = res.stdout.trim();
-  return sha || null;
-}
-
-async function rollbackGitCheckout(params: {
-  runCommand: CommandRunner;
-  root: string;
-  timeoutMs: number;
-  manager: "pnpm" | "bun" | "npm";
-  progress?: UpdateStepProgress;
-  steps: UpdateStepResult[];
-  targetSha: string;
-  totalSteps: number;
-  startIndex: number;
-}): Promise<{ ok: boolean; rolledBackToSha: string | null }> {
-  let stepIndex = params.startIndex;
-  const nextStep = (name: string, argv: string[]) => ({
-    runCommand: params.runCommand,
-    name,
-    argv,
-    cwd: params.root,
-    timeoutMs: params.timeoutMs,
-    progress: params.progress,
-    stepIndex: stepIndex++,
-    totalSteps: params.totalSteps,
-  });
-
-  const resetStep = await runStep(
-    nextStep("rollback git reset --hard", [
-      "git",
-      "-C",
-      params.root,
-      "reset",
-      "--hard",
-      params.targetSha,
-    ]),
-  );
-  params.steps.push(resetStep);
-  if (resetStep.exitCode !== 0) {
-    return { ok: false, rolledBackToSha: null };
-  }
-
-  const depsStep = await runStep(
-    nextStep("rollback deps install", managerInstallArgs(params.manager)),
-  );
-  params.steps.push(depsStep);
-  if (depsStep.exitCode !== 0) {
-    return { ok: false, rolledBackToSha: params.targetSha };
-  }
-
-  const buildStep = await runStep(
-    nextStep("rollback build", managerScriptArgs(params.manager, "build")),
-  );
-  params.steps.push(buildStep);
-  if (buildStep.exitCode !== 0) {
-    return { ok: false, rolledBackToSha: params.targetSha };
-  }
-
-  const uiBuildStep = await runStep(
-    nextStep("rollback ui:build", managerScriptArgs(params.manager, "ui:build")),
-  );
-  params.steps.push(uiBuildStep);
-  if (uiBuildStep.exitCode !== 0) {
-    return { ok: false, rolledBackToSha: params.targetSha };
-  }
-
-  const doctorEntry = path.join(params.root, "marv.mjs");
-  const doctorStep = await runStep(
-    nextStep("rollback marv doctor", [
-      process.execPath,
-      doctorEntry,
-      "doctor",
-      "--non-interactive",
-      "--fix",
-    ]),
-  );
-  params.steps.push(doctorStep);
-  if (doctorStep.exitCode !== 0) {
-    return { ok: false, rolledBackToSha: params.targetSha };
-  }
-
-  return { ok: true, rolledBackToSha: params.targetSha };
-}
+// ── Main update ───────────────────────────────────────────────────────
 
 export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<UpdateRunResult> {
   const startedAt = Date.now();
-  const runCommand =
+  const runCommand: CommandRunner =
     opts.runCommand ??
     (async (argv, options) => {
       const res = await runCommandWithTimeout(argv, options);
@@ -495,7 +315,6 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
   }
 
   if (gitRoot) {
-    // Get current SHA (not a visible step, no progress)
     const beforeSha = await getGitHeadSha(runCommand, gitRoot, timeoutMs);
     const beforeVersion = await readPackageVersion(gitRoot);
     const deployStatePath = resolveDeployStatePath(gitRoot);
@@ -588,7 +407,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       }
 
       let preflightBaseSha: string | null = null;
-      let candidates: string[] = [];
+      let preflightCandidates: string[] = [];
 
       if (approvalPolicy) {
         const approval = await resolveDeployApproval({
@@ -620,7 +439,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           };
         }
         preflightBaseSha = approval.approvedSha;
-        candidates = [approval.approvedSha];
+        preflightCandidates = [approval.approvedSha];
       } else {
         const upstreamStep = await runStep(
           step(
@@ -692,13 +511,13 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         }
 
         preflightBaseSha = upstreamSha;
-        candidates = (revListStep.stdoutTail ?? "")
+        preflightCandidates = (revListStep.stdoutTail ?? "")
           .split("\n")
           .map((line) => line.trim())
           .filter(Boolean);
       }
 
-      if (!preflightBaseSha || candidates.length === 0) {
+      if (!preflightBaseSha || preflightCandidates.length === 0) {
         return {
           status: "error",
           mode: "git",
@@ -711,89 +530,22 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       }
 
       const manager = await detectPackageManager(gitRoot);
-      const preflightRoot = await fs.mkdtemp(path.join(os.tmpdir(), "marv-update-preflight-"));
-      const worktreeDir = path.join(preflightRoot, "worktree");
-      const worktreeStep = await runStep(
-        step(
-          "preflight worktree",
-          ["git", "-C", gitRoot, "worktree", "add", "--detach", worktreeDir, preflightBaseSha],
-          gitRoot,
-        ),
-      );
-      steps.push(worktreeStep);
-      if (worktreeStep.exitCode !== 0) {
-        await fs.rm(preflightRoot, { recursive: true, force: true }).catch(() => {});
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "preflight-worktree-failed",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
-      }
+      const preflight = await runPreflight({
+        runCommand,
+        gitRoot,
+        manager,
+        timeoutMs,
+        progress,
+        baseSha: preflightBaseSha,
+        candidates: preflightCandidates,
+        stepIndexStart: stepIndex,
+        totalSteps: gitTotalSteps,
+        trustCi: opts.trustCi,
+      });
+      steps.push(...preflight.steps);
+      stepIndex += preflight.stepCount;
 
-      let selectedSha: string | null = null;
-      try {
-        for (const sha of candidates) {
-          const shortSha = sha.slice(0, 8);
-          const checkoutStep = await runStep(
-            step(
-              `preflight checkout (${shortSha})`,
-              ["git", "-C", worktreeDir, "checkout", "--detach", sha],
-              worktreeDir,
-            ),
-          );
-          steps.push(checkoutStep);
-          if (checkoutStep.exitCode !== 0) {
-            continue;
-          }
-
-          const depsStep = await runStep(
-            step(`preflight deps install (${shortSha})`, managerInstallArgs(manager), worktreeDir),
-          );
-          steps.push(depsStep);
-          if (depsStep.exitCode !== 0) {
-            continue;
-          }
-
-          const buildStep = await runStep(
-            step(`preflight build (${shortSha})`, managerScriptArgs(manager, "build"), worktreeDir),
-          );
-          steps.push(buildStep);
-          if (buildStep.exitCode !== 0) {
-            continue;
-          }
-
-          const lintStep = await runStep(
-            step(`preflight lint (${shortSha})`, managerScriptArgs(manager, "lint"), worktreeDir),
-          );
-          steps.push(lintStep);
-          if (lintStep.exitCode !== 0) {
-            continue;
-          }
-
-          selectedSha = sha;
-          break;
-        }
-      } finally {
-        const removeStep = await runStep(
-          step(
-            "preflight cleanup",
-            ["git", "-C", gitRoot, "worktree", "remove", "--force", worktreeDir],
-            gitRoot,
-          ),
-        );
-        steps.push(removeStep);
-        await runCommand(["git", "-C", gitRoot, "worktree", "prune"], {
-          cwd: gitRoot,
-          timeoutMs,
-        }).catch(() => null);
-        await fs.rm(preflightRoot, { recursive: true, force: true }).catch(() => {});
-      }
-
-      if (!selectedSha) {
+      if (!preflight.selectedSha) {
         return {
           status: "error",
           mode: "git",
@@ -805,16 +557,16 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         };
       }
 
-      deployTargetSha = selectedSha;
+      deployTargetSha = preflight.selectedSha;
       await beginDeployAttempt({
         root: gitRoot,
         trigger: "manual",
         fromSha: beforeSha,
-        targetSha: selectedSha,
+        targetSha: preflight.selectedSha,
       });
 
       const rebaseStep = await runStep(
-        step("git rebase", ["git", "-C", gitRoot, "rebase", selectedSha], gitRoot),
+        step("git rebase", ["git", "-C", gitRoot, "rebase", preflight.selectedSha], gitRoot),
       );
       steps.push(rebaseStep);
       if (rebaseStep.exitCode !== 0) {
@@ -1123,9 +875,11 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
   };
 }
 
+// ── Rollback ──────────────────────────────────────────────────────────
+
 export async function runGatewayRollback(opts: UpdateRunnerOptions = {}): Promise<UpdateRunResult> {
   const startedAt = Date.now();
-  const runCommand =
+  const runCommand: CommandRunner =
     opts.runCommand ??
     (async (argv, options) => {
       const res = await runCommandWithTimeout(argv, options);
@@ -1134,8 +888,8 @@ export async function runGatewayRollback(opts: UpdateRunnerOptions = {}): Promis
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const progress = opts.progress;
   const steps: UpdateStepResult[] = [];
-  const candidates = buildStartDirs(opts);
-  const gitRoot = await resolveGitRoot(runCommand, candidates, timeoutMs);
+  const dirCandidates = buildStartDirs(opts);
+  const gitRoot = await resolveGitRoot(runCommand, dirCandidates, timeoutMs);
   if (!gitRoot || !(await isCorePackageRoot(gitRoot))) {
     return {
       status: "error",

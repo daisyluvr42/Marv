@@ -8,6 +8,7 @@ import {
   formatAvailableUpdateSummary,
   shouldNotifyForVersion,
 } from "./update-notify.js";
+import { checkVersionDrift } from "./version-drift.js";
 
 type UpdateCheckState = {
   lastCheckedAt?: string;
@@ -91,6 +92,12 @@ export async function runGatewayUpdateCheck(params: {
   }
 
   await writeState(statePath, nextState);
+
+  // Check for macOS App ↔ CLI version drift (non-blocking)
+  const drift = await checkVersionDrift().catch(() => null);
+  if (drift?.drifted && drift.message) {
+    params.log.info(drift.message);
+  }
 }
 
 export function scheduleGatewayUpdateCheck(params: {

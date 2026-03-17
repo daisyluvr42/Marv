@@ -297,6 +297,8 @@ export const MarvSchema = z
         checkOnStart: z.boolean().optional(),
         autoCheckIntervalMs: z.number().int().positive().optional(),
         autoApplyCron: z.boolean().optional(),
+        autoApplyNpm: z.boolean().optional(),
+        trustCi: z.boolean().optional(),
         approval: z
           .object({
             required: z.boolean().optional(),
