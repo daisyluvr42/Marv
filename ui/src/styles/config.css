@@ -94,11 +94,11 @@
 }
 
 :root[data-theme="light"] .config-search__input {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 :root[data-theme="light"] .config-search__input:focus {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .config-search__clear {
@@ -207,7 +207,7 @@
 }
 
 :root[data-theme="light"] .config-mode-toggle {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .config-mode-toggle__btn {
@@ -344,7 +344,7 @@
 }
 
 :root[data-theme="light"] .config-diff__item {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .config-diff__path {
@@ -455,7 +455,7 @@
 }
 
 :root[data-theme="light"] .config-subnav__item {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .config-subnav__item:hover {
@@ -552,7 +552,7 @@
 }
 
 :root[data-theme="light"] .config-section-card {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .config-section-card__header {
@@ -676,11 +676,11 @@
 }
 
 :root[data-theme="light"] .cfg-input {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 :root[data-theme="light"] .cfg-input:focus {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .cfg-input--sm {
@@ -734,7 +734,7 @@
 }
 
 :root[data-theme="light"] .cfg-textarea {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .cfg-textarea--sm {
@@ -752,7 +752,7 @@
 }
 
 :root[data-theme="light"] .cfg-number {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .cfg-number__btn {
@@ -899,7 +899,7 @@
 }
 
 :root[data-theme="light"] .cfg-toggle-row {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 :root[data-theme="light"] .cfg-toggle-row:hover:not(.disabled) {
@@ -994,7 +994,7 @@
 }
 
 :root[data-theme="light"] .cfg-object {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .cfg-object__header {
@@ -1086,7 +1086,7 @@
 }
 
 :root[data-theme="light"] .cfg-array__count {
-  background: white;
+  background: var(--bg-elevated);
 }
 
 .cfg-array__add {
