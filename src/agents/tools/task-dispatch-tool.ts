@@ -1,18 +1,13 @@
 import crypto from "node:crypto";
 import { Type } from "@sinclair/typebox";
 import { loadConfig } from "../../core/config/config.js";
-import { callGateway } from "../../core/gateway/call.js";
 import { optionalStringEnum } from "../schema/typebox.js";
 import { listSubagentRunsForRequester, type SubagentRunRecord } from "../subagent-registry.js";
 import { spawnSubagentDirect } from "../subagent-spawn.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringArrayParam, readStringParam } from "./common.js";
-import {
-  extractAssistantText,
-  resolveInternalSessionKey,
-  resolveMainSessionAlias,
-  stripToolMessages,
-} from "./sessions-helpers.js";
+import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-helpers.js";
+import { readSubagentResult } from "./subagent-result-reader.js";
 
 const TaskDispatchToolSchema = Type.Object({
   task: Type.String(),
@@ -103,32 +98,6 @@ function pickDispatchRunForRole(
       return (b.createdAt ?? 0) - (a.createdAt ?? 0);
     });
   return matching[0];
-}
-
-async function readDispatchResult(params: { run: SubagentRunRecord; waitTimeoutMs: number }) {
-  if (!params.run.endedAt) {
-    await callGateway({
-      method: "agent.wait",
-      params: {
-        runId: params.run.runId,
-        timeoutMs: params.waitTimeoutMs,
-      },
-      timeoutMs: params.waitTimeoutMs + 5_000,
-    });
-  }
-  const history = await callGateway<{ messages: unknown[] }>({
-    method: "chat.history",
-    params: {
-      sessionKey: params.run.childSessionKey,
-      limit: 12,
-    },
-    timeoutMs: 10_000,
-  });
-  const messages = stripToolMessages(Array.isArray(history?.messages) ? history.messages : []);
-  const lastAssistant = [...messages].toReversed().find((message) => {
-    return (message as { role?: unknown })?.role === "assistant";
-  });
-  return extractAssistantText(lastAssistant);
 }
 
 function buildAggregateText(
@@ -315,27 +284,18 @@ export function createTaskDispatchTool(opts?: {
 
       for (const run of runs) {
         try {
-          const wait = await callGateway<{
-            status?: string;
-            error?: string;
-          }>({
-            method: "agent.wait",
-            params: {
-              runId: run.runId,
-              timeoutMs: waitTimeoutMs,
-            },
-            timeoutMs: waitTimeoutMs + 5_000,
-          });
-          const text = await readDispatchResult({
-            run,
+          const output = await readSubagentResult({
+            runId: run.runId,
+            childSessionKey: run.childSessionKey,
             waitTimeoutMs,
+            alreadyEnded: !!run.endedAt,
           });
           results.push({
             role: run.role ?? "worker",
             runId: run.runId,
             sessionKey: run.childSessionKey,
-            status: wait?.status ?? run.outcome?.status ?? "unknown",
-            text: text || run.outcome?.error,
+            status: output.status,
+            text: output.text || run.outcome?.error,
           });
         } catch (err) {
           results.push({

@@ -171,6 +171,12 @@ export type SubagentRoleConfig = {
   thinking?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   systemPromptAppend?: string;
   tools?: SubagentRoleToolPolicyConfig;
+  /** Default context injection spec applied when this role is used by a subagent. */
+  context?: {
+    recentTurns?: number;
+    includeToolResults?: string[];
+    maxContextChars?: number;
+  };
 };
 
 export type SubagentPresetConfig = {
@@ -179,6 +185,10 @@ export type SubagentPresetConfig = {
   autoTrigger?: {
     keywords?: string[];
     minComplexity?: AutoRoutingComplexity;
+    /** Override model pool when this preset is auto-triggered. */
+    modelPool?: string;
+    /** Override thinking level when this preset is auto-triggered. */
+    thinking?: string;
   };
 };
 

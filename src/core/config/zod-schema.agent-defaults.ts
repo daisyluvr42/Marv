@@ -26,6 +26,14 @@ const SubagentRoleToolPolicySchema = z
   })
   .strict();
 
+const SubagentRoleContextSchema = z
+  .object({
+    recentTurns: z.number().int().min(0).max(10).optional(),
+    includeToolResults: z.array(z.string()).optional(),
+    maxContextChars: z.number().int().min(0).optional(),
+  })
+  .strict();
+
 const SubagentRoleSchema = z
   .object({
     description: z.string().optional(),
@@ -43,6 +51,7 @@ const SubagentRoleSchema = z
       .optional(),
     systemPromptAppend: z.string().optional(),
     tools: SubagentRoleToolPolicySchema.optional(),
+    context: SubagentRoleContextSchema.optional(),
   })
   .strict();
 
@@ -61,6 +70,8 @@ const SubagentPresetSchema = z
             z.literal("expert"),
           ])
           .optional(),
+        modelPool: z.string().optional(),
+        thinking: z.string().optional(),
       })
       .strict()
       .optional(),

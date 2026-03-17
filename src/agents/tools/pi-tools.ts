@@ -7,7 +7,7 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { ToolLoopDetectionConfig } from "../../core/config/types.tools.js";
-import { logWarn } from "../../logger.js";
+import { logDebug, logWarn } from "../../logger.js";
 import { getPluginToolMeta } from "../../plugins/tools.js";
 import { isSubagentSessionKey } from "../../routing/session-key.js";
 import { resolveGatewayMessageChannel } from "../../utils/message-channel.js";
@@ -273,6 +273,11 @@ export function createMarvCodingTools(options?: {
           options.sessionKey,
         )
       : undefined;
+  if (subagentPolicy && (subagentPolicy.allow?.length || subagentPolicy.deny?.length)) {
+    logDebug(
+      `Subagent tool policy for ${options?.sessionKey}: allow=[${(subagentPolicy.allow ?? []).join(",")}] deny=[${(subagentPolicy.deny ?? []).join(",")}]`,
+    );
+  }
   const allowBackground = isToolAllowedByPolicies("process", [
     profilePolicyWithAlsoAllow,
     providerProfilePolicyWithAlsoAllow,

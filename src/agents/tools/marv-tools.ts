@@ -18,6 +18,7 @@ import { createGatewayTool } from "./gateway-tool.js";
 import { createImageTool } from "./image-tool.js";
 import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
+import { createParallelSpawnTool } from "./parallel-spawn-tool.js";
 import { createProactiveBufferTool } from "./proactive-buffer-tool.js";
 import { createRequestEscalationTool } from "./request-escalation-tool.js";
 import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
@@ -213,6 +214,18 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       agentGroupId: options?.agentGroupId,
       agentGroupChannel: options?.agentGroupChannel,
       agentGroupSpace: options?.agentGroupSpace,
+      requesterAgentIdOverride: options?.requesterAgentIdOverride,
+    }),
+    createParallelSpawnTool({
+      agentSessionKey: options?.agentSessionKey,
+      agentChannel: options?.agentChannel,
+      agentAccountId: options?.agentAccountId,
+      agentTo: options?.agentTo,
+      agentThreadId: options?.agentThreadId,
+      agentGroupId: options?.agentGroupId,
+      agentGroupChannel: options?.agentGroupChannel,
+      agentGroupSpace: options?.agentGroupSpace,
+      sandboxed: options?.sandboxed,
       requesterAgentIdOverride: options?.requesterAgentIdOverride,
     }),
     createSubagentsTool({

@@ -32,6 +32,8 @@ export type SpawnSubagentParams = {
   runTimeoutSeconds?: number;
   cleanup?: "delete" | "keep";
   expectsCompletionMessage?: boolean;
+  /** Pre-built context block to prepend to the task message. */
+  contextBlock?: string;
 };
 
 export type SpawnSubagentContext = {
@@ -253,9 +255,12 @@ export async function spawnSubagentDirect(
     maxSpawnDepth,
   });
   const childTaskMessage = [
+    params.contextBlock ? `[Context]\n${params.contextBlock}` : undefined,
     `[Subagent Context] You are running as a subagent (depth ${childDepth}/${maxSpawnDepth}). Results auto-announce to your requester; do not busy-poll for status.`,
     `[Subagent Task]: ${task}`,
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const childIdem = crypto.randomUUID();
   let childRunId: string = childIdem;

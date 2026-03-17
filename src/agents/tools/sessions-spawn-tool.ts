@@ -1,9 +1,16 @@
 import { Type } from "@sinclair/typebox";
+import { loadConfig } from "../../core/config/config.js";
+import { logDebug } from "../../logger.js";
 import type { GatewayMessageChannel } from "../../utils/message-channel.js";
 import { optionalStringEnum } from "../schema/typebox.js";
+import { resolveSubagentAutoRoute } from "../subagent-auto-route.js";
+import { buildSubagentContext, type SubagentContextSpec } from "../subagent-context-builder.js";
 import { spawnSubagentDirect } from "../subagent-spawn.js";
+import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringParam } from "./common.js";
+import { SubagentContextSpecSchema } from "./parallel-spawn-tool.js";
+import { readSubagentResult } from "./subagent-result-reader.js";
 
 const SessionsSpawnToolSchema = Type.Object({
   task: Type.String(),
@@ -20,6 +27,8 @@ const SessionsSpawnToolSchema = Type.Object({
   // Back-compat: older callers used timeoutSeconds for this tool.
   timeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
   cleanup: optionalStringEnum(["delete", "keep"] as const),
+  waitForResult: Type.Optional(Type.Boolean()),
+  context: Type.Optional(SubagentContextSpecSchema),
 });
 
 export function createSessionsSpawnTool(opts?: {
@@ -70,21 +79,65 @@ export function createSessionsSpawnTool(opts?: {
           ? Math.max(0, Math.floor(timeoutSecondsCandidate))
           : undefined;
 
+      const waitForResult = params.waitForResult === true;
+
+      // Auto-route: when no explicit role/preset/model is provided, analyze the task
+      // and auto-select based on configured presets and model pool.
+      let autoRoutedPreset: string | undefined;
+      let autoRoutedModel: string | undefined;
+      let autoRoutedThinking: string | undefined;
+      if (!role && !preset && !modelOverride) {
+        const cfg = loadConfig();
+        const route = resolveSubagentAutoRoute({ task, cfg });
+        if (route.matched && route.preset) {
+          autoRoutedPreset = route.preset;
+        }
+        if (route.recommendedModel) {
+          autoRoutedModel = route.recommendedModel;
+        }
+        if (route.recommendedThinking && !thinkingOverrideRaw) {
+          autoRoutedThinking = route.recommendedThinking;
+        }
+        logDebug(
+          `[sessions_spawn] auto-route: complexity=${route.complexity}, matched=${route.matched}, preset=${autoRoutedPreset ?? "none"}, model=${autoRoutedModel ?? "default"}, thinking=${autoRoutedThinking ?? "default"}, reason=${route.modelReason ?? "n/a"}`,
+        );
+      }
+
+      // Build context block if requested.
+      let contextBlock: string | undefined;
+      const contextSpec = params.context as SubagentContextSpec | undefined;
+      if (contextSpec && opts?.agentSessionKey) {
+        try {
+          const block = await buildSubagentContext({
+            spec: contextSpec,
+            parentSessionKey: opts.agentSessionKey,
+            workspaceDir: resolveWorkspaceRoot(),
+          });
+          if (block) {
+            contextBlock = block;
+          }
+        } catch {
+          // Context building failure is non-fatal; proceed without context.
+        }
+      }
+
       const result = await spawnSubagentDirect(
         {
           task,
+          contextBlock,
           label: label || undefined,
           agentId: requestedAgentId,
-          model: modelOverride,
-          thinking: thinkingOverrideRaw,
+          model: modelOverride || autoRoutedModel,
+          thinking: thinkingOverrideRaw || autoRoutedThinking,
           role,
-          preset,
+          preset: preset || autoRoutedPreset,
           taskGroup,
           dispatchId,
-          announceMode,
+          // When waiting for inline result, suppress async announce to avoid duplicate delivery.
+          announceMode: waitForResult ? "aggregate" : announceMode,
           runTimeoutSeconds,
           cleanup,
-          expectsCompletionMessage: true,
+          expectsCompletionMessage: !waitForResult,
         },
         {
           agentSessionKey: opts?.agentSessionKey,
@@ -99,7 +152,29 @@ export function createSessionsSpawnTool(opts?: {
         },
       );
 
-      return jsonResult(result);
+      if (!waitForResult || result.status !== "accepted") {
+        return jsonResult(result);
+      }
+
+      // Block and return the subagent's output inline as the tool result.
+      const waitTimeoutMs =
+        typeof runTimeoutSeconds === "number" && runTimeoutSeconds > 0
+          ? runTimeoutSeconds * 1000
+          : 60_000;
+      const output = await readSubagentResult({
+        runId: result.runId!,
+        childSessionKey: result.childSessionKey!,
+        waitTimeoutMs,
+      });
+
+      return jsonResult({
+        status: output.status,
+        runId: result.runId,
+        sessionKey: result.childSessionKey,
+        text: output.text,
+        durationMs: output.durationMs,
+        model: result.modelApplied ? undefined : undefined,
+      });
     },
   };
 }

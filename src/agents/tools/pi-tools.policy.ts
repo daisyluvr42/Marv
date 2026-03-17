@@ -151,6 +151,42 @@ export function filterToolsByPolicy(tools: AnyAgentTool[], policy?: SandboxToolP
   return tools.filter((tool) => matcher(tool.name));
 }
 
+/**
+ * Validate that tool names referenced in subagent role configs actually exist.
+ * Emits warnings for unknown tool names that would silently match nothing.
+ */
+export function validateRoleToolNames(params: {
+  cfg: MarvConfig;
+  availableToolNames: Set<string>;
+  warn: (msg: string) => void;
+}): void {
+  const roles = params.cfg.agents?.defaults?.subagents?.roles;
+  if (!roles) {
+    return;
+  }
+  for (const [roleName, roleConfig] of Object.entries(roles)) {
+    const tools = roleConfig.tools;
+    if (!tools) {
+      continue;
+    }
+    for (const toolName of tools.allow ?? []) {
+      if (!params.availableToolNames.has(normalizeToolName(toolName))) {
+        params.warn(
+          `Subagent role "${roleName}" has tools.allow entry "${toolName}" that does not match any known tool.`,
+        );
+      }
+    }
+    for (const toolName of tools.deny ?? []) {
+      // Glob patterns (e.g., "web_*") are valid, so only warn on exact non-glob names.
+      if (!toolName.includes("*") && !params.availableToolNames.has(normalizeToolName(toolName))) {
+        params.warn(
+          `Subagent role "${roleName}" has tools.deny entry "${toolName}" that does not match any known tool.`,
+        );
+      }
+    }
+  }
+}
+
 type ToolPolicyConfig = {
   allow?: string[];
   alsoAllow?: string[];
