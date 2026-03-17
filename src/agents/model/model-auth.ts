@@ -216,7 +216,7 @@ export async function resolveApiKeyForProvider(params: {
     const hasCodex = listProfilesForProvider(store, "openai-codex").length > 0;
     if (hasCodex) {
       throw new Error(
-        'No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/gpt-5.3-codex (OAuth) or set OPENAI_API_KEY to use openai/gpt-5.1-codex.',
+        'No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/<model> (OAuth) or set OPENAI_API_KEY to use openai/<model> with an API key.',
       );
     }
   }
@@ -267,6 +267,13 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     const envKey = getEnvApiKey(normalized);
     if (!envKey) {
       return null;
+    }
+    // The pi-ai helper returns a sentinel "<authenticated>" when ADC is
+    // configured but the actual token must be obtained at request time.
+    // Do not pass the sentinel as an API key — let the provider SDK
+    // handle ADC auth natively.
+    if (envKey === "<authenticated>") {
+      return { apiKey: "", source: "gcloud adc" };
     }
     return { apiKey: envKey, source: "gcloud adc" };
   }

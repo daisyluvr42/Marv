@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveConfigPath, resolveGatewayLockDir, resolveStateDir } from "../core/config/paths.js";
 import { isPidAlive } from "../shared/pid-alive.js";
+import { isWSL2Sync } from "./wsl.js";
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const DEFAULT_POLL_INTERVAL_MS = 100;
@@ -117,14 +118,17 @@ function resolveGatewayOwnerStatus(
   if (Number.isFinite(payloadStartTime)) {
     const currentStartTime = readLinuxStartTime(pid);
     if (currentStartTime == null) {
-      return "unknown";
+      // In WSL2 mirrored mode, a Windows-side gateway won't have /proc entry
+      // in WSL — treat as alive to prevent duplicate gateways
+      return isWSL2Sync() ? "alive" : "unknown";
     }
     return currentStartTime === payloadStartTime ? "alive" : "dead";
   }
 
   const args = readLinuxCmdline(pid);
   if (!args) {
-    return "unknown";
+    // Same WSL2 mirrored mode guard: can't read cmdline → assume alive
+    return isWSL2Sync() ? "alive" : "unknown";
   }
   return isGatewayArgv(args) ? "alive" : "dead";
 }

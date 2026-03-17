@@ -26,16 +26,24 @@ import { renderTelegramCard } from "./channels.telegram.js";
 import type { ChannelKey, ChannelsChannelData, ChannelsProps } from "./channels.types.js";
 import { renderWhatsAppCard } from "./channels.whatsapp.js";
 
+/** Safely extract a channel status object; returns null/undefined if the value is not a plain object. */
+function safeChannelStatus<T>(value: unknown): T | null {
+  if (value != null && typeof value === "object" && !Array.isArray(value)) {
+    return value as T;
+  }
+  return null;
+}
+
 export function renderChannels(props: ChannelsProps) {
   const channels = props.snapshot?.channels as Record<string, unknown> | null;
-  const whatsapp = (channels?.whatsapp ?? undefined) as WhatsAppStatus | undefined;
-  const telegram = (channels?.telegram ?? undefined) as TelegramStatus | undefined;
-  const discord = (channels?.discord ?? null) as DiscordStatus | null;
-  const googlechat = (channels?.googlechat ?? null) as GoogleChatStatus | null;
-  const slack = (channels?.slack ?? null) as SlackStatus | null;
-  const signal = (channels?.signal ?? null) as SignalStatus | null;
-  const imessage = (channels?.imessage ?? null) as IMessageStatus | null;
-  const nostr = (channels?.nostr ?? null) as NostrStatus | null;
+  const whatsapp = safeChannelStatus<WhatsAppStatus>(channels?.whatsapp) ?? undefined;
+  const telegram = safeChannelStatus<TelegramStatus>(channels?.telegram) ?? undefined;
+  const discord = safeChannelStatus<DiscordStatus>(channels?.discord);
+  const googlechat = safeChannelStatus<GoogleChatStatus>(channels?.googlechat);
+  const slack = safeChannelStatus<SlackStatus>(channels?.slack);
+  const signal = safeChannelStatus<SignalStatus>(channels?.signal);
+  const imessage = safeChannelStatus<IMessageStatus>(channels?.imessage);
+  const nostr = safeChannelStatus<NostrStatus>(channels?.nostr);
   const channelOrder = resolveChannelOrder(props.snapshot);
   const orderedChannels = channelOrder
     .map((key, index) => ({

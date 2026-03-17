@@ -6,6 +6,7 @@ import {
   isHeartbeatRunContext,
 } from "../../infra/agent-events.js";
 import { resolveHeartbeatVisibility } from "../../infra/heartbeat/heartbeat-visibility.js";
+import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionEntry } from "./session-utils.js";
 import { formatForLog } from "./ws-log.js";
@@ -292,6 +293,19 @@ export function createAgentEventHandler({
         broadcast("chat", payload);
       }
       nodeSendToSession(sessionKey, "chat", payload);
+
+      // Fire message_sent plugin hook for webchat replies (mirrors deliver.ts behavior)
+      if (text && !shouldSuppressSilent) {
+        const hookRunner = getGlobalHookRunner();
+        if (hookRunner?.hasHooks("message_sent")) {
+          void hookRunner
+            .runMessageSent(
+              { to: sessionKey, content: text, success: true },
+              { channelId: "webchat", conversationId: sessionKey },
+            )
+            .catch(() => {});
+        }
+      }
       return;
     }
     const payload = {

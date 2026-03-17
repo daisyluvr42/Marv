@@ -64,18 +64,19 @@ describe("model-selection", () => {
       });
     });
 
-    it("normalizes openai gpt-5.3 codex refs to openai-codex provider", () => {
+    it("preserves openai provider for gpt-5.3-codex models (no hard routing to oauth)", () => {
       expect(parseModelRef("openai/gpt-5.3-codex", "anthropic")).toEqual({
-        provider: "openai-codex",
+        provider: "openai",
         model: "gpt-5.3-codex",
       });
       expect(parseModelRef("gpt-5.3-codex", "openai")).toEqual({
-        provider: "openai-codex",
+        provider: "openai",
         model: "gpt-5.3-codex",
       });
-      expect(parseModelRef("openai/gpt-5.3-codex-codex", "anthropic")).toEqual({
+      // Explicit openai-codex provider is still respected
+      expect(parseModelRef("openai-codex/gpt-5.3-codex", "anthropic")).toEqual({
         provider: "openai-codex",
-        model: "gpt-5.3-codex-codex",
+        model: "gpt-5.3-codex",
       });
     });
 
@@ -94,12 +95,10 @@ describe("model-selection", () => {
   describe("buildModelAliasIndex", () => {
     it("should build alias index from config", () => {
       const cfg: Partial<MarvConfig> = {
-        agents: {
-          defaults: {
-            models: {
-              "anthropic/claude-3-5-sonnet": { alias: "fast" },
-              "openai/gpt-4o": { alias: "smart" },
-            },
+        models: {
+          metadata: {
+            "anthropic/claude-3-5-sonnet": { alias: "fast" },
+            "openai/gpt-4o": { alias: "smart" },
           },
         },
       };
