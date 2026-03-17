@@ -13,17 +13,6 @@ describe("sandbox docker config", () => {
             },
           },
         },
-        list: [
-          {
-            id: "main",
-            sandbox: {
-              docker: {
-                image: "custom-sandbox:latest",
-                binds: ["/home/user/projects:/projects:ro"],
-              },
-            },
-          },
-        ],
       },
     });
     expect(res.ok).toBe(true);
@@ -31,9 +20,6 @@ describe("sandbox docker config", () => {
       expect(res.config.agents?.defaults?.sandbox?.docker?.binds).toEqual([
         "/home/user/source:/source:rw",
         "/var/data/myapp:/data:ro",
-      ]);
-      expect(res.config.agents?.list?.[0]?.sandbox?.docker?.binds).toEqual([
-        "/home/user/projects:/projects:ro",
       ]);
     }
   });

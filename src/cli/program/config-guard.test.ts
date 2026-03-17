@@ -7,9 +7,13 @@ vi.mock("../../commands/doctor-config-flow.js", () => ({
   loadAndMaybeMigrateDoctorConfig: loadAndMaybeMigrateDoctorConfigMock,
 }));
 
-vi.mock("../../core/config/config.js", () => ({
-  readConfigFileSnapshot: readConfigFileSnapshotMock,
-}));
+vi.mock("../../core/config/config.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/config/config.js")>();
+  return {
+    ...actual,
+    readConfigFileSnapshot: readConfigFileSnapshotMock,
+  };
+});
 
 function makeSnapshot() {
   return {

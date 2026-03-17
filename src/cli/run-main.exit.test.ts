@@ -15,9 +15,13 @@ vi.mock("../infra/dotenv.js", () => ({
   loadDotEnv: loadDotEnvMock,
 }));
 
-vi.mock("../infra/env.js", () => ({
-  normalizeEnv: normalizeEnvMock,
-}));
+vi.mock("../infra/env.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../infra/env.js")>();
+  return {
+    ...actual,
+    normalizeEnv: normalizeEnvMock,
+  };
+});
 
 vi.mock("../infra/path-env.js", () => ({
   ensureMarvCliOnPath: ensurePathMock,

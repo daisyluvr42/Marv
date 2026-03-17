@@ -38,6 +38,7 @@ vi.mock("../infra/marv-root.js", () => ({
 vi.mock("../core/config/config.js", () => ({
   readConfigFileSnapshot: vi.fn(),
   writeConfigFile: vi.fn(),
+  STATE_DIR: "/tmp/marv-test-state",
 }));
 
 vi.mock("../infra/update/update-check.js", async (importOriginal) => {
@@ -88,6 +89,11 @@ vi.mock("../infra/daemon/service.js", () => ({
 vi.mock("./update-cli/restart-helper.js", () => ({
   prepareRestartScript: (...args: unknown[]) => prepareRestartScript(...args),
   runRestartScript: (...args: unknown[]) => runRestartScript(...args),
+}));
+
+// Mock completion-cli to break circular dependency (update-cli → completion-cli → command-registry → command-policies → update-cli)
+vi.mock("./completion-cli.js", () => ({
+  installCompletion: vi.fn(),
 }));
 
 // Mock doctor (heavy module; should not run in unit tests)

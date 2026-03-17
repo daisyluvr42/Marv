@@ -17,16 +17,13 @@ describe("config identity defaults", () => {
     await withTempHome("marv-config-identity-", async (home) => {
       const cfg = await writeAndLoadConfig(home, {
         agents: {
-          list: [
-            {
-              id: "main",
-              identity: {
-                name: "Samantha",
-                theme: "helpful sloth",
-                emoji: "🦥",
-              },
+          defaults: {
+            identity: {
+              name: "Samantha",
+              theme: "helpful sloth",
+              emoji: "🦥",
             },
-          ],
+          },
         },
         messages: {},
       });
@@ -46,7 +43,7 @@ describe("config identity defaults", () => {
       expect(cfg.messages?.ackReactionScope).toBe("group-mentions");
       expect(cfg.messages?.responsePrefix).toBeUndefined();
       expect(cfg.messages?.groupChat?.mentionPatterns).toBeUndefined();
-      expect(cfg.agents?.list).toBeUndefined();
+      expect(cfg.agents?.defaults?.identity).toBeUndefined();
       expect(cfg.agents?.defaults?.maxConcurrent).toBe(DEFAULT_AGENT_MAX_CONCURRENT);
       expect(cfg.agents?.defaults?.subagents?.maxConcurrent).toBe(DEFAULT_SUBAGENT_MAX_CONCURRENT);
       expect(cfg.session).toBeUndefined();
@@ -57,17 +54,14 @@ describe("config identity defaults", () => {
     await withTempHome("marv-config-identity-", async (home) => {
       const cfg = await writeAndLoadConfig(home, {
         agents: {
-          list: [
-            {
-              id: "main",
-              identity: {
-                name: "Samantha Sloth",
-                theme: "space lobster",
-                emoji: "🤖",
-              },
-              groupChat: { mentionPatterns: ["@marv"] },
+          defaults: {
+            identity: {
+              name: "Samantha Sloth",
+              theme: "space lobster",
+              emoji: "🤖",
             },
-          ],
+            groupChat: { mentionPatterns: ["@marv"] },
+          },
         },
         messages: {
           responsePrefix: "✅",
@@ -75,7 +69,7 @@ describe("config identity defaults", () => {
       });
 
       expect(cfg.messages?.responsePrefix).toBe("✅");
-      expect(cfg.agents?.list?.[0]?.groupChat?.mentionPatterns).toEqual(["@marv"]);
+      expect(cfg.agents?.defaults?.groupChat?.mentionPatterns).toEqual(["@marv"]);
     });
   });
 
@@ -150,16 +144,13 @@ describe("config identity defaults", () => {
     await withTempHome("marv-config-identity-", async (home) => {
       const cfg = await writeAndLoadConfig(home, {
         agents: {
-          list: [
-            {
-              id: "main",
-              identity: {
-                name: "Samantha",
-                theme: "helpful sloth",
-                emoji: "🦥",
-              },
+          defaults: {
+            identity: {
+              name: "Samantha",
+              theme: "helpful sloth",
+              emoji: "🦥",
             },
-          ],
+          },
         },
         messages: { responsePrefix: "" },
       });

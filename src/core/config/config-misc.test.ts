@@ -283,12 +283,9 @@ describe("cron webhook schema", () => {
 describe("broadcast", () => {
   it("accepts a broadcast peer map with strategy", () => {
     const res = validateConfigObject({
-      agents: {
-        list: [{ id: "alfred" }, { id: "baerbel" }],
-      },
       broadcast: {
         strategy: "parallel",
-        "120363403215116621@g.us": ["alfred", "baerbel"],
+        "120363403215116621@g.us": ["main"],
       },
     });
     expect(res.ok).toBe(true);
@@ -368,7 +365,6 @@ describe("config paths", () => {
 describe("config strict validation", () => {
   it("rejects unknown fields", async () => {
     const res = validateConfigObject({
-      agents: { list: [{ id: "pi" }] },
       customUnknownField: { nested: "value" },
     });
     expect(res.ok).toBe(false);
@@ -381,7 +377,6 @@ describe("config strict validation", () => {
       await fs.writeFile(
         path.join(configDir, "marv.json"),
         JSON.stringify({
-          agents: { list: [{ id: "pi" }] },
           routing: { allowFrom: ["+15555550123"] },
         }),
         "utf-8",
