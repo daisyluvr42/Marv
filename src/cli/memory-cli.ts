@@ -23,6 +23,9 @@ import {
   countSoulArchiveEvents,
   countSoulMemoryItemsByRecordKind,
   countSoulMemoryItemsByTier,
+  listSoulMemoryItems,
+  resolveSoulMemoryDbPath,
+  type SoulMemoryTier,
 } from "../memory/storage/soul-memory-store.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
@@ -584,12 +587,14 @@ export function registerMemoryCli(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["marv mem p0", "Show the P0 soul, identity, and user memory layers."],
-          ['marv mem p0 soul "Stay warm and polite."', "Update P0 Soul inline."],
+          ["marv mem list", "Browse all structured memory items."],
+          ["marv mem list --tier P0", "Show only P0-tier items."],
+          ["marv mem backup", "Back up memory database to a file."],
+          ["marv mem restore backup.sqlite", "Restore memory from a backup."],
+          ["marv mem export", "Export memory items to JSON."],
+          ["marv mem import export.json", "Import memory items from JSON."],
           ["marv memory status", "Show index and provider status."],
-          ["marv memory index --force", "Force a full reindex."],
-          ['marv memory search --query "deployment notes"', "Search indexed memory entries."],
-          ["marv memory status --json", "Output machine-readable JSON."],
+          ['marv memory search "deployment notes"', "Search indexed memory entries."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs: /cli/memory")}\n`,
     );
 
@@ -891,7 +896,133 @@ export function registerMemoryCli(program: Command) {
       },
     );
 
-  const mirror = memory.command("mirror").description("Export/import Markdown memory mirror");
+  // ── marv mem export ──
+  memory
+    .command("export")
+    .description("Export all structured memory items to a JSON file")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .option("--tier <tier>", "Filter by tier (P0, P1, P2, P3)")
+    .option("--output <path>", "Output file path (default: ~/marv-memory-<agent>-<date>.json)")
+    .action(async (opts: { agent?: string; tier?: string; output?: string }) => {
+      const cfg = loadConfig();
+      const agentId = resolveAgent(cfg, opts.agent);
+      const tier = opts.tier?.trim().toUpperCase() as SoulMemoryTier | undefined;
+      const validTier = tier && ["P0", "P1", "P2", "P3"].includes(tier) ? tier : undefined;
+      const items = listSoulMemoryItems({
+        agentId,
+        tier: validTier,
+        limit: 500,
+      });
+      const exportData = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        agentId,
+        tier: validTier ?? "all",
+        items: items.map((item) => ({
+          kind: item.kind,
+          content: item.content,
+          tier: item.tier,
+          recordKind: item.recordKind,
+          source: item.source,
+          confidence: item.confidence,
+          createdAt: item.createdAt,
+          metadata: item.metadata,
+        })),
+      };
+      const date = new Date().toISOString().slice(0, 10);
+      const tierSuffix = validTier ? `-${validTier.toLowerCase()}` : "";
+      const defaultOutput = path.join(
+        os.homedir(),
+        `marv-memory-${agentId}${tierSuffix}-${date}.json`,
+      );
+      const outputPath = path.resolve(opts.output?.trim() || defaultOutput);
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+      await fs.writeFile(outputPath, JSON.stringify(exportData, null, 2), "utf-8");
+      defaultRuntime.log(`Exported ${items.length} memory items to ${shortenHomePath(outputPath)}`);
+      const tierCounts = countSoulMemoryItemsByTier({ agentId });
+      defaultRuntime.log(
+        `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3}`,
+      );
+    });
+
+  // ── marv mem import ──
+  memory
+    .command("import <file>")
+    .description("Import memory items from a JSON export file")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .action(async (file: string, opts: { agent?: string }) => {
+      const cfg = loadConfig();
+      const agentId = resolveAgent(cfg, opts.agent);
+      const sourcePath = path.resolve(file);
+      let raw: string;
+      try {
+        raw = await fs.readFile(sourcePath, "utf-8");
+      } catch {
+        defaultRuntime.error(`File not found: ${shortenHomePath(sourcePath)}`);
+        process.exitCode = 1;
+        return;
+      }
+      let exportData: {
+        version?: number;
+        items?: Array<{
+          kind?: string;
+          content?: string;
+          tier?: string;
+          recordKind?: string;
+          source?: string;
+          confidence?: number;
+          metadata?: Record<string, unknown>;
+        }>;
+      };
+      try {
+        exportData = JSON.parse(raw);
+      } catch {
+        defaultRuntime.error("Invalid JSON file.");
+        process.exitCode = 1;
+        return;
+      }
+      if (!Array.isArray(exportData.items) || exportData.items.length === 0) {
+        defaultRuntime.log("No items to import.");
+        return;
+      }
+      const { writeSoulMemory } = await import("../memory/storage/soul-memory-store.js");
+      let imported = 0;
+      for (const entry of exportData.items) {
+        const kind = entry.kind?.trim();
+        const content = entry.content?.trim();
+        const tier = entry.tier?.trim().toUpperCase();
+        if (!kind || !content) {
+          continue;
+        }
+        const validTier =
+          tier && ["P0", "P1", "P2", "P3"].includes(tier) ? (tier as SoulMemoryTier) : "P2";
+        const recordKind = entry.recordKind?.trim() || "experience";
+        const result = writeSoulMemory({
+          agentId,
+          scopeType: "agent",
+          scopeId: agentId,
+          kind,
+          content,
+          tier: validTier,
+          source: "manual_log",
+          recordKind: recordKind as "fact" | "relationship" | "experience" | "soul",
+        });
+        if (result) {
+          imported += 1;
+        }
+      }
+      const tierCounts = countSoulMemoryItemsByTier({ agentId });
+      defaultRuntime.log(
+        `Imported ${imported}/${exportData.items.length} items into agent "${agentId}".`,
+      );
+      defaultRuntime.log(
+        `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3}`,
+      );
+    });
+
+  // ── marv mem mirror (legacy) ──
+  // Legacy mirror subcommand kept for backward compatibility.
+  const mirror = memory.command("mirror").description("Legacy Markdown memory mirror");
 
   mirror
     .command("export")
@@ -909,19 +1040,7 @@ export function registerMemoryCli(program: Command) {
       });
       if (result.requiresConfirmation) {
         defaultRuntime.log(
-          `Mirror export paused: ${shortenHomePath(result.path)} has Markdown edits that are not synced back to structured memory.`,
-        );
-        defaultRuntime.log(
-          "Review these entries and decide whether to import them into P0/P1 first:",
-        );
-        for (const entry of result.conflicts.slice(0, 12)) {
-          defaultRuntime.log(`- ${entry.tier} [${entry.kind}] ${entry.content}`);
-        }
-        if (result.conflicts.length > 12) {
-          defaultRuntime.log(`- ... +${result.conflicts.length - 12} more`);
-        }
-        defaultRuntime.log(
-          "Run `marv memory mirror import` to sync Markdown changes first, or rerun with `--force` to overwrite the file.",
+          `Mirror export paused: ${shortenHomePath(result.path)} has unsynced edits. Run with --force to overwrite.`,
         );
         return;
       }
@@ -930,7 +1049,7 @@ export function registerMemoryCli(program: Command) {
 
   mirror
     .command("import")
-    .description("Import explicit MEMORY.md mirror edits back into structured memory")
+    .description("Import MEMORY.md edits back into structured memory")
     .option("--agent <id>", "Agent id (default: default agent)")
     .action(async (opts: { agent?: string }) => {
       const cfg = loadConfig();
@@ -944,4 +1063,150 @@ export function registerMemoryCli(program: Command) {
         `Mirror imported from ${shortenHomePath(result.path)} (${result.imported} entries synced).`,
       );
     });
+
+  // ── marv mem list ──
+  memory
+    .command("list")
+    .description("List structured soul memory items")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .option("--tier <tier>", "Filter by tier (P0, P1, P2, P3)")
+    .option("--kind <kind>", "Filter by kind (fact, relationship, experience, soul)")
+    .option("--limit <n>", "Max items to show", (v: string) => Number(v))
+    .option("--json", "Print JSON")
+    .action(
+      async (opts: {
+        agent?: string;
+        tier?: string;
+        kind?: string;
+        limit?: number;
+        json?: boolean;
+      }) => {
+        const cfg = loadConfig();
+        const agentId = resolveAgent(cfg, opts.agent);
+        const tier = opts.tier?.trim().toUpperCase() as SoulMemoryTier | undefined;
+        const items = listSoulMemoryItems({
+          agentId,
+          tier: tier && ["P0", "P1", "P2", "P3"].includes(tier) ? tier : undefined,
+          kind: opts.kind?.trim().toLowerCase(),
+          limit: opts.limit ?? 50,
+        });
+        if (opts.json) {
+          defaultRuntime.log(JSON.stringify(items, null, 2));
+          return;
+        }
+        if (items.length === 0) {
+          defaultRuntime.log("No memory items found.");
+          return;
+        }
+        const rich = isRich();
+        const lines: string[] = [];
+        for (const item of items) {
+          const tierColor =
+            item.tier === "P0"
+              ? theme.success
+              : item.tier === "P1"
+                ? theme.info
+                : item.tier === "P2"
+                  ? theme.accent
+                  : theme.muted;
+          const tierLabel = colorize(rich, tierColor, item.tier);
+          const kindLabel = colorize(rich, theme.muted, `[${item.kind}]`);
+          const age = Math.floor((Date.now() - item.createdAt) / (24 * 60 * 60 * 1000));
+          const ageLabel = colorize(rich, theme.muted, `${age}d ago`);
+          const conf = colorize(rich, theme.muted, `conf=${item.confidence.toFixed(2)}`);
+          lines.push(`${tierLabel} ${kindLabel} ${item.content}`);
+          lines.push(colorize(rich, theme.muted, `  ${ageLabel} · ${conf} · ${item.recordKind}`));
+        }
+        defaultRuntime.log(lines.join("\n"));
+        defaultRuntime.log(colorize(rich, theme.muted, `\n${items.length} item(s) shown.`));
+      },
+    );
+
+  // ── marv mem backup ──
+  memory
+    .command("backup")
+    .description("Back up soul memory database to a file")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .option("--output <path>", "Output file path (default: ~/marv-memory-backup-<date>.sqlite)")
+    .action(async (opts: { agent?: string; output?: string }) => {
+      const cfg = loadConfig();
+      const agentId = resolveAgent(cfg, opts.agent);
+      const dbPath = resolveSoulMemoryDbPath(agentId);
+      try {
+        await fs.access(dbPath, fsSync.constants.R_OK);
+      } catch {
+        defaultRuntime.error(`No soul memory database found for agent "${agentId}".`);
+        defaultRuntime.error(`Expected at: ${shortenHomePath(dbPath)}`);
+        process.exitCode = 1;
+        return;
+      }
+      const date = new Date().toISOString().slice(0, 10);
+      const defaultOutput = path.join(os.homedir(), `marv-memory-backup-${agentId}-${date}.sqlite`);
+      const outputPath = path.resolve(opts.output?.trim() || defaultOutput);
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+      await fs.copyFile(dbPath, outputPath);
+      const stat = await fs.stat(outputPath);
+      const tierCounts = countSoulMemoryItemsByTier({ agentId });
+      const total = tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3;
+      defaultRuntime.log(`Memory backed up: ${shortenHomePath(outputPath)}`);
+      defaultRuntime.log(
+        `Agent: ${agentId} · ${total} items (P0 ${tierCounts.P0}, P1 ${tierCounts.P1}, P2 ${tierCounts.P2}, P3 ${tierCounts.P3})`,
+      );
+      defaultRuntime.log(`Size: ${formatBackupSize(stat.size)}`);
+    });
+
+  // ── marv mem restore ──
+  memory
+    .command("restore <file>")
+    .description("Restore soul memory database from a backup file")
+    .option("--agent <id>", "Agent id (default: default agent)")
+    .option("--force", "Overwrite existing database without prompting", false)
+    .action(async (file: string, opts: { agent?: string; force?: boolean }) => {
+      const cfg = loadConfig();
+      const agentId = resolveAgent(cfg, opts.agent);
+      const sourcePath = path.resolve(file);
+      try {
+        await fs.access(sourcePath, fsSync.constants.R_OK);
+      } catch {
+        defaultRuntime.error(`Backup file not found: ${shortenHomePath(sourcePath)}`);
+        process.exitCode = 1;
+        return;
+      }
+      const dbPath = resolveSoulMemoryDbPath(agentId);
+      let existingExists = false;
+      try {
+        await fs.access(dbPath);
+        existingExists = true;
+      } catch {
+        // No existing DB — safe to restore.
+      }
+      if (existingExists && !opts.force) {
+        const tierCounts = countSoulMemoryItemsByTier({ agentId });
+        const total = tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3;
+        defaultRuntime.error(
+          `Existing memory database has ${total} items (P0 ${tierCounts.P0}, P1 ${tierCounts.P1}, P2 ${tierCounts.P2}, P3 ${tierCounts.P3}).`,
+        );
+        defaultRuntime.error("Use --force to overwrite.");
+        process.exitCode = 1;
+        return;
+      }
+      await fs.mkdir(path.dirname(dbPath), { recursive: true });
+      await fs.copyFile(sourcePath, dbPath);
+      const tierCounts = countSoulMemoryItemsByTier({ agentId });
+      const total = tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3;
+      defaultRuntime.log(`Memory restored for agent "${agentId}".`);
+      defaultRuntime.log(
+        `${total} items (P0 ${tierCounts.P0}, P1 ${tierCounts.P1}, P2 ${tierCounts.P2}, P3 ${tierCounts.P3})`,
+      );
+    });
+}
+
+function formatBackupSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  }
+  if (bytes >= 1024) {
+    return `${Math.round(bytes / 1024)}KB`;
+  }
+  return `${bytes}B`;
 }
