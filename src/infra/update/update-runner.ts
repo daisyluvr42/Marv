@@ -411,7 +411,8 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
 
       if (approvalPolicy) {
         const approval = await resolveDeployApproval({
-          runCommand,
+          runCommand: async (argv, options) =>
+            runCommand(argv, { ...options, timeoutMs: options.timeoutMs ?? timeoutMs }),
           root: gitRoot,
           timeoutMs,
           config: approvalPolicy,

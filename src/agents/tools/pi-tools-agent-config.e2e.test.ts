@@ -92,12 +92,9 @@ describe("Agent-specific tool filtering", () => {
         deny: ["bash"],
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            workspace: "~/marv",
-          },
-        ],
+        defaults: {
+          workspace: "~/marv",
+        },
       },
     };
 
@@ -121,18 +118,15 @@ describe("Agent-specific tool filtering", () => {
         deny: ["write"],
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            workspace: "~/marv",
-            tools: {
-              elevated: {
-                enabled: true,
-                allowFrom: { whatsapp: ["+15555550123"] },
-              },
+        defaults: {
+          workspace: "~/marv",
+          tools: {
+            elevated: {
+              enabled: true,
+              allowFrom: { whatsapp: ["+15555550123"] },
             },
           },
-        ],
+        },
       },
     };
 
@@ -202,22 +196,19 @@ describe("Agent-specific tool filtering", () => {
         deny: [],
       },
       agents: {
-        list: [
-          {
-            id: "restricted",
-            workspace: "~/marv-restricted",
-            tools: {
-              allow: ["read"], // Agent override: only read
-              deny: ["exec", "write", "edit"],
-            },
+        defaults: {
+          workspace: "~/marv-restricted",
+          tools: {
+            allow: ["read"], // Agent override: only read
+            deny: ["exec", "write", "edit"],
           },
-        ],
+        },
       },
     };
 
     const tools = createMarvCodingTools({
       config: cfg,
-      sessionKey: "agent:restricted:main",
+      sessionKey: "agent:main:main",
       workspaceDir: "/tmp/test-restricted",
       agentDir: "/tmp/agent-restricted",
     });
@@ -286,21 +277,10 @@ describe("Agent-specific tool filtering", () => {
   it("should allow different tool policies for different agents", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [
-          {
-            id: "main",
-            workspace: "~/marv",
-            // No tools restriction - all tools available
-          },
-          {
-            id: "family",
-            workspace: "~/marv-family",
-            tools: {
-              allow: ["read"],
-              deny: ["exec", "write", "edit", "process"],
-            },
-          },
-        ],
+        defaults: {
+          workspace: "~/marv",
+          // No tools restriction - all tools available
+        },
       },
     };
 
@@ -316,20 +296,6 @@ describe("Agent-specific tool filtering", () => {
     expect(mainToolNames).toContain("write");
     expect(mainToolNames).toContain("edit");
     expect(mainToolNames).not.toContain("apply_patch");
-
-    // family agent: restricted
-    const familyTools = createMarvCodingTools({
-      config: cfg,
-      sessionKey: "agent:family:whatsapp:group:123",
-      workspaceDir: "/tmp/test-family",
-      agentDir: "/tmp/agent-family",
-    });
-    const familyToolNames = familyTools.map((t) => t.name);
-    expect(familyToolNames).toContain("read");
-    expect(familyToolNames).not.toContain("exec");
-    expect(familyToolNames).not.toContain("write");
-    expect(familyToolNames).not.toContain("edit");
-    expect(familyToolNames).not.toContain("apply_patch");
   });
 
   it("should apply group tool policy overrides (group-specific beats wildcard)", () => {
@@ -496,21 +462,18 @@ describe("Agent-specific tool filtering", () => {
         deny: ["browser"], // Global deny
       },
       agents: {
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            tools: {
-              deny: ["exec", "process"], // Agent deny (override)
-            },
+        defaults: {
+          workspace: "~/marv-work",
+          tools: {
+            deny: ["exec", "process"], // Agent deny (override)
           },
-        ],
+        },
       },
     };
 
     const tools = createMarvCodingTools({
       config: cfg,
-      sessionKey: "agent:work:slack:dm:user123",
+      sessionKey: "agent:main:slack:dm:user123",
       workspaceDir: "/tmp/test-work",
       agentDir: "/tmp/agent-work",
     });
@@ -531,21 +494,12 @@ describe("Agent-specific tool filtering", () => {
             mode: "all",
             scope: "agent",
           },
-        },
-        list: [
-          {
-            id: "restricted",
-            workspace: "~/marv-restricted",
-            sandbox: {
-              mode: "all",
-              scope: "agent",
-            },
-            tools: {
-              allow: ["read"], // Agent further restricts to only read
-              deny: ["exec", "write"],
-            },
+          workspace: "~/marv-restricted",
+          tools: {
+            allow: ["read"], // Agent further restricts to only read
+            deny: ["exec", "write"],
           },
-        ],
+        },
       },
       tools: {
         sandbox: {

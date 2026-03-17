@@ -18,14 +18,11 @@ describe("marv-tools: subagents (sessions_spawn allowlist)", () => {
         scope: "per-sender",
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            subagents: {
-              allowAgents,
-            },
-          },
-        ],
+        defaults: {
+          subagents: {
+            allowAgents,
+          } as never,
+        },
       },
     });
   }
@@ -107,14 +104,11 @@ describe("marv-tools: subagents (sessions_spawn allowlist)", () => {
         scope: "per-sender",
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            subagents: {
-              allowAgents: ["alpha"],
-            },
-          },
-        ],
+        defaults: {
+          subagents: {
+            allowAgents: ["alpha"],
+          } as never,
+        },
       },
     });
 

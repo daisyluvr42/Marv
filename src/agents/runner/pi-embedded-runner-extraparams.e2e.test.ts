@@ -17,14 +17,12 @@ describe("resolveExtraParams", () => {
   it("returns params for exact provider/model key", () => {
     const result = resolveExtraParams({
       cfg: {
-        agents: {
-          defaults: {
-            models: {
-              "openai/gpt-4": {
-                params: {
-                  temperature: 0.7,
-                  maxTokens: 2048,
-                },
+        models: {
+          metadata: {
+            "openai/gpt-4": {
+              params: {
+                temperature: 0.7,
+                maxTokens: 2048,
               },
             },
           },
@@ -43,13 +41,11 @@ describe("resolveExtraParams", () => {
   it("ignores unrelated model entries", () => {
     const result = resolveExtraParams({
       cfg: {
-        agents: {
-          defaults: {
-            models: {
-              "openai/gpt-4": {
-                params: {
-                  temperature: 0.7,
-                },
+        models: {
+          metadata: {
+            "openai/gpt-4": {
+              params: {
+                temperature: 0.7,
               },
             },
           },
@@ -120,13 +116,11 @@ describe("applyExtraParamsToAgent", () => {
     };
     const agent = { streamFn: baseStreamFn };
     const cfg = {
-      agents: {
-        defaults: {
-          models: {
-            "anthropic/claude-opus-4-6": {
-              params: {
-                context1m: true,
-              },
+      models: {
+        metadata: {
+          "anthropic/claude-opus-4-6": {
+            params: {
+              context1m: true,
             },
           },
         },
@@ -159,14 +153,12 @@ describe("applyExtraParamsToAgent", () => {
     };
     const agent = { streamFn: baseStreamFn };
     const cfg = {
-      agents: {
-        defaults: {
-          models: {
-            "anthropic/claude-sonnet-4-5": {
-              params: {
-                context1m: true,
-                anthropicBeta: ["files-api-2025-04-14"],
-              },
+      models: {
+        metadata: {
+          "anthropic/claude-sonnet-4-5": {
+            params: {
+              context1m: true,
+              anthropicBeta: ["files-api-2025-04-14"],
             },
           },
         },
@@ -200,13 +192,11 @@ describe("applyExtraParamsToAgent", () => {
     };
     const agent = { streamFn: baseStreamFn };
     const cfg = {
-      agents: {
-        defaults: {
-          models: {
-            "anthropic/claude-haiku-3-5": {
-              params: {
-                context1m: true,
-              },
+      models: {
+        metadata: {
+          "anthropic/claude-haiku-3-5": {
+            params: {
+              context1m: true,
             },
           },
         },

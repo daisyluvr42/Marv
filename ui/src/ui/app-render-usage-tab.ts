@@ -14,7 +14,7 @@ const debouncedLoadUsage = (state: UsageState) => {
 };
 
 export function renderUsageTab(state: AppViewState) {
-  if (state.tab !== "usage") {
+  if (state.tab !== "operations" || state.operationsSection !== "usage") {
     return nothing;
   }
 

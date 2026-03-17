@@ -53,19 +53,9 @@ describe("agents_list", () => {
         scope: "per-sender",
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            name: "Main",
-            subagents: {
-              allowAgents: ["research"],
-            },
-          },
-          {
-            id: "research",
-            name: "Research",
-          },
-        ],
+        defaults: {
+          name: "Main",
+        },
       },
     };
 
@@ -82,7 +72,7 @@ describe("agents_list", () => {
         agents?: Array<{ id: string }>;
       }
     ).agents;
-    expect(agents?.map((agent) => agent.id)).toEqual(["main", "research"]);
+    expect(agents?.map((agent) => agent.id)).toEqual(["main"]);
   });
 
   it("returns configured agents when allowlist is *", async () => {
@@ -92,22 +82,7 @@ describe("agents_list", () => {
         scope: "per-sender",
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            subagents: {
-              allowAgents: ["*"],
-            },
-          },
-          {
-            id: "research",
-            name: "Research",
-          },
-          {
-            id: "coder",
-            name: "Coder",
-          },
-        ],
+        defaults: {},
       },
     };
 
@@ -119,15 +94,12 @@ describe("agents_list", () => {
     }
 
     const result = await tool.execute("call3", {});
-    expect(result.details).toMatchObject({
-      allowAny: true,
-    });
     const agents = (
       result.details as {
         agents?: Array<{ id: string }>;
       }
     ).agents;
-    expect(agents?.map((agent) => agent.id)).toEqual(["main", "coder", "research"]);
+    expect(agents?.map((agent) => agent.id)).toEqual(["main"]);
   });
 
   it("marks allowlisted-but-unconfigured agents", async () => {
@@ -137,14 +109,7 @@ describe("agents_list", () => {
         scope: "per-sender",
       },
       agents: {
-        list: [
-          {
-            id: "main",
-            subagents: {
-              allowAgents: ["research"],
-            },
-          },
-        ],
+        defaults: {},
       },
     };
 
@@ -161,8 +126,8 @@ describe("agents_list", () => {
         agents?: Array<{ id: string; configured: boolean }>;
       }
     ).agents;
-    expect(agents?.map((agent) => agent.id)).toEqual(["main", "research"]);
-    const research = agents?.find((agent) => agent.id === "research");
-    expect(research?.configured).toBe(false);
+    expect(agents?.map((agent) => agent.id)).toEqual(["main"]);
+    const main = agents?.find((agent) => agent.id === "main");
+    expect(main?.configured).toBe(true);
   });
 });

@@ -69,6 +69,10 @@ export type MarvConfig = {
     autoCheckIntervalMs?: number;
     /** Auto-apply git deployment updates from the tracked upstream branch during cron checks. */
     autoApplyCron?: boolean;
+    /** Auto-apply npm updates during cron checks (requires autoApplyCron). */
+    autoApplyNpm?: boolean;
+    /** Trust CI status checks when evaluating preflight candidates. */
+    trustCi?: boolean;
     /** Optional deploy approval gate for git deployments. */
     approval?: {
       /** Require an approved deploy tag before git updates can move the checkout. */

@@ -16,13 +16,6 @@ export function collectWorkspaceDirs(cfg: MarvConfig | undefined): string[] {
   if (typeof defaults?.workspace === "string" && defaults.workspace.trim()) {
     dirs.add(resolveUserPath(defaults.workspace));
   }
-  const list = Array.isArray(cfg?.agents?.list) ? cfg?.agents?.list : [];
-  for (const agent of list) {
-    const workspace = (agent as { workspace?: unknown }).workspace;
-    if (typeof workspace === "string" && workspace.trim()) {
-      dirs.add(resolveUserPath(workspace));
-    }
-  }
   if (dirs.size === 0) {
     dirs.add(resolveDefaultAgentWorkspaceDir());
   }

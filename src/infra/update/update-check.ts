@@ -193,24 +193,29 @@ export async function checkGitUpdateStatus(params: {
       ? null
       : await resolveDeployApproval({
           runCommand: async (argv, options) => {
-            const res = await runCommandWithTimeout(argv, options);
+            const res = await runCommandWithTimeout(argv, {
+              ...options,
+              timeoutMs: options.timeoutMs ?? timeoutMs,
+            });
             return { stdout: res.stdout, stderr: res.stderr, code: res.code };
           },
           root,
           timeoutMs,
           config: approvalConfig,
-        }).catch(() => ({
-          required: true,
-          mode: "signed-tag" as const,
-          tagPattern: approvalConfig.tagPattern,
-          branch: approvalConfig.branch,
-          branchRef: null,
-          branchSha: null,
-          approvedTag: null,
-          approvedSha: null,
-          pendingCommits: null,
-          reason: "approval-check-failed",
-        }));
+        }).catch(
+          (): DeployApprovalStatus => ({
+            required: true,
+            mode: "signed-tag",
+            tagPattern: approvalConfig.tagPattern,
+            branch: approvalConfig.branch,
+            branchRef: null,
+            branchSha: null,
+            approvedTag: null,
+            approvedSha: null,
+            pendingCommits: null,
+            reason: "approval-check-failed",
+          }),
+        );
 
   return {
     root,

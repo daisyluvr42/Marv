@@ -40,7 +40,7 @@ describe("resolveAgentConfig", () => {
       name: "Main Agent",
       workspace: "~/marv",
       agentDir: "~/.marv/agents/main",
-      model: "anthropic/claude-opus-4",
+      model: { primary: "anthropic/claude-opus-4" },
       identity: undefined,
       groupChat: undefined,
       subagents: undefined,

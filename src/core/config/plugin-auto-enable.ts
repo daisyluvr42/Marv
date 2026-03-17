@@ -251,14 +251,6 @@ function collectModelRefs(cfg: MarvConfig): string[] {
   const defaults = cfg.agents?.defaults as Record<string, unknown> | undefined;
   collectFromAgent(defaults);
 
-  const list = cfg.agents?.list;
-  if (Array.isArray(list)) {
-    for (const entry of list) {
-      if (isRecord(entry)) {
-        collectFromAgent(entry);
-      }
-    }
-  }
   return refs;
 }
 

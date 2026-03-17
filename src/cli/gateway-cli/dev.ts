@@ -109,19 +109,12 @@ export async function ensureDevGatewayConfig(opts: { reset?: boolean }) {
       defaults: {
         workspace,
         skipBootstrap: true,
-      },
-      list: [
-        {
-          id: "dev",
-          default: true,
-          workspace,
-          identity: {
-            name: DEV_IDENTITY_NAME,
-            theme: DEV_IDENTITY_THEME,
-            emoji: DEV_IDENTITY_EMOJI,
-          },
+        identity: {
+          name: DEV_IDENTITY_NAME,
+          theme: DEV_IDENTITY_THEME,
+          emoji: DEV_IDENTITY_EMOJI,
         },
-      ],
+      },
     },
   });
   await ensureDevWorkspace(workspace);

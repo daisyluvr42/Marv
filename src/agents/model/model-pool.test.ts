@@ -8,8 +8,10 @@ import {
 } from "./model-pool.js";
 import { resolveSelectedModelRefs } from "./model-selections.js";
 
-const readRuntimeModelRegistryMock = vi.fn(() => null);
-const listConfiguredProvidersMock = vi.fn(() => new Set<string>());
+const readRuntimeModelRegistryMock = vi.fn((): unknown => null);
+const listConfiguredProvidersMock = vi.fn(
+  (_cfg?: unknown, _agentDir?: string) => new Set<string>(),
+);
 
 vi.mock("../agent-scope.js", () => ({
   resolveAgentConfig: vi.fn((cfg: MarvConfig, agentId?: string) => {

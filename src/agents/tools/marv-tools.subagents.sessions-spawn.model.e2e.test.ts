@@ -260,8 +260,7 @@ describe("marv-tools: subagents (sessions_spawn model + thinking)", () => {
       config: {
         session: { mainKey: "main", scope: "per-sender" },
         agents: {
-          defaults: { subagents: { model: "minimax/MiniMax-M2.1" } },
-          list: [{ id: "research", subagents: { model: "opencode/claude" } }],
+          defaults: { subagents: { model: "opencode/claude" } },
         },
       },
       runId: "run-agent-model",
@@ -275,8 +274,7 @@ describe("marv-tools: subagents (sessions_spawn model + thinking)", () => {
       config: {
         session: { mainKey: "main", scope: "per-sender" },
         agents: {
-          defaults: { model: { primary: "minimax/MiniMax-M2.1" } },
-          list: [{ id: "research", model: { primary: "opencode/claude" } }],
+          defaults: { model: { primary: "opencode/claude" } },
         },
       },
       runId: "run-agent-primary-model",

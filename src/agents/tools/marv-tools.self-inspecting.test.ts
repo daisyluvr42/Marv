@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-const callGatewayToolMock = vi.fn(async (method: string) => {
+const callGatewayToolMock = vi.fn(async (method: string, ..._rest: unknown[]) => {
   if (method === "cron.status") {
     return {
       enabled: true,
@@ -133,7 +133,7 @@ vi.mock("./session-status-tool.js", () => ({
 }));
 
 vi.mock("./gateway.js", () => ({
-  callGatewayTool: (...args: unknown[]) => callGatewayToolMock(...args),
+  callGatewayTool: (...args: unknown[]) => callGatewayToolMock(...(args as [string, ...unknown[]])),
 }));
 
 import { createSelfInspectingTool } from "./self-inspecting-tool.js";
@@ -146,7 +146,7 @@ describe("self_inspecting tool", () => {
     });
 
     const result = await tool.execute("call1", {});
-    const text = result.content[0]?.text ?? "";
+    const text = (result.content[0] as { text?: string } | undefined)?.text ?? "";
     expect(text).toContain("Current model: google/gemini-2.0-flash");
     expect(text).toContain("Default model: google/gemini-2.5-flash");
     expect(text).toContain("Model pool: default");
@@ -171,7 +171,7 @@ describe("self_inspecting tool", () => {
     });
 
     const result = await tool.execute("call3", { query: "context", cleanupContextPollution: true });
-    const text = result.content[0]?.text ?? "";
+    const text = (result.content[0] as { text?: string } | undefined)?.text ?? "";
     expect(text).toContain("Cleanup removed transcript 2, task context 1.");
     expect(result.details).toMatchObject({
       ok: true,
@@ -186,7 +186,7 @@ describe("self_inspecting tool", () => {
     });
 
     const result = await tool.execute("call4", { query: "models" });
-    const text = result.content[0]?.text ?? "";
+    const text = (result.content[0] as { text?: string } | undefined)?.text ?? "";
     expect(text).toContain("Runtime registry: /tmp/main/runtime/model-registry.json (3 models)");
     expect(text).toContain("Registry last refreshed: 2026-03-09T03:00:00.000Z");
     expect(text).toContain("Runnable candidate count: 2");
@@ -208,7 +208,7 @@ describe("self_inspecting tool", () => {
     });
 
     const result = await tool.execute("call5", { query: "available models" });
-    const text = result.content[0]?.text ?? "";
+    const text = (result.content[0] as { text?: string } | undefined)?.text ?? "";
     expect(result.details).toMatchObject({ ok: true, query: "models" });
     expect(text).toContain("Runnable candidates: google/gemini-2.0-flash, google/gemini-2.5-flash");
   });
@@ -220,7 +220,7 @@ describe("self_inspecting tool", () => {
     });
 
     const result = await tool.execute("call6", { query: "定时任务" });
-    const text = result.content[0]?.text ?? "";
+    const text = (result.content[0] as { text?: string } | undefined)?.text ?? "";
     expect(result.details).toMatchObject({
       ok: true,
       query: "tasks",
@@ -243,7 +243,7 @@ describe("self_inspecting tool", () => {
     const result = await tool.execute("call7", {
       query: "向我报告你目前的状态，包括你的定时任务，模型列表，以及其它有用的信息",
     });
-    const text = result.content[0]?.text ?? "";
+    const text = (result.content[0] as { text?: string } | undefined)?.text ?? "";
     expect(result.details).toMatchObject({ ok: true, query: "all" });
     expect(text).toContain("Settings");
     expect(text).toContain("Auth profile override: google:work");

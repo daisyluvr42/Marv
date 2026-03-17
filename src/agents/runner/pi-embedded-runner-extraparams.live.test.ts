@@ -15,14 +15,12 @@ describeLive("pi embedded extra params (live)", () => {
     const model = getModel("openai", "gpt-5.2") as unknown as Model<"openai-completions">;
 
     const cfg: MarvConfig = {
-      agents: {
-        defaults: {
-          models: {
-            "openai/gpt-5.2": {
-              // OpenAI Responses enforces a minimum max_output_tokens of 16.
-              params: {
-                maxTokens: 16,
-              },
+      models: {
+        metadata: {
+          "openai/gpt-5.2": {
+            // OpenAI Responses enforces a minimum max_output_tokens of 16.
+            params: {
+              maxTokens: 16,
             },
           },
         },

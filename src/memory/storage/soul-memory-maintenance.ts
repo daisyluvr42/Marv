@@ -150,6 +150,7 @@ export function runSoulMemoryMaintenance(params: {
               archiveAgeDays: soulConfig?.p3Compaction?.archiveAgeDays ?? 30,
               orphanAgeDays: soulConfig?.p3Compaction?.orphanAgeDays ?? 60,
               compactedDiscount: soulConfig?.p3Compaction?.compactedDiscount ?? 0.5,
+              batchLimit: soulConfig?.p3Compaction?.batchLimit ?? 1000,
             },
             nowMs,
           })

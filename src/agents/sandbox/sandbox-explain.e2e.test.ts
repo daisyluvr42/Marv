@@ -35,20 +35,15 @@ describe("sandbox explain helpers", () => {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
-        },
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            tools: {
-              sandbox: { tools: { allow: ["group:memory", "group:fs"] } },
-            },
+          workspace: "~/marv-work",
+          tools: {
+            sandbox: { tools: { allow: ["group:memory", "group:fs"] } },
           },
-        ],
+        },
       },
     };
 
-    const policy = resolveSandboxToolPolicyForAgent(cfg, "work");
+    const policy = resolveSandboxToolPolicyForAgent(cfg, "main");
     expect(policy.allow).toEqual([
       "memory_search",
       "memory_get",

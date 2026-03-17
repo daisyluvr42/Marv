@@ -1,4 +1,6 @@
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { describe, expect, it } from "vitest";
+import type { TaskContextEntry } from "../memory/task-context/types.js";
 import {
   filterTaskContextEntriesForReplyPreferences,
   filterTranscriptMessagesForReplyPreferences,
@@ -69,7 +71,7 @@ describe("context pollution", () => {
         stopReason: "stop",
         timestamp: 2,
       },
-    ] as const;
+    ] as unknown as AgentMessage[];
 
     const filtered = filterTranscriptMessagesForReplyPreferences([...messages]);
     expect(filtered.removedCount).toBe(1);
@@ -101,12 +103,12 @@ describe("context pollution", () => {
         stopReason: "toolUse",
         timestamp: 1,
       },
-    ] as const;
+    ] as unknown as AgentMessage[];
 
     const filtered = filterTranscriptMessagesForReplyPreferences([...messages]);
     expect(filtered.removedCount).toBe(0);
     expect(filtered.sanitizedCount).toBe(1);
-    const assistant = filtered.messages[1];
+    const assistant = filtered.messages[1] as { content: unknown[] };
     expect(Array.isArray(assistant.content)).toBe(true);
     expect(assistant.content).toHaveLength(1);
     expect(assistant.content[0]).toMatchObject({ type: "toolCall", name: "self_inspecting" });
@@ -134,7 +136,7 @@ describe("context pollution", () => {
         tokenCount: 1,
         createdAt: 2,
       },
-    ] as const;
+    ] as unknown as TaskContextEntry[];
 
     const filtered = filterTaskContextEntriesForReplyPreferences([...entries]);
     expect(filtered.removedIds).toEqual(["a1"]);

@@ -463,8 +463,8 @@ export async function agentCommand(
     }
 
     if (!resolvedThinkLevel) {
-      let catalogForThinking = modelCatalog;
-      if (!catalogForThinking || catalogForThinking.length === 0) {
+      let catalogForThinking: Awaited<ReturnType<typeof loadModelCatalog>> = modelCatalog ?? [];
+      if (catalogForThinking.length === 0) {
         modelCatalog = await loadModelCatalog({ config: cfg });
         catalogForThinking = modelCatalog;
       }

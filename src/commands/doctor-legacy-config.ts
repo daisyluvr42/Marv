@@ -210,7 +210,7 @@ export function normalizeLegacyConfigValues(cfg: MarvConfig): {
   normalizeProvider("slack");
   normalizeProvider("discord");
 
-  const rootWeb = isRecord(next.web) ? { ...next.web } : null;
+  const rootWeb = isRecord(next.web) ? { ...(next.web as Record<string, unknown>) } : null;
   const legacyWebSearch = normalizeLegacyWebSearch(rootWeb?.search);
   const legacyWebFetch = isRecord(rootWeb?.fetch) ? { ...rootWeb.fetch } : null;
   if (rootWeb && (legacyWebSearch || legacyWebFetch)) {

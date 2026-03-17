@@ -331,17 +331,6 @@ async function chmodCredentialsAndAgentState(params: {
 
   const ids = new Set<string>();
   ids.add(resolveDefaultAgentId(params.cfg));
-  const list = Array.isArray(params.cfg.agents?.list) ? params.cfg.agents?.list : [];
-  for (const agent of list ?? []) {
-    if (!agent || typeof agent !== "object") {
-      continue;
-    }
-    const id =
-      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id.trim() : "";
-    if (id) {
-      ids.add(id);
-    }
-  }
 
   for (const agentId of ids) {
     const normalizedAgentId = normalizeAgentId(agentId);

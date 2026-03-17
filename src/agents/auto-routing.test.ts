@@ -232,15 +232,6 @@ ${"x".repeat(1500)}`;
             rules: [{ complexity: "simple", model: "anthropic/claude-haiku-4-5" }],
           },
         },
-        list: [
-          {
-            id: "coding-agent",
-            autoRouting: {
-              enabled: true,
-              rules: [{ complexity: "simple", model: "openai/gpt-4o-mini" }],
-            },
-          },
-        ],
       },
     };
     const result = await resolveAutoRouting({

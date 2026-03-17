@@ -153,7 +153,6 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
   testState.sessionStorePath = undefined;
   testState.agentConfig = undefined;
   testState.agentsConfig = undefined;
-  testState.bindingsConfig = undefined;
   testState.channelsConfig = undefined;
   testState.allowFrom = undefined;
   testIsNixMode.value = false;

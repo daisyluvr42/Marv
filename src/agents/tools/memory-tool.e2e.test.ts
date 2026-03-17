@@ -108,7 +108,7 @@ describe("memory search citations", () => {
     backend = "builtin";
     const cfg = asMarvConfig({
       memory: { citations: "on" },
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { defaults: {} },
     });
     const tool = createMemorySearchTool({ config: cfg });
     if (!tool) {
@@ -124,7 +124,7 @@ describe("memory search citations", () => {
     backend = "builtin";
     const cfg = asMarvConfig({
       memory: { citations: "off" },
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { defaults: {} },
     });
     const tool = createMemorySearchTool({ config: cfg });
     if (!tool) {
@@ -140,7 +140,7 @@ describe("memory search citations", () => {
     backend = "qmd";
     const cfg = asMarvConfig({
       memory: { citations: "on", backend: "qmd", qmd: { limits: { maxInjectedChars: 20 } } },
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { defaults: {} },
     });
     const tool = createMemorySearchTool({ config: cfg });
     if (!tool) {
@@ -155,7 +155,7 @@ describe("memory search citations", () => {
     backend = "builtin";
     const cfg = asMarvConfig({
       memory: { citations: "auto" },
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { defaults: {} },
     });
     const tool = createMemorySearchTool({
       config: cfg,
@@ -173,7 +173,7 @@ describe("memory search citations", () => {
     backend = "builtin";
     const cfg = asMarvConfig({
       memory: { citations: "auto" },
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { defaults: {} },
     });
     const tool = createMemorySearchTool({
       config: cfg,
@@ -231,7 +231,7 @@ describe("memory search citations", () => {
     ];
     const cfg = asMarvConfig({
       memory: { citations: "on" },
-      agents: { list: [{ id: "main", default: true }] },
+      agents: { defaults: {} },
     });
     const tool = createMemorySearchTool({ config: cfg });
     if (!tool) {
@@ -263,7 +263,6 @@ describe("memory tools", () => {
             },
           },
         },
-        list: [{ id: "main", default: true }],
       },
     });
     const tool = createMemorySearchTool({ config: cfg });
@@ -298,7 +297,6 @@ describe("memory tools", () => {
             },
           },
         },
-        list: [{ id: "main", default: true }],
       },
     });
     const tool = createMemorySearchTool({ config: cfg });
@@ -325,7 +323,7 @@ describe("memory tools", () => {
       throw new Error("openai embeddings failed: 429 insufficient_quota");
     };
 
-    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const cfg = { agents: { defaults: {} } };
     const tool = createMemorySearchTool({ config: cfg });
     expect(tool).not.toBeNull();
     if (!tool) {
@@ -345,7 +343,7 @@ describe("memory tools", () => {
       throw new Error("path required");
     };
 
-    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const cfg = { agents: { defaults: {} } };
     const tool = createMemoryGetTool({ config: cfg });
     expect(tool).not.toBeNull();
     if (!tool) {
@@ -365,7 +363,7 @@ describe("memory tools", () => {
     soulReadImpl = () => ({ id: "mem_a", content: "follow-up linked note" });
     soulRefsImpl = () => ["mem_root"];
 
-    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const cfg = { agents: { defaults: {} } };
     const tool = createMemoryGetTool({ config: cfg });
     if (!tool) {
       throw new Error("tool missing");
@@ -382,7 +380,7 @@ describe("memory tools", () => {
   it("writes structured soul memory with memory_write", async () => {
     soulWriteImpl = () => ({ id: "mem_written" });
     soulRefsImpl = () => ["mem_anchor"];
-    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const cfg = { agents: { defaults: {} } };
     const tool = createMemoryWriteTool({ config: cfg });
     expect(tool).not.toBeNull();
     if (!tool) {
@@ -403,7 +401,7 @@ describe("memory tools", () => {
   });
 
   it("skips transient memory_write requests", async () => {
-    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const cfg = { agents: { defaults: {} } };
     const tool = createMemoryWriteTool({ config: cfg });
     if (!tool) {
       throw new Error("tool missing");
@@ -460,7 +458,7 @@ describe("memory tools", () => {
     ];
     searchImpl = async () => [];
 
-    const cfg = { agents: { list: [{ id: "main", default: true }] } };
+    const cfg = { agents: { defaults: {} } };
     const tool = createMemorySearchTool({ config: cfg });
     if (!tool) {
       throw new Error("tool missing");

@@ -9,7 +9,6 @@ describe("resolveSandboxContext", () => {
         defaults: {
           sandbox: { mode: "non-main", scope: "session" },
         },
-        list: [{ id: "main" }],
       },
     };
 
@@ -28,7 +27,6 @@ describe("resolveSandboxContext", () => {
         defaults: {
           sandbox: { mode: "non-main", scope: "session" },
         },
-        list: [{ id: "main" }],
       },
     };
 
@@ -48,7 +46,6 @@ describe("resolveSandboxContext", () => {
         defaults: {
           sandbox: { mode: "non-main", scope: "session" },
         },
-        list: [{ id: "main" }],
       },
     };
 
