@@ -75,14 +75,14 @@ describe("browser CSRF loopback mutation guard", () => {
     expect(
       shouldRejectBrowserMutation({
         method: "POST",
-        origin: "http://127.0.0.1:18789",
+        origin: "http://127.0.0.1:4242",
       }),
     ).toBe(false);
 
     expect(
       shouldRejectBrowserMutation({
         method: "POST",
-        origin: "http://localhost:18789",
+        origin: "http://localhost:4242",
       }),
     ).toBe(false);
   });
@@ -185,7 +185,7 @@ describe("browser server-context listKnownProfileNames", () => {
     const resolved = resolveBrowserConfig({
       defaultProfile: "marv",
       profiles: {
-        marv: { cdpPort: 18800, color: "#FF4500" },
+        marv: { cdpPort: 4253, color: "#FF4500" },
       },
     });
     const marv = resolveProfile(resolved, "marv");
@@ -195,7 +195,7 @@ describe("browser server-context listKnownProfileNames", () => {
 
     const state: BrowserServerState = {
       server: null as unknown as BrowserServerState["server"],
-      port: 18791,
+      port: 4244,
       resolved,
       profiles: new Map([
         [

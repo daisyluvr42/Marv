@@ -23,7 +23,7 @@ describe("resolveGatewayRuntimeConfig", () => {
 
       const result = await resolveGatewayRuntimeConfig({
         cfg,
-        port: 18789,
+        port: 4242,
       });
 
       expect(result.authMode).toBe("trusted-proxy");
@@ -47,7 +47,7 @@ describe("resolveGatewayRuntimeConfig", () => {
       await expect(
         resolveGatewayRuntimeConfig({
           cfg,
-          port: 18789,
+          port: 4242,
         }),
       ).rejects.toThrow("gateway auth mode=trusted-proxy makes no sense with bind=loopback");
     });
@@ -69,7 +69,7 @@ describe("resolveGatewayRuntimeConfig", () => {
       await expect(
         resolveGatewayRuntimeConfig({
           cfg,
-          port: 18789,
+          port: 4242,
         }),
       ).rejects.toThrow(
         "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
@@ -91,7 +91,7 @@ describe("resolveGatewayRuntimeConfig", () => {
       await expect(
         resolveGatewayRuntimeConfig({
           cfg,
-          port: 18789,
+          port: 4242,
         }),
       ).rejects.toThrow("gateway auth mode is token, but no token was configured");
     });
@@ -109,7 +109,7 @@ describe("resolveGatewayRuntimeConfig", () => {
 
       const result = await resolveGatewayRuntimeConfig({
         cfg,
-        port: 18789,
+        port: 4242,
       });
 
       expect(result.authMode).toBe("token");
@@ -128,7 +128,7 @@ describe("resolveGatewayRuntimeConfig", () => {
 
       const result = await resolveGatewayRuntimeConfig({
         cfg,
-        port: 18789,
+        port: 4242,
       });
 
       expect(result.authMode).toBe("none");
@@ -148,7 +148,7 @@ describe("resolveGatewayRuntimeConfig", () => {
       await expect(
         resolveGatewayRuntimeConfig({
           cfg,
-          port: 18789,
+          port: 4242,
         }),
       ).rejects.toThrow("refusing to bind gateway");
     });

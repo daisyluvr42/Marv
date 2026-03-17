@@ -33,12 +33,12 @@ function installStorageMock() {
   };
   vi.stubGlobal("localStorage", localStorage);
   vi.stubGlobal("window", { localStorage });
-  vi.stubGlobal("location", { protocol: "http:", host: "127.0.0.1:18789" });
+  vi.stubGlobal("location", { protocol: "http:", host: "127.0.0.1:4242" });
 }
 
 function createSettings(overrides: Partial<UiSettings> = {}): UiSettings {
   return {
-    gatewayUrl: "ws://127.0.0.1:18789",
+    gatewayUrl: "ws://127.0.0.1:4242",
     token: "bootstrap-token",
     sessionKey: "main",
     lastActiveSessionKey: "main",
@@ -75,7 +75,7 @@ describe("storage", () => {
     localStorage.setItem(
       "marv.control.settings.v2",
       JSON.stringify({
-        gatewayUrl: "ws://127.0.0.1:18789",
+        gatewayUrl: "ws://127.0.0.1:4242",
         token: "legacy-token",
         sessionKey: "main",
         lastActiveSessionKey: "main",

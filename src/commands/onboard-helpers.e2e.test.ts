@@ -75,42 +75,42 @@ describe("resolveBrowserOpenCommand", () => {
 describe("resolveControlUiLinks", () => {
   it("uses customBindHost for custom bind", () => {
     const links = resolveControlUiLinks({
-      port: 18789,
+      port: 4242,
       bind: "custom",
       customBindHost: "192.168.1.100",
     });
-    expect(links.httpUrl).toBe("http://192.168.1.100:18789/");
-    expect(links.wsUrl).toBe("ws://192.168.1.100:18789");
+    expect(links.httpUrl).toBe("http://192.168.1.100:4242/");
+    expect(links.wsUrl).toBe("ws://192.168.1.100:4242");
   });
 
   it("falls back to loopback for invalid customBindHost", () => {
     const links = resolveControlUiLinks({
-      port: 18789,
+      port: 4242,
       bind: "custom",
       customBindHost: "192.168.001.100",
     });
-    expect(links.httpUrl).toBe("http://127.0.0.1:18789/");
-    expect(links.wsUrl).toBe("ws://127.0.0.1:18789");
+    expect(links.httpUrl).toBe("http://127.0.0.1:4242/");
+    expect(links.wsUrl).toBe("ws://127.0.0.1:4242");
   });
 
   it("uses tailnet IP for tailnet bind", () => {
     mocks.pickPrimaryTailnetIPv4.mockReturnValueOnce("100.64.0.9");
     const links = resolveControlUiLinks({
-      port: 18789,
+      port: 4242,
       bind: "tailnet",
     });
-    expect(links.httpUrl).toBe("http://100.64.0.9:18789/");
-    expect(links.wsUrl).toBe("ws://100.64.0.9:18789");
+    expect(links.httpUrl).toBe("http://100.64.0.9:4242/");
+    expect(links.wsUrl).toBe("ws://100.64.0.9:4242");
   });
 
   it("keeps loopback for auto even when tailnet is present", () => {
     mocks.pickPrimaryTailnetIPv4.mockReturnValueOnce("100.64.0.9");
     const links = resolveControlUiLinks({
-      port: 18789,
+      port: 4242,
       bind: "auto",
     });
-    expect(links.httpUrl).toBe("http://127.0.0.1:18789/");
-    expect(links.wsUrl).toBe("ws://127.0.0.1:18789");
+    expect(links.httpUrl).toBe("http://127.0.0.1:4242/");
+    expect(links.wsUrl).toBe("ws://127.0.0.1:4242");
   });
 });
 

@@ -25,7 +25,7 @@ describe("trusted device lifecycle", () => {
     localStorage.setItem(
       "marv.control.settings.v2",
       JSON.stringify({
-        gatewayUrl: "ws://127.0.0.1:18789",
+        gatewayUrl: "ws://127.0.0.1:4242",
         sessionKey: "main",
         lastActiveSessionKey: "main",
       }),
@@ -59,7 +59,7 @@ describe("trusted device lifecycle", () => {
     const { forgetTrustedDevice } = await import("./trusted-device.js");
     const host: import("./trusted-device.js").TrustedDeviceHost = {
       settings: {
-        gatewayUrl: "ws://127.0.0.1:18789",
+        gatewayUrl: "ws://127.0.0.1:4242",
         token: "bootstrap-token",
         sessionKey: "main",
         lastActiveSessionKey: "main",

@@ -225,7 +225,7 @@ mkdir -p ~/.marv/workspace
 MARV_IMAGE=marv:latest
 MARV_GATEWAY_TOKEN=change-me-now
 MARV_GATEWAY_BIND=lan
-MARV_GATEWAY_PORT=18789
+MARV_GATEWAY_PORT=4242
 
 MARV_CONFIG_DIR=/home/$USER/.marv
 MARV_WORKSPACE_DIR=/home/$USER/.marv/workspace
@@ -272,11 +272,11 @@ services:
     ports:
       # 推荐：在 VM 上保持 Gateway 网关仅绑定 loopback；通过 SSH 隧道访问。
       # 要公开暴露，移除 `127.0.0.1:` 前缀并相应配置防火墙。
-      - "127.0.0.1:${MARV_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${MARV_GATEWAY_PORT}:4242"
 
       # 可选：仅当你针对此 VM 运行 iOS/Android 节点并需要 Canvas 主机时。
       # 如果你公开暴露此端口，请阅读 /gateway/security 并相应配置防火墙。
-      # - "18793:18793"
+      # - "4246:4246"
     command:
       [
         "node",
@@ -388,7 +388,7 @@ docker compose logs -f marv-gateway
 成功：
 
 ```
-[gateway] listening on ws://0.0.0.0:18789
+[gateway] listening on ws://0.0.0.0:4242
 ```
 
 ---
@@ -398,12 +398,12 @@ docker compose logs -f marv-gateway
 创建 SSH 隧道以转发 Gateway 网关端口：
 
 ```bash
-gcloud compute ssh marv-gateway --zone=us-central1-a -- -L 18789:127.0.0.1:18789
+gcloud compute ssh marv-gateway --zone=us-central1-a -- -L 4242:127.0.0.1:4242
 ```
 
 在浏览器中打开：
 
-`http://127.0.0.1:18789/`
+`http://127.0.0.1:4242/`
 
 粘贴你的 Gateway 网关令牌。
 

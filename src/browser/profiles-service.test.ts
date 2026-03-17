@@ -101,7 +101,7 @@ describe("BrowserProfilesService", () => {
       browser: {
         defaultProfile: "marv",
         profiles: {
-          marv: { cdpPort: 18800, color: "#FF4500" },
+          marv: { cdpPort: 4253, color: "#FF4500" },
           remote: { cdpUrl: "http://10.0.0.42:9222", color: "#0066CC" },
         },
       },
@@ -127,7 +127,7 @@ describe("BrowserProfilesService", () => {
       browser: {
         defaultProfile: "marv",
         profiles: {
-          marv: { cdpPort: 18800, color: "#FF4500" },
+          marv: { cdpPort: 4253, color: "#FF4500" },
           work: { cdpPort: 18801, color: "#0066CC" },
         },
       },

@@ -11,7 +11,7 @@ function renderQrAscii(data: string): Promise<string> {
   });
 }
 
-const DEFAULT_GATEWAY_PORT = 18789;
+const DEFAULT_GATEWAY_PORT = 4242;
 
 type DevicePairPluginConfig = {
   publicUrl?: string;

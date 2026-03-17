@@ -75,7 +75,7 @@ vi.mock("../../browser/client-actions.js", () => browserActionsMocks);
 const browserConfigMocks = vi.hoisted(() => ({
   resolveBrowserConfig: vi.fn(() => ({
     enabled: true,
-    controlPort: 18791,
+    controlPort: 4244,
   })),
 }));
 vi.mock("../../browser/config.js", () => browserConfigMocks);

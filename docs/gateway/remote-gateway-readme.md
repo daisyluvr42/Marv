@@ -15,7 +15,7 @@ flowchart TB
     subgraph Client["Client Machine"]
         direction TB
         A["Marv.app"]
-        B["ws://127.0.0.1:18789\n(local port)"]
+        B["ws://127.0.0.1:4242\n(local port)"]
         T["SSH Tunnel"]
 
         A --> B
@@ -24,7 +24,7 @@ flowchart TB
     subgraph Remote["Remote Machine"]
         direction TB
         C["Gateway WebSocket"]
-        D["ws://127.0.0.1:18789"]
+        D["ws://127.0.0.1:4242"]
 
         C --> D
     end
@@ -41,7 +41,7 @@ Edit `~/.ssh/config` and add:
 Host remote-gateway
     HostName <REMOTE_IP>          # e.g., 172.27.187.184
     User <REMOTE_USER>            # e.g., jefferson
-    LocalForward 18789 127.0.0.1:18789
+    LocalForward 4242 127.0.0.1:4242
     IdentityFile ~/.ssh/id_rsa
 ```
 
@@ -129,7 +129,7 @@ Legacy note: remove any leftover `com.marv.ssh-tunnel` LaunchAgent if present.
 
 ```bash
 ps aux | grep "ssh -N remote-gateway" | grep -v grep
-lsof -i :18789
+lsof -i :4242
 ```
 
 **Restart the tunnel:**
@@ -148,11 +148,11 @@ launchctl bootout gui/$UID/bot.molt.ssh-tunnel
 
 ## How It Works
 
-| Component                            | What It Does                                                 |
-| ------------------------------------ | ------------------------------------------------------------ |
-| `LocalForward 18789 127.0.0.1:18789` | Forwards local port 18789 to remote port 18789               |
-| `ssh -N`                             | SSH without executing remote commands (just port forwarding) |
-| `KeepAlive`                          | Automatically restarts tunnel if it crashes                  |
-| `RunAtLoad`                          | Starts tunnel when the agent loads                           |
+| Component                          | What It Does                                                 |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `LocalForward 4242 127.0.0.1:4242` | Forwards local port 4242 to remote port 4242                 |
+| `ssh -N`                           | SSH without executing remote commands (just port forwarding) |
+| `KeepAlive`                        | Automatically restarts tunnel if it crashes                  |
+| `RunAtLoad`                        | Starts tunnel when the agent loads                           |
 
-Marv.app connects to `ws://127.0.0.1:18789` on your client machine. The SSH tunnel forwards that connection to port 18789 on the remote machine where the Gateway is running.
+Marv.app connects to `ws://127.0.0.1:4242` on your client machine. The SSH tunnel forwards that connection to port 4242 on the remote machine where the Gateway is running.

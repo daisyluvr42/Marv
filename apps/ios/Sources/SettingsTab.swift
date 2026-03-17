@@ -8,7 +8,7 @@ struct SettingsTab: View {
         NavigationStack {
             Form {
                 Section("Gateway") {
-                    TextField("ws://gateway-host:18789", text: $appModel.gatewayURL)
+                    TextField("ws://gateway-host:4242", text: $appModel.gatewayURL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .keyboardType(.URL)

@@ -53,7 +53,7 @@ Marv 的 Gateway 网关提供一个兼容 MCP 的记忆端点（基于 HTTP JSON
 ### 初始化
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -67,7 +67,7 @@ curl -sS http://127.0.0.1:18789/mcp \
 ### 列出工具
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -81,7 +81,7 @@ curl -sS http://127.0.0.1:18789/mcp \
 ### 调用 memory_search
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -102,7 +102,7 @@ curl -sS http://127.0.0.1:18789/mcp \
 ### 调用 memory_write
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -133,7 +133,7 @@ MCP 服务名使用 `Marv-mem`。
   "mcpServers": {
     "Marv-mem": {
       "type": "streamableHttp",
-      "url": "http://127.0.0.1:18789/mcp",
+      "url": "http://127.0.0.1:4242/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }
@@ -149,7 +149,7 @@ MCP 服务名使用 `Marv-mem`。
   "mcpServers": {
     "Marv-mem": {
       "type": "streamableHttp",
-      "url": "http://127.0.0.1:18789/mcp",
+      "url": "http://127.0.0.1:4242/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }

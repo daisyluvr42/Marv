@@ -139,7 +139,7 @@ systemctl --user status marv-gateway
 tailscale serve status
 
 # Test local response
-curl http://localhost:18789
+curl http://localhost:4242
 ```
 
 ## 8) Lock Down VCN Security
@@ -219,10 +219,10 @@ If Tailscale Serve isn't working, use an SSH tunnel:
 
 ```bash
 # From your local machine (via Tailscale)
-ssh -L 18789:127.0.0.1:18789 ubuntu@marv
+ssh -L 4242:127.0.0.1:4242 ubuntu@marv
 ```
 
-Then open `http://localhost:18789`.
+Then open `http://localhost:4242`.
 
 ---
 
@@ -261,7 +261,7 @@ journalctl --user -u marv-gateway -n 50
 tailscale serve status
 
 # Check gateway is listening
-curl http://localhost:18789
+curl http://localhost:4242
 
 # Restart if needed
 systemctl --user restart marv-gateway

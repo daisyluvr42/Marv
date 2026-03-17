@@ -52,7 +52,7 @@ marv channels login
 2. Start the Gateway (leave it running):
 
 ```bash
-marv gateway --port 18789
+marv gateway --port 4242
 ```
 
 3. Put a minimal config in `~/.marv/marv.json`:

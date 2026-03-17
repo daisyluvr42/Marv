@@ -27,7 +27,7 @@ Object.defineProperty(globalThis, "window", {
   configurable: true,
 });
 Object.defineProperty(globalThis, "location", {
-  value: { protocol: "http:", host: "127.0.0.1:18789" },
+  value: { protocol: "http:", host: "127.0.0.1:4242" },
   configurable: true,
 });
 
@@ -101,7 +101,7 @@ vi.mock("./gateway.js", () => {
 function createHost() {
   return {
     settings: {
-      gatewayUrl: "ws://127.0.0.1:18789",
+      gatewayUrl: "ws://127.0.0.1:4242",
       token: "",
       sessionKey: "main",
       lastActiveSessionKey: "main",

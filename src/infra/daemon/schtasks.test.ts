@@ -131,7 +131,7 @@ describe("readScheduledTaskCommand", () => {
           "rem Marv Gateway",
           "cd /d C:\\Projects\\marv",
           "set NODE_ENV=production",
-          "set MARV_PORT=18789",
+          "set MARV_PORT=4242",
           "node gateway.js --verbose",
         ],
       },
@@ -142,7 +142,7 @@ describe("readScheduledTaskCommand", () => {
           workingDirectory: "C:\\Projects\\marv",
           environment: {
             NODE_ENV: "production",
-            MARV_PORT: "18789",
+            MARV_PORT: "4242",
           },
         });
       },
@@ -154,7 +154,7 @@ describe("readScheduledTaskCommand", () => {
       {
         scriptLines: [
           "@echo off",
-          '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\agentmarv\\dist\\index.js gateway --port 18789',
+          '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\agentmarv\\dist\\index.js gateway --port 4242',
         ],
       },
       async (env) => {
@@ -165,7 +165,7 @@ describe("readScheduledTaskCommand", () => {
             "C:\\Users\\test\\AppData\\Roaming\\npm\\node_modules\\agentmarv\\dist\\index.js",
             "gateway",
             "--port",
-            "18789",
+            "4242",
           ],
         });
       },
@@ -177,7 +177,7 @@ describe("readScheduledTaskCommand", () => {
       {
         scriptLines: [
           "@echo off",
-          '"\\\\fileserver\\Marv Share\\node.exe" "\\\\fileserver\\Marv Share\\dist\\index.js" gateway --port 18789',
+          '"\\\\fileserver\\Marv Share\\node.exe" "\\\\fileserver\\Marv Share\\dist\\index.js" gateway --port 4242',
         ],
       },
       async (env) => {
@@ -188,7 +188,7 @@ describe("readScheduledTaskCommand", () => {
             "\\\\fileserver\\Marv Share\\dist\\index.js",
             "gateway",
             "--port",
-            "18789",
+            "4242",
           ],
         });
       },

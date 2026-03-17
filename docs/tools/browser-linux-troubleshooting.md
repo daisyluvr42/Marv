@@ -6,12 +6,12 @@ title: "Browser Troubleshooting"
 
 # Browser Troubleshooting (Linux)
 
-## Problem: "Failed to start Chrome CDP on port 18800"
+## Problem: "Failed to start Chrome CDP on port 4253"
 
 Marv's browser control server fails to launch Chrome/Brave/Edge/Chromium with the error:
 
 ```
-{"error":"Error: Failed to start Chrome CDP on port 18800 for profile \"marv\"."}
+{"error":"Error: Failed to start Chrome CDP on port 4253 for profile \"marv\"."}
 ```
 
 ### Root Cause
@@ -71,7 +71,7 @@ If you must use snap Chromium, configure Marv to attach to a manually-started br
 
 ```bash
 chromium-browser --headless --no-sandbox --disable-gpu \
-  --remote-debugging-port=18800 \
+  --remote-debugging-port=4253 \
   --user-data-dir=$HOME/.marv/browser/marv/user-data \
   about:blank &
 ```
@@ -85,7 +85,7 @@ Description=Marv Browser (Chrome CDP)
 After=network.target
 
 [Service]
-ExecStart=/snap/bin/chromium --headless --no-sandbox --disable-gpu --remote-debugging-port=18800 --user-data-dir=%h/.marv/browser/marv/user-data about:blank
+ExecStart=/snap/bin/chromium --headless --no-sandbox --disable-gpu --remote-debugging-port=4253 --user-data-dir=%h/.marv/browser/marv/user-data about:blank
 Restart=on-failure
 RestartSec=5
 
@@ -100,14 +100,14 @@ Enable with: `systemctl --user enable --now marv-browser.service`
 Check status:
 
 ```bash
-curl -s http://127.0.0.1:18791/ | jq '{running, pid, chosenBrowser}'
+curl -s http://127.0.0.1:4244/ | jq '{running, pid, chosenBrowser}'
 ```
 
 Test browsing:
 
 ```bash
-curl -s -X POST http://127.0.0.1:18791/start
-curl -s http://127.0.0.1:18791/tabs
+curl -s -X POST http://127.0.0.1:4244/start
+curl -s http://127.0.0.1:4244/tabs
 ```
 
 ### Config Reference
@@ -119,7 +119,7 @@ curl -s http://127.0.0.1:18791/tabs
 | `browser.headless`       | Run without GUI                                                      | `false`                                                     |
 | `browser.noSandbox`      | Add `--no-sandbox` flag (needed for some Linux setups)               | `false`                                                     |
 | `browser.attachOnly`     | Don't launch browser, only attach to existing                        | `false`                                                     |
-| `browser.cdpPort`        | Chrome DevTools Protocol port                                        | `18800`                                                     |
+| `browser.cdpPort`        | Chrome DevTools Protocol port                                        | `4253`                                                      |
 
 ### Problem: "Chrome extension relay is running, but no tab is connected"
 

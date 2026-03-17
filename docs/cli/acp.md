@@ -19,7 +19,7 @@ over WebSocket. It keeps ACP sessions mapped to Gateway session keys.
 marv acp
 
 # Remote Gateway
-marv acp --url wss://gateway-host:18789 --token <token>
+marv acp --url wss://gateway-host:4242 --token <token>
 
 # Attach to an existing session key
 marv acp --session agent:main:main
@@ -40,7 +40,7 @@ It spawns the ACP bridge and lets you type prompts interactively.
 marv acp client
 
 # Point the spawned bridge at a remote Gateway
-marv acp client --server-args --url wss://gateway-host:18789 --token <token>
+marv acp client --server-args --url wss://gateway-host:4242 --token <token>
 
 # Override the server command (default: marv)
 marv acp client --server "node" --server-args marv.mjs acp --url ws://127.0.0.1:19001
@@ -58,14 +58,14 @@ it to drive a Marv Gateway session.
 Example config (persisted):
 
 ```bash
-marv config set gateway.remote.url wss://gateway-host:18789
+marv config set gateway.remote.url wss://gateway-host:4242
 marv config set gateway.remote.token <token>
 ```
 
 Example direct run (no config write):
 
 ```bash
-marv acp --url wss://gateway-host:18789 --token <token>
+marv acp --url wss://gateway-host:4242 --token <token>
 ```
 
 ## Selecting agents
@@ -112,7 +112,7 @@ To target a specific Gateway or agent:
       "args": [
         "acp",
         "--url",
-        "wss://gateway-host:18789",
+        "wss://gateway-host:4242",
         "--token",
         "<token>",
         "--session",

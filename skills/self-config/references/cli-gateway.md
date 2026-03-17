@@ -6,13 +6,13 @@ Run the WebSocket Gateway (foreground):
 
 ```bash
 marv gateway run
-marv gateway run --bind loopback --port 18789
-marv gateway run --bind lan --port 18789
+marv gateway run --bind loopback --port 4242
+marv gateway run --bind lan --port 4242
 marv gateway run --verbose
 marv gateway run --force             # override existing gateway lock
 ```
 
-Default address: `ws://127.0.0.1:18789`
+Default address: `ws://127.0.0.1:4242`
 
 ### Bind modes
 
@@ -44,7 +44,7 @@ Manual headless restart:
 
 ```bash
 pkill -9 -f marv-gateway || true
-nohup marv gateway run --bind loopback --port 18789 --force > /tmp/marv-gateway.log 2>&1 &
+nohup marv gateway run --bind loopback --port 4242 --force > /tmp/marv-gateway.log 2>&1 &
 ```
 
 Verify:

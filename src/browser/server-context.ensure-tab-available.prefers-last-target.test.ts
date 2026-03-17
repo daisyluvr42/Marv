@@ -11,7 +11,7 @@ function makeBrowserState(): BrowserServerState {
     port: 0,
     resolved: {
       enabled: true,
-      controlPort: 18791,
+      controlPort: 4244,
       cdpProtocol: "http",
       cdpHost: "127.0.0.1",
       cdpIsLoopback: true,
@@ -31,7 +31,7 @@ function makeBrowserState(): BrowserServerState {
           cdpPort: 18792,
           color: "#00AA00",
         },
-        marv: { cdpPort: 18800, color: "#FF4500" },
+        marv: { cdpPort: 4253, color: "#FF4500" },
       },
     },
     profiles: new Map(),

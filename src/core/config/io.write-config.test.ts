@@ -83,11 +83,11 @@ describe("config io write", () => {
     await withTempHome("marv-config-io-", async (home) => {
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
         home,
-        initialConfig: { gateway: { port: 18789 } },
+        initialConfig: { gateway: { port: 4242 } },
       });
       const persisted = await writeTokenAuthAndReadConfig({ io, snapshot, configPath });
       expect(persisted.gateway).toEqual({
-        port: 18789,
+        port: 4242,
         auth: { mode: "token" },
       });
       expect(persisted).not.toHaveProperty("agents.defaults");
@@ -114,7 +114,7 @@ describe("config io write", () => {
               },
             },
           },
-          gateway: { port: 18789 },
+          gateway: { port: 4242 },
         },
       });
       const persisted = (await writeTokenAuthAndReadConfig({ io, snapshot, configPath })) as {
@@ -125,7 +125,7 @@ describe("config io write", () => {
         "${OPENAI_API_KEY}",
       );
       expect(persisted.gateway).toEqual({
-        port: 18789,
+        port: 4242,
         auth: { mode: "token" },
       });
     });
@@ -146,7 +146,7 @@ describe("config io write", () => {
               dm: { enabled: true, policy: "pairing" },
             },
           },
-          gateway: { port: 18789 },
+          gateway: { port: 4242 },
         },
       });
 
@@ -255,7 +255,7 @@ describe("config io write", () => {
       const warn = vi.fn();
       const { configPath, io, snapshot } = await writeConfigAndCreateIo({
         home,
-        initialConfig: { gateway: { port: 18789 } },
+        initialConfig: { gateway: { port: 4242 } },
         env: {} as NodeJS.ProcessEnv,
         logger: {
           warn: warn as (msg: string) => void,
@@ -307,7 +307,7 @@ describe("config io write", () => {
     await withTempHome("marv-config-io-", async (home) => {
       const { configPath, lines, last } = await writeGatewayPatchAndReadLastAuditEntry({
         home,
-        initialConfig: { gateway: { port: 18789 } },
+        initialConfig: { gateway: { port: 4242 } },
         gatewayPatch: { mode: "local" },
         env: {} as NodeJS.ProcessEnv,
       });

@@ -12,11 +12,11 @@ function derivePort(base: number, offset: number, fallback: number): number {
   return clampPort(base + offset, fallback);
 }
 
-export const DEFAULT_BRIDGE_PORT = 18790;
-export const DEFAULT_BROWSER_CONTROL_PORT = 18791;
-export const DEFAULT_CANVAS_HOST_PORT = 18793;
-export const DEFAULT_BROWSER_CDP_PORT_RANGE_START = 18800;
-export const DEFAULT_BROWSER_CDP_PORT_RANGE_END = 18899;
+export const DEFAULT_BRIDGE_PORT = 4243;
+export const DEFAULT_BROWSER_CONTROL_PORT = 4244;
+export const DEFAULT_CANVAS_HOST_PORT = 4246;
+export const DEFAULT_BROWSER_CDP_PORT_RANGE_START = 4253;
+export const DEFAULT_BROWSER_CDP_PORT_RANGE_END = 4352;
 
 export function deriveDefaultBridgePort(gatewayPort: number): number {
   return derivePort(gatewayPort, 1, DEFAULT_BRIDGE_PORT);

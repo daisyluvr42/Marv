@@ -166,7 +166,7 @@ CLI（无论操作系统都适用）：
 marv gateway status
 marv gateway stop
 marv gateway restart
-marv gateway --port 18789
+marv gateway --port 4242
 marv logs --follow
 ```
 

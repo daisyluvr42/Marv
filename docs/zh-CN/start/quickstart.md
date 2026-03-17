@@ -46,7 +46,7 @@ Marv 需要 Node 22 或更新版本。
   </Step>
   <Step title="启动 Gateway 网关">
     ```bash
-    marv gateway --port 18789
+    marv gateway --port 4242
     ```
   </Step>
 </Steps>

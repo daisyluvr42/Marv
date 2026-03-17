@@ -15,9 +15,9 @@ describe("gateway hook runner methods", () => {
     const registry = createMockPluginRegistry([{ hookName: "gateway_start", handler }]);
     const runner = createHookRunner(registry);
 
-    await runner.runGatewayStart({ port: 18789 }, { port: 18789 });
+    await runner.runGatewayStart({ port: 4242 }, { port: 4242 });
 
-    expect(handler).toHaveBeenCalledWith({ port: 18789 }, { port: 18789 });
+    expect(handler).toHaveBeenCalledWith({ port: 4242 }, { port: 4242 });
   });
 
   it("runGatewayStop invokes registered gateway_stop hooks", async () => {
@@ -25,9 +25,9 @@ describe("gateway hook runner methods", () => {
     const registry = createMockPluginRegistry([{ hookName: "gateway_stop", handler }]);
     const runner = createHookRunner(registry);
 
-    await runner.runGatewayStop({ reason: "test shutdown" }, { port: 18789 });
+    await runner.runGatewayStop({ reason: "test shutdown" }, { port: 4242 });
 
-    expect(handler).toHaveBeenCalledWith({ reason: "test shutdown" }, { port: 18789 });
+    expect(handler).toHaveBeenCalledWith({ reason: "test shutdown" }, { port: 4242 });
   });
 
   it("hasHooks returns true for registered gateway hooks", () => {

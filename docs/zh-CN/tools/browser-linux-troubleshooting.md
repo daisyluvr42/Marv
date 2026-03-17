@@ -13,12 +13,12 @@ x-i18n:
 
 # 浏览器故障排除（Linux）
 
-## 问题："Failed to start Chrome CDP on port 18800"
+## 问题："Failed to start Chrome CDP on port 4253"
 
 Marv 的浏览器控制服务器无法启动 Chrome/Brave/Edge/Chromium，出现以下错误：
 
 ```
-{"error":"Error: Failed to start Chrome CDP on port 18800 for profile \"marv\"."}
+{"error":"Error: Failed to start Chrome CDP on port 4253 for profile \"marv\"."}
 ```
 
 ### 根本原因
@@ -78,7 +78,7 @@ sudo apt --fix-broken install -y  # if there are dependency errors
 
 ```bash
 chromium-browser --headless --no-sandbox --disable-gpu \
-  --remote-debugging-port=18800 \
+  --remote-debugging-port=4253 \
   --user-data-dir=$HOME/.marv/browser/marv/user-data \
   about:blank &
 ```
@@ -92,7 +92,7 @@ Description=Marv Browser (Chrome CDP)
 After=network.target
 
 [Service]
-ExecStart=/snap/bin/chromium --headless --no-sandbox --disable-gpu --remote-debugging-port=18800 --user-data-dir=%h/.marv/browser/marv/user-data about:blank
+ExecStart=/snap/bin/chromium --headless --no-sandbox --disable-gpu --remote-debugging-port=4253 --user-data-dir=%h/.marv/browser/marv/user-data about:blank
 Restart=on-failure
 RestartSec=5
 
@@ -107,14 +107,14 @@ WantedBy=default.target
 检查状态：
 
 ```bash
-curl -s http://127.0.0.1:18791/ | jq '{running, pid, chosenBrowser}'
+curl -s http://127.0.0.1:4244/ | jq '{running, pid, chosenBrowser}'
 ```
 
 测试浏览：
 
 ```bash
-curl -s -X POST http://127.0.0.1:18791/start
-curl -s http://127.0.0.1:18791/tabs
+curl -s -X POST http://127.0.0.1:4244/start
+curl -s http://127.0.0.1:4244/tabs
 ```
 
 ### 配置参考
@@ -126,7 +126,7 @@ curl -s http://127.0.0.1:18791/tabs
 | `browser.headless`       | 无 GUI 运行                                                   | `false`                                          |
 | `browser.noSandbox`      | 添加 `--no-sandbox` 标志（某些 Linux 设置需要）               | `false`                                          |
 | `browser.attachOnly`     | 不启动浏览器，仅附加到现有浏览器                              | `false`                                          |
-| `browser.cdpPort`        | Chrome DevTools Protocol 端口                                 | `18800`                                          |
+| `browser.cdpPort`        | Chrome DevTools Protocol 端口                                 | `4253`                                           |
 
 ### 问题："Chrome extension relay is running, but no tab is connected"
 

@@ -65,7 +65,7 @@ marv nodes describe --node <idOrNameOrIp>
 在节点机器上：
 
 ```bash
-marv node run --host <gateway-host> --port 18789 --display-name "Build Node"
+marv node run --host <gateway-host> --port 4242 --display-name "Build Node"
 ```
 
 ### 通过 SSH 隧道访问远程 Gateway 网关（loopback 绑定）
@@ -77,12 +77,12 @@ marv node run --host <gateway-host> --port 18789 --display-name "Build Node"
 示例（节点主机 -> Gateway 网关主机）：
 
 ```bash
-# 终端 A（保持运行）：转发本地 18790 -> Gateway 网关 127.0.0.1:18789
-ssh -N -L 18790:127.0.0.1:18789 user@gateway-host
+# 终端 A（保持运行）：转发本地 4243 -> Gateway 网关 127.0.0.1:4242
+ssh -N -L 4243:127.0.0.1:4242 user@gateway-host
 
 # 终端 B：导出 Gateway 网关令牌并通过隧道连接
 export MARV_GATEWAY_TOKEN="<gateway-token>"
-marv node run --host 127.0.0.1 --port 18790 --display-name "Build Node"
+marv node run --host 127.0.0.1 --port 4243 --display-name "Build Node"
 ```
 
 注意事项：
@@ -93,7 +93,7 @@ marv node run --host 127.0.0.1 --port 18790 --display-name "Build Node"
 ### 启动节点主机（服务）
 
 ```bash
-marv node install --host <gateway-host> --port 18789 --display-name "Build Node"
+marv node install --host <gateway-host> --port 4242 --display-name "Build Node"
 marv node restart
 ```
 
@@ -328,7 +328,7 @@ WebSocket 并暴露 `system.run` / `system.which`。这在 Linux/Windows
 启动它：
 
 ```bash
-marv node run --host <gateway-host> --port 18789
+marv node run --host <gateway-host> --port 4242
 ```
 
 注意事项：

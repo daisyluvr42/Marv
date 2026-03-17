@@ -393,7 +393,7 @@ function getHostName(hostHeader?: string | string[]): string {
   if (!host) {
     return "";
   }
-  // Bracketed IPv6: [::1]:18789
+  // Bracketed IPv6: [::1]:4242
   if (host.startsWith("[")) {
     const end = host.indexOf("]");
     if (end !== -1) {

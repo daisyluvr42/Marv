@@ -24,7 +24,7 @@ vi.mock("../../core/config/config.js", () => ({
   loadConfig: () => ({}),
   readConfigFileSnapshot: async () => ({ exists: false }),
   resolveStateDir: () => "/tmp",
-  resolveGatewayPort: () => 18789,
+  resolveGatewayPort: () => 4242,
 }));
 
 vi.mock("../../core/gateway/auth.js", () => ({
@@ -121,10 +121,10 @@ describe("gateway run option collisions", () => {
       { from: "user" },
     );
 
-    expect(forceFreePortAndWait).toHaveBeenCalledWith(18789, expect.anything());
+    expect(forceFreePortAndWait).toHaveBeenCalledWith(4242, expect.anything());
     expect(setGatewayWsLogStyle).toHaveBeenCalledWith("full");
     expect(startGatewayServer).toHaveBeenCalledWith(
-      18789,
+      4242,
       expect.objectContaining({
         auth: expect.objectContaining({
           token: "tok_run",
@@ -144,7 +144,7 @@ describe("gateway run option collisions", () => {
     });
 
     expect(startGatewayServer).toHaveBeenCalledWith(
-      18789,
+      4242,
       expect.objectContaining({
         bind: "loopback",
       }),

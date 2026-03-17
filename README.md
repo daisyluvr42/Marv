@@ -32,7 +32,7 @@ Chat Channels / WebChat / Nodes
           Plugins/Extensions
 ```
 
-默认本地网关地址：`ws://127.0.0.1:18789`
+默认本地网关地址：`ws://127.0.0.1:4242`
 
 ## 部署要求
 
@@ -107,7 +107,7 @@ marv tui
 如果你不想装成后台服务，也可以直接前台运行：
 
 ```bash
-marv gateway run --bind loopback --port 18789
+marv gateway run --bind loopback --port 4242
 ```
 
 适用原则：
@@ -151,13 +151,13 @@ pnpm marv dashboard
 ### 前台运行（调试）
 
 ```bash
-pnpm marv gateway run --port 18789 --verbose
+pnpm marv gateway run --port 4242 --verbose
 ```
 
 如果你只想在仓库内直接运行，不做全局 link，也可以始终使用 `pnpm marv ...`：
 
 ```bash
-pnpm marv gateway run --bind loopback --port 18789
+pnpm marv gateway run --bind loopback --port 4242
 pnpm marv tui
 ```
 
@@ -184,7 +184,7 @@ corepack enable
 pnpm install
 pnpm ui:build
 pnpm build
-pnpm marv gateway run --bind loopback --port 18789
+pnpm marv gateway run --bind loopback --port 4242
 ```
 
 如果你其实并不需要源码运行，换成全局安装通常更稳：
@@ -201,7 +201,7 @@ marv onboard --install-daemon
 ```bash
 pnpm install
 pnpm marv onboard
-pnpm marv gateway run --bind loopback --port 18789
+pnpm marv gateway run --bind loopback --port 4242
 ```
 
 适用于开发调试和单机使用。

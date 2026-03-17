@@ -85,7 +85,7 @@ marv channels login
 2. 启动 Gateway 网关（保持运行）：
 
 ```bash
-marv gateway --port 18789
+marv gateway --port 4242
 ```
 
 3. 在 `~/.marv/marv.json` 中放置最小配置：

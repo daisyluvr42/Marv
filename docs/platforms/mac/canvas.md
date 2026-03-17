@@ -73,7 +73,7 @@ A2UI host page on first open.
 Default A2UI host URL:
 
 ```
-http://<gateway-host>:18789/__marv__/a2ui/
+http://<gateway-host>:4242/__marv__/a2ui/
 ```
 
 ### A2UI commands (v0.8)

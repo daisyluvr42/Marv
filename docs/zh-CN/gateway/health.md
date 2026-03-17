@@ -34,7 +34,7 @@ x-i18n:
 ## 当出现故障时
 
 - `logged out` 或状态 409–515 → 使用 `marv channels logout` 然后 `marv channels login` 重新链接。
-- Gateway 网关不可达 → 启动它：`marv gateway --port 18789`（如果端口被占用则使用 `--force`）。
+- Gateway 网关不可达 → 启动它：`marv gateway --port 4242`（如果端口被占用则使用 `--force`）。
 - 没有入站消息 → 确认已链接的手机在线且发送者被允许（`channels.whatsapp.allowFrom`）；对于群聊，确保允许列表 + 提及规则匹配（`channels.whatsapp.groups`、`agents.list[].groupChat.mentionPatterns`）。
 
 ## 专用"health"命令

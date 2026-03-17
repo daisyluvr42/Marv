@@ -18,7 +18,7 @@ The canvas tool lets you present web content on any connected node's canvas view
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
 │  Canvas Host    │────▶│   Node Bridge    │────▶│  Node App   │
 │  (HTTP Server)  │     │  (TCP Server)    │     │ (Mac/iOS/   │
-│  Port 18793     │     │  Port 18790      │     │  Android)   │
+│  Port 4246     │     │  Port 4243      │     │  Android)   │
 └─────────────────┘     └──────────────────┘     └─────────────┘
 ```
 
@@ -40,7 +40,7 @@ The canvas host server binds based on `gateway.bind` setting:
 **Key insight:** The `canvasHostHostForBridge` is derived from `bridgeHost`. When bound to Tailscale, nodes receive URLs like:
 
 ```
-http://<tailscale-hostname>:18793/__marv__/canvas/<file>.html
+http://<tailscale-hostname>:4246/__marv__/canvas/<file>.html
 ```
 
 This is why localhost URLs don't work - the node receives the Tailscale hostname from the bridge!
@@ -63,7 +63,7 @@ In `~/.marv/marv.json`:
 {
   "canvasHost": {
     "enabled": true,
-    "port": 18793,
+    "port": 4246,
     "root": "/Users/you/clawd/canvas",
     "liveReload": true
   },
@@ -111,8 +111,8 @@ cat ~/.marv/marv.json | jq '.gateway.bind'
 
 Then construct the URL:
 
-- **loopback**: `http://127.0.0.1:18793/__marv__/canvas/<file>.html`
-- **lan/tailnet/auto**: `http://<hostname>:18793/__marv__/canvas/<file>.html`
+- **loopback**: `http://127.0.0.1:4246/__marv__/canvas/<file>.html`
+- **lan/tailnet/auto**: `http://<hostname>:4246/__marv__/canvas/<file>.html`
 
 Find your Tailscale hostname:
 
@@ -137,7 +137,7 @@ canvas action:present node:<node-id> target:<full-url>
 **Example:**
 
 ```
-canvas action:present node:mac-63599bc4-b54d-4392-9048-b97abd58343a target:http://peters-mac-studio-1.sheep-coho.ts.net:18793/__marv__/canvas/snake.html
+canvas action:present node:mac-63599bc4-b54d-4392-9048-b97abd58343a target:http://peters-mac-studio-1.sheep-coho.ts.net:4246/__marv__/canvas/snake.html
 ```
 
 ### 5. Navigate, snapshot, or hide
@@ -157,8 +157,8 @@ canvas action:hide node:<node-id>
 **Debug steps:**
 
 1. Check server bind: `cat ~/.marv/marv.json | jq '.gateway.bind'`
-2. Check what port canvas is on: `lsof -i :18793`
-3. Test URL directly: `curl http://<hostname>:18793/__marv__/canvas/<file>.html`
+2. Check what port canvas is on: `lsof -i :4246`
+3. Test URL directly: `curl http://<hostname>:4246/__marv__/canvas/<file>.html`
 
 **Solution:** Use the full hostname matching your bind mode, not localhost.
 
@@ -183,8 +183,8 @@ If live reload isn't working:
 The canvas host serves from `/__marv__/canvas/` prefix:
 
 ```
-http://<host>:18793/__marv__/canvas/index.html  → ~/clawd/canvas/index.html
-http://<host>:18793/__marv__/canvas/games/snake.html → ~/clawd/canvas/games/snake.html
+http://<host>:4246/__marv__/canvas/index.html  → ~/clawd/canvas/index.html
+http://<host>:4246/__marv__/canvas/games/snake.html → ~/clawd/canvas/games/snake.html
 ```
 
 The `/__marv__/canvas/` prefix is defined by `CANVAS_HOST_PATH` constant.

@@ -6,7 +6,7 @@ describe("wide-area DNS-SD zone rendering", () => {
     const txt = renderWideAreaGatewayZoneText({
       domain: "marv.internal.",
       serial: 2025121701,
-      gatewayPort: 18789,
+      gatewayPort: 4242,
       displayName: "Mac Studio (Marv)",
       tailnetIPv4: "100.123.224.76",
       tailnetIPv6: "fd7a:115c:a1e0::8801:e04c",
@@ -20,9 +20,9 @@ describe("wide-area DNS-SD zone rendering", () => {
     expect(txt).toContain(`studio-london IN A 100.123.224.76`);
     expect(txt).toContain(`studio-london IN AAAA fd7a:115c:a1e0::8801:e04c`);
     expect(txt).toContain(`_marvbot._tcp IN PTR studio-london._marvbot._tcp`);
-    expect(txt).toContain(`studio-london._marvbot._tcp IN SRV 0 0 18789 studio-london`);
+    expect(txt).toContain(`studio-london._marvbot._tcp IN SRV 0 0 4242 studio-london`);
     expect(txt).toContain(`displayName=Mac Studio (Marv)`);
-    expect(txt).toContain(`gatewayPort=18789`);
+    expect(txt).toContain(`gatewayPort=4242`);
     expect(txt).toContain(`sshPort=22`);
     expect(txt).toContain(`cliPath=/opt/homebrew/bin/marv`);
   });
@@ -31,7 +31,7 @@ describe("wide-area DNS-SD zone rendering", () => {
     const txt = renderWideAreaGatewayZoneText({
       domain: "marv.internal.",
       serial: 2025121701,
-      gatewayPort: 18789,
+      gatewayPort: 4242,
       displayName: "Mac Studio (Marv)",
       tailnetIPv4: "100.123.224.76",
       tailnetDns: "peters-mac-studio-1.sheep-coho.ts.net",

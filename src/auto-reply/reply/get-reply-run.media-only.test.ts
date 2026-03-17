@@ -28,9 +28,13 @@ vi.mock("../../process/command-queue.js", () => ({
   getQueueSize: vi.fn().mockReturnValue(0),
 }));
 
-vi.mock("../../routing/session-key.js", () => ({
-  normalizeMainKey: vi.fn().mockReturnValue("main"),
-}));
+vi.mock("../../routing/session-key.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../routing/session-key.js")>();
+  return {
+    ...actual,
+    normalizeMainKey: vi.fn().mockReturnValue("main"),
+  };
+});
 
 vi.mock("../../utils/provider-utils.js", () => ({
   isReasoningTagProvider: vi.fn().mockReturnValue(false),
@@ -51,6 +55,7 @@ vi.mock("./body.js", () => ({
 vi.mock("./groups.js", () => ({
   buildGroupIntro: vi.fn().mockReturnValue(""),
   buildGroupChatContext: vi.fn().mockReturnValue(""),
+  resolveGroupPersona: vi.fn().mockReturnValue(undefined),
 }));
 
 vi.mock("./inbound-meta.js", () => ({
@@ -133,6 +138,7 @@ function baseParams(
     resolvedBlockStreamingBreak: "message_end",
     modelState: {
       resolveDefaultThinkingLevel: async () => "medium",
+      candidates: [],
     } as never,
     provider: "anthropic",
     model: "claude-opus-4-1",

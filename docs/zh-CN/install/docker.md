@@ -61,7 +61,7 @@ Docker 是**可选的**。仅当你想要容器化的 Gateway 网关或验证 Do
 
 完成后：
 
-- 在浏览器中打开 `http://127.0.0.1:18789/`。
+- 在浏览器中打开 `http://127.0.0.1:4242/`。
 - 将令牌粘贴到控制 UI（设置 → token）。
 - 需要再次获取带令牌的 URL？运行 `docker compose run --rm marv-cli dashboard --no-open`。
 

@@ -12,7 +12,7 @@ Goal: go from zero to a first working chat with minimal setup.
 
 <Info>
 Fastest chat: open the Control UI (no channel setup needed). Run `marv dashboard`
-and chat in the browser, or open `http://127.0.0.1:18789/` on the
+and chat in the browser, or open `http://127.0.0.1:4242/` on the
 <Tooltip headline="Gateway host" tip="The machine running the Marv gateway service.">gateway host</Tooltip>.
 Docs: [Dashboard](/web/dashboard) and [Control UI](/web/control-ui).
 </Info>
@@ -87,7 +87,7 @@ If the Control UI loads, your Gateway is ready for use.
     Useful for quick tests or troubleshooting.
 
     ```bash
-    marv gateway --port 18789
+    marv gateway --port 4242
     ```
 
   </Accordion>

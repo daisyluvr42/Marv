@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   install: vi.fn(),
   auditGatewayServiceConfig: vi.fn(),
   buildGatewayInstallPlan: vi.fn(),
-  resolveGatewayPort: vi.fn(() => 18789),
+  resolveGatewayPort: vi.fn(() => 4242),
   resolveIsNixMode: vi.fn(() => false),
   note: vi.fn(),
 }));
@@ -76,7 +76,7 @@ const gatewayProgramArguments = [
   "/usr/local/bin/marv",
   "gateway",
   "--port",
-  "18789",
+  "4242",
 ];
 
 function setupGatewayTokenRepairScenario(expectedToken: string) {

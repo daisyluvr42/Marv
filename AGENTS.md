@@ -45,8 +45,8 @@
 - Config: use `marv config set ...`; ensure `gateway.mode=local` is set.
 - Discord: store raw token only (no `DISCORD_BOT_TOKEN=` prefix).
 - Restart: stop old gateway and run:
-  `pkill -9 -f marv-gateway || true; nohup marv gateway run --bind loopback --port 18789 --force > /tmp/marv-gateway.log 2>&1 &`
-- Verify: `marv channels status --probe`, `ss -ltnp | rg 18789`, `tail -n 120 /tmp/marv-gateway.log`.
+  `pkill -9 -f marv-gateway || true; nohup marv gateway run --bind loopback --port 4242 --force > /tmp/marv-gateway.log 2>&1 &`
+- Verify: `marv channels status --probe`, `ss -ltnp | rg 4242`, `tail -n 120 /tmp/marv-gateway.log`.
 
 ## Build, Test, and Development Commands
 

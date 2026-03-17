@@ -44,7 +44,7 @@ By default the container is **not** installed as a systemd service, you start it
 ./scripts/run-marv-podman.sh launch setup
 ```
 
-Then open `http://127.0.0.1:18789/` and use the token from `~marv/.marv/.env` (or the value printed by setup).
+Then open `http://127.0.0.1:4242/` and use the token from `~marv/.marv/.env` (or the value printed by setup).
 
 ## Systemd (Quadlet, optional)
 
@@ -84,7 +84,7 @@ To add quadlet **after** an initial setup that did not use it, re-run: `./setup-
 
 - **Token:** Stored in `~marv/.marv/.env` as `MARV_GATEWAY_TOKEN`. `setup-podman.sh` and `run-marv-podman.sh` generate it if missing (uses `openssl`, `python3`, or `od`).
 - **Optional:** In that `.env` you can set provider keys (e.g. `GROQ_API_KEY`, `OLLAMA_API_KEY`) and other Marv env vars.
-- **Host ports:** By default the script maps `18789` (gateway) and `18790` (bridge). Override the **host** port mapping with `MARV_PODMAN_GATEWAY_HOST_PORT` and `MARV_PODMAN_BRIDGE_HOST_PORT` when launching.
+- **Host ports:** By default the script maps `4242` (gateway) and `4243` (bridge). Override the **host** port mapping with `MARV_PODMAN_GATEWAY_HOST_PORT` and `MARV_PODMAN_BRIDGE_HOST_PORT` when launching.
 - **Paths:** Host config and workspace default to `~marv/.marv` and `~marv/.marv/workspace`. Override the host paths used by the launch script with `MARV_CONFIG_DIR` and `MARV_WORKSPACE_DIR`.
 
 ## Useful commands

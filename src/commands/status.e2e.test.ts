@@ -95,7 +95,7 @@ const mocks = vi.hoisted(() => ({
   logWebSelfId: vi.fn(),
   probeGateway: vi.fn().mockResolvedValue({
     ok: false,
-    url: "ws://127.0.0.1:18789",
+    url: "ws://127.0.0.1:4242",
     connectLatencyMs: null,
     error: "timeout",
     close: null,
@@ -408,7 +408,7 @@ describe("statusCommand", () => {
     try {
       mocks.probeGateway.mockResolvedValueOnce({
         ok: true,
-        url: "ws://127.0.0.1:18789",
+        url: "ws://127.0.0.1:4242",
         connectLatencyMs: 123,
         error: null,
         close: null,
@@ -433,7 +433,7 @@ describe("statusCommand", () => {
   it("surfaces channel runtime errors from the gateway", async () => {
     mocks.probeGateway.mockResolvedValueOnce({
       ok: true,
-      url: "ws://127.0.0.1:18789",
+      url: "ws://127.0.0.1:4242",
       connectLatencyMs: 10,
       error: null,
       close: null,

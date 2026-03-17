@@ -43,7 +43,7 @@ describe("server-context hot-reload profiles", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cfgProfiles = {
-      marv: { cdpPort: 18800, color: "#FF4500" },
+      marv: { cdpPort: 4253, color: "#FF4500" },
     };
     cachedConfig = null; // Clear simulated cache
   });
@@ -60,7 +60,7 @@ describe("server-context hot-reload profiles", () => {
     expect(cfg.browser?.profiles?.desktop).toBeUndefined();
     const state = {
       server: null,
-      port: 18791,
+      port: 4244,
       resolved,
       profiles: new Map(),
     };
@@ -107,7 +107,7 @@ describe("server-context hot-reload profiles", () => {
     const resolved = resolveBrowserConfig(cfg.browser, cfg);
     const state = {
       server: null,
-      port: 18791,
+      port: 4244,
       resolved,
       profiles: new Map(),
     };
@@ -129,7 +129,7 @@ describe("server-context hot-reload profiles", () => {
     const resolved = resolveBrowserConfig(cfg.browser, cfg);
     const state = {
       server: null,
-      port: 18791,
+      port: 4244,
       resolved,
       profiles: new Map(),
     };
@@ -153,7 +153,7 @@ describe("server-context hot-reload profiles", () => {
     const resolved = resolveBrowserConfig(cfg.browser, cfg);
     const state = {
       server: null,
-      port: 18791,
+      port: 4244,
       resolved,
       profiles: new Map(),
     };

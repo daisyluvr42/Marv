@@ -34,7 +34,7 @@ x-i18n:
 ```bash
 # main
 marv --profile main setup
-marv --profile main gateway --port 18789
+marv --profile main gateway --port 4242
 
 # rescue
 marv --profile rescue setup
@@ -65,7 +65,7 @@ marv --profile rescue gateway install
 
 ```bash
 # 主机器人（现有或新建，不带 --profile 参数）
-# 运行在端口 18789 + Chrome CDC/Canvas/... 端口
+# 运行在端口 4242 + Chrome CDC/Canvas/... 端口
 marv onboard
 marv gateway install
 
@@ -73,7 +73,7 @@ marv gateway install
 marv --profile rescue onboard
 # 注意：
 # - 工作区名称默认会添加 -rescue 后缀
-# - 端口应至少为 18789 + 20 个端口，
+# - 端口应至少为 4242 + 20 个端口，
 #   最好选择完全不同的基础端口，如 19789，
 # - 其余的新手引导与正常相同
 
@@ -103,7 +103,7 @@ marv --profile rescue gateway install
 ```bash
 MARV_CONFIG_PATH=~/.marv/main.json \
 MARV_STATE_DIR=~/.marv-main \
-marv gateway --port 18789
+marv gateway --port 4242
 
 MARV_CONFIG_PATH=~/.marv/rescue.json \
 MARV_STATE_DIR=~/.marv-rescue \

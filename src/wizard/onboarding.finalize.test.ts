@@ -24,7 +24,7 @@ describe("formatOnboardingSetupSummary", () => {
         },
         workspaceDir: "~/marv-workspace",
         settings: {
-          port: 18789,
+          port: 4242,
           bind: "loopback",
           authMode: "token",
           gatewayToken: "token",
@@ -54,7 +54,7 @@ describe("formatOnboardingSetupSummary", () => {
         },
         workspaceDir: "~/marv-workspace",
         settings: {
-          port: 18789,
+          port: 4242,
           bind: "loopback",
           authMode: "token",
           gatewayToken: "token",
@@ -71,7 +71,7 @@ describe("formatOnboardingSetupSummary", () => {
         nextConfig: {},
         workspaceDir: "/tmp/marv-workspace",
         settings: {
-          port: 18789,
+          port: 4242,
           bind: "lan",
           authMode: "password",
           tailscaleMode: "serve",
@@ -90,7 +90,7 @@ describe("formatOnboardingSetupSummary", () => {
         },
         workspaceDir: "/tmp/marv-workspace",
         settings: {
-          port: 18789,
+          port: 4242,
           bind: "lan",
           authMode: "password",
           tailscaleMode: "serve",

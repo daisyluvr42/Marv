@@ -101,7 +101,7 @@ Gateway 网关是会话、路由和渠道连接的唯一事实来源。
   <Step title="配对 WhatsApp 并启动 Gateway 网关">
     ```bash
     marv channels login
-    marv gateway --port 18789
+    marv gateway --port 4242
     ```
   </Step>
 </Steps>
@@ -112,7 +112,7 @@ Gateway 网关是会话、路由和渠道连接的唯一事实来源。
 
 Gateway 网关启动后，打开浏览器控制界面。
 
-- 本地默认地址：http://127.0.0.1:18789/
+- 本地默认地址：http://127.0.0.1:4242/
 - 远程访问：[Web 界面](/web)和 [Tailscale](/gateway/tailscale)
 
 <p align="center">

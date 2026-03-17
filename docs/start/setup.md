@@ -53,7 +53,7 @@ If you don’t have a global install yet, run it via `pnpm marv setup`.
 After `pnpm build`, you can run the packaged CLI directly:
 
 ```bash
-node marv.mjs gateway --port 18789 --verbose
+node marv.mjs gateway --port 4242 --verbose
 ```
 
 ## Stable workflow (macOS app first)
@@ -116,7 +116,7 @@ marv health
 
 ### Common footguns
 
-- **Wrong port:** Gateway WS defaults to `ws://127.0.0.1:18789`; keep app + CLI on the same port.
+- **Wrong port:** Gateway WS defaults to `ws://127.0.0.1:4242`; keep app + CLI on the same port.
 - **Where state lives:**
   - Credentials: `~/.marv/credentials/`
   - Sessions: `~/.marv/agents/<agentId>/sessions/`

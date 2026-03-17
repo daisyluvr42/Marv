@@ -53,7 +53,7 @@ describe("configureGatewayForOnboarding", () => {
 
     const prompter = createPrompter({
       selectQueue: ["loopback", "token", "off"],
-      textQueue: ["18789", undefined],
+      textQueue: ["4242", undefined],
     });
     const runtime = createRuntime();
 
@@ -61,10 +61,10 @@ describe("configureGatewayForOnboarding", () => {
       flow: "advanced",
       baseConfig: {},
       nextConfig: {},
-      localPort: 18789,
+      localPort: 4242,
       quickstartGateway: {
         hasExisting: false,
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         tailscaleMode: "off",
@@ -93,7 +93,7 @@ describe("configureGatewayForOnboarding", () => {
     // Flow: loopback bind → password auth → tailscale off
     const prompter = createPrompter({
       selectQueue: ["loopback", "password", "off"],
-      textQueue: ["18789", undefined],
+      textQueue: ["4242", undefined],
     });
     const runtime = createRuntime();
 
@@ -101,10 +101,10 @@ describe("configureGatewayForOnboarding", () => {
       flow: "advanced",
       baseConfig: {},
       nextConfig: {},
-      localPort: 18789,
+      localPort: 4242,
       quickstartGateway: {
         hasExisting: false,
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "password",
         tailscaleMode: "off",

@@ -69,7 +69,7 @@ Browser settings live in `~/.marv/marv.json`.
     attachOnly: false,
     executablePath: "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
     profiles: {
-      marv: { cdpPort: 18800, color: "#FF4500" },
+      marv: { cdpPort: 4253, color: "#FF4500" },
       work: { cdpPort: 18801, color: "#0066CC" },
       remote: { cdpUrl: "http://10.0.0.42:9222", color: "#00AA00" },
     },
@@ -80,7 +80,7 @@ Browser settings live in `~/.marv/marv.json`.
 Notes:
 
 - The browser control service binds to loopback on a port derived from `gateway.port`
-  (default: `18791`, which is gateway + 2). The relay uses the next port (`18792`).
+  (default: `4244`, which is gateway + 2). The relay uses the next port (`18792`).
 - If you override the Gateway port (`gateway.port` or `MARV_GATEWAY_PORT`),
   the derived browser ports shift to stay in the same “family”.
 - `cdpUrl` defaults to the relay port when unset.
@@ -213,7 +213,7 @@ Defaults:
 
 - The `marv` profile is auto-created if missing.
 - The `chrome` profile is built-in for the Chrome extension relay (points at `http://127.0.0.1:18792` by default).
-- Local CDP ports allocate from **18800–18899** by default.
+- Local CDP ports allocate from **4253–4352** by default.
 - Deleting a profile moves its local data directory to Trash.
 
 All control endpoints accept `?profile=<name>`; the CLI uses `--browser-profile`.

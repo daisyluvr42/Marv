@@ -186,7 +186,7 @@ marv gateway status
 marv onboard --install-daemon
 
 # Start in foreground (debug)
-marv gateway run --bind loopback --port 18789
+marv gateway run --bind loopback --port 4242
 
 # Restart
 marv gateway run --force
@@ -354,14 +354,14 @@ marv doctor                 # automated repair
 
 ### Common issues
 
-| Symptom                       | Fix                                                         |
-| ----------------------------- | ----------------------------------------------------------- |
-| Gateway wont start            | `marv gateway run --force` (kills stale process)            |
-| Channel disconnected          | `marv channels login --channel <name>`                      |
-| No replies to messages        | Check `marv status --all` for model/channel errors          |
-| Port conflict (18789)         | `marv gateway run --port 18790` or kill conflicting process |
-| Config validation error       | `marv doctor --repair`                                      |
-| Missing dependencies (source) | `pnpm install && pnpm ui:build && pnpm build`               |
+| Symptom                       | Fix                                                        |
+| ----------------------------- | ---------------------------------------------------------- |
+| Gateway wont start            | `marv gateway run --force` (kills stale process)           |
+| Channel disconnected          | `marv channels login --channel <name>`                     |
+| No replies to messages        | Check `marv status --all` for model/channel errors         |
+| Port conflict (4242)          | `marv gateway run --port 4243` or kill conflicting process |
+| Config validation error       | `marv doctor --repair`                                     |
+| Missing dependencies (source) | `pnpm install && pnpm ui:build && pnpm build`              |
 
 ### Doctor (automated repair)
 

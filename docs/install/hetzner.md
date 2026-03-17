@@ -129,7 +129,7 @@ Create `.env` in the repository root.
 MARV_IMAGE=marv:latest
 MARV_GATEWAY_TOKEN=change-me-now
 MARV_GATEWAY_BIND=lan
-MARV_GATEWAY_PORT=18789
+MARV_GATEWAY_PORT=4242
 
 MARV_CONFIG_DIR=/root/.marv
 MARV_WORKSPACE_DIR=/root/.marv/workspace
@@ -176,7 +176,7 @@ services:
     ports:
       # Recommended: keep the Gateway loopback-only on the VPS; access via SSH tunnel.
       # To expose it publicly, remove the `127.0.0.1:` prefix and firewall accordingly.
-      - "127.0.0.1:${MARV_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${MARV_GATEWAY_PORT}:4242"
     command:
       [
         "node",
@@ -291,18 +291,18 @@ docker compose logs -f marv-gateway
 Success:
 
 ```
-[gateway] listening on ws://0.0.0.0:18789
+[gateway] listening on ws://0.0.0.0:4242
 ```
 
 From your laptop:
 
 ```bash
-ssh -N -L 18789:127.0.0.1:18789 root@YOUR_VPS_IP
+ssh -N -L 4242:127.0.0.1:4242 root@YOUR_VPS_IP
 ```
 
 Open:
 
-`http://127.0.0.1:18789/`
+`http://127.0.0.1:4242/`
 
 Paste your gateway token.
 

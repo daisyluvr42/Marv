@@ -34,7 +34,7 @@ marv onboard
   <Tab title="クイックスタート（デフォルト設定）">
     - loopback上のローカルGateway
     - 既存のワークスペースまたはデフォルトワークスペース
-    - Gatewayポート `18789`
+    - Gatewayポート `4242`
     - Gateway認証トークンは自動生成（loopback上でも生成されます）
     - Tailscale公開はオフ
     - TelegramとWhatsAppのDMはデフォルトで許可リスト（電話番号の入力を求められる場合があります）

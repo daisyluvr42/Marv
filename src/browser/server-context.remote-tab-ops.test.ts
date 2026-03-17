@@ -22,7 +22,7 @@ function makeState(
     port: 0,
     resolved: {
       enabled: true,
-      controlPort: 18791,
+      controlPort: 4244,
       cdpProtocol: profile === "remote" ? "https" : "http",
       cdpHost: profile === "remote" ? "browserless.example" : "127.0.0.1",
       cdpIsLoopback: profile !== "remote",
@@ -41,7 +41,7 @@ function makeState(
           cdpPort: 443,
           color: "#00AA00",
         },
-        marv: { cdpPort: 18800, color: "#FF4500" },
+        marv: { cdpPort: 4253, color: "#FF4500" },
       },
     },
     profiles: new Map(),

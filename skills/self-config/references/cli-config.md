@@ -24,7 +24,7 @@ Set a value. For arrays/objects pass JSON:
 
 ```bash
 marv config set channels.telegram.proxy "http://127.0.0.1:7890"
-marv config set gateway.port 18789
+marv config set gateway.port 4242
 marv config set agents.defaults.heartbeat.every "2h"
 marv config set channels.whatsapp.allowFrom '["*"]'
 ```

@@ -27,7 +27,7 @@ Profiles auto-scope `MARV_STATE_DIR` + `MARV_CONFIG_PATH` and suffix service nam
 ```bash
 # main
 marv --profile main setup
-marv --profile main gateway --port 18789
+marv --profile main gateway --port 4242
 
 # rescue
 marv --profile rescue setup
@@ -58,7 +58,7 @@ Port spacing: leave at least 20 ports between base ports so the derived browser/
 
 ```bash
 # Main bot (existing or fresh, without --profile param)
-# Runs on port 18789 + Chrome CDC/Canvas/... Ports
+# Runs on port 4242 + Chrome CDC/Canvas/... Ports
 marv onboard
 marv gateway install
 
@@ -66,7 +66,7 @@ marv gateway install
 marv --profile rescue onboard
 # Notes:
 # - workspace name will be postfixed with -rescue per default
-# - Port should be at least 18789 + 20 Ports,
+# - Port should be at least 4242 + 20 Ports,
 #   better choose completely different base port, like 19789,
 # - rest of the onboarding is the same as normal
 
@@ -96,7 +96,7 @@ If you override any of these in config or env, you must keep them unique per ins
 ```bash
 MARV_CONFIG_PATH=~/.marv/main.json \
 MARV_STATE_DIR=~/.marv-main \
-marv gateway --port 18789
+marv gateway --port 4242
 
 MARV_CONFIG_PATH=~/.marv/rescue.json \
 MARV_STATE_DIR=~/.marv-rescue \

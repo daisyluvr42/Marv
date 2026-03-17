@@ -73,7 +73,7 @@ vi.mock("../infra/daemon/service.js", () => ({
 
 vi.mock("../infra/daemon/program-args.js", () => ({
   resolveGatewayProgramArguments: async () => ({
-    programArguments: ["/bin/node", "cli", "gateway", "--port", "18789"],
+    programArguments: ["/bin/node", "cli", "gateway", "--port", "4242"],
   }),
 }));
 
@@ -128,7 +128,7 @@ describe("gateway-cli coverage", () => {
         host: "studio.local",
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",
-        gatewayPort: 18789,
+        gatewayPort: 4242,
         sshPort: 22,
       },
     ]);
@@ -159,7 +159,7 @@ describe("gateway-cli coverage", () => {
         host: "studio.marv.internal",
         lanHost: "studio.local",
         tailnetDns: "studio.tailnet.ts.net",
-        gatewayPort: 18789,
+        gatewayPort: 4242,
         sshPort: 22,
       },
     ]);
@@ -179,7 +179,7 @@ describe("gateway-cli coverage", () => {
     expect(out).toContain("- Studio marv.internal.");
     expect(out).toContain("  tailnet: studio.tailnet.ts.net");
     expect(out).toContain("  host: studio.marv.internal");
-    expect(out).toContain("  ws: ws://studio.marv.internal:18789");
+    expect(out).toContain("  ws: ws://studio.marv.internal:4242");
   });
 
   it("validates gateway discover timeout", async () => {
@@ -242,7 +242,7 @@ describe("gateway-cli coverage", () => {
     registerGatewayCli(programForceFail);
     await expect(
       programForceFail.parseAsync(
-        ["gateway", "--port", "18789", "--token", "test-token", "--force", "--allow-unconfigured"],
+        ["gateway", "--port", "4242", "--token", "test-token", "--force", "--allow-unconfigured"],
         { from: "user" },
       ),
     ).rejects.toThrow("__exit__:1");
@@ -256,7 +256,7 @@ describe("gateway-cli coverage", () => {
     const beforeSigint = new Set(process.listeners("SIGINT"));
     await expect(
       programStartFail.parseAsync(
-        ["gateway", "--port", "18789", "--token", "test-token", "--allow-unconfigured"],
+        ["gateway", "--port", "4242", "--token", "test-token", "--allow-unconfigured"],
         {
           from: "user",
         },

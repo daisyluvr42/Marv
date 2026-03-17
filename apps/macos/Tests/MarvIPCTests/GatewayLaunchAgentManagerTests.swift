@@ -7,7 +7,7 @@ import Testing
         let url = FileManager().temporaryDirectory
             .appendingPathComponent("marv-launchd-\(UUID().uuidString).plist")
         let plist: [String: Any] = [
-            "ProgramArguments": ["marv", "gateway-daemon", "--port", "18789", "--bind", "loopback"],
+            "ProgramArguments": ["marv", "gateway-daemon", "--port", "4242", "--bind", "loopback"],
             "EnvironmentVariables": [
                 "OPENCLAW_GATEWAY_TOKEN": " secret ",
                 "OPENCLAW_GATEWAY_PASSWORD": "pw",
@@ -18,7 +18,7 @@ import Testing
         defer { try? FileManager().removeItem(at: url) }
 
         let snapshot = try #require(LaunchAgentPlist.snapshot(url: url))
-        #expect(snapshot.port == 18789)
+        #expect(snapshot.port == 4242)
         #expect(snapshot.bind == "loopback")
         #expect(snapshot.token == "secret")
         #expect(snapshot.password == "pw")
@@ -28,14 +28,14 @@ import Testing
         let url = FileManager().temporaryDirectory
             .appendingPathComponent("marv-launchd-\(UUID().uuidString).plist")
         let plist: [String: Any] = [
-            "ProgramArguments": ["marv", "gateway-daemon", "--port", "18789"],
+            "ProgramArguments": ["marv", "gateway-daemon", "--port", "4242"],
         ]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
         try data.write(to: url, options: [.atomic])
         defer { try? FileManager().removeItem(at: url) }
 
         let snapshot = try #require(LaunchAgentPlist.snapshot(url: url))
-        #expect(snapshot.port == 18789)
+        #expect(snapshot.port == 4242)
         #expect(snapshot.bind == nil)
     }
 }

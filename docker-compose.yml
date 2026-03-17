@@ -12,12 +12,12 @@ services:
       - ${MARV_CONFIG_DIR}:/home/node/.marv
       - ${MARV_WORKSPACE_DIR}:/home/node/.marv/workspace
     ports:
-      - "${MARV_GATEWAY_PORT:-18789}:18789"
-      - "${MARV_BRIDGE_PORT:-18790}:18790"
+      - "${MARV_GATEWAY_PORT:-4242}:4242"
+      - "${MARV_BRIDGE_PORT:-4243}:4243"
     init: true
     restart: unless-stopped
     command:
-      ["node", "dist/index.js", "gateway", "--bind", "${MARV_GATEWAY_BIND:-lan}", "--port", "18789"]
+      ["node", "dist/index.js", "gateway", "--bind", "${MARV_GATEWAY_BIND:-lan}", "--port", "4242"]
 
   marv-cli:
     image: ${MARV_IMAGE:-marv:local}

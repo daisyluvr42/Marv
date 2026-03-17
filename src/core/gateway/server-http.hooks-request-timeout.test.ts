@@ -41,7 +41,7 @@ function createRequest(): IncomingMessage {
     method: "POST",
     url: "/hooks/wake",
     headers: {
-      host: "127.0.0.1:18789",
+      host: "127.0.0.1:4242",
       authorization: "Bearer hook-secret",
     },
     socket: { remoteAddress: "127.0.0.1" },
@@ -75,7 +75,7 @@ describe("createHooksRequestHandler timeout status mapping", () => {
     const handler = createHooksRequestHandler({
       getHooksConfig: () => createHooksConfig(),
       bindHost: "127.0.0.1",
-      port: 18789,
+      port: 4242,
       logHooks: {
         warn: vi.fn(),
         debug: vi.fn(),

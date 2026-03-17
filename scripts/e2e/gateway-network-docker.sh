@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 IMAGE_NAME="marv-gateway-network-e2e"
 
-PORT="18789"
+PORT="4242"
 TOKEN="e2e-$(date +%s)-$$"
 NET_NAME="marv-net-e2e-$$"
 GW_NAME="marv-gateway-e2e-$$"

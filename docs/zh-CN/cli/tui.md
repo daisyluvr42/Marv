@@ -25,6 +25,6 @@ x-i18n:
 
 ```bash
 marv tui
-marv tui --url ws://127.0.0.1:18789 --token <token>
+marv tui --url ws://127.0.0.1:4242 --token <token>
 marv tui --session main --deliver
 ```

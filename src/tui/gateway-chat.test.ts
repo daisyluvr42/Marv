@@ -33,7 +33,7 @@ describe("resolveGatewayConnection", () => {
     resolveGatewayPort.mockReset();
     pickPrimaryTailnetIPv4.mockReset();
     pickPrimaryLanIPv4.mockReset();
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     pickPrimaryLanIPv4.mockReturnValue(undefined);
     delete process.env.MARV_GATEWAY_TOKEN;
@@ -94,21 +94,21 @@ describe("resolveGatewayConnection", () => {
 
   it("uses tailnet host when local bind is tailnet", () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "tailnet" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue("100.64.0.1");
 
     const result = resolveGatewayConnection({});
 
-    expect(result.url).toBe("ws://100.64.0.1:18800");
+    expect(result.url).toBe("ws://100.64.0.1:4253");
   });
 
   it("uses lan host when local bind is lan", () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "lan" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryLanIPv4.mockReturnValue("192.168.1.42");
 
     const result = resolveGatewayConnection({});
 
-    expect(result.url).toBe("ws://192.168.1.42:18800");
+    expect(result.url).toBe("ws://192.168.1.42:4253");
   });
 });

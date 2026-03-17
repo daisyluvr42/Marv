@@ -66,10 +66,10 @@ Use this when you want the Gateway to listen directly on the Tailnet IP (no Serv
 
 Connect from another Tailnet device:
 
-- Control UI: `http://<tailscale-ip>:18789/`
-- WebSocket: `ws://<tailscale-ip>:18789`
+- Control UI: `http://<tailscale-ip>:4242/`
+- WebSocket: `ws://<tailscale-ip>:4242`
 
-Note: loopback (`http://127.0.0.1:18789`) will **not** work in this mode.
+Note: loopback (`http://127.0.0.1:4242`) will **not** work in this mode.
 
 ### Public internet (Funnel + shared password)
 

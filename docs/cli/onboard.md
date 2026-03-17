@@ -23,7 +23,7 @@ Interactive onboarding wizard (local or remote Gateway setup).
 marv onboard
 marv onboard --flow quickstart
 marv onboard --flow advanced
-marv onboard --mode remote --remote-url ws://gateway-host:18789
+marv onboard --mode remote --remote-url ws://gateway-host:4242
 ```
 
 Non-interactive custom provider:

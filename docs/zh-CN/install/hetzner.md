@@ -138,7 +138,7 @@ chown -R 1000:1000 /root/.marv/workspace
 MARV_IMAGE=marv:latest
 MARV_GATEWAY_TOKEN=change-me-now
 MARV_GATEWAY_BIND=lan
-MARV_GATEWAY_PORT=18789
+MARV_GATEWAY_PORT=4242
 
 MARV_CONFIG_DIR=/root/.marv
 MARV_WORKSPACE_DIR=/root/.marv/workspace
@@ -185,11 +185,11 @@ services:
     ports:
       # 推荐：在 VPS 上保持 Gateway 网关仅限 loopback；通过 SSH 隧道访问。
       # 要公开暴露，移除 `127.0.0.1:` 前缀并相应配置防火墙。
-      - "127.0.0.1:${MARV_GATEWAY_PORT}:18789"
+      - "127.0.0.1:${MARV_GATEWAY_PORT}:4242"
 
       # 可选：仅当你对此 VPS 运行 iOS/Android 节点并需要 Canvas 主机时。
       # 如果你公开暴露此端口，请阅读 /gateway/security 并相应配置防火墙。
-      # - "18793:18793"
+      # - "4246:4246"
     command:
       [
         "node",
@@ -301,18 +301,18 @@ docker compose logs -f marv-gateway
 成功：
 
 ```
-[gateway] listening on ws://0.0.0.0:18789
+[gateway] listening on ws://0.0.0.0:4242
 ```
 
 从你的笔记本电脑：
 
 ```bash
-ssh -N -L 18789:127.0.0.1:18789 root@YOUR_VPS_IP
+ssh -N -L 4242:127.0.0.1:4242 root@YOUR_VPS_IP
 ```
 
 打开：
 
-`http://127.0.0.1:18789/`
+`http://127.0.0.1:4242/`
 
 粘贴你的 Gateway 网关令牌。
 

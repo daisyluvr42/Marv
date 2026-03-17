@@ -71,7 +71,7 @@ marv browser --browser-profile marv snapshot
     attachOnly: false,
     executablePath: "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
     profiles: {
-      marv: { cdpPort: 18800, color: "#FF4500" },
+      marv: { cdpPort: 4253, color: "#FF4500" },
       work: { cdpPort: 18801, color: "#0066CC" },
       remote: { cdpUrl: "http://10.0.0.42:9222", color: "#00AA00" },
     },
@@ -81,7 +81,7 @@ marv browser --browser-profile marv snapshot
 
 注意事项：
 
-- 浏览器控制服务绑定到 loopback 上的端口，该端口从 `gateway.port` 派生（默认：`18791`，即 gateway + 2）。中继使用下一个端口（`18792`）。
+- 浏览器控制服务绑定到 loopback 上的端口，该端口从 `gateway.port` 派生（默认：`4244`，即 gateway + 2）。中继使用下一个端口（`18792`）。
 - 如果你覆盖了 Gateway 网关端口（`gateway.port` 或 `MARV_GATEWAY_PORT`），派生的浏览器端口会相应调整以保持在同一"系列"中。
 - 未设置时，`cdpUrl` 默认为中继端口。
 - `remoteCdpTimeoutMs` 适用于远程（非 loopback）CDP 可达性检查。
@@ -203,7 +203,7 @@ Marv 支持多个命名配置文件（路由配置）。配置文件可以是：
 
 - 如果缺少 `marv` 配置文件，会自动创建。
 - `chrome` 配置文件是内置的，用于 Chrome 扩展中继（默认指向 `http://127.0.0.1:18792`）。
-- 本地 CDP 端口默认从 **18800–18899** 分配。
+- 本地 CDP 端口默认从 **4253–4352** 分配。
 - 删除配置文件会将其本地数据目录移至回收站。
 
 所有控制端点接受 `?profile=<name>`；CLI 使用 `--browser-profile`。

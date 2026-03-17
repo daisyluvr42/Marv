@@ -85,14 +85,14 @@ marv models status
 
 ### Control UI 在 HTTP 上失败（"device identity required" / "connect failed"）
 
-如果你通过纯 HTTP 打开仪表板（例如 `http://<lan-ip>:18789/` 或
-`http://<tailscale-ip>:18789/`），浏览器运行在**非安全上下文**中，
+如果你通过纯 HTTP 打开仪表板（例如 `http://<lan-ip>:4242/` 或
+`http://<tailscale-ip>:4242/`），浏览器运行在**非安全上下文**中，
 会阻止 WebCrypto，因此无法生成设备身份。
 
 **修复：**
 
 - 优先通过 [Tailscale Serve](/gateway/tailscale) 使用 HTTPS。
-- 或在 Gateway 网关主机上本地打开：`http://127.0.0.1:18789/`。
+- 或在 Gateway 网关主机上本地打开：`http://127.0.0.1:4242/`。
 - 如果必须使用 HTTP，启用 `gateway.controlUi.allowInsecureAuth: true` 并
   使用 Gateway 网关令牌（仅令牌；无设备身份/配对）。参见
   [Control UI](/web/control-ui#insecure-http)。
@@ -245,7 +245,7 @@ Gateway 网关可能拒绝绑定。
 - 对于 `bind=lan` 这是预期的：Gateway 网关监听 `0.0.0.0`（所有接口），本地回环仍应本地连接。
 - 对于远程客户端，使用真实的 LAN IP（不是 `0.0.0.0`）加端口，并确保配置了认证。
 
-### 地址已被使用（端口 18789）
+### 地址已被使用（端口 4242）
 
 这意味着某些东西已经在 Gateway 网关端口上监听。
 
@@ -635,7 +635,7 @@ tccutil reset All bot.molt.mac.debug
 
 ### Gateway 网关卡在"Starting..."
 
-应用连接到端口 `18789` 上的本地 Gateway 网关。如果一直卡住：
+应用连接到端口 `4242` 上的本地 Gateway 网关。如果一直卡住：
 
 **修复 1：停止监管程序（首选）**
 如果 Gateway 网关由 launchd 监管，杀死 PID 只会重新生成它。先停止监管程序：
@@ -649,7 +649,7 @@ marv gateway stop
 **修复 2：端口被占用（查找监听器）**
 
 ```bash
-lsof -nP -iTCP:18789 -sTCP:LISTEN
+lsof -nP -iTCP:4242 -sTCP:LISTEN
 ```
 
 如果是未被监管的进程，先尝试优雅停止，然后升级：
@@ -705,7 +705,7 @@ marv health --json
 marv health --verbose
 
 # 默认端口上是否有东西在监听？
-lsof -nP -iTCP:18789 -sTCP:LISTEN
+lsof -nP -iTCP:4242 -sTCP:LISTEN
 
 # 最近活动（RPC 日志尾部）
 marv logs --follow
@@ -747,7 +747,7 @@ _"你试过关掉再开吗？"_ — 每个 IT 人员都这么说
 
 ### 浏览器无法启动（Linux）
 
-如果你看到 `"Failed to start Chrome CDP on port 18800"`：
+如果你看到 `"Failed to start Chrome CDP on port 4253"`：
 
 **最可能的原因：** Ubuntu 上的 Snap 打包的 Chromium。
 

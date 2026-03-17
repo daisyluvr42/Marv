@@ -82,7 +82,7 @@ function resetGatewayCallMocks() {
   closeReason = "";
 }
 
-function setGatewayNetworkDefaults(port = 18789) {
+function setGatewayNetworkDefaults(port = 4242) {
   resolveGatewayPort.mockReturnValue(port);
   pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 }
@@ -91,7 +91,7 @@ function makeRemotePasswordGatewayConfig(remotePassword: string, localPassword =
   return {
     gateway: {
       mode: "remote",
-      remote: { url: "ws://remote.example:18789", password: remotePassword },
+      remote: { url: "ws://remote.example:4242", password: remotePassword },
       auth: { password: localPassword },
     },
   };
@@ -104,61 +104,61 @@ describe("callGateway url resolution", () => {
 
   it("keeps loopback when local bind is auto even if tailnet is present", async () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "auto" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue("100.64.0.1");
 
     await callGateway({ method: "health" });
 
-    expect(lastClientOptions?.url).toBe("ws://127.0.0.1:18800");
+    expect(lastClientOptions?.url).toBe("ws://127.0.0.1:4253");
   });
 
   it("falls back to loopback when local bind is auto without tailnet IP", async () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "auto" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
     await callGateway({ method: "health" });
 
-    expect(lastClientOptions?.url).toBe("ws://127.0.0.1:18800");
+    expect(lastClientOptions?.url).toBe("ws://127.0.0.1:4253");
   });
 
   it("uses tailnet IP when local bind is tailnet and tailnet is present", async () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "tailnet" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue("100.64.0.1");
 
     await callGateway({ method: "health" });
 
-    expect(lastClientOptions?.url).toBe("ws://100.64.0.1:18800");
+    expect(lastClientOptions?.url).toBe("ws://100.64.0.1:4253");
   });
 
   it("uses LAN IP when bind is lan and LAN IP is available", async () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "lan" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     pickPrimaryLanIPv4.mockReturnValue("192.168.1.42");
 
     await callGateway({ method: "health" });
 
-    expect(lastClientOptions?.url).toBe("ws://192.168.1.42:18800");
+    expect(lastClientOptions?.url).toBe("ws://192.168.1.42:4253");
   });
 
   it("falls back to loopback when bind is lan but no LAN IP found", async () => {
     loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "lan" } });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     pickPrimaryLanIPv4.mockReturnValue(undefined);
 
     await callGateway({ method: "health" });
 
-    expect(lastClientOptions?.url).toBe("ws://127.0.0.1:18800");
+    expect(lastClientOptions?.url).toBe("ws://127.0.0.1:4253");
   });
 
   it("uses url override in remote mode even when remote url is missing", async () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "remote", bind: "loopback", remote: {} },
     });
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
     await callGateway({
@@ -181,7 +181,7 @@ describe("buildGatewayConnectionDetails", () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "local", bind: "loopback" },
     });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue("100.64.0.1");
 
     const details = buildGatewayConnectionDetails({
@@ -200,31 +200,31 @@ describe("buildGatewayConnectionDetails", () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "remote", bind: "loopback", remote: {} },
     });
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
     const details = buildGatewayConnectionDetails();
 
-    expect(details.url).toBe("ws://127.0.0.1:18789");
+    expect(details.url).toBe("ws://127.0.0.1:4242");
     expect(details.urlSource).toBe("missing gateway.remote.url (fallback local)");
     expect(details.bindDetail).toBe("Bind: loopback");
     expect(details.remoteFallbackNote).toContain(
       "gateway.mode=remote but gateway.remote.url is missing",
     );
-    expect(details.message).toContain("Gateway target: ws://127.0.0.1:18789");
+    expect(details.message).toContain("Gateway target: ws://127.0.0.1:4242");
   });
 
   it("uses LAN IP and reports lan source when bind is lan", () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "local", bind: "lan" },
     });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     pickPrimaryLanIPv4.mockReturnValue("10.0.0.5");
 
     const details = buildGatewayConnectionDetails();
 
-    expect(details.url).toBe("ws://10.0.0.5:18800");
+    expect(details.url).toBe("ws://10.0.0.5:4253");
     expect(details.urlSource).toBe("local lan 10.0.0.5");
     expect(details.bindDetail).toBe("Bind: lan");
   });
@@ -237,7 +237,7 @@ describe("buildGatewayConnectionDetails", () => {
         remote: { url: "wss://remote.example.com/ws" },
       },
     });
-    resolveGatewayPort.mockReturnValue(18800);
+    resolveGatewayPort.mockReturnValue(4253);
     pickPrimaryTailnetIPv4.mockReturnValue("100.64.0.9");
 
     const details = buildGatewayConnectionDetails();
@@ -265,7 +265,7 @@ describe("callGateway error details", () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "local", bind: "loopback" },
     });
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
     let err: Error | null = null;
@@ -276,7 +276,7 @@ describe("callGateway error details", () => {
     }
 
     expect(err?.message).toContain("gateway closed (1006");
-    expect(err?.message).toContain("Gateway target: ws://127.0.0.1:18789");
+    expect(err?.message).toContain("Gateway target: ws://127.0.0.1:4242");
     expect(err?.message).toContain("Source: local loopback");
     expect(err?.message).toContain("Bind: loopback");
   });
@@ -286,7 +286,7 @@ describe("callGateway error details", () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "local", bind: "loopback" },
     });
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
     vi.useFakeTimers();
@@ -299,7 +299,7 @@ describe("callGateway error details", () => {
     await promise;
 
     expect(errMessage).toContain("gateway timeout after 5ms");
-    expect(errMessage).toContain("Gateway target: ws://127.0.0.1:18789");
+    expect(errMessage).toContain("Gateway target: ws://127.0.0.1:4242");
     expect(errMessage).toContain("Source: local loopback");
     expect(errMessage).toContain("Bind: loopback");
   });
@@ -309,7 +309,7 @@ describe("callGateway error details", () => {
     loadConfig.mockReturnValue({
       gateway: { mode: "local", bind: "loopback" },
     });
-    resolveGatewayPort.mockReturnValue(18789);
+    resolveGatewayPort.mockReturnValue(4242);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
     vi.useFakeTimers();
@@ -346,7 +346,7 @@ describe("callGateway url override auth requirements", () => {
   beforeEach(() => {
     envSnapshot = captureEnv(["MARV_GATEWAY_TOKEN", "MARV_GATEWAY_PASSWORD"]);
     resetGatewayCallMocks();
-    setGatewayNetworkDefaults(18789);
+    setGatewayNetworkDefaults(4242);
   });
 
   afterEach(() => {
@@ -377,7 +377,7 @@ describe("callGateway url override auth requirements", () => {
       },
     });
 
-    await callGateway({ method: "health", url: "ws://127.0.0.1:18789" });
+    await callGateway({ method: "health", url: "ws://127.0.0.1:4242" });
 
     expect(lastClientOptions?.token).toBe("local-token");
     expect(lastClientOptions?.password).toBe("local-password");
@@ -391,7 +391,7 @@ describe("callGateway password resolution", () => {
     envSnapshot = captureEnv(["MARV_GATEWAY_PASSWORD"]);
     resetGatewayCallMocks();
     delete process.env.MARV_GATEWAY_PASSWORD;
-    setGatewayNetworkDefaults(18789);
+    setGatewayNetworkDefaults(4242);
   });
 
   afterEach(() => {
@@ -470,7 +470,7 @@ describe("callGateway token resolution", () => {
     envSnapshot = captureEnv(["MARV_GATEWAY_TOKEN"]);
     resetGatewayCallMocks();
     delete process.env.MARV_GATEWAY_TOKEN;
-    setGatewayNetworkDefaults(18789);
+    setGatewayNetworkDefaults(4242);
   });
 
   afterEach(() => {

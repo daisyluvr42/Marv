@@ -25,7 +25,7 @@ x-i18n:
 marv acp
 
 # Remote Gateway
-marv acp --url wss://gateway-host:18789 --token <token>
+marv acp --url wss://gateway-host:4242 --token <token>
 
 # Attach to an existing session key
 marv acp --session agent:main:main
@@ -46,7 +46,7 @@ marv acp --session agent:main:main --reset-session
 marv acp client
 
 # Point the spawned bridge at a remote Gateway
-marv acp client --server-args --url wss://gateway-host:18789 --token <token>
+marv acp client --server-args --url wss://gateway-host:4242 --token <token>
 
 # Override the server command (default: marv)
 marv acp client --server "node" --server-args marv.mjs acp --url ws://127.0.0.1:19001
@@ -63,14 +63,14 @@ marv acp client --server "node" --server-args marv.mjs acp --url ws://127.0.0.1:
 示例配置（持久化）：
 
 ```bash
-marv config set gateway.remote.url wss://gateway-host:18789
+marv config set gateway.remote.url wss://gateway-host:4242
 marv config set gateway.remote.token <token>
 ```
 
 示例直接运行（不写入配置）：
 
 ```bash
-marv acp --url wss://gateway-host:18789 --token <token>
+marv acp --url wss://gateway-host:4242 --token <token>
 ```
 
 ## 选择智能体
@@ -115,7 +115,7 @@ marv acp --session agent:qa:bug-123
       "args": [
         "acp",
         "--url",
-        "wss://gateway-host:18789",
+        "wss://gateway-host:4242",
         "--token",
         "<token>",
         "--session",

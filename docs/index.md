@@ -107,7 +107,7 @@ The Gateway is the single source of truth for sessions, routing, and channel con
   <Step title="Pair WhatsApp and start the Gateway">
     ```bash
     marv channels login
-    marv gateway --port 18789
+    marv gateway --port 4242
     ```
   </Step>
 </Steps>
@@ -118,7 +118,7 @@ Need the full install and dev setup? See [Quick start](/start/quickstart).
 
 Open the browser Control UI after the Gateway starts.
 
-- Local default: [http://127.0.0.1:18789/](http://127.0.0.1:18789/)
+- Local default: [http://127.0.0.1:4242/](http://127.0.0.1:4242/)
 - Remote access: [Web surfaces](/web) and [Tailscale](/gateway/tailscale)
 
 <p align="center">

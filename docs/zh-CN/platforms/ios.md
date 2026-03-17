@@ -37,7 +37,7 @@ x-i18n:
 1. 启动 Gateway 网关：
 
 ```bash
-marv gateway --port 18789
+marv gateway --port 4242
 ```
 
 2. 在 iOS 应用中，打开设置并选择一个已发现的 Gateway 网关（或启用手动主机并输入主机/端口）。
@@ -69,14 +69,14 @@ Gateway 网关在 `local.` 上广播 `_marv-gw._tcp`。iOS 应用会自动列出
 
 ### 手动主机/端口
 
-在设置中，启用**手动主机**并输入 Gateway 网关主机 + 端口（默认 `18789`）。
+在设置中，启用**手动主机**并输入 Gateway 网关主机 + 端口（默认 `4242`）。
 
 ## Canvas + A2UI
 
 iOS 节点渲染一个 WKWebView canvas。使用 `node.invoke` 来驱动它：
 
 ```bash
-marv nodes invoke --node "iOS Node" --command canvas.navigate --params '{"url":"http://<gateway-host>:18793/__marv__/canvas/"}'
+marv nodes invoke --node "iOS Node" --command canvas.navigate --params '{"url":"http://<gateway-host>:4246/__marv__/canvas/"}'
 ```
 
 注意事项：

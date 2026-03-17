@@ -17,7 +17,7 @@ x-i18n:
 
 控制 UI 是一个由 Gateway 网关提供服务的小型 **Vite + Lit** 单页应用：
 
-- 默认：`http://<host>:18789/`
+- 默认：`http://<host>:4242/`
 - 可选前缀：设置 `gateway.controlUi.basePath`（例如 `/marv`）
 
 它**直接与同一端口上的 Gateway 网关 WebSocket** 通信。
@@ -26,7 +26,7 @@ x-i18n:
 
 如果 Gateway 网关在同一台计算机上运行，打开：
 
-- http://127.0.0.1:18789/（或 http://localhost:18789/）
+- http://127.0.0.1:4242/（或 http://localhost:4242/）
 
 如果页面加载失败，请先启动 Gateway 网关：`marv gateway`。
 
@@ -114,7 +114,7 @@ marv gateway --bind tailnet --token "$(openssl rand -hex 32)"
 
 然后打开：
 
-- `http://<tailscale-ip>:18789/`（或你配置的 `gateway.controlUi.basePath`）
+- `http://<tailscale-ip>:4242/`（或你配置的 `gateway.controlUi.basePath`）
 
 将 token 粘贴到 UI 设置中（作为 `connect.params.auth.token` 发送）。
 
@@ -125,7 +125,7 @@ marv gateway --bind tailnet --token "$(openssl rand -hex 32)"
 **推荐修复：** 使用 HTTPS（Tailscale Serve）或在本地打开 UI：
 
 - `https://<magicdns>/`（Serve）
-- `http://127.0.0.1:18789/`（在 Gateway 网关主机上）
+- `http://127.0.0.1:4242/`（在 Gateway 网关主机上）
 
 **降级示例（仅通过 HTTP 使用 token）：**
 
@@ -163,7 +163,7 @@ MARV_CONTROL_UI_BASE_PATH=/marv/ pnpm ui:build
 pnpm ui:dev # 首次运行时自动安装 UI 依赖
 ```
 
-然后将 UI 指向你的 Gateway 网关 WS URL（例如 `ws://127.0.0.1:18789`）。
+然后将 UI 指向你的 Gateway 网关 WS URL（例如 `ws://127.0.0.1:4242`）。
 
 ## 调试/测试：开发服务器 + 远程 Gateway 网关
 
@@ -173,13 +173,13 @@ pnpm ui:dev # 首次运行时自动安装 UI 依赖
 2. 打开类似以下的 URL：
 
 ```text
-http://localhost:5173/?gatewayUrl=ws://<gateway-host>:18789
+http://localhost:5173/?gatewayUrl=ws://<gateway-host>:4242
 ```
 
 可选的一次性认证（如需要）：
 
 ```text
-http://localhost:5173/?gatewayUrl=wss://<gateway-host>:18789&token=<gateway-token>
+http://localhost:5173/?gatewayUrl=wss://<gateway-host>:4242&token=<gateway-token>
 ```
 
 注意：

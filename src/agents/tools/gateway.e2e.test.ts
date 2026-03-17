@@ -4,7 +4,7 @@ import { callGatewayTool, resolveGatewayOptions } from "./gateway.js";
 const callGatewayMock = vi.fn();
 vi.mock("../../core/config/config.js", () => ({
   loadConfig: () => ({}),
-  resolveGatewayPort: () => 18789,
+  resolveGatewayPort: () => 4242,
 }));
 vi.mock("../../core/gateway/call.js", () => ({
   callGateway: (...args: unknown[]) => callGatewayMock(...args),
@@ -24,12 +24,12 @@ describe("gateway tool defaults", () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
     await callGatewayTool(
       "health",
-      { gatewayUrl: "ws://127.0.0.1:18789", gatewayToken: "t", timeoutMs: 5000 },
+      { gatewayUrl: "ws://127.0.0.1:4242", gatewayToken: "t", timeoutMs: 5000 },
       {},
     );
     expect(callGatewayMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: "ws://127.0.0.1:18789",
+        url: "ws://127.0.0.1:4242",
         token: "t",
         timeoutMs: 5000,
       }),

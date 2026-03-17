@@ -3,12 +3,12 @@
 ## Starting the gateway
 
 ```bash
-marv gateway run --bind loopback --port 18789          # foreground (dev)
+marv gateway run --bind loopback --port 4242          # foreground (dev)
 marv onboard --install-daemon                          # background daemon
 marv gateway status                                    # check status
 ```
 
-Default address: `ws://127.0.0.1:18789`
+Default address: `ws://127.0.0.1:4242`
 
 ## Bind modes
 
@@ -18,7 +18,7 @@ Default address: `ws://127.0.0.1:18789`
 
 ```bash
 marv config set gateway.bind "loopback"
-marv config set gateway.port 18789
+marv config set gateway.port 4242
 ```
 
 ## Authentication modes
@@ -52,14 +52,14 @@ Manual (headless):
 
 ```bash
 pkill -9 -f marv-gateway || true
-nohup marv gateway run --bind loopback --port 18789 --force > /tmp/marv-gateway.log 2>&1 &
+nohup marv gateway run --bind loopback --port 4242 --force > /tmp/marv-gateway.log 2>&1 &
 ```
 
 Verify:
 
 ```bash
 marv channels status --probe
-ss -ltnp | rg 18789       # or: lsof -nP -iTCP:18789
+ss -ltnp | rg 4242       # or: lsof -nP -iTCP:4242
 tail -n 120 /tmp/marv-gateway.log
 ```
 

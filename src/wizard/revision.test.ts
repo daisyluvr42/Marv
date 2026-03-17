@@ -66,7 +66,7 @@ describe("applyWizardRevision", () => {
       input: "switch default model to openai/gpt-5.2",
       nextConfig: {},
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         gatewayToken: "token",
@@ -97,7 +97,7 @@ describe("applyWizardRevision", () => {
         },
       },
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "password",
         tailscaleMode: "off",
@@ -129,7 +129,7 @@ describe("applyWizardRevision", () => {
         },
       },
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "lan",
         authMode: "token",
         gatewayToken: "old-token",
@@ -162,7 +162,7 @@ describe("applyWizardRevision", () => {
       input: "set gateway bind to custom",
       nextConfig: {},
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         gatewayToken: "token",
@@ -185,7 +185,7 @@ describe("applyWizardRevision", () => {
       input: "make it smarter",
       nextConfig: {},
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         gatewayToken: "token",
@@ -206,7 +206,7 @@ describe("promptWizardRevisionFallback", () => {
     const result = await promptWizardRevisionFallback({
       nextConfig: {},
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         gatewayToken: "token",
@@ -227,7 +227,7 @@ describe("promptWizardRevisionFallback", () => {
     const result = await promptWizardRevisionFallback({
       nextConfig: {},
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         gatewayToken: "token",
@@ -249,7 +249,7 @@ describe("promptWizardRevisionFallback", () => {
     const result = await promptWizardRevisionFallback({
       nextConfig: {},
       settings: {
-        port: 18789,
+        port: 4242,
         bind: "loopback",
         authMode: "token",
         gatewayToken: "token",

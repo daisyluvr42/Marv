@@ -318,7 +318,7 @@ Marv 有两个独立的"谁可以触发我？"层：
 
 Gateway 网关在单个端口上复用 **WebSocket + HTTP**：
 
-- 默认：`18789`
+- 默认：`4242`
 - 配置/标志/环境变量：`gateway.port`、`--port`、`MARV_GATEWAY_PORT`
 
 绑定模式控制 Gateway 网关在哪里监听：
@@ -534,7 +534,7 @@ Doctor 可以为你生成一个：`marv doctor --generate-gateway-token`。
   gateway: {
     mode: "local",
     bind: "loopback",
-    port: 18789,
+    port: 4242,
     auth: { mode: "token", token: "your-long-random-token" },
   },
   channels: {

@@ -53,7 +53,7 @@ If omitted, the Gateway resolves the configured main session key.
 ### Initialize
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -67,7 +67,7 @@ curl -sS http://127.0.0.1:18789/mcp \
 ### List tools
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -81,7 +81,7 @@ curl -sS http://127.0.0.1:18789/mcp \
 ### Call memory_search
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -102,7 +102,7 @@ curl -sS http://127.0.0.1:18789/mcp \
 ### Call memory_write
 
 ```bash
-curl -sS http://127.0.0.1:18789/mcp \
+curl -sS http://127.0.0.1:4242/mcp \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -133,7 +133,7 @@ Use `Marv-mem` as the MCP server name.
   "mcpServers": {
     "Marv-mem": {
       "type": "streamableHttp",
-      "url": "http://127.0.0.1:18789/mcp",
+      "url": "http://127.0.0.1:4242/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }
@@ -149,7 +149,7 @@ Use `Marv-mem` as the MCP server name.
   "mcpServers": {
     "Marv-mem": {
       "type": "streamableHttp",
-      "url": "http://127.0.0.1:18789/mcp",
+      "url": "http://127.0.0.1:4242/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }

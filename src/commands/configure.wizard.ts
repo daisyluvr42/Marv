@@ -283,7 +283,7 @@ export async function runConfigureWizard(
       }
     }
 
-    const localUrl = "ws://127.0.0.1:18789";
+    const localUrl = "ws://127.0.0.1:4242";
     const localProbe = await probeGatewayReachable({
       url: localUrl,
       token:

@@ -42,7 +42,7 @@ marv configure
 
 - 本地 Gateway 网关（loopback）
 - 默认工作区（或现有工作区）
-- Gateway 网关端口 **18789**
+- Gateway 网关端口 **4242**
 - Gateway 网关认证 **Token**（自动生成，即使在 loopback 上）
 - Tailscale 暴露 **关闭**
 - Telegram + WhatsApp 私信默认使用**允许列表**（系统会提示你输入电话号码）
@@ -195,7 +195,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice apiKey \
   --anthropic-api-key "$ANTHROPIC_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback \
   --install-daemon \
   --daemon-runtime node \
@@ -211,7 +211,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice gemini-api-key \
   --gemini-api-key "$GEMINI_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback
 ```
 
@@ -222,7 +222,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice zai-api-key \
   --zai-api-key "$ZAI_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback
 ```
 
@@ -233,7 +233,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice ai-gateway-api-key \
   --ai-gateway-api-key "$AI_GATEWAY_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback
 ```
 
@@ -244,7 +244,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice moonshot-api-key \
   --moonshot-api-key "$MOONSHOT_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback
 ```
 
@@ -255,7 +255,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice synthetic-api-key \
   --synthetic-api-key "$SYNTHETIC_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback
 ```
 
@@ -266,7 +266,7 @@ marv onboard --non-interactive \
   --mode local \
   --auth-choice opencode-zen \
   --opencode-zen-api-key "$OPENCODE_API_KEY" \
-  --gateway-port 18789 \
+  --gateway-port 4242 \
   --gateway-bind loopback
 ```
 

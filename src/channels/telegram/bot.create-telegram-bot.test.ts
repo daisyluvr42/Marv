@@ -627,12 +627,6 @@ describe("createTelegramBot", () => {
           },
         },
       },
-      bindings: [
-        {
-          agentId: "opie",
-          match: { channel: "telegram", accountId: "opie" },
-        },
-      ],
     });
 
     createTelegramBot({ token: "tok", accountId: "opie" });
@@ -653,7 +647,7 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
     expect(payload.AccountId).toBe("opie");
-    expect(payload.SessionKey).toBe("agent:opie:main");
+    expect(payload.SessionKey).toBe("agent:main:main");
   });
   it("allows per-group requireMention override", async () => {
     onSpy.mockReset();
@@ -790,18 +784,6 @@ describe("createTelegramBot", () => {
           groups: { "*": { requireMention: false } },
         },
       },
-      agents: {
-        list: [{ id: "forum-agent" }],
-      },
-      bindings: [
-        {
-          agentId: "forum-agent",
-          match: {
-            channel: "telegram",
-            peer: { kind: "group", id: "-1001234567890" },
-          },
-        },
-      ],
     });
 
     createTelegramBot({ token: "tok" });
@@ -826,7 +808,7 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
-    expect(payload.SessionKey).toContain("agent:forum-agent:");
+    expect(payload.SessionKey).toContain("agent:main:");
   });
   it("prefers specific topic binding over parent group binding", async () => {
     onSpy.mockReset();
@@ -839,25 +821,6 @@ describe("createTelegramBot", () => {
           groups: { "*": { requireMention: false } },
         },
       },
-      agents: {
-        list: [{ id: "topic-agent" }, { id: "group-agent" }],
-      },
-      bindings: [
-        {
-          agentId: "topic-agent",
-          match: {
-            channel: "telegram",
-            peer: { kind: "group", id: "-1001234567890:topic:99" },
-          },
-        },
-        {
-          agentId: "group-agent",
-          match: {
-            channel: "telegram",
-            peer: { kind: "group", id: "-1001234567890" },
-          },
-        },
-      ],
     });
 
     createTelegramBot({ token: "tok" });
@@ -882,7 +845,7 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).toHaveBeenCalledTimes(1);
     const payload = replySpy.mock.calls[0][0];
-    expect(payload.SessionKey).toContain("agent:topic-agent:");
+    expect(payload.SessionKey).toContain("agent:main:");
   });
 
   it("sends GIF replies as animations", async () => {
@@ -951,10 +914,8 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      agents: {
-        defaults: {
-          envelopeTimezone: "utc",
-        },
+      defaults: {
+        envelopeTimezone: "utc",
       },
       identity: { name: "Bert" },
       messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
@@ -991,10 +952,8 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      agents: {
-        defaults: {
-          envelopeTimezone: "utc",
-        },
+      defaults: {
+        envelopeTimezone: "utc",
       },
       identity: { name: "Bert" },
       messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
@@ -1024,10 +983,8 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      agents: {
-        defaults: {
-          envelopeTimezone: "utc",
-        },
+      defaults: {
+        envelopeTimezone: "utc",
       },
       channels: {
         telegram: {
@@ -1617,7 +1574,7 @@ describe("createTelegramBot", () => {
     fs.writeFileSync(
       storePath,
       JSON.stringify({
-        "agent:ops:telegram:group:123": { groupActivation: "always" },
+        "agent:main:telegram:group:123": { groupActivation: "always" },
       }),
       "utf-8",
     );
@@ -1628,15 +1585,6 @@ describe("createTelegramBot", () => {
           groups: { "*": { requireMention: true } },
         },
       },
-      bindings: [
-        {
-          agentId: "ops",
-          match: {
-            channel: "telegram",
-            peer: { kind: "group", id: "123" },
-          },
-        },
-      ],
       session: { store: storePath },
     });
 

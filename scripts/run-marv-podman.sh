@@ -73,8 +73,8 @@ WORKSPACE_DIR="${MARV_WORKSPACE_DIR:-$CONFIG_DIR/workspace}"
 CONTAINER_NAME="${MARV_PODMAN_CONTAINER:-marv}"
 MARV_IMAGE="${MARV_PODMAN_IMAGE:-marv:local}"
 PODMAN_PULL="${MARV_PODMAN_PULL:-never}"
-HOST_GATEWAY_PORT="${MARV_PODMAN_GATEWAY_HOST_PORT:-${MARV_GATEWAY_PORT:-18789}}"
-HOST_BRIDGE_PORT="${MARV_PODMAN_BRIDGE_HOST_PORT:-${MARV_BRIDGE_PORT:-18790}}"
+HOST_GATEWAY_PORT="${MARV_PODMAN_GATEWAY_HOST_PORT:-${MARV_GATEWAY_PORT:-4242}}"
+HOST_BRIDGE_PORT="${MARV_PODMAN_BRIDGE_HOST_PORT:-${MARV_BRIDGE_PORT:-4243}}"
 GATEWAY_BIND="${MARV_GATEWAY_BIND:-lan}"
 
 # Safe cwd for podman (marv is nologin; avoid inherited cwd from sudo)
@@ -201,10 +201,10 @@ podman run --pull="$PODMAN_PULL" -d --replace \
   "${ENV_FILE_ARGS[@]}" \
   -v "$CONFIG_DIR:/home/node/.marv:rw" \
   -v "$WORKSPACE_DIR:/home/node/.marv/workspace:rw" \
-  -p "${HOST_GATEWAY_PORT}:18789" \
-  -p "${HOST_BRIDGE_PORT}:18790" \
+  -p "${HOST_GATEWAY_PORT}:4242" \
+  -p "${HOST_BRIDGE_PORT}:4243" \
   "$MARV_IMAGE" \
-  node dist/index.js gateway --bind "$GATEWAY_BIND" --port 18789
+  node dist/index.js gateway --bind "$GATEWAY_BIND" --port 4242
 
 echo "Container $CONTAINER_NAME started. Dashboard: http://127.0.0.1:${HOST_GATEWAY_PORT}/"
 echo "Logs: podman logs -f $CONTAINER_NAME"

@@ -19,7 +19,7 @@ Gateway 网关仪表板是默认在 `/` 提供的浏览器控制 UI
 
 快速打开（本地 Gateway 网关）：
 
-- http://127.0.0.1:18789/（或 http://localhost:18789/）
+- http://127.0.0.1:4242/（或 http://localhost:4242/）
 
 关键参考：
 
@@ -42,12 +42,12 @@ Gateway 网关仪表板是默认在 `/` 提供的浏览器控制 UI
 
 ## Token 基础（本地 vs 远程）
 
-- **Localhost**：打开 `http://127.0.0.1:18789/`。如果你看到"unauthorized"，运行 `marv dashboard` 并使用带 token 的链接（`?token=...`）。
+- **Localhost**：打开 `http://127.0.0.1:4242/`。如果你看到"unauthorized"，运行 `marv dashboard` 并使用带 token 的链接（`?token=...`）。
 - **Token 来源**：`gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）；UI 在首次加载后存储它。
 - **非 localhost**：使用 Tailscale Serve（如果 `gateway.auth.allowTailscale: true` 则无需 token）、带 token 的 tailnet 绑定，或 SSH 隧道。参见 [Web 界面](/web)。
 
 ## 如果你看到"unauthorized" / 1008
 
 - 运行 `marv dashboard` 获取新的带 token 链接。
-- 确保 Gateway 网关可达（本地：`marv status`；远程：SSH 隧道 `ssh -N -L 18789:127.0.0.1:18789 user@host` 然后打开 `http://127.0.0.1:18789/?token=...`）。
+- 确保 Gateway 网关可达（本地：`marv status`；远程：SSH 隧道 `ssh -N -L 4242:127.0.0.1:4242 user@host` 然后打开 `http://127.0.0.1:4242/?token=...`）。
 - 在仪表板设置中，粘贴你在 `gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）中配置的相同 token。

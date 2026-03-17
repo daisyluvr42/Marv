@@ -26,9 +26,9 @@ Marv 有两个表面上看起来相似的不同问题：
 ## 术语
 
 - **Gateway 网关**：一个长期运行的 Gateway 网关进程，拥有状态（会话、配对、节点注册表）并运行渠道。大多数设置每台主机使用一个；也可以进行隔离的多 Gateway 网关设置。
-- **Gateway 网关 WS（控制平面）**：默认在 `127.0.0.1:18789` 上的 WebSocket 端点；可通过 `gateway.bind` 绑定到 LAN/tailnet。
+- **Gateway 网关 WS（控制平面）**：默认在 `127.0.0.1:4242` 上的 WebSocket 端点；可通过 `gateway.bind` 绑定到 LAN/tailnet。
 - **直连 WS 传输**：面向 LAN/tailnet 的 Gateway 网关 WS 端点（无 SSH）。
-- **SSH 传输（回退）**：通过 SSH 转发 `127.0.0.1:18789` 进行远程控制。
+- **SSH 传输（回退）**：通过 SSH 转发 `127.0.0.1:4242` 进行远程控制。
 - **旧版 TCP 桥接（已弃用/移除）**：旧的节点传输（参见 [桥接协议](/gateway/bridge-protocol)）；不再用于发现广播。
 
 协议详情：
@@ -68,10 +68,10 @@ Bonjour 是尽力而为的，不会跨网络。它仅用于"同一 LAN"的便利
   - `role=gateway`
   - `lanHost=<hostname>.local`
   - `sshPort=22`（或广播的端口）
-  - `gatewayPort=18789`（Gateway 网关 WS + HTTP）
+  - `gatewayPort=4242`（Gateway 网关 WS + HTTP）
   - `gatewayTls=1`（仅当启用 TLS 时）
   - `gatewayTlsSha256=<sha256>`（仅当启用 TLS 且指纹可用时）
-  - `canvasPort=18793`（默认画布主机端口；服务于 `/__marv__/canvas/`）
+  - `canvasPort=4246`（默认画布主机端口；服务于 `/__marv__/canvas/`）
   - `cliPath=<path>`（可选；可运行的 `marv` 入口点或二进制文件的绝对路径）
   - `tailnetDns=<magicdns>`（可选提示；当 Tailscale 可用时自动检测）
 

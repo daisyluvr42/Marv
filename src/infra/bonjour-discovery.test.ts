@@ -55,14 +55,14 @@ describe("bonjour-discovery", () => {
           "txtvers=1",
           `displayName=${displayName}`,
           `lanHost=${host}`,
-          "gatewayPort=18789",
+          "gatewayPort=4242",
           "sshPort=22",
           tailnetDns ? `tailnetDns=${tailnetDns}` : null,
         ].filter((v): v is string => Boolean(v));
 
         return {
           stdout: [
-            `${instance}._marvbot._tcp. can be reached at ${host}:18789`,
+            `${instance}._marvbot._tcp. can be reached at ${host}:4242`,
             txtParts.join(" "),
             "",
           ].join("\n"),
@@ -123,8 +123,8 @@ describe("bonjour-discovery", () => {
       if (argv[0] === "dns-sd" && argv[1] === "-L") {
         return {
           stdout: [
-            "Studio Gateway._marvbot._tcp. can be reached at studio.local:18789",
-            "txtvers=1 displayName=Peter\\226\\128\\153s\\032Mac\\032Studio lanHost=studio.local gatewayPort=18789 sshPort=22",
+            "Studio Gateway._marvbot._tcp. can be reached at studio.local:4242",
+            "txtvers=1 displayName=Peter\\226\\128\\153s\\032Mac\\032Studio lanHost=studio.local gatewayPort=4242 sshPort=22",
             "",
           ].join("\n"),
           stderr: "",
@@ -215,7 +215,7 @@ describe("bonjour-discovery", () => {
 
         if (server === "100.123.224.76" && qtype === "SRV" && qname === studioService) {
           return {
-            stdout: `0 0 18789 studio.${zone}.\n`,
+            stdout: `0 0 4242 studio.${zone}.\n`,
             stderr: "",
             code: 0,
             signal: null,
@@ -227,7 +227,7 @@ describe("bonjour-discovery", () => {
           return {
             stdout: [
               `"displayName=Studio"`,
-              `"gatewayPort=18789"`,
+              `"gatewayPort=4242"`,
               `"transport=gateway"`,
               `"sshPort=22"`,
               `"tailnetDns=peters-mac-studio-1.sheep-coho.ts.net"`,
@@ -259,9 +259,9 @@ describe("bonjour-discovery", () => {
         instanceName: "studio-gateway",
         displayName: "Studio",
         host: `studio.${zone}`,
-        port: 18789,
+        port: 4242,
         tailnetDns: "peters-mac-studio-1.sheep-coho.ts.net",
-        gatewayPort: 18789,
+        gatewayPort: 4242,
         sshPort: 22,
         cliPath: "/opt/homebrew/bin/marv",
       }),

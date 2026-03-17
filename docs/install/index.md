@@ -94,7 +94,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
         Run in the foreground instead of a service:
 
         ```bash
-        marv gateway run --bind loopback --port 18789
+        marv gateway run --bind loopback --port 4242
         ```
 
         <Accordion title="sharp build errors?">
@@ -177,7 +177,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
         Option A: stay inside the repo and use the workspace command:
 
         ```bash
-        pnpm marv gateway run --bind loopback --port 18789
+        pnpm marv gateway run --bind loopback --port 4242
         pnpm marv tui
         ```
 
@@ -225,7 +225,7 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
     pnpm install
     pnpm ui:build
     pnpm build
-    pnpm marv gateway run --bind loopback --port 18789
+    pnpm marv gateway run --bind loopback --port 4242
     ```
 
     For deeper development workflows, see [Setup](/start/setup).

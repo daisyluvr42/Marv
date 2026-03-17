@@ -293,7 +293,7 @@ Marv 为 browser、canvas、nodes 和 cron 暴露**一流的智能体工具**。
 - 所有操作接受可选的 `profile` 参数以支持多实例。
 - 当省略 `profile` 时，使用 `browser.defaultProfile`（默认为"chrome"）。
 - 配置文件名称：仅小写字母数字 + 连字符（最多 64 字符）。
-- 端口范围：18800-18899（最多约 100 个配置文件）。
+- 端口范围：4253-4352（最多约 100 个配置文件）。
 - 远程配置文件仅支持附加（无 start/stop/reset）。
 - 如果连接了支持浏览器的节点，工具可能会自动路由到它（除非你固定了 `target`）。
 - 安装 Playwright 时 `snapshot` 默认为 `ai`；使用 `aria` 获取无障碍树。
@@ -467,7 +467,7 @@ Marv 为 browser、canvas、nodes 和 cron 暴露**一流的智能体工具**。
 
 Gateway 网关支持的工具（`canvas`、`nodes`、`cron`）：
 
-- `gatewayUrl`（默认 `ws://127.0.0.1:18789`）
+- `gatewayUrl`（默认 `ws://127.0.0.1:4242`）
 - `gatewayToken`（如果启用了认证）
 - `timeoutMs`
 

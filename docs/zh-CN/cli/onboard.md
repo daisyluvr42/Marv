@@ -26,7 +26,7 @@ x-i18n:
 marv onboard
 marv onboard --flow quickstart
 marv onboard --flow manual
-marv onboard --mode remote --remote-url ws://gateway-host:18789
+marv onboard --mode remote --remote-url ws://gateway-host:4242
 ```
 
 流程说明：

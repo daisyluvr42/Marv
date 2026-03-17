@@ -292,7 +292,7 @@ URL 获取默认值：
 非流式：
 
 ```bash
-curl -sS http://127.0.0.1:18789/v1/responses \
+curl -sS http://127.0.0.1:4242/v1/responses \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -H 'x-marv-agent-id: main' \
@@ -305,7 +305,7 @@ curl -sS http://127.0.0.1:18789/v1/responses \
 流式：
 
 ```bash
-curl -N http://127.0.0.1:18789/v1/responses \
+curl -N http://127.0.0.1:4242/v1/responses \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -H 'x-marv-agent-id: main' \

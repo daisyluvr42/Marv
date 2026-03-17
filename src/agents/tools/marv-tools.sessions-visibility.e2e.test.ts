@@ -13,7 +13,7 @@ vi.mock("../../core/config/config.js", async (importOriginal) => {
   return {
     ...actual,
     loadConfig: () => mockConfig,
-    resolveGatewayPort: () => 18789,
+    resolveGatewayPort: () => 4242,
   };
 });
 

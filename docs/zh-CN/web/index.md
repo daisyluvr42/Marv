@@ -17,7 +17,7 @@ x-i18n:
 
 Gateway 网关从与 Gateway 网关 WebSocket 相同的端口提供一个小型**浏览器 Control UI**（Vite + Lit）：
 
-- 默认：`http://<host>:18789/`
+- 默认：`http://<host>:4242/`
 - 可选前缀：设置 `gateway.controlUi.basePath`（例如 `/marv`）
 
 功能详见 [Control UI](/web/control-ui)。
@@ -86,7 +86,7 @@ marv gateway
 
 打开：
 
-- `http://<tailscale-ip>:18789/`（或你配置的 `gateway.controlUi.basePath`）
+- `http://<tailscale-ip>:4242/`（或你配置的 `gateway.controlUi.basePath`）
 
 ### 公共互联网（Funnel）
 

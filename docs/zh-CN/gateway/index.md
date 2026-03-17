@@ -25,9 +25,9 @@ x-i18n:
 ## 如何运行（本地）
 
 ```bash
-marv gateway --port 18789
+marv gateway --port 4242
 # 在 stdio 中获取完整的调试/追踪日志：
-marv gateway --port 18789 --verbose
+marv gateway --port 4242 --verbose
 # 如果端口被占用，终止监听器然后启动：
 marv gateway --force
 # 开发循环（TS 更改时自动重载）：
@@ -38,13 +38,13 @@ pnpm gateway:watch
   - 默认模式：`gateway.reload.mode="hybrid"`（热应用安全更改，关键更改时重启）。
   - 热重载在需要时通过 **SIGUSR1** 使用进程内重启。
   - 使用 `gateway.reload.mode="off"` 禁用。
-- 将 WebSocket 控制平面绑定到 `127.0.0.1:<port>`（默认 18789）。
+- 将 WebSocket 控制平面绑定到 `127.0.0.1:<port>`（默认 4242）。
 - 同一端口也提供 HTTP 服务（控制界面、hooks、A2UI）。单端口多路复用。
   - OpenAI Chat Completions（HTTP）：[`/v1/chat/completions`](/gateway/openai-http-api)。
   - OpenResponses（HTTP）：[`/v1/responses`](/gateway/openresponses-http-api)。
   - Tools Invoke（HTTP）：[`/tools/invoke`](/gateway/tools-invoke-http-api)。
   - Marv-mem MCP（HTTP）：[`/mcp`](/gateway/mcp-memory-http-api)。
-- 默认在 `canvasHost.port`（默认 `18793`）上启动 Canvas 文件服务器，从 `~/.marv/workspace/canvas` 提供 `http://<gateway-host>:18793/__marv__/canvas/`。使用 `canvasHost.enabled=false` 或 `MARV_SKIP_CANVAS_HOST=1` 禁用。
+- 默认在 `canvasHost.port`（默认 `4246`）上启动 Canvas 文件服务器，从 `~/.marv/workspace/canvas` 提供 `http://<gateway-host>:4246/__marv__/canvas/`。使用 `canvasHost.enabled=false` 或 `MARV_SKIP_CANVAS_HOST=1` 禁用。
 - 输出日志到 stdout；使用 launchd/systemd 保持运行并轮转日志。
 - 故障排除时传递 `--verbose` 以将调试日志（握手、请求/响应、事件）从日志文件镜像到 stdio。
 - `--force` 使用 `lsof` 查找所选端口上的监听器，发送 SIGTERM，记录它终止了什么，然后启动 Gateway 网关（如果缺少 `lsof` 则快速失败）。
@@ -52,15 +52,15 @@ pnpm gateway:watch
 - **SIGUSR1** 在授权时触发进程内重启（Gateway 网关工具/配置应用/更新，或启用 `commands.restart` 以进行手动重启）。
 - 默认需要 Gateway 网关认证：设置 `gateway.auth.token`（或 `MARV_GATEWAY_TOKEN`）或 `gateway.auth.password`。客户端必须发送 `connect.params.auth.token/password`，除非使用 Tailscale Serve 身份。
 - 向导现在默认生成令牌，即使在 loopback 上也是如此。
-- 端口优先级：`--port` > `MARV_GATEWAY_PORT` > `gateway.port` > 默认 `18789`。
+- 端口优先级：`--port` > `MARV_GATEWAY_PORT` > `gateway.port` > 默认 `4242`。
 
 ## 远程访问
 
 - 首选 Tailscale/VPN；否则使用 SSH 隧道：
   ```bash
-  ssh -N -L 18789:127.0.0.1:18789 user@host
+  ssh -N -L 4242:127.0.0.1:4242 user@host
   ```
-- 然后客户端通过隧道连接到 `ws://127.0.0.1:18789`。
+- 然后客户端通过隧道连接到 `ws://127.0.0.1:4242`。
 - 如果配置了令牌，即使通过隧道，客户端也必须在 `connect.params.auth.token` 中包含它。
 
 ## 多个 Gateway 网关（同一主机）
@@ -271,7 +271,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/marv gateway --port 18789
+ExecStart=/usr/local/bin/marv gateway --port 4242
 Restart=always
 RestartSec=5
 Environment=MARV_GATEWAY_TOKEN=
