@@ -68,8 +68,8 @@
     "format:check": "oxfmt --check",
     "format:docs": "git ls-files 'docs/**/*.md' 'docs/**/*.mdx' 'README.md' | xargs oxfmt --write",
     "format:docs:check": "git ls-files 'docs/**/*.md' 'docs/**/*.mdx' 'README.md' | xargs oxfmt --check",
-    "gateway:dev": "MARV_SKIP_CHANNELS=1 CLAWDBOT_SKIP_CHANNELS=1 node scripts/run-node.mjs --dev gateway",
-    "gateway:dev:reset": "MARV_SKIP_CHANNELS=1 CLAWDBOT_SKIP_CHANNELS=1 node scripts/run-node.mjs --dev gateway --reset",
+    "gateway:dev": "MARV_SKIP_CHANNELS=1 node scripts/run-node.mjs --dev gateway",
+    "gateway:dev:reset": "MARV_SKIP_CHANNELS=1 node scripts/run-node.mjs --dev gateway --reset",
     "gateway:watch": "node scripts/watch-node.mjs gateway --force",
     "ios:generate": "bash scripts/ios-open.sh --generate-only",
     "ios:open": "bash scripts/ios-open.sh",
@@ -80,7 +80,6 @@
     "lint:fix": "oxlint --type-aware --fix && pnpm format",
     "marv": "node scripts/run-node.mjs",
     "marv:rpc": "node scripts/run-node.mjs agent --mode rpc --json",
-    "moltbot:rpc": "node scripts/run-node.mjs agent --mode rpc --json",
     "plugins:sync": "node --import tsx scripts/sync-plugin-versions.ts",
     "prepack": "pnpm build && pnpm ui:build",
     "prepare": "command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath git-hooks || exit 0",
@@ -214,17 +213,6 @@
       "@sinclair/typebox": "0.34.48",
       "tar": "7.5.9",
       "tough-cookie": "4.1.3"
-    },
-    "onlyBuiltDependencies": [
-      "@lydell/node-pty",
-      "@matrix-org/matrix-sdk-crypto-nodejs",
-      "@napi-rs/canvas",
-      "@whiskeysockets/baileys",
-      "authenticate-pam",
-      "esbuild",
-      "node-llama-cpp",
-      "protobufjs",
-      "sharp"
-    ]
+    }
   }
 }
