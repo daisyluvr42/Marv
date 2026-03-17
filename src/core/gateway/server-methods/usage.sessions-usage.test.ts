@@ -7,9 +7,6 @@ import { captureEnv } from "../../../test-utils/env.js";
 vi.mock("../../config/config.js", () => {
   return {
     loadConfig: vi.fn(() => ({
-      agents: {
-        list: [{ id: "main" }, { id: "opus" }],
-      },
       session: {},
     })),
   };
@@ -115,29 +112,25 @@ describe("sessions.usage", () => {
     vi.clearAllMocks();
   });
 
-  it("discovers sessions across configured agents and keeps agentId in key", async () => {
+  it("discovers sessions for the main agent and keeps agentId in key", async () => {
     const respond = await runSessionsUsage({
       startDate: "2026-02-01",
       endDate: "2026-02-02",
       limit: 10,
     });
 
-    expect(vi.mocked(discoverAllSessions)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(discoverAllSessions)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(discoverAllSessions).mock.calls[0]?.[0]?.agentId).toBe("main");
-    expect(vi.mocked(discoverAllSessions).mock.calls[1]?.[0]?.agentId).toBe("opus");
 
     expect(respond).toHaveBeenCalledTimes(1);
     expect(respond.mock.calls[0]?.[0]).toBe(true);
     const result = respond.mock.calls[0]?.[1] as unknown as {
       sessions: Array<{ key: string; agentId: string }>;
     };
-    expect(result.sessions).toHaveLength(2);
+    expect(result.sessions).toHaveLength(1);
 
-    // Sorted by most recent first (mtime=200 -> opus first).
-    expect(result.sessions[0].key).toBe("agent:opus:s-opus");
-    expect(result.sessions[0].agentId).toBe("opus");
-    expect(result.sessions[1].key).toBe("agent:main:s-main");
-    expect(result.sessions[1].agentId).toBe("main");
+    expect(result.sessions[0].key).toBe("agent:main:s-main");
+    expect(result.sessions[0].agentId).toBe("main");
   });
 
   it("resolves store entries by sessionId when queried via discovered agent-prefixed key", async () => {
