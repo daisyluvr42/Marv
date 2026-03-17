@@ -189,22 +189,10 @@ describe("applyGroupGating", () => {
         groupChat: { mentionPatterns: ["@global"] },
       },
       agents: {
-        list: [
-          {
-            id: "work",
-            groupChat: { mentionPatterns: ["@workbot"] },
-          },
-        ],
-      },
-      bindings: [
-        {
-          agentId: "work",
-          match: {
-            provider: "whatsapp",
-            peer: { kind: "group", id: "123@g.us" },
-          },
+        defaults: {
+          groupChat: { mentionPatterns: ["@workbot"] },
         },
-      ],
+      },
     });
 
     const route = resolveAgentRoute({
@@ -212,7 +200,7 @@ describe("applyGroupGating", () => {
       channel: "whatsapp",
       peer: { kind: "group", id: "123@g.us" },
     });
-    expect(route.agentId).toBe("work");
+    expect(route.agentId).toBe("main");
 
     const { result: globalMention } = runGroupGating({
       cfg,

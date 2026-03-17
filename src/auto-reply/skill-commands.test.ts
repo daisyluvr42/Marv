@@ -106,26 +106,19 @@ describe("resolveSkillCommandInvocation", () => {
 });
 
 describe("listSkillCommandsForAgents", () => {
-  it("merges command names across agents and de-duplicates", async () => {
+  it("lists skill commands for the main agent workspace", async () => {
     const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-skills-"));
     const mainWorkspace = path.join(baseDir, "main");
-    const researchWorkspace = path.join(baseDir, "research");
     await fs.mkdir(mainWorkspace, { recursive: true });
-    await fs.mkdir(researchWorkspace, { recursive: true });
 
     const commands = listSkillCommandsForAgents({
       cfg: {
         agents: {
-          list: [
-            { id: "main", workspace: mainWorkspace },
-            { id: "research", workspace: researchWorkspace },
-          ],
+          defaults: { workspace: mainWorkspace },
         },
       },
     });
     const names = commands.map((entry) => entry.name);
     expect(names).toContain("demo_skill");
-    expect(names).toContain("demo_skill_2");
-    expect(names).toContain("extra_skill");
   });
 });

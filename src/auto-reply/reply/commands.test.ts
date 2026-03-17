@@ -833,20 +833,20 @@ describe("/models command", () => {
       },
       models: {
         selections: {
-          "google:default": ["google-gemini-cli/gemini-2.5-flash"],
+          "google:default": ["google/gemini-2.5-flash"],
         },
       },
       agents: { defaults: { modelPool: "default" } },
     } as unknown as MarvConfig;
 
-    const params = buildPolicyParams("/models google-gemini-cli", selectedCfg, {
+    const params = buildPolicyParams("/models google", selectedCfg, {
       Surface: "discord",
     });
     const result = await handleCommands(params);
 
     expect(result.shouldContinue).toBe(false);
-    expect(result.reply?.text).toContain("Models (google-gemini-cli)");
-    expect(result.reply?.text).toContain("google-gemini-cli/gemini-2.5-flash");
+    expect(result.reply?.text).toContain("Models (google)");
+    expect(result.reply?.text).toContain("google/gemini-2.5-flash");
   });
 
   it("ignores page argument when all flag is present", async () => {

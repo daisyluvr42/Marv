@@ -80,11 +80,11 @@ describe("registerTelegramNativeCommands", () => {
   it("scopes skill commands when account binding exists", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [{ id: "main", default: true }, { id: "butler" }],
+        defaults: {},
       },
       bindings: [
         {
-          agentId: "butler",
+          agentId: "main",
           match: { channel: "telegram", accountId: "bot-a" },
         },
       ],
@@ -94,14 +94,14 @@ describe("registerTelegramNativeCommands", () => {
 
     expect(listSkillCommandsForAgents).toHaveBeenCalledWith({
       cfg,
-      agentIds: ["butler"],
+      agentIds: ["main"],
     });
   });
 
   it("scopes skill commands to default agent without a matching binding (#15599)", () => {
     const cfg: MarvConfig = {
       agents: {
-        list: [{ id: "main", default: true }, { id: "butler" }],
+        defaults: {},
       },
     };
 
@@ -233,9 +233,8 @@ describe("registerTelegramNativeCommands", () => {
     const sendMessage = vi.fn().mockResolvedValue(undefined);
     const cfg: MarvConfig = {
       agents: {
-        list: [{ id: "main", default: true }, { id: "work" }],
+        defaults: {},
       },
-      bindings: [{ agentId: "work", match: { channel: "telegram", accountId: "default" } }],
     };
 
     pluginCommandMocks.getPluginCommandSpecs.mockReturnValue([
@@ -280,7 +279,7 @@ describe("registerTelegramNativeCommands", () => {
 
     expect(deliveryMocks.deliverReplies).toHaveBeenCalledWith(
       expect.objectContaining({
-        mediaLocalRoots: expect.arrayContaining([path.join(STATE_DIR, "workspace-work")]),
+        mediaLocalRoots: expect.arrayContaining([path.join(STATE_DIR, "workspace")]),
       }),
     );
     expect(sendMessage).not.toHaveBeenCalledWith(123, "Command not found.");

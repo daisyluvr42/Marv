@@ -94,14 +94,11 @@ describe("buildStatusMessage", () => {
     const text = buildStatusMessage({
       config: {
         agents: {
-          list: [
-            { id: "main", default: true },
-            { id: "discord", sandbox: { mode: "all" } },
-          ],
+          defaults: { sandbox: { mode: "all" } },
         },
       } as unknown as MarvConfig,
       agent: {},
-      sessionKey: "agent:discord:discord:channel:1456350065223270435",
+      sessionKey: "agent:main:discord:channel:1456350065223270435",
       sessionScope: "per-sender",
       queue: { mode: "collect", depth: 0 },
     });

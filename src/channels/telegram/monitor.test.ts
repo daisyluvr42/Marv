@@ -85,6 +85,7 @@ vi.mock("@grammyjs/runner", () => ({
 vi.mock("../../infra/backoff.js", () => ({
   computeBackoff,
   sleepWithAbort,
+  resolveBackoffPolicy: () => ({ maxAttempts: 5, baseMs: 1000, maxMs: 30_000 }),
 }));
 
 vi.mock("./webhook.js", () => ({

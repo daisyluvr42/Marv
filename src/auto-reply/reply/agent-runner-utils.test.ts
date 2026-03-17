@@ -1,21 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { FollowupRun } from "./queue.js";
-
-const hoisted = vi.hoisted(() => {
-  const resolveAgentModelFallbacksOverrideMock = vi.fn();
-  const resolveAgentIdFromSessionKeyMock = vi.fn();
-  return { resolveAgentModelFallbacksOverrideMock, resolveAgentIdFromSessionKeyMock };
-});
-
-vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentModelFallbacksOverride: (...args: unknown[]) =>
-    hoisted.resolveAgentModelFallbacksOverrideMock(...args),
-}));
-
-vi.mock("../../core/config/sessions.js", () => ({
-  resolveAgentIdFromSessionKey: (...args: unknown[]) =>
-    hoisted.resolveAgentIdFromSessionKeyMock(...args),
-}));
 
 const {
   buildEmbeddedRunBaseParams,
@@ -27,12 +11,12 @@ const {
 function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"] {
   return {
     sessionId: "session-1",
-    agentId: "agent-1",
+    agentId: "main",
     config: { models: { providers: {} } },
     provider: "openai",
     model: "gpt-4.1",
     agentDir: "/tmp/agent",
-    sessionKey: "agent:test:session",
+    sessionKey: "agent:main:session",
     sessionFile: "/tmp/session.json",
     workspaceDir: "/tmp/workspace",
     skillsSnapshot: [],
@@ -49,29 +33,22 @@ function makeRun(overrides: Partial<FollowupRun["run"]> = {}): FollowupRun["run"
 }
 
 describe("agent-runner-utils", () => {
-  beforeEach(() => {
-    hoisted.resolveAgentModelFallbacksOverrideMock.mockReset();
-    hoisted.resolveAgentIdFromSessionKeyMock.mockReset();
-  });
-
   it("resolves model fallback options from run context", () => {
-    hoisted.resolveAgentIdFromSessionKeyMock.mockReturnValue("agent-id");
-    hoisted.resolveAgentModelFallbacksOverrideMock.mockReturnValue(["fallback-model"]);
-    const run = makeRun();
+    const run = makeRun({
+      modelCandidates: [
+        { provider: "openai", model: "gpt-4.1" },
+        { provider: "openai", model: "fallback-model" },
+      ],
+    } as Partial<FollowupRun["run"]>);
 
     const resolved = resolveModelFallbackOptions(run);
 
-    expect(hoisted.resolveAgentIdFromSessionKeyMock).toHaveBeenCalledWith(run.sessionKey);
-    expect(hoisted.resolveAgentModelFallbacksOverrideMock).toHaveBeenCalledWith(
-      run.config,
-      "agent-id",
-    );
     expect(resolved).toEqual({
       cfg: run.config,
       provider: run.provider,
       model: run.model,
       agentDir: run.agentDir,
-      fallbacksOverride: ["fallback-model"],
+      fallbacksOverride: [{ provider: "openai", model: "fallback-model" }],
     });
   });
 

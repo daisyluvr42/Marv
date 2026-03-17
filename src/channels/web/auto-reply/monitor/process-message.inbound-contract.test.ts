@@ -159,13 +159,9 @@ describe("web processMessage inbound contract", () => {
         groupHistoryKey: "+1555",
         cfg: {
           agents: {
-            list: [
-              {
-                id: "main",
-                default: true,
-                identity: { name: "Mainbot", emoji: "🤖", theme: "space lobster" },
-              },
-            ],
+            defaults: {
+              identity: { name: "Mainbot", emoji: "🤖", theme: "space lobster" },
+            },
           },
           messages: {},
           session: { store: sessionStorePath },

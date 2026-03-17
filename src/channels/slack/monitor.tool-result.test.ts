@@ -662,7 +662,7 @@ describe("monitorSlackProvider tool results", () => {
       SessionKey?: string;
       ParentSessionKey?: string;
     };
-    expect(ctx.SessionKey).toBe("agent:support:slack:channel:c1:thread:111.222");
+    expect(ctx.SessionKey).toBe("agent:main:slack:channel:c1:thread:111.222");
     expect(ctx.ParentSessionKey).toBeUndefined();
   });
 

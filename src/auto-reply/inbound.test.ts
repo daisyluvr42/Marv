@@ -332,15 +332,12 @@ describe("mention helpers", () => {
           groupChat: { mentionPatterns: ["\\bglobal\\b"] },
         },
         agents: {
-          list: [
-            {
-              id: "work",
-              groupChat: { mentionPatterns: ["\\bworkbot\\b"] },
-            },
-          ],
+          defaults: {
+            groupChat: { mentionPatterns: ["\\bworkbot\\b"] },
+          },
         },
       },
-      "work",
+      "main",
     );
     expect(matchesMentionPatterns("workbot: hi", regexes)).toBe(true);
     expect(matchesMentionPatterns("global: hi", regexes)).toBe(false);

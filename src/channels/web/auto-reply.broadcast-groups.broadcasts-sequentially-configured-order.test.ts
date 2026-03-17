@@ -18,36 +18,33 @@ installWebAutoReplyTestHomeHooks();
 describe("broadcast groups", () => {
   installWebAutoReplyUnitTestHooks();
 
-  it("broadcasts sequentially in configured order", async () => {
+  it("broadcasts to main agent with single-agent config", async () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
         defaults: { maxConcurrent: 10 },
-        list: [{ id: "alfred" }, { id: "baerbel" }],
       },
       broadcast: {
         strategy: "sequential",
-        "+1000": ["alfred", "baerbel"],
+        "+1000": ["main"],
       },
     } satisfies MarvConfig);
 
     const { seen, resolver } = await sendWebDirectInboundAndCollectSessionKeys();
 
-    expect(resolver).toHaveBeenCalledTimes(2);
-    expect(seen[0]).toContain("agent:alfred:");
-    expect(seen[1]).toContain("agent:baerbel:");
+    expect(resolver).toHaveBeenCalledTimes(1);
+    expect(seen[0]).toContain("agent:main:");
     resetLoadConfigMock();
   });
-  it("shares group history across broadcast agents and clears after replying", async () => {
+  it("shares group history with main agent and clears after replying", async () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
         defaults: { maxConcurrent: 10 },
-        list: [{ id: "alfred" }, { id: "baerbel" }],
       },
       broadcast: {
         strategy: "sequential",
-        "123@g.us": ["alfred", "baerbel"],
+        "123@g.us": ["main"],
       },
     } satisfies MarvConfig);
 
@@ -79,23 +76,21 @@ describe("broadcast groups", () => {
       selfJid: "999@s.whatsapp.net",
     });
 
-    expect(resolver).toHaveBeenCalledTimes(2);
-    for (const call of resolver.mock.calls.slice(0, 2)) {
-      const payload = call[0] as {
-        Body: string;
-        SenderName?: string;
-        SenderE164?: string;
-        SenderId?: string;
-      };
-      expect(payload.Body).toContain("Chat messages since your last reply");
-      expect(payload.Body).toContain("Alice (+111): hello group");
-      // Message id hints are not included in prompts anymore.
-      expect(payload.Body).not.toContain("[message_id:");
-      expect(payload.Body).toContain("@bot ping");
-      expect(payload.SenderName).toBe("Bob");
-      expect(payload.SenderE164).toBe("+222");
-      expect(payload.SenderId).toBe("+222");
-    }
+    expect(resolver).toHaveBeenCalledTimes(1);
+    const payload = resolver.mock.calls[0][0] as {
+      Body: string;
+      SenderName?: string;
+      SenderE164?: string;
+      SenderId?: string;
+    };
+    expect(payload.Body).toContain("Chat messages since your last reply");
+    expect(payload.Body).toContain("Alice (+111): hello group");
+    // Message id hints are not included in prompts anymore.
+    expect(payload.Body).not.toContain("[message_id:");
+    expect(payload.Body).toContain("@bot ping");
+    expect(payload.SenderName).toBe("Bob");
+    expect(payload.SenderE164).toBe("+222");
+    expect(payload.SenderId).toBe("+222");
 
     await sendWebGroupInboundMessage({
       onMessage,
@@ -109,66 +104,11 @@ describe("broadcast groups", () => {
       selfJid: "999@s.whatsapp.net",
     });
 
-    expect(resolver).toHaveBeenCalledTimes(4);
-    for (const call of resolver.mock.calls.slice(2, 4)) {
-      const payload = call[0] as { Body: string };
-      expect(payload.Body).not.toContain("Alice (+111): hello group");
-      expect(payload.Body).not.toContain("Chat messages since your last reply");
-    }
-
-    resetLoadConfigMock();
-  });
-  it("broadcasts in parallel by default", async () => {
-    setLoadConfigMock({
-      channels: { whatsapp: { allowFrom: ["*"] } },
-      agents: {
-        defaults: { maxConcurrent: 10 },
-        list: [{ id: "alfred" }, { id: "baerbel" }],
-      },
-      broadcast: {
-        strategy: "parallel",
-        "+1000": ["alfred", "baerbel"],
-      },
-    } satisfies MarvConfig);
-
-    const sendMedia = vi.fn();
-    const reply = vi.fn().mockResolvedValue(undefined);
-    const sendComposing = vi.fn();
-
-    let started = 0;
-    let release: (() => void) | undefined;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-
-    const resolver = vi.fn(async () => {
-      started += 1;
-      if (started < 2) {
-        await gate;
-      } else {
-        release?.();
-      }
-      return { text: "ok" };
-    });
-
-    const { onMessage: capturedOnMessage } = await monitorWebChannelWithCapture(resolver);
-
-    await capturedOnMessage({
-      id: "m1",
-      from: "+1000",
-      conversationId: "+1000",
-      to: "+2000",
-      accountId: "default",
-      body: "hello",
-      timestamp: Date.now(),
-      chatType: "direct",
-      chatId: "direct:+1000",
-      sendComposing,
-      reply,
-      sendMedia,
-    });
-
     expect(resolver).toHaveBeenCalledTimes(2);
+    const followup = resolver.mock.calls[1][0] as { Body: string };
+    expect(followup.Body).not.toContain("Alice (+111): hello group");
+    expect(followup.Body).not.toContain("Chat messages since your last reply");
+
     resetLoadConfigMock();
   });
 });

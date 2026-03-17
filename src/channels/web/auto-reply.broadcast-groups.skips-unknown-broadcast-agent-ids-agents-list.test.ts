@@ -14,22 +14,21 @@ installWebAutoReplyTestHomeHooks();
 describe("broadcast groups", () => {
   installWebAutoReplyUnitTestHooks();
 
-  it("skips unknown broadcast agent ids when agents.list is present", async () => {
+  it("resolves broadcast to main agent when only main agent exists", async () => {
     setLoadConfigMock({
       channels: { whatsapp: { allowFrom: ["*"] } },
       agents: {
         defaults: { maxConcurrent: 10 },
-        list: [{ id: "alfred" }],
       },
       broadcast: {
-        "+1000": ["alfred", "missing"],
+        "+1000": ["main", "missing"],
       },
     } satisfies MarvConfig);
 
     const { seen, resolver } = await sendWebDirectInboundAndCollectSessionKeys();
 
     expect(resolver).toHaveBeenCalledTimes(1);
-    expect(seen[0]).toContain("agent:alfred:");
+    expect(seen[0]).toContain("agent:main:");
     resetLoadConfigMock();
   });
 });

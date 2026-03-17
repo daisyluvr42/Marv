@@ -914,9 +914,7 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      defaults: {
-        envelopeTimezone: "utc",
-      },
+      agents: { defaults: { envelopeTimezone: "utc" } },
       identity: { name: "Bert" },
       messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
       channels: {
@@ -952,9 +950,7 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      defaults: {
-        envelopeTimezone: "utc",
-      },
+      agents: { defaults: { envelopeTimezone: "utc" } },
       identity: { name: "Bert" },
       messages: { groupChat: { mentionPatterns: ["\\bbert\\b"] } },
       channels: {
@@ -983,9 +979,7 @@ describe("createTelegramBot", () => {
     resetHarnessSpies();
 
     loadConfig.mockReturnValue({
-      defaults: {
-        envelopeTimezone: "utc",
-      },
+      agents: { defaults: { envelopeTimezone: "utc" } },
       channels: {
         telegram: {
           groupPolicy: "open",

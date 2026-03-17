@@ -147,7 +147,7 @@ describe("createModelSelectionState parent inheritance", () => {
     expect(state.model).toBe("claude-opus-4-5");
   });
 
-  it("ignores parent override when disallowed", async () => {
+  it("inherits parent override when no model selection restriction exists", async () => {
     const cfg = {
       agents: {
         defaults: {
@@ -176,8 +176,10 @@ describe("createModelSelectionState parent inheritance", () => {
       sessionKey,
     });
 
-    expect(state.provider).toBe(defaultProvider);
-    expect(state.model).toBe(defaultModel);
+    // Without model selections configured, there is no restriction on model
+    // overrides so the parent's stored override is inherited.
+    expect(state.provider).toBe("anthropic");
+    expect(state.model).toBe("claude-opus-4-5");
   });
 
   it("applies stored override when heartbeat override was not resolved", async () => {
