@@ -21,8 +21,17 @@ extension OnboardingView {
     func handleNext() {
         if self.currentPage < self.pageCount - 1 {
             withAnimation { self.currentPage += 1 }
+            // Auto-start setup when arriving at page 3
+            if self.activePageIndex(for: self.currentPage) == 3, self.setupPhase == .idle {
+                Task { await self.runSetup() }
+            }
         } else {
-            Task { await self.finishOnboarding() }
+            // On the setup page: "Done" closes, "Retry" re-runs setup
+            if self.setupPhase == .done {
+                self.finishAndClose()
+            } else if self.isSetupFailed {
+                Task { await self.runSetup() }
+            }
         }
     }
 
@@ -37,32 +46,149 @@ extension OnboardingView {
         }
     }
 
-    // MARK: - Config Writing
+    // MARK: - Setup Flow
 
-    /// Save provider, API key, model, and gateway mode to ~/.marv/marv.json and credentials.
+    /// Run the full setup sequence: save config → check env → install CLI → start gateway.
     @MainActor
-    func finishOnboarding() async {
+    func runSetup() async {
         guard !self.savingConfig else { return }
         self.savingConfig = true
         defer { self.savingConfig = false }
 
-        // Write API key to credentials directory
+        // Phase 1: Save configuration
+        withAnimation { self.setupPhase = .savingConfig }
+        self.setupDetailMessage = "Writing API key and config..."
         self.writeApiKeyCredential()
-
-        // Write provider + model + gateway config
         await self.saveProviderAndModelConfig()
-
-        // Set gateway mode to local
         self.state.connectionMode = .local
 
-        // Ensure workspace exists
+        // Phase 2: Check environment
+        withAnimation { self.setupPhase = .checkingEnvironment }
+        self.setupDetailMessage = "Looking for Node.js..."
+
+        let envStatus = await Task.detached(priority: .userInitiated) {
+            GatewayEnvironment.check()
+        }.value
+
+        switch envStatus.kind {
+        case .missingNode:
+            withAnimation {
+                self.setupPhase = .failed(
+                    "Node.js 22+ is required but was not found. Install Node.js from nodejs.org and try again.")
+            }
+            self.setupDetailMessage = ""
+            return
+
+        case .ok:
+            // CLI already installed, skip install step
+            self.setupDetailMessage = "Node \(envStatus.nodeVersion ?? "?") found, CLI ready."
+
+        case .missingGateway, .incompatible:
+            // Phase 3: Install CLI
+            withAnimation { self.setupPhase = .installingCLI }
+            self.setupDetailMessage = "Downloading and installing..."
+
+            await CLIInstaller.install { status in
+                self.setupDetailMessage = status
+            }
+
+            // Re-check after install
+            let recheck = await Task.detached(priority: .userInitiated) {
+                GatewayEnvironment.check()
+            }.value
+
+            if recheck.kind != .ok {
+                withAnimation {
+                    self.setupPhase = .failed(
+                        "CLI installation did not complete successfully. \(recheck.message)")
+                }
+                self.setupDetailMessage = ""
+                return
+            }
+
+        case .checking:
+            break // shouldn't happen
+
+        case let .error(msg):
+            withAnimation {
+                self.setupPhase = .failed("Environment check failed: \(msg)")
+            }
+            self.setupDetailMessage = ""
+            return
+        }
+
+        // Phase 4: Start gateway (skip if already running)
+        withAnimation { self.setupPhase = .startingGateway }
+        let port = GatewayEnvironment.gatewayPort()
+        self.setupDetailMessage = "Checking for running gateway on port \(port)..."
+
+        let alreadyRunning = await self.waitForGateway(port: port, timeout: 2)
+        if alreadyRunning {
+            self.setupDetailMessage = "Gateway already running."
+        } else {
+            self.setupDetailMessage = "Launching gateway on port \(port)..."
+            let gateway = GatewayProcessManager.shared
+            gateway.setActive(true)
+
+            // Wait for gateway to become reachable (up to 15s)
+            let gatewayReady = await self.waitForGateway(port: port, timeout: 15)
+            if !gatewayReady {
+                self.setupDetailMessage = "Gateway is starting up (may take a moment)..."
+            }
+        }
+
+        // Ensure workspace + mark onboarding complete
         await self.loadWorkspaceDefaults()
         await self.ensureDefaultWorkspace()
-
-        // Mark onboarding complete
         UserDefaults.standard.set(true, forKey: "marv.onboardingSeen")
         UserDefaults.standard.set(currentOnboardingVersion, forKey: onboardingVersionKey)
+        AppStateStore.shared.onboardingSeen = true
+
+        withAnimation { self.setupPhase = .done }
+        self.setupDetailMessage = ""
+    }
+
+    /// Close onboarding after successful setup.
+    func finishAndClose() {
         OnboardingController.shared.close()
+    }
+
+    /// Skip setup and close onboarding (user can set up later from Settings).
+    func skipSetup() {
+        // Still save config so provider/model/key aren't lost
+        self.writeApiKeyCredential()
+        Task {
+            await self.saveProviderAndModelConfig()
+            self.state.connectionMode = .local
+            await self.loadWorkspaceDefaults()
+            await self.ensureDefaultWorkspace()
+            UserDefaults.standard.set(true, forKey: "marv.onboardingSeen")
+            UserDefaults.standard.set(currentOnboardingVersion, forKey: onboardingVersionKey)
+            AppStateStore.shared.onboardingSeen = true
+            OnboardingController.shared.close()
+        }
+    }
+
+    /// Poll localhost gateway health endpoint until it responds or timeout.
+    private func waitForGateway(port: Int, timeout: Int) async -> Bool {
+        let url = URL(string: "http://127.0.0.1:\(port)/health")!
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 2
+        let session = URLSession(configuration: config)
+
+        let deadline = Date().addingTimeInterval(TimeInterval(timeout))
+        while Date() < deadline {
+            do {
+                let (_, response) = try await session.data(from: url)
+                if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                    return true
+                }
+            } catch {
+                // Not ready yet
+            }
+            try? await Task.sleep(for: .seconds(1))
+        }
+        return false
     }
 
     /// Write the API key to ~/.marv/credentials/ in the format the CLI expects.

@@ -8,6 +8,35 @@ enum UIStrings {
     static let welcomeTitle = "Welcome to Marv"
 }
 
+enum SetupPhase: Equatable {
+    case idle
+    case savingConfig
+    case checkingEnvironment
+    case installingCLI
+    case startingGateway
+    case done
+    case failed(String)
+
+    var message: String {
+        switch self {
+        case .idle: return ""
+        case .savingConfig: return "Saving configuration..."
+        case .checkingEnvironment: return "Checking environment..."
+        case .installingCLI: return "Installing Marv CLI..."
+        case .startingGateway: return "Starting gateway..."
+        case .done: return "All set!"
+        case let .failed(reason): return reason
+        }
+    }
+
+    var isActive: Bool {
+        switch self {
+        case .idle, .done, .failed: return false
+        default: return true
+        }
+    }
+}
+
 @MainActor
 final class OnboardingController {
     static let shared = OnboardingController()
@@ -70,6 +99,8 @@ struct OnboardingView: View {
     @State var selectedModel: String = ""
     @State var apiKeyValid: Bool = false
     @State var savingConfig: Bool = false
+    @State var setupPhase: SetupPhase = .idle
+    @State var setupDetailMessage: String = ""
 
     static let windowWidth: CGFloat = 630
     static let windowHeight: CGFloat = 580
@@ -90,7 +121,14 @@ struct OnboardingView: View {
     }
 
     var buttonTitle: String {
-        self.currentPage == self.pageCount - 1 ? "Finish" : "Next"
+        if self.currentPage == self.pageCount - 1 {
+            switch self.setupPhase {
+            case .done: return "Done"
+            case .failed: return "Retry"
+            default: return "Setting up..."
+            }
+        }
+        return "Next"
     }
 
     var canAdvance: Bool {
@@ -102,9 +140,17 @@ struct OnboardingView: View {
                     && !self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return !self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case 3:
+            // Setup page: only advance (close) when done, or allow retry on failure
+            return self.setupPhase == .done || self.isSetupFailed
         default:
             return true
         }
+    }
+
+    var isSetupFailed: Bool {
+        if case .failed = self.setupPhase { return true }
+        return false
     }
 
     static let providerDisplayNames: [(id: String, name: String, icon: String)] = [

@@ -203,6 +203,16 @@ fi
 echo "🖼  Copying app icon"
 cp "$ROOT_DIR/apps/macos/Sources/Marv/Resources/Marv.icns" "$APP_ROOT/Contents/Resources/Marv.icns"
 
+echo "🖼  Copying status bar icons"
+for icon in StatusBarIcon.png StatusBarIcon@2x.png; do
+  SRC="$ROOT_DIR/apps/macos/Sources/Marv/Resources/$icon"
+  if [ -f "$SRC" ]; then
+    cp "$SRC" "$APP_ROOT/Contents/Resources/$icon"
+  else
+    echo "WARN: $icon not found at $SRC" >&2
+  fi
+done
+
 echo "📦 Copying device model resources"
 rm -rf "$APP_ROOT/Contents/Resources/DeviceModels"
 cp -R "$ROOT_DIR/apps/macos/Sources/Marv/Resources/DeviceModels" "$APP_ROOT/Contents/Resources/DeviceModels"

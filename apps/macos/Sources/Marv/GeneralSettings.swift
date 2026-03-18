@@ -12,6 +12,7 @@ struct GeneralSettings: View {
     @State private var gatewayDiscovery = GatewayDiscoveryModel(
         localDisplayName: InstanceIdentity.displayName)
     @State private var gatewayStatus: GatewayEnvironmentStatus = .checking
+    @State private var gatewayStarting = false
     @State private var remoteStatus: RemoteStatus = .idle
     @State private var showRemoteAdvanced = false
     private let isPreview = ProcessInfo.processInfo.isPreview
@@ -368,8 +369,26 @@ struct GeneralSettings: View {
                     .foregroundStyle(.red)
             }
 
-            Button("Recheck") { self.refreshGatewayStatus() }
-                .buttonStyle(.bordered)
+            HStack(spacing: 8) {
+                Button("Recheck") { self.refreshGatewayStatus() }
+                    .buttonStyle(.bordered)
+
+                if self.showStartGatewayButton {
+                    Button {
+                        Task { await self.startGateway() }
+                    } label: {
+                        if self.gatewayStarting {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(width: 60)
+                        } else {
+                            Text("Start")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(self.gatewayStarting)
+                }
+            }
 
             Text("Gateway auto-starts in local mode via launchd (\(gatewayLaunchdLabel)).")
                 .font(.caption)
@@ -381,12 +400,88 @@ struct GeneralSettings: View {
         .cornerRadius(10)
     }
 
+    /// Show "Start" button when gateway isn't running and environment is usable.
+    private var showStartGatewayButton: Bool {
+        switch self.gatewayManager.status {
+        case .running, .attachedExisting, .starting:
+            return false
+        case .stopped, .failed:
+            // Only show if CLI is available (ok or incompatible but present)
+            switch self.gatewayStatus.kind {
+            case .ok, .incompatible:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    /// Probe the port first; only start via GatewayProcessManager if nothing is listening.
+    private func startGateway() async {
+        self.gatewayStarting = true
+        defer { self.gatewayStarting = false }
+
+        // Ensure gateway.mode=local is in the config (required by the CLI to start)
+        await self.ensureGatewayModeLocal()
+
+        let port = GatewayEnvironment.gatewayPort()
+        let url = URL(string: "http://127.0.0.1:\(port)/health")!
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 2
+        let session = URLSession(configuration: config)
+
+        // Quick check: is something already listening?
+        let alreadyRunning: Bool
+        do {
+            let (_, response) = try await session.data(from: url)
+            alreadyRunning = (response as? HTTPURLResponse)?.statusCode == 200
+        } catch {
+            alreadyRunning = false
+        }
+
+        if alreadyRunning {
+            // Just attach to the existing instance
+            self.gatewayManager.setActive(true)
+        } else {
+            // Full start via launchd
+            self.gatewayManager.setActive(true)
+
+            // Wait briefly for it to come up
+            for _ in 0..<10 {
+                try? await Task.sleep(for: .seconds(1))
+                do {
+                    let (_, resp) = try await session.data(from: url)
+                    if (resp as? HTTPURLResponse)?.statusCode == 200 { break }
+                } catch {
+                    continue
+                }
+            }
+        }
+
+        // Refresh status display
+        self.refreshGatewayStatus()
+    }
+
     private func refreshGatewayStatus() {
         Task {
             let status = await Task.detached(priority: .utility) {
                 GatewayEnvironment.check()
             }.value
             self.gatewayStatus = status
+        }
+    }
+
+    private func ensureGatewayModeLocal() async {
+        var root = await ConfigStore.load()
+        var gateway = root["gateway"] as? [String: Any] ?? [:]
+        let currentMode = gateway["mode"] as? String
+        guard currentMode != "local" else { return }
+        gateway["mode"] = "local"
+        root["gateway"] = gateway
+        do {
+            try await ConfigStore.save(root)
+        } catch {
+            MarvConfigFile.saveDict(root)
         }
     }
 

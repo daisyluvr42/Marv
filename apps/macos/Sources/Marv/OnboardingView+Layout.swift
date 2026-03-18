@@ -56,7 +56,7 @@ extension OnboardingView {
                 .opacity(0)
                 .disabled(true)
 
-                if self.currentPage > 0 {
+                if self.currentPage > 0, !self.setupPhase.isActive {
                     Button(action: self.handleBack, label: {
                         Label("Back", systemImage: "chevron.left")
                             .labelStyle(.iconOnly)
@@ -81,13 +81,14 @@ extension OnboardingView {
                             .frame(width: 8, height: 8)
                     }
                     .buttonStyle(.plain)
+                    .disabled(self.setupPhase.isActive)
                 }
             }
 
             Spacer()
 
             Button(action: self.handleNext) {
-                if self.savingConfig {
+                if self.savingConfig || self.setupPhase.isActive {
                     ProgressView()
                         .controlSize(.small)
                         .frame(minWidth: 88)
@@ -98,7 +99,7 @@ extension OnboardingView {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .disabled(!self.canAdvance || self.savingConfig)
+            .disabled(!self.canAdvance || self.savingConfig || self.setupPhase.isActive)
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 13)

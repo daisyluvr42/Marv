@@ -277,14 +277,114 @@ extension OnboardingView {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Page 3: Ready
+    // MARK: - Page 3: Setup
 
     private static let cliInstallCommand = "npm install -g agentmarv@latest && marv gateway run"
 
     func readyPage() -> some View {
         self.onboardingPage {
+            if self.setupPhase == .done {
+                self.setupSuccessContent()
+            } else if self.isSetupFailed {
+                self.setupFailedContent()
+            } else {
+                self.setupProgressContent()
+            }
+        }
+    }
+
+    private func setupProgressContent() -> some View {
+        VStack(spacing: 22) {
+            Text("Setting Up...")
+                .font(.largeTitle.weight(.semibold))
+            Text("Configuring Marv on your Mac. This may take a minute.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 520)
+
+            self.onboardingCard(spacing: 16, padding: 20) {
+                self.setupStepRow(
+                    title: "Save configuration",
+                    phase: .savingConfig)
+                Divider()
+                self.setupStepRow(
+                    title: "Check environment",
+                    phase: .checkingEnvironment)
+                Divider()
+                self.setupStepRow(
+                    title: "Install CLI",
+                    phase: .installingCLI)
+                Divider()
+                self.setupStepRow(
+                    title: "Start gateway",
+                    phase: .startingGateway)
+            }
+
+            if !self.setupDetailMessage.isEmpty {
+                Text(self.setupDetailMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 480)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private func setupStepRow(title: String, phase: SetupPhase) -> some View {
+        let stepState = self.stepState(for: phase)
+        return HStack(spacing: 12) {
+            Group {
+                switch stepState {
+                case .pending:
+                    Image(systemName: "circle")
+                        .foregroundStyle(.tertiary)
+                case .active:
+                    ProgressView()
+                        .controlSize(.small)
+                case .done:
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                case .skipped:
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(width: 20, height: 20)
+
+            Text(title)
+                .font(.callout.weight(stepState == .active ? .semibold : .regular))
+                .foregroundStyle(stepState == .pending ? .secondary : .primary)
+
+            Spacer()
+        }
+        .padding(.vertical, 2)
+    }
+
+    private enum StepState { case pending, active, done, skipped }
+
+    private func stepState(for phase: SetupPhase) -> StepState {
+        let order: [SetupPhase] = [.savingConfig, .checkingEnvironment, .installingCLI, .startingGateway]
+        guard let targetIdx = order.firstIndex(of: phase) else { return .pending }
+        guard let currentIdx = order.firstIndex(of: self.setupPhase) else {
+            // .done or .failed — all steps are done
+            if self.setupPhase == .done || self.isSetupFailed {
+                return .done
+            }
+            return .pending
+        }
+        if currentIdx > targetIdx { return .done }
+        if currentIdx == targetIdx { return .active }
+        return .pending
+    }
+
+    private func setupSuccessContent() -> some View {
+        VStack(spacing: 22) {
             Text("All Set!")
                 .font(.largeTitle.weight(.semibold))
+
             self.onboardingCard {
                 self.featureRow(
                     title: "Provider",
@@ -298,13 +398,39 @@ extension OnboardingView {
                 Divider().padding(.vertical, 2)
                 self.featureRow(
                     title: "Gateway",
-                    subtitle: "Local (port 4242)",
+                    subtitle: "Running (port \(GatewayEnvironment.gatewayPort()))",
                     systemImage: "network")
                 Divider().padding(.vertical, 6)
                 Toggle("Launch at login", isOn: self.$state.launchAtLogin)
                     .onChange(of: self.state.launchAtLogin) { _, newValue in
                         AppStateStore.updateLaunchAtLogin(enabled: newValue)
                     }
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private func setupFailedContent() -> some View {
+        VStack(spacing: 22) {
+            Text("Setup Issue")
+                .font(.largeTitle.weight(.semibold))
+
+            if case let .failed(reason) = self.setupPhase {
+                self.onboardingCard(spacing: 10, padding: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Color(nsColor: .systemOrange))
+                            .frame(width: 22)
+                            .padding(.top, 1)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(reason)
+                                .font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
             }
 
             self.onboardingCard(spacing: 10, padding: 14) {
@@ -316,9 +442,9 @@ extension OnboardingView {
                         .padding(.top, 1)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Install CLI & Start Gateway")
+                        Text("Manual Setup")
                             .font(.headline)
-                        Text("Copy the command below and run it in Terminal to install the Marv CLI and start the gateway.")
+                        Text("You can also install manually in Terminal:")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -350,8 +476,15 @@ extension OnboardingView {
                     }
                 }
             }
-            .frame(maxWidth: 520)
+
+            Button("Skip for now") {
+                self.skipSetup()
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .font(.callout)
         }
+        .padding(.top, 8)
     }
 
     var providerDisplayName: String {
