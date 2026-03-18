@@ -78,6 +78,16 @@ public struct OpenClawChatView: View {
             .frame(maxWidth: .infinity)
             .frame(maxHeight: .infinity, alignment: .top)
         }
+        .overlay {
+            if let approval = self.viewModel.pendingApproval {
+                ChatExecApprovalOverlay(
+                    approval: approval,
+                    isResolving: self.viewModel.isResolvingApproval,
+                    onDecision: { decision in
+                        self.viewModel.resolveApproval(decision: decision)
+                    })
+            }
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear { self.viewModel.load() }
         .sheet(isPresented: self.$showSessions) {
@@ -523,5 +533,129 @@ private struct ChatNoticeBanner: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)))
+    }
+}
+
+// MARK: - Exec/Escalation Approval Overlay
+
+private struct ChatExecApprovalOverlay: View {
+    let approval: OpenClawExecApprovalRequest
+    let isResolving: Bool
+    let onDecision: (String) -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                // Header icon + title
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.16))
+                    Image(systemName: self.approval.isEscalation
+                        ? "lock.shield.fill"
+                        : "terminal.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(.orange)
+                }
+                .frame(width: 48, height: 48)
+
+                Text(self.approval.isEscalation
+                    ? "Permission Escalation"
+                    : "Exec Approval Needed")
+                    .font(.headline)
+
+                if self.approval.isEscalation {
+                    Text("The agent wants stronger capabilities for this task.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                // Command / details
+                VStack(alignment: .leading, spacing: 6) {
+                    self.detailRow("Command", self.approval.command)
+                    if let kind = self.approval.kind, !kind.isEmpty {
+                        self.detailRow("Kind", kind)
+                    }
+                    if let taskId = self.approval.taskId, !taskId.isEmpty {
+                        self.detailRow("Task", taskId)
+                    }
+                    if let cwd = self.approval.cwd, !cwd.isEmpty {
+                        self.detailRow("CWD", cwd)
+                    }
+                    if let ask = self.approval.ask, !ask.isEmpty {
+                        self.detailRow("Reason", ask)
+                    }
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.primary.opacity(0.06)))
+
+                // Action buttons
+                HStack(spacing: 10) {
+                    Button {
+                        self.onDecision("deny")
+                    } label: {
+                        Text("Deny")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .disabled(self.isResolving)
+
+                    Button {
+                        self.onDecision("allow-always")
+                    } label: {
+                        Text("Always Allow")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .disabled(self.isResolving)
+
+                    Button {
+                        self.onDecision("allow-once")
+                    } label: {
+                        Text("Allow Once")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                    .disabled(self.isResolving)
+                }
+
+                if self.isResolving {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: 380)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(OpenClawChatTheme.subtleCard)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)))
+            .shadow(color: .black.opacity(0.2), radius: 24, y: 10)
+        }
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            Text(value)
+                .font(.caption.monospaced())
+                .foregroundStyle(.primary)
+                .lineLimit(3)
+                .textSelection(.enabled)
+        }
     }
 }

@@ -25,6 +25,8 @@ public final class OpenClawChatViewModel {
     public var attachments: [OpenClawPendingAttachment] = []
     public private(set) var healthOK: Bool = false
     public private(set) var pendingRunCount: Int = 0
+    public private(set) var pendingApproval: OpenClawExecApprovalRequest?
+    public private(set) var isResolvingApproval = false
 
     public private(set) var sessionKey: String
     public private(set) var sessionId: String?
@@ -97,6 +99,14 @@ public final class OpenClawChatViewModel {
 
     public func switchSession(to sessionKey: String) {
         Task { await self.performSwitchSession(to: sessionKey) }
+    }
+
+    public func resolveApproval(decision: String) {
+        Task { await self.performResolveApproval(decision: decision) }
+    }
+
+    public func dismissApproval() {
+        self.pendingApproval = nil
     }
 
     public var sessionChoices: [OpenClawChatSessionEntry] {
@@ -467,6 +477,13 @@ public final class OpenClawChatViewModel {
             self.handleChatEvent(chat)
         case let .agent(agent):
             self.handleAgentEvent(agent)
+        case let .execApprovalRequested(request):
+            self.pendingApproval = request
+        case let .execApprovalResolved(id, _):
+            // Another client resolved this approval; dismiss if it matches ours.
+            if self.pendingApproval?.id == id {
+                self.pendingApproval = nil
+            }
         case .seqGap:
             self.errorText = nil
             self.clearPendingRuns(reason: nil)
@@ -563,6 +580,21 @@ public final class OpenClawChatViewModel {
             }
         default:
             break
+        }
+    }
+
+    private func performResolveApproval(decision: String) async {
+        guard let approval = self.pendingApproval else { return }
+        guard !self.isResolvingApproval else { return }
+        self.isResolvingApproval = true
+        defer { self.isResolvingApproval = false }
+
+        do {
+            try await self.transport.resolveExecApproval(id: approval.id, decision: decision)
+            self.pendingApproval = nil
+        } catch {
+            self.errorText = "Approval failed: \(error.localizedDescription)"
+            chatUILogger.error("exec approval resolve failed \(error.localizedDescription, privacy: .public)")
         }
     }
 

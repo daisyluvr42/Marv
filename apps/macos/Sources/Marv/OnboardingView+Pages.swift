@@ -279,6 +279,8 @@ extension OnboardingView {
 
     // MARK: - Page 3: Ready
 
+    private static let cliInstallCommand = "npm install -g agentmarv@latest && marv gateway run"
+
     func readyPage() -> some View {
         self.onboardingPage {
             Text("All Set!")
@@ -304,6 +306,51 @@ extension OnboardingView {
                         AppStateStore.updateLaunchAtLogin(enabled: newValue)
                     }
             }
+
+            self.onboardingCard(spacing: 10, padding: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "terminal.fill")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22)
+                        .padding(.top, 1)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Install CLI & Start Gateway")
+                            .font(.headline)
+                        Text("Copy the command below and run it in Terminal to install the Marv CLI and start the gateway.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        HStack(spacing: 8) {
+                            Text(Self.cliInstallCommand)
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(Color.primary.opacity(0.06)))
+
+                            Button {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(Self.cliInstallCommand, forType: .string)
+                            } label: {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.body.weight(.medium))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .help("Copy to clipboard")
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: 520)
         }
     }
 

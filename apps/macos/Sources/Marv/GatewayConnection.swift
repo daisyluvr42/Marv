@@ -88,6 +88,7 @@ actor GatewayConnection {
         case cronStatus = "cron.status"
         case proactiveBuffer = "proactive.buffer"
         case proactiveFlush = "proactive.flush"
+        case execApprovalResolve = "exec.approval.resolve"
     }
 
     private let configProvider: @Sendable () async throws -> Config
@@ -642,5 +643,14 @@ extension GatewayConnection {
 
     func cronAdd(payload: [String: AnyCodable]) async throws {
         try await self.requestVoid(method: .cronAdd, params: payload)
+    }
+
+    // MARK: - Exec Approval
+
+    func execApprovalResolve(id: String, decision: String) async throws {
+        try await self.requestVoid(
+            method: .execApprovalResolve,
+            params: ["id": AnyCodable(id), "decision": AnyCodable(decision)],
+            timeoutMs: 10000)
     }
 }

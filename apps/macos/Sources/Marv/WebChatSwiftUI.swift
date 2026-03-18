@@ -65,6 +65,10 @@ struct MacGatewayChatTransport: OpenClawChatTransport, Sendable {
         try await GatewayConnection.shared.healthOK(timeoutMs: timeoutMs)
     }
 
+    func resolveExecApproval(id: String, decision: String) async throws {
+        try await GatewayConnection.shared.execApprovalResolve(id: id, decision: decision)
+    }
+
     func events() -> AsyncStream<OpenClawChatTransportEvent> {
         AsyncStream { continuation in
             let task = Task {
@@ -125,6 +129,15 @@ struct MacGatewayChatTransport: OpenClawChatTransport, Sendable {
                     return nil
                 }
                 return .agent(agent)
+            case "exec.approval.requested":
+                guard let payload = evt.payload else { return nil }
+                return Self.decodeExecApprovalRequested(payload)
+            case "exec.approval.resolved":
+                guard let payload = evt.payload else { return nil }
+                let dict = payload.value as? [String: Any] ?? [:]
+                let id = dict["id"] as? String ?? ""
+                let decision = dict["decision"] as? String ?? "deny"
+                return .execApprovalResolved(id: id, decision: decision)
             default:
                 return nil
             }
@@ -132,6 +145,30 @@ struct MacGatewayChatTransport: OpenClawChatTransport, Sendable {
         case .seqGap:
             return .seqGap
         }
+    }
+
+    private static func decodeExecApprovalRequested(_ payload: AnyCodable) -> OpenClawChatTransportEvent? {
+        let dict = payload.value as? [String: Any] ?? [:]
+        let id = dict["id"] as? String ?? ""
+        guard !id.isEmpty else { return nil }
+
+        let request = dict["request"] as? [String: Any] ?? [:]
+        let command = request["command"] as? String ?? id
+
+        return .execApprovalRequested(OpenClawExecApprovalRequest(
+            id: id,
+            command: command,
+            kind: request["kind"] as? String,
+            taskId: request["taskId"] as? String,
+            cwd: request["cwd"] as? String,
+            host: request["host"] as? String,
+            agentId: request["agentId"] as? String,
+            sessionKey: request["sessionKey"] as? String,
+            security: request["security"] as? String,
+            ask: request["ask"] as? String,
+            resolvedPath: request["resolvedPath"] as? String,
+            createdAtMs: dict["createdAtMs"] as? Double,
+            expiresAtMs: dict["expiresAtMs"] as? Double))
     }
 }
 
