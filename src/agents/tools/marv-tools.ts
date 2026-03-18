@@ -10,7 +10,7 @@ import { createCanvasTool } from "./canvas-tool.js";
 import { createCliInvokeTool } from "./cli-invoke-tool.js";
 import { createCliProfilesTool } from "./cli-profiles-tool.js";
 import { createCliSynthesizeTool } from "./cli-synthesize-tool.js";
-import { createCliVerifyTool } from "./cli-verify-tool.js";
+// cli_verify no longer registered as an agent tool (cli_synthesize auto-verifies).
 import type { AnyAgentTool } from "./common.js";
 import { createCronTool } from "./cron-tool.js";
 import { createExternalCliTool } from "./external-cli-tool.js";
@@ -125,11 +125,8 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     workspaceDir,
     sandboxed: options?.sandboxed,
   });
-  const cliVerifyTool = createCliVerifyTool({
-    config: options?.config,
-    workspaceDir,
-    sandboxed: options?.sandboxed,
-  });
+  // cli_verify removed: cli_synthesize auto-verifies on registration.
+  // Kept available as createCliVerifyTool() for programmatic re-verification if needed.
   const messageTool = options?.disableMessageTool
     ? null
     : createMessageTool({
@@ -166,7 +163,7 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     ...(cliProfilesTool ? [cliProfilesTool] : []),
     ...(cliInvokeTool ? [cliInvokeTool] : []),
     ...(cliSynthesizeTool ? [cliSynthesizeTool] : []),
-    ...(cliVerifyTool ? [cliVerifyTool] : []),
+    // cli_verify no longer exposed as agent tool (merged into cli_synthesize).
     ...(proactiveBufferTool ? [proactiveBufferTool] : []),
     ...(messageTool ? [messageTool] : []),
     createTtsTool({

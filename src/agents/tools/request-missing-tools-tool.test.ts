@@ -18,6 +18,9 @@ const {
 vi.mock("./tool-discovery.js", () => ({
   ToolDiscoveryService: class {
     discover = discoverMock;
+    discoverAsync = vi
+      .fn()
+      .mockImplementation((...args: unknown[]) => Promise.resolve(discoverMock(...args)));
   },
 }));
 
@@ -28,6 +31,7 @@ vi.mock("../skills-install.js", () => ({
 
 vi.mock("../skill-usage-records.js", () => ({
   readSkillUsageRecords: readSkillUsageRecordsMock,
+  markInstalledSkillUsageRecord: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./gateway.js", () => ({
@@ -227,7 +231,7 @@ describe("request_missing_tools tool", () => {
     };
 
     expect(details.discovered).toEqual([]);
-    expect(details.synthesisHint?.guidance).toContain("Create one using the appropriate path");
+    expect(details.synthesisHint?.guidance).toContain("Create one:");
     expect(details.message).toContain("Consider creating an ad-hoc solution");
   });
 

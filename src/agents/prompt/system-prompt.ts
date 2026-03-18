@@ -216,26 +216,26 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
   const lines: string[] = [];
   if (params.availableTools.has("request_missing_tools")) {
     lines.push(
-      "- If a required capability/tool is unavailable, call `request_missing_tools` with a concrete capability description and likely tool names.",
+      "- If a required capability/tool is unavailable, call `request_missing_tools` — it searches local skills, managed CLI profiles, and configured registry sources. It handles approval and installation automatically.",
     );
     lines.push(
-      "- If `request_missing_tools` returns no matches, create an ad-hoc solution: identify the needed capability, write a script (Python/Bash preferred), test it via `exec`, and save successful scripts as managed skills at ~/.marv/skills/ using `bun src/agents/tools/tool-synthesis.ts persist ...`.",
+      "- If `request_missing_tools` returns no matches, create a tool: (1) write a wrapper script (Python/Bash preferred), (2) test via `exec`, (3) register with `cli_synthesize` (auto-verifies and makes it discoverable for future sessions), (4) invoke via `cli_invoke`.",
     );
     lines.push(
-      "- When reading a file returns a MIME type hint (binary/unknown format), follow this chain: (1) call `request_missing_tools` with the MIME type as the capability description, (2) if no skill is found, write an ad-hoc script using the suggested approach, (3) test it, then persist it.",
+      "- When reading a file returns a MIME type hint (binary/unknown format): (1) call `request_missing_tools` with the MIME type, (2) if no skill found, create a wrapper script and register with `cli_synthesize`.",
     );
   }
-  if (params.availableTools.has("cli_profiles")) {
+  if (
+    params.availableTools.has("cli_synthesize") &&
+    !params.availableTools.has("request_missing_tools")
+  ) {
     lines.push(
-      "- Before synthesizing a new CLI tool, check `cli_profiles` to see whether a managed CLI profile for that capability already exists.",
+      "- You can hand-craft a wrapper script and register it with `cli_synthesize` (auto-verifies), then invoke via `cli_invoke`.",
     );
   }
   if (params.availableTools.has("cli_synthesize")) {
     lines.push(
-      "- If the best-fit software surface lacks a usable CLI, you can hand-craft a wrapper and register it with `cli_synthesize`, then validate it with `cli_verify` and call it with `cli_invoke`.",
-    );
-    lines.push(
-      "- Prefer a narrow script wrapper first. Only build a richer multi-command CLI when the capability will clearly be reused.",
+      "- Prefer a narrow script wrapper. Only build a richer multi-command CLI when the capability will clearly be reused.",
     );
   }
   if (params.availableTools.has("request_escalation")) {
@@ -359,8 +359,7 @@ export function buildAgentSystemPrompt(params: {
       "List, inspect, enable, disable, quarantine, or retire managed synthesized CLI profiles",
     cli_invoke: "Invoke a managed synthesized CLI profile",
     cli_synthesize:
-      "Register a new managed CLI profile from a wrapper script or command so it can be reused as a tool",
-    cli_verify: "Verify a managed synthesized CLI profile and optionally activate it",
+      "Register a new managed CLI profile from a wrapper script or command (auto-verifies and activates; creates a discoverable skill entry)",
     agents_list: "List agent ids allowed for sessions_spawn",
     sessions_list: "List other sessions (incl. sub-agents) with filters/last",
     sessions_history: "Fetch history for another session/sub-agent",
@@ -372,9 +371,10 @@ export function buildAgentSystemPrompt(params: {
     self_inspecting:
       "Inspect your own runtime/settings/models/scheduled-tasks/context/tools state; use for questions about your current status, settings, available models, scheduled tasks, tool limits, or why you are behaving a certain way",
     self_settings:
-      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory and memory-search settings (model, auth profile, thinking, verbose, reasoning, usage, elevated, exec, queue, reset/new, runtime model-registry refresh, deep-memory settings, shared memory embeddings/reranker defaults)",
+      "Apply self-setting requests (model, auth, thinking, exec, queue, memory, config get/set/unset, skill list, skill registry sources)",
     request_escalation: "Request task-scoped elevated permissions with user approval",
-    request_missing_tools: "Discover/install skills for missing capabilities (approval required)",
+    request_missing_tools:
+      "Discover and install skills for missing capabilities — searches local skills, managed CLI profiles, and configured registry sources (approval required)",
     image: "Analyze an image with the configured image model",
   };
 
@@ -400,7 +400,6 @@ export function buildAgentSystemPrompt(params: {
     "cli_profiles",
     "cli_invoke",
     "cli_synthesize",
-    "cli_verify",
     "agents_list",
     "sessions_list",
     "sessions_history",

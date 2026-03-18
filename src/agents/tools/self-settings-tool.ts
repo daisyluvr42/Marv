@@ -36,7 +36,6 @@ import {
   handleConfigGet,
   handleConfigSet,
   handleConfigUnset,
-  handleSkillInstall,
   handleSkillList,
   handleSkillSourceAdd,
   handleSkillSourceList,
@@ -121,21 +120,16 @@ const SelfSettingsToolSchema = Type.Object(
         description: "Remove a config key by dot-path (e.g. 'tools.web.search.tavily.apiKey').",
       }),
     ),
-    skillInstall: Type.Optional(
-      Type.String({
-        description:
-          "Install a skill/plugin from a source. Supported formats: npm package name (e.g. '@marv/tavily'), GitHub repo URL (e.g. 'https://github.com/user/repo'), or a local path. The source is cloned/downloaded, validated, and installed to ~/.marv/extensions/.",
-      }),
-    ),
     skillList: Type.Optional(
       Type.Boolean({
-        description: "List all installed skills/plugins and their status.",
+        description:
+          "List all installed skills, plugins, and managed CLI profiles across all sources.",
       }),
     ),
     skillSourceAdd: Type.Optional(
       Type.String({
         description:
-          "Add a skill registry source URL. The agent can later search this source for available skills. Format: 'name=url' (e.g. 'community=https://raw.githubusercontent.com/user/skills-registry/main/registry.json').",
+          "Add a skill registry source URL so request_missing_tools can search it for available skills. Format: 'name=url' (e.g. 'community=https://raw.githubusercontent.com/user/skills-registry/main/registry.json').",
       }),
     ),
     skillSourceList: Type.Optional(
@@ -471,7 +465,7 @@ export function createSelfSettingsTool(opts?: {
     label: "Self Settings",
     name: "self_settings",
     description:
-      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory, shared memory-search, and external CLI fallback settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, managed deep-consolidation settings, shared memory-search embedding/reranker defaults, external CLI availability/default preferences, config get/set/unset by dot-path, or skill install/list/source management.",
+      "Apply self-setting requests: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, registry refresh, deep-memory, memory-search, external CLI. Also: config get/set/unset by dot-path, skill list, and skill registry source management.",
     parameters: SelfSettingsToolSchema,
     execute: async (_toolCallId, args) => {
       if (!opts?.agentSessionKey?.trim()) {
@@ -484,7 +478,6 @@ export function createSelfSettingsTool(opts?: {
       const configGetPath = readStringParam(params, "configGet");
       const configSetExpr = readStringParam(params, "configSet");
       const configUnsetPath = readStringParam(params, "configUnset");
-      const skillInstallSource = readStringParam(params, "skillInstall");
       const skillListFlag = readBooleanParam(params, "skillList");
       const skillSourceAddExpr = readStringParam(params, "skillSourceAdd");
       const skillSourceListFlag = readBooleanParam(params, "skillSourceList");
@@ -493,7 +486,6 @@ export function createSelfSettingsTool(opts?: {
         configGetPath !== undefined ||
         configSetExpr !== undefined ||
         configUnsetPath !== undefined ||
-        skillInstallSource !== undefined ||
         skillListFlag !== undefined ||
         skillSourceAddExpr !== undefined ||
         skillSourceListFlag !== undefined;
@@ -509,12 +501,6 @@ export function createSelfSettingsTool(opts?: {
         }
         if (configUnsetPath) {
           results.push({ action: "configUnset", result: await handleConfigUnset(configUnsetPath) });
-        }
-        if (skillInstallSource) {
-          results.push({
-            action: "skillInstall",
-            result: await handleSkillInstall(skillInstallSource),
-          });
         }
         if (skillListFlag) {
           results.push({ action: "skillList", result: await handleSkillList() });

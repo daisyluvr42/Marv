@@ -1,7 +1,10 @@
+import { execSync } from "node:child_process";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
-import { readSkillUsageRecords } from "../skill-usage-records.js";
+import { markInstalledSkillUsageRecord, readSkillUsageRecords } from "../skill-usage-records.js";
 import {
   inspectDiscoveredSkillSafety,
   installDiscoveredSkill,
@@ -11,7 +14,11 @@ import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringArrayParam, readStringParam } from "./common.js";
 import { callGatewayTool, readGatewayCallOptions } from "./gateway.js";
-import { ToolDiscoveryService, type MissingCapability } from "./tool-discovery.js";
+import {
+  ToolDiscoveryService,
+  type DiscoveredSkill,
+  type MissingCapability,
+} from "./tool-discovery.js";
 
 const RequestMissingToolsSchema = Type.Object(
   {
@@ -86,6 +93,75 @@ async function requestInstallApproval(params: {
   }
 }
 
+const EXTENSIONS_DIR = path.join(
+  process.env.HOME ?? process.env.USERPROFILE ?? ".",
+  ".marv",
+  "extensions",
+);
+
+/** Install a skill discovered from a registry source (GitHub repo or npm package). */
+async function installFromRegistrySource(
+  candidate: DiscoveredSkill,
+): Promise<{ ok: boolean; message: string }> {
+  const install = candidate.registryInstall;
+  if (!install) {
+    return { ok: false, message: "No install spec available for this registry skill." };
+  }
+  const skillId = candidate.skillId;
+  const installDir = path.join(EXTENSIONS_DIR, skillId);
+
+  try {
+    if (install.repo) {
+      // Install from GitHub.
+      await fs.mkdir(installDir, { recursive: true });
+      execSync(`git clone --depth 1 ${install.repo} "${installDir}"`, {
+        stdio: "pipe",
+        timeout: 60_000,
+      });
+      // Run npm install if package.json exists.
+      const pkgPath = path.join(installDir, "package.json");
+      try {
+        await fs.access(pkgPath);
+        execSync("npm install --omit=dev", {
+          cwd: installDir,
+          stdio: "pipe",
+          timeout: 120_000,
+        });
+      } catch {
+        // No package.json or install failed — skill may not need deps.
+      }
+    } else if (install.npm) {
+      // Install from npm.
+      await fs.mkdir(installDir, { recursive: true });
+      const tmpPkg = {
+        name: `marv-skill-${skillId}`,
+        version: "1.0.0",
+        dependencies: { [install.npm]: "latest" },
+      };
+      await fs.writeFile(path.join(installDir, "package.json"), JSON.stringify(tmpPkg, null, 2));
+      execSync("npm install --omit=dev", {
+        cwd: installDir,
+        stdio: "pipe",
+        timeout: 120_000,
+      });
+    } else {
+      return { ok: false, message: "Registry entry has no repo or npm install spec." };
+    }
+
+    await markInstalledSkillUsageRecord({ skillId });
+    return {
+      ok: true,
+      message: `Skill '${skillId}' installed from registry. Restart gateway to activate plugin features.`,
+    };
+  } catch (err) {
+    await fs.rm(installDir, { recursive: true, force: true }).catch(() => {});
+    return {
+      ok: false,
+      message: `Failed to install '${skillId}': ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
 export function createRequestMissingToolsTool(opts?: {
   workspaceDir?: string;
   config?: MarvConfig;
@@ -132,15 +208,17 @@ export function createRequestMissingToolsTool(opts?: {
       const discovery = new ToolDiscoveryService();
       const workspaceDir = resolveWorkspaceRoot(opts?.workspaceDir);
       const usageRecords = await readSkillUsageRecords();
-      const discovered = discovery.discover({
+      const limit =
+        typeof params.installLimit === "number" && Number.isFinite(params.installLimit)
+          ? params.installLimit
+          : 5;
+      const discovered = await discovery.discoverAsync({
         workspaceDir,
         capability,
         config: opts?.config,
         usageRecords,
-        limit:
-          typeof params.installLimit === "number" && Number.isFinite(params.installLimit)
-            ? params.installLimit
-            : 5,
+        limit,
+        searchRegistries: true,
       });
 
       if (discovered.length === 0) {
@@ -151,13 +229,11 @@ export function createRequestMissingToolsTool(opts?: {
           synthesisHint: synthesisEnabled
             ? {
                 guidance:
-                  "No existing skill matches. Create one using the appropriate path:\n" +
-                  "• Managed CLI tool (recommended — persists across sessions and becomes discoverable):\n" +
-                  "  (1) Write a wrapper script via `write` (Python or Bash) with stable arguments.\n" +
-                  "  (2) Register with `cli_synthesize` (automatically creates a SKILL.md index entry).\n" +
-                  "  (3) Run `cli_verify` to validate, then invoke via `cli_invoke`.\n" +
-                  "• Lightweight one-off script (no external CLI, not needed across sessions):\n" +
-                  "  `bun src/agents/tools/tool-synthesis.ts persist --name <name> --description <desc> --script <path>`",
+                  "No existing skill matches. Create one:\n" +
+                  "1. Write a wrapper script (Python/Bash preferred).\n" +
+                  "2. Test it via `exec`.\n" +
+                  "3. Register with `cli_synthesize` — it auto-verifies and creates a discoverable skill entry.\n" +
+                  "4. Future invocations via `cli_invoke`.",
               }
             : null,
           message: synthesisEnabled
@@ -191,13 +267,17 @@ export function createRequestMissingToolsTool(opts?: {
         warnings?: string[];
       }> = [];
       for (const candidate of installCandidates) {
-        // Workspace/project skills are already locally present — no installation needed.
+        // Workspace/project skills and CLI profiles are already locally present.
         if (candidate.alreadyInstalled) {
+          const hint =
+            candidate.source === "cli-profile"
+              ? `CLI profile already registered. Invoke via cli_invoke with profileId="${candidate.skillId}".`
+              : "Skill already available (workspace source; no install required).";
           installed.push({
             skillId: candidate.skillId,
             approved: "not-needed",
             ok: true,
-            message: "Skill already available (workspace source; no install required).",
+            message: hint,
           });
           if (installApprovalMode !== "batch") {
             break;
@@ -205,6 +285,47 @@ export function createRequestMissingToolsTool(opts?: {
           continue;
         }
 
+        // Registry-sourced skills: install from GitHub/npm.
+        if (candidate.source === "registry" && candidate.registryInstall) {
+          let approved: ApprovalDecision = "not-needed";
+          if (!autoInstallRequested) {
+            approved = await requestInstallApproval({
+              skillId: candidate.skillId,
+              contextTaskId,
+              config: opts?.config,
+              agentSessionKey: opts?.agentSessionKey,
+              gatewayOptions,
+            });
+            if (approved !== "allow-once" && approved !== "allow-always") {
+              installed.push({
+                skillId: candidate.skillId,
+                approved,
+                ok: false,
+                message:
+                  approved === "deny"
+                    ? "User denied installation request."
+                    : "Approval unavailable or timed out; installation skipped.",
+              });
+              if (installApprovalMode !== "batch") {
+                break;
+              }
+              continue;
+            }
+          }
+          const result = await installFromRegistrySource(candidate);
+          installed.push({
+            skillId: candidate.skillId,
+            approved,
+            ok: result.ok,
+            message: result.message,
+          });
+          if (installApprovalMode !== "batch") {
+            break;
+          }
+          continue;
+        }
+
+        // Standard local skill installation with safety scanning.
         const scan = await inspectDiscoveredSkillSafety({
           workspaceDir,
           skillId: candidate.skillId,
