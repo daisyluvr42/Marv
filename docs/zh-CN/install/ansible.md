@@ -23,7 +23,7 @@ x-i18n:
 一条命令安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marv/marv-ansible/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv-ansible/main/install.sh | bash
 ```
 
 > **📦 完整指南：[github.com/daisyluvr42/Marv-ansible](-ansible)**

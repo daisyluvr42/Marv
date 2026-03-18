@@ -67,7 +67,7 @@ ditto -c -k --keepParent apps/macos/.build/release/Marv.app.dSYM dist/Marv-2026.
 Use the release note generator so Sparkle renders formatted HTML notes:
 
 ```bash
-SPARKLE_PRIVATE_KEY_FILE=/path/to/ed25519-private-key scripts/make_appcast.sh dist/Marv-2026.3.16.zip https://raw.githubusercontent.com/marv/marv/main/appcast.xml
+SPARKLE_PRIVATE_KEY_FILE=/path/to/ed25519-private-key scripts/make_appcast.sh dist/Marv-2026.3.16.zip https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml
 ```
 
 Generates HTML release notes from `CHANGELOG.md` (via [`scripts/changelog-to-html.sh`](scripts/changelog-to-html.sh)) and embeds them in the appcast entry.
@@ -76,9 +76,9 @@ Commit the updated `appcast.xml` alongside the release assets (zip + dSYM) when 
 ## Publish & verify
 
 - Upload `Marv-2026.3.16.zip` (and `Marv-2026.3.16.dSYM.zip`) to the GitHub release for tag `v2026.3.16`.
-- Ensure the raw appcast URL matches the baked feed: `https://raw.githubusercontent.com/marv/marv/main/appcast.xml`.
+- Ensure the raw appcast URL matches the baked feed: `https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml`.
 - Sanity checks:
-  - `curl -I https://raw.githubusercontent.com/marv/marv/main/appcast.xml` returns 200.
+  - `curl -I https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml` returns 200.
   - `curl -I <enclosure url>` returns 200 after assets upload.
   - On a previous public build, run “Check for Updates…” from the About tab and verify Sparkle installs the new build cleanly.
 

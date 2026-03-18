@@ -9,7 +9,7 @@ summary: "Community-built projects and integrations powered by Marv"
 Real projects from the community. See what people are building with Marv.
 
 <Info>
-**Want to be featured?** Share your project in [#showcase on Discord](https://discord.gg/clawd) or [tag @marv on X](https://x.com/marv).
+**Want to be featured?** Share your project in [#showcase on Discord](https://discord.gg/marv) or [tag @marv on X](https://x.com/marv).
 </Info>
 
 ## 🎥 Marv in Action
@@ -405,7 +405,7 @@ Have something to share? We'd love to feature it!
 
 <Steps>
   <Step title="Share It">
-    Post in [#showcase on Discord](https://discord.gg/clawd) or [tweet @marv](https://x.com/marv)
+    Post in [#showcase on Discord](https://discord.gg/marv) or [tweet @marv](https://x.com/marv)
   </Step>
   <Step title="Include Details">
     Tell us what it does, link to the repo/demo, share a screenshot if you have one

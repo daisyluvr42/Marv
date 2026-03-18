@@ -47,6 +47,13 @@ Four-tier memory model with clarity decay and automatic promotion:
 - Automatic promotion (P3→P2→P1), confidence decay, retrieval reinforcement, semantic evolution
 - P3 episodic compaction: clusters similar fragments into distilled P2 semantic knowledge nodes
 
+## Requirements
+
+- Node.js >= 22.12.0
+- pnpm 10 (for source builds)
+- macOS / Linux (Windows via WSL2)
+- Recommended: 2+ vCPU, 4 GB+ RAM
+
 ## Quick Start
 
 ```bash
@@ -134,6 +141,13 @@ pnpm dev            # Dev mode
 - 混合检索：向量 RRF + BM25 + 词法 + 图谱扩展 + 聚类
 - 自动晋升（P3→P2→P1）、置信度衰减、检索增强、语义演化
 - P3 episodic 压缩：将相似片段聚类为 P2 语义知识节点
+
+## 部署要求
+
+- Node.js >= 22.12.0
+- pnpm 10（源码构建）
+- macOS / Linux（Windows 需 WSL2）
+- 建议：2+ vCPU、4 GB+ 内存
 
 ## 快速开始
 

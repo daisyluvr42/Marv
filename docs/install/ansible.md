@@ -16,7 +16,7 @@ The recommended way to deploy Marv to production servers is via **[marv-ansible]
 One-command install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marv/marv-ansible/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv-ansible/main/install.sh | bash
 ```
 
 > **📦 Full guide: [github.com/daisyluvr42/Marv-ansible](-ansible)**

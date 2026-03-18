@@ -275,7 +275,7 @@ Swift 生成器输出：
 
 生成的 JSON Schema 在仓库的 `dist/protocol.schema.json` 中。发布的原始文件通常可在以下位置获取：
 
-- https://raw.githubusercontent.com/marv/marv/main/dist/protocol.schema.json
+- https://raw.githubusercontent.com/daisyluvr42/Marv/main/dist/protocol.schema.json
 
 ## 当你更改模式时
 

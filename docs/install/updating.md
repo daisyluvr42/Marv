@@ -228,4 +228,4 @@ git pull
 
 - Run `marv doctor` again and read the output carefully (it often tells you the fix).
 - Check: [Troubleshooting](/gateway/troubleshooting)
-- Ask in Discord: [https://discord.gg/clawd](https://discord.gg/clawd)
+- Ask in Discord: [https://discord.gg/marv](https://discord.gg/marv)
