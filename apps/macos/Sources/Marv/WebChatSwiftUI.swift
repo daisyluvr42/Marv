@@ -300,6 +300,9 @@ final class WebChatSwiftUIWindowController {
             panel.becomesKeyOnlyIfNeeded = true
             panel.contentView?.wantsLayer = true
             panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+            panel.contentView?.layer?.cornerRadius = 16
+            panel.contentView?.layer?.cornerCurve = .continuous
+            panel.contentView?.layer?.masksToBounds = true
             panel.setFrame(
                 WindowPlacement.topRightFrame(
                     size: WebChatSwiftUILayout.panelSize,
