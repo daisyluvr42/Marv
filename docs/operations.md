@@ -12,7 +12,7 @@ This guide walks you through every stage of running Marv: from first install to 
 The installer detects macOS, installs the CLI, then automatically downloads and launches the **Marv Mac app** for GUI-based setup.
 
 ```bash
-curl -fsSL https://marv.bot/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
 ```
 
 What happens:
@@ -26,13 +26,13 @@ What happens:
 If you prefer CLI-only setup, skip the Mac app:
 
 ```bash
-curl -fsSL https://marv.bot/install.sh | bash -s -- --no-mac-app
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash -s -- --no-mac-app
 ```
 
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://marv.bot/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
 ```
 
 This installs the CLI and runs `marv onboard --install-daemon` in the terminal.

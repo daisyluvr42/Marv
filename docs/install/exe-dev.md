@@ -64,7 +64,7 @@ sudo apt-get install -y git curl jq ca-certificates openssl
 Run the Marv install script:
 
 ```bash
-curl -fsSL https://marv.bot/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
 ```
 
 ## 4) Setup nginx to proxy Marv to port 8000

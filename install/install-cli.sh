@@ -48,9 +48,9 @@ Options:
   -h, --help                 Show this help
 
 Examples:
-  curl -fsSL https://marv.bot/install-cli.sh | bash
-  curl -fsSL https://marv.bot/install-cli.sh | bash -s -- --prefix ~/Documents/Marv-Run
-  curl -fsSL https://marv.bot/install-cli.sh | bash -s -- --package ./agentmarv-2026.3.15.tgz --prefix ~/Documents/Marv-Run
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install-cli.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install-cli.sh | bash -s -- --prefix ~/Documents/Marv-Run
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install-cli.sh | bash -s -- --package ./agentmarv-2026.3.15.tgz --prefix ~/Documents/Marv-Run
 USAGE
 }
 

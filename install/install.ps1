@@ -32,9 +32,9 @@ Usage:
   install.ps1 [-InstallMethod npm|git] [-Version <tag>] [-Package <path-or-url>] [-Repo <url>] [-Ref <git-ref>] [-NoOnboard] [-Onboard] [-DryRun]
 
 Examples:
-  iwr -useb https://marv.bot/install.ps1 | iex
-  & ([scriptblock]::Create((iwr -useb https://marv.bot/install.ps1))) -Beta
-  & ([scriptblock]::Create((iwr -useb https://marv.bot/install.ps1))) -Package .\agentmarv-2026.3.15.tgz
+  iwr -useb https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.ps1 | iex
+  & ([scriptblock]::Create((iwr -useb https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.ps1))) -Beta
+  & ([scriptblock]::Create((iwr -useb https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.ps1))) -Package .\agentmarv-2026.3.15.tgz
 "@
 }
 

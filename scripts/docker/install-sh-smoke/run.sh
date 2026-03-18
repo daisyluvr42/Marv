@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_URL="${MARV_INSTALL_URL:-https://marv.bot/install.sh}"
+INSTALL_URL="${MARV_INSTALL_URL:-https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh}"
 SMOKE_PREVIOUS_VERSION="${MARV_INSTALL_SMOKE_PREVIOUS:-}"
 SKIP_PREVIOUS="${MARV_INSTALL_SMOKE_SKIP_PREVIOUS:-0}"
 DEFAULT_PACKAGE="agentmarv"

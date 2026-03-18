@@ -59,10 +59,10 @@ Options:
   -h, --help                  Show this help
 
 Examples:
-  curl -fsSL https://marv.bot/install.sh | bash
-  curl -fsSL https://marv.bot/install.sh | bash -s -- --beta
-  curl -fsSL https://marv.bot/install.sh | bash -s -- --install-method git
-  curl -fsSL https://marv.bot/install.sh | bash -s -- --package ./agentmarv-2026.3.15.tgz
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash -s -- --beta
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash -s -- --install-method git
+  curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash -s -- --package ./agentmarv-2026.3.15.tgz
 
 Env:
   MARV_INSTALL_METHOD         npm or git

@@ -71,7 +71,7 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 
 # Install Marv
-curl -fsSL https://marv.bot/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
 
 # Verify
 marv --version
