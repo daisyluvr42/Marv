@@ -39,7 +39,7 @@ final class ProactiveStore {
             self.error = nil
             do {
                 let result: Snapshot = try await GatewayConnection.shared.requestDecoded(
-                    method: "proactive.buffer",
+                    method: .proactiveBuffer,
                     params: [:])
                 self.snapshot = result
             } catch {
@@ -53,7 +53,7 @@ final class ProactiveStore {
         Task {
             do {
                 _ = try await GatewayConnection.shared.requestRaw(
-                    method: "proactive.flush",
+                    method: .proactiveFlush,
                     params: [:],
                     timeoutMs: nil)
                 // Refresh after flush to get updated counts

@@ -86,6 +86,8 @@ actor GatewayConnection {
         case cronUpdate = "cron.update"
         case cronAdd = "cron.add"
         case cronStatus = "cron.status"
+        case proactiveBuffer = "proactive.buffer"
+        case proactiveFlush = "proactive.flush"
     }
 
     private let configProvider: @Sendable () async throws -> Config
