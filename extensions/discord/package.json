@@ -1,6 +1,6 @@
 {
   "name": "@marv/discord",
-  "version": "2026.3.16",
+  "version": "2026.3.18",
   "description": "Marv Discord channel plugin",
   "type": "module",
   "devDependencies": {

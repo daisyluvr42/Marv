@@ -1,6 +1,6 @@
 {
   "name": "@marv/imessage",
-  "version": "2026.3.16",
+  "version": "2026.3.18",
   "private": true,
   "description": "Marv iMessage channel plugin",
   "type": "module",
