@@ -134,16 +134,14 @@ describe("resolveSubagentToolPolicy depth awareness", () => {
   });
 
   it("applies built-in reviewer read-only restrictions from session metadata", () => {
-    const spy = vi
-      .spyOn(sessionUtils, "loadSessionEntry")
-      .mockReturnValue({
-        cfg: baseCfg,
-        storePath: "",
-        store: {},
-        entry: { subagentRole: "reviewer" } as SessionEntry,
-        canonicalKey: "agent:main:subagent:reviewer",
-        legacyKey: undefined,
-      });
+    const spy = vi.spyOn(sessionUtils, "loadSessionEntry").mockReturnValue({
+      cfg: baseCfg,
+      storePath: "",
+      store: {},
+      entry: { subagentRole: "reviewer" } as SessionEntry,
+      canonicalKey: "agent:main:subagent:reviewer",
+      legacyKey: undefined,
+    });
     const policy = resolveSubagentToolPolicy(baseCfg, 1, "agent:main:subagent:reviewer");
     expect(isToolAllowedByPolicyName("read", policy)).toBe(true);
     expect(isToolAllowedByPolicyName("apply_patch", policy)).toBe(false);
@@ -169,16 +167,14 @@ describe("resolveSubagentToolPolicy depth awareness", () => {
         },
       },
     } as unknown as MarvConfig;
-    const spy = vi
-      .spyOn(sessionUtils, "loadSessionEntry")
-      .mockReturnValue({
-        cfg,
-        storePath: "",
-        store: {},
-        entry: { subagentRole: "reviewer" } as SessionEntry,
-        canonicalKey: "agent:main:subagent:reviewer",
-        legacyKey: undefined,
-      });
+    const spy = vi.spyOn(sessionUtils, "loadSessionEntry").mockReturnValue({
+      cfg,
+      storePath: "",
+      store: {},
+      entry: { subagentRole: "reviewer" } as SessionEntry,
+      canonicalKey: "agent:main:subagent:reviewer",
+      legacyKey: undefined,
+    });
     const policy = resolveSubagentToolPolicy(cfg, 1, "agent:main:subagent:reviewer");
     expect(isToolAllowedByPolicyName("web_fetch", policy)).toBe(true);
     expect(isToolAllowedByPolicyName("browser", policy)).toBe(false);
