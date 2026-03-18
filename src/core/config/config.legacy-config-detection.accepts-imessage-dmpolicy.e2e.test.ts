@@ -217,10 +217,10 @@ describe("legacy config detection", () => {
     expect(res.config?.agents?.defaults?.imageModel?.fallbacks).toEqual([
       "anthropic/claude-opus-4-5",
     ]);
-    expect(res.config?.agents?.defaults?.models?.["anthropic/claude-opus-4-5"]).toMatchObject({
+    expect(res.config?.models?.metadata?.["anthropic/claude-opus-4-5"]).toMatchObject({
       alias: "Opus",
     });
-    expect(res.config?.agents?.defaults?.models?.["openai/gpt-4.1-mini"]).toBeTruthy();
+    expect(res.config?.models?.metadata?.["openai/gpt-4.1-mini"]).toBeTruthy();
     expect((res.config as { agent?: unknown } | undefined)?.agent).toBeUndefined();
   });
   it("flags legacy config in snapshot", async () => {

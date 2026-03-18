@@ -61,7 +61,9 @@ describe("gateway config methods", () => {
     });
     expect(setRes.ok).toBe(false);
     expect(setRes.error?.message ?? "").toContain("invalid config");
-    expect(JSON.stringify(setRes.error?.details ?? {})).toContain("agents.list");
+    expect(
+      JSON.stringify((setRes.error as { details?: unknown } | undefined)?.details ?? {}),
+    ).toContain("agents.list");
   });
 
   it("rejects config.patch when legacy multi-agent fields are targeted", async () => {

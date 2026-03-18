@@ -117,7 +117,7 @@ export type LinkToolsConfig = {
   models?: LinkModelConfig[];
 };
 
-export type ExternalCliAdapterId = "codex" | "claude" | "aider";
+export type ExternalCliAdapterId = "codex" | "claude" | "aider" | "gemini";
 
 export type ExternalCliOverrideConfig = {
   command?: string;

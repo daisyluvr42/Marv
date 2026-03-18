@@ -90,7 +90,7 @@ describe("promptCustomApiConfig", () => {
     const result = await runPromptCustomApi(prompter);
 
     expectOpenAiCompatResult({ prompter, textCalls: 5, selectCalls: 1, result });
-    expect(result.config.agents?.defaults?.models?.["custom/llama3"]?.alias).toBe("local");
+    expect(result.config.models?.metadata?.["custom/llama3"]?.alias).toBe("local");
   });
 
   it("retries when verification fails", async () => {

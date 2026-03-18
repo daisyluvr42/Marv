@@ -609,8 +609,16 @@ describe("Agent-specific tool filtering", () => {
       }),
     ).rejects.toThrow("exec host not allowed");
 
+    // Without agent-level exec host override, falls back to global config (host: "sandbox")
+    const globalOnlyCfg: MarvConfig = {
+      tools: {
+        exec: {
+          host: "sandbox",
+        },
+      },
+    };
     const helperTools = createMarvCodingTools({
-      config: cfg,
+      config: globalOnlyCfg,
       sessionKey: "agent:helper:main",
       workspaceDir: "/tmp/test-helper-exec-defaults",
       agentDir: "/tmp/agent-helper-exec-defaults",

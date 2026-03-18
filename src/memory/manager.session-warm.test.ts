@@ -47,7 +47,7 @@ describe("memory manager session warm cache", () => {
         defaults: {
           workspace: workspaceDir,
           memorySearch: {
-            provider: "openai",
+            provider: "openai" as const,
             model: "mock-embed",
             store: { path: storePath, vector: { enabled: false } },
             chunking: { tokens: 4000, overlap: 0 },

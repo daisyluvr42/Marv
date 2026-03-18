@@ -16,12 +16,17 @@ vi.mock("../../process/exec.js", () => ({
 vi.mock("./external-cli-adapters.js", () => ({
   normalizeExternalCliId: (value: string | undefined) => {
     const normalized = value?.trim().toLowerCase();
-    if (normalized === "codex" || normalized === "claude" || normalized === "aider") {
+    if (
+      normalized === "codex" ||
+      normalized === "claude" ||
+      normalized === "aider" ||
+      normalized === "gemini"
+    ) {
       return normalized;
     }
     return null;
   },
-  listExternalCliAdapterIds: () => ["codex", "claude", "aider"],
+  listExternalCliAdapterIds: () => ["codex", "claude", "aider", "gemini"],
   getExternalCliAdapter: () => ({
     id: "codex",
     command: "codex",

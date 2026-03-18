@@ -20,7 +20,9 @@ import {
   OPENCODE_ZEN_DEFAULT_MODEL,
 } from "./opencode-zen-model-default.js";
 
-const loadModelCatalog = vi.hoisted(() => vi.fn(async () => []));
+const loadModelCatalog = vi.hoisted(() =>
+  vi.fn(async () => [] as Array<{ id: string; name: string; provider: string }>),
+);
 vi.mock("../agents/model/model-catalog.js", () => ({
   loadModelCatalog,
 }));

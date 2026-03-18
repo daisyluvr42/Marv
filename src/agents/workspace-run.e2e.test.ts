@@ -19,12 +19,10 @@ describe("resolveRunWorkspaceDir", () => {
   });
 
   it("falls back to configured per-agent workspace when input is missing", () => {
-    const defaultWorkspace = path.join(process.cwd(), "tmp", "workspace-default-main");
     const researchWorkspace = path.join(process.cwd(), "tmp", "workspace-research");
     const cfg = {
       agents: {
-        defaults: { workspace: defaultWorkspace },
-        list: [{ id: "research", workspace: researchWorkspace }],
+        defaults: { workspace: researchWorkspace },
       },
     } satisfies MarvConfig;
 
@@ -100,14 +98,9 @@ describe("resolveRunWorkspaceDir", () => {
 
   it("throws for malformed agent session keys even when config has a default agent", () => {
     const mainWorkspace = path.join(process.cwd(), "tmp", "workspace-main-default");
-    const researchWorkspace = path.join(process.cwd(), "tmp", "workspace-research-default");
     const cfg = {
       agents: {
         defaults: { workspace: mainWorkspace },
-        list: [
-          { id: "main", workspace: mainWorkspace },
-          { id: "research", workspace: researchWorkspace, default: true },
-        ],
       },
     } satisfies MarvConfig;
 

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarvConfig } from "../core/config/types.js";
+import type { RuntimeEnv } from "../runtime.js";
 
 const mocks = vi.hoisted(() => ({
   snapshot: {
@@ -35,12 +36,12 @@ vi.mock("../agents/agent-scope.js", () => ({
 const { memoryP0SectionCommand, memoryP0ShowCommand, memoryP0SyncCommand } =
   await import("./memory-p0.js");
 
-function makeRuntime() {
+function makeRuntime(): RuntimeEnv {
   return {
     log: vi.fn(),
     error: vi.fn(),
     exit: vi.fn(),
-  } as never;
+  };
 }
 
 describe("memory P0 commands", () => {

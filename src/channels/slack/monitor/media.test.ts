@@ -18,6 +18,8 @@ const createSavedMedia = (filePath: string, contentType: string): SavedMedia => 
   path: filePath,
   size: 128,
   contentType,
+  scope: "inbound",
+  lifecycle: "session",
 });
 
 describe("fetchWithSlackAuth", () => {

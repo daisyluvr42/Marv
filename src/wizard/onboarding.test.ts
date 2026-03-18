@@ -703,14 +703,15 @@ describe("runOnboardingWizard", () => {
       events.push("model");
       return { config: undefined, model: "openai/gpt-5.2" };
     });
-    applyPrimaryModel.mockImplementationOnce((cfg: Record<string, unknown>, model: string) => {
+    applyPrimaryModel.mockImplementationOnce((rawCfg: unknown, model?: string) => {
       events.push("apply-model");
+      const cfg = rawCfg as Record<string, Record<string, unknown>>;
       return {
         ...cfg,
         agents: {
           ...cfg?.agents,
           defaults: {
-            ...cfg?.agents?.defaults,
+            ...(cfg?.agents?.defaults as Record<string, unknown>),
             model: { primary: model },
           },
         },
@@ -823,16 +824,19 @@ describe("runOnboardingWizard", () => {
     try {
       promptAuthChoiceGrouped.mockResolvedValueOnce("token");
       promptDefaultModel.mockResolvedValueOnce({ config: undefined, model: "openai/gpt-5.2" });
-      applyPrimaryModel.mockImplementationOnce((cfg: Record<string, unknown>, model: string) => ({
-        ...cfg,
-        agents: {
-          ...cfg?.agents,
-          defaults: {
-            ...cfg?.agents?.defaults,
-            model: { primary: model },
+      applyPrimaryModel.mockImplementationOnce((rawCfg: unknown, model?: string) => {
+        const cfg = rawCfg as Record<string, Record<string, unknown>>;
+        return {
+          ...cfg,
+          agents: {
+            ...cfg?.agents,
+            defaults: {
+              ...(cfg?.agents?.defaults as Record<string, unknown>),
+              model: { primary: model },
+            },
           },
-        },
-      }));
+        };
+      });
       readConfigFileSnapshot.mockResolvedValueOnce({
         path: "/tmp/.marv/marv.json",
         exists: true,

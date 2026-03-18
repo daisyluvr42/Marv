@@ -91,8 +91,8 @@ function expectAllowlistContains(
   cfg: ReturnType<typeof applyOpenrouterProviderConfig>,
   key: string,
 ) {
-  const models = cfg.agents?.defaults?.models ?? {};
-  expect(Object.keys(models)).toContain(key);
+  const metadata = cfg.models?.metadata ?? {};
+  expect(Object.keys(metadata)).toContain(key);
 }
 
 function expectAliasPreserved(
@@ -100,7 +100,7 @@ function expectAliasPreserved(
   key: string,
   alias: string,
 ) {
-  expect(cfg.agents?.defaults?.models?.[key]?.alias).toBe(alias);
+  expect(cfg.models?.metadata?.[key]?.alias).toBe(alias);
 }
 
 describe("writeOAuthCredentials", () => {
@@ -222,26 +222,24 @@ describe("applyMinimaxApiConfig", () => {
 
   it("adds model alias", () => {
     const cfg = applyMinimaxApiConfig({}, "MiniMax-M2.1");
-    expect(cfg.agents?.defaults?.models?.["minimax/MiniMax-M2.1"]?.alias).toBe("Minimax");
+    expect(cfg.models?.metadata?.["minimax/MiniMax-M2.1"]?.alias).toBe("Minimax");
   });
 
   it("preserves existing model params when adding alias", () => {
     const cfg = applyMinimaxApiConfig(
       {
-        agents: {
-          defaults: {
-            models: {
-              "minimax/MiniMax-M2.1": {
-                alias: "MiniMax",
-                params: { custom: "value" },
-              },
+        models: {
+          metadata: {
+            "minimax/MiniMax-M2.1": {
+              alias: "MiniMax",
+              params: { custom: "value" },
             },
           },
         },
       },
       "MiniMax-M2.1",
     );
-    expect(cfg.agents?.defaults?.models?.["minimax/MiniMax-M2.1"]).toMatchObject({
+    expect(cfg.models?.metadata?.["minimax/MiniMax-M2.1"]).toMatchObject({
       alias: "Minimax",
       params: { custom: "value" },
     });
@@ -428,7 +426,7 @@ describe("applyXaiConfig", () => {
 describe("applyXaiProviderConfig", () => {
   it("adds model alias", () => {
     const cfg = applyXaiProviderConfig({});
-    expect(cfg.agents?.defaults?.models?.[XAI_DEFAULT_MODEL_REF]?.alias).toBe("Grok");
+    expect(cfg.models?.metadata?.[XAI_DEFAULT_MODEL_REF]?.alias).toBe("Grok");
   });
 
   it("merges xAI models and keeps existing provider overrides", () => {
@@ -456,11 +454,9 @@ describe("applyOpencodeZenProviderConfig", () => {
 
   it("preserves existing alias for the default model", () => {
     const cfg = applyOpencodeZenProviderConfig({
-      agents: {
-        defaults: {
-          models: {
-            "opencode/claude-opus-4-6": { alias: "My Opus" },
-          },
+      models: {
+        metadata: {
+          "opencode/claude-opus-4-6": { alias: "My Opus" },
         },
       },
     });
@@ -488,11 +484,9 @@ describe("applyOpenrouterProviderConfig", () => {
 
   it("preserves existing alias for the default model", () => {
     const cfg = applyOpenrouterProviderConfig({
-      agents: {
-        defaults: {
-          models: {
-            [OPENROUTER_DEFAULT_MODEL_REF]: { alias: "Router" },
-          },
+      models: {
+        metadata: {
+          [OPENROUTER_DEFAULT_MODEL_REF]: { alias: "Router" },
         },
       },
     });

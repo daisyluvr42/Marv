@@ -44,17 +44,14 @@ function mockConfig(
   storePath: string,
   agentOverrides?: Partial<NonNullable<NonNullable<MarvConfig["agents"]>["defaults"]>>,
   telegramOverrides?: Partial<NonNullable<NonNullable<MarvConfig["channels"]>["telegram"]>>,
-  agentsList?: Array<{ id: string; default?: boolean }>,
 ) {
   configSpy.mockReturnValue({
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-5" },
-        models: { "anthropic/claude-opus-4-5": {} },
         workspace: path.join(home, "marv"),
         ...agentOverrides,
       },
-      list: agentsList,
     },
     session: { store: storePath, mainKey: "main" },
     channels: {
@@ -184,10 +181,6 @@ describe("agentCommand", () => {
       const store = path.join(home, "sessions.json");
       mockConfig(home, store, {
         modelPool: "default",
-        models: {
-          "anthropic/claude-opus-4-5": {},
-          "openai/gpt-4.1-mini": {},
-        },
         modelPools: {
           default: {
             include: ["openai/gpt-4.1-mini", "anthropic/claude-opus-4-5"],
@@ -219,11 +212,6 @@ describe("agentCommand", () => {
         model: {
           primary: "openai/gpt-4.1-mini",
           fallbacks: ["openai/gpt-5.2"],
-        },
-        models: {
-          "anthropic/claude-opus-4-5": {},
-          "openai/gpt-4.1-mini": {},
-          "openai/gpt-5.2": {},
         },
       });
 
@@ -294,13 +282,15 @@ describe("agentCommand", () => {
   it("derives session key from --agent when no routing target is provided", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
-      mockConfig(home, store, undefined, undefined, [{ id: "ops" }]);
+      mockConfig(home, store);
 
-      await agentCommand({ message: "hi", agentId: "ops" }, runtime);
+      await agentCommand({ message: "hi", agentId: "main" }, runtime);
 
       const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
-      expect(callArgs?.sessionKey).toBe("agent:ops:main");
-      expect(callArgs?.sessionFile).toContain(`${path.sep}agents${path.sep}ops${path.sep}sessions`);
+      expect(callArgs?.sessionKey).toBe("agent:main:main");
+      expect(callArgs?.sessionFile).toContain(
+        `${path.sep}agents${path.sep}main${path.sep}sessions`,
+      );
     });
   });
 
@@ -421,9 +411,9 @@ describe("agentCommand", () => {
   it("uses reply channel as the message channel context", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
-      mockConfig(home, store, undefined, undefined, [{ id: "ops" }]);
+      mockConfig(home, store);
 
-      await agentCommand({ message: "hi", agentId: "ops", replyChannel: "slack" }, runtime);
+      await agentCommand({ message: "hi", agentId: "main", replyChannel: "slack" }, runtime);
 
       const callArgs = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0];
       expect(callArgs?.messageChannel).toBe("slack");
@@ -466,9 +456,9 @@ describe("agentCommand", () => {
   it("logs output when delivery is disabled", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
-      mockConfig(home, store, undefined, undefined, [{ id: "ops" }]);
+      mockConfig(home, store);
 
-      await agentCommand({ message: "hi", agentId: "ops" }, runtime);
+      await agentCommand({ message: "hi", agentId: "main" }, runtime);
 
       expect(runtime.log).toHaveBeenCalledWith("ok");
     });

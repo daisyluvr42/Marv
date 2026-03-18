@@ -406,22 +406,28 @@ function buildLiveGatewayConfig(params: {
     ...params.cfg,
     agents: {
       ...params.cfg.agents,
-      list: (params.cfg.agents?.list ?? []).map((entry) => ({
-        ...entry,
-        sandbox: { mode: "off" },
-      })),
       defaults: {
         ...params.cfg.agents?.defaults,
         // Live tests should avoid Docker sandboxing so tool probes can
         // operate on the temporary probe files we create in the host workspace.
         sandbox: { mode: "off" },
-        models: Object.fromEntries(params.candidates.map((m) => [`${m.provider}/${m.id}`, {}])),
       },
     },
     models:
       Object.keys(providers).length > 0
-        ? ({ ...baseModels, providers } as ModelsConfig)
-        : baseModels,
+        ? ({
+            ...baseModels,
+            providers,
+            metadata: Object.fromEntries(
+              params.candidates.map((m) => [`${m.provider}/${m.id}`, {}]),
+            ),
+          } as ModelsConfig)
+        : {
+            ...baseModels,
+            metadata: Object.fromEntries(
+              params.candidates.map((m) => [`${m.provider}/${m.id}`, {}]),
+            ),
+          },
   };
 }
 

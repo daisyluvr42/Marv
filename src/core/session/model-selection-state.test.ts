@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { SessionEntry } from "../config/sessions.js";
 import {
   clearSessionManualModelSelection,
   resolveSessionModelSelectionState,
@@ -35,7 +36,7 @@ describe("session model selection state", () => {
   });
 
   it("writes and clears manual selection fields", () => {
-    const entry = {
+    const entry: SessionEntry = {
       sessionId: "session-1",
       updatedAt: 1,
     };

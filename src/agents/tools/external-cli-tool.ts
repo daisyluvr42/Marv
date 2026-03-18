@@ -21,7 +21,7 @@ const GIT_DIFF_LIMIT = 16_000;
 const DEFAULT_TIMEOUT_SECONDS = 300;
 
 const ExternalCliToolSchema = Type.Object({
-  cli: optionalStringEnum(["codex", "claude", "aider"] as const, {
+  cli: optionalStringEnum(["codex", "claude", "aider", "gemini"] as const, {
     description: "External CLI to use. Omit to resolve from preference or availability.",
   }),
   task: Type.String({
@@ -473,7 +473,7 @@ export function createExternalCliTool(options?: {
     label: "External CLI",
     name: "external_cli",
     description:
-      "Delegate a difficult task to a stronger local external AI CLI such as Codex, Claude Code, or Aider. Use this as an explicit fallback when the task is complex, your current approach is weak, or your result quality is below the expected bar. If the user's available external CLI brands are not configured yet, ask which brands are installed and store them via self_settings before retrying.",
+      "Delegate a difficult task to a stronger local external AI CLI such as Codex, Claude Code, Aider, or Gemini. Use this as an explicit fallback when the task is complex, your current approach is weak, or your result quality is below the expected bar. If the user's available external CLI brands are not configured yet, ask which brands are installed and store them via self_settings before retrying.",
     parameters: ExternalCliToolSchema,
     execute: async (_toolCallId, args) => {
       const params = args as Record<string, unknown>;

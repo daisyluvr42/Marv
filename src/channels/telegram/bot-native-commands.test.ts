@@ -82,12 +82,6 @@ describe("registerTelegramNativeCommands", () => {
       agents: {
         defaults: {},
       },
-      bindings: [
-        {
-          agentId: "main",
-          match: { channel: "telegram", accountId: "bot-a" },
-        },
-      ],
     };
 
     registerTelegramNativeCommands(buildParams(cfg, "bot-a"));

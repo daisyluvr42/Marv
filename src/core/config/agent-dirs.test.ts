@@ -16,9 +16,7 @@ describe("resolveEffectiveAgentDir via findDuplicateAgentDirs", () => {
     // that the env flows through by checking a two-agent config produces
     // distinct dirs (no duplicates).
     const cfg: MarvConfig = {
-      agents: {
-        list: [{ id: "alpha" }, { id: "beta" }],
-      },
+      agents: {},
     };
 
     const env = {

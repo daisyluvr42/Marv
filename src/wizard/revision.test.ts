@@ -3,7 +3,7 @@ import type { WizardPrompter } from "./prompts.js";
 
 const mocks = vi.hoisted(() => ({
   randomToken: vi.fn(),
-  findTailscaleBinary: vi.fn(async () => "/usr/bin/tailscale"),
+  findTailscaleBinary: vi.fn(async (_opts?: unknown) => "/usr/bin/tailscale"),
 }));
 
 vi.mock("../commands/onboard-helpers.js", async (importActual) => {

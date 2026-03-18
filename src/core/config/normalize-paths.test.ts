@@ -27,18 +27,14 @@ describe("normalizeConfigPaths", () => {
           },
         },
         agents: {
-          defaults: { workspace: "~/ws-default" },
-          list: [
-            {
-              id: "main",
-              workspace: "~/ws-agent",
-              agentDir: "~/.marv/agents/main",
-              identity: {
-                name: "~not-a-path",
-              },
-              sandbox: { workspaceRoot: "~/sandbox-root" },
+          defaults: {
+            workspace: "~/ws-agent",
+            agentDir: "~/.marv/agents/main",
+            identity: {
+              name: "~not-a-path",
             },
-          ],
+            sandbox: { workspaceRoot: "~/sandbox-root" },
+          },
         },
       });
 
@@ -53,13 +49,12 @@ describe("normalizeConfigPaths", () => {
       expect(cfg.channels?.imessage?.accounts?.personal?.dbPath).toBe(
         path.join(home, "Library", "Messages", "chat.db"),
       );
-      expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-default"));
-      expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
-      expect(cfg.agents?.list?.[0]?.agentDir).toBe(path.join(home, ".marv", "agents", "main"));
-      expect(cfg.agents?.list?.[0]?.sandbox?.workspaceRoot).toBe(path.join(home, "sandbox-root"));
+      expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-agent"));
+      expect(cfg.agents?.defaults?.agentDir).toBe(path.join(home, ".marv", "agents", "main"));
+      expect(cfg.agents?.defaults?.sandbox?.workspaceRoot).toBe(path.join(home, "sandbox-root"));
 
       // Non-path key => do not treat "~" as home expansion.
-      expect(cfg.agents?.list?.[0]?.identity?.name).toBe("~not-a-path");
+      expect(cfg.agents?.defaults?.identity?.name).toBe("~not-a-path");
     });
   });
 });

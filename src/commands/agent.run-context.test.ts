@@ -44,7 +44,6 @@ describe("agentCommand run context", () => {
         agents: {
           defaults: {
             model: { primary: "anthropic/claude-opus-4-5" },
-            models: { "anthropic/claude-opus-4-5": {} },
             workspace: path.join(home, "marv"),
           },
         },

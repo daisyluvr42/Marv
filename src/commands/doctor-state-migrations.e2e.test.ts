@@ -316,9 +316,7 @@ describe("doctor legacy state migrations", () => {
 
   it("routes legacy state to the default agent entry", async () => {
     const root = await makeTempRoot();
-    const cfg: MarvConfig = {
-      agents: { list: [{ id: "alpha", default: true }] },
-    };
+    const cfg: MarvConfig = {};
     writeLegacySessionsFixture({
       root,
       sessions: {
@@ -326,14 +324,14 @@ describe("doctor legacy state migrations", () => {
       },
     });
 
-    const targetDir = path.join(root, "agents", "alpha", "sessions");
+    const targetDir = path.join(root, "agents", "main", "sessions");
     const store = await runAndReadSessionsStore({
       root,
       cfg,
       targetDir,
       now: () => 123,
     });
-    expect(store["agent:alpha:main"]?.sessionId).toBe("a");
+    expect(store["agent:main:main"]?.sessionId).toBe("a");
   });
 
   it("honors session.mainKey when seeding the direct-chat bucket", async () => {

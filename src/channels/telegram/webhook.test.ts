@@ -36,7 +36,7 @@ describe("startTelegramWebhook", () => {
     createTelegramBotSpy.mockClear();
     webhookCallbackSpy.mockClear();
     const abort = new AbortController();
-    const cfg = { bindings: [] };
+    const cfg = {};
     const { server } = await startTelegramWebhook({
       token: "tok",
       secret: "secret",
@@ -48,7 +48,7 @@ describe("startTelegramWebhook", () => {
     expect(createTelegramBotSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         accountId: "opie",
-        config: expect.objectContaining({ bindings: [] }),
+        config: expect.objectContaining({}),
       }),
     );
     const address = server.address();
@@ -81,7 +81,7 @@ describe("startTelegramWebhook", () => {
     handlerSpy.mockClear();
     createTelegramBotSpy.mockClear();
     const abort = new AbortController();
-    const cfg = { bindings: [] };
+    const cfg = {};
     const { server } = await startTelegramWebhook({
       token: "tok",
       secret: "secret",
@@ -94,7 +94,7 @@ describe("startTelegramWebhook", () => {
     expect(createTelegramBotSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         accountId: "opie",
-        config: expect.objectContaining({ bindings: [] }),
+        config: expect.objectContaining({}),
       }),
     );
     const addr = server.address();

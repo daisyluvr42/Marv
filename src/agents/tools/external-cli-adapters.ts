@@ -49,6 +49,15 @@ const CODEX_BACKEND: CliBackendConfig = {
   sessionIdFields: ["thread_id"],
 };
 
+const GEMINI_BACKEND: CliBackendConfig = {
+  command: "gemini",
+  args: [],
+  output: "json",
+  input: "arg",
+  modelArg: "--model",
+  sessionIdFields: ["session_id"],
+};
+
 const detectCache = new Map<string, Promise<boolean>>();
 
 function uniqueArgs(parts: string[]): string[] {
@@ -177,11 +186,43 @@ const adapters: Record<ExternalCliAdapterId, ExternalCliAdapter> = {
     },
     detect: async (command) => await detectBinary(command ?? "aider"),
   },
+  gemini: {
+    id: "gemini",
+    command: "gemini",
+    buildInvocation: ({ task, model, override }) => {
+      const command = override?.command?.trim() || "gemini";
+      const args = uniqueArgs([
+        "-y",
+        "--output-format",
+        "json",
+        ...(model ? ["--model", model] : []),
+        ...(override?.args ?? []),
+        task,
+      ]);
+      return { command, args };
+    },
+    parseOutput: (stdout, stderr) => {
+      const parsed = parseCliJson(stdout, GEMINI_BACKEND);
+      if (!parsed) {
+        return parseTextFallback(stdout, stderr);
+      }
+      return {
+        text: parsed.text,
+        raw: stdout.trim(),
+      };
+    },
+    detect: async (command) => await detectBinary(command ?? "gemini"),
+  },
 };
 
 export function normalizeExternalCliId(value: string | undefined): ExternalCliAdapterId | null {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === "codex" || normalized === "claude" || normalized === "aider") {
+  if (
+    normalized === "codex" ||
+    normalized === "claude" ||
+    normalized === "aider" ||
+    normalized === "gemini"
+  ) {
     return normalized;
   }
   return null;

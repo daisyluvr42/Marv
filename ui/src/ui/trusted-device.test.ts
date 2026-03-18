@@ -105,6 +105,6 @@ describe("trusted device lifecycle", () => {
     expect(host.password).toBe("");
     expect(host.connected).toBe(false);
     expect(host.lastError).toBeNull();
-    expect(host.client.stop).toHaveBeenCalledTimes(1);
+    expect(host.client!.stop).toHaveBeenCalledTimes(1);
   });
 });

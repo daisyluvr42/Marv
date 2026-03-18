@@ -4,7 +4,9 @@ import { registerBrowserActionObserveCommands } from "./browser-cli-actions-obse
 import type { BrowserParentOpts } from "./browser-cli-shared.js";
 
 const mocks = vi.hoisted(() => ({
-  callBrowserRequest: vi.fn(async () => ({ messages: [] })),
+  callBrowserRequest: vi.fn(
+    async (_opts: unknown, _params: unknown, _extra?: unknown) => ({ messages: [] }) as unknown,
+  ),
   runtime: {
     log: vi.fn(),
     error: vi.fn(),

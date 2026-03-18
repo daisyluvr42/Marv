@@ -139,15 +139,11 @@ describe("Nix integration (U3, U5, U9)", () => {
                 },
               },
               agents: {
-                defaults: { workspace: "~/ws-default" },
-                list: [
-                  {
-                    id: "main",
-                    workspace: "~/ws-agent",
-                    agentDir: "~/.marv/agents/main",
-                    sandbox: { workspaceRoot: "~/sandbox-root" },
-                  },
-                ],
+                defaults: {
+                  workspace: "~/ws-agent",
+                  agentDir: "~/.marv/agents/main",
+                  sandbox: { workspaceRoot: "~/sandbox-root" },
+                },
               },
               channels: {
                 whatsapp: {
@@ -168,10 +164,9 @@ describe("Nix integration (U3, U5, U9)", () => {
         const cfg = loadConfigForHome(home);
 
         expect(cfg.plugins?.load?.paths?.[0]).toBe(path.join(home, "plugins", "demo-plugin"));
-        expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-default"));
-        expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
-        expect(cfg.agents?.list?.[0]?.agentDir).toBe(path.join(home, ".marv", "agents", "main"));
-        expect(cfg.agents?.list?.[0]?.sandbox?.workspaceRoot).toBe(path.join(home, "sandbox-root"));
+        expect(cfg.agents?.defaults?.workspace).toBe(path.join(home, "ws-agent"));
+        expect(cfg.agents?.defaults?.agentDir).toBe(path.join(home, ".marv", "agents", "main"));
+        expect(cfg.agents?.defaults?.sandbox?.workspaceRoot).toBe(path.join(home, "sandbox-root"));
         expect(cfg.channels?.whatsapp?.accounts?.personal?.authDir).toBe(
           path.join(home, ".marv", "credentials", "wa-personal"),
         );

@@ -442,7 +442,7 @@ describe("createMarvCodingTools", () => {
       config: {
         tools: { profile: "coding" },
         agents: {
-          list: [{ id: "work", tools: { profile: "messaging" } }],
+          defaults: { tools: { profile: "messaging" } },
         },
       },
     });

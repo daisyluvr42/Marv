@@ -9,6 +9,7 @@ import {
   updateSessionStore,
   type SessionEntry,
 } from "../../core/config/sessions.js";
+import type { ExternalCliAdapterId } from "../../core/config/types.tools.js";
 import type { SessionsPatchParams } from "../../core/gateway/protocol/index.js";
 import { sessionsHandlers } from "../../core/gateway/server-methods/sessions.js";
 import {
@@ -244,7 +245,7 @@ function normalizeAuthProfile(raw: string | undefined): string | null | undefine
 
 function normalizeExternalCliDefault(
   raw: string | undefined,
-): "codex" | "claude" | "aider" | null | undefined {
+): ExternalCliAdapterId | null | undefined {
   const normalized = normalizePatchString(raw);
   if (normalized == null) {
     return normalized;
@@ -254,7 +255,7 @@ function normalizeExternalCliDefault(
 
 function normalizeExternalCliAvailableBrands(
   raw: string | undefined,
-): Array<"codex" | "claude" | "aider"> | undefined {
+): ExternalCliAdapterId[] | undefined {
   if (raw === undefined) {
     return undefined;
   }
@@ -267,7 +268,7 @@ function normalizeExternalCliAvailableBrands(
     .flatMap((part) => part.split(/\s+/g))
     .map((part) => part.trim())
     .filter(Boolean);
-  const out: Array<"codex" | "claude" | "aider"> = [];
+  const out: ExternalCliAdapterId[] = [];
   const seen = new Set<string>();
   for (const part of parts) {
     const normalized = normalizeExternalCliId(part);

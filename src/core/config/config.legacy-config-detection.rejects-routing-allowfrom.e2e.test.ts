@@ -284,23 +284,20 @@ describe("legacy config detection", () => {
         },
       },
       agents: {
-        list: [
-          {
-            id: "work",
-            workspace: "~/marv-work",
-            tools: {
-              elevated: {
-                enabled: false,
-                allowFrom: { whatsapp: ["+15555550123"] },
-              },
+        defaults: {
+          workspace: "~/marv-work",
+          tools: {
+            elevated: {
+              enabled: false,
+              allowFrom: { whatsapp: ["+15555550123"] },
             },
           },
-        ],
+        },
       },
     });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config?.agents?.list?.[0]?.tools?.elevated).toEqual({
+      expect(res.config?.agents?.defaults?.tools?.elevated).toEqual({
         enabled: false,
         allowFrom: { whatsapp: ["+15555550123"] },
       });

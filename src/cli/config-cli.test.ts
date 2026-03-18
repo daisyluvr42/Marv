@@ -62,7 +62,7 @@ function setInvalidSnapshot(issues: Array<{ path: string; message: string }>) {
     issues,
     warnings: [],
     legacyIssues: [],
-  } as ConfigFileSnapshot);
+  } as unknown as ConfigFileSnapshot);
 }
 
 async function runConfigCommand(args: string[]) {
@@ -86,7 +86,7 @@ describe("config cli", () => {
     it("preserves existing config keys when setting a new value", async () => {
       const resolved: MarvConfig = {
         agents: {
-          list: [{ id: "main" }, { id: "oracle", workspace: "~/oracle-workspace" }],
+          defaults: {},
         },
         gateway: { port: 4242 },
         tools: { allow: ["group:fs"] },
@@ -112,7 +112,7 @@ describe("config cli", () => {
       expect(written.agents).toEqual(resolved.agents);
       expect(written.tools).toEqual(resolved.tools);
       expect(written.logging).toEqual(resolved.logging);
-      expect(written.agents).not.toHaveProperty("defaults");
+      expect(written.agents?.defaults).not.toHaveProperty("model");
     });
 
     it("does not inject runtime defaults into the written config", async () => {
@@ -150,7 +150,7 @@ describe("config cli", () => {
   describe("config unset - issue #6070", () => {
     it("preserves existing config keys when unsetting a value", async () => {
       const resolved: MarvConfig = {
-        agents: { list: [{ id: "main" }] },
+        agents: { defaults: {} },
         gateway: { port: 4242 },
         tools: {
           profile: "coding",
@@ -174,8 +174,7 @@ describe("config cli", () => {
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = mockWriteConfigFile.mock.calls[0]?.[0];
       expect(written.tools).not.toHaveProperty("alsoAllow");
-      expect(written.agents).not.toHaveProperty("defaults");
-      expect(written.agents?.list).toEqual(resolved.agents?.list);
+      expect(written.agents?.defaults).toEqual(resolved.agents?.defaults);
       expect(written.gateway).toEqual(resolved.gateway);
       expect(written.tools?.profile).toBe("coding");
       expect(written.logging).toEqual(resolved.logging);
@@ -218,7 +217,7 @@ describe("config cli", () => {
         issues: [{ path: "gateway.port", message: "Expected number, received string" }],
         warnings: [],
         legacyIssues: [],
-      } as ConfigFileSnapshot);
+      } as unknown as ConfigFileSnapshot);
 
       await runConfigCommand(["config", "get", "gateway.port"]);
 

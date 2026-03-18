@@ -163,7 +163,7 @@ describe("normalizeLegacyConfigValues", () => {
           fetch: { enabled: false },
         },
       },
-    });
+    } as never);
 
     expect(res.config.web).toEqual({ enabled: true });
     expect(res.config.tools?.web?.search).toEqual({
@@ -183,7 +183,7 @@ describe("normalizeLegacyConfigValues", () => {
           readability: false,
         },
       },
-    });
+    } as never);
 
     expect(res.config.web).toEqual({ heartbeatSeconds: 15 });
     expect(res.config.tools?.web?.fetch).toEqual({

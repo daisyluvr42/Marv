@@ -200,6 +200,7 @@ export function parseCliJson(raw: string, backend: CliBackendConfig): CliOutput 
     collectText(parsed.message) ||
     collectText(parsed.content) ||
     collectText(parsed.result) ||
+    collectText(parsed.response) ||
     collectText(parsed);
   return { text: text.trim(), sessionId, usage };
 }

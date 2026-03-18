@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const readChannelAllowFromStore = vi.hoisted(() => vi.fn(async () => []));
+const readChannelAllowFromStore = vi.hoisted(() => vi.fn(async (): Promise<string[]> => []));
 
 vi.mock("../../../../pairing/pairing-store.js", () => ({
   readChannelAllowFromStore,
