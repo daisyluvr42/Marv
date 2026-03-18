@@ -1,9 +1,9 @@
-import MarvProtocol
+import OpenClawProtocol
 import SwiftUI
 import Testing
 @testable import Marv
 
-private typealias ProtoAnyCodable = MarvProtocol.AnyCodable
+private typealias ProtoAnyCodable = OpenClawProtocol.AnyCodable
 
 @Suite(.serialized)
 @MainActor

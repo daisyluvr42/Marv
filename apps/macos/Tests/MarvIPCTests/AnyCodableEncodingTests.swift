@@ -1,4 +1,4 @@
-import MarvProtocol
+import OpenClawProtocol
 import Foundation
 import Testing
 
@@ -12,7 +12,7 @@ import Testing
             "null": NSNull(),
         ]
 
-        let data = try JSONEncoder().encode(MarvProtocol.AnyCodable(payload))
+        let data = try JSONEncoder().encode(OpenClawProtocol.AnyCodable(payload))
         let obj = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         #expect(obj["tags"] as? [String] == ["node", "ios"])
@@ -25,7 +25,7 @@ import Testing
             "items": [1, "two", NSNull(), ["ok": true]],
         ]
 
-        let data = try JSONEncoder().encode(MarvProtocol.AnyCodable(payload))
+        let data = try JSONEncoder().encode(OpenClawProtocol.AnyCodable(payload))
         let obj = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         let items = try #require(obj["items"] as? [Any])

@@ -80,6 +80,8 @@ let package = Package(
                 "MarvIPC",
                 "Marv",
                 "MarvDiscovery",
+                .product(name: "OpenClawChatUI", package: "OpenClawKit"),
+                .product(name: "OpenClawKit", package: "OpenClawKit"),
                 .product(name: "OpenClawProtocol", package: "OpenClawKit"),
             ],
             swiftSettings: [

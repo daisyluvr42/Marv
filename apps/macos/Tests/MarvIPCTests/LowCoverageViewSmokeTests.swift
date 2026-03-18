@@ -1,5 +1,5 @@
 import AppKit
-import MarvProtocol
+import OpenClawProtocol
 import SwiftUI
 import Testing
 

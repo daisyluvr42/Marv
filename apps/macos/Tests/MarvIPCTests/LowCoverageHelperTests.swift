@@ -1,5 +1,5 @@
 import AppKit
-import MarvProtocol
+import OpenClawProtocol
 import Foundation
 import Testing
 
@@ -7,7 +7,7 @@ import Testing
 
 @Suite(.serialized)
 struct LowCoverageHelperTests {
-    private typealias ProtoAnyCodable = MarvProtocol.AnyCodable
+    private typealias ProtoAnyCodable = OpenClawProtocol.AnyCodable
 
     @Test func anyCodableHelperAccessors() throws {
         let payload: [String: ProtoAnyCodable] = [
