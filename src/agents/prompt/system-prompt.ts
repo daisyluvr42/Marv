@@ -271,10 +271,7 @@ function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readT
   return [
     "## Documentation",
     `Marv docs: ${docsPath}`,
-    "Mirror: ",
-    "Source: ",
-    "Community: https://discord.com/invite/clawd",
-    "Find new skills: https://clawhub.com",
+    `Source: https://github.com/daisyluvr42/Marv`,
     "For Marv behavior, commands, config, or architecture: consult local docs first.",
     "When diagnosing issues, run `marv status` yourself when possible; only ask the user if you lack access (e.g., sandboxed).",
     "",
