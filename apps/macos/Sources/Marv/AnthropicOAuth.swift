@@ -197,7 +197,7 @@ enum AnthropicOAuth {
 enum MarvOAuthStore {
     static let oauthFilename = "oauth.json"
     private static let providerKey = "anthropic"
-    private static let marvOAuthDirEnv = "OPENCLAW_OAUTH_DIR"
+    private static let marvOAuthDirEnv = "MARV_OAUTH_DIR"
     private static let legacyPiDirEnv = "PI_CODING_AGENT_DIR"
 
     enum AnthropicOAuthStatus: Equatable {

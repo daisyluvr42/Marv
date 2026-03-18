@@ -14,8 +14,8 @@ enum MarvEnv {
 }
 
 enum MarvPaths {
-    private static let configPathEnv = ["OPENCLAW_CONFIG_PATH"]
-    private static let stateDirEnv = ["OPENCLAW_STATE_DIR"]
+    private static let configPathEnv = ["MARV_CONFIG_PATH"]
+    private static let stateDirEnv = ["MARV_STATE_DIR"]
 
     static var stateDirURL: URL {
         for key in self.stateDirEnv {
