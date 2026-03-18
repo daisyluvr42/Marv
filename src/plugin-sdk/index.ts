@@ -462,3 +462,27 @@ export type { ProcessedLineMessage } from "../channels/line/markdown-to-line.js"
 
 // Media utilities
 export { loadWebMedia, type WebMediaResult } from "../channels/web/media.js";
+
+// Profession Pack SDK
+export { registerProfessionPack } from "./pack.js";
+export type {
+  PackPersona,
+  PackWorkflow,
+  PackWorkflowStep,
+  PackKnowledge,
+  ProfessionPack,
+} from "./pack.js";
+export { registerPackKnowledge } from "./pack-knowledge.js";
+export { workflowToEddiePipeline, validateWorkflow, formatWorkflowList } from "./pack-workflow.js";
+export type { WorkflowValidationError } from "./pack-workflow.js";
+export {
+  useAnthropicSkill,
+  isAnthropicSkillsAvailable,
+  resolveAnthropicApiKey,
+  executeAnthropicSkill,
+} from "./pack-skills-bridge.js";
+export type {
+  AnthropicSkillId,
+  SkillExecutionInput,
+  SkillExecutionResult,
+} from "./pack-skills-bridge.js";

@@ -997,7 +997,12 @@
               },
               {
                 "group": "Extensions",
-                "pages": ["plugins/community", "plugins/voice-call", "plugins/zalouser"]
+                "pages": [
+                  "plugins/profession-packs",
+                  "plugins/community",
+                  "plugins/voice-call",
+                  "plugins/zalouser"
+                ]
               },
               {
                 "group": "Automation",

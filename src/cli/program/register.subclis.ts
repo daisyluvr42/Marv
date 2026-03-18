@@ -277,6 +277,24 @@ const entries: SubCliEntry[] = [
       mod.registerCompletionCli(program);
     },
   },
+  {
+    name: "pack",
+    description: "Manage profession packs",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../pack-cli.js");
+      mod.registerPackCli(program);
+    },
+  },
+  {
+    name: "workflow",
+    description: "Manage pack workflows",
+    hasSubcommands: true,
+    register: async (program) => {
+      const mod = await import("../pack-cli.js");
+      mod.registerPackCli(program);
+    },
+  },
 ];
 
 export function getSubCliEntries(): SubCliEntry[] {

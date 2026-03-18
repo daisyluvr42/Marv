@@ -1,0 +1,39 @@
+{
+  "id": "pack-example",
+  "name": "Example Profession Pack",
+  "description": "Scaffold for building industry-specific Marv packs with persona, tools, workflows, and knowledge.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "companyName": {
+        "type": "string",
+        "description": "Company or organization name"
+      },
+      "specialization": {
+        "type": "string",
+        "description": "Area of specialization within the domain"
+      },
+      "embeddingApiKey": {
+        "type": "string",
+        "description": "OpenAI API key for knowledge base embeddings (falls back to OPENAI_API_KEY env var)"
+      }
+    }
+  },
+  "uiHints": {
+    "companyName": {
+      "label": "Company Name",
+      "placeholder": "Your Company"
+    },
+    "specialization": {
+      "label": "Specialization",
+      "placeholder": "e.g. Intellectual Property"
+    },
+    "embeddingApiKey": {
+      "label": "Embedding API Key",
+      "sensitive": true,
+      "placeholder": "sk-proj-...",
+      "help": "OpenAI key for knowledge search (or set OPENAI_API_KEY env)"
+    }
+  }
+}
