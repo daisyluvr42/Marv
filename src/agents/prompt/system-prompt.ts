@@ -46,50 +46,40 @@ function buildMemorySection(params: {
   if (params.isMinimal) {
     return [];
   }
-  if (
-    !params.availableTools.has("memory_search") &&
-    !params.availableTools.has("memory_get") &&
-    !params.availableTools.has("memory_write")
-  ) {
+  const hasSearch =
+    params.availableTools.has("memory_search") || params.availableTools.has("memory_get");
+  const hasWrite = params.availableTools.has("memory_write");
+  if (!hasSearch && !hasWrite) {
     return [];
   }
   const lines = [
-    "## Memory Recall",
-    "Before answering anything about prior work, decisions, dates, people, preferences, or todos: run memory_search first; then use memory_get to pull only the needed lines/snippets. If low confidence after search, say you checked.",
+    "## Memory",
+    "For questions about prior work, decisions, preferences, or todos: use memory_search/memory_get before answering.",
   ];
-  if (params.availableTools.has("memory_write")) {
+  if (hasWrite) {
     lines.push(
-      "For durable memory updates, prefer memory_write (structured soul memory) instead of editing MEMORY.md files.",
+      "Use memory_write for durable updates. Memory tools are the primary interface; .md files are read-only projections.",
     );
   }
-  if (params.citationsMode === "off") {
-    lines.push(
-      "Citations are disabled: do not mention file paths or line numbers in replies unless the user explicitly asks.",
-    );
-  } else {
-    lines.push(
-      "Citations: include Source: <path#line> when it helps the user verify memory snippets.",
-    );
+  if (params.citationsMode !== "off") {
+    lines.push("Include Source: <path#line> when it helps the user verify.");
   }
   lines.push("");
   return lines;
 }
 
 function buildLanguageSection(params: { isMinimal: boolean; availableTools: Set<string> }) {
-  if (params.isMinimal) {
-    return [];
-  }
   const hasMemory =
     params.availableTools.has("memory_search") || params.availableTools.has("memory_write");
   const lines = [
     "## Response Language",
-    "Match the user's language: detect from their messages and reply in the same language.",
-    'If the user explicitly requests a language (e.g., "speak English", "用中文回复"), switch immediately and persist that preference.',
-    "Chinese-specific: never add pinyin romanization unless the user explicitly asks for it. Reply in plain Chinese characters only.",
+    "Always reply in the language the user is writing in. Detect per-message and match it.",
+    'Explicit switch (e.g., "speak English", "用中文回复") overrides auto-detection for all subsequent replies.',
+    "Never add pinyin unless explicitly asked.",
   ];
   if (hasMemory) {
     lines.push(
-      "Persistence: when the user explicitly changes language preference, store it via memory_write (key: `response_language`). On session start, check memory for a stored language preference before defaulting to auto-detection.",
+      "When the user explicitly changes language, persist via memory_write (key: `response_language`). On session start, check memory first.",
     );
   }
   lines.push("");
@@ -100,45 +90,16 @@ function buildSelfManagementSection(params: { isMinimal: boolean; availableTools
   if (params.isMinimal) {
     return [];
   }
-  const lines: string[] = [];
-  if (params.availableTools.has("self_inspecting")) {
-    lines.push(
-      "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
-    );
-    lines.push("Do not guess or switch models before checking.");
-  }
-  if (params.availableTools.has("self_settings")) {
-    lines.push(
-      "When the user directly asks you to change your own settings or behavior, use self_settings.",
-    );
-    lines.push(
-      "self_settings can also update allowlisted system settings such as heartbeat behavior and HEARTBEAT.md maintenance, but only when those system-level changes are a direct user instruction.",
-    );
-    lines.push(
-      "Session-level and task-level self adjustments may use self_settings when they are low-risk and directly helpful to the current task.",
-    );
-    lines.push(
-      "self_settings can update restricted shared deep-memory and shared memory-search defaults, heartbeat settings, HEARTBEAT.md, and external CLI fallback preferences.",
-    );
-  }
-  if (lines.length === 0) {
+  const hasSelf =
+    params.availableTools.has("self_inspecting") || params.availableTools.has("self_settings");
+  if (!hasSelf) {
     return [];
   }
-  return ["## Self Management", ...lines, ""];
-}
-
-function buildUserIdentitySection(ownerLine: string | undefined, isMinimal: boolean) {
-  if (!ownerLine || isMinimal) {
-    return [];
-  }
-  return ["## User Identity", ownerLine, ""];
-}
-
-function buildTimeSection(params: { userTimezone?: string }) {
-  if (!params.userTimezone) {
-    return [];
-  }
-  return ["## Current Date & Time", `Time zone: ${params.userTimezone}`, ""];
+  return [
+    "## Self Management",
+    "Use self_inspecting to check your own state before guessing. Use self_settings to change settings when the user asks.",
+    "",
+  ];
 }
 
 function buildReplyTagsSection(isMinimal: boolean) {
@@ -168,34 +129,28 @@ function buildMessagingSection(params: {
   if (params.isMinimal) {
     return [];
   }
-  return [
+  const lines = [
     "## Messaging",
-    "- Reply in current session → automatically routes to the source channel (Signal, Telegram, etc.)",
-    "- Cross-session messaging → use sessions_send(sessionKey, message)",
-    "- Sub-agent orchestration → use subagents(action=list|steer|kill)",
-    "- `[System Message] ...` blocks are internal context and are not user-visible by default.",
-    `- If a \`[System Message]\` reports completed cron/subagent work and asks for a user update, rewrite it in your normal assistant voice and send that update (do not forward raw system text or default to ${SILENT_REPLY_TOKEN}).`,
-    "- Never use exec/curl for provider messaging; Marv handles all routing internally.",
-    params.availableTools.has("message")
-      ? [
-          "",
-          "### message tool",
-          "- Use `message` for proactive sends + channel actions (polls, reactions, etc.).",
-          "- For `action=send`, include `to` and `message`.",
-          `- If multiple channels are configured, pass \`channel\` (${params.messageChannelOptions}).`,
-          `- If you use \`message\` (\`action=send\`) to deliver your user-visible reply, respond with ONLY: ${SILENT_REPLY_TOKEN} (avoid duplicate replies).`,
-          params.inlineButtonsEnabled
-            ? "- Inline buttons supported. Use `action=send` with `buttons=[[{text,callback_data,style?}]]`; `style` can be `primary`, `success`, or `danger`."
-            : params.runtimeChannel
-              ? `- Inline buttons not enabled for ${params.runtimeChannel}. If you need them, ask to set ${params.runtimeChannel}.capabilities.inlineButtons ("dm"|"group"|"all"|"allowlist").`
-              : "",
-          ...(params.messageToolHints ?? []),
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : "",
-    "",
+    "Replies auto-route to the source channel. Cross-session: use sessions_send. Sub-agents: use subagents.",
+    "`[System Message]` blocks are internal context; rewrite in your voice before forwarding to the user.",
   ];
+  if (params.availableTools.has("message")) {
+    lines.push(
+      `Use \`message\` for proactive sends and channel actions. After sending via message(action=send), respond with ONLY: ${SILENT_REPLY_TOKEN}`,
+    );
+    if (params.inlineButtonsEnabled) {
+      lines.push(
+        "Inline buttons supported via message(action=send, buttons=[[{text,callback_data,style?}]]).",
+      );
+    }
+    for (const hint of params.messageToolHints ?? []) {
+      if (hint.trim()) {
+        lines.push(hint.trim());
+      }
+    }
+  }
+  lines.push("");
+  return lines;
 }
 
 function buildVoiceSection(params: { isMinimal: boolean; ttsHint?: string }) {
@@ -216,46 +171,14 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
   const lines: string[] = [];
   if (params.availableTools.has("request_missing_tools")) {
     lines.push(
-      "- If a required capability/tool is unavailable, call `request_missing_tools` — it searches local skills, managed CLI profiles, and configured registry sources. It handles approval and installation automatically.",
-    );
-    lines.push(
-      "- If `request_missing_tools` returns no matches, create a tool: (1) write a wrapper script (Python/Bash preferred), (2) test via `exec`, (3) register with `cli_synthesize` (auto-verifies and makes it discoverable for future sessions), (4) invoke via `cli_invoke`.",
-    );
-    lines.push(
-      "- When reading a file returns a MIME type hint (binary/unknown format): (1) call `request_missing_tools` with the MIME type, (2) if no skill found, create a wrapper script and register with `cli_synthesize`.",
-    );
-  }
-  if (
-    params.availableTools.has("cli_synthesize") &&
-    !params.availableTools.has("request_missing_tools")
-  ) {
-    lines.push(
-      "- You can hand-craft a wrapper script and register it with `cli_synthesize` (auto-verifies), then invoke via `cli_invoke`.",
-    );
-  }
-  if (params.availableTools.has("cli_synthesize")) {
-    lines.push(
-      "- Prefer a narrow script wrapper. Only build a richer multi-command CLI when the capability will clearly be reused.",
+      "Missing a capability? Call request_missing_tools first. If no match, create a wrapper script and register with cli_synthesize.",
     );
   }
   if (params.availableTools.has("request_escalation")) {
-    lines.push(
-      "- For risky operations requiring higher privileges, call `request_escalation` with requested level, reason, and scope before retrying.",
-    );
-    lines.push(
-      "- When `request_escalation` returns `approvalId`/`requestId` plus `taskId`, treat `approvalId` as the canonical approval handle. `taskId` is scope metadata and only a compatibility alias.",
-    );
+    lines.push("For elevated privileges, call request_escalation with level/reason/scope.");
   }
   if (params.availableTools.has("external_cli")) {
-    lines.push(
-      "- If a difficult task, especially a coding task, is better handled by a stronger local AI CLI, or your current result quality is below the expected bar, consider delegating with `external_cli`.",
-    );
-    lines.push(
-      "- If external CLI fallback is enabled but you do not yet know which brands are installed on this machine, ask the user in natural language, then store the answer with `self_settings` before retrying.",
-    );
-    lines.push(
-      "- If `external_cli` returns `quota_exhausted`, continue from the existing partial work instead of starting over.",
-    );
+    lines.push("For tasks better handled by a stronger local AI CLI, delegate with external_cli.");
   }
   if (lines.length === 0) {
     return [];
@@ -263,17 +186,14 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
   return ["## Autonomy Helpers", ...lines, ""];
 }
 
-function buildDocsSection(params: { docsPath?: string; isMinimal: boolean; readToolName: string }) {
+function buildDocsSection(params: { docsPath?: string; isMinimal: boolean }) {
   const docsPath = params.docsPath?.trim();
   if (!docsPath || params.isMinimal) {
     return [];
   }
   return [
     "## Documentation",
-    `Marv docs: ${docsPath}`,
-    `Source: https://github.com/daisyluvr42/Marv`,
-    "For Marv behavior, commands, config, or architecture: consult local docs first.",
-    "When diagnosing issues, run `marv status` yourself when possible; only ask the user if you lack access (e.g., sandboxed).",
+    `Marv docs: ${docsPath}. Consult local docs first for Marv behavior/config questions.`,
     "",
   ];
 }
@@ -334,127 +254,30 @@ export function buildAgentSystemPrompt(params: {
   };
   memoryCitationsMode?: MemoryCitationsMode;
 }) {
-  const coreToolSummaries: Record<string, string> = {
-    read: "Read file contents",
-    write: "Create or overwrite files",
-    edit: "Make precise edits to files",
-    apply_patch: "Apply multi-file patches",
-    grep: "Search file contents for patterns",
-    find: "Find files by glob pattern",
-    ls: "List directory contents",
-    exec: "Run shell commands (pty available for TTY-required CLIs)",
-    process: "Manage background exec sessions",
-    web_search: "Search the web (Brave API)",
-    web_fetch: "Fetch and extract readable content from a URL",
-    // Channel docking: add login tools here when a channel needs interactive linking.
-    browser: "Control web browser (snapshot/act, pin tabs, extract page text)",
-    canvas: "Present/eval/snapshot the Canvas",
-    nodes: "List/describe/notify/camera/screen on paired nodes",
-    cron: "Manage cron jobs and reminders (include recent context in reminder text; write systemEvent as user-facing reminder text)",
-    message: "Send messages and channel actions",
-    gateway: "Restart, apply config, or run updates on the running Marv process",
-    external_cli:
-      "Delegate a difficult task to a stronger local external AI CLI (explicit fallback; ask/store available brands first if not configured)",
-    cli_profiles:
-      "List, inspect, enable, disable, quarantine, or retire managed synthesized CLI profiles",
-    cli_invoke: "Invoke a managed synthesized CLI profile",
-    cli_synthesize:
-      "Register a new managed CLI profile from a wrapper script or command (auto-verifies and activates; creates a discoverable skill entry)",
-    agents_list: "List agent ids allowed for sessions_spawn",
-    sessions_list: "List other sessions (incl. sub-agents) with filters/last",
-    sessions_history: "Fetch history for another session/sub-agent",
-    sessions_send: "Send a message to another session/sub-agent",
-    sessions_spawn: "Spawn a sub-agent session",
-    subagents: "List, steer, or kill sub-agent runs for this requester session",
-    session_status:
-      "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",
-    self_inspecting:
-      "Inspect your own runtime/settings/models/scheduled-tasks/context/tools state; use for questions about your current status, settings, available models, scheduled tasks, tool limits, or why you are behaving a certain way",
-    self_settings:
-      "Apply self-setting requests (model, auth, thinking, exec, queue, memory, config get/set/unset, skill list, skill registry sources)",
-    request_escalation: "Request task-scoped elevated permissions with user approval",
-    request_missing_tools:
-      "Discover and install skills for missing capabilities — searches local skills, managed CLI profiles, and configured registry sources (approval required)",
-    image: "Analyze an image with the configured image model",
-  };
-
-  const toolOrder = [
-    "read",
-    "write",
-    "edit",
-    "apply_patch",
-    "grep",
-    "find",
-    "ls",
-    "exec",
-    "process",
-    "web_search",
-    "web_fetch",
-    "browser",
-    "canvas",
-    "nodes",
-    "cron",
-    "message",
-    "gateway",
-    "external_cli",
-    "cli_profiles",
-    "cli_invoke",
-    "cli_synthesize",
-    "agents_list",
-    "sessions_list",
-    "sessions_history",
-    "sessions_send",
-    "subagents",
-    "session_status",
-    "self_inspecting",
-    "self_settings",
-    "request_escalation",
-    "request_missing_tools",
-    "image",
-  ];
-
-  const rawToolNames = (params.toolNames ?? []).map((tool) => tool.trim());
-  const canonicalToolNames = rawToolNames.filter(Boolean);
-  // Preserve caller casing while deduping tool names by lowercase.
-  const canonicalByNormalized = new Map<string, string>();
-  for (const name of canonicalToolNames) {
-    const normalized = name.toLowerCase();
-    if (!canonicalByNormalized.has(normalized)) {
-      canonicalByNormalized.set(normalized, name);
-    }
-  }
-  const resolveToolName = (normalized: string) =>
-    canonicalByNormalized.get(normalized) ?? normalized;
-
-  const normalizedTools = canonicalToolNames.map((tool) => tool.toLowerCase());
-  const availableTools = new Set(normalizedTools);
-  const externalToolSummaries = new Map<string, string>();
+  // Tool summaries are resolved dynamically from tool registrations via buildToolSummaryMap().
+  // Callers pass toolNames (preserving registration order) and toolSummaries (extracted from tool.description).
+  const summaries = new Map<string, string>();
   for (const [key, value] of Object.entries(params.toolSummaries ?? {})) {
     const normalized = key.trim().toLowerCase();
-    if (!normalized || !value?.trim()) {
-      continue;
+    if (normalized && value?.trim()) {
+      summaries.set(normalized, value.trim());
     }
-    externalToolSummaries.set(normalized, value.trim());
-  }
-  const extraTools = Array.from(
-    new Set(normalizedTools.filter((tool) => !toolOrder.includes(tool))),
-  );
-  const enabledTools = toolOrder.filter((tool) => availableTools.has(tool));
-  const toolLines = enabledTools.map((tool) => {
-    const summary = coreToolSummaries[tool] ?? externalToolSummaries.get(tool);
-    const name = resolveToolName(tool);
-    return summary ? `- ${name}: ${summary}` : `- ${name}`;
-  });
-  for (const tool of extraTools.toSorted()) {
-    const summary = coreToolSummaries[tool] ?? externalToolSummaries.get(tool);
-    const name = resolveToolName(tool);
-    toolLines.push(summary ? `- ${name}: ${summary}` : `- ${name}`);
   }
 
+  const canonicalToolNames = (params.toolNames ?? []).map((t) => t.trim()).filter(Boolean);
+  const availableTools = new Set(canonicalToolNames.map((t) => t.toLowerCase()));
+  const toolLines = canonicalToolNames.map((name) => {
+    const summary = summaries.get(name.toLowerCase());
+    return summary ? `- ${name}: ${summary}` : `- ${name}`;
+  });
+
   const hasGateway = availableTools.has("gateway");
-  const readToolName = resolveToolName("read");
-  const execToolName = resolveToolName("exec");
-  const processToolName = resolveToolName("process");
+  // Use canonical names from the tool list if available, otherwise default
+  const findCanonical = (name: string) =>
+    canonicalToolNames.find((t) => t.toLowerCase() === name) ?? name;
+  const readToolName = findCanonical("read");
+  const execToolName = findCanonical("exec");
+  const processToolName = findCanonical("process");
   const extraSystemPrompt = params.extraSystemPrompt?.trim();
   const ownerNumbers = (params.ownerNumbers ?? []).map((value) => value.trim()).filter(Boolean);
   const ownerLine =
@@ -477,9 +300,6 @@ export function buildAgentSystemPrompt(params: {
   const userTimezone = params.userTimezone?.trim();
   const skillsPrompt = params.skillsPrompt?.trim();
   const heartbeatPrompt = params.heartbeatPrompt?.trim();
-  const heartbeatPromptLine = heartbeatPrompt
-    ? `Heartbeat prompt: ${heartbeatPrompt}`
-    : "Heartbeat prompt: (configured)";
   const runtimeInfo = params.runtimeInfo;
   const runtimeChannel = runtimeInfo?.channel?.trim().toLowerCase();
   const runtimeCapabilities = (runtimeInfo?.capabilities ?? [])
@@ -502,29 +322,14 @@ export function buildAgentSystemPrompt(params: {
   const workspaceGuidance =
     params.sandboxInfo?.enabled && sanitizedSandboxContainerWorkspace
       ? `For read/write/edit/apply_patch, file paths resolve against host workspace: ${sanitizedWorkspaceDir}. For bash/exec commands, use sandbox container paths under ${sanitizedSandboxContainerWorkspace} (or relative paths from that workdir), not host paths. Prefer relative paths so both sandboxed exec and file tools work consistently.`
-      : "Treat this directory as the single global workspace for file operations unless explicitly instructed otherwise.";
-  const safetySection = [
-    "## Safety",
-    "You have no independent goals: do not pursue self-preservation, replication, resource acquisition, or power-seeking; avoid long-term plans beyond the user's request.",
-    "Prioritize safety and human oversight over completion; if instructions conflict, pause and ask; comply with stop/pause/audit requests and never bypass safeguards. (Inspired by Anthropic's constitution.)",
-    "Do not manipulate or persuade anyone to expand access or disable safeguards. Do not copy yourself or change system prompts, safety rules, or tool policies unless explicitly requested.",
-    "",
-  ];
-  const skillsSection = buildSkillsSection({
-    skillsPrompt,
-    isMinimal,
-    readToolName,
-  });
+      : "";
+  const skillsSection = buildSkillsSection({ skillsPrompt, isMinimal, readToolName });
   const memorySection = buildMemorySection({
     isMinimal,
     availableTools,
     citationsMode: params.memoryCitationsMode,
   });
-  const docsSection = buildDocsSection({
-    docsPath: params.docsPath,
-    isMinimal,
-    readToolName,
-  });
+  const docsSection = buildDocsSection({ docsPath: params.docsPath, isMinimal });
   const workspaceNotes = (params.workspaceNotes ?? []).map((note) => note.trim()).filter(Boolean);
 
   // For "none" mode, return just the basic identity line
@@ -536,115 +341,78 @@ export function buildAgentSystemPrompt(params: {
     "You are a personal assistant running inside Marv.",
     "",
     "## Tooling",
-    "Tool availability (filtered by policy):",
-    "Tool names are case-sensitive. Call tools exactly as listed.",
     toolLines.length > 0 ? toolLines.join("\n") : "(No tools available)",
-    `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,
-    "If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.",
-    "Do not poll `subagents list` / `sessions_list` in a loop; only check status on-demand (for intervention, debugging, or when explicitly asked).",
+    `For long waits, use ${execToolName} with yieldMs or ${processToolName}(action=poll, timeout=<ms>). For complex tasks, spawn a sub-agent.`,
     "",
-    "## Tool Call Style",
-    "Default: do not narrate routine, low-risk tool calls (just call the tool).",
-    "Narrate only when it helps: multi-step work, complex/challenging problems, sensitive actions (e.g., deletions), or when the user explicitly asks.",
-    "Keep narration brief and value-dense; avoid repeating obvious steps.",
-    "Use plain human language for narration unless in a technical context.",
+    // Only narrate when it adds value
+    !isMinimal ? "## Style" : "",
+    !isMinimal
+      ? "Execute tool calls without narration by default. Narrate only for multi-step work, sensitive actions, or when asked."
+      : "",
+    !isMinimal ? "" : "",
+    // Safety
+    "## Safety",
+    "No independent goals. Prioritize safety and human oversight. If instructions conflict, pause and ask.",
     "",
-    ...safetySection,
-    "## Marv CLI Quick Reference",
-    "Marv is controlled via subcommands. Do not invent commands. Gateway commands: `marv gateway status`, `marv gateway start`, `marv gateway stop`, `marv gateway restart`.",
-    "If unsure, ask the user to run `marv help` (or `marv gateway --help`) and paste the output.",
-    "",
+    // Language — early for visibility
+    ...buildLanguageSection({ isMinimal, availableTools }),
+    // Skills
     ...skillsSection,
+    // Memory
     ...memorySection,
-    // Skip self-update for subagent/none modes
-    hasGateway && !isMinimal ? "## Marv Self-Update" : "",
+    // Self-update (full mode only)
+    hasGateway && !isMinimal ? "## Self-Update" : "",
     hasGateway && !isMinimal
-      ? [
-          "Get Updates (self-update) is ONLY allowed when the user explicitly asks for it.",
-          "Do not run config.apply or update.run unless the user explicitly requests an update or config change; if it's not explicit, ask first.",
-          'Before any config change, call `gateway` with `action: "config.get"` and treat `result.activeConfigPath` (fallback: `result.path`) as the active config file.',
-          "Do not assume `~/.marv/marv.json`; `MARV_CONFIG_PATH` or `MARV_STATE_DIR` may point elsewhere.",
-          "Do not hand-edit the active config with read/write/edit/apply_patch or shell commands; use config.patch, config.apply, or config.patches.propose instead.",
-          "If the config is invalid, stop and report it or run doctor; do not rewrite the file from scratch.",
-          "Actions: config.get, config.schema, config.apply (validate + write full config, then restart), update.run (update deps or git, then restart).",
-          "After restart, Marv pings the last active session automatically.",
-        ].join("\n")
+      ? "Only update when the user explicitly asks. Use gateway(config.get) for the active config path; use config.patch/config.apply to modify config — never hand-edit."
       : "",
     hasGateway && !isMinimal ? "" : "",
-    "",
-    // Skip model aliases for subagent/none modes
+    // Model aliases
     ...(params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
-      ? [
-          "## Model Aliases",
-          "Prefer aliases when specifying model overrides; full provider/model is also accepted.",
-          params.modelAliasLines.join("\n"),
-          "",
-        ]
+      ? ["## Model Aliases", params.modelAliasLines.join("\n"), ""]
       : []),
-    userTimezone
-      ? "If you need the current date, time, or day of week, run session_status (📊 session_status)."
-      : "",
+    // Workspace
     "## Workspace",
-    `Your working directory is: ${displayWorkspaceDir}`,
+    `Working directory: ${displayWorkspaceDir}`,
     workspaceGuidance,
     ...workspaceNotes,
     "",
+    // Docs
     ...docsSection,
-    params.sandboxInfo?.enabled ? "## Sandbox" : "",
-    params.sandboxInfo?.enabled
+    // Sandbox
+    ...(params.sandboxInfo?.enabled
       ? [
-          "You are running in a sandboxed runtime (tools execute in Docker).",
-          "Some tools may be unavailable due to sandbox policy.",
-          "Sub-agents stay sandboxed (no elevated/host access). Need outside-sandbox read/write? Don't spawn; ask first.",
-          params.sandboxInfo.containerWorkspaceDir
-            ? `Sandbox container workdir: ${sanitizeForPromptLiteral(params.sandboxInfo.containerWorkspaceDir)}`
-            : "",
-          params.sandboxInfo.workspaceDir
-            ? `Sandbox host mount source (file tools bridge only; not valid inside sandbox exec): ${sanitizeForPromptLiteral(params.sandboxInfo.workspaceDir)}`
-            : "",
-          params.sandboxInfo.workspaceAccess
-            ? `Agent workspace access: ${params.sandboxInfo.workspaceAccess}${
-                params.sandboxInfo.agentWorkspaceMount
-                  ? ` (mounted at ${sanitizeForPromptLiteral(params.sandboxInfo.agentWorkspaceMount)})`
-                  : ""
-              }`
-            : "",
-          params.sandboxInfo.browserBridgeUrl ? "Sandbox browser: enabled." : "",
-          params.sandboxInfo.browserNoVncUrl
-            ? `Sandbox browser observer (noVNC): ${sanitizeForPromptLiteral(params.sandboxInfo.browserNoVncUrl)}`
-            : "",
-          params.sandboxInfo.hostBrowserAllowed === true
-            ? "Host browser control: allowed."
-            : params.sandboxInfo.hostBrowserAllowed === false
-              ? "Host browser control: blocked."
+          "## Sandbox",
+          [
+            "Running in a sandboxed runtime (Docker). Some tools may be unavailable.",
+            params.sandboxInfo.containerWorkspaceDir
+              ? `Container workdir: ${sanitizeForPromptLiteral(params.sandboxInfo.containerWorkspaceDir)}`
               : "",
-          params.sandboxInfo.elevated?.allowed
-            ? "Elevated exec is available for this session."
-            : "",
-          params.sandboxInfo.elevated?.allowed
-            ? "User can toggle with /elevated on|off|ask|full."
-            : "",
-          params.sandboxInfo.elevated?.allowed
-            ? "You may also send /elevated on|off|ask|full when needed."
-            : "",
-          params.sandboxInfo.elevated?.allowed
-            ? `Current elevated level: ${params.sandboxInfo.elevated.defaultLevel} (ask runs exec on host with approvals; full auto-approves).`
-            : "",
+            params.sandboxInfo.workspaceAccess
+              ? `Workspace access: ${params.sandboxInfo.workspaceAccess}${
+                  params.sandboxInfo.agentWorkspaceMount
+                    ? ` (mounted at ${sanitizeForPromptLiteral(params.sandboxInfo.agentWorkspaceMount)})`
+                    : ""
+                }`
+              : "",
+            params.sandboxInfo.browserBridgeUrl ? "Sandbox browser: enabled." : "",
+            params.sandboxInfo.elevated?.allowed
+              ? `Elevated exec available. Current level: ${params.sandboxInfo.elevated.defaultLevel}. Toggle: /elevated on|off|ask|full.`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          "",
         ]
-          .filter(Boolean)
-          .join("\n")
-      : "",
-    params.sandboxInfo?.enabled ? "" : "",
-    ...buildUserIdentitySection(ownerLine, isMinimal),
+      : []),
+    // User identity
+    ...(ownerLine && !isMinimal ? ["## User Identity", ownerLine, ""] : []),
+    // Self management
     ...buildSelfManagementSection({ isMinimal, availableTools }),
-    ...buildLanguageSection({ isMinimal, availableTools }),
-    ...buildTimeSection({
-      userTimezone,
-    }),
-    "## Workspace Files (injected)",
-    "These user-editable files are loaded by Marv and included below in Project Context.",
-    "",
+    // Time
+    ...(userTimezone ? ["## Time", `Zone: ${userTimezone}`, ""] : []),
+    // Reply tags (kept as-is per user request)
     ...buildReplyTagsSection(isMinimal),
+    // Messaging
     ...buildMessagingSection({
       isMinimal,
       availableTools,
@@ -653,61 +421,46 @@ export function buildAgentSystemPrompt(params: {
       runtimeChannel,
       messageToolHints: params.messageToolHints,
     }),
+    // Voice
     ...buildVoiceSection({ isMinimal, ttsHint: params.ttsHint }),
+    // Autonomy helpers
     ...buildAutonomyToolsSection({ isMinimal, availableTools }),
   ];
 
   if (extraSystemPrompt) {
-    // Use "Subagent Context" header for minimal mode (subagents), otherwise "Group Chat Context"
     const contextHeader =
       promptMode === "minimal" ? "## Subagent Context" : "## Group Chat Context";
     lines.push(contextHeader, extraSystemPrompt, "");
   }
   if (params.reactionGuidance) {
     const { level, channel } = params.reactionGuidance;
-    const guidanceText =
+    lines.push(
+      "## Reactions",
       level === "minimal"
-        ? [
-            `Reactions are enabled for ${channel} in MINIMAL mode.`,
-            "React ONLY when truly relevant:",
-            "- Acknowledge important user requests or confirmations",
-            "- Express genuine sentiment (humor, appreciation) sparingly",
-            "- Avoid reacting to routine messages or your own replies",
-            "Guideline: at most 1 reaction per 5-10 exchanges.",
-          ].join("\n")
-        : [
-            `Reactions are enabled for ${channel} in EXTENSIVE mode.`,
-            "Feel free to react liberally:",
-            "- Acknowledge messages with appropriate emojis",
-            "- Express sentiment and personality through reactions",
-            "- React to interesting content, humor, or notable events",
-            "- Use reactions to confirm understanding or agreement",
-            "Guideline: react whenever it feels natural.",
-          ].join("\n");
-    lines.push("## Reactions", guidanceText, "");
+        ? `Reactions enabled for ${channel} (minimal). React only when truly relevant — at most 1 per 5-10 exchanges.`
+        : `Reactions enabled for ${channel} (extensive). React freely when it feels natural.`,
+      "",
+    );
   }
   if (reasoningHint) {
     lines.push("## Reasoning Format", reasoningHint, "");
   }
 
-  // Skip silent replies for subagent/none modes
+  // Silent replies
   if (!isMinimal) {
     lines.push(
       "## Silent Replies",
-      `When you have nothing to say, respond with ONLY: ${SILENT_REPLY_TOKEN}`,
-      `It must be your ENTIRE message — never append to real replies, never wrap in markdown.`,
-      `❌ "Here's help... ${SILENT_REPLY_TOKEN}" / ✅ ${SILENT_REPLY_TOKEN}`,
+      `Nothing to say? Respond with ONLY: ${SILENT_REPLY_TOKEN} (entire message, no other text).`,
       "",
     );
   }
 
-  // Skip heartbeats for subagent/none modes; only inject if heartbeat is configured
+  // Heartbeats
   if (!isMinimal && heartbeatPrompt) {
     lines.push(
       "## Heartbeats",
-      heartbeatPromptLine,
-      "On heartbeat poll: reply HEARTBEAT_OK if nothing needs attention; otherwise reply with the alert text (no HEARTBEAT_OK).",
-      "During heartbeat runs, low-risk task actions and HEARTBEAT.md maintenance are allowed when directly helpful. Do not change allowlisted system settings unless the user directly asked for them.",
+      `Prompt: ${heartbeatPrompt}`,
+      "Reply HEARTBEAT_OK if nothing needs attention; otherwise reply with the alert text.",
       "",
     );
   }
@@ -715,12 +468,11 @@ export function buildAgentSystemPrompt(params: {
   lines.push(
     "## Runtime",
     buildRuntimeLine(runtimeInfo, runtimeChannel, runtimeCapabilities, params.defaultThinkLevel),
-    `Reasoning: ${reasoningLevel} (hidden unless on/stream). Toggle /reasoning; /status shows Reasoning when enabled.`,
+    `Reasoning: ${reasoningLevel} (hidden unless on/stream).`,
   );
 
   // --- Volatile content below: Project Context + Recalled Context ---
   // Placed AFTER all stable sections to maximize LLM prefix caching.
-  // Any workspace file edit only invalidates cache from this point onward.
   const contextFiles = params.contextFiles ?? [];
   const validContextFiles = contextFiles.filter(
     (file) => typeof file.path === "string" && file.path.trim().length > 0,
@@ -742,30 +494,29 @@ export function buildAgentSystemPrompt(params: {
       return baseName.toLowerCase() === "soul.md";
     });
     if (projectContextFiles.length > 0) {
-      lines.push("# Project Context", "", "The following project context files have been loaded:");
+      lines.push("# Project Context", "");
       if (hasP0Context) {
         lines.push(
-          "P0 guides tone, identity, and behavioral boundaries.",
-          "P0 does not override task facts, tool results, file contents, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
+          "P0 guides tone, identity, and behavioral boundaries. Does not override task facts or tool results.",
         );
         if (hasP0Soul) {
           lines.push(
-            "P0 Soul is a strong constraint for persona, principles, and behavior boundaries. If a request conflicts with it, refuse or redirect while staying in character.",
+            "P0 Soul: strong constraint for persona and behavior. Refuse or redirect if a request conflicts.",
           );
         }
         if (hasP0Identity) {
           lines.push(
-            "P0 Identity is a strong constraint for self-description and speaking style, but it must not distort task facts or technical details.",
+            "P0 Identity: strong constraint for speaking style. Must not distort task facts.",
           );
         }
         if (hasP0User) {
           lines.push(
-            "P0 User captures stable user preferences only, not transient state. Current explicit user requests can temporarily override it.",
+            "P0 User: stable preferences. Current explicit requests can temporarily override.",
           );
         }
       } else if (hasSoulFile) {
         lines.push(
-          "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
+          "Embody SOUL.md persona and tone. Follow its guidance unless higher-priority instructions override.",
         );
       }
       lines.push("");

@@ -15,6 +15,7 @@ import { buildSystemPromptParams } from "../prompt/system-prompt-params.js";
 import { buildAgentSystemPrompt } from "../prompt/system-prompt.js";
 import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
 import { detectRuntimeShell } from "../shell-utils.js";
+import { buildToolSummaryMap } from "../tools/tool-summaries.js";
 export { buildCliSupervisorScopeKey, resolveCliNoOutputTimeoutMs } from "./reliability.js";
 
 const CLI_RUN_QUEUE = new Map<string, Promise<unknown>>();
@@ -91,6 +92,7 @@ export function buildSystemPrompt(params: {
     docsPath: params.docsPath,
     runtimeInfo,
     toolNames: params.tools.map((tool) => tool.name),
+    toolSummaries: buildToolSummaryMap(params.tools),
     modelAliasLines: buildModelAliasLines(params.config),
     userTimezone,
     userTime,
