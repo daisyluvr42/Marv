@@ -13,7 +13,6 @@ deployments work at a high level.
 
 ## Pick a provider
 
-- **Railway** (one‑click + browser setup): [Railway](/install/railway)
 - **Northflank** (one‑click + browser setup): [Northflank](/install/northflank)
 - **Oracle Cloud (Always Free)**: [Oracle](/platforms/oracle) — $0/month (Always Free, ARM; capacity/signup can be finicky)
 - **Fly.io**: [Fly.io](/install/fly)

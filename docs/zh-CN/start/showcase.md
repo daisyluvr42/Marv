@@ -16,7 +16,7 @@ x-i18n:
 来自社区的真实项目。看看大家正在用 Marv 构建什么。
 
 <Info>
-**想要展示你的项目？** 在 [Discord 的 #showcase 频道](https://discord.gg/marv) 分享或在 [X 上 @marv](https://x.com/marv)。
+**想要展示你的项目？** 在 [GitHub Issues](https://github.com/daisyluvr42/Marv/issues) 提交。
 </Info>
 
 ## 🎥 Marv 实战演示
@@ -412,7 +412,6 @@ Marv 连接到 Jira，然后即时生成一个新的 skill（在它出现在 Cla
 
 <Steps>
   <Step title="分享它">
-    在 [Discord 的 #showcase 频道](https://discord.gg/marv) 发布或在 [Twitter 上 @marv](https://x.com/marv)
   </Step>
   <Step title="包含详细信息">
     告诉我们它做什么，链接到仓库/演示，如果有的话分享截图

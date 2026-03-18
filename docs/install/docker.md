@@ -65,24 +65,6 @@ It writes config/workspace on the host:
 
 Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
 
-### Shell Helpers (optional)
-
-For easier day-to-day Docker management, install `Marv Docker`:
-
-```bash
-mkdir -p ~/.marv-dock && curl -sL https://raw.githubusercontent.com/daisyluvr42/Marv/main/scripts/shell-helpers/marv-dock-helpers.sh -o ~/.marv-dock/marv-dock-helpers.sh
-```
-
-**Add to your shell config (zsh):**
-
-```bash
-echo 'source ~/.marv-dock/marv-dock-helpers.sh' >> ~/.zshrc && source ~/.zshrc
-```
-
-Then use `marv-dock-start`, `marv-dock-stop`, `marv-dock-dashboard`, etc. Run `marv-dock-help` for all commands.
-
-See [`Marv Docker` Helper README](scripts/shell-helpers/README.md) for details.
-
 ### Manual flow (compose)
 
 ```bash
