@@ -1,6 +1,6 @@
 {
   "name": "@marv/llm-task",
-  "version": "2026.3.18",
+  "version": "2026.3.19",
   "private": true,
   "description": "Marv JSON-only LLM task plugin",
   "type": "module",

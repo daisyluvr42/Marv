@@ -1,6 +1,6 @@
 {
   "name": "@marv/zalo",
-  "version": "2026.3.18",
+  "version": "2026.3.19",
   "description": "Marv Zalo channel plugin",
   "type": "module",
   "dependencies": {
