@@ -262,9 +262,10 @@ struct OpenClawChatComposer: View {
     }
 
     private var editorOverlay: some View {
-        ZStack(alignment: .topLeading) {
+        VStack(alignment: .leading, spacing: 0) {
             if self.viewModel.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(self.currentShimmerVerb)
+                    .font(.system(size: 13))
                     .foregroundStyle(.tertiary)
                     .opacity(self.shimmerOpacity)
                     .padding(.horizontal, 4)
