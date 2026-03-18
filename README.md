@@ -47,6 +47,17 @@ Four-tier memory model with clarity decay and automatic promotion:
 - Automatic promotion (P3→P2→P1), confidence decay, retrieval reinforcement, semantic evolution
 - P3 episodic compaction: clusters similar fragments into distilled P2 semantic knowledge nodes
 
+### Skills
+
+Marv uses the [AgentSkills](https://agentskills.io) specification. Each skill is a folder with a `SKILL.md` (YAML frontmatter + Markdown instructions). Skills from [ClawHub](https://clawhub.ai) and other AgentSkills-compatible sources can be installed directly.
+
+```
+~/.marv/skills/          Shared skills (machine-wide)
+<workspace>/skills/      Workspace skills (per-agent, highest precedence)
+```
+
+See [Skills docs](/tools/skills) and [Creating Skills](/tools/creating-skills) for details.
+
 ## Requirements
 
 - Node.js >= 22.12.0
@@ -141,6 +152,17 @@ pnpm dev            # Dev mode
 - 混合检索：向量 RRF + BM25 + 词法 + 图谱扩展 + 聚类
 - 自动晋升（P3→P2→P1）、置信度衰减、检索增强、语义演化
 - P3 episodic 压缩：将相似片段聚类为 P2 语义知识节点
+
+### Skills 扩展
+
+Marv 使用 [AgentSkills](https://agentskills.io) 规范。每个 skill 是一个包含 `SKILL.md`（YAML frontmatter + Markdown 指令）的文件夹。可直接安装来自 [ClawHub](https://clawhub.ai) 及其他 AgentSkills 兼容源的 skills。
+
+```
+~/.marv/skills/          共享 skills（全局）
+<workspace>/skills/      工作区 skills（当前 agent，优先级最高）
+```
+
+详见 [Skills 文档](/tools/skills) 和 [创建 Skills](/tools/creating-skills)。
 
 ## 部署要求
 
