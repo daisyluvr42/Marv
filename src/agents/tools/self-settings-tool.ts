@@ -32,6 +32,15 @@ import {
 import { DEFAULT_HEARTBEAT_FILENAME } from "../workspace.js";
 import type { AnyAgentTool } from "./common.js";
 import { readNumberParam, readStringParam, ToolInputError } from "./common.js";
+import {
+  handleConfigGet,
+  handleConfigSet,
+  handleConfigUnset,
+  handleSkillInstall,
+  handleSkillList,
+  handleSkillSourceAdd,
+  handleSkillSourceList,
+} from "./config-manage.js";
 import { normalizeExternalCliId } from "./external-cli-adapters.js";
 
 const SelfSettingsToolSchema = Type.Object(
@@ -95,6 +104,45 @@ const SelfSettingsToolSchema = Type.Object(
     heartbeatActiveHoursTimezone: Type.Optional(Type.String()),
     heartbeatFileAction: Type.Optional(Type.String()),
     heartbeatFileContent: Type.Optional(Type.String()),
+    configGet: Type.Optional(
+      Type.String({
+        description:
+          "Read a config value by dot-path (e.g. 'gateway.port', 'tools.web.search.provider', 'models.catalog'). Returns the current value.",
+      }),
+    ),
+    configSet: Type.Optional(
+      Type.String({
+        description:
+          "Set a config value. Format: 'path=value' where path is dot-notation (e.g. 'tools.web.search.provider=tavily', 'gateway.port=4242'). Value is parsed as JSON if valid, otherwise stored as string.",
+      }),
+    ),
+    configUnset: Type.Optional(
+      Type.String({
+        description: "Remove a config key by dot-path (e.g. 'tools.web.search.tavily.apiKey').",
+      }),
+    ),
+    skillInstall: Type.Optional(
+      Type.String({
+        description:
+          "Install a skill/plugin from a source. Supported formats: npm package name (e.g. '@marv/tavily'), GitHub repo URL (e.g. 'https://github.com/user/repo'), or a local path. The source is cloned/downloaded, validated, and installed to ~/.marv/extensions/.",
+      }),
+    ),
+    skillList: Type.Optional(
+      Type.Boolean({
+        description: "List all installed skills/plugins and their status.",
+      }),
+    ),
+    skillSourceAdd: Type.Optional(
+      Type.String({
+        description:
+          "Add a skill registry source URL. The agent can later search this source for available skills. Format: 'name=url' (e.g. 'community=https://raw.githubusercontent.com/user/skills-registry/main/registry.json').",
+      }),
+    ),
+    skillSourceList: Type.Optional(
+      Type.Boolean({
+        description: "List all configured skill registry sources.",
+      }),
+    ),
   },
   { additionalProperties: false },
 );
@@ -423,7 +471,7 @@ export function createSelfSettingsTool(opts?: {
     label: "Self Settings",
     name: "self_settings",
     description:
-      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory, shared memory-search, and external CLI fallback settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, managed deep-consolidation settings, shared memory-search embedding/reranker defaults, or external CLI availability/default preferences.",
+      "Apply direct self-setting requests for the current session, plus restricted shared deep-memory, shared memory-search, and external CLI fallback settings: model, auth profile, thinking, verbose, reasoning, usage, elevated, exec defaults, queue behavior, session reset/new, runtime model-registry refresh, managed deep-consolidation settings, shared memory-search embedding/reranker defaults, external CLI availability/default preferences, config get/set/unset by dot-path, or skill install/list/source management.",
     parameters: SelfSettingsToolSchema,
     execute: async (_toolCallId, args) => {
       if (!opts?.agentSessionKey?.trim()) {
@@ -431,6 +479,63 @@ export function createSelfSettingsTool(opts?: {
       }
 
       const params = args as SelfSettingsArgs;
+
+      // --- Config get/set/unset and skill management (early return) ---
+      const configGetPath = readStringParam(params, "configGet");
+      const configSetExpr = readStringParam(params, "configSet");
+      const configUnsetPath = readStringParam(params, "configUnset");
+      const skillInstallSource = readStringParam(params, "skillInstall");
+      const skillListFlag = readBooleanParam(params, "skillList");
+      const skillSourceAddExpr = readStringParam(params, "skillSourceAdd");
+      const skillSourceListFlag = readBooleanParam(params, "skillSourceList");
+
+      const hasConfigOrSkillAction =
+        configGetPath !== undefined ||
+        configSetExpr !== undefined ||
+        configUnsetPath !== undefined ||
+        skillInstallSource !== undefined ||
+        skillListFlag !== undefined ||
+        skillSourceAddExpr !== undefined ||
+        skillSourceListFlag !== undefined;
+
+      if (hasConfigOrSkillAction) {
+        const results: Array<{ action: string; result: unknown }> = [];
+
+        if (configGetPath) {
+          results.push({ action: "configGet", result: await handleConfigGet(configGetPath) });
+        }
+        if (configSetExpr) {
+          results.push({ action: "configSet", result: await handleConfigSet(configSetExpr) });
+        }
+        if (configUnsetPath) {
+          results.push({ action: "configUnset", result: await handleConfigUnset(configUnsetPath) });
+        }
+        if (skillInstallSource) {
+          results.push({
+            action: "skillInstall",
+            result: await handleSkillInstall(skillInstallSource),
+          });
+        }
+        if (skillListFlag) {
+          results.push({ action: "skillList", result: await handleSkillList() });
+        }
+        if (skillSourceAddExpr) {
+          results.push({
+            action: "skillSourceAdd",
+            result: await handleSkillSourceAdd(skillSourceAddExpr),
+          });
+        }
+        if (skillSourceListFlag) {
+          results.push({ action: "skillSourceList", result: await handleSkillSourceList() });
+        }
+
+        const summary = results.map((r) => `${r.action}: ${JSON.stringify(r.result)}`).join("\n");
+        return {
+          content: [{ type: "text" as const, text: summary }],
+          details: { ok: true, applied: true, configActions: results },
+        };
+      }
+
       const cfg = opts.config ?? loadConfig();
       const sessionKey = opts.agentSessionKey.trim();
       const agentId = resolveAgentIdFromSessionKey(sessionKey);
