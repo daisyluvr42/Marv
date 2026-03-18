@@ -49,12 +49,16 @@ Four-tier memory model with clarity decay and automatic promotion:
 
 ### Skills
 
-Marv uses the [AgentSkills](https://agentskills.io) specification. Each skill is a folder with a `SKILL.md` (YAML frontmatter + Markdown instructions). Skills from [ClawHub](https://clawhub.ai) and other AgentSkills-compatible sources can be installed directly.
+Marv uses the [AgentSkills](https://agentskills.io) open standard — the same specification adopted by Claude Code, OpenAI Codex, Gemini CLI, Cursor, VS Code, and GitHub. Skills are interoperable across these platforms: a skill written for Codex or Claude Code works in Marv, and vice versa.
+
+Each skill is a folder with a `SKILL.md` (YAML frontmatter + Markdown instructions). Skills from [ClawHub](https://clawhub.ai), [OpenAI Skills Catalog](https://github.com/openai/skills), [skills.sh](https://skills.sh), and other AgentSkills-compatible sources can be installed directly.
 
 ```
 ~/.marv/skills/          Shared skills (machine-wide)
 <workspace>/skills/      Workspace skills (per-agent, highest precedence)
 ```
+
+Marv extends the base spec with environment gating (`requires.bins/env/config`), auto-install (`install` field for brew/npm/go/uv), platform filtering (`os`), and invocation control (`user-invocable` / `disable-model-invocation`).
 
 See [Skills docs](/tools/skills) and [Creating Skills](/tools/creating-skills) for details.
 
@@ -155,12 +159,16 @@ pnpm dev            # Dev mode
 
 ### Skills 扩展
 
-Marv 使用 [AgentSkills](https://agentskills.io) 规范。每个 skill 是一个包含 `SKILL.md`（YAML frontmatter + Markdown 指令）的文件夹。可直接安装来自 [ClawHub](https://clawhub.ai) 及其他 AgentSkills 兼容源的 skills。
+Marv 使用 [AgentSkills](https://agentskills.io) 开放标准——与 Claude Code、OpenAI Codex、Gemini CLI、Cursor、VS Code、GitHub 相同的规范。Skills 跨平台互通：为 Codex 或 Claude Code 编写的 skill 可以直接在 Marv 中使用，反之亦然。
+
+每个 skill 是一个包含 `SKILL.md`（YAML frontmatter + Markdown 指令）的文件夹。可直接安装来自 [ClawHub](https://clawhub.ai)、[OpenAI Skills Catalog](https://github.com/openai/skills)、[skills.sh](https://skills.sh) 及其他 AgentSkills 兼容源的 skills。
 
 ```
 ~/.marv/skills/          共享 skills（全局）
 <workspace>/skills/      工作区 skills（当前 agent，优先级最高）
 ```
+
+Marv 在基础规范上扩展了环境门控（`requires.bins/env/config`）、自动安装（`install` 字段，支持 brew/npm/go/uv）、平台过滤（`os`）和调用权限控制（`user-invocable` / `disable-model-invocation`）。
 
 详见 [Skills 文档](/tools/skills) 和 [创建 Skills](/tools/creating-skills)。
 
