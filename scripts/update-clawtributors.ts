@@ -6,8 +6,46 @@ import type { ApiContributor, Entry, MapConfig, User } from "./update-clawtribut
 const REPO = "marv/marv";
 const PER_LINE = 10;
 
-const mapPath = resolve("scripts/clawtributors-map.json");
-const mapConfig = JSON.parse(readFileSync(mapPath, "utf8")) as MapConfig;
+const mapConfig: MapConfig = {
+  ensureLogins: [
+    "odrobnik",
+    "alphonse-arianee",
+    "aaronn",
+    "ronak-guliani",
+    "cpojer",
+    "carlulsoe",
+    "jdrhyne",
+    "latitudeki5223",
+    "longmaba",
+    "manmal",
+    "thesash",
+    "rhjoh",
+    "ysqander",
+    "atalovesyou",
+    "0xJonHoldsCrypto",
+    "hougangdev",
+    "jiulingyun",
+  ],
+  seedCommit: "d6863f87",
+  placeholderAvatar: "assets/avatar-placeholder.svg",
+  displayName: {
+    jdrhyne: "Jonathan D. Rhyne (DJ-D)",
+  },
+  nameToLogin: {
+    "peter steinberger": "steipete",
+    "eng. juan combetto": "omniwired",
+    "mariano belinky": "mbelinky",
+    "vasanth rao naik sabavat": "vsabavat",
+    "tu nombre real": "nachx639",
+    "django navarro": "djangonavarro220",
+  },
+  emailToLogin: {
+    "steipete@gmail.com": "steipete",
+    "sbarrios93@gmail.com": "sebslight",
+    "rltorres26+github@gmail.com": "RandyVentures",
+    "hixvac@gmail.com": "VACInc",
+  },
+};
 
 const displayName = mapConfig.displayName ?? {};
 const nameToLogin = normalizeMap(mapConfig.nameToLogin ?? {});

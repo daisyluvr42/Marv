@@ -28,7 +28,7 @@ describe("config discord", () => {
                 enabled: true,
                 dm: {
                   enabled: true,
-                  allowFrom: ["steipete"],
+                  allowFrom: ["monadlab"],
                   groupEnabled: true,
                   groupChannels: ["marv-dm"],
                 },
@@ -41,7 +41,7 @@ describe("config discord", () => {
                   "123": {
                     slug: "friends-of-marv",
                     requireMention: false,
-                    users: ["steipete"],
+                    users: ["monadlab"],
                     channels: {
                       general: { allow: true },
                     },

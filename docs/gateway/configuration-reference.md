@@ -187,7 +187,7 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
       },
       replyToMode: "off", // off | first | all
       dmPolicy: "pairing",
-      allowFrom: ["1234567890", "steipete"],
+      allowFrom: ["1234567890", "monadlab"],
       dm: { enabled: true, groupEnabled: false, groupChannels: ["marv-dm"] },
       guilds: {
         "123456789012345678": {
@@ -1243,7 +1243,7 @@ Controls elevated (host) exec access:
       enabled: true,
       allowFrom: {
         whatsapp: ["+15555550123"],
-        discord: ["steipete", "1234567890123"],
+        discord: ["monadlab", "1234567890123"],
       },
     },
   },

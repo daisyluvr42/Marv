@@ -196,7 +196,7 @@ x-i18n:
     discord: {
       enabled: true,
       token: "YOUR_DISCORD_BOT_TOKEN",
-      dm: { enabled: true, allowFrom: ["steipete"] },
+      dm: { enabled: true, allowFrom: ["monadlab"] },
       guilds: {
         "123456789012345678": {
           slug: "friends-of-marv",
@@ -311,7 +311,7 @@ x-i18n:
       allowFrom: {
         whatsapp: ["+15555550123"],
         telegram: ["123456789"],
-        discord: ["steipete"],
+        discord: ["monadlab"],
         slack: ["U123"],
         signal: ["+15555550123"],
         imessage: ["user@example.com"],

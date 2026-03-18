@@ -10,7 +10,7 @@ struct AboutSettings: View {
         VStack(spacing: 8) {
             let appIcon = NSApplication.shared.applicationIconImage ?? NSImage(named: NSImage.applicationIconName)!
             Button {
-                if let url = URL(string: "https://github.com/marv/marv") {
+                if let url = URL(string: "https://github.com/daisyluvr42/Marv") {
                     NSWorkspace.shared.open(url)
                 }
             } label: {
@@ -49,10 +49,10 @@ struct AboutSettings: View {
                 AboutLinkRow(
                     icon: "chevron.left.slash.chevron.right",
                     title: "GitHub",
-                    url: "https://github.com/marv/marv")
+                    url: "https://github.com/daisyluvr42/Marv")
                 AboutLinkRow(icon: "globe", title: "Website", url: "https://github.com/daisyluvr42/Marv")
-                AboutLinkRow(icon: "bird", title: "Twitter", url: "https://twitter.com/steipete")
-                AboutLinkRow(icon: "envelope", title: "Email", url: "mailto:peter@steipete.me")
+                AboutLinkRow(icon: "bird", title: "Twitter", url: "https://x.com/Monad_lab")
+                AboutLinkRow(icon: "envelope", title: "Email", url: "mailto:founder@monad-lab.com")
             }
             .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
@@ -77,7 +77,7 @@ struct AboutSettings: View {
                 }
             }
 
-            Text("© 2025 Peter Steinberger — MIT License.")
+            Text("© 2025 Monad Lab — MIT License.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)

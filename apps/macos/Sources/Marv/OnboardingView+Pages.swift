@@ -99,6 +99,14 @@ extension OnboardingView {
                             TextField("https://api.example.com/v1", text: self.$customBaseUrl)
                                 .textFieldStyle(.roundedBorder)
 
+                            Text("API Compatibility")
+                                .font(.callout.weight(.semibold))
+                            Picker("API Compatibility", selection: self.$customApiCompatibility) {
+                                Text("OpenAI-compatible").tag("openai")
+                                Text("Anthropic-compatible").tag("anthropic")
+                            }
+                            .pickerStyle(.segmented)
+
                             Text("Model ID")
                                 .font(.callout.weight(.semibold))
                             TextField("model-name", text: self.$customModelId)

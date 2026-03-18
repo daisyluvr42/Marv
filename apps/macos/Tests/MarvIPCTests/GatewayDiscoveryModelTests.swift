@@ -66,19 +66,19 @@ struct GatewayDiscoveryModelTests {
 
     @Test func serviceNameDoesNotFalsePositiveOnSubstringHostToken() {
         let local = GatewayDiscoveryModel.LocalIdentity(
-            hostTokens: ["steipete"],
+            hostTokens: ["monadlab"],
             displayTokens: [])
         #expect(!GatewayDiscoveryModel.isLocalGateway(
             lanHost: nil,
             tailnetDns: nil,
             displayName: nil,
-            serviceName: "steipetacstudio (Marv)",
+            serviceName: "monadlabcstudio (Marv)",
             local: local))
         #expect(GatewayDiscoveryModel.isLocalGateway(
             lanHost: nil,
             tailnetDns: nil,
             displayName: nil,
-            serviceName: "steipete (Marv)",
+            serviceName: "monadlab (Marv)",
             local: local))
     }
 

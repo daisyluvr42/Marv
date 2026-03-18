@@ -16,6 +16,7 @@ enum MarvEnv {
 enum MarvPaths {
     private static let configPathEnv = ["MARV_CONFIG_PATH"]
     private static let stateDirEnv = ["MARV_STATE_DIR"]
+    private static let agentDirEnv = ["MARV_AGENT_DIR", "PI_CODING_AGENT_DIR"]
 
     static var stateDirURL: URL {
         for key in self.stateDirEnv {
@@ -49,5 +50,21 @@ enum MarvPaths {
 
     static var workspaceURL: URL {
         self.stateDirURL.appendingPathComponent("workspace", isDirectory: true)
+    }
+
+    static var mainAgentDirURL: URL {
+        for key in self.agentDirEnv {
+            if let override = MarvEnv.path(key) {
+                return URL(fileURLWithPath: override, isDirectory: true)
+            }
+        }
+        return self.stateDirURL
+            .appendingPathComponent("agents", isDirectory: true)
+            .appendingPathComponent("main", isDirectory: true)
+            .appendingPathComponent("agent", isDirectory: true)
+    }
+
+    static var authProfilesURL: URL {
+        self.mainAgentDirURL.appendingPathComponent("auth-profiles.json")
     }
 }

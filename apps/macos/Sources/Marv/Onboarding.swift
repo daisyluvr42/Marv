@@ -96,6 +96,7 @@ struct OnboardingView: View {
     @State var apiKey: String = ""
     @State var customBaseUrl: String = ""
     @State var customModelId: String = ""
+    @State var customApiCompatibility: String = "openai"
     @State var selectedModel: String = ""
     @State var apiKeyValid: Bool = false
     @State var savingConfig: Bool = false
@@ -134,10 +135,11 @@ struct OnboardingView: View {
     var canAdvance: Bool {
         switch self.activePageIndex {
         case 1:
-            // Provider page: require API key (or custom base URL)
+            // Provider page: require API key and any custom-provider specifics.
             if self.selectedProvider == "custom" {
                 return !self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     && !self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && !self.customModelId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return !self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 3:

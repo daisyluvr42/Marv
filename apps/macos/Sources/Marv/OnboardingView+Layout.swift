@@ -38,6 +38,20 @@ extension OnboardingView {
             self.apiKey = ""
             self.updateDefaultModel()
         }
+        .onChange(of: self.customModelId) { _, newValue in
+            guard self.selectedProvider == "custom" else { return }
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if self.selectedModel != trimmed {
+                self.selectedModel = trimmed
+            }
+        }
+        .onChange(of: self.selectedModel) { _, newValue in
+            guard self.selectedProvider == "custom" else { return }
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if self.customModelId != trimmed {
+                self.customModelId = trimmed
+            }
+        }
     }
 
     func activePageIndex(for pageCursor: Int) -> Int {

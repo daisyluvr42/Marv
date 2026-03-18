@@ -86,7 +86,7 @@ describe("doctor command", () => {
     findLegacyGatewayServices.mockResolvedValueOnce([
       {
         platform: "darwin",
-        label: "com.steipete.marv.gateway",
+        label: "com.monadlab.marv.gateway",
         detail: "loaded",
       },
     ]);

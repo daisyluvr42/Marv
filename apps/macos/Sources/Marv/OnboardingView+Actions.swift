@@ -4,6 +4,8 @@ import MarvIPC
 import SwiftUI
 
 extension OnboardingView {
+    private static let authStoreVersion = 1
+
     func openSettings(tab: SettingsTab) {
         SettingsTabRouter.request(tab)
         self.openSettings()
@@ -37,8 +39,7 @@ extension OnboardingView {
 
     func updateDefaultModel() {
         if self.selectedProvider == "custom" {
-            // For custom, pre-fill from customModelId if set
-            self.selectedModel = self.customModelId
+            self.selectedModel = self.resolvedCustomModelId
         } else if let models = Self.providerModels[self.selectedProvider], let first = models.first {
             self.selectedModel = first.id
         } else {
@@ -58,7 +59,7 @@ extension OnboardingView {
         // Phase 1: Save configuration
         withAnimation { self.setupPhase = .savingConfig }
         self.setupDetailMessage = "Writing API key and config..."
-        self.writeApiKeyCredential()
+        self.writeApiKeyAuthProfile()
         await self.saveProviderAndModelConfig()
         self.state.connectionMode = .local
 
@@ -133,7 +134,12 @@ extension OnboardingView {
             // Wait for gateway to become reachable (up to 15s)
             let gatewayReady = await self.waitForGateway(port: port, timeout: 15)
             if !gatewayReady {
-                self.setupDetailMessage = "Gateway is starting up (may take a moment)..."
+                withAnimation {
+                    self.setupPhase = .failed(
+                        "The local gateway did not become reachable on port \(port). Check your Node/CLI install and try again.")
+                }
+                self.setupDetailMessage = ""
+                return
             }
         }
 
@@ -156,7 +162,7 @@ extension OnboardingView {
     /// Skip setup and close onboarding (user can set up later from Settings).
     func skipSetup() {
         // Still save config so provider/model/key aren't lost
-        self.writeApiKeyCredential()
+        self.writeApiKeyAuthProfile()
         Task {
             await self.saveProviderAndModelConfig()
             self.state.connectionMode = .local
@@ -191,65 +197,62 @@ extension OnboardingView {
         return false
     }
 
-    /// Write the API key to ~/.marv/credentials/ in the format the CLI expects.
-    /// The CLI stores auth profiles in the agent dir (auth-profiles.json), but for
-    /// onboarding we write a simple provider credential file that the gateway picks up.
-    private func writeApiKeyCredential() {
+    private var resolvedCustomModelId: String {
+        let selected = self.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !selected.isEmpty {
+            return selected
+        }
+        return self.customModelId.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var configuredProviderId: String {
+        if self.selectedProvider != "custom" {
+            return self.selectedProvider
+        }
+
+        let baseUrl = self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        let providers = (MarvConfigFile.loadDict()["models"] as? [String: Any])?["providers"] as? [String: Any] ?? [:]
+        return self.resolveUniqueCustomProviderId(baseUrl: baseUrl, providers: providers)
+    }
+
+    private var authProfileId: String {
+        "\(self.configuredProviderId):default"
+    }
+
+    private func writeApiKeyAuthProfile() {
         let trimmedKey = self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedKey.isEmpty else { return }
 
-        let stateDir = MarvPaths.stateDirURL
-        let credentialsDir = stateDir.appendingPathComponent("credentials", isDirectory: true)
-
         do {
-            try FileManager.default.createDirectory(at: credentialsDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: MarvPaths.authProfilesURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true)
         } catch {
             return
         }
 
-        // Write a provider-specific credential file
-        let filename: String
-        switch self.selectedProvider {
-        case "anthropic":
-            filename = "anthropic.json"
-        case "openai":
-            filename = "openai.json"
-        case "google":
-            filename = "google.json"
-        case "moonshot":
-            filename = "moonshot.json"
-        case "custom":
-            filename = "custom.json"
-        default:
-            filename = "\(self.selectedProvider).json"
-        }
-
-        var credDict: [String: Any] = [
+        var root = self.loadJSONDictionary(from: MarvPaths.authProfilesURL) ?? [:]
+        root["version"] = (root["version"] as? Int) ?? Self.authStoreVersion
+        var profiles = root["profiles"] as? [String: Any] ?? [:]
+        profiles[self.authProfileId] = [
             "type": "api_key",
-            "provider": self.selectedProvider,
+            "provider": self.configuredProviderId,
             "key": trimmedKey,
         ]
+        root["profiles"] = profiles
 
-        if self.selectedProvider == "custom" {
-            let trimmedUrl = self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedUrl.isEmpty {
-                credDict["baseUrl"] = trimmedUrl
-            }
-        }
-
-        let credURL = credentialsDir.appendingPathComponent(filename)
         guard let data = try? JSONSerialization.data(
-            withJSONObject: credDict,
+            withJSONObject: root,
             options: [.prettyPrinted, .sortedKeys])
         else {
             return
         }
-        try? data.write(to: credURL, options: [.atomic])
+        try? data.write(to: MarvPaths.authProfilesURL, options: [.atomic])
 
         // Set owner-only permissions (0600)
         try? FileManager.default.setAttributes(
             [.posixPermissions: 0o600],
-            ofItemAtPath: credURL.path)
+            ofItemAtPath: MarvPaths.authProfilesURL.path)
     }
 
     /// Save provider and model selection to marv.json config.
@@ -262,26 +265,55 @@ extension OnboardingView {
         gateway["mode"] = "local"
         root["gateway"] = gateway
 
-        // Set default model pool with the selected model
+        var auth = root["auth"] as? [String: Any] ?? [:]
+        var authProfiles = auth["profiles"] as? [String: Any] ?? [:]
+        authProfiles[self.authProfileId] = [
+            "provider": self.configuredProviderId,
+            "mode": "api_key",
+        ]
+        auth["profiles"] = authProfiles
+        var authOrder = auth["order"] as? [String: Any] ?? [:]
+        authOrder[self.configuredProviderId] = [self.authProfileId]
+        auth["order"] = authOrder
+        root["auth"] = auth
+
         var agents = root["agents"] as? [String: Any] ?? [:]
         var defaults = agents["defaults"] as? [String: Any] ?? [:]
 
         let effectiveModel = self.selectedProvider == "custom"
-            ? self.customModelId.trimmingCharacters(in: .whitespacesAndNewlines)
-            : self.selectedModel
+            ? self.resolvedCustomModelId
+            : self.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if !effectiveModel.isEmpty {
-            // Model pool format: list of entries with id + model
-            let modelRef: String
-            if self.selectedProvider == "custom" {
-                let baseUrl = self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-                modelRef = baseUrl.isEmpty ? effectiveModel : "\(self.selectedProvider):\(effectiveModel)"
-            } else {
-                modelRef = "\(self.selectedProvider):\(effectiveModel)"
-            }
-            defaults["modelPool"] = [
-                ["id": "primary", "model": modelRef],
+            defaults["model"] = [
+                "primary": "\(self.configuredProviderId)/\(effectiveModel)",
             ]
+        }
+        if let modelPool = defaults["modelPool"], !(modelPool is String) {
+            defaults.removeValue(forKey: "modelPool")
+        }
+
+        var models = root["models"] as? [String: Any] ?? [:]
+        var selections = models["selections"] as? [String: Any] ?? [:]
+        if !effectiveModel.isEmpty {
+            selections[self.configuredProviderId] = ["\(self.configuredProviderId)/\(effectiveModel)"]
+        }
+        if selections.isEmpty {
+            models.removeValue(forKey: "selections")
+        } else {
+            models["selections"] = selections
+        }
+        if self.selectedProvider == "custom",
+           let providerConfig = self.customProviderConfig(modelId: effectiveModel)
+        {
+            var providers = models["providers"] as? [String: Any] ?? [:]
+            providers[self.configuredProviderId] = providerConfig
+            models["providers"] = providers
+        }
+        if models.isEmpty {
+            root.removeValue(forKey: "models")
+        } else {
+            root["models"] = models
         }
 
         if defaults.isEmpty {
@@ -303,9 +335,90 @@ extension OnboardingView {
         }
     }
 
+    private func customProviderConfig(modelId: String) -> [String: Any]? {
+        let baseUrl = self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !baseUrl.isEmpty, !modelId.isEmpty else { return nil }
+
+        let api = self.customApiCompatibility == "anthropic" ? "anthropic-messages" : "openai-completions"
+        return [
+            "baseUrl": baseUrl,
+            "api": api,
+            "models": [
+                [
+                    "id": modelId,
+                    "name": modelId,
+                ],
+            ],
+        ]
+    }
+
+    private func resolveUniqueCustomProviderId(baseUrl: String, providers: [String: Any]) -> String {
+        let requestedId = Self.normalizedCustomProviderId(from: baseUrl)
+        guard !requestedId.isEmpty else { return "custom" }
+
+        if let existing = providers[requestedId] as? [String: Any],
+           let existingBaseUrl = existing["baseUrl"] as? String,
+           existingBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines) != baseUrl
+        {
+            var suffix = 2
+            while true {
+                let candidate = "\(requestedId)-\(suffix)"
+                if let collision = providers[candidate] as? [String: Any],
+                   let collisionBaseUrl = collision["baseUrl"] as? String,
+                   collisionBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines) != baseUrl
+                {
+                    suffix += 1
+                    continue
+                }
+                return candidate
+            }
+        }
+
+        return requestedId
+    }
+
+    private static func normalizedCustomProviderId(from baseUrl: String) -> String {
+        guard let url = URL(string: baseUrl), let host = url.host?.lowercased(), !host.isEmpty else {
+            return "custom"
+        }
+
+        let portSuffix = url.port.map { "-\($0)" } ?? ""
+        let raw = "custom-\(host)\(portSuffix)"
+        let normalized = raw
+            .replacingOccurrences(of: "[^a-z0-9-]+", with: "-", options: .regularExpression)
+            .replacingOccurrences(of: "^-+|-+$", with: "", options: .regularExpression)
+        return normalized.isEmpty ? "custom" : normalized
+    }
+
+    private func loadJSONDictionary(from url: URL) -> [String: Any]? {
+        guard let data = try? Data(contentsOf: url),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            return nil
+        }
+        return object
+    }
+
     func copyToPasteboard(_ text: String) {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
     }
 }
+
+#if DEBUG
+@MainActor
+extension OnboardingView {
+    func _testWriteApiKeyAuthProfile() {
+        self.writeApiKeyAuthProfile()
+    }
+
+    func _testAuthProfileId() -> String {
+        self.authProfileId
+    }
+
+    func _testSaveProviderAndModelConfig() async {
+        await self.saveProviderAndModelConfig()
+    }
+}
+#endif

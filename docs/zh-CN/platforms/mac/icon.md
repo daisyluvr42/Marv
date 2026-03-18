@@ -14,7 +14,7 @@ x-i18n:
 
 # 菜单栏图标状态
 
-作者：steipete · 更新时间：2025-12-06 · 范围：macOS 应用（`apps/macos`）
+作者：Monad Lab · 更新时间：2025-12-06 · 范围：macOS 应用（`apps/macos`）
 
 - **空闲：** 正常图标动画（眨眼、偶尔摆动）。
 - **暂停：** 状态项使用 `appearsDisabled`；无动画。
