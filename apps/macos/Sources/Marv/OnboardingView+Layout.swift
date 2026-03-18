@@ -31,39 +31,12 @@ extension OnboardingView {
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             self.currentPage = 0
-            self.updateMonitoring(for: 0)
+            // Set default model for initial provider
+            self.updateDefaultModel()
         }
-        .onChange(of: self.currentPage) { _, newValue in
-            self.updateMonitoring(for: self.activePageIndex(for: newValue))
-        }
-        .onChange(of: self.state.connectionMode) { _, _ in
-            let oldActive = self.activePageIndex
-            self.reconcilePageForModeChange(previousActivePageIndex: oldActive)
-            self.updateDiscoveryMonitoring(for: self.activePageIndex)
-        }
-        .onChange(of: self.needsBootstrap) { _, _ in
-            if self.currentPage >= self.pageOrder.count {
-                self.currentPage = max(0, self.pageOrder.count - 1)
-            }
-        }
-        .onChange(of: self.onboardingWizard.isComplete) { _, newValue in
-            guard newValue, self.activePageIndex == self.wizardPageIndex else { return }
-            self.handleNext()
-        }
-        .onDisappear {
-            self.stopPermissionMonitoring()
-            self.stopDiscovery()
-            self.stopAuthMonitoring()
-            Task { await self.onboardingWizard.cancelIfRunning() }
-        }
-        .task {
-            await self.refreshPerms()
-            self.refreshCLIStatus()
-            await self.loadWorkspaceDefaults()
-            await self.ensureDefaultWorkspace()
-            self.refreshAnthropicOAuthStatus()
-            self.refreshBootstrapStatus()
-            self.preferredGatewayID = GatewayDiscoveryPreferences.preferredStableID()
+        .onChange(of: self.selectedProvider) { _, _ in
+            self.apiKey = ""
+            self.updateDefaultModel()
         }
     }
 
@@ -73,21 +46,8 @@ extension OnboardingView {
         return self.pageOrder[clamped]
     }
 
-    func reconcilePageForModeChange(previousActivePageIndex: Int) {
-        if let exact = self.pageOrder.firstIndex(of: previousActivePageIndex) {
-            withAnimation { self.currentPage = exact }
-            return
-        }
-        if let next = self.pageOrder.firstIndex(where: { $0 > previousActivePageIndex }) {
-            withAnimation { self.currentPage = next }
-            return
-        }
-        withAnimation { self.currentPage = max(0, self.pageOrder.count - 1) }
-    }
-
     var navigationBar: some View {
-        let wizardLockIndex = self.wizardPageOrderIndex
-        return HStack(spacing: 20) {
+        HStack(spacing: 20) {
             ZStack(alignment: .leading) {
                 Button(action: {}, label: {
                     Label("Back", systemImage: "chevron.left").labelStyle(.iconOnly)
@@ -113,8 +73,6 @@ extension OnboardingView {
 
             HStack(spacing: 8) {
                 ForEach(0..<self.pageCount, id: \.self) { index in
-                    let isLocked = wizardLockIndex != nil && !self.onboardingWizard
-                        .isComplete && index > (wizardLockIndex ?? 0)
                     Button {
                         withAnimation { self.currentPage = index }
                     } label: {
@@ -123,20 +81,24 @@ extension OnboardingView {
                             .frame(width: 8, height: 8)
                     }
                     .buttonStyle(.plain)
-                    .disabled(isLocked)
-                    .opacity(isLocked ? 0.3 : 1)
                 }
             }
 
             Spacer()
 
             Button(action: self.handleNext) {
-                Text(self.buttonTitle)
-                    .frame(minWidth: 88)
+                if self.savingConfig {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(minWidth: 88)
+                } else {
+                    Text(self.buttonTitle)
+                        .frame(minWidth: 88)
+                }
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .disabled(!self.canAdvance)
+            .disabled(!self.canAdvance || self.savingConfig)
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 13)

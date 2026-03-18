@@ -1,46 +1,9 @@
 import AppKit
 import Foundation
-import MarvDiscovery
 import MarvIPC
 import SwiftUI
 
 extension OnboardingView {
-    func selectLocalGateway() {
-        self.state.connectionMode = .local
-        self.preferredGatewayID = nil
-        self.showAdvancedConnection = false
-        GatewayDiscoveryPreferences.setPreferredStableID(nil)
-    }
-
-    func selectUnconfiguredGateway() {
-        Task { await self.onboardingWizard.cancelIfRunning() }
-        self.state.connectionMode = .unconfigured
-        self.preferredGatewayID = nil
-        self.showAdvancedConnection = false
-        GatewayDiscoveryPreferences.setPreferredStableID(nil)
-    }
-
-    func selectRemoteGateway(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) {
-        Task { await self.onboardingWizard.cancelIfRunning() }
-        self.preferredGatewayID = gateway.stableID
-        GatewayDiscoveryPreferences.setPreferredStableID(gateway.stableID)
-
-        if self.state.remoteTransport == .direct {
-            self.state.remoteUrl = GatewayDiscoveryHelpers.directUrl(for: gateway) ?? ""
-        } else {
-            self.state.remoteTarget = GatewayDiscoveryHelpers.sshTarget(for: gateway) ?? ""
-        }
-        if let endpoint = GatewayDiscoveryHelpers.serviceEndpoint(for: gateway) {
-            MarvConfigFile.setRemoteGatewayUrl(
-                host: endpoint.host,
-                port: endpoint.port)
-        } else {
-            MarvConfigFile.clearRemoteGatewayUrl()
-        }
-
-        self.state.connectionMode = .remote
-    }
-
     func openSettings(tab: SettingsTab) {
         SettingsTabRouter.request(tab)
         self.openSettings()
@@ -56,91 +19,167 @@ extension OnboardingView {
     }
 
     func handleNext() {
-        if self.isWizardBlocking { return }
         if self.currentPage < self.pageCount - 1 {
             withAnimation { self.currentPage += 1 }
         } else {
-            self.finish()
+            Task { await self.finishOnboarding() }
         }
     }
 
-    func finish() {
+    func updateDefaultModel() {
+        if self.selectedProvider == "custom" {
+            // For custom, pre-fill from customModelId if set
+            self.selectedModel = self.customModelId
+        } else if let models = Self.providerModels[self.selectedProvider], let first = models.first {
+            self.selectedModel = first.id
+        } else {
+            self.selectedModel = ""
+        }
+    }
+
+    // MARK: - Config Writing
+
+    /// Save provider, API key, model, and gateway mode to ~/.marv/marv.json and credentials.
+    @MainActor
+    func finishOnboarding() async {
+        guard !self.savingConfig else { return }
+        self.savingConfig = true
+        defer { self.savingConfig = false }
+
+        // Write API key to credentials directory
+        self.writeApiKeyCredential()
+
+        // Write provider + model + gateway config
+        await self.saveProviderAndModelConfig()
+
+        // Set gateway mode to local
+        self.state.connectionMode = .local
+
+        // Ensure workspace exists
+        await self.loadWorkspaceDefaults()
+        await self.ensureDefaultWorkspace()
+
+        // Mark onboarding complete
         UserDefaults.standard.set(true, forKey: "marv.onboardingSeen")
         UserDefaults.standard.set(currentOnboardingVersion, forKey: onboardingVersionKey)
         OnboardingController.shared.close()
+    }
+
+    /// Write the API key to ~/.marv/credentials/ in the format the CLI expects.
+    /// The CLI stores auth profiles in the agent dir (auth-profiles.json), but for
+    /// onboarding we write a simple provider credential file that the gateway picks up.
+    private func writeApiKeyCredential() {
+        let trimmedKey = self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty else { return }
+
+        let stateDir = MarvPaths.stateDirURL
+        let credentialsDir = stateDir.appendingPathComponent("credentials", isDirectory: true)
+
+        do {
+            try FileManager.default.createDirectory(at: credentialsDir, withIntermediateDirectories: true)
+        } catch {
+            return
+        }
+
+        // Write a provider-specific credential file
+        let filename: String
+        switch self.selectedProvider {
+        case "anthropic":
+            filename = "anthropic.json"
+        case "openai":
+            filename = "openai.json"
+        case "google":
+            filename = "google.json"
+        case "moonshot":
+            filename = "moonshot.json"
+        case "custom":
+            filename = "custom.json"
+        default:
+            filename = "\(self.selectedProvider).json"
+        }
+
+        var credDict: [String: Any] = [
+            "type": "api_key",
+            "provider": self.selectedProvider,
+            "key": trimmedKey,
+        ]
+
+        if self.selectedProvider == "custom" {
+            let trimmedUrl = self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedUrl.isEmpty {
+                credDict["baseUrl"] = trimmedUrl
+            }
+        }
+
+        let credURL = credentialsDir.appendingPathComponent(filename)
+        guard let data = try? JSONSerialization.data(
+            withJSONObject: credDict,
+            options: [.prettyPrinted, .sortedKeys])
+        else {
+            return
+        }
+        try? data.write(to: credURL, options: [.atomic])
+
+        // Set owner-only permissions (0600)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: credURL.path)
+    }
+
+    /// Save provider and model selection to marv.json config.
+    @MainActor
+    private func saveProviderAndModelConfig() async {
+        var root = await ConfigStore.load()
+
+        // Set gateway mode to local
+        var gateway = root["gateway"] as? [String: Any] ?? [:]
+        gateway["mode"] = "local"
+        root["gateway"] = gateway
+
+        // Set default model pool with the selected model
+        var agents = root["agents"] as? [String: Any] ?? [:]
+        var defaults = agents["defaults"] as? [String: Any] ?? [:]
+
+        let effectiveModel = self.selectedProvider == "custom"
+            ? self.customModelId.trimmingCharacters(in: .whitespacesAndNewlines)
+            : self.selectedModel
+
+        if !effectiveModel.isEmpty {
+            // Model pool format: list of entries with id + model
+            let modelRef: String
+            if self.selectedProvider == "custom" {
+                let baseUrl = self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+                modelRef = baseUrl.isEmpty ? effectiveModel : "\(self.selectedProvider):\(effectiveModel)"
+            } else {
+                modelRef = "\(self.selectedProvider):\(effectiveModel)"
+            }
+            defaults["modelPool"] = [
+                ["id": "primary", "model": modelRef],
+            ]
+        }
+
+        if defaults.isEmpty {
+            agents.removeValue(forKey: "defaults")
+        } else {
+            agents["defaults"] = defaults
+        }
+        if agents.isEmpty {
+            root.removeValue(forKey: "agents")
+        } else {
+            root["agents"] = agents
+        }
+
+        do {
+            try await ConfigStore.save(root)
+        } catch {
+            // Fall back to direct file write
+            MarvConfigFile.saveDict(root)
+        }
     }
 
     func copyToPasteboard(_ text: String) {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
-        self.copied = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { self.copied = false }
-    }
-
-    func startAnthropicOAuth() {
-        guard !self.anthropicAuthBusy else { return }
-        self.anthropicAuthBusy = true
-        defer { self.anthropicAuthBusy = false }
-
-        do {
-            let pkce = try AnthropicOAuth.generatePKCE()
-            self.anthropicAuthPKCE = pkce
-            let url = AnthropicOAuth.buildAuthorizeURL(pkce: pkce)
-            NSWorkspace.shared.open(url)
-            self.anthropicAuthStatus = "Browser opened. After approving, paste the `code#state` value here."
-        } catch {
-            self.anthropicAuthStatus = "Failed to start OAuth: \(error.localizedDescription)"
-        }
-    }
-
-    @MainActor
-    func finishAnthropicOAuth() async {
-        guard !self.anthropicAuthBusy else { return }
-        guard let pkce = self.anthropicAuthPKCE else { return }
-        self.anthropicAuthBusy = true
-        defer { self.anthropicAuthBusy = false }
-
-        guard let parsed = AnthropicOAuthCodeState.parse(from: self.anthropicAuthCode) else {
-            self.anthropicAuthStatus = "OAuth failed: missing or invalid code/state."
-            return
-        }
-
-        do {
-            let creds = try await AnthropicOAuth.exchangeCode(
-                code: parsed.code,
-                state: parsed.state,
-                verifier: pkce.verifier)
-            try MarvOAuthStore.saveAnthropicOAuth(creds)
-            self.refreshAnthropicOAuthStatus()
-            self.anthropicAuthStatus = "Connected. Marv can now use Claude."
-        } catch {
-            self.anthropicAuthStatus = "OAuth failed: \(error.localizedDescription)"
-        }
-    }
-
-    func pollAnthropicClipboardIfNeeded() {
-        guard self.currentPage == self.anthropicAuthPageIndex else { return }
-        guard self.anthropicAuthPKCE != nil else { return }
-        guard !self.anthropicAuthBusy else { return }
-        guard self.anthropicAuthAutoDetectClipboard else { return }
-
-        let pb = NSPasteboard.general
-        let changeCount = pb.changeCount
-        guard changeCount != self.anthropicAuthLastPasteboardChangeCount else { return }
-        self.anthropicAuthLastPasteboardChangeCount = changeCount
-
-        guard let raw = pb.string(forType: .string), !raw.isEmpty else { return }
-        guard let parsed = AnthropicOAuthCodeState.parse(from: raw) else { return }
-        guard let pkce = self.anthropicAuthPKCE, parsed.state == pkce.verifier else { return }
-
-        let next = "\(parsed.code)#\(parsed.state)"
-        if self.anthropicAuthCode != next {
-            self.anthropicAuthCode = next
-            self.anthropicAuthStatus = "Detected `code#state` from clipboard."
-        }
-
-        guard self.anthropicAuthAutoConnectClipboard else { return }
-        Task { await self.finishAnthropicOAuth() }
     }
 }

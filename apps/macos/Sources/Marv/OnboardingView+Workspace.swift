@@ -6,7 +6,6 @@ extension OnboardingView {
         let configured = await self.loadAgentWorkspace()
         let url = AgentWorkspace.resolveWorkspaceURL(from: configured)
         self.workspacePath = AgentWorkspace.displayPath(for: url)
-        self.refreshBootstrapStatus()
     }
 
     func ensureDefaultWorkspace() async {
@@ -23,17 +22,8 @@ extension OnboardingView {
             } catch {
                 self.workspaceStatus = "Failed to create workspace: \(error.localizedDescription)"
             }
-        case let .unsafe (reason):
+        case let .unsafe(reason):
             self.workspaceStatus = "Workspace not touched: \(reason)"
-        }
-        self.refreshBootstrapStatus()
-    }
-
-    func refreshBootstrapStatus() {
-        let url = AgentWorkspace.resolveWorkspaceURL(from: self.workspacePath)
-        self.needsBootstrap = AgentWorkspace.needsBootstrap(workspaceURL: url)
-        if self.needsBootstrap {
-            self.didAutoKickoff = false
         }
     }
 
@@ -54,14 +44,13 @@ extension OnboardingView {
 
         do {
             let url = AgentWorkspace.resolveWorkspaceURL(from: self.workspacePath)
-            if case let .unsafe (reason) = AgentWorkspace.bootstrapSafety(for: url) {
+            if case let .unsafe(reason) = AgentWorkspace.bootstrapSafety(for: url) {
                 self.workspaceStatus = "Workspace not created: \(reason)"
                 return
             }
             _ = try AgentWorkspace.bootstrap(workspaceURL: url)
             self.workspacePath = AgentWorkspace.displayPath(for: url)
             self.workspaceStatus = "Workspace ready at \(self.workspacePath)"
-            self.refreshBootstrapStatus()
         } catch {
             self.workspaceStatus = "Failed to create workspace: \(error.localizedDescription)"
         }

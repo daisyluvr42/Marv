@@ -1,4 +1,3 @@
-import MarvDiscovery
 import SwiftUI
 
 #if DEBUG
@@ -6,82 +5,56 @@ import SwiftUI
 extension OnboardingView {
     static func exerciseForTesting() {
         let state = AppState(preview: true)
-        let discovery = GatewayDiscoveryModel(localDisplayName: InstanceIdentity.displayName)
-        discovery.statusText = "Searching..."
-        let gateway = GatewayDiscoveryModel.DiscoveredGateway(
-            displayName: "Test Gateway",
-            lanHost: "gateway.local",
-            tailnetDns: "gateway.ts.net",
-            sshPort: 2222,
-            gatewayPort: 4242,
-            cliPath: "/usr/local/bin/marv",
-            stableID: "gateway-1",
-            debugID: "gateway-1",
-            isLocal: false)
-        discovery.gateways = [gateway]
+        let view = OnboardingView(state: state)
 
-        let view = OnboardingView(
-            state: state,
-            permissionMonitor: PermissionMonitor.shared,
-            discoveryModel: discovery)
-        view.needsBootstrap = true
-        view.localGatewayProbe = LocalGatewayProbe(
-            port: GatewayEnvironment.gatewayPort(),
-            pid: 123,
-            command: "marv-gateway",
-            expected: true)
-        view.showAdvancedConnection = true
-        view.preferredGatewayID = gateway.stableID
-        view.cliInstalled = true
-        view.cliInstallLocation = "/usr/local/bin/marv"
-        view.cliStatus = "Installed"
-        view.workspacePath = "/tmp/marv"
-        view.workspaceStatus = "Saved workspace"
-        view.anthropicAuthPKCE = AnthropicOAuth.PKCE(verifier: "verifier", challenge: "challenge")
-        view.anthropicAuthCode = "code#state"
-        view.anthropicAuthStatus = "Connected"
-        view.anthropicAuthDetectedStatus = .connected(expiresAtMs: 1_700_000_000_000)
-        view.anthropicAuthConnected = true
-        view.anthropicAuthAutoDetectClipboard = false
-        view.anthropicAuthAutoConnectClipboard = false
+        // Exercise provider/model state
+        var mutableView = view
+        mutableView.selectedProvider = "anthropic"
+        mutableView.apiKey = "sk-ant-test"
+        mutableView.selectedModel = "claude-opus-4-6"
+        mutableView.customBaseUrl = "https://api.example.com"
+        mutableView.customModelId = "custom-model"
 
-        view.state.connectionMode = .local
-        _ = view.welcomePage()
-        _ = view.connectionPage()
-        _ = view.anthropicAuthPage()
-        _ = view.wizardPage()
-        _ = view.permissionsPage()
-        _ = view.cliPage()
-        _ = view.workspacePage()
-        _ = view.onboardingChatPage()
-        _ = view.readyPage()
+        // Exercise all pages
+        _ = mutableView.welcomePage()
+        _ = mutableView.providerPage()
+        _ = mutableView.modelPage()
+        _ = mutableView.readyPage()
 
-        view.selectLocalGateway()
-        view.selectRemoteGateway(gateway)
-        view.selectUnconfiguredGateway()
+        // Exercise navigation
+        mutableView.currentPage = 0
+        mutableView.handleNext()
+        mutableView.handleBack()
 
-        view.state.connectionMode = .remote
-        _ = view.connectionPage()
-        _ = view.workspacePage()
-
-        view.state.connectionMode = .unconfigured
-        _ = view.connectionPage()
-
-        view.currentPage = 0
-        view.handleNext()
-        view.handleBack()
-
-        _ = view.onboardingPage { Text("Test") }
-        _ = view.onboardingCard { Text("Card") }
-        _ = view.featureRow(title: "Feature", subtitle: "Subtitle", systemImage: "sparkles")
-        _ = view.featureActionRow(
+        // Exercise layout helpers
+        _ = mutableView.onboardingPage { Text("Test") }
+        _ = mutableView.onboardingCard { Text("Card") }
+        _ = mutableView.featureRow(title: "Feature", subtitle: "Subtitle", systemImage: "sparkles")
+        _ = mutableView.featureActionRow(
             title: "Action",
             subtitle: "Action subtitle",
             systemImage: "gearshape",
             buttonTitle: "Action",
             action: {})
-        _ = view.gatewaySubtitle(for: gateway)
-        _ = view.isSelectedGateway(gateway)
+
+        // Exercise provider switching
+        mutableView.selectedProvider = "openai"
+        mutableView.updateDefaultModel()
+        _ = mutableView.providerPage()
+        _ = mutableView.modelPage()
+
+        mutableView.selectedProvider = "custom"
+        mutableView.updateDefaultModel()
+        _ = mutableView.providerPage()
+        _ = mutableView.modelPage()
+
+        mutableView.selectedProvider = "google"
+        mutableView.updateDefaultModel()
+        _ = mutableView.modelPage()
+
+        mutableView.selectedProvider = "moonshot"
+        mutableView.updateDefaultModel()
+        _ = mutableView.modelPage()
     }
 }
 #endif

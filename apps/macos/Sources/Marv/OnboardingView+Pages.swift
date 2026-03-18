@@ -1,6 +1,4 @@
 import AppKit
-import OpenClawChatUI
-import MarvDiscovery
 import MarvIPC
 import SwiftUI
 
@@ -11,30 +9,24 @@ extension OnboardingView {
         case 0:
             self.welcomePage()
         case 1:
-            self.connectionPage()
+            self.providerPage()
         case 2:
-            self.anthropicAuthPage()
+            self.modelPage()
         case 3:
-            self.wizardPage()
-        case 5:
-            self.permissionsPage()
-        case 6:
-            self.cliPage()
-        case 8:
-            self.onboardingChatPage()
-        case 9:
             self.readyPage()
         default:
             EmptyView()
         }
     }
 
+    // MARK: - Page 0: Welcome
+
     func welcomePage() -> some View {
         self.onboardingPage {
             VStack(spacing: 22) {
                 Text("Welcome to Marv")
                     .font(.largeTitle.weight(.semibold))
-                Text("Marv is a powerful personal AI assistant that can connect to WhatsApp or Telegram.")
+                Text("Your personal AI agent assistant. Let's set up your AI provider and model to get started.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -71,251 +63,117 @@ extension OnboardingView {
         }
     }
 
-    func connectionPage() -> some View {
+    // MARK: - Page 1: Provider & API Key
+
+    func providerPage() -> some View {
         self.onboardingPage {
-            Text("Choose your Gateway")
+            Text("Choose AI Provider")
                 .font(.largeTitle.weight(.semibold))
-            Text(
-                "Marv uses a single Gateway that stays running. Pick this Mac, " +
-                    "connect to a discovered gateway nearby, or configure later.")
+            Text("Select your AI provider and enter your API key.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
                 .frame(maxWidth: 520)
                 .fixedSize(horizontal: false, vertical: true)
 
             self.onboardingCard(spacing: 12, padding: 14) {
                 VStack(alignment: .leading, spacing: 10) {
-                    let localSubtitle: String = {
-                        guard let probe = self.localGatewayProbe else {
-                            return "Gateway starts automatically on this Mac."
+                    ForEach(Self.providerDisplayNames, id: \.id) { provider in
+                        self.providerChoiceButton(
+                            title: provider.name,
+                            systemImage: provider.icon,
+                            selected: self.selectedProvider == provider.id)
+                        {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                                self.selectedProvider = provider.id
+                            }
                         }
-                        let base = probe.expected
-                            ? "Existing gateway detected"
-                            : "Port \(probe.port) already in use"
-                        let command = probe.command.isEmpty ? "" : " (\(probe.command) pid \(probe.pid))"
-                        return "\(base)\(command). Will attach."
-                    }()
-                    self.connectionChoiceButton(
-                        title: "This Mac",
-                        subtitle: localSubtitle,
-                        selected: self.state.connectionMode == .local)
-                    {
-                        self.selectLocalGateway()
                     }
 
                     Divider().padding(.vertical, 4)
 
-                    HStack(spacing: 8) {
-                        Image(systemName: "dot.radiowaves.left.and.right")
+                    if self.selectedProvider == "custom" {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Base URL")
+                                .font(.callout.weight(.semibold))
+                            TextField("https://api.example.com/v1", text: self.$customBaseUrl)
+                                .textFieldStyle(.roundedBorder)
+
+                            Text("Model ID")
+                                .font(.callout.weight(.semibold))
+                            TextField("model-name", text: self.$customModelId)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("API Key")
+                            .font(.callout.weight(.semibold))
+                        SecureField(self.apiKeyPlaceholder, text: self.$apiKey)
+                            .textFieldStyle(.roundedBorder)
+
+                        Text(self.apiKeyHint)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(self.gatewayDiscovery.statusText)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        if self.gatewayDiscovery.gateways.isEmpty {
-                            ProgressView().controlSize(.small)
-                            Button("Refresh") {
-                                self.gatewayDiscovery.refreshWideAreaFallbackNow(timeoutSeconds: 5.0)
-                            }
-                            .buttonStyle(.link)
-                            .help("Retry Tailscale discovery (DNS-SD).")
-                        }
-                        Spacer(minLength: 0)
-                    }
-
-                    if self.gatewayDiscovery.gateways.isEmpty {
-                        Text("Searching for nearby gateways…")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.leading, 4)
-                    } else {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Nearby gateways")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, 4)
-                            ForEach(self.gatewayDiscovery.gateways.prefix(6)) { gateway in
-                                self.connectionChoiceButton(
-                                    title: gateway.displayName,
-                                    subtitle: self.gatewaySubtitle(for: gateway),
-                                    selected: self.isSelectedGateway(gateway))
-                                {
-                                    self.selectRemoteGateway(gateway)
-                                }
-                            }
-                        }
-                        .padding(8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color(NSColor.controlBackgroundColor)))
-                    }
-
-                    self.connectionChoiceButton(
-                        title: "Configure later",
-                        subtitle: "Don’t start the Gateway yet.",
-                        selected: self.state.connectionMode == .unconfigured)
-                    {
-                        self.selectUnconfiguredGateway()
-                    }
-
-                    Button(self.showAdvancedConnection ? "Hide Advanced" : "Advanced…") {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
-                            self.showAdvancedConnection.toggle()
-                        }
-                        if self.showAdvancedConnection, self.state.connectionMode != .remote {
-                            self.state.connectionMode = .remote
-                        }
-                    }
-                    .buttonStyle(.link)
-
-                    if self.showAdvancedConnection {
-                        let labelWidth: CGFloat = 110
-                        let fieldWidth: CGFloat = 320
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
-                                GridRow {
-                                    Text("Transport")
-                                        .font(.callout.weight(.semibold))
-                                        .frame(width: labelWidth, alignment: .leading)
-                                    Picker("Transport", selection: self.$state.remoteTransport) {
-                                        Text("SSH tunnel").tag(AppState.RemoteTransport.ssh)
-                                        Text("Direct (ws/wss)").tag(AppState.RemoteTransport.direct)
-                                    }
-                                    .pickerStyle(.segmented)
-                                    .frame(width: fieldWidth)
-                                }
-                                if self.state.remoteTransport == .direct {
-                                    GridRow {
-                                        Text("Gateway URL")
-                                            .font(.callout.weight(.semibold))
-                                            .frame(width: labelWidth, alignment: .leading)
-                                        TextField("wss://gateway.example.ts.net", text: self.$state.remoteUrl)
-                                            .textFieldStyle(.roundedBorder)
-                                            .frame(width: fieldWidth)
-                                    }
-                                }
-                                if self.state.remoteTransport == .ssh {
-                                    GridRow {
-                                        Text("SSH target")
-                                            .font(.callout.weight(.semibold))
-                                            .frame(width: labelWidth, alignment: .leading)
-                                        TextField("user@host[:port]", text: self.$state.remoteTarget)
-                                            .textFieldStyle(.roundedBorder)
-                                            .frame(width: fieldWidth)
-                                    }
-                                    if let message = CommandResolver
-                                        .sshTargetValidationMessage(self.state.remoteTarget)
-                                    {
-                                        GridRow {
-                                            Text("")
-                                                .frame(width: labelWidth, alignment: .leading)
-                                            Text(message)
-                                                .font(.caption)
-                                                .foregroundStyle(.red)
-                                                .frame(width: fieldWidth, alignment: .leading)
-                                        }
-                                    }
-                                    GridRow {
-                                        Text("Identity file")
-                                            .font(.callout.weight(.semibold))
-                                            .frame(width: labelWidth, alignment: .leading)
-                                        TextField("/Users/you/.ssh/id_ed25519", text: self.$state.remoteIdentity)
-                                            .textFieldStyle(.roundedBorder)
-                                            .frame(width: fieldWidth)
-                                    }
-                                    GridRow {
-                                        Text("Project root")
-                                            .font(.callout.weight(.semibold))
-                                            .frame(width: labelWidth, alignment: .leading)
-                                        TextField("/home/you/Projects/marv", text: self.$state.remoteProjectRoot)
-                                            .textFieldStyle(.roundedBorder)
-                                            .frame(width: fieldWidth)
-                                    }
-                                    GridRow {
-                                        Text("CLI path")
-                                            .font(.callout.weight(.semibold))
-                                            .frame(width: labelWidth, alignment: .leading)
-                                        TextField(
-                                            "/Applications/Marv.app/.../marv",
-                                            text: self.$state.remoteCliPath)
-                                            .textFieldStyle(.roundedBorder)
-                                            .frame(width: fieldWidth)
-                                    }
-                                }
-                            }
-
-                            Text(self.state.remoteTransport == .direct
-                                ? "Tip: use Tailscale Serve so the gateway has a valid HTTPS cert."
-                                : "Tip: keep Tailscale enabled so your gateway stays reachable.")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
             }
         }
     }
 
-    func gatewaySubtitle(for gateway: GatewayDiscoveryModel.DiscoveredGateway) -> String? {
-        if self.state.remoteTransport == .direct {
-            return GatewayDiscoveryHelpers.directUrl(for: gateway) ?? "Gateway pairing only"
+    private var apiKeyPlaceholder: String {
+        switch self.selectedProvider {
+        case "anthropic": return "sk-ant-..."
+        case "openai": return "sk-..."
+        case "google": return "AIza..."
+        case "moonshot": return "sk-..."
+        default: return "API key"
         }
-        if let target = GatewayDiscoveryHelpers.sshTarget(for: gateway),
-           let parsed = CommandResolver.parseSSHTarget(target)
-        {
-            let portSuffix = parsed.port != 22 ? " · ssh \(parsed.port)" : ""
-            return "\(parsed.host)\(portSuffix)"
-        }
-        return "Gateway pairing only"
     }
 
-    func isSelectedGateway(_ gateway: GatewayDiscoveryModel.DiscoveredGateway) -> Bool {
-        guard self.state.connectionMode == .remote else { return false }
-        let preferred = self.preferredGatewayID ?? GatewayDiscoveryPreferences.preferredStableID()
-        return preferred == gateway.stableID
+    private var apiKeyHint: String {
+        switch self.selectedProvider {
+        case "anthropic":
+            return "Get your API key at console.anthropic.com"
+        case "openai":
+            return "Get your API key at platform.openai.com"
+        case "google":
+            return "Get your API key at aistudio.google.com"
+        case "moonshot":
+            return "Get your API key at platform.moonshot.cn"
+        default:
+            return "Enter the API key for your custom provider."
+        }
     }
 
-    func connectionChoiceButton(
+    private func providerChoiceButton(
         title: String,
-        subtitle: String?,
+        systemImage: String,
         selected: Bool,
         action: @escaping () -> Void) -> some View
     {
         Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
-                action()
-            }
+            action()
         } label: {
             HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.callout.weight(.semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                }
+                Image(systemName: systemImage)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(selected ? Color.accentColor : .secondary)
+                    .frame(width: 22)
+                Text(title)
+                    .font(.callout.weight(.semibold))
+                    .lineLimit(1)
                 Spacer(minLength: 0)
                 if selected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.accentColor)
                 } else {
-                    Image(systemName: "arrow.right.circle")
+                    Image(systemName: "circle")
                         .foregroundStyle(.secondary)
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -329,424 +187,128 @@ extension OnboardingView {
         .buttonStyle(.plain)
     }
 
-    func anthropicAuthPage() -> some View {
+    // MARK: - Page 2: Model Selection
+
+    func modelPage() -> some View {
         self.onboardingPage {
-            Text("Connect Claude")
+            Text("Choose Default Model")
                 .font(.largeTitle.weight(.semibold))
-            Text("Give your model the token it needs!")
+            Text("Select the model to use by default. You can change this later in Settings.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 540)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("Marv supports any model — we strongly recommend Opus 4.6 for the best experience.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 540)
+                .frame(maxWidth: 520)
                 .fixedSize(horizontal: false, vertical: true)
 
-            self.onboardingCard(spacing: 12, padding: 16) {
-                HStack(alignment: .center, spacing: 10) {
-                    Circle()
-                        .fill(self.anthropicAuthVerified ? Color.green : Color.orange)
-                        .frame(width: 10, height: 10)
-                    Text(
-                        self.anthropicAuthConnected
-                            ? (self.anthropicAuthVerified
-                                ? "Claude connected (OAuth) — verified"
-                                : "Claude connected (OAuth)")
-                            : "Not connected yet")
-                        .font(.headline)
-                    Spacer()
+            self.onboardingCard(spacing: 12, padding: 14) {
+                if self.selectedProvider == "custom" {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Model ID")
+                            .font(.callout.weight(.semibold))
+                        TextField("model-name", text: self.$selectedModel)
+                            .textFieldStyle(.roundedBorder)
+                        Text("Enter the model identifier for your custom provider.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if let models = Self.providerModels[self.selectedProvider] {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(models, id: \.id) { model in
+                            self.modelChoiceButton(
+                                title: model.name,
+                                modelId: model.id,
+                                selected: self.selectedModel == model.id)
+                            {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+                                    self.selectedModel = model.id
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Text("No models available for this provider.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
+            }
+        }
+    }
 
-                if self.anthropicAuthConnected, self.anthropicAuthVerifying {
-                    Text("Verifying OAuth…")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else if !self.anthropicAuthConnected {
-                    Text(self.anthropicAuthDetectedStatus.shortDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else if self.anthropicAuthVerified, let date = self.anthropicAuthVerifiedAt {
-                    Text("Detected working OAuth (\(date.formatted(date: .abbreviated, time: .shortened))).")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(
-                    "This lets Marv use Claude immediately. Credentials are stored at " +
-                        "`~/.marv/credentials/oauth.json` (owner-only).")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 12) {
-                    Text(MarvOAuthStore.oauthURL().path)
-                        .font(.caption)
+    private func modelChoiceButton(
+        title: String,
+        modelId: String,
+        selected: Bool,
+        action: @escaping () -> Void) -> some View
+    {
+        Button {
+            action()
+        } label: {
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.callout.weight(.semibold))
+                        .lineLimit(1)
+                    Text(modelId)
+                        .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .truncationMode(.middle)
-
-                    Spacer()
-
-                    Button("Reveal") {
-                        NSWorkspace.shared.activateFileViewerSelecting([MarvOAuthStore.oauthURL()])
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button("Refresh") {
-                        self.refreshAnthropicOAuthStatus()
-                    }
-                    .buttonStyle(.bordered)
                 }
-
-                Divider().padding(.vertical, 2)
-
-                HStack(spacing: 12) {
-                    if !self.anthropicAuthVerified {
-                        if self.anthropicAuthConnected {
-                            Button("Verify") {
-                                Task { await self.verifyAnthropicOAuthIfNeeded(force: true) }
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(self.anthropicAuthBusy || self.anthropicAuthVerifying)
-
-                            if self.anthropicAuthVerificationFailed {
-                                Button("Re-auth (OAuth)") {
-                                    self.startAnthropicOAuth()
-                                }
-                                .buttonStyle(.bordered)
-                                .disabled(self.anthropicAuthBusy || self.anthropicAuthVerifying)
-                            }
-                        } else {
-                            Button {
-                                self.startAnthropicOAuth()
-                            } label: {
-                                if self.anthropicAuthBusy {
-                                    ProgressView()
-                                } else {
-                                    Text("Open Claude sign-in (OAuth)")
-                                }
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(self.anthropicAuthBusy)
-                        }
-                    }
-                }
-
-                if !self.anthropicAuthVerified, self.anthropicAuthPKCE != nil {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Paste the `code#state` value")
-                            .font(.headline)
-                        TextField("code#state", text: self.$anthropicAuthCode)
-                            .textFieldStyle(.roundedBorder)
-
-                        Toggle("Auto-detect from clipboard", isOn: self.$anthropicAuthAutoDetectClipboard)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .disabled(self.anthropicAuthBusy)
-
-                        Toggle("Auto-connect when detected", isOn: self.$anthropicAuthAutoConnectClipboard)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .disabled(self.anthropicAuthBusy)
-
-                        Button("Connect") {
-                            Task { await self.finishAnthropicOAuth() }
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(
-                            self.anthropicAuthBusy ||
-                                self.anthropicAuthCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                    .onReceive(Self.clipboardPoll) { _ in
-                        self.pollAnthropicClipboardIfNeeded()
-                    }
-                }
-
-                self.onboardingCard(spacing: 8, padding: 12) {
-                    Text("API key (advanced)")
-                        .font(.headline)
-                    Text(
-                        "You can also use an Anthropic API key, but this UI is instructions-only for now " +
-                            "(GUI apps don’t automatically inherit your shell env vars like `ANTHROPIC_API_KEY`).")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .shadow(color: .clear, radius: 0)
-                .background(Color.clear)
-
-                if let status = self.anthropicAuthStatus {
-                    Text(status)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .task { await self.verifyAnthropicOAuthIfNeeded() }
-    }
-
-    func permissionsPage() -> some View {
-        self.onboardingPage {
-            Text("Grant permissions")
-                .font(.largeTitle.weight(.semibold))
-            Text("These macOS permissions let Marv automate apps and capture context on this Mac.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 520)
-                .fixedSize(horizontal: false, vertical: true)
-
-            self.onboardingCard(spacing: 8, padding: 12) {
-                ForEach(Capability.allCases, id: \.self) { cap in
-                    PermissionRow(
-                        capability: cap,
-                        status: self.permissionMonitor.status[cap] ?? false,
-                        compact: true)
-                    {
-                        Task { await self.request(cap) }
-                    }
-                }
-
-                HStack(spacing: 12) {
-                    Button {
-                        Task { await self.refreshPerms() }
-                    } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Refresh status")
-                    if self.isRequesting {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                }
-                .padding(.top, 4)
-            }
-        }
-    }
-
-    func cliPage() -> some View {
-        self.onboardingPage {
-            Text("Install the CLI")
-                .font(.largeTitle.weight(.semibold))
-            Text("Required for local mode: installs `marv` so launchd can run the gateway.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 520)
-                .fixedSize(horizontal: false, vertical: true)
-
-            self.onboardingCard(spacing: 10) {
-                HStack(spacing: 12) {
-                    Button {
-                        Task { await self.installCLI() }
-                    } label: {
-                        let title = self.cliInstalled ? "Reinstall CLI" : "Install CLI"
-                        ZStack {
-                            Text(title)
-                                .opacity(self.installingCLI ? 0 : 1)
-                            if self.installingCLI {
-                                ProgressView()
-                                    .controlSize(.mini)
-                            }
-                        }
-                        .frame(minWidth: 120)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(self.installingCLI)
-
-                    Button(self.copied ? "Copied" : "Copy install command") {
-                        self.copyToPasteboard(self.devLinkCommand)
-                    }
-                    .disabled(self.installingCLI)
-
-                    if self.cliInstalled, let loc = self.cliInstallLocation {
-                        Label("Installed at \(loc)", systemImage: "checkmark.circle.fill")
-                            .font(.footnote)
-                            .foregroundStyle(.green)
-                    }
-                }
-
-                if let cliStatus {
-                    Text(cliStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if !self.cliInstalled, self.cliInstallLocation == nil {
-                    Text(
-                        """
-                        Installs a user-space Node 22+ runtime and the CLI (no Homebrew).
-                        Rerun anytime to reinstall or update.
-                        """)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    func workspacePage() -> some View {
-        self.onboardingPage {
-            Text("Agent workspace")
-                .font(.largeTitle.weight(.semibold))
-            Text(
-                "Marv runs the agent from a dedicated workspace so it can load `AGENTS.md` " +
-                    "and write files there without mixing into your other projects.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 560)
-                .fixedSize(horizontal: false, vertical: true)
-
-            self.onboardingCard(spacing: 10) {
-                if self.state.connectionMode == .remote {
-                    Text("Remote gateway detected")
-                        .font(.headline)
-                    Text(
-                        "Create the workspace on the remote host (SSH in first). " +
-                            "The macOS app can’t write files on your gateway over SSH yet.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    Button(self.copied ? "Copied" : "Copy setup command") {
-                        self.copyToPasteboard(self.workspaceBootstrapCommand)
-                    }
-                    .buttonStyle(.bordered)
+                Spacer(minLength: 0)
+                if selected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.accentColor)
                 } else {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Workspace folder")
-                            .font(.headline)
-                        TextField(
-                            AgentWorkspace.displayPath(for: MarvConfigFile.defaultWorkspaceURL()),
-                            text: self.$workspacePath)
-                            .textFieldStyle(.roundedBorder)
-
-                        HStack(spacing: 12) {
-                            Button {
-                                Task { await self.applyWorkspace() }
-                            } label: {
-                                if self.workspaceApplying {
-                                    ProgressView()
-                                } else {
-                                    Text("Create workspace")
-                                }
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(self.workspaceApplying)
-
-                            Button("Open folder") {
-                                let url = AgentWorkspace.resolveWorkspaceURL(from: self.workspacePath)
-                                NSWorkspace.shared.open(url)
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(self.workspaceApplying)
-
-                            Button("Save in config") {
-                                Task {
-                                    let url = AgentWorkspace.resolveWorkspaceURL(from: self.workspacePath)
-                                    let saved = await self.saveAgentWorkspace(AgentWorkspace.displayPath(for: url))
-                                    if saved {
-                                        self.workspaceStatus =
-                                            "Saved to ~/.marv/marv.json (agents.defaults.workspace)"
-                                    }
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(self.workspaceApplying)
-                        }
-                    }
-
-                    if let workspaceStatus {
-                        Text(workspaceStatus)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    } else {
-                        Text(
-                            "Tip: edit AGENTS.md in this folder to shape the assistant’s behavior. " +
-                                "For backup, make the workspace a private git repo so your agent’s " +
-                                "“memory” is versioned.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
+                    Image(systemName: "circle")
+                        .foregroundStyle(.secondary)
                 }
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(selected ? Color.accentColor.opacity(0.12) : Color.clear))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(
+                        selected ? Color.accentColor.opacity(0.45) : Color.clear,
+                        lineWidth: 1))
         }
+        .buttonStyle(.plain)
     }
 
-    func onboardingChatPage() -> some View {
-        VStack(spacing: 16) {
-            Text("Meet your agent")
-                .font(.largeTitle.weight(.semibold))
-            Text(
-                "This is a dedicated onboarding chat. Your agent will introduce itself, " +
-                    "learn who you are, and help you connect WhatsApp or Telegram if you want.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 520)
-                .fixedSize(horizontal: false, vertical: true)
-
-            self.onboardingGlassCard(padding: 8) {
-                OpenClawChatView(viewModel: self.onboardingChatModel, style: .onboarding)
-                    .frame(maxHeight: .infinity)
-            }
-            .frame(maxHeight: .infinity)
-        }
-        .padding(.horizontal, 28)
-        .frame(width: self.pageWidth, height: self.contentHeight, alignment: .top)
-    }
+    // MARK: - Page 3: Ready
 
     func readyPage() -> some View {
         self.onboardingPage {
-            Text("All set")
+            Text("All Set!")
                 .font(.largeTitle.weight(.semibold))
             self.onboardingCard {
-                if self.state.connectionMode == .unconfigured {
-                    self.featureRow(
-                        title: "Configure later",
-                        subtitle: "Pick Local or Remote in Settings → General whenever you’re ready.",
-                        systemImage: "gearshape")
-                    Divider()
-                        .padding(.vertical, 6)
-                }
-                if self.state.connectionMode == .remote {
-                    self.featureRow(
-                        title: "Remote gateway checklist",
-                        subtitle: """
-                        On your gateway host: install/update the `marv` package and make sure credentials exist
-                        (typically `~/.marv/credentials/oauth.json`). Then connect again if needed.
-                        """,
-                        systemImage: "network")
-                    Divider()
-                        .padding(.vertical, 6)
-                }
                 self.featureRow(
-                    title: "Open the menu bar panel",
-                    subtitle: "Click the Marv menu bar icon for quick chat and status.",
-                    systemImage: "bubble.left.and.bubble.right")
-                self.featureActionRow(
-                    title: "Connect WhatsApp or Telegram",
-                    subtitle: "Open Settings → Channels to link channels and monitor status.",
-                    systemImage: "link",
-                    buttonTitle: "Open Settings → Channels")
-                {
-                    self.openSettings(tab: .channels)
-                }
+                    title: "Provider",
+                    subtitle: self.providerDisplayName,
+                    systemImage: "cpu")
+                Divider().padding(.vertical, 2)
+                self.featureRow(
+                    title: "Model",
+                    subtitle: self.selectedModel.isEmpty ? "Default" : self.selectedModel,
+                    systemImage: "brain")
+                Divider().padding(.vertical, 2)
+                self.featureRow(
+                    title: "Gateway",
+                    subtitle: "Local (port 4242)",
+                    systemImage: "network")
+                Divider().padding(.vertical, 6)
                 Toggle("Launch at login", isOn: self.$state.launchAtLogin)
                     .onChange(of: self.state.launchAtLogin) { _, newValue in
                         AppStateStore.updateLaunchAtLogin(enabled: newValue)
                     }
             }
         }
+    }
+
+    var providerDisplayName: String {
+        Self.providerDisplayNames.first(where: { $0.id == self.selectedProvider })?.name
+            ?? self.selectedProvider
     }
 }

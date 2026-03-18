@@ -1,8 +1,6 @@
 import AppKit
 import Combine
 import Observation
-import OpenClawChatUI
-import MarvDiscovery
 import MarvIPC
 import SwiftUI
 
@@ -59,86 +57,29 @@ struct OnboardingView: View {
     @Environment(\.openSettings) var openSettings
     @State var currentPage = 0
     @State var isRequesting = false
-    @State var installingCLI = false
-    @State var cliStatus: String?
-    @State var copied = false
-    @State var monitoringPermissions = false
-    @State var monitoringDiscovery = false
-    @State var cliInstalled = false
-    @State var cliInstallLocation: String?
     @State var workspacePath: String = ""
     @State var workspaceStatus: String?
     @State var workspaceApplying = false
-    @State var anthropicAuthPKCE: AnthropicOAuth.PKCE?
-    @State var anthropicAuthCode: String = ""
-    @State var anthropicAuthStatus: String?
-    @State var anthropicAuthBusy = false
-    @State var anthropicAuthConnected = false
-    @State var anthropicAuthVerifying = false
-    @State var anthropicAuthVerified = false
-    @State var anthropicAuthVerificationAttempted = false
-    @State var anthropicAuthVerificationFailed = false
-    @State var anthropicAuthVerifiedAt: Date?
-    @State var anthropicAuthDetectedStatus: MarvOAuthStore.AnthropicOAuthStatus = .missingFile
-    @State var anthropicAuthAutoDetectClipboard = true
-    @State var anthropicAuthAutoConnectClipboard = true
-    @State var anthropicAuthLastPasteboardChangeCount = NSPasteboard.general.changeCount
-    @State var monitoringAuth = false
-    @State var authMonitorTask: Task<Void, Never>?
-    @State var needsBootstrap = false
-    @State var didAutoKickoff = false
-    @State var showAdvancedConnection = false
-    @State var preferredGatewayID: String?
-    @State var gatewayDiscovery: GatewayDiscoveryModel
-    @State var onboardingChatModel: OpenClawChatViewModel
-    @State var onboardingWizard = OnboardingWizardModel()
-    @State var localGatewayProbe: LocalGatewayProbe?
     @Bindable var state: AppState
-    var permissionMonitor: PermissionMonitor
+
+    // Provider & API key state
+    @State var selectedProvider: String = "anthropic"
+    @State var apiKey: String = ""
+    @State var customBaseUrl: String = ""
+    @State var customModelId: String = ""
+    @State var selectedModel: String = ""
+    @State var apiKeyValid: Bool = false
+    @State var savingConfig: Bool = false
 
     static let windowWidth: CGFloat = 630
-    static let windowHeight: CGFloat = 752 // ~+10% to fit full onboarding content
+    static let windowHeight: CGFloat = 580
 
     let pageWidth: CGFloat = Self.windowWidth
-    let contentHeight: CGFloat = 460
-    let connectionPageIndex = 1
-    let anthropicAuthPageIndex = 2
-    let wizardPageIndex = 3
-    let onboardingChatPageIndex = 8
+    let contentHeight: CGFloat = 400
 
-    static let clipboardPoll: AnyPublisher<Date, Never> = {
-        if ProcessInfo.processInfo.isRunningTests {
-            return Empty(completeImmediately: false).eraseToAnyPublisher()
-        }
-        return Timer.publish(every: 0.4, on: .main, in: .common)
-            .autoconnect()
-            .eraseToAnyPublisher()
-    }()
+    var totalPages: Int { 4 }
 
-    let permissionsPageIndex = 5
-    static func pageOrder(
-        for mode: AppState.ConnectionMode,
-        showOnboardingChat: Bool) -> [Int]
-    {
-        switch mode {
-        case .remote:
-            // Remote setup doesn't need local gateway/CLI/workspace setup pages,
-            // and WhatsApp/Telegram setup is optional.
-            showOnboardingChat ? [0, 1, 5, 8, 9] : [0, 1, 5, 9]
-        case .unconfigured:
-            showOnboardingChat ? [0, 1, 8, 9] : [0, 1, 9]
-        case .local:
-            showOnboardingChat ? [0, 1, 3, 5, 8, 9] : [0, 1, 3, 5, 9]
-        }
-    }
-
-    var showOnboardingChat: Bool {
-        self.state.connectionMode == .local && self.needsBootstrap
-    }
-
-    var pageOrder: [Int] {
-        Self.pageOrder(for: self.state.connectionMode, showOnboardingChat: self.showOnboardingChat)
-    }
+    var pageOrder: [Int] { [0, 1, 2, 3] }
 
     var pageCount: Int {
         self.pageOrder.count
@@ -152,43 +93,52 @@ struct OnboardingView: View {
         self.currentPage == self.pageCount - 1 ? "Finish" : "Next"
     }
 
-    var wizardPageOrderIndex: Int? {
-        self.pageOrder.firstIndex(of: self.wizardPageIndex)
-    }
-
-    var isWizardBlocking: Bool {
-        self.activePageIndex == self.wizardPageIndex && !self.onboardingWizard.isComplete
-    }
-
     var canAdvance: Bool {
-        !self.isWizardBlocking
+        switch self.activePageIndex {
+        case 1:
+            // Provider page: require API key (or custom base URL)
+            if self.selectedProvider == "custom" {
+                return !self.customBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && !self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            return !self.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        default:
+            return true
+        }
     }
 
-    var devLinkCommand: String {
-        let version = GatewayEnvironment.expectedGatewayVersionString() ?? "latest"
-        return "npm install -g marv@\(version)"
-    }
+    static let providerDisplayNames: [(id: String, name: String, icon: String)] = [
+        ("anthropic", "Anthropic (Claude)", "brain.head.profile"),
+        ("openai", "OpenAI", "sparkle"),
+        ("google", "Google (Gemini)", "globe"),
+        ("moonshot", "Moonshot", "moon.stars"),
+        ("custom", "Custom", "wrench.and.screwdriver"),
+    ]
 
-    struct LocalGatewayProbe: Equatable {
-        let port: Int
-        let pid: Int32
-        let command: String
-        let expected: Bool
-    }
+    static let providerModels: [String: [(id: String, name: String)]] = [
+        "anthropic": [
+            ("claude-opus-4-6", "Claude Opus 4.6"),
+            ("claude-sonnet-4-6", "Claude Sonnet 4.6"),
+            ("claude-haiku-3.5", "Claude Haiku 3.5"),
+        ],
+        "openai": [
+            ("gpt-5", "GPT-5"),
+            ("gpt-5-mini", "GPT-5 Mini"),
+            ("gpt-4.1", "GPT-4.1"),
+        ],
+        "google": [
+            ("gemini-2.5-pro", "Gemini 2.5 Pro"),
+            ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+        ],
+        "moonshot": [
+            ("moonshot-v1-128k", "Moonshot v1 128K"),
+            ("moonshot-v1-32k", "Moonshot v1 32K"),
+        ],
+    ]
 
     init(
-        state: AppState = AppStateStore.shared,
-        permissionMonitor: PermissionMonitor = .shared,
-        discoveryModel: GatewayDiscoveryModel = GatewayDiscoveryModel(
-            localDisplayName: InstanceIdentity.displayName,
-            filterLocalGateways: false))
+        state: AppState = AppStateStore.shared)
     {
         self.state = state
-        self.permissionMonitor = permissionMonitor
-        self._gatewayDiscovery = State(initialValue: discoveryModel)
-        self._onboardingChatModel = State(
-            initialValue: OpenClawChatViewModel(
-                sessionKey: "onboarding",
-                transport: MacGatewayChatTransport()))
     }
 }

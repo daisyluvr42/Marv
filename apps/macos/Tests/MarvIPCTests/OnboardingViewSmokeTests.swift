@@ -1,5 +1,4 @@
 import Foundation
-import MarvDiscovery
 import SwiftUI
 import Testing
 @testable import Marv
@@ -9,53 +8,26 @@ import Testing
 struct OnboardingViewSmokeTests {
     @Test func onboardingViewBuildsBody() {
         let state = AppState(preview: true)
-        let view = OnboardingView(
-            state: state,
-            permissionMonitor: PermissionMonitor.shared,
-            discoveryModel: GatewayDiscoveryModel(localDisplayName: InstanceIdentity.displayName))
+        let view = OnboardingView(state: state)
         _ = view.body
     }
 
-    @Test func pageOrderOmitsWorkspaceAndIdentitySteps() {
-        let order = OnboardingView.pageOrder(for: .local, showOnboardingChat: false)
-        #expect(!order.contains(7))
-        #expect(order.contains(3))
+    @Test func pageOrderIsFixedFourPages() {
+        let state = AppState(preview: true)
+        let view = OnboardingView(state: state)
+        #expect(view.pageOrder == [0, 1, 2, 3])
+        #expect(view.totalPages == 4)
+        #expect(view.pageCount == 4)
     }
 
-    @Test func pageOrderOmitsOnboardingChatWhenIdentityKnown() {
-        let order = OnboardingView.pageOrder(for: .local, showOnboardingChat: false)
-        #expect(!order.contains(8))
-    }
-
-    @Test func selectRemoteGatewayClearsStaleSshTargetWhenEndpointUnresolved() async {
-        let override = FileManager().temporaryDirectory
-            .appendingPathComponent("marv-config-\(UUID().uuidString)")
-            .appendingPathComponent("marv.json")
-            .path
-
-        await TestIsolation.withEnvValues(["OPENCLAW_CONFIG_PATH": override]) {
-            let state = AppState(preview: true)
-            state.remoteTransport = .ssh
-            state.remoteTarget = "user@old-host:2222"
-            let view = OnboardingView(
-                state: state,
-                permissionMonitor: PermissionMonitor.shared,
-                discoveryModel: GatewayDiscoveryModel(localDisplayName: InstanceIdentity.displayName))
-            let gateway = GatewayDiscoveryModel.DiscoveredGateway(
-                displayName: "Unresolved",
-                serviceHost: nil,
-                servicePort: nil,
-                lanHost: "txt-host.local",
-                tailnetDns: "txt-host.ts.net",
-                sshPort: 22,
-                gatewayPort: 4242,
-                cliPath: "/tmp/marv",
-                stableID: UUID().uuidString,
-                debugID: UUID().uuidString,
-                isLocal: false)
-
-            view.selectRemoteGateway(gateway)
-            #expect(state.remoteTarget.isEmpty)
-        }
+    @Test func canAdvanceRequiresApiKey() {
+        let state = AppState(preview: true)
+        var view = OnboardingView(state: state)
+        view.currentPage = 1
+        view.selectedProvider = "anthropic"
+        view.apiKey = ""
+        #expect(!view.canAdvance)
+        view.apiKey = "sk-ant-test"
+        #expect(view.canAdvance)
     }
 }
