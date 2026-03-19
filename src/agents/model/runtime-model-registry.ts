@@ -344,6 +344,85 @@ async function fetchGoogleModels(params: {
   return resolvedModels;
 }
 
+// ---------------------------------------------------------------------------
+// Local provider model discovery
+// ---------------------------------------------------------------------------
+
+/** Resolve the base URL for a local provider from user config. */
+function resolveLocalProviderBaseUrl(cfg: MarvConfig, provider: string): string | undefined {
+  const providers = cfg.models?.providers ?? {};
+  for (const [key, entry] of Object.entries(providers)) {
+    if (normalizeProviderId(key) === provider && entry?.baseUrl) {
+      return entry.baseUrl.replace(/\/+$/, "");
+    }
+  }
+  // Ollama defaults to localhost:11434 even without explicit config.
+  if (provider === "ollama") {
+    return "http://127.0.0.1:11434";
+  }
+  return undefined;
+}
+
+/** Fetch models from an Ollama instance via /api/tags. */
+async function fetchOllamaModels(
+  baseUrl: string,
+  provider: string,
+): Promise<RuntimeRegistryModel[]> {
+  // Strip /v1 suffix if present (users often configure the OpenAI-compat URL).
+  const apiBase = baseUrl.replace(/\/v1$/i, "");
+  const response = await fetch(`${apiBase}/api/tags`, {
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) {
+    return [];
+  }
+  const payload = (await response.json()) as { models?: Array<{ name?: string }> };
+  return (payload.models ?? [])
+    .map((entry) => String(entry.name ?? "").trim())
+    .filter(Boolean)
+    .map((model) => ({
+      ref: `${provider}/${model}`,
+      provider,
+      model,
+      displayName: model,
+      source: "official_api" as const,
+      status: "active" as const,
+      capabilities: inferCapabilities({ provider, model }),
+      tier: normalizeTier(model),
+      location: "local" as const,
+    }));
+}
+
+/** Fetch models from an OpenAI-compatible local server (LM Studio, vLLM, etc.) via /v1/models. */
+async function fetchOpenAICompatibleLocalModels(
+  baseUrl: string,
+  provider: string,
+): Promise<RuntimeRegistryModel[]> {
+  // Ensure the URL ends with /v1/models.
+  const url = baseUrl.replace(/\/v1\/?$/, "");
+  const response = await fetch(`${url}/v1/models`, {
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) {
+    return [];
+  }
+  const payload = (await response.json()) as OpenAIModelsApiResponse;
+  return (payload.data ?? [])
+    .map((entry) => String(entry.id ?? "").trim())
+    .filter(Boolean)
+    .map((model) => ({
+      ref: `${provider}/${model}`,
+      provider,
+      model,
+      displayName: model,
+      source: "official_api" as const,
+      status: "active" as const,
+      capabilities: inferCapabilities({ provider, model }),
+      tier: normalizeTier(model),
+      location: "local" as const,
+    }));
+}
+
 const KNOWN_PROVIDER_GUIDES: ProviderGuide[] = [
   {
     provider: "google",
@@ -472,6 +551,33 @@ export async function refreshRuntimeModelRegistry(params?: {
       delete status.lastError;
     } catch (error) {
       status.lastError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  // Discover models from configured local providers by querying their API.
+  // Local providers don't need API keys but require a baseUrl in config.
+  for (const localProvider of LOCAL_PROVIDERS) {
+    if (!configuredProviders.has(localProvider)) {
+      continue;
+    }
+    const baseUrl = resolveLocalProviderBaseUrl(cfg, localProvider);
+    if (!baseUrl) {
+      continue;
+    }
+    try {
+      const fetched =
+        localProvider === "ollama"
+          ? await fetchOllamaModels(baseUrl, localProvider)
+          : await fetchOpenAICompatibleLocalModels(baseUrl, localProvider);
+      if (fetched.length > 0) {
+        models = mergeProviderModels({
+          base: models,
+          provider: localProvider,
+          next: fetched,
+        });
+      }
+    } catch {
+      // Best-effort; local server may be offline.
     }
   }
 
