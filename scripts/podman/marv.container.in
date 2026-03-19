@@ -13,10 +13,9 @@ Volume={{MARV_HOME}}/.marv:/home/node/.marv
 EnvironmentFile={{MARV_HOME}}/.marv/.env
 Environment=HOME=/home/node
 Environment=TERM=xterm-256color
-PublishPort=18789:18789
-PublishPort=18790:18790
+PublishPort=4242:4242
 Pull=never
-Exec=node dist/index.js gateway --bind lan --port 18789
+Exec=node dist/index.js gateway --bind lan --port 4242
 
 [Service]
 TimeoutStartSec=300
