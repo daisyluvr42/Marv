@@ -81,26 +81,34 @@ export function createSessionsSpawnTool(opts?: {
 
       const waitForResult = params.waitForResult === true;
 
-      // Auto-route: when no explicit role/preset/model is provided, analyze the task
-      // and auto-select based on configured presets and model pool.
+      // Auto-route: when no explicit role/preset/model is provided and auto-routing
+      // is enabled, analyze the task and auto-select based on configured presets and
+      // model pool. Respects the agents.defaults.autoRouting.enabled toggle set
+      // during onboarding.
       let autoRoutedPreset: string | undefined;
       let autoRoutedModel: string | undefined;
       let autoRoutedThinking: string | undefined;
       if (!role && !preset && !modelOverride) {
         const cfg = loadConfig();
-        const route = resolveSubagentAutoRoute({ task, cfg });
-        if (route.matched && route.preset) {
+        const autoRoutingEnabled = cfg.agents?.defaults?.autoRouting?.enabled === true;
+        if (!autoRoutingEnabled) {
+          logDebug("[sessions_spawn] auto-routing disabled by config; skipping.");
+        }
+        const route = autoRoutingEnabled ? resolveSubagentAutoRoute({ task, cfg }) : null;
+        if (route?.matched && route.preset) {
           autoRoutedPreset = route.preset;
         }
-        if (route.recommendedModel) {
+        if (route?.recommendedModel) {
           autoRoutedModel = route.recommendedModel;
         }
-        if (route.recommendedThinking && !thinkingOverrideRaw) {
+        if (route?.recommendedThinking && !thinkingOverrideRaw) {
           autoRoutedThinking = route.recommendedThinking;
         }
-        logDebug(
-          `[sessions_spawn] auto-route: complexity=${route.complexity}, matched=${route.matched}, preset=${autoRoutedPreset ?? "none"}, model=${autoRoutedModel ?? "default"}, thinking=${autoRoutedThinking ?? "default"}, reason=${route.modelReason ?? "n/a"}`,
-        );
+        if (route) {
+          logDebug(
+            `[sessions_spawn] auto-route: complexity=${route.complexity}, matched=${route.matched}, preset=${autoRoutedPreset ?? "none"}, model=${autoRoutedModel ?? "default"}, thinking=${autoRoutedThinking ?? "default"}, reason=${route.modelReason ?? "n/a"}`,
+          );
+        }
       }
 
       // Build context block if requested.

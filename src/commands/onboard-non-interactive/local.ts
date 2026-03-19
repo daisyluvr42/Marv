@@ -87,6 +87,47 @@ export async function runNonInteractiveOnboardingLocal(params: {
 
   nextConfig = applyNonInteractiveSkillsConfig({ nextConfig, opts, runtime });
 
+  // Memory search: apply when --enable-memory-search is set (mirrors interactive onboarding).
+  if (opts.enableMemorySearch) {
+    type MemoryProvider = "openai" | "gemini" | "local" | "voyage" | "script";
+    const VALID_PROVIDERS = new Set<string>(["openai", "gemini", "local", "voyage", "script"]);
+    const rawProvider = opts.memorySearchProvider ?? "auto";
+    const provider: MemoryProvider | undefined = VALID_PROVIDERS.has(rawProvider)
+      ? (rawProvider as MemoryProvider)
+      : undefined;
+    nextConfig = {
+      ...nextConfig,
+      agents: {
+        ...nextConfig.agents,
+        defaults: {
+          ...nextConfig.agents?.defaults,
+          memorySearch: {
+            ...nextConfig.agents?.defaults?.memorySearch,
+            ...(provider ? { provider } : {}),
+          },
+        },
+      },
+    };
+  }
+
+  // Auto-routing: apply when --enable-auto-routing is set (mirrors interactive onboarding).
+  if (opts.enableAutoRouting) {
+    nextConfig = {
+      ...nextConfig,
+      agents: {
+        ...nextConfig.agents,
+        defaults: {
+          ...nextConfig.agents?.defaults,
+          autoRouting: {
+            ...nextConfig.agents?.defaults?.autoRouting,
+            enabled: true,
+            classifier: "rules",
+          },
+        },
+      },
+    };
+  }
+
   nextConfig = applyWizardMetadata(nextConfig, { command: "onboard", mode });
   await writeConfigFile(nextConfig);
   logConfigUpdated(runtime);

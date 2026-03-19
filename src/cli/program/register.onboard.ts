@@ -106,6 +106,12 @@ export function registerOnboardCommand(program: Command) {
     .option("--skip-skills", "Skip skills setup")
     .option("--skip-health", "Skip health check")
     .option("--skip-ui", "Skip Control UI/TUI prompts")
+    .option("--enable-memory-search", "Enable memory search (non-interactive)", false)
+    .option(
+      "--memory-search-provider <provider>",
+      "Memory search embedding provider: auto|openai|gemini|local|voyage|script",
+    )
+    .option("--enable-auto-routing", "Enable subagent auto model routing (non-interactive)", false)
     .option("--node-manager <name>", "Node manager for skills: npm|pnpm|bun")
     .option("--json", "Output JSON summary", false);
 
@@ -176,6 +182,9 @@ export function registerOnboardCommand(program: Command) {
           skipSkills: Boolean(opts.skipSkills),
           skipHealth: Boolean(opts.skipHealth),
           skipUi: Boolean(opts.skipUi),
+          enableMemorySearch: Boolean(opts.enableMemorySearch),
+          memorySearchProvider: opts.memorySearchProvider as string | undefined,
+          enableAutoRouting: Boolean(opts.enableAutoRouting),
           nodeManager: opts.nodeManager as NodeManagerChoice | undefined,
           json: Boolean(opts.json),
         },

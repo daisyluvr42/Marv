@@ -1,11 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
 // Mock the model pool module to avoid needing real provider configs.
+// Real resolveRuntimeModelPlan sorts candidates low → standard → high (ascending tier weight).
 vi.mock("./model/model-pool.js", () => ({
   resolveRuntimeModelPlan: vi.fn(() => ({
     poolName: "default",
     configured: [],
     candidates: [
+      {
+        ref: "anthropic/claude-3-haiku",
+        provider: "anthropic",
+        model: "claude-3-haiku",
+        location: "cloud",
+        tier: "low",
+        capabilities: ["text", "tools"],
+        priority: 0,
+        enabled: true,
+        available: true,
+        aliases: [],
+      },
       {
         ref: "anthropic/claude-3-5-sonnet",
         provider: "anthropic",
@@ -14,18 +27,6 @@ vi.mock("./model/model-pool.js", () => ({
         tier: "high",
         capabilities: ["text", "vision", "coding", "tools"],
         priority: 0,
-        enabled: true,
-        available: true,
-        aliases: [],
-      },
-      {
-        ref: "anthropic/claude-3-haiku",
-        provider: "anthropic",
-        model: "claude-3-haiku",
-        location: "cloud",
-        tier: "low",
-        capabilities: ["text", "tools"],
-        priority: 1,
         enabled: true,
         available: true,
         aliases: [],
@@ -179,7 +180,7 @@ describe("resolveTaskAwareModel", () => {
       cfg: {} as never,
     });
 
-    // Simple tasks reverse the candidate list, so haiku (low-tier) comes first.
+    // Simple tasks keep pool default order (low → high), so haiku (low-tier) comes first.
     expect(result.model).toBe("anthropic/claude-3-haiku");
     expect(result.thinking).toBe("off");
   });
@@ -192,7 +193,7 @@ describe("resolveTaskAwareModel", () => {
       cfg: {} as never,
     });
 
-    // Expert tasks keep pool default order: high-tier first.
+    // Expert tasks reverse pool order (low → high becomes high → low), so sonnet (high-tier) comes first.
     expect(result.model).toBe("anthropic/claude-3-5-sonnet");
     expect(result.thinking).toBe("high");
   });

@@ -268,18 +268,20 @@ export function resolveTaskAwareModel(params: {
 
 /**
  * Re-order candidates based on complexity:
- * - simple/moderate: prefer low-tier (cheaper/faster) models first
- * - complex/expert: prefer high-tier (most capable) models first (default pool sort)
+ * - simple/moderate: keep default pool sort (low-tier first — cheaper/faster)
+ * - complex/expert: reverse so high-tier (most capable) models come first
+ *
+ * The pool's default sort order is low → standard → high (ascending tier weight).
  */
 function reorderForComplexity(
   candidates: RuntimeConfiguredModel[],
   complexity: AutoRoutingComplexity,
 ): RuntimeConfiguredModel[] {
-  if (complexity === "simple" || complexity === "moderate") {
-    // Reverse the default tier sort so low-tier comes first.
+  if (complexity === "complex" || complexity === "expert") {
+    // Reverse the default tier sort so high-tier comes first.
     return [...candidates].toReversed();
   }
-  // For complex/expert, pool's default sort already puts high-tier first.
+  // For simple/moderate, pool's default sort already puts low-tier first.
   return candidates;
 }
 

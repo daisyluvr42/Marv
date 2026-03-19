@@ -4,7 +4,6 @@ import {
   resolveSessionAgentId,
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
-import { resolveAutoRouting } from "../../agents/auto-routing.js";
 import { resolveModelRefFromString } from "../../agents/model/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -51,14 +50,6 @@ function mergeSkillFilters(channelFilter?: string[], agentFilter?: string[]): st
   }
   const agentSet = new Set(agent);
   return channel.filter((name) => agentSet.has(name));
-}
-
-function hasPromptImages(ctx: MsgContext): boolean {
-  return (
-    (ctx.MultimodalRouting?.promptMedia ?? []).some((entry) => entry.kind === "image") ||
-    (ctx.MediaPaths?.length ?? 0) > 0 ||
-    (ctx.MediaUrls?.length ?? 0) > 0
-  );
 }
 
 export async function getReplyFromConfig(
@@ -109,21 +100,10 @@ export async function getReplyFromConfig(
     }
   }
 
-  // Auto-routing: classify message complexity and override model (skip for heartbeats).
-  let autoRoutingThinking: string | undefined;
-  if (!isHeartbeatRun(opts)) {
-    const autoRoutingResult = await resolveAutoRouting({
-      prompt: ctx.Body ?? "",
-      hasImages: hasPromptImages(ctx),
-      config: cfg,
-      agentId,
-      defaultProvider: provider,
-      defaultModel: model,
-    });
-    if (autoRoutingResult.routed) {
-      autoRoutingThinking = autoRoutingResult.thinking;
-    }
-  }
+  // Auto-routing is scoped to subagent model selection only (sessions_spawn).
+  // The main session model is chosen manually by the user; auto-routing does
+  // not override it or its thinking level.
+  const autoRoutingThinking: string | undefined = undefined;
 
   const workspaceDirRaw = resolveAgentWorkspaceDir(cfg, agentId) ?? DEFAULT_AGENT_WORKSPACE_DIR;
   const workspace = await ensureAgentWorkspace({

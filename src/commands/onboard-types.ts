@@ -132,6 +132,12 @@ export type OnboardOptions = {
   skipSkills?: boolean;
   skipHealth?: boolean;
   skipUi?: boolean;
+  /** Enable memory search in non-interactive onboarding (default: false). */
+  enableMemorySearch?: boolean;
+  /** Memory search provider for non-interactive onboarding (e.g. "local", "openai", "gemini"). */
+  memorySearchProvider?: string;
+  /** Enable subagent auto-routing in non-interactive onboarding (default: false). */
+  enableAutoRouting?: boolean;
   nodeManager?: NodeManagerChoice;
   remoteUrl?: string;
   remoteToken?: string;

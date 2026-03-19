@@ -3,6 +3,18 @@ import type { RuntimeEnv } from "../../../runtime.js";
 import { randomToken } from "../../onboard-helpers.js";
 import type { OnboardOptions } from "../../onboard-types.js";
 
+// Mirror the interactive onboarding's high-risk node command denylist.
+// These commands are privacy-sensitive (recording/writing) and should be
+// explicitly armed by the user via /phone arm ... (phone-control plugin).
+const DEFAULT_DANGEROUS_NODE_DENY_COMMANDS = [
+  "camera.snap",
+  "camera.clip",
+  "screen.record",
+  "calendar.add",
+  "contacts.add",
+  "reminders.add",
+];
+
 export function applyNonInteractiveGatewayConfig(params: {
   nextConfig: MarvConfig;
   opts: OnboardOptions;
@@ -101,6 +113,25 @@ export function applyNonInteractiveGatewayConfig(params: {
       },
     },
   };
+
+  // Apply the same high-risk node command denylist as interactive onboarding
+  // when this is a fresh gateway setup (no existing deny/allow/browser config).
+  if (
+    nextConfig.gateway?.nodes?.denyCommands === undefined &&
+    nextConfig.gateway?.nodes?.allowCommands === undefined &&
+    nextConfig.gateway?.nodes?.browser === undefined
+  ) {
+    nextConfig = {
+      ...nextConfig,
+      gateway: {
+        ...nextConfig.gateway,
+        nodes: {
+          ...nextConfig.gateway?.nodes,
+          denyCommands: [...DEFAULT_DANGEROUS_NODE_DENY_COMMANDS],
+        },
+      },
+    };
+  }
 
   return {
     nextConfig,

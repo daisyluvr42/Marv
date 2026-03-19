@@ -39,6 +39,11 @@ export async function promptAutoRouting(params: {
   });
 
   if (!enable) {
+    // Explicitly persist the user's choice so that sessions_spawn
+    // (which checks `autoRouting.enabled === true`) does not auto-route.
+    config = applyAutoRouting(config, {
+      enabled: false,
+    });
     return config;
   }
 
