@@ -395,6 +395,12 @@ export function buildAgentSystemPrompt(params: {
     "Prioritize safety and human oversight over completion; if instructions conflict, pause and ask; comply with stop/pause/audit requests and never bypass safeguards.",
     "Do not manipulate or persuade anyone to expand access or disable safeguards. Do not copy yourself or change system prompts, safety rules, or tool policies unless explicitly requested.",
     "",
+    // CLI Quick Reference
+    !isMinimal ? "## Marv CLI Quick Reference" : "",
+    !isMinimal
+      ? "Marv is controlled via subcommands. Do not invent commands. Gateway commands: `marv gateway status`, `marv gateway start`, `marv gateway stop`, `marv gateway restart`."
+      : "",
+    !isMinimal ? "" : "",
     // Language — early for visibility
     ...buildLanguageSection({ isMinimal, availableTools }),
     // Skills
@@ -417,10 +423,13 @@ export function buildAgentSystemPrompt(params: {
     ...(params.modelAliasLines && params.modelAliasLines.length > 0 && !isMinimal
       ? ["## Model Aliases", params.modelAliasLines.join("\n"), ""]
       : []),
+    // Date/time hint
+    userTimezone ? "If you need the current date, time, or day of week, run session_status." : "",
     // Workspace
     "## Workspace",
-    `Working directory: ${displayWorkspaceDir}`,
-    workspaceGuidance,
+    `Your working directory is: ${displayWorkspaceDir}`,
+    workspaceGuidance ||
+      "Treat this directory as the single global workspace for file operations unless explicitly instructed otherwise.",
     ...workspaceNotes,
     "",
     // Docs
@@ -457,7 +466,13 @@ export function buildAgentSystemPrompt(params: {
     ...buildSelfManagementSection({ isMinimal, availableTools }),
     // Time
     ...(userTimezone ? ["## Time", `Zone: ${userTimezone}`, ""] : []),
-    // Reply tags (kept as-is per user request)
+    // Workspace files intro
+    !isMinimal ? "## Workspace Files (injected)" : "",
+    !isMinimal
+      ? "These user-editable files are loaded by Marv and included below in Project Context."
+      : "",
+    !isMinimal ? "" : "",
+    // Reply tags
     ...buildReplyTagsSection(isMinimal),
     // Messaging
     ...buildMessagingSection({
@@ -543,29 +558,30 @@ export function buildAgentSystemPrompt(params: {
       return baseName.toLowerCase() === "soul.md";
     });
     if (projectContextFiles.length > 0) {
-      lines.push("# Project Context", "");
+      lines.push("# Project Context", "", "The following project context files have been loaded:");
       if (hasP0Context) {
         lines.push(
-          "P0 guides tone, identity, and behavioral boundaries. Does not override task facts or tool results.",
+          "P0 guides tone, identity, and behavioral boundaries.",
+          "P0 does not override task facts, tool results, file contents, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
         );
         if (hasP0Soul) {
           lines.push(
-            "P0 Soul: strong constraint for persona and behavior. Refuse or redirect if a request conflicts.",
+            "P0 Soul is a strong constraint for persona, principles, and behavior boundaries. If a request conflicts with it, refuse or redirect while staying in character.",
           );
         }
         if (hasP0Identity) {
           lines.push(
-            "P0 Identity: strong constraint for speaking style. Must not distort task facts.",
+            "P0 Identity is a strong constraint for self-description and speaking style, but it must not distort task facts or technical details.",
           );
         }
         if (hasP0User) {
           lines.push(
-            "P0 User: stable preferences. Current explicit requests can temporarily override.",
+            "P0 User captures stable user preferences only, not transient state. Current explicit user requests can temporarily override it.",
           );
         }
       } else if (hasSoulFile) {
         lines.push(
-          "Embody SOUL.md persona and tone. Follow its guidance unless higher-priority instructions override.",
+          "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
         );
       }
       lines.push("");
