@@ -1,7 +1,7 @@
 ---
 summary: "How the installer scripts work (install.sh, install-cli.sh, install.ps1), flags, and automation"
 read_when:
-  - You want to understand `marv.bot/install.sh`
+  - You want to understand the installer scripts hosted on GitHub
   - You want to automate installs (CI / headless)
   - You want to install from a GitHub checkout
 title: "Installer Internals"
@@ -9,7 +9,7 @@ title: "Installer Internals"
 
 # Installer internals
 
-Marv ships three installer scripts, served from `marv.bot`.
+Marv ships three installer scripts, served from [GitHub](https://github.com/daisyluvr42/Marv/tree/main/install).
 
 | Script                             | Platform             | What it does                                                                             |
 | ---------------------------------- | -------------------- | ---------------------------------------------------------------------------------------- |

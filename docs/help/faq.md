@@ -448,7 +448,7 @@ detail: [Troubleshooting](/help/troubleshooting#docsmarvai-shows-an-ssl-error-co
 Please help us unblock it by reporting here: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
 If you still can't reach the site, the docs are mirrored on GitHub:
-[docs](docs)
+[docs](https://github.com/daisyluvr42/Marv/tree/main/docs)
 
 ### What's the difference between stable and beta
 
@@ -2891,4 +2891,4 @@ You can add options like `debounce:2s cap:25 drop:summarize` for followup modes.
 
 ---
 
-Still stuck? Ask in [Discord](https://discord.com/invite/clawd) or open a [GitHub discussion]().
+Still stuck? Ask in [Discord](https://discord.com/invite/clawd) or open a [GitHub discussion](https://github.com/daisyluvr42/Marv/discussions).
