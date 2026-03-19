@@ -48,6 +48,7 @@ export {
   LITELLM_BASE_URL,
   LITELLM_DEFAULT_MODEL_ID,
 } from "./onboard-auth.config-litellm.js";
+import { resolvePrimaryModel } from "./model-default.js";
 import {
   applyAgentDefaultModelPrimary,
   applyOnboardAuthAgentModelsAndProviders,
@@ -474,4 +475,72 @@ export function applyQianfanProviderConfig(cfg: MarvConfig): MarvConfig {
 export function applyQianfanConfig(cfg: MarvConfig): MarvConfig {
   const next = applyQianfanProviderConfig(cfg);
   return applyAgentDefaultModelPrimary(next, QIANFAN_DEFAULT_MODEL_REF);
+}
+
+// Google Gemini — API-key models come from the catalog, no inline provider config needed.
+export const GOOGLE_GEMINI_DEFAULT_MODEL = "google/gemini-3-pro-preview";
+
+export function applyGoogleGeminiProviderConfig(cfg: MarvConfig): MarvConfig {
+  return cfg;
+}
+
+export function applyGoogleGeminiConfig(cfg: MarvConfig): MarvConfig {
+  return applyAgentDefaultModelPrimary(cfg, GOOGLE_GEMINI_DEFAULT_MODEL);
+}
+
+// Anthropic — catalog-driven, no inline provider config needed.
+export const DEFAULT_ANTHROPIC_MODEL = "anthropic/claude-sonnet-4-6";
+
+export function applyAnthropicProviderConfig(cfg: MarvConfig): MarvConfig {
+  return cfg;
+}
+
+export function applyAnthropicConfig(cfg: MarvConfig): MarvConfig {
+  return applyAgentDefaultModelPrimary(cfg, DEFAULT_ANTHROPIC_MODEL);
+}
+
+// OpenAI — catalog-driven models with metadata alias.
+export const OPENAI_DEFAULT_MODEL = "openai/gpt-5.1-codex";
+
+export function applyOpenAIProviderConfig(cfg: MarvConfig): MarvConfig {
+  const modelMetadata = { ...cfg.models?.metadata };
+  modelMetadata[OPENAI_DEFAULT_MODEL] = {
+    ...modelMetadata[OPENAI_DEFAULT_MODEL],
+    alias: modelMetadata[OPENAI_DEFAULT_MODEL]?.alias ?? "GPT",
+  };
+
+  return {
+    ...cfg,
+    models: {
+      ...cfg.models,
+      metadata: modelMetadata,
+    },
+  };
+}
+
+export function applyOpenAIConfig(cfg: MarvConfig): MarvConfig {
+  const next = applyOpenAIProviderConfig(cfg);
+  return applyAgentDefaultModelPrimary(next, OPENAI_DEFAULT_MODEL);
+}
+
+// OpenAI Codex — migrates users from openai/* models to the codex provider.
+export const OPENAI_CODEX_DEFAULT_MODEL = "openai-codex/gpt-5.3-codex";
+
+export function applyOpenAICodexProviderConfig(cfg: MarvConfig): MarvConfig {
+  return cfg;
+}
+
+export function applyOpenAICodexConfig(cfg: MarvConfig): MarvConfig {
+  const current = resolvePrimaryModel(cfg.agents?.defaults?.model)?.trim()?.toLowerCase();
+  // Don't override if already on a codex model or empty (will be set).
+  if (current && current.startsWith("openai-codex/")) {
+    return cfg;
+  }
+  // Migrate from any openai/* model or known aliases.
+  const shouldMigrate =
+    !current || current.startsWith("openai/") || current === "gpt" || current === "gpt-mini";
+  if (!shouldMigrate) {
+    return cfg;
+  }
+  return applyAgentDefaultModelPrimary(cfg, OPENAI_CODEX_DEFAULT_MODEL);
 }

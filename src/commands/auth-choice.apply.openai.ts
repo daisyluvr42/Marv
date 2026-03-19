@@ -9,18 +9,17 @@ import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js"
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import { isRemoteEnvironment } from "./oauth-env.js";
-import { applyAuthProfileConfig, setOpenAiApiKey, writeOAuthCredentials } from "./onboard-auth.js";
-import { openUrl } from "./onboard-helpers.js";
 import {
-  applyOpenAICodexModelDefault,
+  applyOpenAICodexConfig,
+  applyOpenAICodexProviderConfig,
   OPENAI_CODEX_DEFAULT_MODEL,
-} from "./openai-codex-model-default.js";
-import { loginOpenAICodexOAuth } from "./openai-codex-oauth.js";
-import {
   applyOpenAIConfig,
   applyOpenAIProviderConfig,
   OPENAI_DEFAULT_MODEL,
-} from "./openai-model-default.js";
+} from "./onboard-auth.config-core.js";
+import { applyAuthProfileConfig, setOpenAiApiKey, writeOAuthCredentials } from "./onboard-auth.js";
+import { openUrl } from "./onboard-helpers.js";
+import { loginOpenAICodexOAuth } from "./openai-codex-oauth.js";
 
 export async function applyAuthChoiceOpenAI(
   params: ApplyAuthChoiceParams,
@@ -135,18 +134,19 @@ export async function applyAuthChoiceOpenAI(
         provider: "openai-codex",
         mode: "oauth",
       });
-      if (params.setDefaultModel) {
-        const applied = applyOpenAICodexModelDefault(nextConfig);
-        nextConfig = applied.next;
-        if (applied.changed) {
-          await params.prompter.note(
-            `Default model set to ${OPENAI_CODEX_DEFAULT_MODEL}`,
-            "Model configured",
-          );
-        }
-      } else {
-        agentModelOverride = OPENAI_CODEX_DEFAULT_MODEL;
-        await noteAgentModel(OPENAI_CODEX_DEFAULT_MODEL);
+      {
+        const applied = await applyDefaultModelChoice({
+          config: nextConfig,
+          setDefaultModel: params.setDefaultModel,
+          defaultModel: OPENAI_CODEX_DEFAULT_MODEL,
+          applyDefaultConfig: applyOpenAICodexConfig,
+          applyProviderConfig: applyOpenAICodexProviderConfig,
+          noteDefault: OPENAI_CODEX_DEFAULT_MODEL,
+          noteAgentModel,
+          prompter: params.prompter,
+        });
+        nextConfig = applied.config;
+        agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
       }
     }
     return { config: nextConfig, agentModelOverride };

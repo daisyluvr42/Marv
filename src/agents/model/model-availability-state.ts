@@ -27,6 +27,9 @@ const TEMPORARY_UNAVAILABLE_RETRY_MS = {
   billing: 60 * 60 * 1000,
 } as const;
 
+/** Unsupported/auth_invalid entries expire after 30 minutes so local models can recover. */
+const PERSISTENT_STATUS_TTL_MS = 30 * 60 * 1000;
+
 function resolveAvailabilityPath(): string {
   return path.join(resolveStateDir(), AVAILABILITY_FILENAME);
 }
@@ -101,10 +104,22 @@ export function getRuntimeModelAvailability(
   if (!entry) {
     return undefined;
   }
+  const now = Date.now();
   if (
     entry.status === "temporary_unavailable" &&
     typeof entry.retryAfter === "number" &&
-    entry.retryAfter <= Date.now()
+    entry.retryAfter <= now
+  ) {
+    delete store.models[ref];
+    writeStore(store);
+    return undefined;
+  }
+  // Expire persistent failure states (unsupported/auth_invalid) after TTL
+  // so local/custom models that were transiently unavailable can recover.
+  if (
+    (entry.status === "unsupported" || entry.status === "auth_invalid") &&
+    typeof entry.lastCheckedAt === "number" &&
+    now - entry.lastCheckedAt >= PERSISTENT_STATUS_TTL_MS
   ) {
     delete store.models[ref];
     writeStore(store);

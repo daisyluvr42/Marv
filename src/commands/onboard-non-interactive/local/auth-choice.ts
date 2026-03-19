@@ -6,8 +6,11 @@ import { upsertSharedEnvVar } from "../../../infra/env-file.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { shortenHomePath } from "../../../utils.js";
 import { normalizeSecretInput } from "../../../utils/normalize-secret-input.js";
+import { syncProviderSelectionsAfterAuth } from "../../auth-choice.default-model.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "../../auth-token.js";
-import { applyGoogleGeminiModelDefault } from "../../google-gemini-model-default.js";
+import { resolvePrimaryModel } from "../../model-default.js";
+import { applyGoogleGeminiConfig } from "../../onboard-auth.config-core.js";
+import { applyOpenAIConfig } from "../../onboard-auth.config-core.js";
 import {
   applyAuthProfileConfig,
   applyCloudflareAiGatewayConfig,
@@ -56,11 +59,30 @@ import {
   resolveCustomProviderId,
 } from "../../onboard-custom.js";
 import type { AuthChoice, OnboardOptions } from "../../onboard-types.js";
-import { applyOpenAIConfig } from "../../openai-model-default.js";
 import { detectZaiEndpoint } from "../../zai-endpoint-detect.js";
 import { resolveNonInteractiveApiKey } from "../api-keys.js";
 
 export async function applyNonInteractiveAuthChoice(params: {
+  nextConfig: MarvConfig;
+  authChoice: AuthChoice;
+  opts: OnboardOptions;
+  runtime: RuntimeEnv;
+  baseConfig: MarvConfig;
+  agentDir?: string;
+}): Promise<MarvConfig | null> {
+  const config = await applyNonInteractiveAuthChoiceInner(params);
+  if (!config) {
+    return null;
+  }
+  // Sync provider model selections so the allowlist includes all provider models.
+  const primaryModel = resolvePrimaryModel(config.agents?.defaults?.model);
+  if (primaryModel) {
+    return syncProviderSelectionsAfterAuth(config, primaryModel);
+  }
+  return config;
+}
+
+async function applyNonInteractiveAuthChoiceInner(params: {
   nextConfig: MarvConfig;
   authChoice: AuthChoice;
   opts: OnboardOptions;
@@ -181,7 +203,7 @@ export async function applyNonInteractiveAuthChoice(params: {
       provider: "google",
       mode: "api_key",
     });
-    return applyGoogleGeminiModelDefault(nextConfig).next;
+    return applyGoogleGeminiConfig(nextConfig);
   }
 
   if (

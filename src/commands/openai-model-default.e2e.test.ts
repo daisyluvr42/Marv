@@ -1,24 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
+import { OPENCODE_ZEN_DEFAULT_MODEL_REF } from "../agents/model/opencode-zen-models.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import {
-  applyGoogleGeminiModelDefault,
+  applyGoogleGeminiConfig,
   GOOGLE_GEMINI_DEFAULT_MODEL,
-} from "./google-gemini-model-default.js";
-import {
-  applyOpenAICodexModelDefault,
+  applyOpenAICodexConfig,
   OPENAI_CODEX_DEFAULT_MODEL,
-} from "./openai-codex-model-default.js";
-import {
   applyOpenAIConfig,
   applyOpenAIProviderConfig,
   OPENAI_DEFAULT_MODEL,
-} from "./openai-model-default.js";
-import {
-  applyOpencodeZenModelDefault,
-  OPENCODE_ZEN_DEFAULT_MODEL,
-} from "./opencode-zen-model-default.js";
+} from "./onboard-auth.config-core.js";
+import { applyOpencodeZenConfig } from "./onboard-auth.config-opencode.js";
 
 const loadModelCatalog = vi.hoisted(() =>
   vi.fn(async () => [] as Array<{ id: string; name: string; provider: string }>),
@@ -38,19 +32,6 @@ function makePrompter(): WizardPrompter {
     confirm: async () => false,
     progress: () => ({ update: () => {}, stop: () => {} }),
   };
-}
-
-function expectPrimaryModelChanged(
-  applied: { changed: boolean; next: MarvConfig },
-  primary: string,
-) {
-  expect(applied.changed).toBe(true);
-  expect(applied.next.agents?.defaults?.model).toEqual({ primary });
-}
-
-function expectConfigUnchanged(applied: { changed: boolean; next: MarvConfig }, cfg: MarvConfig) {
-  expect(applied.changed).toBe(false);
-  expect(applied.next).toEqual(cfg);
 }
 
 describe("applyDefaultModelChoice", () => {
@@ -131,27 +112,27 @@ describe("applyDefaultModelChoice", () => {
   });
 });
 
-describe("applyGoogleGeminiModelDefault", () => {
+describe("applyGoogleGeminiConfig", () => {
   it("sets gemini default when model is unset", () => {
     const cfg: MarvConfig = { agents: { defaults: {} } };
-    const applied = applyGoogleGeminiModelDefault(cfg);
-    expectPrimaryModelChanged(applied, GOOGLE_GEMINI_DEFAULT_MODEL);
+    const next = applyGoogleGeminiConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({ primary: GOOGLE_GEMINI_DEFAULT_MODEL });
   });
 
   it("overrides existing model", () => {
     const cfg: MarvConfig = {
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
     };
-    const applied = applyGoogleGeminiModelDefault(cfg);
-    expectPrimaryModelChanged(applied, GOOGLE_GEMINI_DEFAULT_MODEL);
+    const next = applyGoogleGeminiConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({ primary: GOOGLE_GEMINI_DEFAULT_MODEL });
   });
 
   it("no-ops when already gemini default", () => {
     const cfg: MarvConfig = {
       agents: { defaults: { model: { primary: GOOGLE_GEMINI_DEFAULT_MODEL } } },
     };
-    const applied = applyGoogleGeminiModelDefault(cfg);
-    expectConfigUnchanged(applied, cfg);
+    const next = applyGoogleGeminiConfig(cfg);
+    expect(next).toBe(cfg);
   });
 });
 
@@ -187,67 +168,51 @@ describe("applyOpenAIConfig", () => {
   });
 });
 
-describe("applyOpenAICodexModelDefault", () => {
+describe("applyOpenAICodexConfig", () => {
   it("sets openai-codex default when model is unset", () => {
     const cfg: MarvConfig = { agents: { defaults: {} } };
-    const applied = applyOpenAICodexModelDefault(cfg);
-    expectPrimaryModelChanged(applied, OPENAI_CODEX_DEFAULT_MODEL);
+    const next = applyOpenAICodexConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({ primary: OPENAI_CODEX_DEFAULT_MODEL });
   });
 
   it("sets openai-codex default when model is openai/*", () => {
     const cfg: MarvConfig = {
       agents: { defaults: { model: { primary: OPENAI_DEFAULT_MODEL } } },
     };
-    const applied = applyOpenAICodexModelDefault(cfg);
-    expectPrimaryModelChanged(applied, OPENAI_CODEX_DEFAULT_MODEL);
+    const next = applyOpenAICodexConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({ primary: OPENAI_CODEX_DEFAULT_MODEL });
   });
 
   it("does not override openai-codex/*", () => {
     const cfg: MarvConfig = {
       agents: { defaults: { model: { primary: OPENAI_CODEX_DEFAULT_MODEL } } },
     };
-    const applied = applyOpenAICodexModelDefault(cfg);
-    expectConfigUnchanged(applied, cfg);
+    const next = applyOpenAICodexConfig(cfg);
+    expect(next).toBe(cfg);
   });
 
   it("does not override non-openai models", () => {
     const cfg: MarvConfig = {
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
     };
-    const applied = applyOpenAICodexModelDefault(cfg);
-    expectConfigUnchanged(applied, cfg);
+    const next = applyOpenAICodexConfig(cfg);
+    expect(next).toBe(cfg);
   });
 });
 
-describe("applyOpencodeZenModelDefault", () => {
+describe("applyOpencodeZenConfig", () => {
   it("sets opencode default when model is unset", () => {
     const cfg: MarvConfig = { agents: { defaults: {} } };
-    const applied = applyOpencodeZenModelDefault(cfg);
-    expectPrimaryModelChanged(applied, OPENCODE_ZEN_DEFAULT_MODEL);
+    const next = applyOpencodeZenConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({ primary: OPENCODE_ZEN_DEFAULT_MODEL_REF });
   });
 
   it("overrides existing model", () => {
     const cfg = {
       agents: { defaults: { model: "anthropic/claude-opus-4-5" } },
     } as MarvConfig;
-    const applied = applyOpencodeZenModelDefault(cfg);
-    expectPrimaryModelChanged(applied, OPENCODE_ZEN_DEFAULT_MODEL);
-  });
-
-  it("no-ops when already opencode-zen default", () => {
-    const cfg = {
-      agents: { defaults: { model: OPENCODE_ZEN_DEFAULT_MODEL } },
-    } as MarvConfig;
-    const applied = applyOpencodeZenModelDefault(cfg);
-    expectConfigUnchanged(applied, cfg);
-  });
-
-  it("no-ops when already legacy opencode-zen default", () => {
-    const cfg = {
-      agents: { defaults: { model: "opencode-zen/claude-opus-4-5" } },
-    } as MarvConfig;
-    const applied = applyOpencodeZenModelDefault(cfg);
-    expectConfigUnchanged(applied, cfg);
+    const next = applyOpencodeZenConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({ primary: OPENCODE_ZEN_DEFAULT_MODEL_REF });
   });
 
   it("preserves fallbacks when setting primary", () => {
@@ -261,10 +226,9 @@ describe("applyOpencodeZenModelDefault", () => {
         },
       },
     };
-    const applied = applyOpencodeZenModelDefault(cfg);
-    expect(applied.changed).toBe(true);
-    expect(applied.next.agents?.defaults?.model).toEqual({
-      primary: OPENCODE_ZEN_DEFAULT_MODEL,
+    const next = applyOpencodeZenConfig(cfg);
+    expect(next.agents?.defaults?.model).toEqual({
+      primary: OPENCODE_ZEN_DEFAULT_MODEL_REF,
       fallbacks: ["google/gemini-3-pro"],
     });
   });

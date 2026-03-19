@@ -4,18 +4,25 @@ import {
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
+import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js";
 import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
+import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import { buildTokenProfileId, validateAnthropicSetupToken } from "./auth-token.js";
-import { applyAgentDefaultModelPrimary } from "./onboard-auth.config-shared.js";
+import {
+  applyAnthropicConfig,
+  applyAnthropicProviderConfig,
+  DEFAULT_ANTHROPIC_MODEL,
+} from "./onboard-auth.config-core.js";
 import { applyAuthProfileConfig, setAnthropicApiKey } from "./onboard-auth.js";
-
-const DEFAULT_ANTHROPIC_MODEL = "anthropic/claude-sonnet-4-6";
 
 export async function applyAuthChoiceAnthropic(
   params: ApplyAuthChoiceParams,
 ): Promise<ApplyAuthChoiceResult | null> {
+  const noteAgentModel = createAuthChoiceAgentModelNoter(params);
+
   if (params.authChoice === "token") {
     let nextConfig = params.config;
+    let agentModelOverride: string | undefined;
     await params.prompter.note(
       ["Run `claude setup-token` in your terminal.", "Then paste the generated token below."].join(
         "\n",
@@ -54,10 +61,21 @@ export async function applyAuthChoiceAnthropic(
       provider,
       mode: "token",
     });
-    if (params.setDefaultModel) {
-      nextConfig = applyAgentDefaultModelPrimary(nextConfig, DEFAULT_ANTHROPIC_MODEL);
+    {
+      const applied = await applyDefaultModelChoice({
+        config: nextConfig,
+        setDefaultModel: params.setDefaultModel,
+        defaultModel: DEFAULT_ANTHROPIC_MODEL,
+        applyDefaultConfig: applyAnthropicConfig,
+        applyProviderConfig: applyAnthropicProviderConfig,
+        noteDefault: DEFAULT_ANTHROPIC_MODEL,
+        noteAgentModel,
+        prompter: params.prompter,
+      });
+      nextConfig = applied.config;
+      agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
     }
-    return { config: nextConfig };
+    return { config: nextConfig, agentModelOverride };
   }
 
   if (params.authChoice === "apiKey") {
@@ -66,6 +84,7 @@ export async function applyAuthChoiceAnthropic(
     }
 
     let nextConfig = params.config;
+    let agentModelOverride: string | undefined;
     let hasCredential = false;
     const envKey = process.env.ANTHROPIC_API_KEY?.trim();
 
@@ -96,10 +115,21 @@ export async function applyAuthChoiceAnthropic(
       provider: "anthropic",
       mode: "api_key",
     });
-    if (params.setDefaultModel) {
-      nextConfig = applyAgentDefaultModelPrimary(nextConfig, DEFAULT_ANTHROPIC_MODEL);
+    {
+      const applied = await applyDefaultModelChoice({
+        config: nextConfig,
+        setDefaultModel: params.setDefaultModel,
+        defaultModel: DEFAULT_ANTHROPIC_MODEL,
+        applyDefaultConfig: applyAnthropicConfig,
+        applyProviderConfig: applyAnthropicProviderConfig,
+        noteDefault: DEFAULT_ANTHROPIC_MODEL,
+        noteAgentModel,
+        prompter: params.prompter,
+      });
+      nextConfig = applied.config;
+      agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
     }
-    return { config: nextConfig };
+    return { config: nextConfig, agentModelOverride };
   }
 
   return null;

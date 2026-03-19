@@ -16,7 +16,7 @@ import {
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
 import { formatTokenK } from "./models/shared.js";
-import { OPENAI_CODEX_DEFAULT_MODEL } from "./openai-codex-model-default.js";
+import { OPENAI_CODEX_DEFAULT_MODEL } from "./onboard-auth.config-core.js";
 import { promptAndConfigureVllm } from "./vllm-setup.js";
 
 const KEEP_VALUE = "__keep__";

@@ -1,5 +1,6 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { buildModelAliasIndex, modelKey } from "../agents/model/model-selection.js";
+import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { ModelProviderConfig } from "../core/config/types.models.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -545,6 +546,11 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   };
 
   config = applyPrimaryModel(config, modelRef);
+  config = syncProviderSelectionsFromProviderConfig({
+    cfg: config,
+    providerId,
+    defaultProvider: providerId,
+  });
   if (alias) {
     config = {
       ...config,

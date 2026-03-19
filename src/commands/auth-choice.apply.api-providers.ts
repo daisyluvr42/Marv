@@ -1,5 +1,6 @@
 import { ensureAuthProfileStore, resolveAuthProfileOrder } from "../agents/auth-profiles.js";
 import { resolveEnvApiKey } from "../agents/model/model-auth.js";
+import { OPENCODE_ZEN_DEFAULT_MODEL_REF } from "../agents/model/opencode-zen-models.js";
 import {
   formatApiKeyPreview,
   normalizeApiKeyInput,
@@ -11,9 +12,10 @@ import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice
 import { applyAuthChoiceOpenRouter } from "./auth-choice.apply.openrouter.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import {
-  applyGoogleGeminiModelDefault,
+  applyGoogleGeminiConfig,
+  applyGoogleGeminiProviderConfig,
   GOOGLE_GEMINI_DEFAULT_MODEL,
-} from "./google-gemini-model-default.js";
+} from "./onboard-auth.config-core.js";
 import {
   applyAuthProfileConfig,
   applyCloudflareAiGatewayConfig,
@@ -67,7 +69,6 @@ import {
   setZaiApiKey,
   ZAI_DEFAULT_MODEL_REF,
 } from "./onboard-auth.js";
-import { OPENCODE_ZEN_DEFAULT_MODEL } from "./opencode-zen-model-default.js";
 import { detectZaiEndpoint } from "./zai-endpoint-detect.js";
 
 export async function applyAuthChoiceApiProviders(
@@ -505,18 +506,19 @@ export async function applyAuthChoiceApiProviders(
       provider: "google",
       mode: "api_key",
     });
-    if (params.setDefaultModel) {
-      const applied = applyGoogleGeminiModelDefault(nextConfig);
-      nextConfig = applied.next;
-      if (applied.changed) {
-        await params.prompter.note(
-          `Default model set to ${GOOGLE_GEMINI_DEFAULT_MODEL}`,
-          "Model configured",
-        );
-      }
-    } else {
-      agentModelOverride = GOOGLE_GEMINI_DEFAULT_MODEL;
-      await noteAgentModel(GOOGLE_GEMINI_DEFAULT_MODEL);
+    {
+      const applied = await applyDefaultModelChoice({
+        config: nextConfig,
+        setDefaultModel: params.setDefaultModel,
+        defaultModel: GOOGLE_GEMINI_DEFAULT_MODEL,
+        applyDefaultConfig: applyGoogleGeminiConfig,
+        applyProviderConfig: applyGoogleGeminiProviderConfig,
+        noteDefault: GOOGLE_GEMINI_DEFAULT_MODEL,
+        noteAgentModel,
+        prompter: params.prompter,
+      });
+      nextConfig = applied.config;
+      agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
     }
     return { config: nextConfig, agentModelOverride };
   }
@@ -822,10 +824,10 @@ export async function applyAuthChoiceApiProviders(
       const applied = await applyDefaultModelChoice({
         config: nextConfig,
         setDefaultModel: params.setDefaultModel,
-        defaultModel: OPENCODE_ZEN_DEFAULT_MODEL,
+        defaultModel: OPENCODE_ZEN_DEFAULT_MODEL_REF,
         applyDefaultConfig: applyOpencodeZenConfig,
         applyProviderConfig: applyOpencodeZenProviderConfig,
-        noteDefault: OPENCODE_ZEN_DEFAULT_MODEL,
+        noteDefault: OPENCODE_ZEN_DEFAULT_MODEL_REF,
         noteAgentModel,
         prompter: params.prompter,
       });

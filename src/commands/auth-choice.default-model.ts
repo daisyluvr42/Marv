@@ -8,7 +8,7 @@ import {
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
-async function syncProviderSelectionsAfterAuth(
+export async function syncProviderSelectionsAfterAuth(
   config: MarvConfig,
   defaultModel: string,
 ): Promise<MarvConfig> {
