@@ -71,7 +71,7 @@ pnpm gateway:watch
 
 服务名称是配置文件感知的：
 
-- macOS：`bot.molt.<profile>`（旧版 `com.marv.*` 可能仍然存在）
+- macOS：`ai.marv.<profile>`（旧版 `com.marv.*` 可能仍然存在）
 - Linux：`marv-gateway-<profile>.service`
 - Windows：`Marv Gateway (<profile>)`
 
@@ -212,8 +212,8 @@ MARV_CONFIG_PATH=~/.marv/b.json MARV_STATE_DIR=~/.marv-b marv gateway --port 190
   - StandardOut/Err：文件路径或 `syslog`
 - 失败时，launchd 重启；致命的配置错误应保持退出，以便运维人员注意到。
 - LaunchAgents 是按用户的，需要已登录的会话；对于无头设置，使用自定义 LaunchDaemon（未随附）。
-  - `marv gateway install` 写入 `~/Library/LaunchAgents/bot.molt.gateway.plist`
-    （或 `bot.molt.<profile>.plist`；旧版 `com.marv.*` 会被清理）。
+  - `marv gateway install` 写入 `~/Library/LaunchAgents/ai.marv.gateway.plist`
+    （或 `ai.marv.<profile>.plist`；旧版 `com.marv.*` 会被清理）。
   - `marv doctor` 审计 LaunchAgent 配置，可以将其更新为当前默认值。
 
 ## Gateway 网关服务管理（CLI）
@@ -246,11 +246,11 @@ marv logs --follow
 捆绑的 mac 应用：
 
 - Marv.app 可以捆绑基于 Node 的 Gateway 网关中继并安装标记为
-  `bot.molt.gateway`（或 `bot.molt.<profile>`；旧版 `com.marv.*` 标签仍能干净卸载）的按用户 LaunchAgent。
-- 要干净地停止它，使用 `marv gateway stop`（或 `launchctl bootout gui/$UID/bot.molt.gateway`）。
-- 要重启，使用 `marv gateway restart`（或 `launchctl kickstart -k gui/$UID/bot.molt.gateway`）。
+  `ai.marv.gateway`（或 `ai.marv.<profile>`；旧版 `com.marv.*` 标签仍能干净卸载）的按用户 LaunchAgent。
+- 要干净地停止它，使用 `marv gateway stop`（或 `launchctl bootout gui/$UID/ai.marv.gateway`）。
+- 要重启，使用 `marv gateway restart`（或 `launchctl kickstart -k gui/$UID/ai.marv.gateway`）。
   - `launchctl` 仅在 LaunchAgent 已安装时有效；否则先使用 `marv gateway install`。
-  - 运行命名配置文件时，将标签替换为 `bot.molt.<profile>`。
+  - 运行命名配置文件时，将标签替换为 `ai.marv.<profile>`。
 
 ## 监管（systemd 用户单元）
 

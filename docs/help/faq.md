@@ -2486,7 +2486,7 @@ Quick setup (recommended):
 - Set a unique `gateway.port` in each profile config (or pass `--port` for manual runs).
 - Install a per-profile service: `marv --profile <name> gateway install`.
 
-Profiles also suffix service names (`bot.molt.<profile>`; legacy `com.marv.*`, `marv-gateway-<profile>.service`, `Marv Gateway (<profile>)`).
+Profiles also suffix service names (`ai.marv.<profile>`; legacy `com.marv.*`, `marv-gateway-<profile>.service`, `Marv Gateway (<profile>)`).
 Full guide: [Multiple gateways](/gateway/multiple-gateways).
 
 ### What does invalid handshake code 1008 mean

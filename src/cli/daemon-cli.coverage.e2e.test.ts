@@ -144,7 +144,7 @@ describe("daemon-cli coverage", () => {
         MARV_CONFIG_PATH: "/tmp/marv-daemon-state/marv.json",
         MARV_GATEWAY_PORT: "19001",
       },
-      sourcePath: "/tmp/bot.molt.gateway.plist",
+      sourcePath: "/tmp/ai.marv.gateway.plist",
     });
 
     const { registerDaemonCli } = await import("./daemon-cli.js");

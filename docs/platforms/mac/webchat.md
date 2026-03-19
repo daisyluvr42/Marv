@@ -24,7 +24,7 @@ agent (with a session switcher for other sessions).
   dist/Marv.app/Contents/MacOS/Marv --webchat
   ```
 
-- Logs: `./scripts/clawlog.sh` (subsystem `bot.molt`, category `WebChatSwiftUI`).
+- Logs: `./scripts/clawlog.sh` (subsystem `ai.marv`, category `WebChatSwiftUI`).
 
 ## How it’s wired
 

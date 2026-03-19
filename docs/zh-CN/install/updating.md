@@ -172,7 +172,7 @@ marv logs --follow
 
 如果你使用受管理服务：
 
-- macOS launchd（应用捆绑的 LaunchAgent）：`launchctl kickstart -k gui/$UID/bot.molt.gateway`（使用 `bot.molt.<profile>`；旧版 `com.marv.*` 仍然有效）
+- macOS launchd（应用捆绑的 LaunchAgent）：`launchctl kickstart -k gui/$UID/ai.marv.gateway`（使用 `ai.marv.<profile>`；旧版 `com.marv.*` 仍然有效）
 - Linux systemd 用户服务：`systemctl --user restart marv-gateway[-<profile>].service`
 - Windows（WSL2）：`systemctl --user restart marv-gateway[-<profile>].service`
   - `launchctl`/`systemctl` 仅在服务已安装时有效；否则运行 `marv gateway install`。
