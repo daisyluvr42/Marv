@@ -1,10 +1,28 @@
 import type { MarvConfig } from "../core/config/config.js";
+import { DEFAULT_GATEWAY_PORT } from "../core/config/paths.js";
+
+/** Ports used by previous project brands that should be migrated to the current default. */
+const LEGACY_GATEWAY_PORTS = new Set([18789]);
+
 export function normalizeLegacyConfigValues(cfg: MarvConfig): {
   config: MarvConfig;
   changes: string[];
 } {
   const changes: string[] = [];
   let next: MarvConfig = cfg;
+
+  // Migrate legacy gateway port to current default.
+  const configuredPort = (next.gateway as Record<string, unknown> | undefined)?.port;
+  if (typeof configuredPort === "number" && LEGACY_GATEWAY_PORTS.has(configuredPort)) {
+    next = {
+      ...next,
+      gateway: {
+        ...(next.gateway as Record<string, unknown>),
+        port: DEFAULT_GATEWAY_PORT,
+      },
+    };
+    changes.push(`Migrated gateway.port from legacy ${configuredPort} to ${DEFAULT_GATEWAY_PORT}.`);
+  }
 
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === "object" && !Array.isArray(value);
