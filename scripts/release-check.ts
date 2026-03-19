@@ -10,7 +10,7 @@ type PackResult = { files?: PackFile[] };
 const requiredPathGroups = [
   ["dist/index.js", "dist/index.mjs"],
   ["dist/entry.js", "dist/entry.mjs"],
-  "dist/plugin-sdk/index.cjs",
+  "dist/plugin-sdk/index.js",
   "dist/plugin-sdk/index.d.ts",
   "dist/build-info.json",
 ];

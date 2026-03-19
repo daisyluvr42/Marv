@@ -33,7 +33,7 @@ describe("version resolution", () => {
         "utf-8",
       );
 
-      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.cjs");
+      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.js");
       expect(readVersionFromPackageJsonForModuleUrl(moduleUrl)).toBe("1.2.3");
       expect(resolveVersionFromModuleUrl(moduleUrl)).toBe("1.2.3");
     });
@@ -53,7 +53,7 @@ describe("version resolution", () => {
         "utf-8",
       );
 
-      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.cjs");
+      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.js");
       expect(readVersionFromPackageJsonForModuleUrl(moduleUrl)).toBe("2.3.4");
     });
   });
@@ -67,7 +67,7 @@ describe("version resolution", () => {
         "utf-8",
       );
 
-      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.cjs");
+      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.js");
       expect(readVersionFromPackageJsonForModuleUrl(moduleUrl)).toBeNull();
       expect(readVersionFromBuildInfoForModuleUrl(moduleUrl)).toBe("4.5.6");
       expect(resolveVersionFromModuleUrl(moduleUrl)).toBe("4.5.6");
@@ -78,7 +78,7 @@ describe("version resolution", () => {
     await withTempDir(async (root) => {
       await fs.mkdir(path.join(root, "dist", "plugin-sdk"), { recursive: true });
 
-      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.cjs");
+      const moduleUrl = moduleUrlFrom(root, "dist/plugin-sdk/index.js");
       expect(readVersionFromPackageJsonForModuleUrl(moduleUrl)).toBeNull();
       expect(readVersionFromBuildInfoForModuleUrl(moduleUrl)).toBeNull();
       expect(resolveVersionFromModuleUrl(moduleUrl)).toBeNull();
