@@ -1,4 +1,5 @@
-import fs from "node:fs";
+import * as fs from "node:fs";
+import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -28,7 +29,6 @@ import type {
   SkillSnapshot,
 } from "./types.js";
 
-const fsp = fs.promises;
 const skillsLogger = createSubsystemLogger("skills");
 const skillCommandDebugOnce = new Set<string>();
 
