@@ -6,7 +6,6 @@ import {
 } from "../agents/agent-scope.js";
 import { ensureAuthProfileStore } from "../agents/auth-profiles.js";
 import { clearSessionAuthProfileOverride } from "../agents/auth-profiles/session-override.js";
-import { resolveAutoRouting } from "../agents/auto-routing.js";
 import { getCliSessionId } from "../agents/cli-session.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
@@ -513,23 +512,8 @@ export async function agentCommand(
       const activeFallbacks = runtimePlan.candidates
         .map((entry) => entry.ref)
         .filter((ref) => ref !== `${provider}/${model}`);
-      let routedThinking: ThinkLevel | undefined = undefined;
-
-      // Auto-routing may still tune policy hints like thinking, but no longer picks models.
-      const autoRoutingResult = await resolveAutoRouting({
-        prompt: body,
-        hasImages: (opts.images?.length ?? 0) > 0,
-        config: cfg,
-        agentId: sessionAgentId,
-        defaultProvider: provider,
-        defaultModel: model,
-      });
-
-      if (autoRoutingResult.routed) {
-        if (autoRoutingResult.thinking) {
-          routedThinking = autoRoutingResult.thinking;
-        }
-      }
+      // Auto-routing is subagent-only; main session uses the user's chosen model.
+      const routedThinking: ThinkLevel | undefined = undefined;
 
       // Track model fallback attempts so retries on an existing session don't
       // re-inject the original prompt as a duplicate user message.
