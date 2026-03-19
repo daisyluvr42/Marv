@@ -78,10 +78,10 @@ const resolvePluginSdkAliasFile = (params: {
 };
 
 const resolvePluginSdkAlias = (): string | null =>
-  resolvePluginSdkAliasFile({ srcFile: "index.ts", distFile: "index.js" });
+  resolvePluginSdkAliasFile({ srcFile: "index.ts", distFile: "index.cjs" });
 
 const resolvePluginSdkAccountIdAlias = (): string | null => {
-  return resolvePluginSdkAliasFile({ srcFile: "account-id.ts", distFile: "account-id.js" });
+  return resolvePluginSdkAliasFile({ srcFile: "account-id.ts", distFile: "account-id.cjs" });
 };
 
 function buildCacheKey(params: {

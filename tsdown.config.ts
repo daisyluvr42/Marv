@@ -33,6 +33,7 @@ export default defineConfig([
   {
     entry: "src/plugin-sdk/index.ts",
     outDir: "dist/plugin-sdk",
+    format: "cjs",
     env,
     fixedExtension: false,
     platform: "node",
@@ -40,6 +41,7 @@ export default defineConfig([
   {
     entry: "src/plugin-sdk/account-id.ts",
     outDir: "dist/plugin-sdk",
+    format: "cjs",
     env,
     fixedExtension: false,
     platform: "node",
