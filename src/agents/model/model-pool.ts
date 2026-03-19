@@ -102,6 +102,12 @@ function isModelAvailable(params: { cfg: MarvConfig; provider: string; agentDir?
   if (LOCAL_PROVIDERS.has(provider)) {
     return { available: true };
   }
+  // Custom providers with a baseUrl configured are considered available even
+  // without an explicit API key (e.g. LM Studio / Ollama on localhost).
+  const providerEntry = params.cfg.models?.providers?.[params.provider];
+  if (providerEntry && typeof providerEntry === "object" && "baseUrl" in providerEntry) {
+    return { available: true };
+  }
   const store = ensureAuthProfileStore(params.agentDir, { allowKeychainPrompt: false });
   const providerFamily = [...resolveProviderFamilyProviders(provider)];
   for (const familyProvider of providerFamily) {

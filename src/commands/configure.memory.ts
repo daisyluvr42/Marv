@@ -352,6 +352,26 @@ export async function promptMemorySearchForOnboarding(params: {
         remote: { ...memorySearch.remote, apiKey },
       };
     }
+
+    // Prompt for custom base URL when using OpenAI-compatible local servers
+    // (e.g. LM Studio, Ollama).
+    if (providerChoice === "openai") {
+      const baseUrlInput = await prompter.text({
+        message: "Custom base URL (leave blank for default OpenAI endpoint)",
+        initialValue: existing?.remote?.baseUrl ?? "",
+        placeholder: "http://127.0.0.1:1234/v1",
+      });
+      const baseUrl = baseUrlInput.trim();
+      if (baseUrl) {
+        memorySearch = {
+          ...memorySearch,
+          remote: { ...memorySearch.remote, baseUrl },
+        };
+      } else if (existing?.remote?.baseUrl) {
+        const { baseUrl: _, ...rest } = memorySearch.remote ?? {};
+        memorySearch = { ...memorySearch, remote: rest };
+      }
+    }
   } else if (providerChoice === "local") {
     const modelPathInput = await prompter.text({
       message: "Local GGUF model path or hf: URI",
