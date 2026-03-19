@@ -161,6 +161,18 @@ function buildConfiguredModelList(params: {
     refs.add(`${parsed.provider}/${parsed.model}`);
   };
 
+  // Always include inline models from configured providers (models.providers.*.models).
+  // These are typically custom/local providers (LM Studio, Ollama via custom config, etc.)
+  // that won't appear in the runtime registry or catalog.
+  const configuredProviderEntries = params.cfg.models?.providers ?? {};
+  for (const [providerId, providerEntry] of Object.entries(configuredProviderEntries)) {
+    if (providerEntry?.models?.length) {
+      for (const modelDef of providerEntry.models) {
+        refs.add(`${providerId}/${modelDef.id}`);
+      }
+    }
+  }
+
   if (runtimeRegistry?.models?.length) {
     registryEntries = runtimeRegistry.models.filter((entry) =>
       configuredProviders.has(normalizeProviderId(entry.provider)),

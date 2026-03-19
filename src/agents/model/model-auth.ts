@@ -207,6 +207,13 @@ export async function resolveApiKeyForProvider(params: {
     return { apiKey: customKey, source: "models.json", mode: "api-key" };
   }
 
+  // Custom providers with a baseUrl (e.g. LM Studio, Ollama via custom config)
+  // don't require an API key — they're local or self-hosted servers.
+  const providerEntry = resolveProviderConfig(cfg, provider);
+  if (providerEntry?.baseUrl) {
+    return { apiKey: "no-key-needed", source: "baseUrl-provider", mode: "api-key" };
+  }
+
   const normalized = normalizeProviderId(provider);
   if (authOverride === undefined && normalized === "amazon-bedrock") {
     return resolveAwsSdkAuthInfo();

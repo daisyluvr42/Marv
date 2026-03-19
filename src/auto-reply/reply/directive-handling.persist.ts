@@ -225,15 +225,48 @@ export function resolveDefaultModel(params: { cfg: MarvConfig; agentId?: string 
     cfg: params.cfg,
     agentId: params.agentId,
   });
-  const mainModel = runtimePlan.candidates[0] ?? {
-    provider: "anthropic",
-    model: "claude-sonnet-4-5",
-  };
-  const defaultProvider = mainModel.provider;
-  const defaultModel = mainModel.model;
+
+  let defaultProvider: string;
+  let defaultModel: string;
+
+  if (runtimePlan.candidates.length > 0) {
+    // Use the top candidate from the model pool.
+    defaultProvider = runtimePlan.candidates[0].provider;
+    defaultModel = runtimePlan.candidates[0].model;
+  } else {
+    // Pool is empty — fall back to the explicitly configured primary model
+    // (agents.defaults.model.primary) before hard-coding Anthropic.
+    const configuredPrimary = resolveConfiguredPrimaryModel(params.cfg);
+    defaultProvider = configuredPrimary.provider;
+    defaultModel = configuredPrimary.model;
+  }
+
   const aliasIndex = buildModelAliasIndex({
     cfg: params.cfg,
     defaultProvider,
   });
   return { defaultProvider, defaultModel, aliasIndex };
+}
+
+/** Parse the user's configured agents.defaults.model.primary into provider/model. */
+function resolveConfiguredPrimaryModel(cfg: MarvConfig): {
+  provider: string;
+  model: string;
+} {
+  const modelCfg = cfg.agents?.defaults?.model;
+  const raw =
+    typeof modelCfg === "string"
+      ? modelCfg
+      : typeof modelCfg === "object" && modelCfg !== null
+        ? modelCfg.primary
+        : undefined;
+  if (typeof raw === "string" && raw.includes("/")) {
+    const slashIdx = raw.indexOf("/");
+    return {
+      provider: raw.slice(0, slashIdx),
+      model: raw.slice(slashIdx + 1),
+    };
+  }
+  // Ultimate fallback.
+  return { provider: "anthropic", model: "claude-sonnet-4-5" };
 }
