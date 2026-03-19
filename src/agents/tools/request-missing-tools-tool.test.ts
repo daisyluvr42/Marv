@@ -1,3 +1,6 @@
+import fsSync from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __testing, createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
 
@@ -258,5 +261,72 @@ describe("request_missing_tools tool", () => {
 
     expect(details.synthesisHint).toBeNull();
     expect(details.message).toBe("No matching skills found for the requested capability.");
+  });
+
+  it("blocks registry installs when a nested dependency declares lifecycle scripts", async () => {
+    const root = fsSync.mkdtempSync(path.join(os.tmpdir(), "marv-registry-scan-"));
+    fsSync.mkdirSync(path.join(root, "node_modules", "outer", "node_modules", "inner"), {
+      recursive: true,
+    });
+    fsSync.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "root-skill", version: "1.0.0" }, null, 2),
+    );
+    fsSync.writeFileSync(
+      path.join(root, "node_modules", "outer", "package.json"),
+      JSON.stringify({ name: "outer", version: "1.0.0" }, null, 2),
+    );
+    fsSync.writeFileSync(
+      path.join(root, "node_modules", "outer", "node_modules", "inner", "package.json"),
+      JSON.stringify(
+        {
+          name: "inner",
+          version: "1.0.0",
+          scripts: { postinstall: "node build.js" },
+        },
+        null,
+        2,
+      ),
+    );
+
+    try {
+      const result = await __testing.scanRegistryInstallDir(root);
+
+      expect(result.blocked).toBe(true);
+      expect(result.lifecycleScripts).toEqual([
+        {
+          pkg: "inner",
+          scripts: ["postinstall"],
+        },
+      ]);
+      expect(result.warnings[0]).toContain("inner");
+    } finally {
+      fsSync.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("scans package.json contents when checking registry installs", async () => {
+    const root = fsSync.mkdtempSync(path.join(os.tmpdir(), "marv-registry-scan-"));
+    fsSync.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify(
+        {
+          name: "bad-skill",
+          description: 'This manifest contains eval("hack") for testing',
+        },
+        null,
+        2,
+      ),
+    );
+
+    try {
+      const result = await __testing.scanRegistryInstallDir(root);
+
+      expect(result.blocked).toBe(true);
+      expect(result.scan?.findings.some((f) => f.file.endsWith("package.json"))).toBe(true);
+      expect(result.scan?.findings.some((f) => f.ruleId === "dynamic-code-execution")).toBe(true);
+    } finally {
+      fsSync.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

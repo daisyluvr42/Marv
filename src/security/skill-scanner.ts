@@ -333,9 +333,6 @@ async function resolveForcedFiles(params: {
     if (!isPathInside(params.rootDir, includePath)) {
       continue;
     }
-    if (!isScannable(includePath)) {
-      continue;
-    }
     if (seen.has(includePath)) {
       continue;
     }

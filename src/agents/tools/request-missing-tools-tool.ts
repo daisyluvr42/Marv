@@ -1,9 +1,11 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+import { scanDirectoryWithSummary, type SkillScanSummary } from "../../security/skill-scanner.js";
 import { markInstalledSkillUsageRecord, readSkillUsageRecords } from "../skill-usage-records.js";
 import {
   inspectDiscoveredSkillSafety,
@@ -48,6 +50,9 @@ export const __testing = {
   resetSeenCapabilitySearches() {
     seenCapabilitySearches.clear();
   },
+  collectPackageJsonFiles,
+  detectLifecycleScripts,
+  scanRegistryInstallDir,
 } as const;
 
 function normalizeApprovalDecision(raw: unknown): ApprovalDecision {
@@ -99,30 +104,73 @@ const EXTENSIONS_DIR = path.join(
   "extensions",
 );
 
-/** Install a skill discovered from a registry source (GitHub repo or npm package). */
+// Only allow alphanumeric, hyphens, underscores, and dots in skill IDs.
+const SAFE_SKILL_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/;
+
+// Validates that a repo URL looks like a legitimate git URL (HTTPS or SSH).
+const SAFE_REPO_URL_RE = /^https:\/\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._/-]+(?:\.git)?$/;
+
+// Validates that an npm package name follows the spec.
+const SAFE_NPM_NAME_RE = /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/;
+
+function sanitizeSkillId(raw: string): string | null {
+  const trimmed = raw.trim();
+  return SAFE_SKILL_ID_RE.test(trimmed) ? trimmed : null;
+}
+
+function validateRepoUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  return SAFE_REPO_URL_RE.test(trimmed) ? trimmed : null;
+}
+
+function validateNpmName(raw: string): string | null {
+  const trimmed = raw.trim();
+  return SAFE_NPM_NAME_RE.test(trimmed) ? trimmed : null;
+}
+
+/**
+ * Download and install a registry skill's dependencies WITHOUT executing
+ * lifecycle scripts (postinstall, etc.).  The caller is responsible for
+ * running a safety scan before calling `runRegistrySkillScripts()`.
+ */
 async function installFromRegistrySource(
   candidate: DiscoveredSkill,
-): Promise<{ ok: boolean; message: string }> {
+): Promise<{ ok: boolean; message: string; installDir?: string }> {
   const install = candidate.registryInstall;
   if (!install) {
     return { ok: false, message: "No install spec available for this registry skill." };
   }
-  const skillId = candidate.skillId;
+
+  const skillId = sanitizeSkillId(candidate.skillId);
+  if (!skillId) {
+    return {
+      ok: false,
+      message: `Skill ID '${candidate.skillId}' contains invalid characters and was rejected.`,
+    };
+  }
   const installDir = path.join(EXTENSIONS_DIR, skillId);
 
   try {
     if (install.repo) {
-      // Install from GitHub.
+      const repoUrl = validateRepoUrl(install.repo);
+      if (!repoUrl) {
+        return {
+          ok: false,
+          message: `Registry repo URL '${install.repo}' failed validation (only HTTPS URLs allowed).`,
+        };
+      }
+      // Install from GitHub using execFileSync to avoid shell injection.
       await fs.mkdir(installDir, { recursive: true });
-      execSync(`git clone --depth 1 ${install.repo} "${installDir}"`, {
+      execFileSync("git", ["clone", "--depth", "1", repoUrl, installDir], {
         stdio: "pipe",
         timeout: 60_000,
       });
-      // Run npm install if package.json exists.
+      // Install deps without executing lifecycle scripts (postinstall, etc.).
+      // Scripts run only after the safety scan passes (see runRegistrySkillScripts).
       const pkgPath = path.join(installDir, "package.json");
       try {
         await fs.access(pkgPath);
-        execSync("npm install --omit=dev", {
+        execFileSync("npm", ["install", "--omit=dev", "--ignore-scripts"], {
           cwd: installDir,
           stdio: "pipe",
           timeout: 120_000,
@@ -131,15 +179,22 @@ async function installFromRegistrySource(
         // No package.json or install failed — skill may not need deps.
       }
     } else if (install.npm) {
-      // Install from npm.
+      const npmName = validateNpmName(install.npm);
+      if (!npmName) {
+        return {
+          ok: false,
+          message: `Registry npm package name '${install.npm}' failed validation.`,
+        };
+      }
+      // Install from npm without executing lifecycle scripts.
       await fs.mkdir(installDir, { recursive: true });
       const tmpPkg = {
         name: `marv-skill-${skillId}`,
         version: "1.0.0",
-        dependencies: { [install.npm]: "latest" },
+        dependencies: { [npmName]: "latest" },
       };
       await fs.writeFile(path.join(installDir, "package.json"), JSON.stringify(tmpPkg, null, 2));
-      execSync("npm install --omit=dev", {
+      execFileSync("npm", ["install", "--omit=dev", "--ignore-scripts"], {
         cwd: installDir,
         stdio: "pipe",
         timeout: 120_000,
@@ -148,9 +203,9 @@ async function installFromRegistrySource(
       return { ok: false, message: "Registry entry has no repo or npm install spec." };
     }
 
-    await markInstalledSkillUsageRecord({ skillId });
     return {
       ok: true,
+      installDir,
       message: `Skill '${skillId}' installed from registry. Restart gateway to activate plugin features.`,
     };
   } catch (err) {
@@ -159,6 +214,149 @@ async function installFromRegistrySource(
       ok: false,
       message: `Failed to install '${skillId}': ${err instanceof Error ? err.message : String(err)}`,
     };
+  }
+}
+
+// npm lifecycle script keys that execute arbitrary code during install/rebuild.
+const LIFECYCLE_SCRIPT_KEYS = new Set([
+  "preinstall",
+  "install",
+  "postinstall",
+  "preuninstall",
+  "postuninstall",
+  "prepublish",
+  "prepare",
+]);
+
+/**
+ * Detect lifecycle scripts in any package.json under the install directory
+ * (root + nested node_modules). Returns the list of packages that have them.
+ */
+async function detectLifecycleScripts(
+  installDir: string,
+): Promise<{ pkg: string; scripts: string[] }[]> {
+  const results: { pkg: string; scripts: string[] }[] = [];
+  const packageJsonPaths = await collectPackageJsonFiles(installDir);
+  for (const pkgPath of packageJsonPaths) {
+    try {
+      const raw = await fs.readFile(pkgPath, "utf-8");
+      const parsed = JSON.parse(raw) as { name?: string; scripts?: Record<string, string> };
+      if (!parsed.scripts) {
+        continue;
+      }
+      const found = Object.keys(parsed.scripts).filter((k) => LIFECYCLE_SCRIPT_KEYS.has(k));
+      if (found.length > 0) {
+        results.push({ pkg: parsed.name ?? pkgPath, scripts: found });
+      }
+    } catch {
+      // Missing or unreadable — skip.
+    }
+  }
+
+  return results;
+}
+
+async function collectPackageJsonFiles(rootDir: string): Promise<string[]> {
+  const out: string[] = [];
+  const stack = [rootDir];
+
+  while (stack.length > 0) {
+    const currentDir = stack.pop();
+    if (!currentDir) {
+      continue;
+    }
+
+    let entries: Dirent[] = [];
+    try {
+      entries = await fs.readdir(currentDir, { encoding: "utf8", withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) {
+        continue;
+      }
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+      if (entry.isFile() && entry.name === "package.json") {
+        out.push(fullPath);
+      }
+    }
+  }
+
+  return out;
+}
+
+type RegistryScanResult = {
+  blocked: boolean;
+  warnings: string[];
+  scan: SkillScanSummary | null;
+  lifecycleScripts: { pkg: string; scripts: string[] }[];
+};
+
+/**
+ * Scan a registry skill's install directory directly (not via workspace
+ * skill lookup). Also checks package.json files for lifecycle scripts.
+ */
+async function scanRegistryInstallDir(installDir: string): Promise<RegistryScanResult> {
+  const warnings: string[] = [];
+  let scan: SkillScanSummary | null = null;
+  let blocked = false;
+  const packageJsonFiles = await collectPackageJsonFiles(installDir);
+  const includeFiles = packageJsonFiles.map((filePath) => path.relative(installDir, filePath));
+
+  // 1. Scan source code for dangerous patterns.
+  try {
+    scan = await scanDirectoryWithSummary(installDir, {
+      // Explicitly include every package.json so manifest contents are scanned
+      // even though the default directory walk skips node_modules and non-code files.
+      includeFiles,
+      maxFiles: Math.max(500, includeFiles.length + 200),
+    });
+    if (scan.critical > 0) {
+      blocked = true;
+      for (const finding of scan.findings) {
+        if (finding.severity === "critical") {
+          warnings.push(`[${finding.ruleId}] ${finding.file}:${finding.line} — ${finding.message}`);
+        }
+      }
+    }
+  } catch {
+    warnings.push("Failed to scan install directory.");
+    blocked = true;
+  }
+
+  // 2. Detect lifecycle scripts — these would execute during npm rebuild.
+  const lifecycleScripts = await detectLifecycleScripts(installDir);
+  if (lifecycleScripts.length > 0) {
+    blocked = true;
+    for (const entry of lifecycleScripts) {
+      warnings.push(
+        `Package '${entry.pkg}' has lifecycle scripts (${entry.scripts.join(", ")}) — blocked to prevent arbitrary code execution during rebuild.`,
+      );
+    }
+  }
+
+  return { blocked, warnings, scan, lifecycleScripts };
+}
+
+/**
+ * Run deferred lifecycle scripts (npm rebuild) for a registry skill that
+ * has passed the safety scan AND has no lifecycle scripts.
+ */
+function runRegistrySkillScripts(installDir: string): void {
+  try {
+    execFileSync("npm", ["rebuild"], {
+      cwd: installDir,
+      stdio: "pipe",
+      timeout: 120_000,
+    });
+  } catch {
+    // rebuild failure is non-fatal — skill may not need native compilation.
   }
 }
 
@@ -286,38 +484,79 @@ export function createRequestMissingToolsTool(opts?: {
         }
 
         // Registry-sourced skills: install from GitHub/npm.
+        // Always require explicit approval for remote code installation.
         if (candidate.source === "registry" && candidate.registryInstall) {
-          let approved: ApprovalDecision = "not-needed";
-          if (!autoInstallRequested) {
-            approved = await requestInstallApproval({
+          const approved = await requestInstallApproval({
+            skillId: candidate.skillId,
+            contextTaskId,
+            config: opts?.config,
+            agentSessionKey: opts?.agentSessionKey,
+            gatewayOptions,
+          });
+          if (approved !== "allow-once" && approved !== "allow-always") {
+            installed.push({
               skillId: candidate.skillId,
-              contextTaskId,
-              config: opts?.config,
-              agentSessionKey: opts?.agentSessionKey,
-              gatewayOptions,
+              approved,
+              ok: false,
+              message:
+                approved === "deny"
+                  ? "User denied installation request."
+                  : "Approval unavailable or timed out; installation skipped.",
             });
-            if (approved !== "allow-once" && approved !== "allow-always") {
-              installed.push({
-                skillId: candidate.skillId,
-                approved,
-                ok: false,
-                message:
-                  approved === "deny"
-                    ? "User denied installation request."
-                    : "Approval unavailable or timed out; installation skipped.",
-              });
-              if (installApprovalMode !== "batch") {
-                break;
-              }
-              continue;
+            if (installApprovalMode !== "batch") {
+              break;
             }
+            continue;
           }
           const result = await installFromRegistrySource(candidate);
+          if (!result.ok) {
+            installed.push({
+              skillId: candidate.skillId,
+              approved,
+              ok: false,
+              message: result.message,
+            });
+            if (installApprovalMode !== "batch") {
+              break;
+            }
+            continue;
+          }
+          // Scan the actual install directory for dangerous patterns and
+          // lifecycle scripts (not via workspace skill lookup — that can't
+          // find registry skills under ~/.marv/extensions/).
+          const registryScan = result.installDir
+            ? await scanRegistryInstallDir(result.installDir)
+            : null;
+          if (registryScan?.blocked) {
+            // Remove the installed skill — it didn't pass the scan.
+            if (result.installDir) {
+              await fs.rm(result.installDir, { recursive: true, force: true }).catch(() => {});
+            }
+            installed.push({
+              skillId: candidate.skillId,
+              approved,
+              ok: false,
+              message:
+                registryScan.warnings[0] ?? "Registry skill blocked by safety scan after install.",
+              warnings: registryScan.warnings,
+            });
+            if (installApprovalMode !== "batch") {
+              break;
+            }
+            continue;
+          }
+          // Scan passed and no lifecycle scripts — safe to run npm rebuild
+          // for native addons (node-gyp etc.).
+          if (result.installDir && registryScan?.lifecycleScripts.length === 0) {
+            runRegistrySkillScripts(result.installDir);
+          }
+          await markInstalledSkillUsageRecord({ skillId: candidate.skillId });
           installed.push({
             skillId: candidate.skillId,
             approved,
-            ok: result.ok,
+            ok: true,
             message: result.message,
+            warnings: registryScan?.warnings,
           });
           if (installApprovalMode !== "batch") {
             break;

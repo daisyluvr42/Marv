@@ -340,6 +340,22 @@ describe("scanDirectoryWithSummary", () => {
     expect(summary.findings.some((f) => f.ruleId === "dynamic-code-execution")).toBe(true);
   });
 
+  it("scans explicitly included package.json files even though json is not walked by default", async () => {
+    const root = makeTmpDir();
+    fsSync.writeFileSync(path.join(root, "clean.js"), `export const ok = true;`);
+    fsSync.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "bad-skill", description: 'eval("hack")' }, null, 2),
+    );
+
+    const summary = await scanDirectoryWithSummary(root, {
+      includeFiles: ["package.json"],
+    });
+    expect(summary.scannedFiles).toBe(2);
+    expect(summary.findings.some((f) => f.file.endsWith("package.json"))).toBe(true);
+    expect(summary.findings.some((f) => f.ruleId === "dynamic-code-execution")).toBe(true);
+  });
+
   it("throws when reading a scannable file fails", async () => {
     const root = makeTmpDir();
     const filePath = path.join(root, "bad.js");
