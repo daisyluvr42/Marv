@@ -140,6 +140,51 @@ Safety:
 3. Ensure **Local** mode is active and the Gateway is running.
 4. Install the CLI if you want terminal access.
 
+## Installing the macOS app
+
+The macOS companion app is not distributed as a pre-built signed binary. You need to build it from source.
+
+<Steps>
+  <Step title="Clone and install dependencies">
+    ```bash
+    git clone https://github.com/daisyluvr42/Marv.git
+    cd Marv
+    pnpm install
+    ```
+  </Step>
+  <Step title="Build the CLI (required by the app)">
+    ```bash
+    pnpm ui:build
+    pnpm build
+    ```
+  </Step>
+  <Step title="Build and package the app">
+    ```bash
+    BUNDLE_ID=ai.marv.mac \
+    APP_VERSION=2026.03.19 \
+    APP_BUILD="$(git rev-list --count HEAD)" \
+    scripts/package-mac-app.sh
+    ```
+
+    The packaged app will be at `dist/Marv.app`.
+
+  </Step>
+  <Step title="Install">
+    Move or copy the app to your Applications folder:
+
+    ```bash
+    cp -R dist/Marv.app /Applications/
+    ```
+
+    On first launch, macOS will warn that the app is from an unidentified developer. Right-click the app and select **Open**, then click **Open** in the dialog to bypass Gatekeeper.
+
+  </Step>
+</Steps>
+
+<Note>
+Without an Apple Developer ID certificate, the app cannot be code-signed or notarized. Sparkle auto-updates will not work. To update, pull the latest source and rebuild.
+</Note>
+
 ## Build & dev workflow (native)
 
 - `cd apps/macos && swift build`

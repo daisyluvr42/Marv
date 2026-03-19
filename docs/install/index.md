@@ -253,6 +253,10 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
   </Card>
 </CardGroup>
 
+## macOS companion app
+
+The macOS menu-bar companion app (notifications, permissions, Canvas, Screen Recording) must be built from source. See [macOS App](/platforms/macos#installing-the-macos-app) for instructions.
+
 ## After install
 
 Verify everything is working:
