@@ -9,8 +9,8 @@
     "@sinclair/typebox": "0.34.48",
     "openai": "^6.22.0"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

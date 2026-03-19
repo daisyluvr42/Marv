@@ -10,8 +10,8 @@
     "music-metadata": "^11.12.1",
     "zod": "^4.3.6"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

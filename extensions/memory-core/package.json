@@ -4,9 +4,6 @@
   "private": true,
   "description": "Marv core memory search plugin",
   "type": "module",
-  "devDependencies": {
-    "agentmarv": "workspace:*"
-  },
   "peerDependencies": {
     "agentmarv": ">=2026.1.26"
   },

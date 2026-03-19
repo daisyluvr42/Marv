@@ -3,8 +3,8 @@
   "version": "2026.03.19-new",
   "description": "Lobster workflow tool plugin (typed pipelines + resumable approvals)",
   "type": "module",
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

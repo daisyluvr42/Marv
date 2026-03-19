@@ -10,8 +10,8 @@
     "@twurple/chat": "^8.0.3",
     "zod": "^4.3.6"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

@@ -244,16 +244,16 @@ importers:
         version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(@vitest/browser-playwright@4.0.18)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2)
 
   extensions/bluebubbles:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/copilot-proxy:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/diagnostics-otel:
     dependencies:
@@ -290,32 +290,30 @@ importers:
       '@opentelemetry/semantic-conventions':
         specifier: ^1.39.0
         version: 1.39.0
-    devDependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/dingtalk:
     dependencies:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       dingtalk-stream:
         specifier: ^2.1.4
         version: 2.1.4
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/discord:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/feishu:
     dependencies:
@@ -325,65 +323,63 @@ importers:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/google-antigravity-auth:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/google-gemini-cli-auth:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/googlechat:
     dependencies:
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       google-auth-library:
         specifier: ^10.5.0
         version: 10.5.0
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/imessage:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/irc:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/line:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/llm-task:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/lobster:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/matrix:
     dependencies:
@@ -393,6 +389,9 @@ importers:
       '@vector-im/matrix-bot-sdk':
         specifier: 0.8.0-element.3
         version: 0.8.0-element.3
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       markdown-it:
         specifier: 14.1.1
         version: 14.1.1
@@ -402,22 +401,18 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/mattermost:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/memory-core:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/memory-lancedb:
     dependencies:
@@ -427,19 +422,18 @@ importers:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       openai:
         specifier: ^6.22.0
         version: 6.22.0(ws@8.19.0)(zod@4.3.6)
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/minimax-portal-auth:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/msteams:
     dependencies:
@@ -452,66 +446,69 @@ importers:
       '@microsoft/agents-hosting-extensions-teams':
         specifier: ^1.2.3
         version: 1.2.3
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       express:
         specifier: ^5.2.1
         version: 5.2.1
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/nextcloud-talk:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/nostr:
     dependencies:
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       nostr-tools:
         specifier: ^2.23.1
         version: 2.23.1(typescript@5.9.3)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/open-prose:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
+
+  extensions/pack-example:
+    dependencies:
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/signal:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/slack:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/telegram:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/tlon:
     dependencies:
       '@urbit/aura':
         specifier: ^3.0.0
         version: 3.0.0
-    devDependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/twitch:
     dependencies:
@@ -524,71 +521,66 @@ importers:
       '@twurple/chat':
         specifier: ^8.0.3
         version: 8.0.3(@twurple/auth@8.0.3)
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/voice-call:
     dependencies:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       ws:
         specifier: ^8.19.0
         version: 8.19.0
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/wechat:
     dependencies:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       wechaty:
         specifier: ^1.20.2
         version: 1.20.2(@swc/core@1.15.18(@swc/helpers@0.5.18))(brolog@1.14.2)(redux@4.2.1)(rxjs@7.8.2)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/whatsapp:
-    devDependencies:
+    dependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   extensions/zalo:
     dependencies:
+      agentmarv:
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
       undici:
         specifier: 7.22.0
         version: 7.22.0
-    devDependencies:
-      agentmarv:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/zalouser:
     dependencies:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
-    devDependencies:
       agentmarv:
-        specifier: workspace:*
-        version: link:../..
+        specifier: '>=2026.1.26'
+        version: 2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2)
 
   ui:
     dependencies:
@@ -3512,6 +3504,14 @@ packages:
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
+
+  agentmarv@2026.3.19:
+    resolution: {integrity: sha512-3H8fcsPr4RAGEIveHquYS/ETNMmSld1hNctWvhMWoXaOcDdHKKhATnTEcuQvEKLxCna0mNUonsS2SOmPs+b7lw==}
+    engines: {node: '>=22.12.0'}
+    hasBin: true
+    peerDependencies:
+      '@napi-rs/canvas': ^0.1.89
+      node-llama-cpp: 3.15.1
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -8384,7 +8384,6 @@ snapshots:
       '@napi-rs/canvas-linux-x64-musl': 0.1.93
       '@napi-rs/canvas-win32-arm64-msvc': 0.1.93
       '@napi-rs/canvas-win32-x64-msvc': 0.1.93
-    optional: true
 
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:
@@ -10100,6 +10099,82 @@ snapshots:
   acorn@8.15.0: {}
 
   agent-base@7.1.4: {}
+
+  agentmarv@2026.3.19(@napi-rs/canvas@0.1.93)(@types/express@5.0.6)(audio-decode@2.2.3)(hono@4.11.9)(node-llama-cpp@3.15.1(typescript@5.9.3))(signal-polyfill@0.2.2):
+    dependencies:
+      '@agentclientprotocol/sdk': 0.14.1(zod@4.3.6)
+      '@aws-sdk/client-bedrock': 3.992.0
+      '@buape/carbon': 0.14.0(hono@4.11.9)
+      '@clack/prompts': 1.0.1
+      '@grammyjs/runner': 2.0.3(grammy@1.40.0)
+      '@grammyjs/transformer-throttler': 1.2.1(grammy@1.40.0)
+      '@homebridge/ciao': 1.3.5
+      '@larksuiteoapi/node-sdk': 1.59.0
+      '@line/bot-sdk': 10.6.0
+      '@lydell/node-pty': 1.2.0-beta.3
+      '@mariozechner/pi-agent-core': 0.53.0(ws@8.19.0)(zod@4.3.6)
+      '@mariozechner/pi-ai': 0.53.0(ws@8.19.0)(zod@4.3.6)
+      '@mariozechner/pi-coding-agent': 0.53.0(ws@8.19.0)(zod@4.3.6)
+      '@mariozechner/pi-tui': 0.53.0
+      '@mozilla/readability': 0.6.0
+      '@napi-rs/canvas': 0.1.93
+      '@sinclair/typebox': 0.34.48
+      '@slack/bolt': 4.6.0(@types/express@5.0.6)
+      '@slack/web-api': 7.14.1
+      '@whiskeysockets/baileys': 7.0.0-rc.9(audio-decode@2.2.3)(sharp@0.34.5)
+      ajv: 8.18.0
+      chalk: 5.6.2
+      chokidar: 5.0.0
+      cli-highlight: 2.1.11
+      commander: 14.0.3
+      croner: 10.0.1
+      discord-api-types: 0.38.39
+      dotenv: 17.3.1
+      express: 5.2.1
+      file-type: 21.3.0
+      grammy: 1.40.0
+      https-proxy-agent: 7.0.6
+      jiti: 2.6.1
+      json5: 2.2.3
+      jszip: 3.10.1
+      linkedom: 0.18.12
+      long: 5.3.2
+      markdown-it: 14.1.1
+      node-edge-tts: 1.2.10
+      node-llama-cpp: 3.15.1(typescript@5.9.3)
+      osc-progress: 0.3.0
+      pdfjs-dist: 5.4.624
+      playwright-core: 1.58.2
+      proper-lockfile: 4.1.2
+      qrcode-terminal: 0.12.0
+      sharp: 0.34.5
+      signal-utils: 0.21.1(signal-polyfill@0.2.2)
+      sqlite-vec: 0.1.7-alpha.2
+      tar: 7.5.9
+      tslog: 4.10.2
+      undici: 7.22.0
+      ws: 8.19.0
+      yaml: 2.8.2
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@discordjs/opus'
+      - '@modelcontextprotocol/sdk'
+      - '@types/express'
+      - audio-decode
+      - aws-crt
+      - bufferutil
+      - canvas
+      - debug
+      - encoding
+      - ffmpeg-static
+      - hono
+      - jimp
+      - link-preview-js
+      - node-opus
+      - opusscript
+      - signal-polyfill
+      - supports-color
+      - utf-8-validate
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:

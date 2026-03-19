@@ -9,8 +9,8 @@
     "@microsoft/agents-hosting-extensions-teams": "^1.2.3",
     "express": "^5.2.1"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

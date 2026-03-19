@@ -3,8 +3,8 @@
   "version": "2026.03.19-new",
   "description": "Marv BlueBubbles channel plugin",
   "type": "module",
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

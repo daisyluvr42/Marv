@@ -4,8 +4,8 @@
   "private": true,
   "description": "Example profession pack — scaffold for building industry-specific Marv packs",
   "type": "module",
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

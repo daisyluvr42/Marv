@@ -8,8 +8,8 @@
     "wechaty": "^1.20.2",
     "zod": "^4.3.6"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

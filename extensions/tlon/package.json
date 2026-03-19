@@ -7,8 +7,8 @@
   "dependencies": {
     "@urbit/aura": "^3.0.0"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

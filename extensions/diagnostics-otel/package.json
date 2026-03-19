@@ -16,8 +16,8 @@
     "@opentelemetry/sdk-trace-base": "^2.5.1",
     "@opentelemetry/semantic-conventions": "^1.39.0"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

@@ -8,8 +8,8 @@
     "dingtalk-stream": "^2.1.4",
     "zod": "^4.3.6"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

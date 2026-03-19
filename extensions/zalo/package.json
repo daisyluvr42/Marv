@@ -6,8 +6,8 @@
   "dependencies": {
     "undici": "7.22.0"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [

@@ -8,8 +8,8 @@
     "ws": "^8.19.0",
     "zod": "^4.3.6"
   },
-  "devDependencies": {
-    "agentmarv": "workspace:*"
+  "peerDependencies": {
+    "agentmarv": ">=2026.1.26"
   },
   "marv": {
     "extensions": [
