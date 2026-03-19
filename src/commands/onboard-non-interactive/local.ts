@@ -4,6 +4,7 @@ import type { MarvConfig } from "../../core/config/config.js";
 import { resolveGatewayPort, writeConfigFile } from "../../core/config/config.js";
 import { logConfigUpdated } from "../../core/config/logging.js";
 import type { RuntimeEnv } from "../../runtime.js";
+import { buildDefaultP0Soul } from "../../wizard/onboarding.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME } from "../daemon-runtime.js";
 import { healthCommand } from "../health.js";
 import { applyOnboardingLocalWorkspaceConfig } from "../onboard-config.js";
@@ -38,8 +39,11 @@ export async function runNonInteractiveOnboardingLocal(params: {
   });
 
   let nextConfig: MarvConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
+  // Seed P0 Soul from the baseline template when no explicit --p0-soul is set,
+  // personalized with the agent's chosen name.
+  const p0Soul = opts.p0Soul?.trim() ? opts.p0Soul : buildDefaultP0Soul(opts.p0Identity ?? "");
   nextConfig = setAgentP0Sections(nextConfig, {
-    soul: opts.p0Soul,
+    soul: p0Soul,
     identity: opts.p0Identity,
     user: opts.p0User,
   });

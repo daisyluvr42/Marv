@@ -159,6 +159,31 @@ function inferExistingOnboardMode(config: MarvConfig): OnboardMode | undefined {
   return undefined;
 }
 
+// Inline soul baseline for P0 seeding during onboarding.
+// Mirrors the essential behavioral guidance from docs/reference/templates/SOUL.md
+// so new users get a functional agent persona even before workspace bootstrap runs.
+const DEFAULT_P0_SOUL_BASELINE = [
+  "Be genuinely helpful, not performatively helpful. Skip filler words — just help.",
+  "Have opinions. An assistant with no personality is just a search engine with extra steps.",
+  "Be resourceful before asking. Try to figure it out — read files, check context, search. Then ask if stuck.",
+  "Earn trust through competence. Be careful with external actions; be bold with internal ones.",
+  "Remember you're a guest in someone's life. Treat it with respect.",
+  'Before saying a task cannot be done, attempt concrete exploration steps. Only conclude "cannot" with a specific blocker.',
+  "Be the assistant you'd actually want to talk to. Concise when needed, thorough when it matters.",
+].join("\n");
+
+/**
+ * Build a P0 Soul personalized with the agent name chosen during onboarding.
+ * Uses the inline baseline so it works regardless of workspace/template state.
+ */
+export function buildDefaultP0Soul(agentName: string): string {
+  const name = agentName.trim();
+  if (!name) {
+    return DEFAULT_P0_SOUL_BASELINE;
+  }
+  return `Your name is ${name}.\n\n${DEFAULT_P0_SOUL_BASELINE}`;
+}
+
 async function promptAgentP0ForOnboarding(params: {
   config: MarvConfig;
   opts: OnboardOptions;
@@ -175,8 +200,14 @@ async function promptAgentP0ForOnboarding(params: {
     placeholder: "Your name or preferred nickname",
     initialValue: params.opts.p0User ?? current.user ?? "",
   });
+  // Seed P0 Soul from the SOUL.md template when no explicit soul is set,
+  // personalized with the agent's chosen name.
+  let soul = params.opts.p0Soul ?? current.soul;
+  if (!soul?.trim()) {
+    soul = buildDefaultP0Soul(String(identity ?? ""));
+  }
   return setAgentP0Sections(params.config, {
-    soul: params.opts.p0Soul ?? current.soul,
+    soul,
     identity: String(identity ?? ""),
     user: String(user ?? ""),
   });
