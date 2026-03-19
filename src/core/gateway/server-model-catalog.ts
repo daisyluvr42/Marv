@@ -15,5 +15,7 @@ export function __resetModelCatalogCacheForTest() {
 }
 
 export async function loadGatewayModelCatalog(): Promise<GatewayModelChoice[]> {
-  return await loadModelCatalog({ config: loadConfig() });
+  // Always bypass cache so the gateway picks up newly available models
+  // (e.g. after auth changes or runtime registry refresh) without restart.
+  return await loadModelCatalog({ config: loadConfig(), useCache: false });
 }

@@ -302,8 +302,9 @@ describe("buildAgentSystemPrompt", () => {
 
     expect(prompt).toContain("## Heartbeats");
     expect(prompt).toContain("Read HEARTBEAT.md and check for blockers.");
+    expect(prompt).toContain("On heartbeat poll:");
     expect(prompt).toContain(
-      "low-risk task actions and HEARTBEAT.md maintenance are allowed when directly helpful",
+      "This section applies ONLY to periodic heartbeat polls, NOT to normal user messages.",
     );
   });
 
