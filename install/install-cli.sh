@@ -142,6 +142,7 @@ ensure_local_node() {
   fi
 
   archive_url="https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-$platform-$arch.tar.gz"
+  shasums_url="https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt"
   cache_dir="$PREFIX/.cache"
   archive_path="$cache_dir/node-v$NODE_VERSION-$platform-$arch.tar.gz"
   extracted_dir="$cache_dir/node-v$NODE_VERSION-$platform-$arch"
@@ -149,7 +150,37 @@ ensure_local_node() {
   json_event "node" "download"
   log "Downloading Node.js $NODE_VERSION ($platform-$arch)"
   mkdir -p "$cache_dir" "$tools_root"
-  curl -fsSL "$archive_url" -o "$archive_path"
+
+  local attempt max_attempts=3
+  for attempt in $(seq 1 $max_attempts); do
+    if curl -fsSL --retry 2 "$archive_url" -o "$archive_path"; then
+      break
+    fi
+    if [[ "$attempt" -lt "$max_attempts" ]]; then
+      log "Download attempt $attempt/$max_attempts failed; retrying..."
+      sleep 1
+    else
+      die "Failed to download Node.js after $max_attempts attempts"
+    fi
+  done
+
+  # Verify SHA-256 checksum.
+  local archive_filename expected_sha
+  archive_filename="node-v$NODE_VERSION-$platform-$arch.tar.gz"
+  expected_sha="$(curl -fsSL "$shasums_url" 2>/dev/null | grep "$archive_filename" | awk '{print $1}' || true)"
+  if [[ -n "$expected_sha" ]]; then
+    local actual_sha
+    if have shasum; then
+      actual_sha="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
+    elif have sha256sum; then
+      actual_sha="$(sha256sum "$archive_path" | awk '{print $1}')"
+    fi
+    if [[ -n "${actual_sha:-}" && "$actual_sha" != "$expected_sha" ]]; then
+      rm -f "$archive_path"
+      die "Checksum mismatch for Node.js download (expected $expected_sha, got $actual_sha)"
+    fi
+    log "Checksum verified."
+  fi
 
   json_event "node" "extract"
   rm -rf "$extracted_dir" "$version_dir"

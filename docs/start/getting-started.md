@@ -80,6 +80,20 @@ Check your Node version with `node --version` if you are unsure.
 If the Control UI loads, your Gateway is ready for use.
 </Check>
 
+## Verify your setup
+
+Run these commands to confirm everything is working:
+
+```bash
+marv doctor              # Check config, auth, and gateway health
+marv gateway status      # Confirm the gateway is reachable
+marv agent -m "hello"    # Send a test message to the agent
+```
+
+<Check>
+If all three commands succeed, your install is fully operational.
+</Check>
+
 ## Optional checks and extras
 
 <AccordionGroup>

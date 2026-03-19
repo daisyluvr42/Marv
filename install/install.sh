@@ -116,7 +116,14 @@ sudo_run() {
 append_line_if_missing() {
   local file="$1"
   local line="$2"
-  [[ -f "$file" ]] || return 0
+  # Create the rc file if it doesn't exist yet (e.g. fresh OS install).
+  if [[ ! -f "$file" ]]; then
+    if [[ "$DRY_RUN" == "1" ]]; then
+      printf '[dry-run] touch %s\n' "$file"
+    else
+      touch "$file"
+    fi
+  fi
   grep -Fqx "$line" "$file" 2>/dev/null && return 0
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] append %q to %s\n' "$line" "$file"
@@ -254,13 +261,37 @@ install_mac_app() {
   fi
 
   zip_url="https://github.com/daisyluvr42/Marv/releases/download/v${marv_ver}/Marv-${marv_ver}.zip"
+  sha_url="https://github.com/daisyluvr42/Marv/releases/download/v${marv_ver}/Marv-${marv_ver}.zip.sha256"
   zip_path="${TMPDIR:-/tmp}/Marv-${marv_ver}.zip"
 
   log "Downloading Marv.app $marv_ver..."
-  if ! curl -fsSL -o "$zip_path" "$zip_url"; then
-    warn "Failed to download Mac app from $zip_url"
-    rm -f "$zip_path"
-    return 1
+  local attempt max_attempts=3
+  for attempt in $(seq 1 $max_attempts); do
+    if curl -fsSL --retry 2 -o "$zip_path" "$zip_url"; then
+      break
+    fi
+    if [[ "$attempt" -lt "$max_attempts" ]]; then
+      warn "Download attempt $attempt/$max_attempts failed; retrying..."
+      sleep 1
+    else
+      warn "Failed to download Mac app from $zip_url after $max_attempts attempts"
+      rm -f "$zip_path"
+      return 1
+    fi
+  done
+
+  # Verify SHA-256 checksum if available.
+  local expected_sha
+  expected_sha="$(curl -fsSL "$sha_url" 2>/dev/null | awk '{print $1}' || true)"
+  if [[ -n "$expected_sha" ]]; then
+    local actual_sha
+    actual_sha="$(shasum -a 256 "$zip_path" | awk '{print $1}')"
+    if [[ "$actual_sha" != "$expected_sha" ]]; then
+      warn "Checksum mismatch for Marv.app download (expected $expected_sha, got $actual_sha)"
+      rm -f "$zip_path"
+      return 1
+    fi
+    log "Checksum verified."
   fi
 
   log "Installing Marv.app to /Applications..."

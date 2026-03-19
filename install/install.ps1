@@ -93,6 +93,10 @@ function Ensure-Node22 {
 
 function Ensure-Npm {
   if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    Write-Host ""
+    Write-Host "Node.js was installed but is not yet on PATH." -ForegroundColor Yellow
+    Write-Host "Please close and reopen PowerShell, then rerun the installer." -ForegroundColor Yellow
+    Write-Host ""
     throw "npm is required. Reopen PowerShell after installing Node.js, then rerun the installer."
   }
 }
@@ -123,7 +127,15 @@ function Resolve-MarvCommand {
   return $null
 }
 
+$hadNodeBefore = [bool](Get-Command node -ErrorAction SilentlyContinue)
 Ensure-Node22
+if (-not $hadNodeBefore -and -not (Get-Command node -ErrorAction SilentlyContinue)) {
+  Write-Host ""
+  Write-Host "Node.js was installed but is not yet on PATH." -ForegroundColor Yellow
+  Write-Host "Please close this PowerShell window, open a new one, and rerun the installer." -ForegroundColor Yellow
+  Write-Host ""
+  exit 1
+}
 Ensure-Npm
 
 $installSpec = Resolve-InstallSpec
