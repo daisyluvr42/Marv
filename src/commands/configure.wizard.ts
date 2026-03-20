@@ -13,7 +13,7 @@ import { defaultRuntime } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import { resolveUserPath } from "../utils.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
-import { WizardCancelledError } from "../wizard/prompts.js";
+import { WizardBackSignal, WizardCancelledError, withBackSupport } from "../wizard/prompts.js";
 import { removeChannelConfigWizard } from "./configure.channels.js";
 import { maybeInstallDaemon } from "./configure.daemon.js";
 import { promptAuthConfig } from "./configure.gateway-auth.js";
@@ -256,7 +256,8 @@ export async function runConfigureWizard(
   try {
     printWizardHeader(runtime);
     intro(opts.command === "update" ? "Marv update wizard" : "Marv configure");
-    const prompter = createClackPrompter();
+    const rawPrompter = createClackPrompter();
+    const prompter = withBackSupport(rawPrompter);
 
     const snapshot = await readConfigFileSnapshot();
     const baseConfig: MarvConfig = snapshot.valid ? snapshot.config : {};
@@ -428,55 +429,78 @@ export async function runConfigureWizard(
         return;
       }
 
-      if (selected.includes("workspace")) {
-        await configureWorkspace();
-      }
+      // Run sections sequentially with back-navigation support.
+      // Snapshot config before each section so we can restore on back.
+      type ConfigSnapshot = {
+        nextConfig: MarvConfig;
+        workspaceDir: string;
+        gatewayPort: number;
+        gatewayToken: string | undefined;
+      };
+      const snapshots: ConfigSnapshot[] = [
+        {
+          nextConfig: JSON.parse(JSON.stringify(nextConfig)),
+          workspaceDir,
+          gatewayPort,
+          gatewayToken,
+        },
+      ];
+      let sectionIndex = 0;
 
-      if (selected.includes("agent")) {
-        nextConfig = await promptAgentP0Config(nextConfig, runtime);
-      }
+      while (sectionIndex < selected.length) {
+        const section = selected[sectionIndex];
+        try {
+          if (section === "workspace") {
+            await configureWorkspace();
+          } else if (section === "agent") {
+            nextConfig = await promptAgentP0Config(nextConfig, runtime);
+          } else if (section === "model") {
+            nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+          } else if (section === "memory") {
+            nextConfig = await promptMemorySearchConfig(nextConfig, runtime);
+          } else if (section === "web") {
+            nextConfig = await promptWebToolsConfig(nextConfig, runtime);
+          } else if (section === "gateway") {
+            const gateway = await promptGatewayConfig(nextConfig, runtime);
+            nextConfig = gateway.config;
+            gatewayPort = gateway.port;
+            gatewayToken = gateway.token;
+          } else if (section === "channels") {
+            await configureChannelsSection();
+          } else if (section === "skills") {
+            const wsDir = resolveUserPath(workspaceDir);
+            nextConfig = await setupSkills(nextConfig, wsDir, runtime, prompter);
+          } else if (section === "daemon") {
+            if (!selected.includes("gateway")) {
+              await promptDaemonPort();
+            }
+            await maybeInstallDaemon({ runtime, port: gatewayPort, gatewayToken });
+          } else if (section === "health") {
+            await runGatewayHealthCheck({ cfg: nextConfig, runtime, port: gatewayPort });
+          }
 
-      if (selected.includes("model")) {
-        nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
-      }
-
-      if (selected.includes("memory")) {
-        nextConfig = await promptMemorySearchConfig(nextConfig, runtime);
-      }
-
-      if (selected.includes("web")) {
-        nextConfig = await promptWebToolsConfig(nextConfig, runtime);
-      }
-
-      if (selected.includes("gateway")) {
-        const gateway = await promptGatewayConfig(nextConfig, runtime);
-        nextConfig = gateway.config;
-        gatewayPort = gateway.port;
-        gatewayToken = gateway.token;
-      }
-
-      if (selected.includes("channels")) {
-        await configureChannelsSection();
-      }
-
-      if (selected.includes("skills")) {
-        const wsDir = resolveUserPath(workspaceDir);
-        nextConfig = await setupSkills(nextConfig, wsDir, runtime, prompter);
+          sectionIndex++;
+          snapshots[sectionIndex] = {
+            nextConfig: JSON.parse(JSON.stringify(nextConfig)),
+            workspaceDir,
+            gatewayPort,
+            gatewayToken,
+          };
+        } catch (err) {
+          if (err instanceof WizardBackSignal && sectionIndex > 0) {
+            sectionIndex--;
+            const prev = snapshots[sectionIndex];
+            nextConfig = JSON.parse(JSON.stringify(prev.nextConfig));
+            workspaceDir = prev.workspaceDir;
+            gatewayPort = prev.gatewayPort;
+            gatewayToken = prev.gatewayToken;
+            continue;
+          }
+          throw err;
+        }
       }
 
       await persistConfig();
-
-      if (selected.includes("daemon")) {
-        if (!selected.includes("gateway")) {
-          await promptDaemonPort();
-        }
-
-        await maybeInstallDaemon({ runtime, port: gatewayPort, gatewayToken });
-      }
-
-      if (selected.includes("health")) {
-        await runGatewayHealthCheck({ cfg: nextConfig, runtime, port: gatewayPort });
-      }
     } else {
       let ranSection = false;
       let didConfigureGateway = false;
@@ -486,66 +510,79 @@ export async function runConfigureWizard(
         if (choice === "__continue") {
           break;
         }
-        ranSection = true;
 
-        if (choice === "workspace") {
-          await configureWorkspace();
-          await persistConfig();
-        }
+        // Snapshot config before the section runs so we can restore on back.
+        const preSnapshot = JSON.stringify(nextConfig);
 
-        if (choice === "agent") {
-          nextConfig = await promptAgentP0Config(nextConfig, runtime);
-          await persistConfig();
-        }
+        try {
+          ranSection = true;
 
-        if (choice === "model") {
-          nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
-          await persistConfig();
-        }
-
-        if (choice === "memory") {
-          nextConfig = await promptMemorySearchConfig(nextConfig, runtime);
-          await persistConfig();
-        }
-
-        if (choice === "web") {
-          nextConfig = await promptWebToolsConfig(nextConfig, runtime);
-          await persistConfig();
-        }
-
-        if (choice === "gateway") {
-          const gateway = await promptGatewayConfig(nextConfig, runtime);
-          nextConfig = gateway.config;
-          gatewayPort = gateway.port;
-          gatewayToken = gateway.token;
-          didConfigureGateway = true;
-          await persistConfig();
-        }
-
-        if (choice === "channels") {
-          await configureChannelsSection();
-          await persistConfig();
-        }
-
-        if (choice === "skills") {
-          const wsDir = resolveUserPath(workspaceDir);
-          nextConfig = await setupSkills(nextConfig, wsDir, runtime, prompter);
-          await persistConfig();
-        }
-
-        if (choice === "daemon") {
-          if (!didConfigureGateway) {
-            await promptDaemonPort();
+          if (choice === "workspace") {
+            await configureWorkspace();
+            await persistConfig();
           }
-          await maybeInstallDaemon({
-            runtime,
-            port: gatewayPort,
-            gatewayToken,
-          });
-        }
 
-        if (choice === "health") {
-          await runGatewayHealthCheck({ cfg: nextConfig, runtime, port: gatewayPort });
+          if (choice === "agent") {
+            nextConfig = await promptAgentP0Config(nextConfig, runtime);
+            await persistConfig();
+          }
+
+          if (choice === "model") {
+            nextConfig = await promptAuthConfig(nextConfig, runtime, prompter);
+            await persistConfig();
+          }
+
+          if (choice === "memory") {
+            nextConfig = await promptMemorySearchConfig(nextConfig, runtime);
+            await persistConfig();
+          }
+
+          if (choice === "web") {
+            nextConfig = await promptWebToolsConfig(nextConfig, runtime);
+            await persistConfig();
+          }
+
+          if (choice === "gateway") {
+            const gateway = await promptGatewayConfig(nextConfig, runtime);
+            nextConfig = gateway.config;
+            gatewayPort = gateway.port;
+            gatewayToken = gateway.token;
+            didConfigureGateway = true;
+            await persistConfig();
+          }
+
+          if (choice === "channels") {
+            await configureChannelsSection();
+            await persistConfig();
+          }
+
+          if (choice === "skills") {
+            const wsDir = resolveUserPath(workspaceDir);
+            nextConfig = await setupSkills(nextConfig, wsDir, runtime, prompter);
+            await persistConfig();
+          }
+
+          if (choice === "daemon") {
+            if (!didConfigureGateway) {
+              await promptDaemonPort();
+            }
+            await maybeInstallDaemon({
+              runtime,
+              port: gatewayPort,
+              gatewayToken,
+            });
+          }
+
+          if (choice === "health") {
+            await runGatewayHealthCheck({ cfg: nextConfig, runtime, port: gatewayPort });
+          }
+        } catch (err) {
+          if (err instanceof WizardBackSignal) {
+            // Restore config and return to the section menu.
+            nextConfig = JSON.parse(preSnapshot);
+            continue;
+          }
+          throw err;
         }
       }
 
@@ -615,7 +652,7 @@ export async function runConfigureWizard(
 
     outro("Configure complete.");
   } catch (err) {
-    if (err instanceof WizardCancelledError) {
+    if (err instanceof WizardCancelledError || err instanceof WizardBackSignal) {
       runtime.exit(1);
       return;
     }

@@ -143,17 +143,33 @@ export function createWizardStageController(params: {
     params.initialStage === undefined ? -1 : (stageIndex.get(params.initialStage) ?? -1);
   return {
     currentStage: () => currentStage,
-    async enter(stage: WizardStage, cardParams: WizardStageCardParams = {}) {
+    async enter(
+      stage: WizardStage,
+      cardParams: WizardStageCardParams = {},
+      options?: { allowReentry?: boolean },
+    ) {
       const nextIndex = stageIndex.get(stage);
       if (nextIndex === undefined) {
         return;
       }
-      if (nextIndex <= currentIndex) {
+      // Skip if we're already past this stage (unless re-entry is allowed, e.g. back-navigation).
+      if (nextIndex <= currentIndex && !options?.allowReentry) {
         return;
       }
       currentIndex = nextIndex;
       currentStage = stage;
       await presentWizardStage(params.prompter, stage, cardParams);
+    },
+    /** Reset the controller so stages can be re-entered (used when stepping back). */
+    reset(stage?: WizardStage) {
+      if (stage !== undefined) {
+        const idx = stageIndex.get(stage);
+        currentIndex = idx !== undefined ? idx - 1 : -1;
+        currentStage = idx !== undefined && idx > 0 ? params.plan[idx - 1] : undefined;
+      } else {
+        currentIndex = -1;
+        currentStage = undefined;
+      }
     },
   };
 }

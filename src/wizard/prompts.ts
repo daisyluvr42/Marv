@@ -51,3 +51,44 @@ export class WizardCancelledError extends Error {
     this.name = "WizardCancelledError";
   }
 }
+
+/**
+ * Thrown when the user chooses "← Back" at a prompt.
+ * The step runner catches this and re-runs the previous step.
+ */
+export class WizardBackSignal extends Error {
+  constructor() {
+    super("wizard back");
+    this.name = "WizardBackSignal";
+  }
+}
+
+/** Sentinel value injected into select options to represent "go back". */
+export const WIZARD_BACK_VALUE = "__wizard_back__" as const;
+
+/**
+ * Wrap a prompter so that `select` prompts include a "← Back" option.
+ * When the user picks it, `WizardBackSignal` is thrown.
+ *
+ * All other methods delegate unchanged.
+ */
+export function withBackSupport(inner: WizardPrompter): WizardPrompter {
+  return {
+    ...inner,
+    select: async <T>(params: WizardSelectParams<T>): Promise<T> => {
+      const backOption = {
+        value: WIZARD_BACK_VALUE as unknown as T,
+        label: "← Back",
+        hint: "Return to previous step",
+      };
+      const result = await inner.select<T>({
+        ...params,
+        options: [...params.options, backOption],
+      });
+      if ((result as unknown) === WIZARD_BACK_VALUE) {
+        throw new WizardBackSignal();
+      }
+      return result;
+    },
+  };
+}
