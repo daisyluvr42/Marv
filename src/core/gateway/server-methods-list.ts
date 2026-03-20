@@ -11,6 +11,7 @@ const BASE_METHODS = [
   "memory.search",
   "knowledge.status",
   "proactive.buffer",
+  "proactive.continuous",
   "documents.list",
   "documents.read",
   "usage.status",

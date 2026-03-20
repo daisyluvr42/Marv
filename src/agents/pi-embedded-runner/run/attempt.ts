@@ -369,6 +369,7 @@ export async function runEmbeddedAttempt(
           disableMessageTool: params.disableMessageTool,
           enableProactiveBuffer:
             isCronSessionKey(params.sessionKey) && isProactiveBufferPrompt(params.prompt),
+          enableProactiveTasks: params.config?.autonomy?.proactive?.continuousLoop === true,
         });
     const tools = sanitizeToolsForGoogle({ tools: toolsRaw, provider: params.provider });
     logToolSchemasForGoogle({ tools, provider: params.provider });

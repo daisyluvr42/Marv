@@ -68,6 +68,7 @@ const READ_METHODS = new Set([
   "memory.search",
   "knowledge.status",
   "proactive.buffer",
+  "proactive.continuous",
   "documents.list",
   "documents.read",
   "usage.status",

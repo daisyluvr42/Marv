@@ -1,7 +1,7 @@
 import { listAgentIds, resolveDefaultAgentId } from "../../../agents/agent-scope.js";
 import { getKnowledgeStatusSnapshot } from "../../../knowledge/status.js";
 import { getMemoryStatusSnapshot } from "../../../memory/status.js";
-import { getProactiveStatusSnapshot } from "../../../proactive/status.js";
+import { getContinuousLoopStatus, getProactiveStatusSnapshot } from "../../../proactive/status.js";
 import { normalizeAgentId } from "../../../routing/session-key.js";
 import { loadConfig } from "../../config/config.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
@@ -72,5 +72,14 @@ export const dashboardHandlers: GatewayRequestHandlers = {
       }),
       undefined,
     );
+  },
+  "proactive.continuous": async ({ params, respond }) => {
+    const resolved = resolveDashboardAgentId(params);
+    if (!resolved.ok) {
+      respond(false, undefined, resolved.error);
+      return;
+    }
+    const budget = resolved.cfg.autonomy?.proactive?.dailyCloudTokenBudget ?? 0;
+    respond(true, await getContinuousLoopStatus(resolved.agentId, budget), undefined);
   },
 };

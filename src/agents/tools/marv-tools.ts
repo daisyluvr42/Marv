@@ -21,6 +21,9 @@ import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
 import { createParallelSpawnTool } from "./parallel-spawn-tool.js";
 import { createProactiveBufferTool } from "./proactive-buffer-tool.js";
+import { createDeliverableTool } from "./proactive-deliverable-tool.js";
+import { createInfoSourcesTool } from "./proactive-sources-tool.js";
+import { createProactiveTasksTool } from "./proactive-tasks-tool.js";
 import { createRequestEscalationTool } from "./request-escalation-tool.js";
 import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
 import { createSelfInspectingTool } from "./self-inspecting-tool.js";
@@ -82,6 +85,8 @@ export type CreateMarvToolsOptions = {
   directUserInstruction?: boolean;
   /** Enable proactive buffer tooling for managed proactive runs only. */
   enableProactiveBuffer?: boolean;
+  /** Enable proactive tasks/goals tooling (continuous loop mode). */
+  enableProactiveTasks?: boolean;
 };
 
 export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[] {
@@ -146,6 +151,21 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     agentSessionKey: options?.agentSessionKey,
     enabled: options?.enableProactiveBuffer,
   });
+  const proactiveTasksTool = createProactiveTasksTool({
+    config: options?.config,
+    agentSessionKey: options?.agentSessionKey,
+    enabled: options?.enableProactiveTasks,
+  });
+  const infoSourcesTool = createInfoSourcesTool({
+    config: options?.config,
+    agentSessionKey: options?.agentSessionKey,
+    enabled: options?.enableProactiveTasks,
+  });
+  const deliverableTool = createDeliverableTool({
+    config: options?.config,
+    agentSessionKey: options?.agentSessionKey,
+    enabled: options?.enableProactiveTasks,
+  });
   const tools: AnyAgentTool[] = [
     createBrowserTool({
       sandboxBridgeUrl: options?.sandboxBrowserBridgeUrl,
@@ -165,6 +185,9 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     ...(cliSynthesizeTool ? [cliSynthesizeTool] : []),
     // cli_verify no longer exposed as agent tool (merged into cli_synthesize).
     ...(proactiveBufferTool ? [proactiveBufferTool] : []),
+    ...(proactiveTasksTool ? [proactiveTasksTool] : []),
+    ...(infoSourcesTool ? [infoSourcesTool] : []),
+    ...(deliverableTool ? [deliverableTool] : []),
     ...(messageTool ? [messageTool] : []),
     createTtsTool({
       agentChannel: options?.agentChannel,

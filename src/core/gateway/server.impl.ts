@@ -73,8 +73,10 @@ import {
   ensureDeepConsolidationCronJob,
   ensureProactiveCheckCronJob,
   ensureProactiveDigestCronJobs,
+  ensureProactivePlannerCronJob,
   ensureSoulMemoryMaintenanceCronJob,
   ensureUpdateCheckCronJob,
+  startProactiveTaskRunnerIfEnabled,
 } from "./server-cron.js";
 import { startGatewayDiscovery } from "./server-discovery-runtime.js";
 import { applyGatewayLaneConcurrency } from "./server-lanes.js";
@@ -445,6 +447,7 @@ export async function startGatewayServer(
     broadcast,
   });
   let { cron, storePath: cronStorePath } = cronState;
+  let proactiveRunner: ReturnType<typeof startProactiveTaskRunnerIfEnabled> = null;
 
   const channelManager = createChannelManager({
     loadConfig,
@@ -576,8 +579,37 @@ export async function startGatewayServer(
           logCron.warn(`failed to ensure update-check cron job: ${String(err)}`);
         }
         try {
-          await ensureProactiveCheckCronJob({ cron, cfg: cfgAtStart });
-          await ensureProactiveDigestCronJobs({ cron, cfg: cfgAtStart });
+          const useContinuousLoop = cfgAtStart.autonomy?.proactive?.continuousLoop === true;
+          if (useContinuousLoop) {
+            // Continuous loop replaces old check/digest crons with planner + runner.
+            await ensureProactivePlannerCronJob({ cron, cfg: cfgAtStart });
+            proactiveRunner = startProactiveTaskRunnerIfEnabled({ cfg: cfgAtStart, deps });
+            // Disable old check/digest crons if they exist.
+            await ensureProactiveCheckCronJob({
+              cron,
+              cfg: {
+                ...cfgAtStart,
+                autonomy: {
+                  ...cfgAtStart.autonomy,
+                  proactive: { ...cfgAtStart.autonomy?.proactive, enabled: false },
+                },
+              },
+            });
+            await ensureProactiveDigestCronJobs({
+              cron,
+              cfg: {
+                ...cfgAtStart,
+                autonomy: {
+                  ...cfgAtStart.autonomy,
+                  proactive: { ...cfgAtStart.autonomy?.proactive, enabled: false },
+                },
+              },
+            });
+          } else {
+            // Legacy periodic check/digest mode.
+            await ensureProactiveCheckCronJob({ cron, cfg: cfgAtStart });
+            await ensureProactiveDigestCronJobs({ cron, cfg: cfgAtStart });
+          }
         } catch (err) {
           logCron.warn(`failed to ensure proactive cron jobs: ${String(err)}`);
         }
@@ -753,6 +785,7 @@ export async function startGatewayServer(
             hooksConfig,
             heartbeatRunner,
             cronState,
+            proactiveRunner,
             browserControl,
           }),
           setState: (nextState) => {
@@ -761,6 +794,7 @@ export async function startGatewayServer(
             cronState = nextState.cronState;
             cron = cronState.cron;
             cronStorePath = cronState.storePath;
+            proactiveRunner = nextState.proactiveRunner;
             browserControl = nextState.browserControl;
           },
           startChannel,
@@ -794,6 +828,7 @@ export async function startGatewayServer(
     stopChannel,
     pluginServices,
     cron,
+    proactiveRunner,
     heartbeatRunner,
     nodePresenceTimers,
     broadcast,

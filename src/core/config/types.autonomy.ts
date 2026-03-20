@@ -91,6 +91,35 @@ export type AutonomyProactiveConfig = {
   digestTimes?: string[];
   /** Digest delivery target. */
   delivery?: AutonomyProactiveDeliveryConfig;
+  /** Enable continuous goal-driven task loop instead of periodic checks. Default: false. */
+  continuousLoop?: boolean;
+  /** Max concurrent proactive tasks on the proactive lane. Default: 1. */
+  maxConcurrentTasks?: number;
+  /** Ms to wait before rechecking when yielding to user. Default: 500. */
+  yieldToUserMs?: number;
+  /** Ms between polling for new tasks when queue is empty. Default: 5000. */
+  taskPollIntervalMs?: number;
+  /**
+   * Model strategy for proactive tasks.
+   * - "default": prefer local models, escalate to cloud for complex tasks.
+   * - "custom": use explicit primaryModel / escalationModel from the model pool.
+   * Default: "default".
+   */
+  modelStrategy?: "default" | "custom";
+  /** Prefer local models for proactive work (unlimited budget). Only used in "default" strategy. Default: true. */
+  preferLocalModels?: boolean;
+  /** Daily cloud token budget for proactive tasks. 0 = unlimited. Default: 0. */
+  dailyCloudTokenBudget?: number;
+  /**
+   * Minimum complexity tier that triggers model escalation.
+   * Tasks below this threshold use the primary/local model; at or above use the escalation/cloud model.
+   * Default: "expert".
+   */
+  cloudEscalationThreshold?: "moderate" | "complex" | "expert";
+  /** Model ref for regular proactive tasks. Required when modelStrategy is "custom". */
+  primaryModel?: string;
+  /** Model ref for complex/expert proactive tasks. Required when modelStrategy is "custom". Can equal primaryModel. */
+  escalationModel?: string;
 };
 
 /**

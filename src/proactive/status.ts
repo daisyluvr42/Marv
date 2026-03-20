@@ -1,5 +1,11 @@
 import type { MarvConfig } from "../core/config/config.js";
+import type { BudgetStatus, DailyTokenRecord } from "./budget.js";
+import { getBudgetStatus, getUsageHistory } from "./budget.js";
+import { listDeliverables, type DeliverableStatus } from "./deliverables.js";
 import { readDigestBuffer } from "./digest-buffer.js";
+import { listGoals, type GoalStatus } from "./goals.js";
+import { listSources } from "./sources.js";
+import { listTasks, type TaskStatus } from "./task-queue.js";
 
 export type ProactiveStatusSnapshot = {
   agentId: string;
@@ -50,5 +56,55 @@ export async function getProactiveStatusSnapshot(params: {
     deliveredEntries,
     urgentEntries,
     lastFlushAt: buffer.lastFlushAt > 0 ? buffer.lastFlushAt : null,
+  };
+}
+
+// ── Continuous loop status ─────────────────────────────────────────────
+
+export type ContinuousLoopStatus = {
+  goals: { total: number; byStatus: Partial<Record<GoalStatus, number>> };
+  tasks: { total: number; byStatus: Partial<Record<TaskStatus, number>> };
+  sources: { total: number; enabled: number };
+  deliverables: { total: number; byStatus: Partial<Record<DeliverableStatus, number>> };
+  budget: BudgetStatus;
+  usageHistory: DailyTokenRecord[];
+};
+
+/** Aggregate continuous-loop proactive subsystem stats for an agent. */
+export async function getContinuousLoopStatus(
+  agentId: string,
+  dailyCloudTokenBudget = 0,
+): Promise<ContinuousLoopStatus> {
+  const [goals, tasks, sources, deliverables, budget, usageHistory] = await Promise.all([
+    listGoals(agentId),
+    listTasks(agentId),
+    listSources(agentId),
+    listDeliverables(agentId),
+    getBudgetStatus(agentId, dailyCloudTokenBudget),
+    getUsageHistory(agentId, 7),
+  ]);
+
+  const goalsByStatus: Partial<Record<GoalStatus, number>> = {};
+  for (const g of goals) {
+    goalsByStatus[g.status] = (goalsByStatus[g.status] ?? 0) + 1;
+  }
+
+  const tasksByStatus: Partial<Record<TaskStatus, number>> = {};
+  for (const t of tasks) {
+    tasksByStatus[t.status] = (tasksByStatus[t.status] ?? 0) + 1;
+  }
+
+  const deliverablesByStatus: Partial<Record<DeliverableStatus, number>> = {};
+  for (const d of deliverables) {
+    deliverablesByStatus[d.status] = (deliverablesByStatus[d.status] ?? 0) + 1;
+  }
+
+  return {
+    goals: { total: goals.length, byStatus: goalsByStatus },
+    tasks: { total: tasks.length, byStatus: tasksByStatus },
+    sources: { total: sources.length, enabled: sources.filter((s) => s.enabled).length },
+    deliverables: { total: deliverables.length, byStatus: deliverablesByStatus },
+    budget,
+    usageHistory,
   };
 }

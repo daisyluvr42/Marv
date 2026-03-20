@@ -48,6 +48,18 @@ const AutonomyProactiveSchema = z
     checkEveryMinutes: z.number().int().positive().optional(),
     digestTimes: z.array(z.string()).optional(),
     delivery: AutonomyProactiveDeliverySchema.optional(),
+    continuousLoop: z.boolean().optional(),
+    maxConcurrentTasks: z.number().int().positive().optional(),
+    yieldToUserMs: z.number().int().positive().optional(),
+    taskPollIntervalMs: z.number().int().positive().optional(),
+    modelStrategy: z.union([z.literal("default"), z.literal("custom")]).optional(),
+    preferLocalModels: z.boolean().optional(),
+    dailyCloudTokenBudget: z.number().int().nonnegative().optional(),
+    cloudEscalationThreshold: z
+      .union([z.literal("moderate"), z.literal("complex"), z.literal("expert")])
+      .optional(),
+    primaryModel: z.string().optional(),
+    escalationModel: z.string().optional(),
   })
   .strict();
 

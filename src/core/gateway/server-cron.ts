@@ -35,7 +35,15 @@ import {
   formatSoulMemoryMaintenanceSummary,
   runSoulMemoryMaintenance,
 } from "../../memory/storage/soul-memory-maintenance.js";
-import { PROACTIVE_CHECK_PROMPT, PROACTIVE_DIGEST_PROMPT } from "../../proactive/constants.js";
+import {
+  PROACTIVE_CHECK_PROMPT,
+  PROACTIVE_DIGEST_PROMPT,
+  PROACTIVE_PLANNER_PROMPT,
+} from "../../proactive/constants.js";
+import {
+  createProactiveTaskRunner,
+  type ProactiveTaskRunner,
+} from "../../proactive/task-runner.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import { loadConfig } from "../config/config.js";
@@ -73,6 +81,10 @@ const UPDATE_CHECK_TASK = "updateCheck";
 const PROACTIVE_CHECK_JOB_NAME = "Proactive Check";
 const PROACTIVE_CHECK_JOB_DESCRIPTION =
   "Managed proactive meta-check that decides whether there is anything worth checking or reporting.";
+const PROACTIVE_PLANNER_JOB_NAME = "Proactive Planner";
+const PROACTIVE_PLANNER_JOB_DESCRIPTION =
+  "Managed proactive planner that decomposes goals into concrete tasks for continuous execution.";
+const DEFAULT_PROACTIVE_PLANNER_INTERVAL_MS = 2 * 60 * 60_000; // 2 hours
 const PROACTIVE_DIGEST_JOB_NAME_PREFIX = "Proactive Digest";
 const PROACTIVE_DIGEST_JOB_DESCRIPTION =
   "Managed proactive digest delivery that formats buffered findings into a concise update.";
@@ -1030,6 +1042,107 @@ function resolveProactiveDigestTimes(raw: string[] | undefined): string[] {
   const times = Array.isArray(raw) ? raw.map((entry) => entry.trim()).filter(Boolean) : [];
   const valid = times.filter((entry) => /^\d{2}:\d{2}$/.test(entry));
   return valid.length > 0 ? valid : [...DEFAULT_PROACTIVE_DIGEST_TIMES];
+}
+
+/**
+ * Ensure a planner cron job exists when `continuousLoop` is enabled.
+ * The planner decomposes goals into concrete tasks on a recurring schedule.
+ */
+export async function ensureProactivePlannerCronJob(params: {
+  cron: CronService;
+  cfg?: ReturnType<typeof loadConfig>;
+  log?: { info: (obj: unknown, msg?: string) => void; warn: (obj: unknown, msg?: string) => void };
+}) {
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  const status = await params.cron.status();
+  if (!status.enabled) {
+    return;
+  }
+
+  const runtimeConfig = params.cfg ?? loadConfig();
+  const proactive = runtimeConfig.autonomy?.proactive;
+  const desiredEnabled = proactive?.continuousLoop === true;
+  if (!desiredEnabled) {
+    return;
+  }
+
+  const existingJobs = await params.cron.list({ includeDisabled: true });
+  const managed = existingJobs.find((job) => job.name === PROACTIVE_PLANNER_JOB_NAME);
+
+  if (!managed) {
+    const created = await params.cron.add({
+      name: PROACTIVE_PLANNER_JOB_NAME,
+      description: PROACTIVE_PLANNER_JOB_DESCRIPTION,
+      enabled: true,
+      deleteAfterRun: false,
+      schedule: {
+        kind: "every",
+        everyMs: DEFAULT_PROACTIVE_PLANNER_INTERVAL_MS,
+      },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: {
+        kind: "agentTurn",
+        message: PROACTIVE_PLANNER_PROMPT,
+        thinking: "low",
+        timeoutSeconds: 180,
+      },
+      delivery: { mode: "none" },
+    });
+    logger.info(
+      { jobId: created.id, nextRunAtMs: created.state.nextRunAtMs ?? null },
+      "cron: added managed proactive-planner job",
+    );
+    return;
+  }
+
+  // Reconcile existing job if shape changed.
+  const needsUpdate =
+    !managed.enabled ||
+    managed.schedule.kind !== "every" ||
+    managed.schedule.everyMs !== DEFAULT_PROACTIVE_PLANNER_INTERVAL_MS ||
+    managed.payload.kind !== "agentTurn" ||
+    managed.payload.message !== PROACTIVE_PLANNER_PROMPT;
+
+  if (needsUpdate) {
+    await params.cron.update(managed.id, {
+      enabled: true,
+      schedule: { kind: "every", everyMs: DEFAULT_PROACTIVE_PLANNER_INTERVAL_MS },
+      payload: {
+        kind: "agentTurn",
+        message: PROACTIVE_PLANNER_PROMPT,
+        thinking: "low",
+        timeoutSeconds: 180,
+      },
+    });
+    logger.info({ jobId: managed.id }, "cron: updated managed proactive-planner job");
+  }
+}
+
+/**
+ * Start the proactive task runner if `autonomy.proactive.continuousLoop` is enabled.
+ * Returns the runner handle (or null when disabled) so callers can stop it on shutdown.
+ */
+export function startProactiveTaskRunnerIfEnabled(params: {
+  cfg: ReturnType<typeof loadConfig>;
+  deps: CliDeps;
+  log?: { info: (obj: unknown, msg?: string) => void };
+}): ProactiveTaskRunner | null {
+  const proactive = params.cfg.autonomy?.proactive;
+  if (!proactive?.continuousLoop) {
+    return null;
+  }
+  const runner = createProactiveTaskRunner({
+    cfg: params.cfg,
+    deps: params.deps,
+  });
+  runner.start();
+  const logger = params.log ?? getChildLogger({ module: "cron" });
+  logger.info(
+    { maxConcurrent: proactive.maxConcurrentTasks ?? 1 },
+    "proactive continuous task runner started",
+  );
+  return runner;
 }
 
 function toDailyCronExpr(time: string): string {

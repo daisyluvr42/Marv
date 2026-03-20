@@ -18,12 +18,17 @@ import type { loadConfig } from "../config/config.js";
 import type { ChannelKind, GatewayReloadPlan } from "./config-reload.js";
 import { resolveHooksConfig } from "./hooks.js";
 import { startBrowserControlServerIfEnabled } from "./server-browser.js";
-import { buildGatewayCronService, type GatewayCronState } from "./server-cron.js";
+import {
+  buildGatewayCronService,
+  startProactiveTaskRunnerIfEnabled,
+  type GatewayCronState,
+} from "./server-cron.js";
 
 type GatewayHotReloadState = {
   hooksConfig: ReturnType<typeof resolveHooksConfig>;
   heartbeatRunner: HeartbeatRunner;
   cronState: GatewayCronState;
+  proactiveRunner: ReturnType<typeof startProactiveTaskRunnerIfEnabled>;
   browserControl: Awaited<ReturnType<typeof startBrowserControlServerIfEnabled>> | null;
 };
 
@@ -68,6 +73,7 @@ export function createGatewayReloadHandlers(params: {
 
     if (plan.restartCron) {
       state.cronState.cron.stop();
+      state.proactiveRunner?.stop();
       nextState.cronState = buildGatewayCronService({
         cfg: nextConfig,
         deps: params.deps,
@@ -76,6 +82,10 @@ export function createGatewayReloadHandlers(params: {
       void nextState.cronState.cron
         .start()
         .catch((err) => params.logCron.error(`failed to start: ${String(err)}`));
+      nextState.proactiveRunner = startProactiveTaskRunnerIfEnabled({
+        cfg: nextConfig,
+        deps: params.deps,
+      });
     }
 
     if (plan.restartBrowserControl) {
@@ -126,6 +136,10 @@ export function createGatewayReloadHandlers(params: {
     setCommandLaneConcurrency(CommandLane.Cron, nextConfig.cron?.maxConcurrentRuns ?? 1);
     setCommandLaneConcurrency(CommandLane.Main, resolveAgentMaxConcurrent(nextConfig));
     setCommandLaneConcurrency(CommandLane.Subagent, resolveSubagentMaxConcurrent(nextConfig));
+    setCommandLaneConcurrency(
+      CommandLane.Proactive,
+      nextConfig.autonomy?.proactive?.maxConcurrentTasks ?? 1,
+    );
 
     if (plan.hotReasons.length > 0) {
       params.logReload.info(`config hot reload applied (${plan.hotReasons.join(", ")})`);
