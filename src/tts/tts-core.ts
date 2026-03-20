@@ -17,7 +17,7 @@ import type {
   TtsDirectiveParseResult,
 } from "./tts.js";
 
-const DEFAULT_ELEVENLABS_BASE_URL = "https://api.elevenlabs.io";
+export const DEFAULT_ELEVENLABS_BASE_URL = "https://api.elevenlabs.io";
 const TEMP_FILE_CLEANUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 export function isValidVoiceId(voiceId: string): boolean {

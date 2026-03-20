@@ -91,9 +91,7 @@ const DEFAULT_ASK: ExecAsk = "on-miss";
 const DEFAULT_ASK_FALLBACK: ExecSecurity = "deny";
 const DEFAULT_AUTO_ALLOW_SKILLS = false;
 const DEFAULT_SOCKET = "~/.marv/exec-approvals.sock";
-const LEGACY_SOCKET = "~/.marv/exec-approvals.sock";
 const DEFAULT_FILE = "~/.marv/exec-approvals.json";
-const LEGACY_FILE = "~/.marv/exec-approvals.json";
 
 function hashExecApprovalsRaw(raw: string | null): string {
   return crypto
@@ -103,21 +101,11 @@ function hashExecApprovalsRaw(raw: string | null): string {
 }
 
 export function resolveExecApprovalsPath(): string {
-  const current = expandHomePrefix(DEFAULT_FILE);
-  const legacy = expandHomePrefix(LEGACY_FILE);
-  if (!fs.existsSync(current) && fs.existsSync(legacy)) {
-    return legacy;
-  }
-  return current;
+  return expandHomePrefix(DEFAULT_FILE);
 }
 
 export function resolveExecApprovalsSocketPath(): string {
-  const current = expandHomePrefix(DEFAULT_SOCKET);
-  const legacy = expandHomePrefix(LEGACY_SOCKET);
-  if (!fs.existsSync(current) && fs.existsSync(legacy)) {
-    return legacy;
-  }
-  return current;
+  return expandHomePrefix(DEFAULT_SOCKET);
 }
 
 function normalizeAllowlistPattern(value: string | undefined): string | null {

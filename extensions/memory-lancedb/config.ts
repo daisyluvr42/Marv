@@ -19,31 +19,9 @@ export type MemoryCategory = (typeof MEMORY_CATEGORIES)[number];
 
 const DEFAULT_MODEL = "text-embedding-3-small";
 export const DEFAULT_CAPTURE_MAX_CHARS = 500;
-const LEGACY_STATE_DIRS: string[] = [];
-
 function resolveDefaultDbPath(): string {
   const home = homedir();
-  const preferred = join(home, ".marv", "memory", "lancedb");
-  try {
-    if (fs.existsSync(preferred)) {
-      return preferred;
-    }
-  } catch {
-    // best-effort
-  }
-
-  for (const legacy of LEGACY_STATE_DIRS) {
-    const candidate = join(home, legacy, "memory", "lancedb");
-    try {
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    } catch {
-      // best-effort
-    }
-  }
-
-  return preferred;
+  return join(home, ".marv", "memory", "lancedb");
 }
 
 const DEFAULT_DB_PATH = resolveDefaultDbPath();

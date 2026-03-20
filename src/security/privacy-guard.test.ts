@@ -97,7 +97,8 @@ describe("PrivacyScanner", () => {
     });
 
     it("detects Stripe key", () => {
-      const result = scanner.scan("sk" + "_live_" + "aBcDeFgHiJkLmNoPqRsTuVwXyZ");
+      // eslint-disable-next-line no-useless-concat -- split to avoid the privacy scanner flagging this test file
+      const result = scanner.scan("sk" + "_live_aBcDeFgHiJkLmNoPqRsTuVwXyZ");
       expect(result.clean).toBe(false);
       expect(result.findings[0].category).toBe("api_keys");
     });

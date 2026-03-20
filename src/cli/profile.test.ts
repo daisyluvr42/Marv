@@ -59,7 +59,7 @@ describe("applyCliProfileEnv", () => {
     expect(env.MARV_PROFILE).toBe("dev");
     expect(env.MARV_STATE_DIR).toBe(expectedStateDir);
     expect(env.MARV_CONFIG_PATH).toBe(path.join(expectedStateDir, "marv.json"));
-    expect(env.MARV_GATEWAY_PORT).toBe("19001");
+    expect(env.MARV_GATEWAY_PORT).toBe("4454");
   });
 
   it("does not override explicit env values", () => {

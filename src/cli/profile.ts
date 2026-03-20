@@ -111,24 +111,17 @@ export function applyCliProfileEnv(params: {
 
   // Convenience only: fill defaults, never override explicit env values.
   env.MARV_PROFILE = profile;
-  env.MARV_PROFILE = profile;
 
-  const stateDir =
-    env.MARV_STATE_DIR?.trim() ||
-    env.MARV_STATE_DIR?.trim() ||
-    resolveProfileStateDir(profile, env, homedir);
-  if (!env.MARV_STATE_DIR?.trim() && !env.MARV_STATE_DIR?.trim()) {
-    env.MARV_STATE_DIR = stateDir;
+  const stateDir = env.MARV_STATE_DIR?.trim() || resolveProfileStateDir(profile, env, homedir);
+  if (!env.MARV_STATE_DIR?.trim()) {
     env.MARV_STATE_DIR = stateDir;
   }
 
-  if (!env.MARV_CONFIG_PATH?.trim() && !env.MARV_CONFIG_PATH?.trim()) {
-    env.MARV_CONFIG_PATH = path.join(stateDir, "marv.json");
+  if (!env.MARV_CONFIG_PATH?.trim()) {
     env.MARV_CONFIG_PATH = path.join(stateDir, "marv.json");
   }
 
-  if (profile === "dev" && !env.MARV_GATEWAY_PORT?.trim() && !env.MARV_GATEWAY_PORT?.trim()) {
-    env.MARV_GATEWAY_PORT = "19001";
-    env.MARV_GATEWAY_PORT = "19001";
+  if (profile === "dev" && !env.MARV_GATEWAY_PORT?.trim()) {
+    env.MARV_GATEWAY_PORT = "4454";
   }
 }

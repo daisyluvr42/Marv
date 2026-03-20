@@ -39,7 +39,6 @@ export type PluginUpdateOptions = {
 
 export type PluginUninstallOptions = {
   keepFiles?: boolean;
-  keepConfig?: boolean;
   force?: boolean;
   dryRun?: boolean;
 };
@@ -396,18 +395,13 @@ export function registerPluginsCli(program: Command) {
     .description("Uninstall a plugin")
     .argument("<id>", "Plugin id")
     .option("--keep-files", "Keep installed files on disk", false)
-    .option("--keep-config", "Deprecated alias for --keep-files", false)
     .option("--force", "Skip confirmation prompt", false)
     .option("--dry-run", "Show what would be removed without making changes", false)
     .action(async (id: string, opts: PluginUninstallOptions) => {
       const cfg = loadConfig();
       const report = buildPluginStatusReport({ config: cfg });
       const extensionsDir = path.join(resolveStateDir(process.env, os.homedir), "extensions");
-      const keepFiles = Boolean(opts.keepFiles || opts.keepConfig);
-
-      if (opts.keepConfig) {
-        defaultRuntime.log(theme.warn("`--keep-config` is deprecated, use `--keep-files`."));
-      }
+      const keepFiles = Boolean(opts.keepFiles);
 
       // Find plugin by id or name
       const plugin = report.plugins.find((p) => p.id === id || p.name === id);

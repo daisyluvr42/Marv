@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import {
   memoryP0SectionCommand,
   memoryP0ShowCommand,
@@ -15,10 +15,6 @@ import { resolveSessionTranscriptsDirForAgent } from "../core/config/sessions/pa
 import { setVerbose } from "../globals.js";
 import { getMemorySearchManager, type MemorySearchManagerResult } from "../memory/index.js";
 import { listMemoryFiles, normalizeExtraMemoryPaths } from "../memory/internal.js";
-import {
-  exportSoulMemoryMirror,
-  importSoulMemoryMirror,
-} from "../memory/storage/soul-memory-mirror.js";
 import {
   countSoulArchiveEvents,
   countSoulMemoryItemsByRecordKind,
@@ -1017,50 +1013,6 @@ export function registerMemoryCli(program: Command) {
       );
       defaultRuntime.log(
         `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3}`,
-      );
-    });
-
-  // ── marv mem mirror (legacy) ──
-  // Legacy mirror subcommand kept for backward compatibility.
-  const mirror = memory.command("mirror").description("Legacy Markdown memory mirror");
-
-  mirror
-    .command("export")
-    .description("Export P0 and selected stable P1 memory into MEMORY.md")
-    .option("--agent <id>", "Agent id (default: default agent)")
-    .option("--force", "Overwrite even if MEMORY.md has unsynced edits", false)
-    .action(async (opts: { agent?: string; force?: boolean }) => {
-      const cfg = loadConfig();
-      const agentId = resolveAgent(cfg, opts.agent);
-      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-      const result = await exportSoulMemoryMirror({
-        agentId,
-        workspaceDir,
-        force: Boolean(opts.force),
-      });
-      if (result.requiresConfirmation) {
-        defaultRuntime.log(
-          `Mirror export paused: ${shortenHomePath(result.path)} has unsynced edits. Run with --force to overwrite.`,
-        );
-        return;
-      }
-      defaultRuntime.log(`Mirror exported to ${shortenHomePath(result.path)}.`);
-    });
-
-  mirror
-    .command("import")
-    .description("Import MEMORY.md edits back into structured memory")
-    .option("--agent <id>", "Agent id (default: default agent)")
-    .action(async (opts: { agent?: string }) => {
-      const cfg = loadConfig();
-      const agentId = resolveAgent(cfg, opts.agent);
-      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-      const result = await importSoulMemoryMirror({
-        agentId,
-        workspaceDir,
-      });
-      defaultRuntime.log(
-        `Mirror imported from ${shortenHomePath(result.path)} (${result.imported} entries synced).`,
       );
     });
 

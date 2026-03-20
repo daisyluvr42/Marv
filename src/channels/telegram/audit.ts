@@ -1,7 +1,6 @@
 import type { TelegramGroupConfig } from "../../core/config/types.js";
 import { isRecord } from "../../utils.js";
-
-const TELEGRAM_API_BASE = "https://api.telegram.org";
+import { TELEGRAM_API_BASE } from "./constants.js";
 
 export type TelegramGroupMembershipAuditEntry = {
   chatId: string;
