@@ -97,4 +97,6 @@ export type SessionsPatchResult = {
     modelProvider?: string;
     model?: string;
   };
+  /** Informational notices about automatic adjustments (e.g., thinking/model sync). */
+  notices?: string[];
 };

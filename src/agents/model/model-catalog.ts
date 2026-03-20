@@ -239,3 +239,16 @@ export function findModelInCatalog(
       entry.id.toLowerCase() === normalizedModelId,
   );
 }
+
+/**
+ * Find the first reasoning-capable model from a given provider.
+ */
+export function findReasoningModelForProvider(
+  catalog: ModelCatalogEntry[],
+  provider: string,
+): ModelCatalogEntry | undefined {
+  const normalizedProvider = provider.toLowerCase().trim();
+  return catalog.find(
+    (entry) => entry.provider.toLowerCase() === normalizedProvider && entry.reasoning === true,
+  );
+}

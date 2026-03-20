@@ -5,6 +5,11 @@ import {
 } from "../../agents/agent-scope.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
+import {
+  findModelInCatalog,
+  findReasoningModelForProvider,
+  loadModelCatalog,
+} from "../../agents/model/model-catalog.js";
 import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
 import {
   buildModelAliasIndex,
@@ -189,6 +194,76 @@ export async function persistInlineDirectives(params: {
       delete sessionEntry.queueCap;
       delete sessionEntry.queueDrop;
       updated = true;
+    }
+
+    // --- Sync thinking level ↔ model ---
+    const hasModelChange = directives.hasModelDirective && !!modelDirective;
+    const hasThinkChange = directives.hasThinkDirective && !!directives.thinkLevel;
+
+    if (hasModelChange && !hasThinkChange) {
+      // Model changed; adapt thinking level silently.
+      try {
+        const catalog = await loadModelCatalog({ config: cfg });
+        const catalogEntry = findModelInCatalog(catalog, provider, model);
+        if (catalogEntry?.reasoning === true) {
+          if (!sessionEntry.thinkingLevel || sessionEntry.thinkingLevel === "off") {
+            sessionEntry.thinkingLevel = "low";
+            updated = true;
+            enqueueSystemEvent(`Thinking set to low (default for ${model})`, {
+              sessionKey,
+              contextKey: `think:sync:${model}`,
+            });
+          }
+        } else if (sessionEntry.thinkingLevel && sessionEntry.thinkingLevel !== "off") {
+          delete sessionEntry.thinkingLevel;
+          updated = true;
+          enqueueSystemEvent(`Thinking set to off (${model} does not support reasoning)`, {
+            sessionKey,
+            contextKey: `think:sync:${model}`,
+          });
+        }
+      } catch {
+        // Catalog unavailable; skip sync silently.
+      }
+    }
+
+    if (hasThinkChange && !hasModelChange) {
+      // Thinking level changed; auto-switch model if current model is non-reasoning.
+      if (directives.thinkLevel !== "off") {
+        try {
+          const catalog = await loadModelCatalog({ config: cfg });
+          const catalogEntry = findModelInCatalog(catalog, provider, model);
+          if (!catalogEntry?.reasoning) {
+            const reasoningModel = findReasoningModelForProvider(catalog, provider);
+            if (reasoningModel) {
+              const isDefault =
+                reasoningModel.provider === defaultProvider && reasoningModel.id === defaultModel;
+              applyModelOverrideToSessionEntry({
+                entry: sessionEntry,
+                selection: {
+                  provider: reasoningModel.provider,
+                  model: reasoningModel.id,
+                  isDefault,
+                },
+              });
+              provider = reasoningModel.provider;
+              model = reasoningModel.id;
+              updated = true;
+              enqueueSystemEvent(
+                `Model switched to ${reasoningModel.provider}/${reasoningModel.id} (reasoning-capable)`,
+                { sessionKey, contextKey: `model:sync:${reasoningModel.id}` },
+              );
+            } else {
+              enqueueSystemEvent(
+                `Warning: no reasoning-capable ${provider} model found. Switch models for thinking support.`,
+                { sessionKey, contextKey: "model:sync:warn" },
+              );
+            }
+          }
+        } catch {
+          // Catalog unavailable; skip sync silently.
+        }
+      }
     }
 
     if (updated) {

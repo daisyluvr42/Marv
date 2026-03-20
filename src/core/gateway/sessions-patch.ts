@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { resolveAgentConfig, resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import type { ModelCatalogEntry } from "../../agents/model/model-catalog.js";
+import {
+  findModelInCatalog,
+  findReasoningModelForProvider,
+  type ModelCatalogEntry,
+} from "../../agents/model/model-catalog.js";
 import {
   normalizeModelSelection,
   parseModelRef,
@@ -108,7 +112,9 @@ export async function applySessionsPatchToStore(params: {
   storeKey: string;
   patch: SessionsPatchParams;
   loadGatewayModelCatalog?: () => Promise<ModelCatalogEntry[]>;
-}): Promise<{ ok: true; entry: SessionEntry } | { ok: false; error: ErrorShape }> {
+}): Promise<
+  { ok: true; entry: SessionEntry; notices?: string[] } | { ok: false; error: ErrorShape }
+> {
   const { cfg, store, storeKey, patch } = params;
   const now = Date.now();
   const parsedAgent = parseAgentSessionKey(storeKey);
@@ -507,6 +513,68 @@ export async function applySessionsPatchToStore(params: {
     }
   }
 
+  // --- Sync thinking level ↔ model ---
+  const notices: string[] = [];
+
+  if ("model" in patch && !("thinkingLevel" in patch)) {
+    // Model changed; adapt thinking level silently.
+    const effectiveProvider = next.providerOverride ?? resolvedDefault.provider;
+    const effectiveModel = next.modelOverride ?? resolvedDefault.model;
+    const catalog = params.loadGatewayModelCatalog
+      ? await params.loadGatewayModelCatalog()
+      : undefined;
+    if (catalog) {
+      const catalogEntry = findModelInCatalog(catalog, effectiveProvider, effectiveModel);
+      if (catalogEntry?.reasoning === true) {
+        const currentThink = next.thinkingLevel ?? "off";
+        if (currentThink === "off") {
+          next.thinkingLevel = "low";
+          notices.push(`Thinking set to low (default for ${effectiveModel})`);
+        }
+      } else if (next.thinkingLevel && next.thinkingLevel !== "off") {
+        delete next.thinkingLevel;
+        notices.push(`Thinking set to off (${effectiveModel} does not support reasoning)`);
+      }
+    }
+  }
+
+  if ("thinkingLevel" in patch && !("model" in patch)) {
+    // Thinking level changed; auto-switch model if current model is non-reasoning.
+    const normalized = next.thinkingLevel;
+    if (normalized && normalized !== "off") {
+      const effectiveProvider = next.providerOverride ?? resolvedDefault.provider;
+      const effectiveModel = next.modelOverride ?? resolvedDefault.model;
+      const catalog = params.loadGatewayModelCatalog
+        ? await params.loadGatewayModelCatalog()
+        : undefined;
+      if (catalog) {
+        const catalogEntry = findModelInCatalog(catalog, effectiveProvider, effectiveModel);
+        if (!catalogEntry?.reasoning) {
+          const reasoningModel = findReasoningModelForProvider(catalog, effectiveProvider);
+          if (reasoningModel) {
+            applyModelOverrideToSessionEntry({
+              entry: next,
+              selection: {
+                provider: reasoningModel.provider,
+                model: reasoningModel.id,
+                isDefault:
+                  reasoningModel.provider === resolvedDefault.provider &&
+                  reasoningModel.id === resolvedDefault.model,
+              },
+            });
+            notices.push(
+              `Model switched to ${reasoningModel.provider}/${reasoningModel.id} (reasoning-capable)`,
+            );
+          } else {
+            notices.push(
+              `Warning: no reasoning-capable ${effectiveProvider} model found. Switch models for thinking support.`,
+            );
+          }
+        }
+      }
+    }
+  }
+
   if (next.thinkingLevel === "xhigh") {
     const effectiveProvider = next.providerOverride ?? resolvedDefault.provider;
     const effectiveModel = next.modelOverride ?? resolvedDefault.model;
@@ -545,5 +613,5 @@ export async function applySessionsPatchToStore(params: {
   }
 
   store[storeKey] = next;
-  return { ok: true, entry: next };
+  return { ok: true, entry: next, ...(notices.length > 0 ? { notices } : {}) };
 }

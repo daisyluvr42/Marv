@@ -270,6 +270,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         modelProvider: resolved.provider,
         model: resolved.model,
       },
+      ...(applied.notices?.length ? { notices: applied.notices } : {}),
     };
     respond(true, result, undefined);
   },

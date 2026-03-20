@@ -94,6 +94,11 @@ export function createCommandHandlers(context: CommandHandlerContext) {
               model: item.value,
             });
             chatLog.addSystem(`model set to ${item.value}`);
+            if (result.notices) {
+              for (const notice of result.notices) {
+                chatLog.addSystem(notice);
+              }
+            }
             applySessionInfoFromPatch(result);
             await refreshSessionInfo();
           } catch (err) {
@@ -300,6 +305,11 @@ export function createCommandHandlers(context: CommandHandlerContext) {
               model: args,
             });
             chatLog.addSystem(`model set to ${args}`);
+            if (result.notices) {
+              for (const notice of result.notices) {
+                chatLog.addSystem(notice);
+              }
+            }
             applySessionInfoFromPatch(result);
             await refreshSessionInfo();
           } catch (err) {
@@ -326,6 +336,11 @@ export function createCommandHandlers(context: CommandHandlerContext) {
             thinkingLevel: args,
           });
           chatLog.addSystem(`thinking set to ${args}`);
+          if (result.notices) {
+            for (const notice of result.notices) {
+              chatLog.addSystem(notice);
+            }
+          }
           applySessionInfoFromPatch(result);
           await refreshSessionInfo();
         } catch (err) {

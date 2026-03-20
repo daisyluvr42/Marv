@@ -482,6 +482,8 @@ export type SessionsPatchResult = {
     reasoningLevel?: string;
     elevatedLevel?: string;
   };
+  /** Informational notices about automatic adjustments (e.g., thinking/model sync). */
+  notices?: string[];
 };
 
 export type {

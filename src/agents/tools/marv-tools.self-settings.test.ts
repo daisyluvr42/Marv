@@ -62,22 +62,26 @@ vi.mock("../../core/config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../model/model-catalog.js", () => ({
-  loadModelCatalog: async () => [
-    {
-      provider: "anthropic",
-      id: "claude-opus-4-5",
-      name: "Opus",
-      contextWindow: 200000,
-    },
-    {
-      provider: "anthropic",
-      id: "claude-sonnet-4-5",
-      name: "Sonnet",
-      contextWindow: 200000,
-    },
-  ],
-}));
+vi.mock("../model/model-catalog.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../model/model-catalog.js")>();
+  return {
+    ...actual,
+    loadModelCatalog: async () => [
+      {
+        provider: "anthropic",
+        id: "claude-opus-4-5",
+        name: "Opus",
+        contextWindow: 200000,
+      },
+      {
+        provider: "anthropic",
+        id: "claude-sonnet-4-5",
+        name: "Sonnet",
+        contextWindow: 200000,
+      },
+    ],
+  };
+});
 
 vi.mock("../auth-profiles.js", () => ({
   ensureAuthProfileStore: () => ({
