@@ -7,15 +7,32 @@ import { loadConfig } from "../config/config.js";
 
 export type GatewayModelChoice = ModelCatalogEntry;
 
-// Test-only escape hatch: model catalog is cached at module scope for the
-// process lifetime, which is fine for the real gateway daemon, but makes
-// isolated unit tests harder. Keep this intentionally obscure.
+// Catalog discovery is expensive (Pi SDK calls provider APIs to list models).
+// Provider model lists rarely change, so cache aggressively (14 days).
+// The model pool (what users/agents pick from) is recomputed cheaply each time.
+// Auth/provider changes invalidate via invalidateGatewayModelCatalogCache().
+const CATALOG_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+let catalogCache: { entries: GatewayModelChoice[]; loadedAt: number } | null = null;
+
+/** Invalidate the gateway catalog cache so the next load re-discovers models. */
+export function invalidateGatewayModelCatalogCache() {
+  catalogCache = null;
+}
+
+// Test-only escape hatch.
 export function __resetModelCatalogCacheForTest() {
+  catalogCache = null;
   resetModelCatalogCacheForTest();
 }
 
 export async function loadGatewayModelCatalog(): Promise<GatewayModelChoice[]> {
-  // Always bypass cache so the gateway picks up newly available models
-  // (e.g. after auth changes or runtime registry refresh) without restart.
-  return await loadModelCatalog({ config: loadConfig(), useCache: false });
+  const now = Date.now();
+  if (catalogCache && now - catalogCache.loadedAt < CATALOG_TTL_MS) {
+    return catalogCache.entries;
+  }
+  const entries = await loadModelCatalog({ config: loadConfig(), useCache: false });
+  if (entries.length > 0) {
+    catalogCache = { entries, loadedAt: now };
+  }
+  return entries;
 }

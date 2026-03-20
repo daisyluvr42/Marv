@@ -229,8 +229,9 @@ function buildConfiguredModelList(params: {
         ? configuredProviders.has(normalizeProviderId(parsed.provider))
         : selectedRefs.size === 0 || selectedRefs.has(ref);
     const blockedByUnsupportedState = runtimeAvailability?.status === "unsupported";
-    const blockedByTemporaryState = runtimeAvailability?.status === "temporary_unavailable";
     const blockedByAuthState = runtimeAvailability?.status === "auth_invalid";
+    // temporary_unavailable (rate-limit, timeout) does NOT block candidates.
+    // The fallback loop handles skipping rate-limited models at runtime.
     configuredModels.push({
       ref,
       provider: parsed.provider,
@@ -243,7 +244,7 @@ function buildConfiguredModelList(params: {
       available:
         catalogEntry?.enabled === false
           ? false
-          : blockedByUnsupportedState || blockedByTemporaryState || blockedByAuthState
+          : blockedByUnsupportedState || blockedByAuthState
             ? false
             : availability.available,
       availabilityReason:
@@ -251,11 +252,9 @@ function buildConfiguredModelList(params: {
           ? "disabled"
           : blockedByUnsupportedState
             ? "unsupported"
-            : blockedByTemporaryState
-              ? "temporary_unavailable"
-              : blockedByAuthState
-                ? "auth_invalid"
-                : availability.reason,
+            : blockedByAuthState
+              ? "auth_invalid"
+              : availability.reason,
       aliases: aliasIndex.byKey.get(ref) ?? [],
     });
   }

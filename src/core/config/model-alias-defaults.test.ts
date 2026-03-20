@@ -9,14 +9,14 @@ describe("applyModelDefaults", () => {
       models: {
         metadata: {
           "anthropic/claude-opus-4-6": {},
-          "openai/gpt-5.2": {},
+          "openai/gpt-5.4": {},
         },
       },
     } satisfies MarvConfig;
     const next = applyModelDefaults(cfg);
 
     expect(next.models?.metadata?.["anthropic/claude-opus-4-6"]?.alias).toBe("opus");
-    expect(next.models?.metadata?.["openai/gpt-5.2"]?.alias).toBe("gpt");
+    expect(next.models?.metadata?.["openai/gpt-5.4"]?.alias).toBe("gpt");
   });
 
   it("does not override existing aliases", () => {
@@ -37,7 +37,7 @@ describe("applyModelDefaults", () => {
     const cfg = {
       models: {
         metadata: {
-          "google/gemini-3-pro-preview": { alias: "" },
+          "google/gemini-3.1-pro-preview": { alias: "" },
           "google/gemini-3-flash-preview": {},
         },
       },
@@ -45,7 +45,7 @@ describe("applyModelDefaults", () => {
 
     const next = applyModelDefaults(cfg);
 
-    expect(next.models?.metadata?.["google/gemini-3-pro-preview"]?.alias).toBe("");
+    expect(next.models?.metadata?.["google/gemini-3.1-pro-preview"]?.alias).toBe("");
     expect(next.models?.metadata?.["google/gemini-3-flash-preview"]?.alias).toBe("gemini-flash");
   });
 

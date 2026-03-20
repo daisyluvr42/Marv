@@ -1,4 +1,5 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
+import { clearProviderFailureStates } from "../agents/model/model-availability-state.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import { normalizeProviderId, parseModelRef } from "../agents/model/model-selection.js";
 import {
@@ -18,6 +19,13 @@ export async function syncProviderSelectionsAfterAuth(
   }
 
   const providerFamily = resolveProviderFamilyProviders(parsed.provider);
+
+  // Clear unsupported/auth_invalid failure states for this provider family
+  // so models can re-enter candidates with the new auth credentials.
+  for (const familyProvider of providerFamily) {
+    clearProviderFailureStates(familyProvider);
+  }
+
   const catalog = await loadModelCatalog({ config, useCache: false });
   const refs = catalog
     .filter((entry) => providerFamily.has(normalizeProviderId(entry.provider)))

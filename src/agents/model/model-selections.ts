@@ -1,4 +1,5 @@
 import type { MarvConfig } from "../../core/config/config.js";
+import { loadConfig } from "../../core/config/config.js";
 import { parseModelRef } from "./model-selection.js";
 
 const LOCAL_PROVIDER_FAMILY = ["local", "ollama", "vllm", "lmstudio", "localai", "llamacpp"];
@@ -181,4 +182,70 @@ export function replaceSelectedModelRefsByProvider(params: {
       selections: Object.keys(grouped).length > 0 ? grouped : undefined,
     },
   };
+}
+
+/**
+ * Remove a confirmed-unsupported model from `models.selections` so it
+ * no longer appears in the /models picker or future fallback lists.
+ * Writes directly to config file (side-effect).
+ */
+export function pruneUnsupportedModelFromSelections(params: {
+  cfg: MarvConfig;
+  provider: string;
+  model: string;
+}): void {
+  const ref = `${params.provider}/${params.model}`;
+  const selections = params.cfg.models?.selections;
+  if (!selections) {
+    return;
+  }
+  let changed = false;
+  const updated = { ...selections };
+  for (const [sourceKey, refs] of Object.entries(updated)) {
+    if (!Array.isArray(refs)) {
+      continue;
+    }
+    const filtered = refs.filter((r) => r !== ref);
+    if (filtered.length < refs.length) {
+      changed = true;
+      if (filtered.length > 0) {
+        updated[sourceKey] = filtered;
+      } else {
+        delete updated[sourceKey];
+      }
+    }
+  }
+  if (!changed) {
+    return;
+  }
+  // Fire-and-forget: persist the pruned selections to config file.
+  void (async () => {
+    try {
+      const { writeConfigFile } = await import("../../core/config/io.js");
+      const freshConfig = loadConfig();
+      const freshSelections = { ...freshConfig.models?.selections };
+      for (const [sourceKey, refs] of Object.entries(freshSelections)) {
+        if (!Array.isArray(refs)) {
+          continue;
+        }
+        const filtered = refs.filter((r) => r !== ref);
+        if (filtered.length < refs.length) {
+          if (filtered.length > 0) {
+            freshSelections[sourceKey] = filtered;
+          } else {
+            delete freshSelections[sourceKey];
+          }
+        }
+      }
+      await writeConfigFile({
+        ...freshConfig,
+        models: {
+          ...freshConfig.models,
+          selections: Object.keys(freshSelections).length > 0 ? freshSelections : undefined,
+        },
+      });
+    } catch {
+      // Best-effort: config write may fail if locked by another process.
+    }
+  })();
 }

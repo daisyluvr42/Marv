@@ -128,6 +128,32 @@ export function getRuntimeModelAvailability(
   return entry;
 }
 
+/**
+ * Clear all unsupported/auth_invalid failure states for models belonging to
+ * a provider. Called when the user reconfigures auth for a provider so
+ * previously rejected models can re-enter the candidate pool.
+ */
+export function clearProviderFailureStates(provider: string): void {
+  const store = readStore();
+  const normalizedProvider = provider.toLowerCase().trim();
+  let changed = false;
+  for (const [ref, entry] of Object.entries(store.models)) {
+    if (entry.status !== "unsupported" && entry.status !== "auth_invalid") {
+      continue;
+    }
+    // ref format: "provider/model"
+    const slash = ref.indexOf("/");
+    const refProvider = slash > 0 ? ref.slice(0, slash).toLowerCase().trim() : "";
+    if (refProvider === normalizedProvider) {
+      delete store.models[ref];
+      changed = true;
+    }
+  }
+  if (changed) {
+    writeStore(store);
+  }
+}
+
 export function markRuntimeModelReady(ref: string): void {
   const store = readStore();
   store.models[ref] = {

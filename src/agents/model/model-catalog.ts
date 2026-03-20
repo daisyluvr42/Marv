@@ -1,5 +1,8 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { type MarvConfig, loadConfig } from "../../core/config/config.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
+import { getBaselineModels } from "./model-baselines.js";
 import { ensureMarvModelsJson } from "./models-config.js";
 
 export type ModelCatalogEntry = {
@@ -11,134 +14,156 @@ export type ModelCatalogEntry = {
   input?: Array<"text" | "image">;
 };
 
-type DiscoveredModel = {
+let modelCatalogPromise: Promise<ModelCatalogEntry[]> | null = null;
+let hasLoggedModelCatalogError = false;
+
+// Test-only: pluggable loader for models.json (replaces the old Pi SDK mock).
+type ModelsJsonLoader = (agentDir: string) => Promise<ModelsJsonFile | null>;
+let loadModelsJsonOverride: ModelsJsonLoader | null = null;
+
+type ModelsJsonModel = {
   id: string;
   name?: string;
-  provider: string;
   contextWindow?: number;
   reasoning?: boolean;
   input?: Array<"text" | "image">;
 };
 
-type PiSdkModule = typeof import("./pi-model-discovery.js");
+type ModelsJsonProvider = {
+  baseUrl?: string;
+  api?: string;
+  models?: ModelsJsonModel[];
+};
 
-let modelCatalogPromise: Promise<ModelCatalogEntry[]> | null = null;
-let hasLoggedModelCatalogError = false;
-const defaultImportPiSdk = () => import("./pi-model-discovery.js");
-let importPiSdk = defaultImportPiSdk;
-
-const CODEX_PROVIDER = "openai-codex";
-const OPENAI_CODEX_GPT53_MODEL_ID = "gpt-5.3-codex";
-const OPENAI_CODEX_GPT53_SPARK_MODEL_ID = "gpt-5.3-codex-spark";
-
-function applyOpenAICodexSparkFallback(models: ModelCatalogEntry[]): void {
-  const hasSpark = models.some(
-    (entry) =>
-      entry.provider === CODEX_PROVIDER &&
-      entry.id.toLowerCase() === OPENAI_CODEX_GPT53_SPARK_MODEL_ID,
-  );
-  if (hasSpark) {
-    return;
-  }
-
-  const baseModel = models.find(
-    (entry) =>
-      entry.provider === CODEX_PROVIDER && entry.id.toLowerCase() === OPENAI_CODEX_GPT53_MODEL_ID,
-  );
-  if (!baseModel) {
-    return;
-  }
-
-  models.push({
-    ...baseModel,
-    id: OPENAI_CODEX_GPT53_SPARK_MODEL_ID,
-    name: OPENAI_CODEX_GPT53_SPARK_MODEL_ID,
-  });
-}
-
-// Forward-compat: inject GPT-5.4 variants when the Pi SDK doesn't include them yet.
-const GPT54_FORWARD_COMPAT_ENTRIES: Array<{
-  provider: string;
-  id: string;
-  templateProvider: string;
-  templateIds: string[];
-}> = [
-  {
-    provider: "openai-codex",
-    id: "gpt-5.4-codex",
-    templateProvider: "openai-codex",
-    templateIds: ["gpt-5.3-codex", "gpt-5.2-codex"],
-  },
-  {
-    provider: "openai",
-    id: "gpt-5.4",
-    templateProvider: "openai",
-    templateIds: ["gpt-5.2"],
-  },
-  {
-    provider: "github-copilot",
-    id: "gpt-5.4-codex",
-    templateProvider: "github-copilot",
-    templateIds: ["gpt-5.3-codex", "gpt-5.2-codex"],
-  },
-  {
-    provider: "github-copilot",
-    id: "gpt-5.4",
-    templateProvider: "github-copilot",
-    templateIds: ["gpt-5.2"],
-  },
-];
-
-function applyGpt54ForwardCompat(models: ModelCatalogEntry[]): void {
-  for (const entry of GPT54_FORWARD_COMPAT_ENTRIES) {
-    const exists = models.some(
-      (m) => m.provider === entry.provider && m.id.toLowerCase() === entry.id,
-    );
-    if (exists) {
-      continue;
-    }
-    // Find a template model from the same provider to clone metadata from.
-    let template: ModelCatalogEntry | undefined;
-    for (const templateId of entry.templateIds) {
-      template = models.find(
-        (m) => m.provider === entry.templateProvider && m.id.toLowerCase() === templateId,
-      );
-      if (template) {
-        break;
-      }
-    }
-    if (!template) {
-      // No template found for this provider (provider not configured); skip.
-      continue;
-    }
-    models.push({
-      ...template,
-      id: entry.id,
-      name: entry.id,
-      reasoning: true,
-    });
-  }
-}
+type ModelsJsonFile = {
+  providers?: Record<string, ModelsJsonProvider>;
+};
 
 export function resetModelCatalogCacheForTest() {
   modelCatalogPromise = null;
   hasLoggedModelCatalogError = false;
-  importPiSdk = defaultImportPiSdk;
+  loadModelsJsonOverride = null;
 }
 
-// Test-only escape hatch: allow mocking the dynamic import to simulate transient failures.
-export function __setModelCatalogImportForTest(loader?: () => Promise<PiSdkModule>) {
-  importPiSdk = loader ?? defaultImportPiSdk;
-}
-
-function createAuthStorage(AuthStorageLike: unknown, path: string) {
-  const withFactory = AuthStorageLike as { create?: (path: string) => unknown };
-  if (typeof withFactory.create === "function") {
-    return withFactory.create(path);
+// Test-only escape hatch: allow mocking the models.json loader.
+export function __setModelCatalogImportForTest(loader?: (() => Promise<unknown>) | null) {
+  // Legacy compat: old tests pass a Pi SDK module loader.
+  // New tests can pass a ModelsJsonLoader. Accept both.
+  if (!loader) {
+    loadModelsJsonOverride = null;
+    return;
   }
-  return new (AuthStorageLike as { new (path: string): unknown })(path);
+  loadModelsJsonOverride = async (agentDir: string) => {
+    try {
+      const mod = await loader();
+      // If it returns something with discoverModels/discoverAuthStorage (legacy Pi SDK mock),
+      // try to run it and extract models. Otherwise treat as a models.json object.
+      if (mod && typeof mod === "object" && "discoverModels" in (mod as Record<string, unknown>)) {
+        const piMod = mod as {
+          AuthStorage: unknown;
+          discoverModels: (auth: unknown, dir: string) => { getAll: () => unknown[] };
+          discoverAuthStorage: (dir: string) => unknown;
+        };
+        const authStorage = piMod.discoverAuthStorage(agentDir);
+        const registry = piMod.discoverModels(authStorage, agentDir);
+        const entries = Array.isArray(registry) ? registry : registry.getAll();
+        return {
+          providers: {
+            _legacy: {
+              models: (entries as Array<Record<string, unknown>>).map((e) => ({
+                id: String((e.id as string) ?? ""),
+                name: String((e.name as string) ?? (e.id as string) ?? ""),
+                provider: String((e.provider as string) ?? ""),
+                contextWindow: typeof e.contextWindow === "number" ? e.contextWindow : undefined,
+                reasoning: typeof e.reasoning === "boolean" ? e.reasoning : undefined,
+                input: Array.isArray(e.input) ? e.input : undefined,
+              })),
+            },
+          },
+        } as ModelsJsonFile;
+      }
+      return mod as ModelsJsonFile;
+    } catch {
+      return null;
+    }
+  };
 }
 
+/**
+ * Read the models.json file from the agent directory.
+ * This file is generated by ensureMarvModelsJson() and contains
+ * user-configured providers with their models.
+ */
+async function readModelsJson(agentDir: string): Promise<ModelsJsonFile | null> {
+  if (loadModelsJsonOverride) {
+    return loadModelsJsonOverride(agentDir);
+  }
+  try {
+    const filePath = path.join(agentDir, "models.json");
+    const raw = await fs.readFile(filePath, "utf8");
+    return JSON.parse(raw) as ModelsJsonFile;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract ModelCatalogEntry[] from a models.json file.
+ * Each provider key in the file becomes the provider name,
+ * and each model entry under it becomes a catalog entry.
+ */
+function extractModelsFromJson(json: ModelsJsonFile): ModelCatalogEntry[] {
+  const models: ModelCatalogEntry[] = [];
+  if (!json.providers) {
+    return models;
+  }
+  for (const [providerId, provider] of Object.entries(json.providers)) {
+    if (!provider?.models?.length) {
+      continue;
+    }
+    for (const model of provider.models) {
+      const id = String(model.id ?? "").trim();
+      if (!id) {
+        continue;
+      }
+      // Legacy compat: if the model has a provider field (from test mocks), use it.
+      const providerName =
+        (model as Record<string, unknown>).provider &&
+        typeof (model as Record<string, unknown>).provider === "string"
+          ? String((model as Record<string, unknown>).provider)
+          : providerId;
+      models.push({
+        id,
+        name: String(model.name ?? id).trim() || id,
+        provider: providerName,
+        contextWindow:
+          typeof model.contextWindow === "number" && model.contextWindow > 0
+            ? model.contextWindow
+            : undefined,
+        reasoning: typeof model.reasoning === "boolean" ? model.reasoning : undefined,
+        input: Array.isArray(model.input) ? model.input : undefined,
+      });
+    }
+  }
+  return models;
+}
+
+const sortModels = (entries: ModelCatalogEntry[]) =>
+  entries.sort((a, b) => {
+    const p = a.provider.localeCompare(b.provider);
+    if (p !== 0) {
+      return p;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+/**
+ * Load the model catalog by merging:
+ * 1. Hardcoded baselines (model-baselines.ts) — always available
+ * 2. User-configured models from models.json — custom/local providers
+ *
+ * Runtime Registry API-fetch later enhances this with live provider data.
+ */
 export async function loadModelCatalog(params?: {
   config?: MarvConfig;
   useCache?: boolean;
@@ -151,78 +176,40 @@ export async function loadModelCatalog(params?: {
   }
 
   modelCatalogPromise = (async () => {
-    const models: ModelCatalogEntry[] = [];
-    const sortModels = (entries: ModelCatalogEntry[]) =>
-      entries.sort((a, b) => {
-        const p = a.provider.localeCompare(b.provider);
-        if (p !== 0) {
-          return p;
-        }
-        return a.name.localeCompare(b.name);
-      });
     try {
       const cfg = params?.config ?? loadConfig();
       await ensureMarvModelsJson(cfg);
-      await (
-        await import("../runner/pi-auth-json.js")
-      ).ensurePiAuthJsonFromAuthProfiles(resolveMarvAgentDir());
-      // IMPORTANT: keep the dynamic import *inside* the try/catch.
-      // If this fails once (e.g. during a pnpm install that temporarily swaps node_modules),
-      // we must not poison the cache with a rejected promise (otherwise all channel handlers
-      // will keep failing until restart).
-      const piSdk = await importPiSdk();
-      const agentDir = resolveMarvAgentDir();
-      const { join } = await import("node:path");
-      const authStorage = createAuthStorage(piSdk.AuthStorage, join(agentDir, "auth.json"));
-      const registry = new (piSdk.ModelRegistry as unknown as {
-        new (
-          authStorage: unknown,
-          modelsFile: string,
-        ):
-          | Array<DiscoveredModel>
-          | {
-              getAll: () => Array<DiscoveredModel>;
-            };
-      })(authStorage, join(agentDir, "models.json"));
-      const entries = Array.isArray(registry) ? registry : registry.getAll();
-      for (const entry of entries) {
-        const id = String(entry?.id ?? "").trim();
-        if (!id) {
-          continue;
-        }
-        const provider = String(entry?.provider ?? "").trim();
-        if (!provider) {
-          continue;
-        }
-        const name = String(entry?.name ?? id).trim() || id;
-        const contextWindow =
-          typeof entry?.contextWindow === "number" && entry.contextWindow > 0
-            ? entry.contextWindow
-            : undefined;
-        const reasoning = typeof entry?.reasoning === "boolean" ? entry.reasoning : undefined;
-        const input = Array.isArray(entry?.input) ? entry.input : undefined;
-        models.push({ id, name, provider, contextWindow, reasoning, input });
-      }
-      applyOpenAICodexSparkFallback(models);
-      applyGpt54ForwardCompat(models);
 
-      if (models.length === 0) {
-        // If we found nothing, don't cache this result so we can try again.
+      const agentDir = resolveMarvAgentDir();
+
+      // Start with hardcoded baselines for known providers.
+      const baselines = getBaselineModels();
+      const seen = new Set(baselines.map((m) => `${m.provider}/${m.id}`));
+
+      // Read user-configured models from models.json and merge.
+      const json = await readModelsJson(agentDir);
+      const configured = json ? extractModelsFromJson(json) : [];
+      for (const entry of configured) {
+        const key = `${entry.provider}/${entry.id}`;
+        if (!seen.has(key)) {
+          baselines.push(entry);
+          seen.add(key);
+        }
+      }
+
+      if (baselines.length === 0) {
         modelCatalogPromise = null;
       }
 
-      return sortModels(models);
+      return sortModels(baselines);
     } catch (error) {
       if (!hasLoggedModelCatalogError) {
         hasLoggedModelCatalogError = true;
         console.warn(`[model-catalog] Failed to load model catalog: ${String(error)}`);
       }
-      // Don't poison the cache on transient dependency/filesystem issues.
       modelCatalogPromise = null;
-      if (models.length > 0) {
-        return sortModels(models);
-      }
-      return [];
+      // Fall back to baselines only.
+      return sortModels(getBaselineModels());
     }
   })();
 

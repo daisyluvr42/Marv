@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { __setModelCatalogImportForTest, resetModelCatalogCacheForTest } from "./model-catalog.js";
 
+// Legacy type alias kept for backward-compat with existing tests.
 export type PiSdkModule = typeof import("./pi-model-discovery.js");
 
 vi.mock("./models-config.js", () => ({
@@ -32,11 +33,12 @@ export function mockCatalogImportFailThenRecover() {
     }
     return {
       AuthStorage: class {},
-      ModelRegistry: class {
+      discoverAuthStorage: () => ({}),
+      discoverModels: () => ({
         getAll() {
           return [{ id: "gpt-4.1", name: "GPT-4.1", provider: "openai" }];
-        }
-      },
+        },
+      }),
     } as unknown as PiSdkModule;
   });
   return () => call;

@@ -1,94 +1,65 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { MarvConfig } from "../../core/config/config.js";
-import { __setModelCatalogImportForTest, loadModelCatalog } from "./model-catalog.js";
+import { getBaselineModels } from "./model-baselines.js";
+import { loadModelCatalog } from "./model-catalog.js";
 import {
   installModelCatalogTestHooks,
   mockCatalogImportFailThenRecover,
-  type PiSdkModule,
 } from "./model-catalog.test-harness.js";
 
 describe("loadModelCatalog", () => {
   installModelCatalogTestHooks();
 
-  it("retries after import failure without poisoning the cache", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("retries after loader failure without poisoning the cache", async () => {
     const getCallCount = mockCatalogImportFailThenRecover();
 
     const cfg = {} as MarvConfig;
+    // First call: models.json loader throws, but baselines are still returned.
     const first = await loadModelCatalog({ config: cfg });
-    expect(first).toEqual([]);
+    expect(first.length).toBeGreaterThan(0);
+    expect(first).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ provider: "anthropic", id: "claude-opus-4-6" }),
+      ]),
+    );
+    expect(getCallCount()).toBe(1);
 
-    const second = await loadModelCatalog({ config: cfg });
-    expect(second).toEqual([{ id: "gpt-4.1", name: "GPT-4.1", provider: "openai" }]);
+    // Second call (with useCache: false): loader recovers, adds models.json models.
+    const second = await loadModelCatalog({ config: cfg, useCache: false });
+    expect(second).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "gpt-4.1", provider: "openai" })]),
+    );
     expect(getCallCount()).toBe(2);
-    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("returns partial results on discovery errors", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("includes baseline models even without models.json", async () => {
+    const cfg = {} as MarvConfig;
+    const result = await loadModelCatalog({ config: cfg });
+    const baselines = getBaselineModels();
 
-    __setModelCatalogImportForTest(
-      async () =>
-        ({
-          AuthStorage: class {},
-          ModelRegistry: class {
-            getAll() {
-              return [
-                { id: "gpt-4.1", name: "GPT-4.1", provider: "openai" },
-                {
-                  get id() {
-                    throw new Error("boom");
-                  },
-                  provider: "openai",
-                  name: "bad",
-                },
-              ];
-            }
-          },
-        }) as unknown as PiSdkModule,
-    );
-
-    const result = await loadModelCatalog({ config: {} as MarvConfig });
-    expect(result).toEqual([{ id: "gpt-4.1", name: "GPT-4.1", provider: "openai" }]);
-    expect(warnSpy).toHaveBeenCalledTimes(1);
+    // All baseline models should be present.
+    for (const baseline of baselines) {
+      expect(result).toContainEqual(
+        expect.objectContaining({ provider: baseline.provider, id: baseline.id }),
+      );
+    }
   });
 
-  it("adds openai-codex/gpt-5.3-codex-spark when base gpt-5.3-codex exists", async () => {
-    __setModelCatalogImportForTest(
-      async () =>
-        ({
-          AuthStorage: class {},
-          ModelRegistry: class {
-            getAll() {
-              return [
-                {
-                  id: "gpt-5.3-codex",
-                  provider: "openai-codex",
-                  name: "GPT-5.3 Codex",
-                  reasoning: true,
-                  contextWindow: 200000,
-                  input: ["text"],
-                },
-                {
-                  id: "gpt-5.2-codex",
-                  provider: "openai-codex",
-                  name: "GPT-5.2 Codex",
-                },
-              ];
-            }
-          },
-        }) as unknown as PiSdkModule,
-    );
+  it("includes openai-codex baseline models", async () => {
+    const cfg = {} as MarvConfig;
+    const result = await loadModelCatalog({ config: cfg });
 
-    const result = await loadModelCatalog({ config: {} as MarvConfig });
     expect(result).toContainEqual(
       expect.objectContaining({
         provider: "openai-codex",
         id: "gpt-5.3-codex-spark",
       }),
     );
-    const spark = result.find((entry) => entry.id === "gpt-5.3-codex-spark");
-    expect(spark?.name).toBe("gpt-5.3-codex-spark");
-    expect(spark?.reasoning).toBe(true);
+    expect(result).toContainEqual(
+      expect.objectContaining({
+        provider: "openai-codex",
+        id: "gpt-5.4-codex",
+      }),
+    );
   });
 });

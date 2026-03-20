@@ -1,5 +1,6 @@
 import { refreshRuntimeModelRegistry } from "../agents/model/runtime-model-registry.js";
 import type { MarvConfig } from "../core/config/config.js";
+import { invalidateGatewayModelCatalogCache } from "../core/gateway/server-model-catalog.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { applyAuthChoiceAnthropic } from "./auth-choice.apply.anthropic.js";
@@ -62,9 +63,10 @@ export async function applyAuthChoice(
   for (const handler of handlers) {
     const result = await handler(params);
     if (result) {
-      // After auth credentials are stored, refresh the model registry so the
-      // model pool picks up all available models for the newly configured
-      // provider (e.g. fetching the live Gemini/OpenAI model list via API).
+      // After auth credentials are stored, invalidate the gateway catalog cache
+      // and refresh the runtime model registry so the model pool picks up all
+      // available models for the newly configured provider.
+      invalidateGatewayModelCatalogCache();
       try {
         await refreshRuntimeModelRegistry({
           cfg: result.config,

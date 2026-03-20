@@ -320,8 +320,9 @@ function resolveApiKeyFromProfiles(params: {
 }
 
 export function normalizeGoogleModelId(id: string): string {
-  if (id === "gemini-3-pro") {
-    return "gemini-3-pro-preview";
+  if (id === "gemini-3-pro" || id === "gemini-3-pro-preview") {
+    // gemini-3-pro-preview was shut down 2026-03-09; map to 3.1
+    return "gemini-3.1-pro-preview";
   }
   if (id === "gemini-3-flash") {
     return "gemini-3-flash-preview";

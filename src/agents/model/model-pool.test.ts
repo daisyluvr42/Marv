@@ -362,11 +362,10 @@ describe("resolveRuntimeModelPlan", () => {
 
     const plan = resolveRuntimeModelPlan({ cfg, agentId: "main" });
 
-    expect(plan.configured.find((entry) => entry.ref === "openai/gpt-4o")?.available).toBe(false);
-    expect(plan.configured.find((entry) => entry.ref === "openai/gpt-4o")?.availabilityReason).toBe(
-      "temporary_unavailable",
-    );
-    expect(plan.candidates.map((entry) => entry.ref)).toEqual(["google/gemini-2.0-flash"]);
+    // temporary_unavailable models remain available and stay in candidates;
+    // the fallback loop handles skipping them at runtime (not the pool).
+    expect(plan.configured.find((entry) => entry.ref === "openai/gpt-4o")?.available).toBe(true);
+    expect(plan.candidates.map((entry) => entry.ref)).toContain("openai/gpt-4o");
   });
 });
 

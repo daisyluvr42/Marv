@@ -20,9 +20,11 @@ import {
   buildConfiguredSelectionKeys,
   modelKey,
   normalizeModelRef,
+  normalizeProviderId,
   parseModelRef,
   resolveConfiguredModelRef,
 } from "./model-selection.js";
+import { pruneUnsupportedModelFromSelections } from "./model-selections.js";
 
 type ModelCandidate = {
   provider: string;
@@ -264,8 +266,43 @@ export async function runWithModelFallback<T>(params: {
 
   const hasFallbackCandidates = candidates.length > 1;
 
+  // Track individual models that returned 429 during this run.
+  // Different models under the same provider may have different rate limits,
+  // so we try each model individually. Only skip remaining models from a
+  // provider when ALL its candidates have been individually rate-limited.
+  const rateLimitedModels = new Set<string>();
+
+  // Pre-compute per-provider model counts for provider-level skip detection.
+  const modelsPerProvider = new Map<string, number>();
+  for (const c of candidates) {
+    const pk = normalizeProviderId(c.provider);
+    modelsPerProvider.set(pk, (modelsPerProvider.get(pk) ?? 0) + 1);
+  }
+
+  // Count rate-limited models per provider during this run.
+  const rateLimitedCountPerProvider = new Map<string, number>();
+
+  function isProviderFullyRateLimited(providerKey: string): boolean {
+    const total = modelsPerProvider.get(providerKey) ?? 0;
+    const limited = rateLimitedCountPerProvider.get(providerKey) ?? 0;
+    return total > 0 && limited >= total;
+  }
+
   for (let i = 0; i < candidates.length; i += 1) {
     const candidate = candidates[i];
+    const candidateProviderKey = normalizeProviderId(candidate.provider);
+
+    // Skip if ALL models from this provider have been rate-limited in this run.
+    if (isProviderFullyRateLimited(candidateProviderKey)) {
+      attempts.push({
+        provider: candidate.provider,
+        model: candidate.model,
+        error: `Provider ${candidate.provider} fully rate-limited (all models exhausted)`,
+        reason: "rate_limit",
+      });
+      continue;
+    }
+
     if (authStore) {
       const profileIds = resolveAuthProfileOrder({
         cfg: params.cfg,
@@ -290,7 +327,6 @@ export async function runWithModelFallback<T>(params: {
           profileIds,
         });
         if (!shouldProbe) {
-          // Skip without attempting
           attempts.push({
             provider: candidate.provider,
             model: candidate.model,
@@ -299,9 +335,6 @@ export async function runWithModelFallback<T>(params: {
           });
           continue;
         }
-        // Primary model probe: attempt it despite cooldown to detect recovery.
-        // If it fails, the error is caught below and we fall through to the
-        // next candidate as usual.
         lastProbeAttempt.set(probeThrottleKey, now);
       }
     }
@@ -318,10 +351,6 @@ export async function runWithModelFallback<T>(params: {
       if (shouldRethrowAbort(err)) {
         throw err;
       }
-      // Context overflow errors should be handled by the inner runner's
-      // compaction/retry logic, not by model fallback.  If one escapes as a
-      // throw, rethrow it immediately rather than trying a different model
-      // that may have a smaller context window and fail worse.
       const errMessage = err instanceof Error ? err.message : String(err);
       if (isLikelyContextOverflowError(errMessage)) {
         throw err;
@@ -345,10 +374,34 @@ export async function runWithModelFallback<T>(params: {
         status: described.status,
         code: described.code,
       });
-      markRuntimeModelFailure({
+      const failureStatus = markRuntimeModelFailure({
         ref: modelKey(candidate.provider, candidate.model),
         error: normalized,
       });
+
+      // Per-model rate-limit tracking: mark this specific model as rate-limited.
+      // The provider is only skipped when ALL its candidate models are rate-limited.
+      if (described.reason === "rate_limit") {
+        const mk = modelKey(candidate.provider, candidate.model);
+        if (!rateLimitedModels.has(mk)) {
+          rateLimitedModels.add(mk);
+          rateLimitedCountPerProvider.set(
+            candidateProviderKey,
+            (rateLimitedCountPerProvider.get(candidateProviderKey) ?? 0) + 1,
+          );
+        }
+      }
+
+      // Hard rejection: prune unsupported models from pool selections
+      // so they don't appear in /models picker or future fallback lists.
+      if (failureStatus === "unsupported" && params.cfg) {
+        pruneUnsupportedModelFromSelections({
+          cfg: params.cfg,
+          provider: candidate.provider,
+          model: candidate.model,
+        });
+      }
+
       await params.onError?.({
         provider: candidate.provider,
         model: candidate.model,
