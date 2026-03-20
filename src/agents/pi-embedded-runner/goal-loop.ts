@@ -250,8 +250,8 @@ export function generateHeuristicGoalFrame(prompt: string): {
   };
 }
 
-function resolveInitialStrategyFamily(goalType: GoalFrame["goalType"]): StrategyFamily {
-  return goalType === "mutation" ? "read_context" : "read_context";
+function resolveInitialStrategyFamily(_goalType: GoalFrame["goalType"]): StrategyFamily {
+  return "read_context";
 }
 
 function resolveStrategyTrack(strategyFamily: StrategyFamily): StrategyTrack {
@@ -471,7 +471,13 @@ export function deriveProgressSignal(args: {
 }
 
 export function classifyProgress(signal: ProgressSignal): ProgressClassification {
-  if (signal.cleanCompletion && signal.deliveredOutput) {
+  // Require tool usage or new evidence beyond just emitting text —
+  // otherwise a trivial "Let me think…" end_turn is a false completion.
+  if (
+    signal.cleanCompletion &&
+    signal.deliveredOutput &&
+    (signal.toolBreadth >= 1 || signal.newEvidence || signal.attemptIndex >= 2)
+  ) {
     return "completed";
   }
   if (
@@ -483,7 +489,9 @@ export function classifyProgress(signal: ProgressSignal): ProgressClassification
   if (
     signal.toolLoopEvent === "critical" ||
     (!signal.newEvidence && signal.resultDiversity < 0.2) ||
-    (!signal.errorStateChanged && signal.toolBreadth <= 1)
+    // Only flag low-breadth as stalled after the first attempt — on attempt 1,
+    // single-tool usage (e.g. reading one file) is legitimate exploration.
+    (!signal.errorStateChanged && signal.toolBreadth <= 1 && signal.attemptIndex >= 2)
   ) {
     return "stalled";
   }
@@ -572,7 +580,12 @@ function nextStrategyFamily(
     case "parallelizable_subproblems":
       return "split_subproblems";
     default:
-      return classification === "advancing" ? "validate_result" : "inspect_failure";
+      if (classification === "advancing") {
+        return "validate_result";
+      }
+      // When the problem shape is unknown, prefer gathering context on
+      // early attempts rather than inspecting a failure that may not exist.
+      return attemptIndex <= 1 ? "read_context" : "recenter_goal";
   }
 }
 
@@ -738,6 +751,48 @@ function advanceDirectionNode(
   return Math.min(state.currentNodeIndex + 1, Math.max(0, state.directionNodes.length - 1));
 }
 
+/** Pick a diverse strategy when force-shifting, considering problem context. */
+function pickForceShiftStrategy(
+  current: StrategyFamily,
+  problemShape: ProblemShape | null,
+  goalFrame: GoalFrame,
+): StrategyFamily {
+  // Build a prioritized rotation order based on context.
+  const candidates: StrategyFamily[] =
+    goalFrame.goalType === "mutation"
+      ? [
+          "recenter_goal",
+          "validate_result",
+          "try_alternative",
+          "inspect_failure",
+          "split_subproblems",
+        ]
+      : [
+          "recenter_goal",
+          "read_context",
+          "inspect_failure",
+          "try_alternative",
+          "split_subproblems",
+        ];
+
+  // Prefer shape-specific strategies when available.
+  if (problemShape === "search_drift") {
+    candidates.unshift("recenter_goal");
+  } else if (problemShape === "validation_failure") {
+    candidates.unshift("validate_result");
+  } else if (problemShape === "parallelizable_subproblems") {
+    candidates.unshift("split_subproblems");
+  }
+
+  // Pick the first candidate that differs from the current strategy.
+  for (const candidate of candidates) {
+    if (candidate !== current) {
+      return candidate;
+    }
+  }
+  return current === "try_alternative" ? "inspect_failure" : "try_alternative";
+}
+
 export function reviewGoalProgress(args: {
   state: GoalLoopState;
   attempt: EmbeddedRunAttemptResult;
@@ -748,7 +803,16 @@ export function reviewGoalProgress(args: {
   canDelegate?: boolean;
 }): GoalProgressReview {
   const { signal, errorFingerprint } = deriveProgressSignal(args);
-  const classification = classifyProgress(signal);
+  let classification = classifyProgress(signal);
+  // For mutation goals, downgrade "completed" to "advancing" when no
+  // write-like tool was used — the model likely just narrated without acting.
+  if (
+    classification === "completed" &&
+    args.state.goalFrame.goalType === "mutation" &&
+    !hasRecentToolMatching(args.recentToolCalls, WRITE_LIKE_TOOL_RE)
+  ) {
+    classification = "advancing";
+  }
   const problemShape = classifyProblemShape({
     attempt: args.attempt,
     recentToolCalls: args.recentToolCalls,
@@ -757,10 +821,24 @@ export function reviewGoalProgress(args: {
   });
   let strategyFamily = nextStrategyFamily(problemShape, classification, args.state.attemptCount);
   let strategyTrack = resolveStrategyTrack(strategyFamily);
-  let stuckCounter =
+  let stuckIncrement =
     classification === "completed" || classification === "advancing"
       ? 0
-      : args.state.stuckCounter + (classification === "stalled" ? 2 : 1);
+      : classification === "stalled"
+        ? 2
+        : 1;
+  // Trend escalation: if the last 3+ progressWindow entries were all
+  // non-advancing (ambiguous/stalled), accelerate the stuck counter so
+  // prolonged ambiguous drifts don't burn tokens for 6+ rounds.
+  if (stuckIncrement > 0 && args.state.progressWindow.length >= 2) {
+    const recentNonAdvancing = args.state.progressWindow
+      .slice(-3)
+      .every((prior) => !prior.newEvidence || prior.resultDiversity < 0.3);
+    if (recentNonAdvancing) {
+      stuckIncrement += 1;
+    }
+  }
+  let stuckCounter = stuckIncrement === 0 ? 0 : args.state.stuckCounter + stuckIncrement;
   let shiftCount = args.state.shiftCount;
   let delegatedShiftCount = args.state.delegatedShiftCount;
   let loopGuardLevel: GoalLoopGuardLevel = "normal";
@@ -780,7 +858,13 @@ export function reviewGoalProgress(args: {
   if (signal.toolLoopEvent === "critical" || stuckCounter >= 4) {
     loopGuardLevel = "force_shift";
     if (strategyFamily === args.state.strategyFamily) {
-      strategyFamily = strategyFamily === "try_alternative" ? "inspect_failure" : "try_alternative";
+      // Rotate through a broader set of strategies based on problem context,
+      // instead of only flipping between try_alternative and inspect_failure.
+      strategyFamily = pickForceShiftStrategy(
+        args.state.strategyFamily,
+        problemShape,
+        args.state.goalFrame,
+      );
     }
     shiftCount += 1;
   } else if (signal.toolLoopEvent === "warning" || stuckCounter >= 2) {
@@ -822,15 +906,19 @@ export function reviewGoalProgress(args: {
     loopGuardLevel = "stop";
   }
 
-  if (loopGuardLevel === "stop" && delegatedRecovery && delegation === null) {
-    strategyFamily = "delegated_subagent";
-    strategyTrack = "delegated_subagent";
-    delegation = delegatedRecovery;
-    shiftCount += 1;
-    delegatedShiftCount += 1;
-    loopGuardLevel = "force_shift";
-  }
-  if (loopGuardLevel === "stop" && delegation) {
+  // Last-resort rescue: if we're about to stop and a delegation plan is
+  // available that hasn't been tried yet, use it as a final recovery attempt.
+  // This rescue can fire at most once per unique delegation key (guarded by
+  // attemptedDelegationKeys dedup) and is capped by MAX_DELEGATED_SHIFTS.
+  if (loopGuardLevel === "stop" && delegatedRecovery) {
+    if (delegation === null) {
+      strategyFamily = "delegated_subagent";
+      strategyTrack = "delegated_subagent";
+      delegation = delegatedRecovery;
+      shiftCount += 1;
+      delegatedShiftCount += 1;
+    }
+    // Downgrade stop → force_shift to allow the delegation attempt to run.
     loopGuardLevel = "force_shift";
   }
 

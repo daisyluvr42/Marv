@@ -865,6 +865,15 @@ export async function runEmbeddedPiAgent(
               },
             });
             if (goalLoopState.loopGuardLevel === "stop") {
+              // Persist failure experience so future runs avoid the same dead ends.
+              persistGoalStrategyMemory({
+                agentId: workspaceResolution.agentId,
+                sessionKey: params.sessionKey,
+                state: {
+                  ...goalLoopState,
+                  convergeReason: goalLoopState.convergeReason ?? "no_progress_no_new_strategy",
+                },
+              });
               await recordAssistantTaskTurn({
                 status: "error",
                 errorText:
