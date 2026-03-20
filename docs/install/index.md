@@ -208,6 +208,24 @@ For VPS/cloud hosts, avoid third-party "1-click" marketplace images when possibl
         marv onboard --install-daemon
         ```
       </Step>
+      <Step title="(macOS) Install the Mac menu-bar app">
+        The macOS companion app (menu bar, notifications, Canvas, Screen Recording) is included in the source tree but must be compiled locally. Run:
+
+        ```bash
+        scripts/setup-mac-app.sh
+        ```
+
+        This builds the Swift app from source, installs it to `/Applications/Marv.app`, and launches it. Requires Xcode Command Line Tools. No Apple Developer account needed — the script uses ad-hoc signing automatically.
+      </Step>
+      <Step title="(iOS) Deploy the iOS companion app">
+        If you have an iPhone connected, you can build and deploy the companion app directly:
+
+        ```bash
+        scripts/ios-deploy.sh
+        ```
+
+        Requires full Xcode, `xcodegen` (`brew install xcodegen`), and a free Apple ID signed in to Xcode (Settings → Accounts). No paid Apple Developer Program membership needed. See [iOS App](/platforms/ios) for details.
+      </Step>
     </Steps>
 
     Source-checkout troubleshooting:

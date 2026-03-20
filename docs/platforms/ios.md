@@ -27,11 +27,16 @@ Availability: internal preview. The iOS app is not publicly distributed yet.
 
 ## Before you start
 
-- Full Xcode installed
-- `xcodegen` available on your PATH
-- A real iPhone connected to this Mac
+- **Full Xcode** installed (not just Command Line Tools)
+- **`xcodegen`** available on your PATH (`brew install xcodegen`)
+- **A free Apple ID** signed in to Xcode (Xcode → Settings → Accounts). No paid Apple Developer Program ($99/year) membership is required — a free Apple ID provides a Personal Team signing certificate that works for local development.
+- A real iPhone connected to this Mac via USB
 - A reachable `ws://` or `wss://` Gateway URL
 - A shared Gateway token or password for the first connection
+
+<Note>
+**Free Apple ID signing limitations:** apps expire after 7 days and must be re-deployed (`scripts/ios-deploy.sh --force`). The device must also trust your certificate in Settings → General → VPN & Device Management.
+</Note>
 
 If `xcodebuild` still resolves to Command Line Tools, switch the active developer directory first:
 
@@ -41,7 +46,26 @@ sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
 ## Local deploy from source
 
-Fast path:
+### One-command deploy
+
+Build, install, and launch on a connected iPhone in one step:
+
+```bash
+scripts/ios-deploy.sh
+```
+
+The script will detect connected devices and ask you to confirm before deploying. If multiple devices are connected, it shows a selection menu. Subsequent runs with the same source code are skipped automatically — use `--force` to redeploy.
+
+```bash
+scripts/ios-deploy.sh --force            # redeploy even if up-to-date
+scripts/ios-deploy.sh --device "iPhone"  # target a specific device by name
+scripts/ios-deploy.sh --list-devices     # list connected devices (JSON)
+scripts/ios-deploy.sh --yes              # skip confirmation prompt (CI/automation)
+```
+
+### Xcode workflow
+
+If you prefer to build via Xcode:
 
 ```bash
 pnpm ios:open

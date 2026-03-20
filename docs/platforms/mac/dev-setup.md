@@ -13,10 +13,26 @@ This guide covers the necessary steps to build and run the Marv macOS applicatio
 
 Before building the app, ensure you have the following installed:
 
-1. **Xcode 26.2+**: Required for Swift development.
+1. **Xcode Command Line Tools** (minimum) or **Xcode 26.2+** (full IDE): Required for Swift compilation. Install with `xcode-select --install`.
 2. **Node.js 22+ & pnpm**: Required for the gateway, CLI, and packaging scripts.
 
-## 1. Install Dependencies
+<Note>
+No Apple Developer account or paid membership is required. The build script uses **ad-hoc signing** automatically when no Developer ID certificate is found.
+</Note>
+
+## Quick start (one command)
+
+If you have already built the CLI (`pnpm install && pnpm build`), run:
+
+```bash
+scripts/setup-mac-app.sh
+```
+
+This builds the Swift app from source, installs it to `/Applications/Marv.app`, removes the Gatekeeper quarantine flag, and launches it. The menu-bar icon should appear shortly after.
+
+## Step-by-step build
+
+### 1. Install Dependencies
 
 Install the project-wide dependencies:
 
@@ -24,7 +40,7 @@ Install the project-wide dependencies:
 pnpm install
 ```
 
-## 2. Build and Package the App
+### 2. Build and Package the App
 
 To build the macOS app and package it into `dist/Marv.app`, run:
 
@@ -39,7 +55,7 @@ For dev run modes, signing flags, and Team ID troubleshooting, see the macOS app
 
 > **Note**: Ad-hoc signed apps may trigger security prompts. If the app crashes immediately with "Abort trap 6", see the [Troubleshooting](#troubleshooting) section.
 
-## 3. Install the CLI
+### 3. Install the CLI
 
 The macOS app expects a global `marv` CLI install to manage background tasks.
 

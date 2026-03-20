@@ -12,6 +12,9 @@ TARGET_DEVICE=""
 LIST_DEVICES=0
 SKIP_BUILD=0
 DRY_RUN=0
+AUTO_CONFIRM=0
+FORCE_DEPLOY=0
+DEPLOY_MARKER_DIR="$IOS_DIR/.build"
 
 # -- Helpers ------------------------------------------------------------------
 
@@ -97,50 +100,55 @@ resolve_device_udid() {
     die_json "Failed to list devices via devicectl"
   }
 
-  local udid=""
-  local device_name=""
-
-  if have jq; then
-    if [[ -n "$TARGET_DEVICE" ]]; then
-      # Match by name (substring, case-insensitive) or exact UDID.
-      udid=$(jq -r --arg target "$TARGET_DEVICE" '
-        [.result.devices[] |
-          select(
-            (.connectionProperties.tunnelState == "connected" or
-             .connectionProperties.transportType != null) and
-            ((.deviceProperties.name | ascii_downcase | contains($target | ascii_downcase)) or
-             .identifier == $target)
-          )] | first | .identifier // empty
-      ' "$json_out" 2>/dev/null || true)
-      device_name=$(jq -r --arg target "$TARGET_DEVICE" '
-        [.result.devices[] |
-          select(
-            (.connectionProperties.tunnelState == "connected" or
-             .connectionProperties.transportType != null) and
-            ((.deviceProperties.name | ascii_downcase | contains($target | ascii_downcase)) or
-             .identifier == $target)
-          )] | first | .deviceProperties.name // empty
-      ' "$json_out" 2>/dev/null || true)
-    else
-      # Pick first connected device.
-      udid=$(jq -r '
-        [.result.devices[] |
-          select(.connectionProperties.tunnelState == "connected" or
-                 .connectionProperties.transportType != null)
-        ] | first | .identifier // empty
-      ' "$json_out" 2>/dev/null || true)
-      device_name=$(jq -r '
-        [.result.devices[] |
-          select(.connectionProperties.tunnelState == "connected" or
-                 .connectionProperties.transportType != null)
-        ] | first | .deviceProperties.name // empty
-      ' "$json_out" 2>/dev/null || true)
-    fi
+  if ! have jq; then
+    rm -f "$json_out"
+    die_json "jq is required for device selection. Install it with: brew install jq"
   fi
+
+  # Collect all connected devices into parallel arrays.
+  local -a device_udids device_names device_models device_versions
+  local count=0
+
+  while IFS=$'\t' read -r d_udid d_name d_model d_version; do
+    device_udids+=("$d_udid")
+    device_names+=("$d_name")
+    device_models+=("$d_model")
+    device_versions+=("$d_version")
+    count=$((count + 1))
+  done < <(jq -r '
+    [.result.devices[] |
+      select(.connectionProperties.tunnelState == "connected" or
+             .connectionProperties.transportType != null)] |
+    .[] | [.identifier, .deviceProperties.name,
+           .deviceProperties.marketingName, .deviceProperties.osVersionNumber] |
+    @tsv
+  ' "$json_out" 2>/dev/null || true)
 
   rm -f "$json_out"
 
-  if [[ -z "$udid" ]]; then
+  # Filter by --device flag if provided.
+  if [[ -n "$TARGET_DEVICE" ]]; then
+    local -a filtered_udids filtered_names filtered_models filtered_versions
+    local target_lower
+    target_lower="$(printf '%s' "$TARGET_DEVICE" | tr '[:upper:]' '[:lower:]')"
+    for i in $(seq 0 $((count - 1))); do
+      local name_lower
+      name_lower="$(printf '%s' "${device_names[$i]}" | tr '[:upper:]' '[:lower:]')"
+      if [[ "${device_udids[$i]}" == "$TARGET_DEVICE" ]] || [[ "$name_lower" == *"$target_lower"* ]]; then
+        filtered_udids+=("${device_udids[$i]}")
+        filtered_names+=("${device_names[$i]}")
+        filtered_models+=("${device_models[$i]}")
+        filtered_versions+=("${device_versions[$i]}")
+      fi
+    done
+    device_udids=("${filtered_udids[@]+"${filtered_udids[@]}"}")
+    device_names=("${filtered_names[@]+"${filtered_names[@]}"}")
+    device_models=("${filtered_models[@]+"${filtered_models[@]}"}")
+    device_versions=("${filtered_versions[@]+"${filtered_versions[@]}"}")
+    count=${#device_udids[@]}
+  fi
+
+  if [[ "$count" -eq 0 ]]; then
     if [[ -n "$TARGET_DEVICE" ]]; then
       die_json "No connected device matching '$TARGET_DEVICE'. Run with --list-devices to see available devices."
     else
@@ -148,8 +156,47 @@ resolve_device_udid() {
     fi
   fi
 
-  RESOLVED_UDID="$udid"
-  RESOLVED_DEVICE_NAME="$device_name"
+  local chosen=0
+
+  if [[ "$count" -eq 1 ]]; then
+    # Single device: confirm with user (unless --yes).
+    log ""
+    log "Found device:"
+    log "  ${device_names[0]} (${device_models[0]}, iOS ${device_versions[0]})"
+    log ""
+    if [[ "$AUTO_CONFIRM" != "1" ]]; then
+      printf 'Deploy to this device? [Y/n] ' >&2
+      local reply
+      read -r reply </dev/tty
+      case "$reply" in
+        [nN]*)
+          die_json "Cancelled by user."
+          ;;
+      esac
+    fi
+  else
+    # Multiple devices: let user choose (unless --yes picks first).
+    if [[ "$AUTO_CONFIRM" == "1" ]]; then
+      log "Multiple devices found; --yes specified, using first device: ${device_names[0]}"
+    else
+      log ""
+      log "Multiple devices found:"
+      for i in $(seq 0 $((count - 1))); do
+        printf '  [%d] %s (%s, iOS %s)\n' "$((i + 1))" "${device_names[$i]}" "${device_models[$i]}" "${device_versions[$i]}" >&2
+      done
+      log ""
+      printf 'Select device [1-%d]: ' "$count" >&2
+      local selection
+      read -r selection </dev/tty
+      if [[ ! "$selection" =~ ^[0-9]+$ ]] || [[ "$selection" -lt 1 ]] || [[ "$selection" -gt "$count" ]]; then
+        die_json "Invalid selection: $selection"
+      fi
+      chosen=$((selection - 1))
+    fi
+  fi
+
+  RESOLVED_UDID="${device_udids[$chosen]}"
+  RESOLVED_DEVICE_NAME="${device_names[$chosen]}"
 }
 
 # -- Build & deploy -----------------------------------------------------------
@@ -250,6 +297,14 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=1
       shift
       ;;
+    -y|--yes)
+      AUTO_CONFIRM=1
+      shift
+      ;;
+    -f|--force)
+      FORCE_DEPLOY=1
+      shift
+      ;;
     -h|--help)
       cat >&2 <<'HELP'
 Usage: ios-deploy.sh [options]
@@ -262,6 +317,8 @@ Options:
   --list-devices         List connected iOS devices and exit (JSON)
   --skip-build           Skip build; install previously built .app
   --dry-run              Print commands without executing
+  -y, --yes              Skip device confirmation prompt
+  -f, --force            Deploy even if already up-to-date
   -h, --help             Show this help
 HELP
       exit 0
@@ -284,6 +341,20 @@ fi
 
 resolve_device_udid
 
+# Skip deploy if the same commit was already deployed to this device.
+CURRENT_COMMIT="$(cd "$REPO_ROOT" && git rev-parse HEAD 2>/dev/null || echo "unknown")"
+MARKER_FILE="$DEPLOY_MARKER_DIR/.deployed-${RESOLVED_UDID}"
+
+if [[ "$FORCE_DEPLOY" != "1" && -f "$MARKER_FILE" ]]; then
+  last_commit="$(cat "$MARKER_FILE" 2>/dev/null || true)"
+  if [[ "$last_commit" == "$CURRENT_COMMIT" ]]; then
+    log "Already deployed (commit ${CURRENT_COMMIT:0:7}) to $RESOLVED_DEVICE_NAME. Use --force to redeploy."
+    printf '{"status":"ok","device":"%s","udid":"%s","skipped":"already_deployed"}\n' \
+      "$RESOLVED_DEVICE_NAME" "$RESOLVED_UDID"
+    exit 0
+  fi
+fi
+
 if [[ "$SKIP_BUILD" == "0" ]]; then
   do_build
 fi
@@ -291,3 +362,7 @@ fi
 APP_PATH="$(locate_app_bundle)"
 do_install "$APP_PATH"
 do_launch "$APP_PATH"
+
+# Record successful deploy.
+mkdir -p "$DEPLOY_MARKER_DIR"
+printf '%s' "$CURRENT_COMMIT" > "$MARKER_FILE"

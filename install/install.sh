@@ -457,7 +457,21 @@ run "$CLI_PATH" --version
 
 if [[ "$RUN_ONBOARD" == "1" ]]; then
   if [[ "$INSTALL_MAC_APP" == "1" ]]; then
-    if install_mac_app; then
+    if [[ "$INSTALL_METHOD" == "git" ]]; then
+      # Git install: source is available locally — build Mac app from source
+      # instead of downloading a pre-built (unsigned) binary.
+      log ""
+      log "────────────────────────────────────────────────────"
+      log "  Marv CLI installed successfully."
+      log ""
+      log "  To install the Mac menu-bar app, run:"
+      log "    scripts/setup-mac-app.sh"
+      log ""
+      log "  (Requires Xcode Command Line Tools)"
+      log "────────────────────────────────────────────────────"
+      log ""
+      run "$CLI_PATH" onboard --install-daemon
+    elif install_mac_app; then
       log "Marv.app installed and launched. Complete setup in the app."
     else
       warn "Mac app download failed; falling back to CLI onboarding."
