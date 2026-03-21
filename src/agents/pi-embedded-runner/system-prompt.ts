@@ -1,8 +1,13 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { AgentSession } from "@mariozechner/pi-coding-agent";
 import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
+import type { ConfiguredModelTier } from "../../core/config/types.models.js";
 import type { ResolvedTimeFormat } from "../date-time.js";
-import { buildAgentSystemPrompt, type PromptMode } from "../prompt/system-prompt.js";
+import {
+  buildAgentSystemPrompt,
+  type PromptMode,
+  type PromptScaffoldLevel,
+} from "../prompt/system-prompt.js";
 import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
 import { buildToolSummaryMap } from "../tools/tool-summaries.js";
 import type { EmbeddedSandboxInfo } from "./types.js";
@@ -48,6 +53,10 @@ export function buildEmbeddedSystemPrompt(params: {
   userTimeFormat?: ResolvedTimeFormat;
   contextFiles?: EmbeddedContextFile[];
   memoryCitationsMode?: MemoryCitationsMode;
+  /** Model tier for scaffold level resolution. */
+  modelTier?: ConfiguredModelTier;
+  /** Override scaffold level directly instead of deriving from modelTier. */
+  scaffoldLevel?: PromptScaffoldLevel;
 }): string {
   return buildAgentSystemPrompt({
     workspaceDir: params.workspaceDir,
@@ -74,6 +83,8 @@ export function buildEmbeddedSystemPrompt(params: {
     userTimeFormat: params.userTimeFormat,
     contextFiles: params.contextFiles,
     memoryCitationsMode: params.memoryCitationsMode,
+    modelTier: params.modelTier,
+    scaffoldLevel: params.scaffoldLevel,
   });
 }
 

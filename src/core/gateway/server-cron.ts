@@ -1062,12 +1062,19 @@ export async function ensureProactivePlannerCronJob(params: {
   const runtimeConfig = params.cfg ?? loadConfig();
   const proactive = runtimeConfig.autonomy?.proactive;
   const desiredEnabled = proactive?.continuousLoop === true;
-  if (!desiredEnabled) {
-    return;
-  }
 
+  // Always list existing jobs so we can reconcile both on→off and off→on transitions.
   const existingJobs = await params.cron.list({ includeDisabled: true });
   const managed = existingJobs.find((job) => job.name === PROACTIVE_PLANNER_JOB_NAME);
+
+  // Feature disabled: disable any existing managed job and return.
+  if (!desiredEnabled) {
+    if (managed && managed.enabled) {
+      await params.cron.update(managed.id, { enabled: false });
+      logger.info({ jobId: managed.id }, "cron: disabled managed proactive-planner job");
+    }
+    return;
+  }
 
   if (!managed) {
     const created = await params.cron.add({

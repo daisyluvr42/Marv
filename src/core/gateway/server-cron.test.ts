@@ -137,6 +137,7 @@ import {
   ensureDeepConsolidationCronJob,
   ensureProactiveCheckCronJob,
   ensureProactiveDigestCronJobs,
+  ensureProactivePlannerCronJob,
   ensureSoulMemoryMaintenanceCronJob,
   ensureUpdateCheckCronJob,
 } from "./server-cron.js";
@@ -689,6 +690,100 @@ describe("buildGatewayCronService", () => {
       expect(scheduleGatewaySigusr1RestartMock).toHaveBeenCalledWith(
         expect.objectContaining({ reason: "cron.updateCheck" }),
       );
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("disables existing planner job when continuousLoop is turned off", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-planner-disable-${Date.now()}`);
+    const enabledCfg = {
+      session: { mainKey: "main" },
+      cron: { store: path.join(tmpDir, "cron.json") },
+      autonomy: { proactive: { continuousLoop: true } },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(enabledCfg);
+
+    const state = buildGatewayCronService({
+      cfg: enabledCfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+
+      // Create the planner job while feature is enabled.
+      await ensureProactivePlannerCronJob({ cron: state.cron, cfg: enabledCfg });
+      let jobs = await state.cron.list({ includeDisabled: true });
+      const planner = jobs.find((j) => j.name === "Proactive Planner");
+      expect(planner).toBeDefined();
+      expect(planner?.enabled).toBe(true);
+
+      // Now disable continuousLoop and reconcile.
+      const disabledCfg = {
+        ...enabledCfg,
+        autonomy: { proactive: { continuousLoop: false } },
+      } as MarvConfig;
+      await ensureProactivePlannerCronJob({ cron: state.cron, cfg: disabledCfg });
+
+      jobs = await state.cron.list({ includeDisabled: true });
+      const updated = jobs.find((j) => j.name === "Proactive Planner");
+      expect(updated).toBeDefined();
+      expect(updated?.enabled).toBe(false);
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("does not create a planner job when continuousLoop is off and none exists", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-planner-noop-${Date.now()}`);
+    const cfg = {
+      session: { mainKey: "main" },
+      cron: { store: path.join(tmpDir, "cron.json") },
+      autonomy: { proactive: { continuousLoop: false } },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureProactivePlannerCronJob({ cron: state.cron, cfg });
+
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const planner = jobs.find((j) => j.name === "Proactive Planner");
+      expect(planner).toBeUndefined();
+    } finally {
+      state.cron.stop();
+    }
+  });
+
+  it("creates planner job when continuousLoop is enabled", async () => {
+    const tmpDir = path.join(os.tmpdir(), `server-cron-planner-create-${Date.now()}`);
+    const cfg = {
+      session: { mainKey: "main" },
+      cron: { store: path.join(tmpDir, "cron.json") },
+      autonomy: { proactive: { continuousLoop: true } },
+    } as MarvConfig;
+    loadConfigMock.mockReturnValue(cfg);
+
+    const state = buildGatewayCronService({
+      cfg,
+      deps: {} as CliDeps,
+      broadcast: () => {},
+    });
+    try {
+      await state.cron.start();
+      await ensureProactivePlannerCronJob({ cron: state.cron, cfg });
+
+      const jobs = await state.cron.list({ includeDisabled: true });
+      const planner = jobs.find((j) => j.name === "Proactive Planner");
+      expect(planner).toBeDefined();
+      expect(planner?.enabled).toBe(true);
+      expect(planner?.payload.kind).toBe("agentTurn");
     } finally {
       state.cron.stop();
     }

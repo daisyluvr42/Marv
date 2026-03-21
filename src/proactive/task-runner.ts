@@ -16,7 +16,12 @@ import {
 } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import { getBudgetStatus, recordTokenUsage } from "./budget.js";
-import { markAnnounced, registerDeliverable } from "./deliverables.js";
+import {
+  getPendingAnnouncements,
+  markAnnouncementFailed,
+  markAnnounced,
+  registerDeliverable,
+} from "./deliverables.js";
 import {
   checkpointTask,
   completeTask,
@@ -296,6 +301,8 @@ export function createProactiveTaskRunner(params: ProactiveTaskRunnerParams): Pr
     // Try to dequeue a task (cheap file read — do this before model resolution).
     const task = await dequeueTask(agentId);
     if (!task) {
+      // Idle tick — drain any pending announcements from earlier failures.
+      await drainPendingAnnouncements(runtimeCfg, agentId);
       await sleep(proactiveCfg.taskPollIntervalMs);
       return;
     }
@@ -444,12 +451,14 @@ export function createProactiveTaskRunner(params: ProactiveTaskRunnerParams): Pr
  * Register a deliverable for a completed task and announce it to the user
  * via the system delivery pipeline (same channel resolution as digest cron).
  */
-async function announceTaskCompletion(
+/** @internal Exported for testing. */
+export async function announceTaskCompletion(
   cfg: MarvConfig,
   agentId: string,
   task: ProactiveTask,
   taskResult?: string,
 ): Promise<void> {
+  let deliverableId: string | undefined;
   try {
     const { deliverable, created } = await registerDeliverable(agentId, {
       taskId: task.id,
@@ -457,8 +466,10 @@ async function announceTaskCompletion(
       title: task.title,
       kind: "other",
     });
-    if (!created) {
-      // Already registered (e.g. by the LLM during execution) — skip duplicate announce.
+    deliverableId = deliverable.id;
+
+    // Only skip if genuinely announced already; stored/failed deliverables should be retried.
+    if (!created && deliverable.status === "announced") {
       return;
     }
 
@@ -490,7 +501,63 @@ async function announceTaskCompletion(
     await markAnnounced(agentId, deliverable.id);
     log.info({ taskId: task.id, channel, to }, "deliverable announced");
   } catch (err) {
+    // Mark the failure so the deliverable stays retryable (not silently swallowed).
+    if (deliverableId) {
+      await markAnnouncementFailed(agentId, deliverableId, String(err)).catch(() => {});
+    }
     log.warn({ taskId: task.id, err: String(err) }, "failed to announce deliverable");
+  }
+}
+
+/** Max pending announcements to drain per idle tick. */
+const PENDING_DRAIN_BATCH = 3;
+
+/**
+ * Attempt to (re)send pending announcement notifications on idle ticks.
+ * Picks up deliverables stuck in "stored" status due to earlier send failures.
+ */
+/** @internal Exported for testing. */
+export async function drainPendingAnnouncements(cfg: MarvConfig, agentId: string): Promise<void> {
+  let pending: Awaited<ReturnType<typeof getPendingAnnouncements>>;
+  try {
+    pending = await getPendingAnnouncements(agentId);
+  } catch {
+    return;
+  }
+  if (pending.length === 0) {
+    return;
+  }
+
+  const delivery = cfg.autonomy?.proactive?.delivery;
+  const channel = delivery?.channel?.trim() || undefined;
+  const to = delivery?.to?.trim();
+
+  if (!to && !channel) {
+    // No delivery target — silently mark all pending as announced.
+    for (const d of pending) {
+      await markAnnounced(agentId, d.id).catch(() => {});
+    }
+    return;
+  }
+
+  const batch = pending.slice(0, PENDING_DRAIN_BATCH);
+  for (const d of batch) {
+    try {
+      const summary = `✅ Proactive task completed: **${d.title}**`;
+      await sendMessage({
+        to: to ?? "",
+        channel,
+        content: summary,
+        agentId,
+        cfg,
+        bestEffort: true,
+      });
+      await markAnnounced(agentId, d.id);
+      log.info({ deliverableId: d.id }, "drained pending announcement");
+    } catch (err) {
+      await markAnnouncementFailed(agentId, d.id, String(err)).catch(() => {});
+      log.warn({ deliverableId: d.id, err: String(err) }, "failed to drain pending announcement");
+    }
   }
 }
 

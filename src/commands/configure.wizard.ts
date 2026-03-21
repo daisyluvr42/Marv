@@ -487,14 +487,24 @@ export async function runConfigureWizard(
             gatewayToken,
           };
         } catch (err) {
-          if (err instanceof WizardBackSignal && sectionIndex > 0) {
-            sectionIndex--;
-            const prev = snapshots[sectionIndex];
-            nextConfig = JSON.parse(JSON.stringify(prev.nextConfig));
-            workspaceDir = prev.workspaceDir;
-            gatewayPort = prev.gatewayPort;
-            gatewayToken = prev.gatewayToken;
-            continue;
+          if (err instanceof WizardBackSignal) {
+            if (sectionIndex > 0) {
+              sectionIndex--;
+              const prev = snapshots[sectionIndex];
+              nextConfig = JSON.parse(JSON.stringify(prev.nextConfig));
+              workspaceDir = prev.workspaceDir;
+              gatewayPort = prev.gatewayPort;
+              gatewayToken = prev.gatewayToken;
+              continue;
+            }
+            // First section: graceful cancel — restore initial state, no persist.
+            const init = snapshots[0];
+            nextConfig = JSON.parse(JSON.stringify(init.nextConfig));
+            workspaceDir = init.workspaceDir;
+            gatewayPort = init.gatewayPort;
+            gatewayToken = init.gatewayToken;
+            outro("No changes applied.");
+            return;
           }
           throw err;
         }
