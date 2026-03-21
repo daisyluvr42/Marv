@@ -71,6 +71,7 @@ apps/ios/*.mobileprovision
 docs/.local/
 Plan/
 IDENTITY.md
+AGENTS.md
 USER.md
 .tgz
 .idea
