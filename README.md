@@ -12,7 +12,7 @@
 
 # Marv
 
-A multi-channel AI agent gateway forked from [Openclaw](https://github.com/openclaw/openlaw), with redesigned agent architecture, sub-agent management, and a tiered memory system.
+A multi-channel AI agent gateway forked from [Openclaw](https://github.com/openclaw/openclaw), with redesigned agent architecture, sub-agent management, and a tiered memory system.
 
 ---
 
@@ -124,7 +124,7 @@ pnpm dev            # Dev mode
 
 # Marv（中文）
 
-基于 [Openclaw](https://github.com/openclaw/openlaw) 衍生的多渠道 AI Agent 网关，重新设计了 agent 运行架构、子 agent 管理和多层记忆系统。
+基于 [Openclaw](https://github.com/openclaw/openclaw) 衍生的多渠道 AI Agent 网关，重新设计了 agent 运行架构、子 agent 管理和多层记忆系统。
 
 ## 与 Openclaw 的主要差异
 
