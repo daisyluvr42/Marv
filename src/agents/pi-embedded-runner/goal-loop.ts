@@ -3,6 +3,7 @@ import type {
   ToolLoopEventRecord,
 } from "../../logging/diagnostic-session-state.js";
 import type { EmbeddedRunAttemptResult } from "./run/types.js";
+import { resolveVerificationDomain, buildVerificationChecklist } from "./verification-recipes.js";
 
 export type GoalFrame = {
   objective: string;
@@ -320,7 +321,12 @@ function dedupeStrings(values: string[]): string[] {
 
 export function buildGoalSteeringContext(
   state: GoalLoopState,
-  options?: { includeAnchor?: boolean },
+  options?: {
+    includeAnchor?: boolean;
+    recentToolCalls?: ToolCallRecord[];
+    rollingSummary?: string;
+    keyDecisions?: string[];
+  },
 ): string | null {
   const currentNode =
     state.directionNodes[state.currentNodeIndex] ??
@@ -341,10 +347,29 @@ export function buildGoalSteeringContext(
     lines.push(...hints);
   }
 
-  const strategyFragment = buildStrategyPromptFragment(state);
+  const strategyFragment = buildStrategyPromptFragment(state, options?.recentToolCalls);
   if (strategyFragment) {
     lines.push(strategyFragment);
   }
+
+  // Progress overview (O6: working memory as derived view)
+  const nodes = state.directionNodes;
+  if (nodes.length > 0) {
+    lines.push("Progress overview:");
+    for (let i = 0; i < nodes.length; i++) {
+      const marker =
+        i < state.currentNodeIndex ? "[done]" : i === state.currentNodeIndex ? "[->]" : "[ ]";
+      const current = i === state.currentNodeIndex ? "  <- current" : "";
+      lines.push(`${marker} ${nodes[i]}${current}`);
+    }
+  }
+  if (options?.rollingSummary) {
+    lines.push(`Rolling summary: ${options.rollingSummary}`);
+  }
+  if (options?.keyDecisions?.length) {
+    lines.push("Key decisions: " + options.keyDecisions.join("; "));
+  }
+
   const merged = lines.map(normalizeLine).filter(Boolean).join("\n");
   return merged || null;
 }
@@ -359,6 +384,7 @@ export function buildStrategyPromptFragment(
     | "loopGuardLevel"
     | "activeDelegation"
   >,
+  recentToolCalls?: ToolCallRecord[],
 ): string | null {
   if (state.strategyFamily === "delegated_subagent" && state.activeDelegation) {
     return (
@@ -378,6 +404,14 @@ export function buildStrategyPromptFragment(
     return "The last attempt hit a blocker. Inspect the failure closely before retrying and compare expected versus actual behavior.";
   }
   if (state.strategyFamily === "validate_result") {
+    if (recentToolCalls && recentToolCalls.length > 0) {
+      const domain = resolveVerificationDomain({
+        goalType: state.goalFrame.goalType,
+        recentToolCalls,
+        objective: state.goalFrame.objective,
+      });
+      return buildVerificationChecklist(domain);
+    }
     return "Prefer validation over more edits. Run the narrowest useful check and use that result to decide the next move.";
   }
   if (state.strategyFamily === "request_capability") {
@@ -951,7 +985,7 @@ export function reviewGoalProgress(args: {
     strategyFamily,
     strategyTrack,
     delegation,
-    steeringContext: buildGoalSteeringContext(nextState),
+    steeringContext: buildGoalSteeringContext(nextState, { recentToolCalls: args.recentToolCalls }),
     visibility: buildVisibilityLabel(strategyFamily, classification),
     state: nextState,
   };

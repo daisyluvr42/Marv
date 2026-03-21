@@ -454,6 +454,8 @@ export function buildWorkspaceSkillSnapshot(
     skillFilter?: string[];
     eligibility?: SkillEligibilityContext;
     snapshotVersion?: number;
+    /** When "lazy", emit a compact index instead of full skill content. */
+    loadingMode?: "eager" | "lazy";
   },
 ): SkillSnapshot {
   const skillEntries = opts?.entries ?? loadSkillEntries(workspaceDir, opts);
@@ -468,22 +470,27 @@ export function buildWorkspaceSkillSnapshot(
   );
   const resolvedSkills = promptEntries.map((entry) => entry.skill);
   const remoteNote = opts?.eligibility?.remote?.note?.trim();
-  const { skillsForPrompt, truncated } = applySkillsPromptLimits({
-    skills: resolvedSkills,
-    config: opts?.config,
-  });
 
-  const truncationNote = truncated
-    ? `⚠️ Skills truncated: included ${skillsForPrompt.length} of ${resolvedSkills.length}. Run \`marv skills check\` to audit.`
-    : "";
+  const prompt = (() => {
+    if (opts?.loadingMode === "lazy") {
+      const indexPrompt = buildWorkspaceSkillsIndex(workspaceDir, {
+        ...opts,
+        entries: skillEntries,
+      });
+      return [remoteNote, indexPrompt].filter(Boolean).join("\n");
+    }
+    const { skillsForPrompt, truncated } = applySkillsPromptLimits({
+      skills: resolvedSkills,
+      config: opts?.config,
+    });
+    const truncationNote = truncated
+      ? `⚠️ Skills truncated: included ${skillsForPrompt.length} of ${resolvedSkills.length}. Run \`marv skills check\` to audit.`
+      : "";
+    return [remoteNote, truncationNote, formatSkillsForPrompt(compactSkillPaths(skillsForPrompt))]
+      .filter(Boolean)
+      .join("\n");
+  })();
 
-  const prompt = [
-    remoteNote,
-    truncationNote,
-    formatSkillsForPrompt(compactSkillPaths(skillsForPrompt)),
-  ]
-    .filter(Boolean)
-    .join("\n");
   const skillFilter = normalizeSkillFilter(opts?.skillFilter);
   return {
     prompt,
@@ -495,6 +502,39 @@ export function buildWorkspaceSkillSnapshot(
     resolvedSkills,
     version: opts?.snapshotVersion,
   };
+}
+
+export function buildWorkspaceSkillsIndex(
+  workspaceDir: string,
+  opts?: {
+    config?: MarvConfig;
+    managedSkillsDir?: string;
+    bundledSkillsDir?: string;
+    entries?: SkillEntry[];
+    skillFilter?: string[];
+    eligibility?: SkillEligibilityContext;
+  },
+): string {
+  const skillEntries = opts?.entries ?? loadSkillEntries(workspaceDir, opts);
+  const eligible = filterSkillEntries(
+    skillEntries,
+    opts?.config,
+    opts?.skillFilter,
+    opts?.eligibility,
+  );
+  const promptEntries = eligible.filter(
+    (entry) => entry.invocation?.disableModelInvocation !== true,
+  );
+  if (promptEntries.length === 0) {
+    return "";
+  }
+  const indexLines = promptEntries.map((entry) => {
+    const name = entry.skill.name || "(unknown)";
+    const desc = (entry.skill.description || "").split("\n")[0].trim();
+    const location = entry.skill.filePath || "";
+    return `<skill><name>${name}</name><description>${desc}</description><location>${location}</location></skill>`;
+  });
+  return `<available_skills>\n${indexLines.join("\n")}\n</available_skills>`;
 }
 
 export function buildWorkspaceSkillsPrompt(

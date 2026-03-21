@@ -42,4 +42,6 @@ export type SkillsConfig = {
   install?: SkillsInstallConfig;
   limits?: SkillsLimitsConfig;
   entries?: Record<string, SkillConfig>;
+  /** Skill loading mode: "eager" loads full content into prompt, "lazy" emits a compact index. */
+  loadingMode?: "eager" | "lazy";
 };

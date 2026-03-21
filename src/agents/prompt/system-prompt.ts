@@ -1,6 +1,7 @@
 import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/thinking.js";
 import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
 import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
+import type { ConfiguredModelTier } from "../../core/config/types.models.js";
 import { listDeliverableMessageChannels } from "../../utils/message-channel.js";
 import type { ResolvedTimeFormat } from "../date-time.js";
 import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
@@ -13,6 +14,38 @@ import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
  * - "none": Just basic identity line, no sections
  */
 export type PromptMode = "full" | "minimal" | "none";
+
+/**
+ * Controls the verbosity of guidance sections in the system prompt.
+ * Weaker models get more scaffolding; strong models get concise prompts.
+ * - "full": All guidance sections, verbose tool rules, explicit anti-patterns (for low-tier models)
+ * - "standard": Moderate guidance (for standard-tier models)
+ * - "lean": Minimal guidance, trusts model judgment (for high-tier models)
+ */
+export type PromptScaffoldLevel = "full" | "standard" | "lean";
+
+/**
+ * Resolve the prompt scaffold level from model tier.
+ * "low" tier → "full" scaffold (maximum guidance)
+ * "standard" tier → "standard" scaffold
+ * "high" tier → "lean" scaffold (minimal guidance)
+ */
+export function resolvePromptScaffoldLevel(
+  modelTier?: ConfiguredModelTier,
+  override?: PromptScaffoldLevel,
+): PromptScaffoldLevel {
+  if (override && override !== ("auto" as string)) {
+    return override;
+  }
+  switch (modelTier) {
+    case "low":
+      return "full";
+    case "high":
+      return "lean";
+    default:
+      return "standard";
+  }
+}
 
 function buildSkillsSection(params: {
   skillsPrompt?: string;
@@ -233,6 +266,101 @@ function buildDocsSection(params: { docsPath?: string; isMinimal: boolean }) {
   ];
 }
 
+/**
+ * O1: Tool anti-pattern guidance. Channels the model to the right tool, not fewer tools.
+ * Each line is conditional on the relevant tools being available.
+ * Omitted entirely for "lean" scaffold (strong models pick tools correctly).
+ */
+function buildToolGuidanceSection(params: {
+  scaffoldLevel: PromptScaffoldLevel;
+  availableTools: Set<string>;
+}): string[] {
+  if (params.scaffoldLevel === "lean") {
+    return [];
+  }
+  const has = (name: string) => params.availableTools.has(name);
+  const lines: string[] = [];
+  if (has("memory_search") && has("read")) {
+    lines.push(
+      "- Prefer memory_search for prior decisions/preferences; re-reading files is a fallback.",
+    );
+  }
+  if (has("web_search") && has("web_fetch")) {
+    lines.push("- Use web_search for broad discovery; web_fetch only for a specific URL.");
+  }
+  if (has("exec") && has("process")) {
+    lines.push("- Use exec for quick commands; process for long-running or interactive work.");
+  }
+  if (has("message")) {
+    lines.push(
+      "- Use message(action=send) for proactive cross-channel sends; inline reply for same-channel.",
+    );
+  }
+  if (has("memory_write") && (has("write") || has("edit"))) {
+    lines.push("- Use memory_write for durable knowledge; do not hand-edit memory files.");
+  }
+  if (has("gateway") && has("exec")) {
+    lines.push("- Do not script config changes via exec; use gateway config actions.");
+  }
+  if (lines.length === 0) {
+    return [];
+  }
+  return ["## Tool Preferences", ...lines];
+}
+
+/**
+ * O5: Output efficiency rules. Baseline that P0 personality can override.
+ * Preserves proactive agency — "take initiative, but keep output focused."
+ * Omitted for "lean" scaffold (strong models are already concise) and minimal mode.
+ */
+function buildOutputEfficiencySection(params: {
+  isMinimal: boolean;
+  scaffoldLevel: PromptScaffoldLevel;
+}): string[] {
+  if (params.isMinimal || params.scaffoldLevel === "lean") {
+    return [];
+  }
+  return [
+    "## Response Efficiency",
+    "Lead with the answer or action, not the reasoning. If one sentence suffices, do not use three.",
+    "Skip filler and preamble. Be proactive and direct — take initiative, but keep output focused.",
+    "These defaults yield to personality (P0 Identity/Soul) when set.",
+    "",
+  ];
+}
+
+/**
+ * O7: Subagent role guidance. Helps the model assign the narrowest role when spawning subagents.
+ * Conditional on subagent spawn tools being available.
+ */
+function buildSubagentRoleGuidance(params: {
+  isMinimal: boolean;
+  scaffoldLevel: PromptScaffoldLevel;
+  availableTools: Set<string>;
+}): string[] {
+  if (params.isMinimal) {
+    return [];
+  }
+  if (!params.availableTools.has("sessions_spawn") && !params.availableTools.has("task_dispatch")) {
+    return [];
+  }
+  if (params.scaffoldLevel === "lean") {
+    return [
+      "## Subagent Roles",
+      "When spawning subagents, assign the narrowest role that fits the task.",
+      "",
+    ];
+  }
+  return [
+    "## Subagent Roles",
+    "When spawning subagents, assign the narrowest role:",
+    "- researcher/fact_checker/analyst: read-only investigation (no file mutations)",
+    "- reviewer/tester/architect: review and verify (no write/exec)",
+    "- debugger/coder: full tool access for hands-on work",
+    "",
+  ];
+}
+
 export function buildAgentSystemPrompt(params: {
   workspaceDir: string;
   defaultThinkLevel?: ThinkLevel;
@@ -288,7 +416,13 @@ export function buildAgentSystemPrompt(params: {
     channel: string;
   };
   memoryCitationsMode?: MemoryCitationsMode;
+  /** Model tier for scaffold level resolution. */
+  modelTier?: ConfiguredModelTier;
+  /** Override scaffold level directly instead of deriving from modelTier. */
+  scaffoldLevel?: PromptScaffoldLevel;
 }) {
+  const scaffoldLevel = resolvePromptScaffoldLevel(params.modelTier, params.scaffoldLevel);
+
   // Tool summaries are resolved dynamically from tool registrations via buildToolSummaryMap().
   // Callers pass toolNames (preserving registration order) and toolSummaries (extracted from tool.description).
   const summaries = new Map<string, string>();
@@ -381,6 +515,8 @@ export function buildAgentSystemPrompt(params: {
     `For long waits, avoid rapid poll loops: use ${execToolName} with enough yieldMs or ${processToolName}(action=poll, timeout=<ms>).`,
     "If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.",
     "Do not poll `subagents list` / `sessions_list` in a loop; only check status on-demand.",
+    // Tool preferences (O1) — scaffold-gated, conditional on available tools
+    ...buildToolGuidanceSection({ scaffoldLevel, availableTools }),
     "",
     // Tool call style
     !isMinimal ? "## Tool Call Style" : "",
@@ -395,6 +531,8 @@ export function buildAgentSystemPrompt(params: {
     "Prioritize safety and human oversight over completion; if instructions conflict, pause and ask; comply with stop/pause/audit requests and never bypass safeguards.",
     "Do not manipulate or persuade anyone to expand access or disable safeguards. Do not copy yourself or change system prompts, safety rules, or tool policies unless explicitly requested.",
     "",
+    // Response efficiency (O5) — scaffold-gated
+    ...buildOutputEfficiencySection({ isMinimal, scaffoldLevel }),
     // CLI Quick Reference
     !isMinimal ? "## Marv CLI Quick Reference" : "",
     !isMinimal
@@ -487,6 +625,8 @@ export function buildAgentSystemPrompt(params: {
     ...buildVoiceSection({ isMinimal, ttsHint: params.ttsHint }),
     // Autonomy helpers
     ...buildAutonomyToolsSection({ isMinimal, availableTools }),
+    // Subagent role guidance (O7) — scaffold-gated
+    ...buildSubagentRoleGuidance({ isMinimal, scaffoldLevel, availableTools }),
   ];
 
   if (extraSystemPrompt) {

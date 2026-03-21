@@ -320,6 +320,7 @@ export async function agentCommand(
           eligibility: { remote: getRemoteSkillEligibility() },
           snapshotVersion: skillsSnapshotVersion,
           skillFilter,
+          loadingMode: cfg?.skills?.loadingMode,
         })
       : sessionEntry?.skillsSnapshot;
 

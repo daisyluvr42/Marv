@@ -170,6 +170,7 @@ export async function ensureSkillSnapshot(params: {
             skillFilter,
             eligibility: { remote: remoteEligibility },
             snapshotVersion,
+            loadingMode: cfg?.skills?.loadingMode,
           })
         : current.skillsSnapshot;
     nextEntry = {
@@ -194,6 +195,7 @@ export async function ensureSkillSnapshot(params: {
         skillFilter,
         eligibility: { remote: remoteEligibility },
         snapshotVersion,
+        loadingMode: cfg?.skills?.loadingMode,
       })
     : (nextEntry?.skillsSnapshot ??
       (isFirstTurnInSession
@@ -203,6 +205,7 @@ export async function ensureSkillSnapshot(params: {
             skillFilter,
             eligibility: { remote: remoteEligibility },
             snapshotVersion,
+            loadingMode: cfg?.skills?.loadingMode,
           })));
   if (
     skillsSnapshot &&

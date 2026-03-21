@@ -40,6 +40,7 @@ export async function resolveCommandsSystemPromptBundle(
         config: params.cfg,
         eligibility: { remote: getRemoteSkillEligibility() },
         snapshotVersion: getSkillsSnapshotVersion(workspaceDir),
+        loadingMode: params.cfg?.skills?.loadingMode,
       });
     } catch {
       return { prompt: "", skills: [], resolvedSkills: [] };

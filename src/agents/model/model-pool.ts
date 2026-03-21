@@ -61,6 +61,14 @@ function inferTier(entry?: ConfiguredModelCatalogEntry): ConfiguredModelTier {
   return entry?.tier ?? "standard";
 }
 
+/**
+ * Resolve the model tier from a catalog entry or configuration.
+ * Public wrapper around inferTier for use by prompt scaffolding (O0).
+ */
+export function resolveModelTier(catalogEntry?: ConfiguredModelCatalogEntry): ConfiguredModelTier {
+  return inferTier(catalogEntry);
+}
+
 function inferCapabilities(
   entry?: ConfiguredModelCatalogEntry,
   model?: string,

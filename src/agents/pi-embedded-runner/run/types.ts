@@ -20,6 +20,7 @@ export type EmbeddedRunAttemptParams = EmbeddedRunAttemptBase & {
   modelRegistry: ModelRegistry;
   thinkLevel: ThinkLevel;
   goalSteeringContext?: string | null;
+  stageToolDeny?: string[];
 };
 
 export type EmbeddedRunAttemptResult = {

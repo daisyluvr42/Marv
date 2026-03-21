@@ -33,5 +33,6 @@ export function resolveCronSkillsSnapshot(params: {
     skillFilter,
     eligibility: { remote: getRemoteSkillEligibility() },
     snapshotVersion,
+    loadingMode: params.config?.skills?.loadingMode,
   });
 }

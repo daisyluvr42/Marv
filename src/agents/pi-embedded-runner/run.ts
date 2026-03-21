@@ -73,6 +73,7 @@ import { resolveModel } from "./model.js";
 import { runEmbeddedAttempt } from "./run/attempt.js";
 import type { RunEmbeddedPiAgentParams } from "./run/params.js";
 import { buildEmbeddedRunPayloads } from "./run/payloads.js";
+import { resolveStageSteering } from "./stage-steering.js";
 import {
   truncateOversizedToolResultsInSession,
   sessionLikelyHasOversizedToolResults,
@@ -651,6 +652,22 @@ export async function runEmbeddedPiAgent(
       let goalSteeringContext = goalLoopState
         ? buildGoalSteeringContext(goalLoopState, { includeAnchor: true })
         : null;
+      let stageToolDeny: string[] | undefined;
+      if (goalLoopState && goalSteeringContext) {
+        const currentNode = goalLoopState.directionNodes[goalLoopState.currentNodeIndex] ?? "";
+        const stageSteering = resolveStageSteering({
+          currentNode,
+          goalType: goalLoopState.goalFrame.goalType,
+          stuckAttempts: goalLoopState.stuckCounter,
+          denyEnabled: true,
+        });
+        if (stageSteering) {
+          goalSteeringContext = [goalSteeringContext, stageSteering.annotation]
+            .filter(Boolean)
+            .join("\n");
+          stageToolDeny = stageSteering.denyTools;
+        }
+      }
       if (goalLoopState) {
         void params.onAgentEvent?.({
           stream: "goal",
@@ -787,6 +804,7 @@ export async function runEmbeddedPiAgent(
             onAgentEvent: params.onAgentEvent,
             extraSystemPrompt,
             goalSteeringContext,
+            stageToolDeny,
             inputProvenance: params.inputProvenance,
             streamParams: params.streamParams,
             ownerNumbers: params.ownerNumbers,
@@ -849,6 +867,24 @@ export async function runEmbeddedPiAgent(
             goalLoopState = review.state;
             goalSteeringContext =
               goalLoopState.loopGuardLevel === "stop" ? null : review.steeringContext;
+            // O2: Re-resolve stage steering after goal progress review
+            stageToolDeny = undefined;
+            if (goalLoopState.loopGuardLevel !== "stop" && goalSteeringContext) {
+              const currentNode =
+                goalLoopState.directionNodes[goalLoopState.currentNodeIndex] ?? "";
+              const stageSteering = resolveStageSteering({
+                currentNode,
+                goalType: goalLoopState.goalFrame.goalType,
+                stuckAttempts: goalLoopState.stuckCounter,
+                denyEnabled: true,
+              });
+              if (stageSteering) {
+                goalSteeringContext = [goalSteeringContext, stageSteering.annotation]
+                  .filter(Boolean)
+                  .join("\n");
+                stageToolDeny = stageSteering.denyTools;
+              }
+            }
             void params.onAgentEvent?.({
               stream: "goal",
               data: {

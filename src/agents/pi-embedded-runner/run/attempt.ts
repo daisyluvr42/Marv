@@ -371,7 +371,11 @@ export async function runEmbeddedAttempt(
             isCronSessionKey(params.sessionKey) && isProactiveBufferPrompt(params.prompt),
           enableProactiveTasks: params.config?.autonomy?.proactive?.continuousLoop === true,
         });
-    const tools = sanitizeToolsForGoogle({ tools: toolsRaw, provider: params.provider });
+    let tools = sanitizeToolsForGoogle({ tools: toolsRaw, provider: params.provider });
+    // O2: Stage-aware tool deny — filter out mutation tools during early stages
+    if (params.stageToolDeny?.length) {
+      tools = tools.filter((t) => !params.stageToolDeny!.includes(t.name));
+    }
     logToolSchemasForGoogle({ tools, provider: params.provider });
 
     const machineName = await getMachineDisplayName();

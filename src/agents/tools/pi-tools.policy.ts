@@ -72,9 +72,17 @@ const SUBAGENT_TOOL_DENY_LEAF = [
 ];
 
 const ROLE_POLICY_DENYLISTS: Record<string, string[]> = {
+  // Existing roles
   tester: ["write", "edit", "apply_patch", "exec", "process"],
   architect: ["write", "edit", "apply_patch", "exec", "process"],
   reviewer: ["write", "edit", "apply_patch", "exec", "process"],
+  // Goal-loop mutation roles
+  debugger: [],
+  coder: [],
+  // Goal-loop inquiry roles
+  researcher: ["write", "edit", "apply_patch", "message"],
+  fact_checker: ["write", "edit", "apply_patch", "message", "exec", "process"],
+  analyst: ["write", "edit", "apply_patch"],
 };
 
 /**
