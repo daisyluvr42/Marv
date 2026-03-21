@@ -86,6 +86,66 @@ The codebase uses TypeScript with Express and Prisma ORM. We need to refactor th
   it("handles empty prompt as simple", () => {
     expect(classifyComplexityByRules({ prompt: "" })).toBe("simple");
   });
+
+  // -- Simple indicators (negative scoring) --
+
+  it("classifies a pure greeting as simple (negative score)", () => {
+    expect(classifyComplexityByRules({ prompt: "Hello!" })).toBe("simple");
+    expect(classifyComplexityByRules({ prompt: "Hey" })).toBe("simple");
+    expect(classifyComplexityByRules({ prompt: "Good morning" })).toBe("simple");
+  });
+
+  it("classifies a pure thanks/affirmative as simple (negative score)", () => {
+    expect(classifyComplexityByRules({ prompt: "Thanks!" })).toBe("simple");
+    expect(classifyComplexityByRules({ prompt: "Ok" })).toBe("simple");
+    expect(classifyComplexityByRules({ prompt: "Yes" })).toBe("simple");
+    expect(classifyComplexityByRules({ prompt: "Got it" })).toBe("simple");
+  });
+
+  it("does not apply simple indicator to messages with extra content", () => {
+    // "Hello" alone matches, but with additional content the anchor fails
+    const prompt =
+      "Hello, can you implement a microservices architecture and analyze the security implications?";
+    const result = classifyComplexityByRules({ prompt });
+    expect(result).not.toBe("simple"); // two complex patterns → score 2 → moderate
+  });
+
+  // -- Reasoning markers (positive scoring) --
+
+  it("upgrades complexity for reasoning keywords", () => {
+    const prompt = "Prove that this algorithm is O(n log n)";
+    const result = classifyComplexityByRules({ prompt });
+    expect(["moderate", "complex", "expert"]).toContain(result);
+  });
+
+  it("upgrades complexity for step-by-step reasoning", () => {
+    const prompt = "Explain step-by-step why does this recursive function overflow";
+    const result = classifyComplexityByRules({ prompt });
+    // step-by-step + why does = 2 reasoning hits (+2), short length → score 2 → moderate
+    expect(["moderate", "complex"]).toContain(result);
+  });
+
+  it("upgrades complexity for compare-and-contrast with trade-offs", () => {
+    const prompt =
+      "Compare and contrast Redux vs Zustand, covering the trade-offs and pros and cons of each approach";
+    const result = classifyComplexityByRules({ prompt });
+    // compare and contrast + trade-offs + pros and cons = 3 reasoning hits (+3) → complex
+    expect(["complex", "expert"]).toContain(result);
+  });
+
+  it("combines reasoning markers with code to push toward expert", () => {
+    const prompt = `Explain the root cause of this bug step by step:
+\`\`\`
+async function process() {
+  const data = await fetchData();
+  if (!data) return null;
+}
+\`\`\`
+Why does it fail intermittently?`;
+    const result = classifyComplexityByRules({ prompt });
+    // code markers (```, async, function, const, await, if, return) + reasoning (root cause, step by step, why does) → expert
+    expect(result).toBe("expert");
+  });
 });
 
 describe("buildClassifierPrompt", () => {

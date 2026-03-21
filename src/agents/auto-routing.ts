@@ -52,6 +52,26 @@ const MULTI_PART_MARKERS = [
   /\bstep\s+\d/i,
 ];
 
+/** Whole-message trivial patterns — strong signal the prompt needs no heavy model. */
+const SIMPLE_INDICATORS = [
+  /^\s*(hi|hello|hey|yo|sup|greetings|howdy)\s*[!?.,]*\s*$/i,
+  /^\s*(thanks?|thank\s+you|thx|ty)\s*[!?.,]*\s*$/i,
+  /^\s*(yes|no|ok|okay|sure|yep|nah|nope|got\s+it)\s*[!?.,]*\s*$/i,
+  /^\s*good\s+(morning|afternoon|evening|night)\s*[!?.,]*\s*$/i,
+];
+
+/** Deep analytical / reasoning patterns — strong upward signal. */
+const REASONING_MARKERS = [
+  /\b(prove|disprove|derive|theorem|proof|conjecture)\b/i,
+  /\bstep[- ]by[- ]step\b/i,
+  /\bcompare\s+(and\s+)?contrast\b/i,
+  /\btrade[- ]?offs?\b/i,
+  /\bpros?\s+(and|&)\s+cons?\b/i,
+  /\bwhy\s+(does|do|is|are|did|would|should|can'?t|doesn'?t|won'?t)\b/i,
+  /\b(explain|describe)\s+(the\s+)?(reasoning|logic|rationale|mechanism)\b/i,
+  /\b(root\s+cause|first\s+principles?)\b/i,
+];
+
 function countMatches(text: string, patterns: RegExp[]): number {
   let count = 0;
   for (const pattern of patterns) {
@@ -94,9 +114,16 @@ export function classifyComplexityByRules(params: {
   const multiPartHits = countMatches(prompt, MULTI_PART_MARKERS);
   const complexPatterns = compilePatterns(complexPatternStrings);
   const complexPatternHits = countMatches(prompt, complexPatterns);
+  const simpleHits = countMatches(prompt, SIMPLE_INDICATORS);
+  const reasoningHits = countMatches(prompt, REASONING_MARKERS);
 
   // Score-based approach: accumulate complexity signals.
   let score = 0;
+
+  // Simple indicators — whole-message trivial patterns (strong negative)
+  if (simpleHits >= 1) {
+    score -= 2;
+  }
 
   // Length signal
   if (length >= complexMax) {
@@ -128,6 +155,16 @@ export function classifyComplexityByRules(params: {
     score += 2;
   } else if (multiPartHits >= 1) {
     score += 1;
+  }
+
+  // Reasoning markers — deep analytical / step-by-step thinking (weighted higher
+  // than other signals because reasoning tasks consistently need capable models)
+  if (reasoningHits >= 3) {
+    score += 4;
+  } else if (reasoningHits >= 2) {
+    score += 3;
+  } else if (reasoningHits >= 1) {
+    score += 2;
   }
 
   // Images increase complexity
