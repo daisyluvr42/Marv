@@ -122,6 +122,20 @@ export type AutonomyProactiveConfig = {
   escalationModel?: string;
 };
 
+/** Experiment loop configuration. */
+export type AutonomyExperimentConfig = {
+  /** Enable experiment loops for proactive tasks. Default: true when proactive is enabled. */
+  enabled?: boolean;
+  /** Default max iterations per experiment. Default: 10. */
+  defaultMaxIterations?: number;
+  /** Default time budget in seconds per experiment. Default: 1800 (30 min). */
+  defaultTimeBudgetSeconds?: number;
+  /** Default checkpoint strategy. Default: "git". */
+  defaultCheckpointStrategy?: "git" | "file-copy" | "json-snapshot" | "none";
+  /** Prefer local models for experiment iterations (unlimited budget). Default: true. */
+  preferLocalModels?: boolean;
+};
+
 /**
  * Top-level autonomy configuration.
  *
@@ -152,6 +166,8 @@ export type AutonomyConfig = {
   toolSynthesis?: AutonomyToolSynthesisConfig;
   /** Proactive checking + digest delivery. */
   proactive?: AutonomyProactiveConfig;
+  /** Experiment loop configuration for autoresearch-style optimization. */
+  experiments?: AutonomyExperimentConfig;
   /** Privacy guard for non-owner / group chat contexts. */
   privacy?: AutonomyPrivacyConfig;
 };

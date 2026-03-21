@@ -1,3 +1,4 @@
+import type { ExperimentState } from "../../experiments/types.js";
 import {
   querySoulMemoryMulti,
   writeSoulMemory,
@@ -8,6 +9,7 @@ import { parseAgentSessionKey } from "../../routing/session-key.js";
 import type { GoalLoopState, ProblemShape, StrategyFamily, StrategyHint } from "./goal-loop.js";
 
 const STRATEGY_MEMORY_KIND = "agent_strategy";
+const EXPERIMENT_MEMORY_KIND = "experiment_result";
 const STRATEGY_MEMORY_SOURCE = "auto_extraction";
 
 function dedupeScopes(scopes: SoulMemoryScope[]): SoulMemoryScope[] {
@@ -174,6 +176,62 @@ export function persistGoalStrategyMemory(params: {
       outcome,
       directionNode: params.state.directionNodes[params.state.currentNodeIndex] ?? null,
       shiftCount: params.state.shiftCount,
+    },
+    soulConfig: params.soulConfig,
+  });
+}
+
+/** Persist experiment outcome to soul memory for cross-experiment learning. */
+export function persistExperimentMemory(params: {
+  agentId: string;
+  state: ExperimentState;
+  soulConfig?: SoulMemoryConfig;
+}): void {
+  const { state } = params;
+  const kept = state.iterations.filter(
+    (i) => i.verdict === "improved" || i.verdict === "threshold_met",
+  ).length;
+  const isSuccess = state.status === "completed" && kept > 0;
+
+  const bestMetrics =
+    state.bestResult?.map((r) => `${r.evaluatorId}=${r.value}`).join(", ") ?? "N/A";
+  const baselineMetrics =
+    state.iterations[0]?.baseline.map((r) => `${r.evaluatorId}=${r.value}`).join(", ") ?? "N/A";
+
+  const content = [
+    `Experiment: ${state.spec.name}`,
+    `Objective: ${state.spec.objective}`,
+    `Outcome: ${isSuccess ? "improved" : "no improvement"}`,
+    `Baseline: ${baselineMetrics}`,
+    `Best: ${bestMetrics} (iteration ${state.bestIteration ?? "N/A"})`,
+    `Iterations: ${state.iterations.length} (${kept} kept)`,
+    `Stop reason: ${state.stopReason ?? "unknown"}`,
+  ].join("\n");
+
+  const summary = isSuccess
+    ? `Experiment "${state.spec.name}" improved metrics: ${bestMetrics}`
+    : `Experiment "${state.spec.name}" did not improve (${state.stopReason ?? "unknown"})`;
+
+  writeSoulMemory({
+    agentId: params.agentId,
+    scopeType: "agent",
+    scopeId: params.agentId,
+    kind: EXPERIMENT_MEMORY_KIND,
+    content,
+    summary,
+    source: STRATEGY_MEMORY_SOURCE,
+    tier: isSuccess ? "P2" : "P3",
+    recordKind: "experience",
+    metadata: {
+      experimentId: state.spec.id,
+      experimentName: state.spec.name,
+      objective: state.spec.objective,
+      status: state.status,
+      stopReason: state.stopReason,
+      iterationCount: state.iterations.length,
+      keptCount: kept,
+      bestIteration: state.bestIteration,
+      evaluators: state.spec.evaluators.map((e) => e.id),
     },
     soulConfig: params.soulConfig,
   });

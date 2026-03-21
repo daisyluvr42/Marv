@@ -56,6 +56,8 @@ Guidelines:
 - Each task description should be self-contained (the executor has no other context)
 `;
 
+export const PROACTIVE_EXPERIMENT_MARKER = "[PROACTIVE_EXPERIMENT]";
+
 export function isProactiveBufferPrompt(prompt: string): boolean {
   const normalized = prompt.trim();
   return (

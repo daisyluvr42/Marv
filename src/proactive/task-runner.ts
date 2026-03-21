@@ -6,6 +6,7 @@ import type { MarvConfig } from "../core/config/config.js";
 import { loadConfig } from "../core/config/config.js";
 import { runCronIsolatedAgentTurn } from "../cron/isolated-agent.js";
 import type { CronJob } from "../cron/types.js";
+import { runExperiment, summarizeExperiment } from "../experiments/protocol.js";
 import { sendMessage } from "../infra/outbound/message.js";
 import { getChildLogger } from "../logging.js";
 import {
@@ -335,6 +336,60 @@ export function createProactiveTaskRunner(params: ProactiveTaskRunnerParams): Pr
       "executing proactive task",
     );
 
+    // ── Experiment routing ────────────────────────────────────────────
+    // Tasks with an experimentSpec run the evaluator-driven experiment
+    // loop instead of a single agent turn.
+    if (task.experimentSpec) {
+      try {
+        const expResult = await enqueueCommandInLane(CommandLane.Proactive, async () => {
+          return await runExperiment({
+            spec: task.experimentSpec!,
+            agentId,
+            cwd: process.cwd(),
+            shouldYield: shouldYieldToUser,
+            runMutation: async ({ prompt }) => {
+              const job = buildProactiveJobShell({ ...task, description: prompt }, agentId, {
+                modelRef,
+                useCloud,
+              });
+              const turnResult = await runCronIsolatedAgentTurn({
+                cfg: runtimeCfg,
+                deps: params.deps,
+                job,
+                message: prompt,
+                agentId,
+                sessionKey: `experiment:${task.experimentSpec!.id}:${Date.now()}`,
+                lane: CommandLane.Proactive,
+              });
+              const tokensUsed = turnResult.usage?.total_tokens ?? 0;
+              if (tokensUsed > 0) {
+                await recordTokenUsage(agentId, tokensUsed);
+              }
+              return { summary: turnResult.outputText, tokensUsed };
+            },
+          });
+        });
+
+        const taskResult = summarizeExperiment(expResult);
+        if (expResult.status === "completed" || expResult.status === "stopped") {
+          await completeTask(agentId, task.id, taskResult);
+          await announceTaskCompletion(runtimeCfg, agentId, task, taskResult);
+          log.info(
+            { taskId: task.id, experimentId: task.experimentSpec.id, status: expResult.status },
+            "experiment task completed",
+          );
+        } else {
+          await failTask(agentId, task.id, taskResult);
+          log.warn({ taskId: task.id, status: expResult.status }, "experiment task failed");
+        }
+      } catch (err) {
+        await failTask(agentId, task.id, String(err));
+        log.warn({ taskId: task.id, err: String(err) }, "experiment task error");
+      }
+      return;
+    }
+
+    // ── Regular task execution ──────────────────────────────────────────
     // Execute the task on the proactive lane.
     try {
       const result = await enqueueCommandInLane(CommandLane.Proactive, async () => {

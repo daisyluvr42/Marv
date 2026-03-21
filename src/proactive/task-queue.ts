@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveStateDir } from "../core/config/paths.js";
+import type { ExperimentSpec } from "../experiments/types.js";
 import { withFileLock } from "../infra/file-lock.js";
 import { createAsyncLock } from "../infra/json-files.js";
 
@@ -34,6 +35,12 @@ export type ProactiveTask = {
   updatedAt: number;
   /** Result summary written on completion or failure. */
   result?: string;
+  /**
+   * When set, the task runner executes this as an experiment loop
+   * (evaluator-driven iteration with checkpoint/rollback) instead of
+   * a plain agent turn.
+   */
+  experimentSpec?: ExperimentSpec;
 };
 
 export type TaskQueueData = {
