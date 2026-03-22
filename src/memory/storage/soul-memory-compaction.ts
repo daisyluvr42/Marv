@@ -326,7 +326,7 @@ function runCompaction(
         continue;
       }
 
-      // Write the new P2 semantic node via writeSoulMemory
+      // Write the semantic node via writeSoulMemory (all items are P3 now)
       const semanticItem = writeSoulMemory({
         agentId,
         scopeType: head.scopeType,
@@ -335,7 +335,7 @@ function runCompaction(
         content: summary,
         confidence: 0.7,
         source: "auto_extraction",
-        tier: "P2",
+        tier: "P3",
         recordKind: normalizeRecordKind(headRow.record_kind),
         metadata: {
           compactedFrom: cluster.map((c) => c.id),

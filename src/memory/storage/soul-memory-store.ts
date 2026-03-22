@@ -875,7 +875,8 @@ export function querySoulMemoryMulti(params: {
       const item = rowToMemoryItem(row);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      if (ttlDays > 0 && ageDays > ttlDays && item.tier !== TIER_P0) {
+      // No tier-based TTL exemption: all items are P3. TTL applies uniformly.
+      if (ttlDays > 0 && ageDays > ttlDays) {
         continue;
       }
 
@@ -1356,7 +1357,7 @@ function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
       "content TEXT NOT NULL, " +
       "embedding_json TEXT NOT NULL, " +
       "confidence REAL NOT NULL, " +
-      "tier TEXT NOT NULL DEFAULT 'P1', " +
+      "tier TEXT NOT NULL DEFAULT 'P3', " +
       "source TEXT NOT NULL DEFAULT 'manual_log', " +
       "record_kind TEXT NOT NULL DEFAULT 'experience', " +
       "summary TEXT, " +

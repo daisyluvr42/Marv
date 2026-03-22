@@ -101,7 +101,8 @@ export function buildTaskContextWindow(params: {
     topK: 12,
     minScore: 0.5,
   })
-    .filter((item) => item.tier === "P0")
+    // No tier filter: all items are P3 now. High-confidence items serve the same role as old P0.
+    .filter((item) => item.confidence >= 0.7)
     .map((item) => item.content)
     .filter(Boolean);
   const p0Memory = clampTextListByTokens(p0Memories, budgets.p0Memory);

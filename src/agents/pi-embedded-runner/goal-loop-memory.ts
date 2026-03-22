@@ -228,7 +228,8 @@ export function persistExperimentMemory(params: {
     content,
     summary,
     source: STRATEGY_MEMORY_SOURCE,
-    tier: isSuccess ? "P2" : "P3",
+    // All items are P3 in the new architecture
+    tier: "P3",
     recordKind: "experience",
     metadata: {
       experimentId: state.spec.id,

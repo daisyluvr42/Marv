@@ -991,7 +991,7 @@ export function registerMemoryCli(program: Command) {
           continue;
         }
         const validTier =
-          tier && ["P0", "P1", "P2", "P3"].includes(tier) ? (tier as SoulMemoryTier) : "P2";
+          tier && ["P0", "P1", "P2", "P3"].includes(tier) ? (tier as SoulMemoryTier) : "P3";
         const recordKind = entry.recordKind?.trim() || "experience";
         const result = writeSoulMemory({
           agentId,

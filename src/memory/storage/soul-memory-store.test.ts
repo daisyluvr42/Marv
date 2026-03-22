@@ -52,7 +52,7 @@ describe("soul-memory-store", () => {
       confidence: 0.01,
     });
     expect(first).not.toBeNull();
-    expect(first?.tier).toBe("P0");
+    expect(first?.tier).toBe("P3");
     expect(first?.confidence).toBeCloseTo(0.95);
     expect(first?.reinforcementCount).toBe(1);
 
@@ -169,7 +169,9 @@ describe("soul-memory-store", () => {
       nowMs: createdMs + 180 * 24 * 60 * 60 * 1000,
     });
     expect(stale).toHaveLength(1);
-    expect((stale[0]?.salienceDecay ?? 0) < (fresh[0]?.salienceDecay ?? 0)).toBe(true);
+    // No decay in the new architecture: salienceDecay is always 1 regardless of age
+    expect(stale[0]?.salienceDecay).toBeCloseTo(1);
+    expect(fresh[0]?.salienceDecay).toBeCloseTo(1);
   });
 
   it("tracks [ref:item_id] citation links and returns them in query results", () => {
@@ -265,7 +267,7 @@ describe("soul-memory-store", () => {
     expect(cResult?.score ?? 0).toBeGreaterThan(0);
   });
 
-  it("prefers slower-decay P0 memory over P2 for stale records", () => {
+  it("assigns all sources to P3 with no tier-based preference for stale records", () => {
     const oldMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = oldMs + 30 * 24 * 60 * 60 * 1000;
     const p0 = writeSoulMemory({
@@ -299,10 +301,12 @@ describe("soul-memory-store", () => {
       nowMs,
     });
     expect(results).toHaveLength(2);
-    expect(results[0]?.tier).toBe("P0");
+    // All sources map to P3 — no tier-based preference
+    expect(results[0]?.tier).toBe("P3");
+    expect(results[1]?.tier).toBe("P3");
   });
 
-  it("downgrades core_preference writes to P1 when kind is not soul-level", () => {
+  it("downgrades core_preference source to manual_log when kind is not soul-level", () => {
     const item = writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
@@ -312,12 +316,13 @@ describe("soul-memory-store", () => {
       source: "core_preference",
     });
     expect(item).not.toBeNull();
-    expect(item?.tier).toBe("P1");
+    // All sources map to P3 in the new architecture
+    expect(item?.tier).toBe("P3");
     expect(item?.source).toBe("manual_log");
     expect(item?.confidence).toBeCloseTo(0.85);
   });
 
-  it("allows configured non-default kinds to enter P0", () => {
+  it("keeps core_preference source for configured kinds but still assigns P3 tier", () => {
     const item = writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
@@ -330,12 +335,13 @@ describe("soul-memory-store", () => {
       },
     });
     expect(item).not.toBeNull();
-    expect(item?.tier).toBe("P0");
+    // All sources map to P3 in the new architecture
+    expect(item?.tier).toBe("P3");
     expect(item?.source).toBe("core_preference");
     expect(item?.confidence).toBeCloseTo(0.95);
   });
 
-  it("applies last-access time decay to demote stale memories", () => {
+  it("returns equal time decay for all memories (no decay in new architecture)", () => {
     const baseMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = baseMs + 180 * 24 * 60 * 60 * 1000;
     writeSoulMemory({
@@ -367,8 +373,9 @@ describe("soul-memory-store", () => {
       nowMs,
     });
     expect(results).toHaveLength(2);
-    expect(results[0]?.content).toContain("recent copy");
-    expect((results[0]?.timeDecay ?? 0) > (results[1]?.timeDecay ?? 0)).toBe(true);
+    // No decay: both items have timeDecay = 1 regardless of age
+    expect(results[0]?.timeDecay).toBeCloseTo(1);
+    expect(results[1]?.timeDecay).toBeCloseTo(1);
   });
 
   it("keeps retrieval stable for exact token queries (bm25/fts path)", () => {
@@ -508,7 +515,7 @@ describe("soul-memory-store", () => {
     expect(crossScope?.scopePenalty).toBeCloseTo(0.55);
   });
 
-  it("boosts dormant P0 memory when relevance suddenly spikes", () => {
+  it("no longer boosts dormant memories — all items are P3 with no recall boost", () => {
     const baseMs = Date.UTC(2024, 0, 1, 0, 0, 0);
     const nowMs = baseMs + 720 * 24 * 60 * 60 * 1000;
     const item = writeSoulMemory({
@@ -534,15 +541,18 @@ describe("soul-memory-store", () => {
       nowMs,
     });
     expect(results).toHaveLength(1);
-    expect(results[0]?.tier).toBe("P0");
-    expect(results[0]?.wasRecallBoosted).toBe(true);
-    expect(results[0]?.clarityScore).toBeCloseTo(1);
+    // All sources map to P3, no recall boost in the new architecture
+    expect(results[0]?.tier).toBe("P3");
+    expect(results[0]?.wasRecallBoosted).toBe(false);
+    // clarityScore = confidence directly (no decay); computed before reinforcement bump
+    expect(results[0]?.clarityScore).toBeCloseTo(0.95);
 
     const refreshed = getSoulMemoryItem({ agentId: "main", itemId: item.id });
-    expect(refreshed?.confidence).toBeCloseTo(1);
+    // confidence bumped from 0.95 to 1.0 via normal retrieval reinforcement (+0.05)
+    expect(refreshed?.confidence).toBeCloseTo(1.0);
   });
 
-  it("records scope hits and silently promotes P2 memories to P1", () => {
+  it("promoteSoulMemories is a no-op — no promotion from P2 to P1", () => {
     const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = createdMs + 20 * 24 * 60 * 60 * 1000;
     const item = writeSoulMemory({
@@ -577,14 +587,16 @@ describe("soul-memory-store", () => {
       agentId: "main",
       nowMs,
     });
-    expect(summary.promotedToP1).toBe(1);
-    expect(summary.p1PromotionIds).toContain(item.id);
-    expect(summary.skillExtractionCandidates).toContain(item.id);
-    const promoted = getSoulMemoryItem({ agentId: "main", itemId: item.id });
-    expect(promoted?.tier).toBe("P1");
+    // Promotion is a no-op in the new architecture
+    expect(summary.promotedToP1).toBe(0);
+    expect(summary.p1PromotionIds).toHaveLength(0);
+    expect(summary.skillExtractionCandidates).toHaveLength(0);
+    // Item stays at P3
+    const unchanged = getSoulMemoryItem({ agentId: "main", itemId: item.id });
+    expect(unchanged?.tier).toBe("P3");
   });
 
-  it("emits P1 to P0 approval candidates and promotes only when approved", () => {
+  it("promoteSoulMemories emits no approval candidates and performs no P0 promotion", () => {
     const createdMs = Date.UTC(2025, 0, 1, 0, 0, 0);
     const nowMs = createdMs + 315 * 24 * 60 * 60 * 1000;
     const item = writeSoulMemory({
@@ -616,21 +628,24 @@ describe("soul-memory-store", () => {
       agentId: "main",
       nowMs,
     });
+    // Promotion is a no-op — no approval candidates emitted
     expect(pending.promotedToP0).toBe(0);
-    expect(pending.p0ApprovalCandidates.some((entry) => entry.id === item.id)).toBe(true);
+    expect(pending.p0ApprovalCandidates).toHaveLength(0);
 
     const approved = promoteSoulMemories({
       agentId: "main",
       nowMs,
       approvedP0Ids: [item.id],
     });
-    expect(approved.promotedToP0).toBe(1);
-    expect(approved.p0PromotionIds).toContain(item.id);
-    const promoted = getSoulMemoryItem({ agentId: "main", itemId: item.id });
-    expect(promoted?.tier).toBe("P0");
+    // Even with approved IDs, promotion is a no-op
+    expect(approved.promotedToP0).toBe(0);
+    expect(approved.p0PromotionIds).toHaveLength(0);
+    // Item stays at P3
+    const unchanged = getSoulMemoryItem({ agentId: "main", itemId: item.id });
+    expect(unchanged?.tier).toBe("P3");
   });
 
-  it("applies configurable P1 to P0 age gating", () => {
+  it("promoteSoulMemories ignores age gating config — always returns empty", () => {
     const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = createdMs + 60 * 24 * 60 * 60 * 1000;
     const item = writeSoulMemory({
@@ -660,7 +675,8 @@ describe("soul-memory-store", () => {
       agentId: "main",
       nowMs,
     });
-    expect(defaultSummary.p0ApprovalCandidates.some((entry) => entry.id === item.id)).toBe(false);
+    // No approval candidates — promotion is a no-op
+    expect(defaultSummary.p0ApprovalCandidates).toHaveLength(0);
 
     const configuredSummary = promoteSoulMemories({
       agentId: "main",
@@ -669,10 +685,11 @@ describe("soul-memory-store", () => {
         p1ToP0MinAgeDays: 30,
       },
     });
-    expect(configuredSummary.p0ApprovalCandidates.some((entry) => entry.id === item.id)).toBe(true);
+    // Config is ignored — still no candidates
+    expect(configuredSummary.p0ApprovalCandidates).toHaveLength(0);
   });
 
-  it("prunes stale P1/P2 but keeps P0 entries", () => {
+  it("no pruning — all items are retained regardless of staleness", () => {
     const createdMs = Date.UTC(2024, 0, 1, 0, 0, 0);
     const nowMs = createdMs + 800 * 24 * 60 * 60 * 1000;
     const p0 = writeSoulMemory({
@@ -703,12 +720,14 @@ describe("soul-memory-store", () => {
       agentId: "main",
       nowMs,
     });
-    expect(decay.deleted).toBeGreaterThanOrEqual(1);
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p1.id })).toBeNull();
+    // No pruning in the new architecture
+    expect(decay.deleted).toBe(0);
+    // Both items remain
+    expect(getSoulMemoryItem({ agentId: "main", itemId: p1.id })).not.toBeNull();
     expect(getSoulMemoryItem({ agentId: "main", itemId: p0.id })).not.toBeNull();
   });
 
-  it("requires sustained low confidence before pruning P2", () => {
+  it("never prunes items regardless of age or confidence", () => {
     const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const p2 = writeSoulMemory({
       agentId: "main",
@@ -735,11 +754,12 @@ describe("soul-memory-store", () => {
       agentId: "main",
       nowMs: createdMs + 60 * 24 * 60 * 60 * 1000,
     });
-    expect(at60Days.deleted).toBeGreaterThanOrEqual(1);
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).toBeNull();
+    // No pruning in the new architecture — item survives indefinitely
+    expect(at60Days.deleted).toBe(0);
+    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).not.toBeNull();
   });
 
-  it("applies configurable pruning windows", () => {
+  it("pruning config has no effect — items are never pruned", () => {
     const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const p2 = writeSoulMemory({
       agentId: "main",
@@ -769,8 +789,9 @@ describe("soul-memory-store", () => {
         forgetStreakHalfLives: 1,
       },
     });
-    expect(aggressive.deleted).toBeGreaterThanOrEqual(1);
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).toBeNull();
+    // Pruning config is ignored — no items deleted
+    expect(aggressive.deleted).toBe(0);
+    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).not.toBeNull();
   });
 
   it("round-trips soul-memory paths", () => {

@@ -132,7 +132,7 @@ export async function indexSingleFile(params: {
       content: chunk.content,
       summary: chunk.heading ?? firstNonEmptyLine(chunk.content),
       confidence: 1,
-      tier: "P1",
+      tier: "P3",
       source: "manual",
       recordKind: "fact",
       metadata: {

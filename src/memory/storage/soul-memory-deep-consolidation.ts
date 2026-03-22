@@ -589,7 +589,7 @@ function listReflectionItems(agentId: string, limit: number): ReflectionItem[] {
     const rows = db
       .prepare(
         "SELECT id, scope_type, scope_id, kind, content, confidence, tier " +
-          "FROM memory_items WHERE tier IN ('P0', 'P1') ORDER BY confidence DESC, created_at DESC LIMIT ?",
+          "FROM memory_items WHERE confidence >= 0.7 ORDER BY confidence DESC, created_at DESC LIMIT ?",
       )
       .all(limit) as ReflectionRow[];
     return rows.map((row) => ({

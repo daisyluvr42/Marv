@@ -265,9 +265,9 @@ function normalizeText(value: string): string {
 function loadMemoryItems(db: DatabaseSync, limit: number): ConsolidationItem[] {
   const rows = db
     .prepare(
-      // P3 episodic excluded: consolidation only applies to P1/P2 semantic knowledge
+      // Consolidation applies to all non-compacted semantic knowledge (all tiers are P3 now)
       "SELECT id, scope_type, scope_id, kind, content, tier, record_kind " +
-        "FROM memory_items WHERE tier IN ('P1', 'P2') AND record_kind IN ('experience', 'soul') " +
+        "FROM memory_items WHERE record_kind IN ('experience', 'soul') AND (is_compacted IS NULL OR is_compacted = 0) " +
         "ORDER BY created_at DESC LIMIT ?",
     )
     .all(limit) as MemoryRow[];
