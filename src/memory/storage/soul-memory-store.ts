@@ -460,6 +460,8 @@ export function writeSoulMemory(params: {
   metadata?: Record<string, unknown>;
   nowMs?: number;
   soulConfig?: SoulMemoryConfig;
+  /** Memory type: 'episodic' (default), 'semantic', or 'knowledge'. Knowledge items are exempt from P3 compaction/archival. */
+  memoryType?: "episodic" | "semantic" | "knowledge";
   // Deprecated alias; prefer soulConfig.p0AllowedKinds.
   p0AllowedKinds?: string[];
 }): SoulMemoryItem | null {
@@ -526,12 +528,13 @@ export function writeSoulMemory(params: {
     const embedding = JSON.stringify(embeddingVec);
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
     const sourceDetail = deriveSourceDetail(normalizedSource);
+    const resolvedMemoryType = params.memoryType ?? "episodic";
     db.prepare(
       "INSERT INTO memory_items (" +
         "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, record_kind, summary, metadata_json, " +
         "created_at, last_accessed_at, reinforcement_count, last_reinforced_at, " +
         "memory_type, source_detail" +
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, 'episodic', ?)",
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, ?, ?)",
     ).run(
       id,
       scopeType,
@@ -547,6 +550,7 @@ export function writeSoulMemory(params: {
       metadataJson,
       nowMs,
       nowMs,
+      resolvedMemoryType,
       sourceDetail,
     );
     upsertItemEntities(db, id, content);

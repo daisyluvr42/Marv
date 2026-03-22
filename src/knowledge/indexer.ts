@@ -135,6 +135,7 @@ export async function indexSingleFile(params: {
       tier: "P3",
       source: "manual",
       recordKind: "fact",
+      memoryType: "knowledge",
       metadata: {
         filePath: path.resolve(params.filePath),
         relativePath: params.relativePath,

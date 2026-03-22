@@ -20,8 +20,7 @@ import {
   formatSoulMemoryDeepConsolidationSummary,
   runSoulMemoryDeepConsolidation,
 } from "./soul-memory-deep-consolidation.js";
-import { resolveSoulMemoryDbPath, writeSoulMemory } from "./soul-memory-store.js";
-import { requireNodeSqlite } from "./sqlite.js";
+import { writeSoulMemory } from "./soul-memory-store.js";
 
 let stateDir = "";
 let previousStateDir: string | undefined;
@@ -45,7 +44,7 @@ afterEach(async () => {
 });
 
 describe("runSoulMemoryDeepConsolidation", () => {
-  it("generates summaries, conflict judgments, and cross-scope insights", async () => {
+  it("skips old 3-stage process (replaced by EXPERIENCE.md calibration)", async () => {
     writeSoulMemory({
       agentId: "main",
       scopeType: "project",
@@ -95,32 +94,9 @@ describe("runSoulMemoryDeepConsolidation", () => {
       source: "manual_log",
     });
 
-    inferLocalMock.mockImplementation(async (params: unknown) => {
-      const input =
-        typeof params === "object" && params
-          ? (params as { system?: string; prompt?: string })
-          : {};
-      const system = input.system ?? "";
-      const prompt = input.prompt ?? "";
-      if (system.includes("cluster of related memories")) {
-        return { ok: true, text: "Quick post-deploy updates reduce coordination confusion." };
-      }
-      if (system.includes("decide whether they genuinely conflict")) {
-        if (
-          prompt.includes("Coffee is better than tea for focus.") &&
-          prompt.includes("Tea is better than coffee for focus.")
-        ) {
-          return { ok: true, text: "Opposite preference ranking for the same outcome." };
-        }
-        return { ok: true, text: "NO_CONFLICT" };
-      }
-      if (system.includes("cross-cutting pattern")) {
-        return {
-          ok: true,
-          text: "Across work and health contexts, short feedback loops improve outcomes.",
-        };
-      }
-      return { ok: false, error: "unexpected prompt" };
+    // Mock inferLocal for the weeklyCalibration path (experience calibration)
+    inferLocalMock.mockImplementation(async () => {
+      return { ok: false, error: "no model available in test" };
     });
 
     const report = await runSoulMemoryDeepConsolidation({
@@ -140,27 +116,22 @@ describe("runSoulMemoryDeepConsolidation", () => {
       },
     });
 
-    expect(report.totals.llmConsolidated).toBe(1);
-    expect(report.totals.llmConflictsDetected).toBe(1);
-    expect(report.totals.crossScopeReflections).toBe(1);
-    expect(formatSoulMemoryDeepConsolidationSummary(report)).toContain("consolidated=1");
+    // Old 3-stage process is replaced — all LLM-based totals should be 0
+    expect(report.totals.llmConsolidated).toBe(0);
+    expect(report.totals.llmConflictsDetected).toBe(0);
+    expect(report.totals.crossScopeReflections).toBe(0);
+    expect(formatSoulMemoryDeepConsolidationSummary(report)).toContain("consolidated=0");
 
-    const db = openDb("main");
-    try {
-      const insightRow = db
-        .prepare(
-          "SELECT content FROM memory_items WHERE scope_type = 'global' AND scope_id = 'cross-scope' AND kind = 'insight' LIMIT 1",
-        )
-        .get() as { content?: string } | undefined;
-      expect(insightRow?.content).toContain("short feedback loops");
-
-      const conflictRow = db
-        .prepare("SELECT conflict_reason FROM memory_conflicts ORDER BY detected_at DESC LIMIT 1")
-        .get() as { conflict_reason?: string } | undefined;
-      expect(conflictRow?.conflict_reason).toContain("Opposite preference ranking");
-    } finally {
-      db.close();
-    }
+    // All three old stages should be reported as skipped/replaced
+    const agent = report.agents[0];
+    expect(agent).toBeDefined();
+    expect(agent.skippedStages).toContain(
+      "clusterSummarization-replaced-by-experience-calibration",
+    );
+    expect(agent.skippedStages).toContain("conflictJudgment-replaced-by-experience-calibration");
+    expect(agent.skippedStages).toContain(
+      "crossScopeReflection-replaced-by-experience-calibration",
+    );
   });
 
   it("returns zero totals when there are no eligible candidates", async () => {
@@ -191,8 +162,3 @@ describe("runSoulMemoryDeepConsolidation", () => {
     expect(inferLocalMock).not.toHaveBeenCalled();
   });
 });
-
-function openDb(agentId: string) {
-  const { DatabaseSync } = requireNodeSqlite();
-  return new DatabaseSync(resolveSoulMemoryDbPath(agentId));
-}
