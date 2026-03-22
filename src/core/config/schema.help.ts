@@ -281,35 +281,13 @@ export const FIELD_HELP: Record<string, string> = {
     'Delivery channel for proactive digests (default: "last").',
   "autonomy.proactive.delivery.to":
     "Explicit delivery target for proactive digests when the channel requires one.",
-  "memory.p0AllowedKinds":
-    "[Deprecated] No longer used. Tier promotion is disabled; all items are P3.",
-  "memory.soul":
-    "Soul memory retrieval tuning. Tier promotion/decay settings are deprecated (all items are P3).",
-  "memory.soul.p0AllowedKinds": "[Deprecated] No longer used. All items are P3.",
-  "memory.soul.forgetConfidenceThreshold":
-    "[Deprecated] Pruning is disabled. Items are never pruned by decay.",
-  "memory.soul.forgetStreakHalfLives": "[Deprecated] Pruning is disabled.",
-  "memory.soul.p0ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
-  "memory.soul.p1ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
-  "memory.soul.p2ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
-  "memory.soul.p3ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
-  "memory.soul.p0RecallRelevanceThreshold": "[Deprecated] P0 recall boost is disabled.",
-  "memory.soul.p2ToP1MinClarity": "[Deprecated] Tier promotion is disabled.",
-  "memory.soul.p2ToP1MinAgeDays": "[Deprecated] Tier promotion is disabled.",
-  "memory.soul.p2ToP1MinScopeCount": "[Deprecated] Tier promotion is disabled.",
-  "memory.soul.p1ToP0MinClarity": "[Deprecated] Tier promotion is disabled.",
-  "memory.soul.p1ToP0MinAgeDays": "[Deprecated] Tier promotion is disabled.",
-  "memory.soul.p0ScopePenalty":
+  "memory.soul": "Soul memory retrieval tuning.",
+  "memory.soul.globalScopePenalty":
     "Scope penalty for global/user memories outside active scope (default: 0.8).",
   "memory.soul.crossScopePenalty": "Scope penalty for unrelated scopes (default: 0.2).",
   "memory.soul.matchScopePenalty": "Scope penalty for exact scope matches (default: 1.0).",
-  "memory.soul.p0TierMultiplier": "[Deprecated] Tier multipliers are disabled. All return 1.",
-  "memory.soul.p1TierMultiplier": "[Deprecated] Tier multipliers are disabled.",
-  "memory.soul.p2TierMultiplier": "[Deprecated] Tier multipliers are disabled.",
-  "memory.soul.p3TierMultiplier": "[Deprecated] Tier multipliers are disabled.",
   "memory.soul.scoreSimilarityWeight":
     "Exponent for similarity contribution in final score (default: 1.0).",
-  "memory.soul.scoreDecayWeight": "[Deprecated] Decay is disabled. This setting has no effect.",
   "memory.soul.reinforcementLogWeight":
     "Multiplier applied to log-scaled reinforcement_count in final score (default: 0.2).",
   "memory.soul.referenceExpansionEnabled":

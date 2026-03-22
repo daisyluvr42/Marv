@@ -27,18 +27,12 @@ import {
 } from "../salience/reinforcement.js";
 import {
   CROSS_SCOPE_PENALTY,
-  FORGET_CONFIDENCE_THRESHOLD,
-  FORGET_STREAK_HALF_LIVES,
+  GLOBAL_SCOPE_PENALTY,
   MATCH_SCOPE_PENALTY,
-  P0_SCOPE_PENALTY,
-  SCORE_DECAY_WEIGHT,
   SCORE_SIMILARITY_WEIGHT,
-  clarityDecayFactor,
-  computeCurrentClarity,
   computeFusionSemanticMatch,
   computeWeightedScore,
   resolveScopePenalty,
-  shouldPruneMemoryItem,
 } from "../salience/salience-compute.js";
 import { requireNodeSqlite } from "./sqlite.js";
 
@@ -49,9 +43,6 @@ const SOURCE_MIGRATION = "migration";
 const SOURCE_AUTO_EXTRACTION = "auto_extraction";
 const SOURCE_RUNTIME_EVENT = "runtime_event";
 
-const TIER_P0 = "P0";
-const TIER_P1 = "P1";
-const TIER_P2 = "P2";
 const TIER_P3 = "P3";
 
 const RECORD_KIND_FACT = "fact";
@@ -196,7 +187,7 @@ export type SoulMemorySource =
   | typeof SOURCE_AUTO_EXTRACTION
   | typeof SOURCE_RUNTIME_EVENT;
 
-export type SoulMemoryTier = typeof TIER_P0 | typeof TIER_P1 | typeof TIER_P2 | typeof TIER_P3;
+export type SoulMemoryTier = string;
 
 export type SoulMemoryRecordKind =
   | typeof RECORD_KIND_FACT
@@ -285,12 +276,10 @@ export type SoulMemoryQueryResult = SoulMemoryItem & {
 };
 
 export type SoulMemoryConfig = {
-  forgetConfidenceThreshold?: number;
-  forgetStreakHalfLives?: number;
+  globalScopePenalty?: number;
   crossScopePenalty?: number;
   matchScopePenalty?: number;
   scoreSimilarityWeight?: number;
-  scoreDecayWeight?: number;
   reinforcementLogWeight?: number;
   referenceExpansionEnabled?: boolean;
   referenceMaxHops?: number;
@@ -323,19 +312,10 @@ export type ResolvedP3CompactionConfig = {
 };
 
 type ResolvedSoulMemoryConfig = {
-  forgetConfidenceThreshold: number;
-  forgetStreakHalfLives: number;
-  // Scope penalties (kept for scope-aware ranking)
-  p0ScopePenalty: number;
+  globalScopePenalty: number;
   crossScopePenalty: number;
   matchScopePenalty: number;
-  // Clarity half-life fields (all Infinity — no decay; kept for ClarityDecayConfig compat)
-  p0ClarityHalfLifeDays: number;
-  p1ClarityHalfLifeDays: number;
-  p2ClarityHalfLifeDays: number;
-  p3ClarityHalfLifeDays: number;
   scoreSimilarityWeight: number;
-  scoreDecayWeight: number;
   reinforcementLogWeight: number;
   referenceExpansionEnabled: boolean;
   referenceMaxHops: number;
@@ -590,23 +570,16 @@ export function listSoulMemoryItems(params: {
   }
 }
 
-export function countSoulMemoryItemsByTier(params: {
-  agentId: string;
-}): Record<SoulMemoryTier, number> {
+export function countSoulMemoryItemsByTier(params: { agentId: string }): Record<string, number> {
   const db = openSoulMemoryDb(params.agentId);
   try {
     type Row = { tier?: string; count?: number };
     const rows = db
       .prepare("SELECT tier, COUNT(*) as count FROM memory_items GROUP BY tier")
       .all() as Row[];
-    const counts: Record<SoulMemoryTier, number> = {
-      P0: 0,
-      P1: 0,
-      P2: 0,
-      P3: 0,
-    };
+    const counts: Record<string, number> = {};
     for (const row of rows) {
-      counts[normalizeTier(String(row.tier ?? "P1"))] = Number(row.count ?? 0);
+      counts[normalizeTier(String(row.tier ?? "P3"))] = Number(row.count ?? 0);
     }
     return counts;
   } finally {
@@ -804,7 +777,6 @@ export function querySoulMemoryMulti(params: {
     };
 
     const candidatesById = new Map<string, Candidate>();
-    const staleMemoryIds: string[] = [];
     for (const row of rows) {
       const item = rowToMemoryItem(row);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
@@ -836,12 +808,8 @@ export function querySoulMemoryMulti(params: {
         }
       }
 
-      const decayFactor = clarityDecayFactor(item.tier, ageDays, soulConfig);
-      const clarityScore = computeCurrentClarity(item, ageDays, soulConfig);
-      if (shouldPruneMemoryItem(item, ageDays, soulConfig)) {
-        staleMemoryIds.push(item.id);
-        continue;
-      }
+      const decayFactor = 1;
+      const clarityScore = clamp(item.confidence, 0, 1);
 
       const itemVec = parseEmbedding(row.embedding_json);
       const vectorScore = cosineSimilarity(queryVec, itemVec);
@@ -861,10 +829,6 @@ export function querySoulMemoryMulti(params: {
         decayFactor,
         ageDays,
       });
-    }
-
-    if (staleMemoryIds.length > 0) {
-      pruneSoulMemoryItems(db, staleMemoryIds);
     }
 
     if (candidatesById.size === 0) {
@@ -1966,15 +1930,10 @@ function rowToArchiveEvent(row: ArchiveRow): SoulArchiveEvent {
 
 function normalizeTier(value: string): SoulMemoryTier {
   const normalized = value.trim().toUpperCase();
-  if (
-    normalized === TIER_P0 ||
-    normalized === TIER_P1 ||
-    normalized === TIER_P2 ||
-    normalized === TIER_P3
-  ) {
+  if (normalized === "P0" || normalized === "P1" || normalized === "P2" || normalized === TIER_P3) {
     return normalized;
   }
-  return TIER_P1;
+  return TIER_P3;
 }
 
 function normalizeSource(value: string): SoulMemorySource {
@@ -2007,31 +1966,14 @@ function normalizeRecordKind(value: string): SoulMemoryRecordKind {
 function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConfig {
   const config = raw ?? {};
   return {
-    forgetConfidenceThreshold: resolveBoundedNumber(
-      config.forgetConfidenceThreshold,
-      FORGET_CONFIDENCE_THRESHOLD,
-      0,
-      1,
-    ),
-    forgetStreakHalfLives: resolveBoundedNumber(
-      config.forgetStreakHalfLives,
-      FORGET_STREAK_HALF_LIVES,
-      0.1,
-    ),
-    p0ScopePenalty: P0_SCOPE_PENALTY,
+    globalScopePenalty: resolveBoundedNumber(config.globalScopePenalty, GLOBAL_SCOPE_PENALTY, 0),
     crossScopePenalty: resolveBoundedNumber(config.crossScopePenalty, CROSS_SCOPE_PENALTY, 0),
     matchScopePenalty: resolveBoundedNumber(config.matchScopePenalty, MATCH_SCOPE_PENALTY, 0),
-    // Clarity half-lives are all Infinity (no decay). Kept for ClarityDecayConfig compat.
-    p0ClarityHalfLifeDays: Infinity,
-    p1ClarityHalfLifeDays: Infinity,
-    p2ClarityHalfLifeDays: Infinity,
-    p3ClarityHalfLifeDays: Infinity,
     scoreSimilarityWeight: resolveBoundedNumber(
       config.scoreSimilarityWeight,
       SCORE_SIMILARITY_WEIGHT,
       0,
     ),
-    scoreDecayWeight: resolveBoundedNumber(config.scoreDecayWeight, SCORE_DECAY_WEIGHT, 0),
     reinforcementLogWeight: resolveBoundedNumber(
       config.reinforcementLogWeight,
       REINFORCEMENT_LOG_WEIGHT,

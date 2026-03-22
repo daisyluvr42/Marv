@@ -25,7 +25,7 @@ type MutableMemoryItem = {
   kind: string;
   content: string;
   confidence: number;
-  tier: "P0" | "P1" | "P2";
+  tier: string;
   reinforcementCount: number;
   createdAt: number;
 };
@@ -87,7 +87,6 @@ export function dedupeSoulMemories(params: {
             currentKeeper.confidence,
             currentDuplicate.confidence,
           );
-          currentKeeper.tier = higherTier(currentKeeper.tier, currentDuplicate.tier);
           currentKeeper.createdAt = Math.min(currentKeeper.createdAt, currentDuplicate.createdAt);
 
           removed.add(currentDuplicate.id);
@@ -168,24 +167,7 @@ function pickKeeper(a: MutableMemoryItem, b: MutableMemoryItem): MutableMemoryIt
   if (a.createdAt !== b.createdAt) {
     return a.createdAt < b.createdAt ? a : b;
   }
-  if (tierRank(a.tier) !== tierRank(b.tier)) {
-    return tierRank(a.tier) < tierRank(b.tier) ? a : b;
-  }
   return a.id.localeCompare(b.id) <= 0 ? a : b;
-}
-
-function higherTier(a: "P0" | "P1" | "P2", b: "P0" | "P1" | "P2"): "P0" | "P1" | "P2" {
-  return tierRank(a) <= tierRank(b) ? a : b;
-}
-
-function tierRank(tier: "P0" | "P1" | "P2"): number {
-  if (tier === "P0") {
-    return 0;
-  }
-  if (tier === "P1") {
-    return 1;
-  }
-  return 2;
 }
 
 function semanticSimilarity(a: string, b: string): number {
@@ -260,12 +242,12 @@ function loadMemoryItems(
   }));
 }
 
-function normalizeTier(value: string): "P0" | "P1" | "P2" {
+function normalizeTier(value: string): string {
   const normalized = value.trim().toUpperCase();
-  if (normalized === "P0" || normalized === "P1" || normalized === "P2") {
+  if (normalized === "P0" || normalized === "P1" || normalized === "P2" || normalized === "P3") {
     return normalized;
   }
-  return "P1";
+  return "P3";
 }
 
 function openSoulMemoryDb(agentId: string): DatabaseSync {

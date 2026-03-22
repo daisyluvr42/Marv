@@ -81,7 +81,6 @@ export type MemoryConfig = {
   citations?: MemoryCitationsMode;
   /** Enable automatic runtime message ingestion into P3. Default: true. */
   runtimeIngest?: boolean;
-  p0AllowedKinds?: string[];
   soul?: MemorySoulConfig;
   autoRecall?: MemoryAutoRecallConfig;
   knowledge?: MemoryKnowledgeConfig;
@@ -91,28 +90,10 @@ export type MemoryConfig = {
 };
 
 export type MemorySoulConfig = {
-  p0AllowedKinds?: string[];
-  forgetConfidenceThreshold?: number;
-  forgetStreakHalfLives?: number;
-  p0ClarityHalfLifeDays?: number;
-  p1ClarityHalfLifeDays?: number;
-  p2ClarityHalfLifeDays?: number;
-  p3ClarityHalfLifeDays?: number;
-  p0RecallRelevanceThreshold?: number;
-  p2ToP1MinClarity?: number;
-  p2ToP1MinAgeDays?: number;
-  p2ToP1MinScopeCount?: number;
-  p1ToP0MinClarity?: number;
-  p1ToP0MinAgeDays?: number;
-  p0ScopePenalty?: number;
+  globalScopePenalty?: number;
   crossScopePenalty?: number;
   matchScopePenalty?: number;
-  p0TierMultiplier?: number;
-  p1TierMultiplier?: number;
-  p2TierMultiplier?: number;
-  p3TierMultiplier?: number;
   scoreSimilarityWeight?: number;
-  scoreDecayWeight?: number;
   reinforcementLogWeight?: number;
   referenceExpansionEnabled?: boolean;
   referenceMaxHops?: number;

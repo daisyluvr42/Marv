@@ -110,12 +110,8 @@ describe("memory soul tuning schema", () => {
     const res = validateConfigObject({
       memory: {
         soul: {
-          p0AllowedKinds: ["preference", "principle"],
-          p1ClarityHalfLifeDays: 60,
-          p2ClarityHalfLifeDays: 12,
-          p1ToP0MinAgeDays: 120,
           crossScopePenalty: 0.35,
-          p0TierMultiplier: 1.3,
+          globalScopePenalty: 0.8,
           referenceExpansionEnabled: true,
           referenceMaxHops: 2,
           referenceBoostWeight: 0.25,

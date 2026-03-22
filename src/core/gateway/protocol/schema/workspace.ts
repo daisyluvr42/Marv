@@ -1,12 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import { NonEmptyString } from "./primitives.js";
 
-const MemoryTierSchema = Type.Union([
-  Type.Literal("P0"),
-  Type.Literal("P1"),
-  Type.Literal("P2"),
-  Type.Literal("P3"),
-]);
+const MemoryTierSchema = Type.String();
 
 const MemorySourceSchema = Type.Union([
   Type.Literal("core_preference"),

@@ -1,12 +1,10 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { SalienceWeights } from "./salience-types.js";
-
 export const REINFORCEMENT_LOG_WEIGHT = 0.2;
 export const SOUL_MEMORY_SCOPE_HITS_TABLE = "memory_scope_hits";
 
 const MEMORY_ITEMS_TABLE = "memory_items";
 
-type ReinforcementConfig = Pick<SalienceWeights, "reinforcementLogWeight">;
+type ReinforcementConfig = { reinforcementLogWeight: number };
 
 function normalizeScopeValue(value: string): string {
   return value.trim().toLowerCase();
