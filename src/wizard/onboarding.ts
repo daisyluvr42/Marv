@@ -1,6 +1,7 @@
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { parseModelRef } from "../agents/model/model-selection.js";
-import { setAgentP0Sections } from "../agents/p0.js";
+import { buildSoulContent, writeSoulFile } from "../agents/soul.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolvePrimaryModel } from "../commands/model-default.js";
 import { describeProbeSummary, runAuthProbes } from "../commands/models/list.probe.js";
@@ -200,28 +201,30 @@ async function promptAgentP0ForOnboarding(params: {
   opts: OnboardOptions;
   prompter: WizardPrompter;
 }): Promise<MarvConfig> {
-  const current = params.config.agents?.defaults?.p0 ?? {};
   const identity = await params.prompter.text({
     message: "Agent name",
     placeholder: "What should the agent be called?",
-    initialValue: params.opts.p0Identity ?? current.identity ?? "",
+    initialValue: params.opts.p0Identity ?? "",
   });
   const user = await params.prompter.text({
     message: "How should the agent address you?",
     placeholder: "Your name or preferred nickname",
-    initialValue: params.opts.p0User ?? current.user ?? "",
+    initialValue: params.opts.p0User ?? "",
   });
   // Seed Soul from the baseline template when no explicit soul is set,
   // personalized with the agent's chosen name.
-  let soul = params.opts.p0Soul ?? current.soul;
+  let soul = params.opts.p0Soul;
   if (!soul?.trim()) {
     soul = buildDefaultP0Soul(String(identity ?? ""));
   }
-  return setAgentP0Sections(params.config, {
+  const agentId = resolveDefaultAgentId(params.config);
+  const content = buildSoulContent({
     soul,
     identity: String(identity ?? ""),
     user: String(user ?? ""),
   });
+  await writeSoulFile(agentId, content);
+  return params.config;
 }
 
 // ---------------------------------------------------------------------------

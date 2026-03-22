@@ -1,4 +1,5 @@
-import { setAgentP0Sections } from "../../agents/p0.js";
+import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { buildSoulContent, writeSoulFile } from "../../agents/soul.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveGatewayPort, writeConfigFile } from "../../core/config/config.js";
@@ -39,14 +40,16 @@ export async function runNonInteractiveOnboardingLocal(params: {
   });
 
   let nextConfig: MarvConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, workspaceDir);
-  // Seed P0 Soul from the baseline template when no explicit --p0-soul is set,
+  // Seed Soul.md from the baseline template when no explicit --p0-soul is set,
   // personalized with the agent's chosen name.
-  const p0Soul = opts.p0Soul?.trim() ? opts.p0Soul : buildDefaultP0Soul(opts.p0Identity ?? "");
-  nextConfig = setAgentP0Sections(nextConfig, {
-    soul: p0Soul,
+  const soulText = opts.p0Soul?.trim() ? opts.p0Soul : buildDefaultP0Soul(opts.p0Identity ?? "");
+  const agentId = resolveDefaultAgentId(nextConfig);
+  const soulContent = buildSoulContent({
+    soul: soulText,
     identity: opts.p0Identity,
     user: opts.p0User,
   });
+  await writeSoulFile(agentId, soulContent);
 
   const inferredAuthChoice = inferAuthChoiceFromFlags(opts);
   if (!opts.authChoice && inferredAuthChoice.matches.length > 1) {

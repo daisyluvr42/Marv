@@ -4,7 +4,6 @@ import os from "node:os";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import JSON5 from "json5";
-import { projectAgentP0FilesFromConfig } from "../../agents/p0.js";
 import { loadDotEnv } from "../../infra/dotenv.js";
 import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
 import {
@@ -1048,7 +1047,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           await deps.fs.promises.unlink(tmp).catch(() => {
             // best-effort
           });
-          await projectAgentP0FilesFromConfig(stampedOutputConfig);
+
           logConfigOverwrite();
           logConfigWriteAnomalies();
           await appendWriteAudit("copy-fallback");
@@ -1059,7 +1058,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         });
         throw err;
       }
-      await projectAgentP0FilesFromConfig(stampedOutputConfig);
       logConfigOverwrite();
       logConfigWriteAnomalies();
       await appendWriteAudit("rename");

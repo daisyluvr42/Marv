@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  applySoulMemoryConfidenceDecay,
   buildSoulArchivePath,
   buildSoulMemoryPath,
   countSoulArchiveEvents,
@@ -14,7 +13,6 @@ import {
   listSoulMemoryReferences,
   parseSoulArchivePath,
   parseSoulMemoryPath,
-  promoteSoulMemories,
   querySoulArchive,
   querySoulMemoryMulti,
   writeSoulMemory,
@@ -306,23 +304,22 @@ describe("soul-memory-store", () => {
     expect(results[1]?.tier).toBe("P3");
   });
 
-  it("downgrades core_preference source to manual_log when kind is not soul-level", () => {
+  it("preserves core_preference source regardless of kind", () => {
     const item = writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
       scopeId: "main",
       kind: "note",
-      content: "ephemeral scratch line that should not enter P0",
+      content: "ephemeral scratch line with core_preference source",
       source: "core_preference",
     });
     expect(item).not.toBeNull();
-    // All sources map to P3 in the new architecture
     expect(item?.tier).toBe("P3");
-    expect(item?.source).toBe("manual_log");
-    expect(item?.confidence).toBeCloseTo(0.85);
+    expect(item?.source).toBe("core_preference");
+    expect(item?.confidence).toBeCloseTo(0.95);
   });
 
-  it("keeps core_preference source for configured kinds but still assigns P3 tier", () => {
+  it("keeps core_preference source and assigns P3 tier", () => {
     const item = writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
@@ -330,12 +327,9 @@ describe("soul-memory-store", () => {
       kind: "note",
       content: "stable canonical project note",
       source: "core_preference",
-      soulConfig: {
-        p0AllowedKinds: ["note"],
-      },
     });
     expect(item).not.toBeNull();
-    // All sources map to P3 in the new architecture
+    // All sources map to P3
     expect(item?.tier).toBe("P3");
     expect(item?.source).toBe("core_preference");
     expect(item?.confidence).toBeCloseTo(0.95);
@@ -550,248 +544,6 @@ describe("soul-memory-store", () => {
     const refreshed = getSoulMemoryItem({ agentId: "main", itemId: item.id });
     // confidence bumped from 0.95 to 1.0 via normal retrieval reinforcement (+0.05)
     expect(refreshed?.confidence).toBeCloseTo(1.0);
-  });
-
-  it("promoteSoulMemories is a no-op — no promotion from P2 to P1", () => {
-    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-    const nowMs = createdMs + 20 * 24 * 60 * 60 * 1000;
-    const item = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "note",
-      content: "operator escalation playbook redline",
-      source: "auto_extraction",
-      nowMs: createdMs,
-    });
-    expect(item).not.toBeNull();
-    if (!item) {
-      throw new Error("item missing");
-    }
-
-    const scopes = ["proj-a", "proj-b", "proj-c"];
-    for (let i = 0; i < 8; i += 1) {
-      querySoulMemoryMulti({
-        agentId: "main",
-        scopes: [
-          { scopeType: "project", scopeId: scopes[i % scopes.length] ?? "proj-a", weight: 1 },
-        ],
-        query: "operator escalation playbook redline",
-        topK: 1,
-        minScore: 0,
-        nowMs,
-      });
-    }
-
-    const summary = promoteSoulMemories({
-      agentId: "main",
-      nowMs,
-    });
-    // Promotion is a no-op in the new architecture
-    expect(summary.promotedToP1).toBe(0);
-    expect(summary.p1PromotionIds).toHaveLength(0);
-    expect(summary.skillExtractionCandidates).toHaveLength(0);
-    // Item stays at P3
-    const unchanged = getSoulMemoryItem({ agentId: "main", itemId: item.id });
-    expect(unchanged?.tier).toBe("P3");
-  });
-
-  it("promoteSoulMemories emits no approval candidates and performs no P0 promotion", () => {
-    const createdMs = Date.UTC(2025, 0, 1, 0, 0, 0);
-    const nowMs = createdMs + 315 * 24 * 60 * 60 * 1000;
-    const item = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "principle",
-      content: "always preserve raw error stack in incident reports",
-      source: "manual_log",
-      nowMs: createdMs,
-    });
-    expect(item).not.toBeNull();
-    if (!item) {
-      throw new Error("item missing");
-    }
-
-    for (let day = 30; day <= 300; day += 30) {
-      querySoulMemoryMulti({
-        agentId: "main",
-        scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
-        query: "always preserve raw error stack in incident reports",
-        topK: 1,
-        minScore: 0,
-        nowMs: createdMs + day * 24 * 60 * 60 * 1000,
-      });
-    }
-
-    const pending = promoteSoulMemories({
-      agentId: "main",
-      nowMs,
-    });
-    // Promotion is a no-op — no approval candidates emitted
-    expect(pending.promotedToP0).toBe(0);
-    expect(pending.p0ApprovalCandidates).toHaveLength(0);
-
-    const approved = promoteSoulMemories({
-      agentId: "main",
-      nowMs,
-      approvedP0Ids: [item.id],
-    });
-    // Even with approved IDs, promotion is a no-op
-    expect(approved.promotedToP0).toBe(0);
-    expect(approved.p0PromotionIds).toHaveLength(0);
-    // Item stays at P3
-    const unchanged = getSoulMemoryItem({ agentId: "main", itemId: item.id });
-    expect(unchanged?.tier).toBe("P3");
-  });
-
-  it("promoteSoulMemories ignores age gating config — always returns empty", () => {
-    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-    const nowMs = createdMs + 60 * 24 * 60 * 60 * 1000;
-    const item = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "principle",
-      content: "always include rollback notes in release docs",
-      source: "manual_log",
-      nowMs: createdMs,
-    });
-    expect(item).not.toBeNull();
-    if (!item) {
-      throw new Error("item missing");
-    }
-
-    querySoulMemoryMulti({
-      agentId: "main",
-      scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
-      query: "always include rollback notes in release docs",
-      topK: 1,
-      minScore: 0,
-      nowMs: createdMs + 59 * 24 * 60 * 60 * 1000,
-    });
-
-    const defaultSummary = promoteSoulMemories({
-      agentId: "main",
-      nowMs,
-    });
-    // No approval candidates — promotion is a no-op
-    expect(defaultSummary.p0ApprovalCandidates).toHaveLength(0);
-
-    const configuredSummary = promoteSoulMemories({
-      agentId: "main",
-      nowMs,
-      soulConfig: {
-        p1ToP0MinAgeDays: 30,
-      },
-    });
-    // Config is ignored — still no candidates
-    expect(configuredSummary.p0ApprovalCandidates).toHaveLength(0);
-  });
-
-  it("no pruning — all items are retained regardless of staleness", () => {
-    const createdMs = Date.UTC(2024, 0, 1, 0, 0, 0);
-    const nowMs = createdMs + 800 * 24 * 60 * 60 * 1000;
-    const p0 = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "policy",
-      content: "keep privacy sensitive defaults",
-      source: "core_preference",
-      nowMs: createdMs,
-    });
-    const p1 = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "note",
-      content: "obsolete migration scratch note",
-      source: "manual_log",
-      nowMs: createdMs,
-    });
-    expect(p0).not.toBeNull();
-    expect(p1).not.toBeNull();
-    if (!p0 || !p1) {
-      throw new Error("item missing");
-    }
-
-    const decay = applySoulMemoryConfidenceDecay({
-      agentId: "main",
-      nowMs,
-    });
-    // No pruning in the new architecture
-    expect(decay.deleted).toBe(0);
-    // Both items remain
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p1.id })).not.toBeNull();
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p0.id })).not.toBeNull();
-  });
-
-  it("never prunes items regardless of age or confidence", () => {
-    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-    const p2 = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "note",
-      content: "short lived extraction memory",
-      source: "auto_extraction",
-      nowMs: createdMs,
-    });
-    expect(p2).not.toBeNull();
-    if (!p2) {
-      throw new Error("item missing");
-    }
-
-    const at45Days = applySoulMemoryConfidenceDecay({
-      agentId: "main",
-      nowMs: createdMs + 45 * 24 * 60 * 60 * 1000,
-    });
-    expect(at45Days.deleted).toBe(0);
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).not.toBeNull();
-
-    const at60Days = applySoulMemoryConfidenceDecay({
-      agentId: "main",
-      nowMs: createdMs + 60 * 24 * 60 * 60 * 1000,
-    });
-    // No pruning in the new architecture — item survives indefinitely
-    expect(at60Days.deleted).toBe(0);
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).not.toBeNull();
-  });
-
-  it("pruning config has no effect — items are never pruned", () => {
-    const createdMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-    const p2 = writeSoulMemory({
-      agentId: "main",
-      scopeType: "agent",
-      scopeId: "main",
-      kind: "note",
-      content: "temporary extraction candidate",
-      source: "auto_extraction",
-      nowMs: createdMs,
-    });
-    expect(p2).not.toBeNull();
-    if (!p2) {
-      throw new Error("item missing");
-    }
-
-    const baseline = applySoulMemoryConfidenceDecay({
-      agentId: "main",
-      nowMs: createdMs + 10 * 24 * 60 * 60 * 1000,
-    });
-    expect(baseline.deleted).toBe(0);
-
-    const aggressive = applySoulMemoryConfidenceDecay({
-      agentId: "main",
-      nowMs: createdMs + 10 * 24 * 60 * 60 * 1000,
-      soulConfig: {
-        p2ClarityHalfLifeDays: 2,
-        forgetStreakHalfLives: 1,
-      },
-    });
-    // Pruning config is ignored — no items deleted
-    expect(aggressive.deleted).toBe(0);
-    expect(getSoulMemoryItem({ agentId: "main", itemId: p2.id })).not.toBeNull();
   });
 
   it("round-trips soul-memory paths", () => {

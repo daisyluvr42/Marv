@@ -1,4 +1,5 @@
-import { setAgentP0Sections } from "../agents/p0.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { buildSoulContent, writeSoulFile } from "../agents/soul.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { MarvConfig } from "../core/config/config.js";
 import {
@@ -216,37 +217,39 @@ async function promptAgentP0Config(
   nextConfig: MarvConfig,
   runtime: RuntimeEnv,
 ): Promise<MarvConfig> {
-  const current = nextConfig.agents?.defaults?.p0 ?? {};
   const soul = guardCancel(
     await text({
-      message: "P0 Soul",
+      message: "Soul",
       placeholder: "Stable persona and principles",
-      initialValue: current.soul ?? "",
+      initialValue: "",
     }),
     runtime,
   );
   const identity = guardCancel(
     await text({
-      message: "P0 Identity",
+      message: "Identity",
       placeholder: "Stable self-description",
-      initialValue: current.identity ?? "",
+      initialValue: "",
     }),
     runtime,
   );
   const user = guardCancel(
     await text({
-      message: "P0 User",
+      message: "User",
       placeholder: "Stable user preferences only, not transient state",
-      initialValue: current.user ?? "",
+      initialValue: "",
     }),
     runtime,
   );
 
-  return setAgentP0Sections(nextConfig, {
+  const agentId = resolveDefaultAgentId(nextConfig);
+  const content = buildSoulContent({
     soul: String(soul ?? ""),
     identity: String(identity ?? ""),
     user: String(user ?? ""),
   });
+  await writeSoulFile(agentId, content);
+  return nextConfig;
 }
 
 export async function runConfigureWizard(

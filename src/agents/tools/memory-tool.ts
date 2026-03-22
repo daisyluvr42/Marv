@@ -69,23 +69,7 @@ function resolveMemoryToolContext(options: { config?: MarvConfig; agentSessionKe
 }
 
 function resolveMemorySoulConfig(cfg: MarvConfig): SoulMemoryConfig | undefined {
-  const memoryConfig = cfg.memory;
-  if (!memoryConfig) {
-    return undefined;
-  }
-  const legacyP0AllowedKinds = Array.isArray(memoryConfig.p0AllowedKinds)
-    ? memoryConfig.p0AllowedKinds
-    : undefined;
-  if (!memoryConfig.soul) {
-    return legacyP0AllowedKinds ? { p0AllowedKinds: legacyP0AllowedKinds } : undefined;
-  }
-  if (memoryConfig.soul.p0AllowedKinds || !legacyP0AllowedKinds) {
-    return memoryConfig.soul;
-  }
-  return {
-    ...memoryConfig.soul,
-    p0AllowedKinds: legacyP0AllowedKinds,
-  };
+  return cfg.memory?.soul;
 }
 
 export function createMemorySearchTool(options: {

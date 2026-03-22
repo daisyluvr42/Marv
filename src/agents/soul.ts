@@ -54,6 +54,38 @@ export function buildSoulContextFile(agentId: string): EmbeddedContextFile[] {
 }
 
 /**
+ * Write Soul.md content for an agent.
+ * Creates parent directories if needed.
+ */
+export async function writeSoulFile(agentId: string, content: string): Promise<void> {
+  const soulPath = resolveSoulFilePath(agentId);
+  await fsp.mkdir(path.dirname(soulPath), { recursive: true });
+  await fsp.writeFile(soulPath, content, "utf-8");
+}
+
+/**
+ * Build Soul.md content from soul/identity/user sections.
+ * Merges provided sections into a single markdown document.
+ */
+export function buildSoulContent(params: {
+  soul?: string;
+  identity?: string;
+  user?: string;
+}): string {
+  const sections: string[] = ["# Soul\n"];
+  if (params.soul?.trim()) {
+    sections.push("## Background\n", params.soul.trim(), "\n");
+  }
+  if (params.identity?.trim()) {
+    sections.push("## Identity\n", params.identity.trim(), "\n");
+  }
+  if (params.user?.trim()) {
+    sections.push("## User\n", params.user.trim(), "\n");
+  }
+  return sections.join("\n");
+}
+
+/**
  * Migrate legacy workspace files (SOUL.md, IDENTITY.md, USER.md) → Soul.md.
  * Only runs once; idempotent via marker file.
  */

@@ -30,15 +30,7 @@ import {
   FORGET_CONFIDENCE_THRESHOLD,
   FORGET_STREAK_HALF_LIVES,
   MATCH_SCOPE_PENALTY,
-  P0_CLARITY_HALF_LIFE_DAYS,
   P0_SCOPE_PENALTY,
-  P0_TIER_MULTIPLIER,
-  P1_CLARITY_HALF_LIFE_DAYS,
-  P1_TIER_MULTIPLIER,
-  P2_CLARITY_HALF_LIFE_DAYS,
-  P2_TIER_MULTIPLIER,
-  P3_CLARITY_HALF_LIFE_DAYS,
-  P3_TIER_MULTIPLIER,
   SCORE_DECAY_WEIGHT,
   SCORE_SIMILARITY_WEIGHT,
   clarityDecayFactor,
@@ -68,12 +60,6 @@ const RECORD_KIND_EXPERIENCE = "experience";
 const RECORD_KIND_SOUL = "soul";
 
 const DEFAULT_INJECT_THRESHOLD = 0.65;
-const P0_RECALL_RELEVANCE_THRESHOLD = 0.7;
-const P2_TO_P1_MIN_CLARITY = 0.75;
-const P2_TO_P1_MIN_AGE_DAYS = 7;
-const P2_TO_P1_MIN_SCOPE_COUNT = 2;
-const P1_TO_P0_MIN_CLARITY = 0.75;
-const P1_TO_P0_MIN_AGE_DAYS = 150;
 const EMBEDDING_DIMS = 128;
 const SOUL_MEMORY_PATH_PREFIX = "soul-memory/";
 const SOUL_ARCHIVE_PATH_PREFIX = "soul-archive/";
@@ -120,15 +106,6 @@ const SOURCE_PROFILE: Record<SoulMemorySource, SourceProfile> = {
   [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5, tier: TIER_P3 },
   [SOURCE_RUNTIME_EVENT]: { confidence: 0.5, tier: TIER_P3 },
 };
-
-// P0 is reserved for durable soul-level facts/policies only.
-const DEFAULT_P0_ALLOWED_KINDS = new Set<string>([
-  "preference",
-  "principle",
-  "identity",
-  "policy",
-  "guardrail",
-]);
 
 const ENTITY_EN_STOPWORDS = new Set<string>([
   "this",
@@ -307,42 +284,11 @@ export type SoulMemoryQueryResult = SoulMemoryItem & {
   conflictIds: string[];
 };
 
-export type SoulMemoryPromotionCandidate = SoulMemoryItem & {
-  ageDays: number;
-  clarityScore: number;
-  distinctScopeHits: number;
-};
-
-export type SoulMemoryPromotionSummary = {
-  promotedToP1: number;
-  promotedToP0: number;
-  p1PromotionIds: string[];
-  p0PromotionIds: string[];
-  p0ApprovalCandidates: SoulMemoryPromotionCandidate[];
-  skillExtractionCandidates: string[];
-};
-
 export type SoulMemoryConfig = {
-  p0AllowedKinds?: string[];
   forgetConfidenceThreshold?: number;
   forgetStreakHalfLives?: number;
-  p0ClarityHalfLifeDays?: number;
-  p1ClarityHalfLifeDays?: number;
-  p2ClarityHalfLifeDays?: number;
-  p3ClarityHalfLifeDays?: number;
-  p0RecallRelevanceThreshold?: number;
-  p2ToP1MinClarity?: number;
-  p2ToP1MinAgeDays?: number;
-  p2ToP1MinScopeCount?: number;
-  p1ToP0MinClarity?: number;
-  p1ToP0MinAgeDays?: number;
-  p0ScopePenalty?: number;
   crossScopePenalty?: number;
   matchScopePenalty?: number;
-  p0TierMultiplier?: number;
-  p1TierMultiplier?: number;
-  p2TierMultiplier?: number;
-  p3TierMultiplier?: number;
   scoreSimilarityWeight?: number;
   scoreDecayWeight?: number;
   reinforcementLogWeight?: number;
@@ -377,26 +323,17 @@ export type ResolvedP3CompactionConfig = {
 };
 
 type ResolvedSoulMemoryConfig = {
-  p0AllowedKinds: Set<string>;
   forgetConfidenceThreshold: number;
   forgetStreakHalfLives: number;
+  // Scope penalties (kept for scope-aware ranking)
+  p0ScopePenalty: number;
+  crossScopePenalty: number;
+  matchScopePenalty: number;
+  // Clarity half-life fields (all Infinity — no decay; kept for ClarityDecayConfig compat)
   p0ClarityHalfLifeDays: number;
   p1ClarityHalfLifeDays: number;
   p2ClarityHalfLifeDays: number;
   p3ClarityHalfLifeDays: number;
-  p0RecallRelevanceThreshold: number;
-  p2ToP1MinClarity: number;
-  p2ToP1MinAgeDays: number;
-  p2ToP1MinScopeCount: number;
-  p1ToP0MinClarity: number;
-  p1ToP0MinAgeDays: number;
-  p0ScopePenalty: number;
-  crossScopePenalty: number;
-  matchScopePenalty: number;
-  p0TierMultiplier: number;
-  p1TierMultiplier: number;
-  p2TierMultiplier: number;
-  p3TierMultiplier: number;
   scoreSimilarityWeight: number;
   scoreDecayWeight: number;
   reinforcementLogWeight: number;
@@ -462,8 +399,6 @@ export function writeSoulMemory(params: {
   soulConfig?: SoulMemoryConfig;
   /** Memory type: 'episodic' (default), 'semantic', or 'knowledge'. Knowledge items are exempt from P3 compaction/archival. */
   memoryType?: "episodic" | "semantic" | "knowledge";
-  // Deprecated alias; prefer soulConfig.p0AllowedKinds.
-  p0AllowedKinds?: string[];
 }): SoulMemoryItem | null {
   const content = params.content.trim();
   if (!content) {
@@ -480,12 +415,7 @@ export function writeSoulMemory(params: {
   const summary = normalizeOptionalSummary(params.summary, content);
   const recordKind = resolveRecordKind(params.recordKind, kind, source);
   const metadataJson = stringifyMetadata(params.metadata);
-  const soulConfig = resolveSoulMemoryConfig({
-    ...params.soulConfig,
-    p0AllowedKinds: params.soulConfig?.p0AllowedKinds ?? params.p0AllowedKinds,
-  });
-  const normalizedSource = normalizeSourceForKind(source, kind, soulConfig.p0AllowedKinds);
-  const sourceProfile = SOURCE_PROFILE[normalizedSource];
+  const sourceProfile = SOURCE_PROFILE[source];
   const explicitTier = params.tier ? normalizeTier(params.tier) : null;
   const resolvedTier = explicitTier ?? sourceProfile.tier;
   const resolvedConfidence = Math.max(
@@ -506,7 +436,7 @@ export function writeSoulMemory(params: {
     if (existing) {
       const nextConfidence = Math.max(existing.confidence, resolvedConfidence);
       const nextTier = resolvedTier;
-      const nextSource = normalizedSource;
+      const nextSource = source;
       db.prepare(
         "UPDATE memory_items SET confidence = ?, tier = ?, source = ?, record_kind = ?, summary = ?, metadata_json = ?, " +
           "reinforcement_count = COALESCE(reinforcement_count, 1) + 1, last_reinforced_at = ? " +
@@ -527,7 +457,7 @@ export function writeSoulMemory(params: {
     const embeddingVec = embedText(content);
     const embedding = JSON.stringify(embeddingVec);
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
-    const sourceDetail = deriveSourceDetail(normalizedSource);
+    const sourceDetail = deriveSourceDetail(source);
     const resolvedMemoryType = params.memoryType ?? "episodic";
     db.prepare(
       "INSERT INTO memory_items (" +
@@ -544,7 +474,7 @@ export function writeSoulMemory(params: {
       embedding,
       resolvedConfidence,
       resolvedTier,
-      normalizedSource,
+      source,
       recordKind,
       summary,
       metadataJson,
@@ -2074,32 +2004,9 @@ function normalizeRecordKind(value: string): SoulMemoryRecordKind {
   return RECORD_KIND_EXPERIENCE;
 }
 
-function normalizeSourceForKind(
-  source: SoulMemorySource,
-  kind: string,
-  p0AllowedKinds: Set<string>,
-): SoulMemorySource {
-  if (source !== SOURCE_CORE_PREFERENCE) {
-    return source;
-  }
-  if (p0AllowedKinds.has(kind)) {
-    return source;
-  }
-  return SOURCE_MANUAL_LOG;
-}
-
-function resolveP0AllowedKinds(raw?: string[]): Set<string> {
-  if (!raw || raw.length === 0) {
-    return DEFAULT_P0_ALLOWED_KINDS;
-  }
-  const normalized = new Set(raw.map((entry) => normalizeScopeValue(entry)).filter(Boolean));
-  return normalized.size > 0 ? normalized : DEFAULT_P0_ALLOWED_KINDS;
-}
-
 function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConfig {
   const config = raw ?? {};
   return {
-    p0AllowedKinds: resolveP0AllowedKinds(config.p0AllowedKinds),
     forgetConfidenceThreshold: resolveBoundedNumber(
       config.forgetConfidenceThreshold,
       FORGET_CONFIDENCE_THRESHOLD,
@@ -2111,48 +2018,14 @@ function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMemoryConf
       FORGET_STREAK_HALF_LIVES,
       0.1,
     ),
-    p0ClarityHalfLifeDays: resolveBoundedNumber(
-      config.p0ClarityHalfLifeDays,
-      P0_CLARITY_HALF_LIFE_DAYS,
-      1,
-    ),
-    p1ClarityHalfLifeDays: resolveBoundedNumber(
-      config.p1ClarityHalfLifeDays,
-      P1_CLARITY_HALF_LIFE_DAYS,
-      1,
-    ),
-    p2ClarityHalfLifeDays: resolveBoundedNumber(
-      config.p2ClarityHalfLifeDays,
-      P2_CLARITY_HALF_LIFE_DAYS,
-      1,
-    ),
-    p3ClarityHalfLifeDays: resolveBoundedNumber(
-      config.p3ClarityHalfLifeDays,
-      P3_CLARITY_HALF_LIFE_DAYS,
-      1,
-    ),
-    p0RecallRelevanceThreshold: resolveBoundedNumber(
-      config.p0RecallRelevanceThreshold,
-      P0_RECALL_RELEVANCE_THRESHOLD,
-      0,
-      1,
-    ),
-    p2ToP1MinClarity: resolveBoundedNumber(config.p2ToP1MinClarity, P2_TO_P1_MIN_CLARITY, 0, 1),
-    p2ToP1MinAgeDays: resolveBoundedInteger(config.p2ToP1MinAgeDays, P2_TO_P1_MIN_AGE_DAYS, 0),
-    p2ToP1MinScopeCount: resolveBoundedInteger(
-      config.p2ToP1MinScopeCount,
-      P2_TO_P1_MIN_SCOPE_COUNT,
-      1,
-    ),
-    p1ToP0MinClarity: resolveBoundedNumber(config.p1ToP0MinClarity, P1_TO_P0_MIN_CLARITY, 0, 1),
-    p1ToP0MinAgeDays: resolveBoundedInteger(config.p1ToP0MinAgeDays, P1_TO_P0_MIN_AGE_DAYS, 0),
-    p0ScopePenalty: resolveBoundedNumber(config.p0ScopePenalty, P0_SCOPE_PENALTY, 0),
+    p0ScopePenalty: P0_SCOPE_PENALTY,
     crossScopePenalty: resolveBoundedNumber(config.crossScopePenalty, CROSS_SCOPE_PENALTY, 0),
     matchScopePenalty: resolveBoundedNumber(config.matchScopePenalty, MATCH_SCOPE_PENALTY, 0),
-    p0TierMultiplier: resolveBoundedNumber(config.p0TierMultiplier, P0_TIER_MULTIPLIER, 0),
-    p1TierMultiplier: resolveBoundedNumber(config.p1TierMultiplier, P1_TIER_MULTIPLIER, 0),
-    p2TierMultiplier: resolveBoundedNumber(config.p2TierMultiplier, P2_TIER_MULTIPLIER, 0),
-    p3TierMultiplier: resolveBoundedNumber(config.p3TierMultiplier, P3_TIER_MULTIPLIER, 0),
+    // Clarity half-lives are all Infinity (no decay). Kept for ClarityDecayConfig compat.
+    p0ClarityHalfLifeDays: Infinity,
+    p1ClarityHalfLifeDays: Infinity,
+    p2ClarityHalfLifeDays: Infinity,
+    p3ClarityHalfLifeDays: Infinity,
     scoreSimilarityWeight: resolveBoundedNumber(
       config.scoreSimilarityWeight,
       SCORE_SIMILARITY_WEIGHT,
@@ -2817,178 +2690,4 @@ function embedText(value: string): number[] {
     return vec;
   }
   return vec.map((entry) => entry / magnitude);
-}
-
-function loadScopeHitSummary(
-  db: DatabaseSync,
-): Map<string, { distinctScopeHits: number; totalHits: number }> {
-  const out = new Map<string, { distinctScopeHits: number; totalHits: number }>();
-  type Row = { memory_id?: string; scope_count?: number; total_hits?: number };
-  const rows = db
-    .prepare(
-      `SELECT memory_id, COUNT(*) AS scope_count, COALESCE(SUM(hit_count), 0) AS total_hits ` +
-        `FROM ${SOUL_MEMORY_SCOPE_HITS_TABLE} GROUP BY memory_id`,
-    )
-    .all() as Row[];
-  for (const row of rows) {
-    const memoryId = String(row.memory_id ?? "").trim();
-    if (!memoryId) {
-      continue;
-    }
-    out.set(memoryId, {
-      distinctScopeHits: Number(row.scope_count ?? 0),
-      totalHits: Number(row.total_hits ?? 0),
-    });
-  }
-  return out;
-}
-
-/** @deprecated Tier promotion is replaced by EXPERIENCE.md distillation. Returns empty results. */
-export function promoteSoulMemories(params: {
-  agentId: string;
-  nowMs?: number;
-  autoApproveP0?: boolean;
-  approvedP0Ids?: string[];
-  soulConfig?: SoulMemoryConfig;
-  // Deprecated alias; prefer soulConfig.p0AllowedKinds.
-  p0AllowedKinds?: string[];
-}): SoulMemoryPromotionSummary {
-  // No-op: tier promotion abolished. All items are P3.
-  void params;
-  return {
-    promotedToP1: 0,
-    promotedToP0: 0,
-    p1PromotionIds: [],
-    p0PromotionIds: [],
-    p0ApprovalCandidates: [],
-    skillExtractionCandidates: [],
-  };
-  // --- Original promotion logic below (disabled) ---
-  const db = openSoulMemoryDb(params.agentId);
-  const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
-  const autoApproveP0 = params.autoApproveP0 === true;
-  const approvedP0Ids = new Set((params.approvedP0Ids ?? []).map((entry) => entry.trim()));
-  const soulConfig = resolveSoulMemoryConfig({
-    ...params.soulConfig,
-    p0AllowedKinds: params.soulConfig?.p0AllowedKinds ?? params.p0AllowedKinds,
-  });
-  try {
-    const rows = db
-      .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items`)
-      .all() as MemoryItemRow[];
-    if (rows.length === 0) {
-      return {
-        promotedToP1: 0,
-        promotedToP0: 0,
-        p1PromotionIds: [],
-        p0PromotionIds: [],
-        p0ApprovalCandidates: [],
-        skillExtractionCandidates: [],
-      };
-    }
-
-    const scopeHitSummary = loadScopeHitSummary(db);
-    const promoteP1Stmt = db.prepare("UPDATE memory_items SET tier = ? WHERE id = ?");
-    const promoteP0Stmt = db.prepare("UPDATE memory_items SET tier = ?, source = ? WHERE id = ?");
-    const p1PromotionIds: string[] = [];
-    const p0PromotionIds: string[] = [];
-    const skillExtractionCandidates: string[] = [];
-    const promotedInRun = new Set<string>();
-
-    for (const row of rows) {
-      const item = rowToMemoryItem(row);
-      if (item.tier !== TIER_P2) {
-        continue;
-      }
-      // Only promote semantic memories when compaction is enabled
-      if (soulConfig.p3Compaction.enabled && item.memoryType === "episodic") {
-        continue;
-      }
-      const hitSummary = scopeHitSummary.get(item.id);
-      const distinctScopeHits = hitSummary?.distinctScopeHits ?? 0;
-      if (distinctScopeHits < soulConfig.p2ToP1MinScopeCount) {
-        continue;
-      }
-      const survivalAgeDays = Math.max(0, (nowMs - item.createdAt) / MILLIS_PER_DAY);
-      const effectiveTs = item.lastAccessedAt ?? item.createdAt;
-      const clarityAgeDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      const clarityScore = computeCurrentClarity(item, clarityAgeDays, soulConfig);
-      if (
-        survivalAgeDays < soulConfig.p2ToP1MinAgeDays ||
-        clarityScore < soulConfig.p2ToP1MinClarity
-      ) {
-        continue;
-      }
-      promoteP1Stmt.run(TIER_P1, item.id);
-      p1PromotionIds.push(item.id);
-      skillExtractionCandidates.push(item.id);
-      promotedInRun.add(item.id);
-    }
-
-    const p0ApprovalCandidates: SoulMemoryPromotionCandidate[] = [];
-    for (const row of rows) {
-      const item = rowToMemoryItem(row);
-      if (item.tier !== TIER_P1 || promotedInRun.has(item.id)) {
-        continue;
-      }
-      if (!soulConfig.p0AllowedKinds.has(item.kind)) {
-        continue;
-      }
-      const survivalAgeDays = Math.max(0, (nowMs - item.createdAt) / MILLIS_PER_DAY);
-      const effectiveTs = item.lastAccessedAt ?? item.createdAt;
-      const clarityAgeDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      const clarityScore = computeCurrentClarity(item, clarityAgeDays, soulConfig);
-      if (
-        survivalAgeDays < soulConfig.p1ToP0MinAgeDays ||
-        clarityScore < soulConfig.p1ToP0MinClarity
-      ) {
-        continue;
-      }
-      const distinctScopeHits = scopeHitSummary.get(item.id)?.distinctScopeHits ?? 0;
-      const candidate: SoulMemoryPromotionCandidate = {
-        ...item,
-        ageDays: survivalAgeDays,
-        clarityScore,
-        distinctScopeHits,
-      };
-      const approved = autoApproveP0 || approvedP0Ids.has(item.id);
-      if (approved) {
-        promoteP0Stmt.run(TIER_P0, SOURCE_CORE_PREFERENCE, item.id);
-        p0PromotionIds.push(item.id);
-        continue;
-      }
-      p0ApprovalCandidates.push(candidate);
-    }
-
-    p0ApprovalCandidates.sort((a, b) => {
-      const clarityDelta = b.clarityScore - a.clarityScore;
-      if (Math.abs(clarityDelta) > 1e-8) {
-        return clarityDelta;
-      }
-      return b.ageDays - a.ageDays;
-    });
-
-    return {
-      promotedToP1: p1PromotionIds.length,
-      promotedToP0: p0PromotionIds.length,
-      p1PromotionIds,
-      p0PromotionIds,
-      p0ApprovalCandidates,
-      skillExtractionCandidates,
-    };
-  } finally {
-    db.close();
-  }
-}
-
-/** @deprecated Confidence decay is abolished. No-op. */
-export function applySoulMemoryConfidenceDecay(params: {
-  agentId: string;
-  scopeType?: string;
-  scopeId?: string;
-  nowMs?: number;
-  soulConfig?: SoulMemoryConfig;
-}): { updated: number; deleted: number } {
-  void params;
-  return { updated: 0, deleted: 0 };
 }

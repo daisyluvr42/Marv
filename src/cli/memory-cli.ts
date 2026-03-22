@@ -4,11 +4,6 @@ import os from "node:os";
 import path from "node:path";
 import type { Command } from "commander";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import {
-  memoryP0SectionCommand,
-  memoryP0ShowCommand,
-  memoryP0SyncCommand,
-} from "../commands/memory-p0.js";
 import { loadConfig } from "../core/config/config.js";
 import { resolveStateDir } from "../core/config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../core/config/sessions/paths.js";
@@ -48,14 +43,6 @@ type MemoryCommandOptions = {
   force?: boolean;
   verbose?: boolean;
 };
-
-function resolveParentJsonFlag(command: Command | undefined): boolean {
-  const parent = command?.parent;
-  if (!parent || typeof parent.opts !== "function") {
-    return false;
-  }
-  return Boolean(parent.opts().json);
-}
 
 type MemoryManager = NonNullable<MemorySearchManagerResult["manager"]>;
 type MemoryManagerPurpose = Parameters<typeof getMemorySearchManager>[0]["purpose"];
@@ -561,7 +548,7 @@ export async function runMemoryStatus(opts: MemoryCommandOptions) {
     const archiveCount = countSoulArchiveEvents({ agentId });
     lines.push(
       `${label("Structured")} ${info(
-        `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3} · Archive ${archiveCount}`,
+        `${tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3} items · Archive ${archiveCount}`,
       )}`,
     );
     lines.push(
@@ -584,7 +571,6 @@ export function registerMemoryCli(program: Command) {
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
           ["marv mem list", "Browse all structured memory items."],
-          ["marv mem list --tier P0", "Show only P0-tier items."],
           ["marv mem backup", "Back up memory database to a file."],
           ["marv mem restore backup.sqlite", "Restore memory from a backup."],
           ["marv mem export", "Export memory items to JSON."],
@@ -593,94 +579,6 @@ export function registerMemoryCli(program: Command) {
           ['marv memory search "deployment notes"', "Search indexed memory entries."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs: /cli/memory")}\n`,
     );
-
-  const p0 = memory
-    .command("p0")
-    .description("Show or update the structured P0 memory layer")
-    .enablePositionalOptions()
-    .option("--json", "Print JSON")
-    .action(async (opts: { json?: boolean }) => {
-      await memoryP0ShowCommand({ json: Boolean(opts.json) }, defaultRuntime);
-    });
-
-  p0.command("soul [value]")
-    .description("Show or update P0 Soul")
-    .option("--file <path>", "Read content from a file")
-    .option("--clear", "Clear this P0 section", false)
-    .option("--json", "Print JSON")
-    .action(
-      async (
-        value: string | undefined,
-        opts: { file?: string; clear?: boolean; json?: boolean },
-        command: Command,
-      ) => {
-        await memoryP0SectionCommand(
-          "soul",
-          value,
-          {
-            file: opts.file,
-            clear: Boolean(opts.clear),
-            json: Boolean(opts.json) || resolveParentJsonFlag(command),
-          },
-          defaultRuntime,
-        );
-      },
-    );
-
-  p0.command("identity [value]")
-    .description("Show or update P0 Identity")
-    .option("--file <path>", "Read content from a file")
-    .option("--clear", "Clear this P0 section", false)
-    .option("--json", "Print JSON")
-    .action(
-      async (
-        value: string | undefined,
-        opts: { file?: string; clear?: boolean; json?: boolean },
-        command: Command,
-      ) => {
-        await memoryP0SectionCommand(
-          "identity",
-          value,
-          {
-            file: opts.file,
-            clear: Boolean(opts.clear),
-            json: Boolean(opts.json) || resolveParentJsonFlag(command),
-          },
-          defaultRuntime,
-        );
-      },
-    );
-
-  p0.command("user [value]")
-    .description("Show or update P0 User")
-    .option("--file <path>", "Read content from a file")
-    .option("--clear", "Clear this P0 section", false)
-    .option("--json", "Print JSON")
-    .action(
-      async (
-        value: string | undefined,
-        opts: { file?: string; clear?: boolean; json?: boolean },
-        command: Command,
-      ) => {
-        await memoryP0SectionCommand(
-          "user",
-          value,
-          {
-            file: opts.file,
-            clear: Boolean(opts.clear),
-            json: Boolean(opts.json) || resolveParentJsonFlag(command),
-          },
-          defaultRuntime,
-        );
-      },
-    );
-
-  p0.command("sync")
-    .description("Import SOUL.md / IDENTITY.md / USER.md back into structured P0")
-    .option("--json", "Print JSON")
-    .action(async (opts: { json?: boolean }) => {
-      await memoryP0SyncCommand({ json: Boolean(opts.json) }, defaultRuntime);
-    });
 
   memory
     .command("status")
@@ -936,9 +834,7 @@ export function registerMemoryCli(program: Command) {
       await fs.writeFile(outputPath, JSON.stringify(exportData, null, 2), "utf-8");
       defaultRuntime.log(`Exported ${items.length} memory items to ${shortenHomePath(outputPath)}`);
       const tierCounts = countSoulMemoryItemsByTier({ agentId });
-      defaultRuntime.log(
-        `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3}`,
-      );
+      defaultRuntime.log(`${tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3} items`);
     });
 
   // ── marv mem import ──
@@ -1011,9 +907,7 @@ export function registerMemoryCli(program: Command) {
       defaultRuntime.log(
         `Imported ${imported}/${exportData.items.length} items into agent "${agentId}".`,
       );
-      defaultRuntime.log(
-        `P0 ${tierCounts.P0} · P1 ${tierCounts.P1} · P2 ${tierCounts.P2} · P3 ${tierCounts.P3}`,
-      );
+      defaultRuntime.log(`${tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3} items`);
     });
 
   // ── marv mem list ──
@@ -1053,15 +947,7 @@ export function registerMemoryCli(program: Command) {
         const rich = isRich();
         const lines: string[] = [];
         for (const item of items) {
-          const tierColor =
-            item.tier === "P0"
-              ? theme.success
-              : item.tier === "P1"
-                ? theme.info
-                : item.tier === "P2"
-                  ? theme.accent
-                  : theme.muted;
-          const tierLabel = colorize(rich, tierColor, item.tier);
+          const tierLabel = colorize(rich, theme.muted, item.tier);
           const kindLabel = colorize(rich, theme.muted, `[${item.kind}]`);
           const age = Math.floor((Date.now() - item.createdAt) / (24 * 60 * 60 * 1000));
           const ageLabel = colorize(rich, theme.muted, `${age}d ago`);
@@ -1101,9 +987,7 @@ export function registerMemoryCli(program: Command) {
       const tierCounts = countSoulMemoryItemsByTier({ agentId });
       const total = tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3;
       defaultRuntime.log(`Memory backed up: ${shortenHomePath(outputPath)}`);
-      defaultRuntime.log(
-        `Agent: ${agentId} · ${total} items (P0 ${tierCounts.P0}, P1 ${tierCounts.P1}, P2 ${tierCounts.P2}, P3 ${tierCounts.P3})`,
-      );
+      defaultRuntime.log(`Agent: ${agentId} · ${total} items`);
       defaultRuntime.log(`Size: ${formatBackupSize(stat.size)}`);
     });
 
@@ -1135,9 +1019,7 @@ export function registerMemoryCli(program: Command) {
       if (existingExists && !opts.force) {
         const tierCounts = countSoulMemoryItemsByTier({ agentId });
         const total = tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3;
-        defaultRuntime.error(
-          `Existing memory database has ${total} items (P0 ${tierCounts.P0}, P1 ${tierCounts.P1}, P2 ${tierCounts.P2}, P3 ${tierCounts.P3}).`,
-        );
+        defaultRuntime.error(`Existing memory database has ${total} items.`);
         defaultRuntime.error("Use --force to overwrite.");
         process.exitCode = 1;
         return;
@@ -1147,9 +1029,7 @@ export function registerMemoryCli(program: Command) {
       const tierCounts = countSoulMemoryItemsByTier({ agentId });
       const total = tierCounts.P0 + tierCounts.P1 + tierCounts.P2 + tierCounts.P3;
       defaultRuntime.log(`Memory restored for agent "${agentId}".`);
-      defaultRuntime.log(
-        `${total} items (P0 ${tierCounts.P0}, P1 ${tierCounts.P1}, P2 ${tierCounts.P2}, P3 ${tierCounts.P3})`,
-      );
+      defaultRuntime.log(`${total} items`);
     });
 }
 
