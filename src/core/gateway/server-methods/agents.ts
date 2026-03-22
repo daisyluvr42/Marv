@@ -2,12 +2,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
 import {
-  isP0FileName,
-  projectAgentP0FilesFromConfig,
-  readAgentP0FilesFromWorkspace,
-  setAgentP0Sections,
-} from "../../../agents/p0.js";
-import {
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_BOOTSTRAP_FILENAME,
   DEFAULT_HEARTBEAT_FILENAME,
@@ -20,11 +14,7 @@ import {
   isWorkspaceOnboardingCompleted,
 } from "../../../agents/workspace.js";
 import { normalizeAgentId } from "../../../routing/session-key.js";
-import {
-  loadConfig,
-  readConfigFileSnapshotForWrite,
-  writeConfigFile,
-} from "../../config/config.js";
+import { loadConfig } from "../../config/config.js";
 import {
   ErrorCodes,
   errorShape,
@@ -272,7 +262,6 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
-    await projectAgentP0FilesFromConfig(cfg);
     let hideBootstrap = false;
     try {
       hideBootstrap = await isWorkspaceOnboardingCompleted(workspaceDir);
@@ -300,8 +289,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
     if (!resolved) {
       return;
     }
-    const { cfg, agentId, workspaceDir, name } = resolved;
-    await projectAgentP0FilesFromConfig(cfg);
+    const { agentId, workspaceDir, name } = resolved;
     const filePath = path.join(workspaceDir, name);
     const meta = await statFile(filePath);
     if (!meta) {
@@ -352,29 +340,11 @@ export const agentsHandlers: GatewayRequestHandlers = {
     if (!resolved) {
       return;
     }
-    const { cfg, agentId, workspaceDir, name } = resolved;
+    const { agentId, workspaceDir, name } = resolved;
     await fs.mkdir(workspaceDir, { recursive: true });
     const content = String(params.content ?? "");
-    if (isP0FileName(name)) {
-      const { snapshot, writeOptions } = await readConfigFileSnapshotForWrite();
-      const baseConfig = snapshot.valid ? snapshot.config : cfg;
-      const imported = await readAgentP0FilesFromWorkspace(workspaceDir);
-      const section =
-        name === DEFAULT_SOUL_FILENAME
-          ? "soul"
-          : name === DEFAULT_IDENTITY_FILENAME
-            ? "identity"
-            : "user";
-      const nextConfig = setAgentP0Sections(baseConfig, {
-        ...imported,
-        [section]: content,
-      });
-      await writeConfigFile(nextConfig, writeOptions);
-    } else {
-      const filePath = path.join(workspaceDir, name);
-      await fs.writeFile(filePath, content, "utf-8");
-    }
     const filePath = path.join(workspaceDir, name);
+    await fs.writeFile(filePath, content, "utf-8");
     const meta = await statFile(filePath);
     respond(
       true,

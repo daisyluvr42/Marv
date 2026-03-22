@@ -1,6 +1,5 @@
 import type { MarvConfig } from "../core/config/config.js";
 import { readExperienceFileSync } from "../memory/experience/experience-files.js";
-import { buildP0ContextFiles, hasConfiguredAgentP0, isP0FileName } from "./p0.js";
 import type { EmbeddedContextFile } from "./runner/pi-embedded-helpers.js";
 import {
   buildBootstrapContextFiles,
@@ -102,16 +101,14 @@ export async function resolveBootstrapContextForRun(params: {
     filteredBootstrapFiles,
     autoRecallEnabled,
   );
-  // Soul.md replaces P0 context files when agentId is available.
-  // Falls back to legacy P0 for backward compatibility.
+
+  // Inject Soul.md + EXPERIENCE.md + CONTEXT.md
   const agentId = params.agentId;
-  let soulContextFiles: EmbeddedContextFile[] = [];
-  let useLegacyP0 = false;
+  const soulContextFiles: EmbeddedContextFile[] = [];
 
   if (agentId) {
-    soulContextFiles = buildSoulContextFile(agentId);
+    soulContextFiles.push(...buildSoulContextFile(agentId));
 
-    // Inject EXPERIENCE.md and CONTEXT.md as semi-stable / volatile context
     const experienceContent = readExperienceFileSync(agentId, "MARV_EXPERIENCE.md");
     if (experienceContent.trim()) {
       soulContextFiles.push({ path: "MARV_EXPERIENCE", content: experienceContent });
@@ -120,27 +117,15 @@ export async function resolveBootstrapContextForRun(params: {
     if (contextContent.trim()) {
       soulContextFiles.push({ path: "MARV_CONTEXT", content: contextContent });
     }
-
-    // If no Soul.md exists, fall back to legacy P0
-    if (soulContextFiles.length === 0) {
-      useLegacyP0 = true;
-    }
-  } else {
-    useLegacyP0 = true;
   }
 
-  const p0ContextFiles = useLegacyP0 && params.config ? buildP0ContextFiles(params.config) : [];
-  const contextSourceFiles =
-    useLegacyP0 && params.config && hasConfiguredAgentP0(params.config)
-      ? transformedBootstrapFiles.filter((file) => !isP0FileName(file.name))
-      : transformedBootstrapFiles;
-  const contextFiles = buildBootstrapContextFiles(contextSourceFiles, {
+  const contextFiles = buildBootstrapContextFiles(transformedBootstrapFiles, {
     maxChars: resolveBootstrapMaxChars(params.config),
     totalMaxChars: resolveBootstrapTotalMaxChars(params.config),
     warn: params.warn,
   });
   return {
     bootstrapFiles,
-    contextFiles: [...soulContextFiles, ...p0ContextFiles, ...contextFiles],
+    contextFiles: [...soulContextFiles, ...contextFiles],
   };
 }

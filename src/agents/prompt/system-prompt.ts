@@ -326,7 +326,7 @@ function buildToolGuidanceSection(params: {
 }
 
 /**
- * O5: Output efficiency rules. Baseline that P0 personality can override.
+ * O5: Output efficiency rules. Baseline that Soul personality can override.
  * Preserves proactive agency — "take initiative, but keep output focused."
  * Omitted for "lean" scaffold (strong models are already concise) and minimal mode.
  */
@@ -341,7 +341,7 @@ function buildOutputEfficiencySection(params: {
     "## Response Efficiency",
     "Lead with the answer or action, not the reasoning. If one sentence suffices, do not use three.",
     "Skip filler and preamble. Be proactive and direct — take initiative, but keep output focused.",
-    "These defaults yield to personality (P0 Identity/Soul) when set.",
+    "These defaults yield to personality (Soul) when set.",
     "",
   ];
 }
@@ -705,10 +705,6 @@ export function buildAgentSystemPrompt(params: {
     });
     const recalledPathSet = new Set(recalledContextFiles.map((file) => file.path));
     const projectContextFiles = validContextFiles.filter((file) => !recalledPathSet.has(file.path));
-    const hasP0Soul = projectContextFiles.some((file) => file.path.trim() === "P0 Soul");
-    const hasP0Identity = projectContextFiles.some((file) => file.path.trim() === "P0 Identity");
-    const hasP0User = projectContextFiles.some((file) => file.path.trim() === "P0 User");
-    const hasP0Context = hasP0Soul || hasP0Identity || hasP0User;
     const hasSoulContext = projectContextFiles.some((file) => file.path.trim() === "Soul");
     const hasExperienceContext = projectContextFiles.some(
       (file) => file.path.trim() === "MARV_EXPERIENCE",
@@ -722,7 +718,6 @@ export function buildAgentSystemPrompt(params: {
     if (projectContextFiles.length > 0) {
       lines.push("# Project Context", "", "The following project context files have been loaded:");
       if (hasSoulContext) {
-        // New Soul.md system — replaces P0
         lines.push(
           "Soul guides persona, principles, and behavioral boundaries. It is user-authored and read-only to the agent.",
           "Soul does not override task facts, tool results, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
@@ -738,27 +733,7 @@ export function buildAgentSystemPrompt(params: {
           "MARV_CONTEXT contains the current session's working context and progress notes.",
         );
       }
-      if (hasP0Context && !hasSoulContext) {
-        lines.push(
-          "P0 guides tone, identity, and behavioral boundaries.",
-          "P0 does not override task facts, tool results, file contents, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
-        );
-        if (hasP0Soul) {
-          lines.push(
-            "P0 Soul is a strong constraint for persona, principles, and behavior boundaries. If a request conflicts with it, refuse or redirect while staying in character.",
-          );
-        }
-        if (hasP0Identity) {
-          lines.push(
-            "P0 Identity is a strong constraint for self-description and speaking style, but it must not distort task facts or technical details.",
-          );
-        }
-        if (hasP0User) {
-          lines.push(
-            "P0 User captures stable user preferences only, not transient state. Current explicit user requests can temporarily override it.",
-          );
-        }
-      } else if (hasSoulFile && !hasSoulContext) {
+      if (hasSoulFile && !hasSoulContext) {
         lines.push(
           "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
         );

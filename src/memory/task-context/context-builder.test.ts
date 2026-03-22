@@ -29,7 +29,7 @@ afterEach(async () => {
 });
 
 describe("task context builder", () => {
-  it("assembles layered context with summary, decisions, p0 memory, and recent turns", () => {
+  it("assembles layered context with summary, decisions, relevant memory, and recent turns", () => {
     createTaskContext({
       agentId: "main",
       taskId: "builder-task",
@@ -49,12 +49,15 @@ describe("task context builder", () => {
       content: "Must preserve backward compatibility with old session format.",
       createdAt: 1200,
     });
+    // All items are P3 now (no P0/P1/P2 tiers). Memory is included based on
+    // relevance scoring from querySoulMemoryMulti, not tier-based filtering.
     writeSoulMemory({
       agentId: "main",
       scopeType: "task",
       scopeId: "task:main:builder-task",
       kind: "preference",
-      content: "Always include tests for behavior changes.",
+      content:
+        "Continue implementation of the migration flow and include tests for behavior changes.",
       source: "core_preference",
     });
 
@@ -81,7 +84,8 @@ describe("task context builder", () => {
 
     expect(built.layers.rollingSummary).toContain("Summarized project background");
     expect(built.layers.keyDecisions[0]).toContain("backward compatibility");
-    expect(built.layers.p0Memory.some((line) => line.includes("include tests"))).toBe(true);
+    // p0Memory layer now contains all relevance-scored items (all P3), not just P0-tier items
+    expect(built.layers.p0Memory.some((line) => line.includes("migration flow"))).toBe(true);
     expect(built.layers.recentEntries.length).toBeGreaterThan(0);
     expect(built.layers.recentEntries.length).toBeLessThan(8);
     expect(built.messages[built.messages.length - 1]?.role).toBe("user");

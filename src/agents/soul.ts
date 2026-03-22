@@ -4,7 +4,6 @@ import path from "node:path";
 import type { MarvConfig } from "../core/config/config.js";
 import { resolveStateDir } from "../core/config/paths.js";
 import { resolveAgentWorkspaceDir } from "./agent-scope.js";
-import { resolveAgentP0Config, P0_SECTION_ORDER } from "./p0.js";
 import type { EmbeddedContextFile } from "./runner/pi-embedded-helpers.js";
 
 const SOUL_FILENAME = "Soul.md";
@@ -55,10 +54,8 @@ export function buildSoulContextFile(agentId: string): EmbeddedContextFile[] {
 }
 
 /**
- * Migrate legacy P0 files (SOUL.md, IDENTITY.md, USER.md) → Soul.md.
+ * Migrate legacy workspace files (SOUL.md, IDENTITY.md, USER.md) → Soul.md.
  * Only runs once; idempotent via marker file.
- *
- * Also attempts to read P0 config sections from MarvConfig as fallback.
  */
 export async function migrateLegacyP0ToSoul(params: {
   agentId: string;
@@ -88,19 +85,6 @@ export async function migrateLegacyP0ToSoul(params: {
         }
       } catch {
         // File doesn't exist, skip
-      }
-    }
-  }
-
-  // Fallback: read from P0 config sections
-  if (cfg && Object.keys(legacyFiles).length === 0) {
-    const p0 = resolveAgentP0Config(cfg);
-    for (const section of P0_SECTION_ORDER) {
-      const content = p0[section];
-      if (typeof content === "string" && content.trim()) {
-        const filename =
-          section === "soul" ? "SOUL.md" : section === "identity" ? "IDENTITY.md" : "USER.md";
-        legacyFiles[filename] = content.trim();
       }
     }
   }
