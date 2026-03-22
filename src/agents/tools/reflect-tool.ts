@@ -47,7 +47,8 @@ export function createReflectTool(options: {
     label: "Reflect",
     name: "reflect",
     description:
-      "Record behavioral experience and lessons (target=experience, triggers LLM distillation) or update current working context (target=context).",
+      "Record behavioral experience and lessons (target=experience, triggers LLM distillation) or update current working context (target=context). " +
+      "Call after completing tasks to capture lessons learned, or when starting new work to set context.",
     parameters: ReflectSchema,
     execute: async (_toolCallId, params) => {
       const target = readParam(params, "target");

@@ -35,6 +35,7 @@ const SelfInspectingToolSchema = Type.Object(
 type SelfInspectingQuery =
   | "summary"
   | "runtime"
+  | "health"
   | "settings"
   | "models"
   | "tasks"
@@ -79,6 +80,7 @@ function normalizeQuery(raw: unknown): SelfInspectingQuery {
   const value = typeof raw === "string" ? normalizeTextQuery(raw) : "";
   switch (value) {
     case "runtime":
+    case "health":
     case "settings":
     case "models":
     case "tasks":
@@ -218,6 +220,31 @@ function normalizeQuery(raw: unknown): SelfInspectingQuery {
     ])
   ) {
     hits.add("context");
+  }
+  if (
+    matchesAny([
+      "health",
+      "healthy",
+      "diagnose",
+      "diagnosis",
+      "diagnostic",
+      "diagnostics",
+      "self check",
+      "self-check",
+      "selfcheck",
+      "error",
+      "errors",
+      "session health",
+      "memory health",
+      "健康",
+      "诊断",
+      "自检",
+      "自诊断",
+      "健康检查",
+      "错误",
+    ])
+  ) {
+    hits.add("health");
   }
   if (
     matchesAny([
@@ -430,6 +457,98 @@ function formatToolsSection(params: {
   return lines.join("\n");
 }
 
+async function formatHealthSection(params: {
+  cfg: MarvConfig;
+  agentId: string;
+  sessionKey: string;
+}): Promise<string> {
+  const lines: string[] = [];
+
+  // 1. Memory system status
+  try {
+    const { readExperienceFileSync, resolveExperienceDir } =
+      await import("../../memory/experience/experience-files.js");
+    const { listSoulMemoryItems, countSoulMemoryItemsByTier } =
+      await import("../../memory/storage/soul-memory-store.js");
+
+    // P3 item counts
+    try {
+      const tierCounts = countSoulMemoryItemsByTier({ agentId: params.agentId });
+      const total = Object.values(tierCounts).reduce((a, b) => a + b, 0);
+      lines.push(`Memory items: ${total} total`);
+    } catch {
+      lines.push("Memory items: unavailable");
+    }
+
+    // Knowledge items
+    try {
+      const knowledgeItems = listSoulMemoryItems({
+        agentId: params.agentId,
+        scopeType: "document",
+        limit: 1,
+      });
+      lines.push(`Knowledge vault: ${knowledgeItems.length > 0 ? "indexed" : "empty"}`);
+    } catch {
+      // Skip if not available
+    }
+
+    // EXPERIENCE.md status
+    const experience = readExperienceFileSync(params.agentId, "MARV_EXPERIENCE.md");
+    if (experience.trim()) {
+      lines.push(`EXPERIENCE.md: ${experience.length} chars`);
+      // Check last modified
+      try {
+        const fsp = await import("node:fs/promises");
+        const pathMod = await import("node:path");
+        const expDir = resolveExperienceDir(params.agentId);
+        const stat = await fsp.stat(pathMod.join(expDir, "MARV_EXPERIENCE.md"));
+        const ageHours = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60);
+        lines.push(
+          `EXPERIENCE.md last updated: ${ageHours < 1 ? "< 1 hour ago" : `${Math.floor(ageHours)} hours ago`}`,
+        );
+      } catch {
+        // Skip mtime check
+      }
+    } else {
+      lines.push("EXPERIENCE.md: empty (no experience recorded yet)");
+    }
+
+    // CONTEXT.md status
+    const context = readExperienceFileSync(params.agentId, "MARV_CONTEXT.md");
+    lines.push(context.trim() ? `CONTEXT.md: ${context.length} chars` : "CONTEXT.md: empty");
+  } catch {
+    lines.push("Memory system: unavailable");
+  }
+
+  // 2. Session file health
+  try {
+    const fsp = await import("node:fs/promises");
+    const pathMod = await import("node:path");
+    const { resolveStateDir } = await import("../../core/config/paths.js");
+    const stateDir = resolveStateDir(process.env, () => process.env.HOME ?? "");
+    const sessionsDir = pathMod.join(stateDir, "sessions");
+
+    try {
+      const sessionFile = pathMod.join(
+        sessionsDir,
+        `${params.sessionKey.replace(/[/:\\]/g, "_")}.jsonl`,
+      );
+      const stat = await fsp.stat(sessionFile);
+      const sizeKb = (stat.size / 1024).toFixed(1);
+      lines.push(`Session file: ${sizeKb} KB`);
+    } catch {
+      lines.push("Session file: not found or inaccessible");
+    }
+  } catch {
+    lines.push("Session health: unavailable");
+  }
+
+  if (lines.length === 0) {
+    return "Health check: no data available";
+  }
+  return lines.join("\n");
+}
+
 function extractTextBlocks(content: unknown): string {
   if (!Array.isArray(content)) {
     return "";
@@ -459,7 +578,10 @@ export function createSelfInspectingTool(opts?: {
     label: "Self Inspecting",
     name: "self_inspecting",
     description:
-      "Inspect your own runtime, settings, models, scheduled tasks, context, and tool state. Use when the user asks about your current status, settings, available models, scheduled tasks, tools, limits, or why you are behaving a certain way. Optional: cleanupContextPollution=true removes recognized polluted assistant history for the current session.",
+      "Inspect your own runtime, health, settings, models, scheduled tasks, context, and tool state. " +
+      "Use proactively: after complex tasks to verify system health, when encountering repeated errors to diagnose, " +
+      "or when the user asks about status. Supports query types: summary, runtime, health, settings, models, tasks, context, tools, all. " +
+      "Optional: cleanupContextPollution=true removes recognized polluted assistant history.",
     parameters: SelfInspectingToolSchema,
     execute: async (_toolCallId, args) => {
       const cfg = opts?.config ?? loadConfig();
@@ -566,10 +688,15 @@ export function createSelfInspectingTool(opts?: {
         directUserInstruction: opts?.directUserInstruction,
       });
 
+      const healthSection = await formatHealthSection({ cfg, agentId, sessionKey });
+
       let text: string;
       switch (query) {
         case "runtime":
           text = sessionStatusText || "Session status unavailable.";
+          break;
+        case "health":
+          text = healthSection;
           break;
         case "settings":
           text = settingsSection;
@@ -590,6 +717,9 @@ export function createSelfInspectingTool(opts?: {
           text = [
             "Runtime",
             sessionStatusText || "Session status unavailable.",
+            "",
+            "Health",
+            healthSection,
             "",
             "Settings",
             settingsSection,

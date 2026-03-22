@@ -99,6 +99,8 @@ function buildMemorySection(params: {
       "Use reflect(target=experience) to record behavioral experience and lessons (triggers LLM distillation).",
       "Use reflect(target=context) to update current session working context and progress.",
       "memory_write records factual episodic information; reflect records behavioral experience.",
+      "After completing a non-trivial task, call reflect(target=experience) to capture lessons learned.",
+      "When starting new work, call reflect(target=context) to note the current objective and progress.",
     );
   }
   if (params.citationsMode !== "off") {
@@ -133,7 +135,10 @@ function buildSelfManagementSection(params: { isMinimal: boolean; availableTools
   const lines: string[] = [];
   if (params.availableTools.has("self_inspecting")) {
     lines.push(
-      "When the user asks you to inspect or explain your own current state, status, settings, available models, scheduled tasks, or current behavior, use self_inspecting first.",
+      "Use self_inspecting to check your own state. Triggers:",
+      "- When the user asks about your status, settings, models, or behavior.",
+      "- After completing a complex task: call self_inspecting(query=health) to verify system health.",
+      "- When you encounter repeated errors or unexpected behavior: diagnose with self_inspecting(query=health).",
       "Do not guess or switch models before checking.",
     );
   }
