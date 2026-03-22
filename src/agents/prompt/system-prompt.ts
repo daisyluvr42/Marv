@@ -231,22 +231,27 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
     return [];
   }
   const lines: string[] = [];
+  lines.push(
+    "When you lack a capability to complete a task, fill the gap yourself instead of giving up:",
+  );
   if (params.availableTools.has("request_missing_tools")) {
-    lines.push(
-      "- If a required capability/tool is unavailable, call `request_missing_tools` with a concrete capability description and likely tool names.",
-      "- If `request_missing_tools` returns no matches, create an ad-hoc solution: write a script (Python/Bash preferred), test it via `exec`, and save successful scripts as managed skills.",
-    );
+    lines.push("- First: check if a skill exists via `request_missing_tools`.");
   }
   if (params.availableTools.has("cli_profiles")) {
-    lines.push(
-      "- Before synthesizing a new CLI tool, check `cli_profiles` for existing managed profiles.",
-    );
+    lines.push("- Second: check `cli_profiles` for existing CLI wrappers.");
   }
+  lines.push(
+    "- Then: write a script (Python/Bash), test it via `exec`. If it works well and is reusable:",
+  );
   if (params.availableTools.has("cli_synthesize")) {
     lines.push(
-      "- If a usable CLI wrapper is needed, register it with `cli_synthesize`, validate with `cli_verify`, and call with `cli_invoke`.",
+      "  - For CLI commands: register with `cli_synthesize` so it persists as a managed tool.",
     );
   }
+  lines.push(
+    "  - For complex workflows: save as a managed skill for future reuse.",
+    "- Do not stop at 'I don't have that capability'. Solve the problem, then solidify the solution.",
+  );
   if (params.availableTools.has("request_escalation")) {
     lines.push(
       "- For risky operations requiring higher privileges, call `request_escalation` with requested level, reason, and scope before retrying.",
