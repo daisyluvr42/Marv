@@ -24,6 +24,7 @@ import { createProactiveBufferTool } from "./proactive-buffer-tool.js";
 import { createDeliverableTool } from "./proactive-deliverable-tool.js";
 import { createInfoSourcesTool } from "./proactive-sources-tool.js";
 import { createProactiveTasksTool } from "./proactive-tasks-tool.js";
+import { createReflectTool } from "./reflect-tool.js";
 import { createRequestEscalationTool } from "./request-escalation-tool.js";
 import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
 import { createSelfInspectingTool } from "./self-inspecting-tool.js";
@@ -282,6 +283,15 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
     ...(webFetchTool ? [webFetchTool] : []),
     ...(imageTool ? [imageTool] : []),
   ];
+
+  // Register reflect tool for experience evolution
+  const reflectTool = createReflectTool({
+    config: options?.config,
+    agentSessionKey: options?.agentSessionKey,
+  });
+  if (reflectTool) {
+    tools.push(reflectTool);
+  }
 
   const pluginTools = resolvePluginTools({
     context: {

@@ -47,6 +47,35 @@ export type DeepConsolidationConfig = {
   model?: DeepConsolidationModelConfig;
 };
 
+export type ExperienceConfig = {
+  /** Enable the experience evolution system. Default: true. */
+  enabled?: boolean;
+  /** Model for LLM distillation. Defaults to agent's mid-tier model. */
+  distillerModel?: string;
+  /** Model for weekly calibration. Defaults to highest-tier model. */
+  calibrationModel?: string;
+  /** Model for context distillation. Defaults to local/cheap model. */
+  contextModel?: string;
+  /** EXPERIENCE.md character budget. Default: 800. */
+  experienceBudgetChars?: number;
+  /** CONTEXT.md character budget. Default: 400. */
+  contextBudgetChars?: number;
+  /** Distillation debounce interval in ms. Default: 4h (14400000). */
+  distillDebounceMs?: number;
+  /** Calibration cron schedule. Default: weekly. */
+  calibrationCron?: string;
+  /** Experience log retention in days. Default: unlimited. */
+  logRetentionDays?: number;
+  /** Enable experience attribution tracking. Default: true. */
+  attributionEnabled?: boolean;
+  /** Model for attribution confirmation. Defaults to local/cheap model. */
+  attributionModel?: string;
+  /** Days after which an a:0 experience is considered a zombie. Default: 30. */
+  zombieAgeDays?: number;
+  /** p/a ratio threshold below which an experience is flagged as harmful. Default: 0.3. */
+  harmfulRatioThreshold?: number;
+};
+
 export type MemoryConfig = {
   backend?: MemoryBackend;
   citations?: MemoryCitationsMode;
@@ -57,6 +86,8 @@ export type MemoryConfig = {
   autoRecall?: MemoryAutoRecallConfig;
   knowledge?: MemoryKnowledgeConfig;
   qmd?: MemoryQmdConfig;
+  /** Experience evolution system configuration. */
+  experience?: ExperienceConfig;
 };
 
 export type MemorySoulConfig = {

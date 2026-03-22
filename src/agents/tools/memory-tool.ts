@@ -419,6 +419,7 @@ export function createMemoryWriteTool(options: {
         });
       }
 
+      // All writes go to P3 (episodic). Source defaults to runtime_event.
       const item = writeSoulMemory({
         agentId,
         scopeType,
@@ -426,7 +427,7 @@ export function createMemoryWriteTool(options: {
         kind,
         content: heuristics.normalizedContent,
         confidence: confidence ?? undefined,
-        source: source ?? undefined,
+        source: source ?? "runtime_event",
         soulConfig,
       });
       if (!item) {

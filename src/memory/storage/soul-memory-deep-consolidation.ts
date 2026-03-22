@@ -202,6 +202,17 @@ export async function runSoulMemoryDeepConsolidation(params: {
       skippedStages.push("crossScopeReflection-disabled");
     }
 
+    // EXPERIENCE.md weekly calibration (attribution-driven culling)
+    try {
+      const { weeklyCalibration } = await import("../experience/experience-rebuild.js");
+      await weeklyCalibration({
+        agentId,
+        cfg: params.cfg,
+      });
+    } catch (err) {
+      errors.push(`experienceCalibration: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     if (errors.length > 0) {
       failedAgents += 1;
     }

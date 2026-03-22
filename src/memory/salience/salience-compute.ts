@@ -10,20 +10,28 @@ export const P0_SCOPE_PENALTY = 0.8;
 export const CROSS_SCOPE_PENALTY = 0.2;
 export const MATCH_SCOPE_PENALTY = 1;
 
-export const P0_TIER_MULTIPLIER = 1.2;
+/** @deprecated Tier multipliers are no longer used. All items are P3. Kept for backward compat. */
+export const P0_TIER_MULTIPLIER = 1;
+/** @deprecated */
 export const P1_TIER_MULTIPLIER = 1;
-export const P2_TIER_MULTIPLIER = 0.75;
-export const P3_TIER_MULTIPLIER = 0.3;
+/** @deprecated */
+export const P2_TIER_MULTIPLIER = 1;
+/** @deprecated */
+export const P3_TIER_MULTIPLIER = 1;
 
 export const SCORE_SIMILARITY_WEIGHT = 1;
 export const SCORE_DECAY_WEIGHT = 1;
 
 export const FORGET_CONFIDENCE_THRESHOLD = 0.1;
 export const FORGET_STREAK_HALF_LIVES = 3;
-export const P0_CLARITY_HALF_LIFE_DAYS = 365;
-export const P1_CLARITY_HALF_LIFE_DAYS = 45;
-export const P2_CLARITY_HALF_LIFE_DAYS = 10;
-export const P3_CLARITY_HALF_LIFE_DAYS = 3;
+/** @deprecated Clarity decay is no longer applied. Kept for backward compat. */
+export const P0_CLARITY_HALF_LIFE_DAYS = Infinity;
+/** @deprecated */
+export const P1_CLARITY_HALF_LIFE_DAYS = Infinity;
+/** @deprecated */
+export const P2_CLARITY_HALF_LIFE_DAYS = Infinity;
+/** @deprecated */
+export const P3_CLARITY_HALF_LIFE_DAYS = Infinity;
 
 export const FUSION_VECTOR_WEIGHT = 0.32;
 export const FUSION_LEXICAL_WEIGHT = 0.15;
@@ -44,41 +52,6 @@ function clamp(value: number, min: number, max: number): number {
     return min;
   }
   return Math.max(min, Math.min(max, value));
-}
-
-function resolveTierHalfLifeDays(
-  tier: SoulMemoryTierValue,
-  config: ClarityDecayConfig,
-): number | null {
-  if (tier === "P1") {
-    return config.p1ClarityHalfLifeDays;
-  }
-  if (tier === "P2") {
-    return config.p2ClarityHalfLifeDays;
-  }
-  if (tier === "P3") {
-    return config.p3ClarityHalfLifeDays;
-  }
-  return null;
-}
-
-function computeBelowThresholdDurationDays(params: {
-  item: { confidence: number };
-  ageDays: number;
-  threshold: number;
-  halfLifeDays: number;
-}): number {
-  const ageDays = Math.max(0, params.ageDays);
-  const threshold = clamp(params.threshold, 0, 1);
-  const baseConfidence = clamp(params.item.confidence, 0, 1);
-  if (baseConfidence <= 0 || baseConfidence <= threshold) {
-    return ageDays;
-  }
-  const crossingAgeDays = params.halfLifeDays * Math.log2(baseConfidence / threshold);
-  if (!Number.isFinite(crossingAgeDays) || crossingAgeDays <= 0) {
-    return ageDays;
-  }
-  return Math.max(0, ageDays - crossingAgeDays);
 }
 
 export function computeFusionSemanticMatch(
@@ -113,17 +86,12 @@ export function computeWeightedScore(value: number, weight: number): number {
   return clamp(normalizedValue ** weight, 0, 1);
 }
 
-export function tierPriorityFactor(tier: SoulMemoryTierValue, config: TierPriorityConfig): number {
-  if (tier === "P0") {
-    return config.p0TierMultiplier;
-  }
-  if (tier === "P2") {
-    return config.p2TierMultiplier;
-  }
-  if (tier === "P3") {
-    return config.p3TierMultiplier;
-  }
-  return config.p1TierMultiplier;
+/** @deprecated All items are P3; tier multiplier is always 1. */
+export function tierPriorityFactor(
+  _tier: SoulMemoryTierValue,
+  _config: TierPriorityConfig,
+): number {
+  return 1;
 }
 
 export function resolveScopePenalty(
@@ -142,50 +110,29 @@ export function resolveScopePenalty(
   return config.crossScopePenalty;
 }
 
+/** @deprecated No decay applied in the new architecture. Always returns 1. */
 export function clarityDecayFactor(
-  tier: SoulMemoryTierValue,
-  ageDays: number,
-  config: ClarityDecayConfig,
+  _tier: SoulMemoryTierValue,
+  _ageDays: number,
+  _config: ClarityDecayConfig,
 ): number {
-  const normalizedAgeDays = Math.max(0, ageDays);
-  const halfLifeDays =
-    tier === "P0"
-      ? config.p0ClarityHalfLifeDays
-      : tier === "P2"
-        ? config.p2ClarityHalfLifeDays
-        : tier === "P3"
-          ? config.p3ClarityHalfLifeDays
-          : config.p1ClarityHalfLifeDays;
-  const factor = 0.5 ** (normalizedAgeDays / halfLifeDays);
-  return clamp(factor, 0, 1);
+  return 1;
 }
 
+/** @deprecated No decay applied. Returns confidence directly. */
 export function computeCurrentClarity(
   item: { confidence: number; tier: SoulMemoryTierValue },
-  ageDays: number,
-  config: ClarityDecayConfig,
+  _ageDays: number,
+  _config: ClarityDecayConfig,
 ): number {
-  return clamp(item.confidence * clarityDecayFactor(item.tier, ageDays, config), 0, 1);
+  return clamp(item.confidence, 0, 1);
 }
 
+/** @deprecated No decay-based pruning in the new architecture. Always returns false. */
 export function shouldPruneMemoryItem(
-  item: { confidence: number; tier: SoulMemoryTierValue },
-  ageDays: number,
-  config: ClarityDecayConfig,
+  _item: { confidence: number; tier: SoulMemoryTierValue },
+  _ageDays: number,
+  _config: ClarityDecayConfig,
 ): boolean {
-  const halfLifeDays = resolveTierHalfLifeDays(item.tier, config);
-  if (!halfLifeDays || !Number.isFinite(halfLifeDays) || halfLifeDays <= 0) {
-    return false;
-  }
-  const clarity = computeCurrentClarity(item, ageDays, config);
-  if (clarity >= config.forgetConfidenceThreshold) {
-    return false;
-  }
-  const belowThresholdDays = computeBelowThresholdDurationDays({
-    item,
-    ageDays,
-    threshold: config.forgetConfidenceThreshold,
-    halfLifeDays,
-  });
-  return belowThresholdDays >= halfLifeDays * config.forgetStreakHalfLives;
+  return false;
 }

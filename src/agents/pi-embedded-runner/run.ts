@@ -885,6 +885,39 @@ export async function runEmbeddedPiAgent(
                 stageToolDeny = stageSteering.denyTools;
               }
             }
+            // Experience attribution: detect which experiences were activated and record outcome
+            try {
+              const { detectActivatedExperiences } =
+                await import("../../memory/experience/experience-attribution.js");
+              const { recordExperienceOutcome } =
+                await import("../../memory/experience/experience-validation.js");
+              const taskOutcome =
+                review.classification === "completed"
+                  ? ("completed" as const)
+                  : review.classification === "advancing"
+                    ? ("advancing" as const)
+                    : review.classification === "stalled"
+                      ? ("stalled" as const)
+                      : ("ambiguous" as const);
+
+              // Use assistantTexts from the attempt result for attribution
+              const responseText = (attempt.assistantTexts ?? []).join("\n").trim();
+
+              if (responseText) {
+                const attribution = await detectActivatedExperiences({
+                  agentId: workspaceResolution.agentId,
+                  agentResponse: responseText.slice(0, 2000),
+                  taskOutcome,
+                  cfg: params.config,
+                });
+                if (attribution.activatedEntries.length > 0) {
+                  await recordExperienceOutcome(workspaceResolution.agentId, attribution);
+                }
+              }
+            } catch {
+              // Attribution is best-effort; never block the goal loop
+            }
+
             void params.onAgentEvent?.({
               stream: "goal",
               data: {

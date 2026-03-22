@@ -205,8 +205,8 @@ function formatRecallEntry(entry: RecallEntry): string | null {
     entry.kind === "memory"
       ? clampNumber(entry.item.score, 0, 0, 9_999).toFixed(2)
       : clampNumber(entry.item.score, 0, 0, 9_999).toFixed(2);
-  const tier = entry.kind === "memory" ? entry.item.tier : "archive";
-  return [`### ${title} (score: ${confidence}, tier: ${tier})`, text].join("\n");
+  const source = entry.kind === "memory" ? "memory" : "archive";
+  return [`### ${title} (score: ${confidence}, source: ${source})`, text].join("\n");
 }
 
 function describeDocumentEntry(metadata: Record<string, unknown> | undefined): string {

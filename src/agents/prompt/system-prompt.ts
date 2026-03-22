@@ -94,6 +94,13 @@ function buildMemorySection(params: {
       "Use memory_write for durable updates. Memory tools are the primary interface; .md files are read-only projections.",
     );
   }
+  if (params.availableTools.has("reflect")) {
+    lines.push(
+      "Use reflect(target=experience) to record behavioral experience and lessons (triggers LLM distillation).",
+      "Use reflect(target=context) to update current session working context and progress.",
+      "memory_write records factual episodic information; reflect records behavioral experience.",
+    );
+  }
   if (params.citationsMode !== "off") {
     lines.push("Include Source: <path#line> when it helps the user verify.");
   }
@@ -692,6 +699,11 @@ export function buildAgentSystemPrompt(params: {
     const hasP0Identity = projectContextFiles.some((file) => file.path.trim() === "P0 Identity");
     const hasP0User = projectContextFiles.some((file) => file.path.trim() === "P0 User");
     const hasP0Context = hasP0Soul || hasP0Identity || hasP0User;
+    const hasSoulContext = projectContextFiles.some((file) => file.path.trim() === "Soul");
+    const hasExperienceContext = projectContextFiles.some(
+      (file) => file.path.trim() === "MARV_EXPERIENCE",
+    );
+    const hasContextMd = projectContextFiles.some((file) => file.path.trim() === "MARV_CONTEXT");
     const hasSoulFile = projectContextFiles.some((file) => {
       const normalizedPath = file.path.trim().replace(/\\/g, "/");
       const baseName = normalizedPath.split("/").pop() ?? normalizedPath;
@@ -699,7 +711,24 @@ export function buildAgentSystemPrompt(params: {
     });
     if (projectContextFiles.length > 0) {
       lines.push("# Project Context", "", "The following project context files have been loaded:");
-      if (hasP0Context) {
+      if (hasSoulContext) {
+        // New Soul.md system — replaces P0
+        lines.push(
+          "Soul guides persona, principles, and behavioral boundaries. It is user-authored and read-only to the agent.",
+          "Soul does not override task facts, tool results, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
+        );
+      }
+      if (hasExperienceContext) {
+        lines.push(
+          "MARV_EXPERIENCE contains agent-maintained behavioral experience and lessons, distilled from past interactions. These are strong guidelines for the agent's approach.",
+        );
+      }
+      if (hasContextMd) {
+        lines.push(
+          "MARV_CONTEXT contains the current session's working context and progress notes.",
+        );
+      }
+      if (hasP0Context && !hasSoulContext) {
         lines.push(
           "P0 guides tone, identity, and behavioral boundaries.",
           "P0 does not override task facts, tool results, file contents, or explicit temporary task constraints unless a request conflicts with soul-level boundaries.",
@@ -719,7 +748,7 @@ export function buildAgentSystemPrompt(params: {
             "P0 User captures stable user preferences only, not transient state. Current explicit user requests can temporarily override it.",
           );
         }
-      } else if (hasSoulFile) {
+      } else if (hasSoulFile && !hasSoulContext) {
         lines.push(
           "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
         );

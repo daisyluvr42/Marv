@@ -645,6 +645,74 @@ export async function compactEmbeddedPiSessionDirect(
           );
         }
 
+        // 3-way writeout: before compacting, capture evicted messages for P3 + experience distillation
+        try {
+          const evictedMessages = preCompactionMessages.filter((msg) => !limited.includes(msg));
+          if (evictedMessages.length > 0) {
+            const agentId = params.sessionKey?.split(":")[0] ?? "main";
+            const evictedText = evictedMessages
+              .map((msg) => {
+                const role = (msg as { role?: string }).role ?? "unknown";
+                const rawContent = (msg as { content?: unknown }).content;
+                const content =
+                  typeof rawContent === "string"
+                    ? rawContent
+                    : Array.isArray(rawContent)
+                      ? (rawContent as Array<{ type: string; text?: string }>)
+                          .filter((b) => b.type === "text")
+                          .map((b) => b.text ?? "")
+                          .join(" ")
+                      : "";
+                return `[${role}] ${content.slice(0, 500)}`;
+              })
+              .join("\n")
+              .slice(0, 2000);
+
+            // Fire-and-forget: non-blocking 3-way writeout
+            Promise.allSettled([
+              // 1. Write to P3 episodic memory
+              (async () => {
+                try {
+                  const { writeSoulMemory } =
+                    await import("../../memory/storage/soul-memory-store.js");
+                  writeSoulMemory({
+                    agentId,
+                    scopeType: "session",
+                    scopeId: params.sessionKey ?? params.sessionId ?? agentId,
+                    kind: "conversation_overflow",
+                    content: evictedText.slice(0, 1000),
+                    source: "runtime_event",
+                  });
+                } catch {
+                  // Best-effort
+                }
+              })(),
+              // 2. Trigger EXPERIENCE distillation (enters debounce queue)
+              (async () => {
+                try {
+                  const { enqueueDistillation } =
+                    await import("../../memory/experience/experience-distiller.js");
+                  enqueueDistillation(
+                    agentId,
+                    {
+                      source: "overflow",
+                      content: evictedText,
+                      timestamp: Date.now(),
+                    },
+                    { cfg: params.config },
+                  );
+                } catch {
+                  // Best-effort
+                }
+              })(),
+            ]).catch(() => {
+              // Swallow errors from fire-and-forget
+            });
+          }
+        } catch {
+          // 3-way writeout must never block compaction
+        }
+
         const compactStartedAt = Date.now();
         const result = await compactWithSafetyTimeout(() =>
           session.compact(params.customInstructions),

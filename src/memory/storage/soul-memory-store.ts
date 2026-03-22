@@ -47,7 +47,6 @@ import {
   computeWeightedScore,
   resolveScopePenalty,
   shouldPruneMemoryItem,
-  tierPriorityFactor,
 } from "../salience/salience-compute.js";
 import { requireNodeSqlite } from "./sqlite.js";
 
@@ -113,11 +112,12 @@ type SourceProfile = {
   tier: SoulMemoryTier;
 };
 
+// All sources now map to P3. Tier promotion is replaced by EXPERIENCE.md distillation.
 const SOURCE_PROFILE: Record<SoulMemorySource, SourceProfile> = {
-  [SOURCE_CORE_PREFERENCE]: { confidence: 0.95, tier: TIER_P0 },
-  [SOURCE_MANUAL_LOG]: { confidence: 0.85, tier: TIER_P1 },
-  [SOURCE_MIGRATION]: { confidence: 0.85, tier: TIER_P1 },
-  [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5, tier: TIER_P2 },
+  [SOURCE_CORE_PREFERENCE]: { confidence: 0.95, tier: TIER_P3 },
+  [SOURCE_MANUAL_LOG]: { confidence: 0.85, tier: TIER_P3 },
+  [SOURCE_MIGRATION]: { confidence: 0.85, tier: TIER_P3 },
+  [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5, tier: TIER_P3 },
   [SOURCE_RUNTIME_EVENT]: { confidence: 0.5, tier: TIER_P3 },
 };
 
@@ -966,41 +966,30 @@ export function querySoulMemoryMulti(params: {
         clusterScore,
       });
       const relevanceScore = clamp(fusionSemanticMatch * candidate.scopePenalty, 0, 1);
-      let clarityScore = candidate.clarityScore;
-      let wasRecallBoosted = false;
-      let decayFactor = candidate.decayFactor;
-      if (
-        candidate.item.tier === TIER_P0 &&
-        relevanceScore >= soulConfig.p0RecallRelevanceThreshold
-      ) {
-        decayFactor = 1;
-        clarityScore = 1;
-        wasRecallBoosted = true;
-      }
+      const clarityScore = candidate.clarityScore;
+      const wasRecallBoosted = false;
+      const decayFactor = 1; // No decay in the new architecture
       const similarityScore = computeWeightedScore(
         relevanceScore,
         soulConfig.scoreSimilarityWeight,
       );
-      const decayScore = computeWeightedScore(decayFactor, soulConfig.scoreDecayWeight);
+      const decayScore = 1; // No decay
       const reinforcementFactor = computeReinforcementFactor(
         candidate.item.reinforcementCount,
         soulConfig,
       );
       const salienceDecay = decayScore;
       const salienceReinforcement = reinforcementFactor;
-      const salienceScore = salienceDecay * salienceReinforcement;
-      const tierMultiplier = tierPriorityFactor(candidate.item.tier, soulConfig);
+      const salienceScore = salienceReinforcement; // score = relevance × scope × reinforcement
+      const tierMultiplier = 1; // All items are P3
       // Discount compacted episodic items so semantic distillations rank higher
       const compactedFactor =
         candidate.item.isCompacted && candidate.item.memoryType === "episodic"
           ? soulConfig.p3Compaction.compactedDiscount
           : 1;
+      // Simplified scoring: relevance × scope × reinforcement
       const score = clamp(
-        tierMultiplier *
-          compactedFactor *
-          candidate.item.confidence *
-          similarityScore *
-          salienceScore,
+        compactedFactor * candidate.item.confidence * similarityScore * salienceScore,
         0,
         1.5,
       );
@@ -2849,6 +2838,7 @@ function loadScopeHitSummary(
   return out;
 }
 
+/** @deprecated Tier promotion is replaced by EXPERIENCE.md distillation. Returns empty results. */
 export function promoteSoulMemories(params: {
   agentId: string;
   nowMs?: number;
@@ -2858,6 +2848,17 @@ export function promoteSoulMemories(params: {
   // Deprecated alias; prefer soulConfig.p0AllowedKinds.
   p0AllowedKinds?: string[];
 }): SoulMemoryPromotionSummary {
+  // No-op: tier promotion abolished. All items are P3.
+  void params;
+  return {
+    promotedToP1: 0,
+    promotedToP0: 0,
+    p1PromotionIds: [],
+    p0PromotionIds: [],
+    p0ApprovalCandidates: [],
+    skillExtractionCandidates: [],
+  };
+  // --- Original promotion logic below (disabled) ---
   const db = openSoulMemoryDb(params.agentId);
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
   const autoApproveP0 = params.autoApproveP0 === true;
@@ -2975,6 +2976,7 @@ export function promoteSoulMemories(params: {
   }
 }
 
+/** @deprecated Confidence decay is abolished. No-op. */
 export function applySoulMemoryConfidenceDecay(params: {
   agentId: string;
   scopeType?: string;
@@ -2982,49 +2984,6 @@ export function applySoulMemoryConfidenceDecay(params: {
   nowMs?: number;
   soulConfig?: SoulMemoryConfig;
 }): { updated: number; deleted: number } {
-  const db = openSoulMemoryDb(params.agentId);
-  const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
-  const soulConfig = resolveSoulMemoryConfig(params.soulConfig);
-  try {
-    const clauses: string[] = [];
-    const values: string[] = [];
-    if (params.scopeType?.trim()) {
-      clauses.push("scope_type = ?");
-      values.push(normalizeScopeValue(params.scopeType));
-    }
-    if (params.scopeId?.trim()) {
-      clauses.push("scope_id = ?");
-      values.push(normalizeScopeValue(params.scopeId));
-    }
-    // When P3 compaction is enabled, skip P3 items entirely (compaction manages their lifecycle)
-    if (soulConfig.p3Compaction.enabled) {
-      clauses.push("tier != 'P3'");
-    }
-    const where = clauses.length > 0 ? ` WHERE ${clauses.join(" AND ")}` : "";
-    const rows = db
-      .prepare(`SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items${where}`)
-      .all(...values) as MemoryItemRow[];
-
-    let updated = 0;
-    const staleIds: string[] = [];
-    for (const row of rows) {
-      const item = rowToMemoryItem(row);
-      const effectiveTs = item.lastAccessedAt ?? item.createdAt;
-      const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      const decayed = computeCurrentClarity(item, ageDays, soulConfig);
-      if (shouldPruneMemoryItem(item, ageDays, soulConfig)) {
-        staleIds.push(item.id);
-        continue;
-      }
-      if (Math.abs(decayed - item.confidence) <= 1e-8) {
-        continue;
-      }
-      db.prepare("UPDATE memory_items SET confidence = ? WHERE id = ?").run(decayed, item.id);
-      updated += 1;
-    }
-    const deleted = pruneSoulMemoryItems(db, staleIds);
-    return { updated, deleted };
-  } finally {
-    db.close();
-  }
+  void params;
+  return { updated: 0, deleted: 0 };
 }

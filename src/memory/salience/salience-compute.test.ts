@@ -51,7 +51,7 @@ describe("salience-compute", () => {
     expect(computeWeightedScore(0.5, Number.NaN)).toBeCloseTo(0.5);
   });
 
-  it("applies clarity decay by tier and prunes stale low-confidence memory", () => {
+  it("decay and pruning are disabled (all items are P3, no decay)", () => {
     const config = {
       p0ClarityHalfLifeDays: P0_CLARITY_HALF_LIFE_DAYS,
       p1ClarityHalfLifeDays: P1_CLARITY_HALF_LIFE_DAYS,
@@ -61,16 +61,19 @@ describe("salience-compute", () => {
       forgetStreakHalfLives: FORGET_STREAK_HALF_LIVES,
     };
 
-    const p0Decay = clarityDecayFactor("P0", 30, config);
-    const p2Decay = clarityDecayFactor("P2", 30, config);
-    expect(p0Decay).toBeGreaterThan(p2Decay);
+    // All tiers return 1 (no decay)
+    expect(clarityDecayFactor("P0", 30, config)).toBe(1);
+    expect(clarityDecayFactor("P2", 30, config)).toBe(1);
+    expect(clarityDecayFactor("P3", 365, config)).toBe(1);
 
-    const p2Item = { confidence: 0.2, tier: "P2" as const };
-    const p0Item = { confidence: 0.95, tier: "P0" as const };
-    expect(computeCurrentClarity(p2Item, 120, config)).toBeLessThan(
-      config.forgetConfidenceThreshold,
+    // Clarity = confidence (no decay applied)
+    const item = { confidence: 0.2, tier: "P2" as const };
+    expect(computeCurrentClarity(item, 120, config)).toBe(0.2);
+
+    // Pruning always returns false
+    expect(shouldPruneMemoryItem(item, 120, config)).toBe(false);
+    expect(shouldPruneMemoryItem({ confidence: 0.01, tier: "P3" as const }, 999, config)).toBe(
+      false,
     );
-    expect(shouldPruneMemoryItem(p2Item, 120, config)).toBe(true);
-    expect(shouldPruneMemoryItem(p0Item, 3650, config)).toBe(false);
   });
 });

@@ -1,4 +1,5 @@
 import type { ExperimentState } from "../../experiments/types.js";
+import { enqueueDistillation } from "../../memory/experience/experience-distiller.js";
 import {
   querySoulMemoryMulti,
   writeSoulMemory,
@@ -156,6 +157,7 @@ export function persistGoalStrategyMemory(params: {
   const summary = isSuccess
     ? `${params.state.strategyFamily} worked for ${params.state.goalFrame.objective}`
     : `${params.state.strategyFamily} failed for ${params.state.goalFrame.objective} (${params.state.problemShape ?? "unknown"})`;
+  // 1. Write to P3 as episodic record (all writes go to P3 now)
   writeSoulMemory({
     agentId: params.agentId,
     scopeType: primaryScope.scopeType,
@@ -164,7 +166,6 @@ export function persistGoalStrategyMemory(params: {
     content,
     summary,
     source: STRATEGY_MEMORY_SOURCE,
-    tier: isSuccess ? "P2" : "P3",
     recordKind: "experience",
     metadata: {
       objective: params.state.goalFrame.objective,
@@ -178,6 +179,13 @@ export function persistGoalStrategyMemory(params: {
       shiftCount: params.state.shiftCount,
     },
     soulConfig: params.soulConfig,
+  });
+
+  // 2. Enqueue strategy experience for EXPERIENCE.md distillation
+  enqueueDistillation(params.agentId, {
+    source: "goal_strategy",
+    content: `${summary}\n${content}`,
+    timestamp: Date.now(),
   });
 }
 
