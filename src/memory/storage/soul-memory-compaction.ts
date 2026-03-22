@@ -19,13 +19,13 @@ import { requireNodeSqlite } from "./sqlite.js";
 // ---------------------------------------------------------------------------
 
 export type P3CompactionResult = {
-  /** Number of new P2 semantic nodes created from clusters. */
+  /** Number of new semantic index nodes created from clusters. */
   compactedClusters: number;
   /** Number of episodic items marked is_compacted = 1. */
   compactedEpisodic: number;
-  /** Number of compacted episodic items archived (moved to memory_archive). */
+  /** @deprecated Archival disabled. Always 0. */
   archivedCompacted: number;
-  /** Number of orphan episodic items archived via safety valve. */
+  /** @deprecated Archival disabled. Always 0. */
   archivedOrphans: number;
   /** IDs of newly created semantic memories. */
   semanticIds: string[];

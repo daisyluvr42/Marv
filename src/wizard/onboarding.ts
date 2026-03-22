@@ -170,7 +170,7 @@ function inferExistingOnboardMode(config: MarvConfig): OnboardMode | undefined {
   return undefined;
 }
 
-// Inline soul baseline for P0 seeding during onboarding.
+// Inline soul baseline for seeding during onboarding.
 // Mirrors the essential behavioral guidance from docs/reference/templates/SOUL.md
 // so new users get a functional agent persona even before workspace bootstrap runs.
 const DEFAULT_P0_SOUL_BASELINE = [
@@ -184,7 +184,7 @@ const DEFAULT_P0_SOUL_BASELINE = [
 ].join("\n");
 
 /**
- * Build a P0 Soul personalized with the agent name chosen during onboarding.
+ * Build a default Soul personalized with the agent name chosen during onboarding.
  * Uses the inline baseline so it works regardless of workspace/template state.
  */
 export function buildDefaultP0Soul(agentName: string): string {
@@ -211,7 +211,7 @@ async function promptAgentP0ForOnboarding(params: {
     placeholder: "Your name or preferred nickname",
     initialValue: params.opts.p0User ?? current.user ?? "",
   });
-  // Seed P0 Soul from the SOUL.md template when no explicit soul is set,
+  // Seed Soul from the baseline template when no explicit soul is set,
   // personalized with the agent's chosen name.
   let soul = params.opts.p0Soul ?? current.soul;
   if (!soul?.trim()) {

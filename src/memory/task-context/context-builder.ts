@@ -101,8 +101,6 @@ export function buildTaskContextWindow(params: {
     topK: 12,
     minScore: 0.5,
   })
-    // No tier filter: all items are P3 now. High-confidence items serve the same role as old P0.
-    .filter((item) => item.confidence >= 0.7)
     .map((item) => item.content)
     .filter(Boolean);
   const p0Memory = clampTextListByTokens(p0Memories, budgets.p0Memory);
@@ -139,7 +137,7 @@ export function buildTaskContextWindow(params: {
   if (p0Memory.length > 0) {
     messages.push({
       role: "system",
-      content: `P0 Memory:\n${p0Memory.map((item) => `- ${item}`).join("\n")}`,
+      content: `Recalled Memory:\n${p0Memory.map((item) => `- ${item}`).join("\n")}`,
     });
   }
   if (rollingSummary) {

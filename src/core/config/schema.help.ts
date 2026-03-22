@@ -282,42 +282,34 @@ export const FIELD_HELP: Record<string, string> = {
   "autonomy.proactive.delivery.to":
     "Explicit delivery target for proactive digests when the channel requires one.",
   "memory.p0AllowedKinds":
-    "Deprecated alias for memory.soul.p0AllowedKinds. Values are normalized to lowercase.",
-  "memory.soul": "Structured soul-memory tuning for decay, promotion, and retrieval scoring.",
-  "memory.soul.p0AllowedKinds":
-    "Allowed memory kinds that may enter P0/SOUL tier. Values are normalized to lowercase. Default: preference, principle, identity, policy, guardrail.",
+    "[Deprecated] No longer used. Tier promotion is disabled; all items are P3.",
+  "memory.soul":
+    "Soul memory retrieval tuning. Tier promotion/decay settings are deprecated (all items are P3).",
+  "memory.soul.p0AllowedKinds": "[Deprecated] No longer used. All items are P3.",
   "memory.soul.forgetConfidenceThreshold":
-    "Prune candidate threshold after clarity decay (default: 0.1). Lower values retain memories longer.",
-  "memory.soul.forgetStreakHalfLives":
-    "How many half-lives a memory must stay below forgetConfidenceThreshold before pruning (default: 3).",
-  "memory.soul.p0ClarityHalfLifeDays": "P0 clarity half-life in days (default: 365).",
-  "memory.soul.p1ClarityHalfLifeDays": "P1 clarity half-life in days (default: 45).",
-  "memory.soul.p2ClarityHalfLifeDays": "P2 clarity half-life in days (default: 10).",
-  "memory.soul.p3ClarityHalfLifeDays":
-    "P3 clarity half-life in days (default: 5). Use for recent active memory before it falls back to archive-only recall.",
-  "memory.soul.p0RecallRelevanceThreshold":
-    "Minimum relevance needed to trigger P0 recall boost (default: 0.7).",
-  "memory.soul.p2ToP1MinClarity":
-    "Minimum clarity required for P2 to P1 promotion (default: 0.75).",
-  "memory.soul.p2ToP1MinAgeDays": "Minimum memory age in days for P2 to P1 promotion (default: 7).",
-  "memory.soul.p2ToP1MinScopeCount":
-    "Minimum distinct scope hits required for P2 to P1 promotion (default: 2).",
-  "memory.soul.p1ToP0MinClarity":
-    "Minimum clarity required for P1 to P0 promotion (default: 0.75).",
-  "memory.soul.p1ToP0MinAgeDays":
-    "Minimum memory age in days for P1 to P0 promotion (default: 150).",
+    "[Deprecated] Pruning is disabled. Items are never pruned by decay.",
+  "memory.soul.forgetStreakHalfLives": "[Deprecated] Pruning is disabled.",
+  "memory.soul.p0ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
+  "memory.soul.p1ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
+  "memory.soul.p2ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
+  "memory.soul.p3ClarityHalfLifeDays": "[Deprecated] Clarity decay is disabled.",
+  "memory.soul.p0RecallRelevanceThreshold": "[Deprecated] P0 recall boost is disabled.",
+  "memory.soul.p2ToP1MinClarity": "[Deprecated] Tier promotion is disabled.",
+  "memory.soul.p2ToP1MinAgeDays": "[Deprecated] Tier promotion is disabled.",
+  "memory.soul.p2ToP1MinScopeCount": "[Deprecated] Tier promotion is disabled.",
+  "memory.soul.p1ToP0MinClarity": "[Deprecated] Tier promotion is disabled.",
+  "memory.soul.p1ToP0MinAgeDays": "[Deprecated] Tier promotion is disabled.",
   "memory.soul.p0ScopePenalty":
     "Scope penalty for global/user memories outside active scope (default: 0.8).",
   "memory.soul.crossScopePenalty": "Scope penalty for unrelated scopes (default: 0.2).",
   "memory.soul.matchScopePenalty": "Scope penalty for exact scope matches (default: 1.0).",
-  "memory.soul.p0TierMultiplier": "Ranking multiplier for P0 tier (default: 1.2).",
-  "memory.soul.p1TierMultiplier": "Ranking multiplier for P1 tier (default: 1.0).",
-  "memory.soul.p2TierMultiplier": "Ranking multiplier for P2 tier (default: 0.75).",
-  "memory.soul.p3TierMultiplier":
-    "Ranking multiplier for P3 tier (default: 0.9). P3 stays highly recallable while recent, but below P0/P1 durable memory.",
+  "memory.soul.p0TierMultiplier": "[Deprecated] Tier multipliers are disabled. All return 1.",
+  "memory.soul.p1TierMultiplier": "[Deprecated] Tier multipliers are disabled.",
+  "memory.soul.p2TierMultiplier": "[Deprecated] Tier multipliers are disabled.",
+  "memory.soul.p3TierMultiplier": "[Deprecated] Tier multipliers are disabled.",
   "memory.soul.scoreSimilarityWeight":
     "Exponent for similarity contribution in final score (default: 1.0).",
-  "memory.soul.scoreDecayWeight": "Exponent for decay contribution in final score (default: 1.0).",
+  "memory.soul.scoreDecayWeight": "[Deprecated] Decay is disabled. This setting has no effect.",
   "memory.soul.reinforcementLogWeight":
     "Multiplier applied to log-scaled reinforcement_count in final score (default: 0.2).",
   "memory.soul.referenceExpansionEnabled":
