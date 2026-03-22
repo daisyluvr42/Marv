@@ -171,11 +171,12 @@ export function compactP3Episodic(params: {
   const db = openSoulMemoryDb(params.agentId);
   try {
     const result = runCompaction(db, params.agentId, params.config, nowMs, params.summarizeCluster);
-    const archiveResult = runArchival(db, params.config, nowMs);
+    // Archival disabled: P3 is an append-only "memory palace".
+    // Compaction generates semantic index nodes but never deletes episodic originals.
     return {
       ...result,
-      archivedCompacted: archiveResult.archivedCompacted,
-      archivedOrphans: archiveResult.archivedOrphans,
+      archivedCompacted: 0,
+      archivedOrphans: 0,
     };
   } finally {
     db.close();
@@ -383,150 +384,8 @@ function runCompaction(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Step 2: Archival — move compacted + orphan episodic items to archive
-// ---------------------------------------------------------------------------
-
-function runArchival(
-  db: DatabaseSync,
-  config: ResolvedP3CompactionConfig,
-  nowMs: number,
-): { archivedCompacted: number; archivedOrphans: number } {
-  const archiveAgeCutoff = nowMs - config.archiveAgeDays * 86_400_000;
-  const orphanAgeCutoff = nowMs - config.orphanAgeDays * 86_400_000;
-
-  // Archive compacted episodic items past archiveAgeDays
-  const compactedRows = db
-    .prepare(
-      "SELECT id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, " +
-        "source, created_at, metadata_json " +
-        "FROM memory_items WHERE tier = 'P3' AND memory_type = 'episodic' " +
-        "AND is_compacted = 1 AND created_at < ?",
-    )
-    .all(archiveAgeCutoff) as ArchiveSourceRow[];
-
-  const archivedCompacted = archiveEpisodicItems(db, compactedRows, nowMs, "compacted");
-
-  // Archive orphan episodic items past orphanAgeDays (safety valve)
-  const orphanRows = db
-    .prepare(
-      "SELECT id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, " +
-        "source, created_at, metadata_json " +
-        "FROM memory_items WHERE tier = 'P3' AND memory_type = 'episodic' " +
-        "AND is_compacted = 0 AND created_at < ?",
-    )
-    .all(orphanAgeCutoff) as ArchiveSourceRow[];
-
-  const archivedOrphans = archiveEpisodicItems(db, orphanRows, nowMs, "orphan_timeout");
-
-  return { archivedCompacted, archivedOrphans };
-}
-
-type ArchiveSourceRow = {
-  id: string;
-  scope_type: string;
-  scope_id: string;
-  kind: string;
-  record_kind: string;
-  content: string;
-  summary: string | null;
-  embedding_json: string;
-  source: string;
-  created_at: number;
-  metadata_json: string | null;
-};
-
-/**
- * Archive episodic items one-by-one (no sessionKey merge).
- * Preserves sessionKey in metadata for session-level queries.
- */
-function archiveEpisodicItems(
-  db: DatabaseSync,
-  rows: ArchiveSourceRow[],
-  nowMs: number,
-  archiveReason: string,
-): number {
-  if (rows.length === 0) {
-    return 0;
-  }
-
-  const insertStmt = db.prepare(
-    "INSERT INTO memory_archive (" +
-      "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, " +
-      "source, created_at, active_memory_id, metadata_json" +
-      ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  );
-  const deleteStmt = db.prepare("DELETE FROM memory_items WHERE id = ?");
-
-  // Load lineage for compacted items (batch)
-  const rowIds = rows.map((r) => String(r.id));
-  const lineageMap = loadLineageForTargets(db, rowIds);
-
-  let archived = 0;
-  for (const row of rows) {
-    const archiveId = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
-    const originalMeta = parseMetadata(row.metadata_json);
-    const archiveMeta: Record<string, unknown> = {
-      ...originalMeta,
-      original_memory_id: row.id,
-      archive_reason: archiveReason,
-    };
-
-    // Preserve lineage: which semantic node was this compacted into
-    const lineageTargets = lineageMap.get(String(row.id));
-    if (lineageTargets && lineageTargets.length > 0) {
-      archiveMeta.compacted_into = lineageTargets;
-      archiveMeta.lineage_type = "compacted_from";
-    }
-
-    const summary = row.summary ?? "";
-
-    insertStmt.run(
-      archiveId,
-      String(row.scope_type),
-      String(row.scope_id),
-      String(row.kind),
-      String(row.record_kind),
-      String(row.content),
-      summary,
-      String(row.embedding_json),
-      String(row.source),
-      Number(row.created_at),
-      null, // active_memory_id: null since source row is being deleted
-      JSON.stringify(archiveMeta),
-    );
-    deleteStmt.run(row.id);
-    archived++;
-  }
-
-  return archived;
-}
-
-/**
- * Load lineage edges where target_id is in the given set.
- * Returns map of target_id -> [source_id] (i.e., which semantic nodes consumed each episodic item).
- */
-function loadLineageForTargets(db: DatabaseSync, targetIds: string[]): Map<string, string[]> {
-  const result = new Map<string, string[]>();
-  if (targetIds.length === 0) {
-    return result;
-  }
-
-  const placeholders = targetIds.map(() => "?").join(",");
-  const rows = db
-    .prepare(
-      `SELECT source_id, target_id FROM memory_lineage WHERE target_id IN (${placeholders}) ` +
-        "AND edge_type = 'compacted_from'",
-    )
-    .all(...targetIds) as Array<{ source_id: string; target_id: string }>;
-
-  for (const row of rows) {
-    const list = result.get(String(row.target_id)) ?? [];
-    list.push(String(row.source_id));
-    result.set(String(row.target_id), list);
-  }
-  return result;
-}
+// Archival removed: P3 is an append-only "memory palace". Compaction generates
+// semantic index nodes but never deletes or archives original episodic items.
 
 // ---------------------------------------------------------------------------
 // Semantic key extraction (conservative v1)
@@ -626,18 +485,6 @@ function normalizeRecordKind(value: string): "fact" | "relationship" | "experien
     return normalized;
   }
   return "experience";
-}
-
-function parseMetadata(json: string | null): Record<string, unknown> {
-  if (!json) {
-    return {};
-  }
-  try {
-    const parsed = JSON.parse(json);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  } catch {
-    return {};
-  }
 }
 
 function openSoulMemoryDb(agentId: string): DatabaseSync {

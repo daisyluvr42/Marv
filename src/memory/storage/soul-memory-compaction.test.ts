@@ -64,7 +64,7 @@ describe("compactP3Episodic", () => {
     expect(result.compactedEpisodic).toBe(0);
   });
 
-  it("clusters similar P3 episodic items and creates P2 semantic node", () => {
+  it("clusters similar P3 episodic items and creates P3 semantic node", () => {
     writeP3("User likes sushi rolls for dinner");
     writeP3("User loves sushi rolls for lunch");
     writeP3("User enjoys sushi rolls for breakfast");
@@ -78,13 +78,12 @@ describe("compactP3Episodic", () => {
     expect(result.compactedEpisodic).toBe(3);
     expect(result.semanticIds).toHaveLength(1);
 
-    // P2 semantic node should exist
-    const p2Items = listSoulMemoryItems({
+    // P3 semantic node should exist (all items are P3 in new architecture)
+    const items = listSoulMemoryItems({
       agentId: "main",
-      tier: "P2",
+      tier: "P3",
     });
-    expect(p2Items.length).toBeGreaterThanOrEqual(1);
-    const semantic = p2Items.find((i) => i.memoryType === "semantic");
+    const semantic = items.find((i) => i.memoryType === "semantic");
     expect(semantic).toBeDefined();
     expect(semantic?.sourceDetail).toBe("system");
 
@@ -123,56 +122,54 @@ describe("compactP3Episodic", () => {
     expect(result.compactedEpisodic).toBe(0);
   });
 
-  it("archives compacted episodic items after archiveAgeDays", () => {
+  it("no archival — compacted episodic items are retained permanently", () => {
     writeP3("User likes sushi rolls for dinner");
     writeP3("User loves sushi rolls for lunch");
     writeP3("User enjoys sushi rolls for breakfast");
 
-    // Compact first (at current time, items created just now)
     compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
 
-    // Verify items still in memory_items (not old enough to archive)
+    // 3 episodic + 1 semantic node, all retained
     let p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.length).toBe(3);
+    expect(p3Items.length).toBe(4);
 
-    // Archive with a far-future time so items appear old enough
-    const futureTime = Date.now() + 31 * 86_400_000;
+    // Even with far-future time, nothing is archived (memory palace model)
+    const futureTime = Date.now() + 365 * 86_400_000;
     const result = compactP3Episodic({
       agentId: "main",
       config: DEFAULT_CONFIG,
       nowMs: futureTime,
     });
-    expect(result.archivedCompacted).toBe(3);
+    expect(result.archivedCompacted).toBe(0);
+    expect(result.archivedOrphans).toBe(0);
 
-    // P3 items should be gone from memory_items
+    // All items still present
     p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.length).toBe(0);
+    expect(p3Items.length).toBe(4);
   });
 
-  it("archives orphan episodic items after orphanAgeDays", () => {
-    // Write dissimilar items that won't cluster
+  it("no archival — orphan episodic items are retained permanently", () => {
     writeP3("User's favorite color is blue");
     writeP3("The weather today is sunny and warm");
     writeP3("Project deadline is next Friday");
 
-    // These won't cluster (dissimilar), so they stay uncompacted
     compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
 
     let p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
     expect(p3Items.every((i) => !i.isCompacted)).toBe(true);
 
-    // Archive with far-future time to trigger orphan safety valve
-    const futureTime = Date.now() + 61 * 86_400_000;
+    // Even with far-future time, orphans are not archived
+    const futureTime = Date.now() + 365 * 86_400_000;
     const result = compactP3Episodic({
       agentId: "main",
       config: DEFAULT_CONFIG,
       nowMs: futureTime,
     });
-    expect(result.archivedOrphans).toBe(3);
+    expect(result.archivedOrphans).toBe(0);
 
-    // P3 items should be gone
+    // All items retained
     p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.length).toBe(0);
+    expect(p3Items.length).toBe(3);
   });
 
   it("new memory items have correct memoryType and sourceDetail defaults", () => {
@@ -230,12 +227,12 @@ describe("compactP3Episodic", () => {
     expect(newSemanticId).not.toBe(oldSemanticId);
 
     // Old semantic should have valid_until set (retired)
-    const p2Items = listSoulMemoryItems({ agentId: "main", tier: "P2" });
-    const oldSemantic = p2Items.find((i) => i.id === oldSemanticId);
+    const p3Semantics = listSoulMemoryItems({ agentId: "main", tier: "P3" });
+    const oldSemantic = p3Semantics.find((i) => i.id === oldSemanticId);
     expect(oldSemantic?.validUntil).not.toBeNull();
 
     // New semantic should have valid_from set and valid_until null (active)
-    const newSemantic = p2Items.find((i) => i.id === newSemanticId);
+    const newSemantic = p3Semantics.find((i) => i.id === newSemanticId);
     expect(newSemantic?.validFrom).not.toBeNull();
     expect(newSemantic?.validUntil).toBeNull();
   });
@@ -313,9 +310,11 @@ describe("compactP3Episodic", () => {
     compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG, nowMs: t1 });
 
     // Verify the evolution happened: old semantic retired, new semantic active
-    const p2Items = listSoulMemoryItems({ agentId: "main", tier: "P2" });
-    const retired = p2Items.filter((i) => i.validUntil !== null);
-    const active = p2Items.filter((i) => i.validUntil === null);
+    const p3Semantics = listSoulMemoryItems({ agentId: "main", tier: "P3" }).filter(
+      (i) => i.memoryType === "semantic",
+    );
+    const retired = p3Semantics.filter((i) => i.validUntil !== null);
+    const active = p3Semantics.filter((i) => i.validUntil === null);
     expect(retired.length).toBe(1);
     expect(active.length).toBe(1);
     expect(retired[0].validFrom).toBeLessThanOrEqual(t0);
