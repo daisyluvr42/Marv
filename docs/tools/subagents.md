@@ -222,6 +222,58 @@ Sub-agents use a dedicated in-process queue lane:
 - Sending `/stop` in the requester chat aborts the requester session and stops any active sub-agent runs spawned from it, cascading to nested children.
 - `/subagents kill <id>` stops a specific sub-agent and cascades to its children.
 
+## Orchestration (goal-driven delegation)
+
+When the goal loop selects `delegated_subagent` as a recovery strategy, it now wraps the delegation in an **orchestration loop** that evaluates the sub-agent output against the parent's success criteria before accepting.
+
+### How it works
+
+1. The goal loop builds a `GoalContract` from the current `GoalFrame.successCriteria` and `GoalFrame.constraints`.
+2. The sub-agent receives the contract as an `[Audit Standards]` context block in its task message.
+3. On completion, the orchestration loop evaluates the output against each audit criterion.
+4. If criteria fail and budget remains, the loop delivers structured feedback via steer and the sub-agent revises.
+5. The loop repeats until the output is accepted, rejected, or the budget (iterations/time) is exhausted.
+
+### Evaluation types
+
+| Evaluator    | Description                                                                   |
+| ------------ | ----------------------------------------------------------------------------- |
+| `checklist`  | All items must be addressed in the output (default for non-complex goals)     |
+| `llm_judge`  | LLM scores the output 1-10 against each criterion (default for complex goals) |
+| `text_match` | Regex pattern match against output text                                       |
+| `command`    | Shell command that produces a metric (reuses the experiments evaluator)       |
+
+### Configuration
+
+```json5
+{
+  agents: {
+    defaults: {
+      subagents: {
+        orchestration: {
+          enabled: true, // default: true
+          maxIterations: 3, // max feedback rounds (default: 3)
+          maxDurationMs: 300000, // max wall-clock time (default: 5 min)
+          defaultAuditEvaluator: "checklist", // or "llm_judge"
+          rejectionThreshold: 0.3, // score below this = reject
+          minImprovementRatio: 0.05, // min score improvement per iteration
+          groupMode: "best_effort", // or "fail_fast" for multi-role
+        },
+      },
+    },
+  },
+}
+```
+
+Set `enabled: false` to disable orchestration and use passive announce (pre-existing behavior).
+
+### Multi-role orchestration
+
+When the goal loop dispatches multiple roles (e.g., `["reviewer", "tester"]`), each role gets its own orchestration entry with its own contract. Group evaluation supports two modes:
+
+- `best_effort` (default): the group succeeds if at least one entry is accepted.
+- `fail_fast`: all entries must pass; the group stops on first failure.
+
 ## Limitations
 
 - Sub-agent announce is **best-effort**. If the gateway restarts, pending "announce back" work is lost.

@@ -65,7 +65,33 @@ If you copy **only** the workspace (e.g., via Git), you do **not** preserve:
 
 Those live under `$MARV_STATE_DIR`.
 
-## Migration steps (recommended)
+## Quick migration (one command)
+
+Marv has a built-in export/import system that handles everything:
+
+```bash
+# On the OLD machine — export
+marv migrate export
+```
+
+This creates a `~/marv-export-YYYY-MM-DD.tar.gz` archive containing config, memory (vector DBs + Soul.md identity + Experience files), sessions, and workspace. Add `--format encrypted` for AES-256-GCM encryption.
+
+```bash
+# On the NEW machine — import
+marv migrate import ~/marv-export-YYYY-MM-DD.tar.gz
+marv doctor
+marv gateway restart
+```
+
+Options:
+
+- `--scopes memory,config,sessions` — export only specific scopes (default: memory, config, sessions, workspace)
+- `--format encrypted --password <pw>` — encrypt the archive
+- `--non-interactive --yes` — non-interactive mode for scripting
+
+Available scopes: `memory` (vector DBs, Soul.md, Experience files), `config`, `sessions`, `credentials`, `workspace`, `tasks`, `ledger`.
+
+## Manual migration steps
 
 ### Step 0 — Make a backup (old machine)
 
@@ -184,6 +210,19 @@ On the new machine, confirm:
 - Your channels are still connected (e.g. WhatsApp doesn’t require re-pair)
 - The dashboard opens and shows existing sessions
 - Your workspace files (memory, configs) are present
+
+## What gets exported with `marv migrate export`
+
+The `memory` scope includes:
+
+| Data       | Path                                              | Description                                          |
+| ---------- | ------------------------------------------------- | ---------------------------------------------------- |
+| Vector DBs | `~/.marv/memory/soul/*.sqlite`                    | Soul memory items, embeddings, lineage, entity index |
+| Soul.md    | `~/.marv/soul/<agentId>/Soul.md`                  | Agent identity and background                        |
+| Experience | `~/.marv/experience/<agentId>/MARV_EXPERIENCE.md` | Behavioral memory (distilled patterns)               |
+| Context    | `~/.marv/experience/<agentId>/MARV_CONTEXT.md`    | Active context memory                                |
+
+Other scopes: `config` (marv.json), `sessions` (agent transcripts), `credentials` (API keys, OAuth), `workspace` (agent files), `tasks` (proactive task state), `ledger` (event store).
 
 ## Related
 

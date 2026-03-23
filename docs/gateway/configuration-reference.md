@@ -1445,6 +1445,35 @@ Notes:
 - `model`: default model for spawned sub-agents. If omitted, sub-agents inherit the caller's model.
 - Per-subagent tool policy: `tools.subagents.tools.allow` / `tools.subagents.tools.deny`.
 
+#### `agents.defaults.subagents.orchestration`
+
+Controls the goal-driven orchestration loop for delegated sub-agents. When the goal loop delegates work, it evaluates the sub-agent output against success criteria before accepting.
+
+```json5
+{
+  agents: {
+    defaults: {
+      subagents: {
+        orchestration: {
+          enabled: true, // enable orchestration loop (default: true)
+          maxIterations: 3, // max feedback rounds (default: 3)
+          maxDurationMs: 300000, // max wall-clock time in ms (default: 300000)
+          evaluationTimeoutSeconds: 60, // per-criterion timeout (default: 60)
+          defaultAuditEvaluator: "checklist", // "checklist" or "llm_judge" (default: "checklist")
+          rejectionThreshold: 0.3, // score below this = reject (default: 0.3)
+          minImprovementRatio: 0.05, // min improvement per iteration (default: 0.05)
+          groupMode: "best_effort", // "best_effort" or "fail_fast" (default: "best_effort")
+        },
+      },
+    },
+  },
+}
+```
+
+- `enabled`: set `false` to disable orchestration (sub-agents announce passively as before).
+- `defaultAuditEvaluator`: `"checklist"` uses keyword matching; `"llm_judge"` uses LLM scoring (1-10). Complex goals (`GoalFrame.complexity === "complex"`) always use `llm_judge` regardless of this setting.
+- `groupMode`: for multi-role delegations, `"fail_fast"` stops on first failure; `"best_effort"` accepts if at least one role succeeds.
+
 ---
 
 ## Custom providers and base URLs

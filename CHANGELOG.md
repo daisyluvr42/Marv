@@ -2,6 +2,13 @@
 
 Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
+## Unreleased
+
+### Changes
+
+- Sub-agents: add goal-driven orchestration loop that evaluates delegated sub-agent output against the parent's success criteria, delivers structured feedback, and iterates until accepted or budget exhausted.
+- Migration: `marv migrate export --scopes memory` now includes Soul.md identity files and Experience/Context files alongside vector databases, enabling complete one-command memory portability.
+
 ## 2026.3.16
 
 ### Changes

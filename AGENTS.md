@@ -13,6 +13,7 @@
 - Offload research, exploration, and parallel analysis to subagents
 - For complex problems, throw more compute at it via subagents
 - One task per subagent for focused execution
+- Goal-driven delegation: when the goal loop delegates, it auto-generates audit criteria from `GoalFrame.successCriteria` and evaluates sub-agent output before accepting. Failed criteria trigger structured feedback and re-iteration (up to `orchestration.maxIterations`, default 3). Config: `agents.defaults.subagents.orchestration`.
 
 ### 3. Self-Improvement Loop
 

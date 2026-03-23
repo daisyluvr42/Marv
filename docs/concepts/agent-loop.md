@@ -109,6 +109,22 @@ See [Plugins](/tools/plugin#plugin-hooks) for the hook API and registration deta
 - If no renderable payloads remain and a tool errored, a fallback tool error reply is emitted
   (unless a messaging tool already sent a user-visible reply).
 
+## Goal loop + orchestrated delegation
+
+The agent loop includes a **goal loop** that tracks progress across attempts using strategy families and progress signals. When local strategies stall, the goal loop can select `delegated_subagent` to spawn focused workers.
+
+Delegated runs are wrapped in an **orchestration loop**:
+
+1. The goal loop auto-generates a `GoalContract` from `GoalFrame.successCriteria`.
+2. The sub-agent is spawned with the contract injected as context.
+3. On completion, the orchestration gate evaluates output against each audit criterion.
+4. If the output fails criteria and budget remains, structured feedback is delivered via steer and the sub-agent revises.
+5. The cycle repeats until accepted, rejected, or budget exhausted.
+
+This turns passive delegation (spawn → wait → accept) into active delegation (spawn → evaluate → feedback → iterate → accept).
+
+See [Sub-Agents](/tools/subagents#orchestration-goal-driven-delegation) for configuration and evaluation types.
+
 ## Compaction + retries
 
 - Auto-compaction emits `compaction` stream events and can trigger a retry.
