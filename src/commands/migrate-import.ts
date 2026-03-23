@@ -317,6 +317,21 @@ function resolveImportPlanEntry(params: {
   }
 
   const relative = normalized.slice(prefix.length).replace(/^\/+/, "");
+
+  // Memory scope has sub-paths that map to different stateDir locations:
+  // - "soul" → <stateDir>/memory/soul (SQLite DBs)
+  // - "soul-files" → <stateDir>/soul (Soul.md identity files)
+  // - "experience" → <stateDir>/experience (MARV_EXPERIENCE.md etc.)
+  if (params.item.scope === "memory") {
+    const targetPath = resolveMemoryImportTarget(relative, params.stateDir);
+    return {
+      scope: "memory",
+      sourcePath,
+      targetPath,
+      kind: params.item.kind,
+    };
+  }
+
   const targetBase = resolveScopeTargetBase(params.item.scope, {
     stateDir: params.stateDir,
     oauthDir: params.oauthDir,
@@ -330,12 +345,10 @@ function resolveImportPlanEntry(params: {
 }
 
 function resolveScopeTargetBase(
-  scope: Exclude<MigrateScope, "config" | "workspace">,
+  scope: Exclude<MigrateScope, "config" | "workspace" | "memory">,
   params: { stateDir: string; oauthDir: string },
 ): string {
   switch (scope) {
-    case "memory":
-      return path.join(params.stateDir, "memory");
     case "sessions":
       return params.stateDir;
     case "credentials":
@@ -345,6 +358,25 @@ function resolveScopeTargetBase(
     case "ledger":
       return path.join(params.stateDir, "ledger");
   }
+}
+
+/**
+ * Memory scope sub-paths map to different stateDir locations:
+ * - "soul/..." → <stateDir>/memory/soul (SQLite DBs)
+ * - "soul-files/..." → <stateDir>/soul (Soul.md identity files)
+ * - "experience/..." → <stateDir>/experience (behavioral memory files)
+ */
+function resolveMemoryImportTarget(relative: string, stateDir: string): string {
+  if (relative.startsWith("soul-files")) {
+    const rest = relative.slice("soul-files".length).replace(/^\/+/, "");
+    return rest ? path.join(stateDir, "soul", rest) : path.join(stateDir, "soul");
+  }
+  if (relative.startsWith("experience")) {
+    const rest = relative.slice("experience".length).replace(/^\/+/, "");
+    return rest ? path.join(stateDir, "experience", rest) : path.join(stateDir, "experience");
+  }
+  // Default: "soul" → <stateDir>/memory/soul (existing SQLite path)
+  return relative ? path.join(stateDir, "memory", relative) : path.join(stateDir, "memory");
 }
 
 async function collectScopeConflicts(

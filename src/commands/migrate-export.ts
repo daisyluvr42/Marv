@@ -205,12 +205,33 @@ async function collectMigrateArchiveEntries(
   const entries: MigrateArchiveEntry[] = [];
 
   if (scopes.includes("memory")) {
+    // Soul memory SQLite databases
     const memoryDir = path.join(plan.stateDir, "memory", "soul");
     if (await pathExists(memoryDir)) {
       entries.push({
         scope: "memory",
         sourcePath: memoryDir,
         archivePath: resolveMigrateArchivePath({ scope: "memory", relativePath: "soul" }),
+        kind: "directory",
+      });
+    }
+    // Soul.md files (agent identity and background)
+    const soulDir = path.join(plan.stateDir, "soul");
+    if (await pathExists(soulDir)) {
+      entries.push({
+        scope: "memory",
+        sourcePath: soulDir,
+        archivePath: resolveMigrateArchivePath({ scope: "memory", relativePath: "soul-files" }),
+        kind: "directory",
+      });
+    }
+    // Experience files (MARV_EXPERIENCE.md, MARV_CONTEXT.md, etc.)
+    const experienceDir = path.join(plan.stateDir, "experience");
+    if (await pathExists(experienceDir)) {
+      entries.push({
+        scope: "memory",
+        sourcePath: experienceDir,
+        archivePath: resolveMigrateArchivePath({ scope: "memory", relativePath: "experience" }),
         kind: "directory",
       });
     }

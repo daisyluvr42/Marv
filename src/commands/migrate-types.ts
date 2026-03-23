@@ -64,7 +64,7 @@ export type MigrateManifest = {
 };
 
 export const SCOPE_PATHS: Record<MigrateScope, readonly string[]> = {
-  memory: ["memory/soul"],
+  memory: ["memory/soul", "soul", "experience"],
   config: ["marv.json"],
   sessions: ["agents/*/sessions", "agents/*/sessions.json"],
   credentials: ["credentials"],
@@ -81,7 +81,7 @@ export const SCOPE_OPTIONS: Array<{
   {
     value: "memory",
     label: "Memory",
-    hint: "vector DBs and soul memory state",
+    hint: "vector DBs, soul identity, and experience files",
   },
   {
     value: "config",
