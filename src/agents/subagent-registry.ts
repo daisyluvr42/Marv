@@ -41,6 +41,8 @@ export type SubagentRunRecord = {
   announceRetryCount?: number;
   /** Timestamp of the last announce retry attempt (for backoff). */
   lastAnnounceRetryAt?: number;
+  /** Orchestration contract ID if this run is managed by the orchestration loop. */
+  contractId?: string;
 };
 
 const subagentRuns = new Map<string, SubagentRunRecord>();
@@ -532,6 +534,7 @@ export function registerSubagentRun(params: {
   announceMode?: SubagentAnnounceMode;
   runTimeoutSeconds?: number;
   expectsCompletionMessage?: boolean;
+  contractId?: string;
 }) {
   const now = Date.now();
   const cfg = loadConfig();
@@ -557,6 +560,7 @@ export function registerSubagentRun(params: {
     dispatchId: params.dispatchId,
     announceMode: params.announceMode,
     runTimeoutSeconds,
+    contractId: params.contractId,
     createdAt: now,
     startedAt: now,
     archiveAtMs,

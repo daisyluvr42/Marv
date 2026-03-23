@@ -2,6 +2,8 @@ import type {
   ToolCallRecord,
   ToolLoopEventRecord,
 } from "../../logging/diagnostic-session-state.js";
+import { buildContractFromGoalFrame } from "../orchestration/contract-builder.js";
+import type { OrchestrationConfig } from "../orchestration/types.js";
 import type { EmbeddedRunAttemptResult } from "./run/types.js";
 import { resolveVerificationDomain, buildVerificationChecklist } from "./verification-recipes.js";
 
@@ -81,6 +83,8 @@ export type GoalLoopState = {
   lastErrorFingerprint: string | null;
   attemptedDelegationKeys: string[];
   activeDelegation: GoalDelegationPlan | null;
+  /** Orchestration entry tracking the current delegated subagent evaluation loop. */
+  activeOrchestration?: import("../orchestration/types.js").OrchestrationEntry | undefined;
 };
 
 export type GoalProgressReview = {
@@ -102,6 +106,8 @@ export type GoalDelegationPlan = {
   announceMode: "aggregate";
   rationale: string;
   key: string;
+  /** When set, the delegation is wrapped in an orchestration loop with audit criteria. */
+  orchestrationContract?: import("../orchestration/types.js").GoalContract;
 };
 
 const TRIVIAL_PROMPT_MAX_CHARS = 48;
@@ -640,6 +646,7 @@ function resolveDelegationPlan(args: {
   classification: ProgressClassification;
   problemShape: ProblemShape | null;
   canDelegate: boolean;
+  orchestrationConfig?: OrchestrationConfig;
 }): GoalDelegationPlan | null {
   if (!args.canDelegate) {
     return null;
@@ -722,6 +729,15 @@ function resolveDelegationPlan(args: {
   if (args.state.attemptedDelegationKeys.includes(key)) {
     return null;
   }
+  // Attach orchestration contract so the runner can wrap the delegation in an eval loop
+  const orchestrationEnabled = args.orchestrationConfig?.enabled !== false;
+  const orchestrationContract = orchestrationEnabled
+    ? buildContractFromGoalFrame({
+        goalFrame: args.state.goalFrame,
+        config: args.orchestrationConfig,
+      })
+    : undefined;
+
   return {
     roles: cappedRoles,
     taskGroup: `goal-loop:${args.problemShape ?? "recovery"}`,
@@ -729,6 +745,7 @@ function resolveDelegationPlan(args: {
     announceMode: "aggregate",
     rationale,
     key,
+    orchestrationContract,
   };
 }
 
@@ -835,6 +852,7 @@ export function reviewGoalProgress(args: {
   recentLoopEvents: ToolLoopEventRecord[];
   promptErrorText?: string;
   canDelegate?: boolean;
+  orchestrationConfig?: OrchestrationConfig;
 }): GoalProgressReview {
   const { signal, errorFingerprint } = deriveProgressSignal(args);
   let classification = classifyProgress(signal);
@@ -915,6 +933,7 @@ export function reviewGoalProgress(args: {
           classification,
           problemShape,
           canDelegate,
+          orchestrationConfig: args.orchestrationConfig,
         })
       : null;
 

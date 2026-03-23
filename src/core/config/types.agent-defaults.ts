@@ -358,6 +358,25 @@ export type AgentDefaultsConfig = {
     presets?: Record<string, SubagentPresetConfig>;
     /** Default preset applied when orchestration does not choose one explicitly. */
     defaultPreset?: string;
+    /** Goal-driven orchestration loop settings for delegated subagents. */
+    orchestration?: {
+      /** Enable orchestration loop for delegated subagents. Default: true. */
+      enabled?: boolean;
+      /** Max feedback iterations per subagent. Default: 3. */
+      maxIterations?: number;
+      /** Max wall-clock time for the full orchestration loop in ms. Default: 300000. */
+      maxDurationMs?: number;
+      /** Per-criterion evaluation timeout in seconds. Default: 60. */
+      evaluationTimeoutSeconds?: number;
+      /** Default evaluator kind when criteria omit the evaluator field. Default: "checklist". */
+      defaultAuditEvaluator?: "checklist" | "llm_judge";
+      /** Score threshold (0-1) below which the loop gives up. Default: 0.3. */
+      rejectionThreshold?: number;
+      /** Minimum improvement between iterations to avoid early rejection. Default: 0.05. */
+      minImprovementRatio?: number;
+      /** Multi-subagent group behavior. Default: "best_effort". */
+      groupMode?: "fail_fast" | "best_effort";
+    };
   };
   /** Optional sandbox settings for non-main sessions. */
   sandbox?: {

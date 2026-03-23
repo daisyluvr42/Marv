@@ -34,6 +34,8 @@ export type SpawnSubagentParams = {
   expectsCompletionMessage?: boolean;
   /** Pre-built context block to prepend to the task message. */
   contextBlock?: string;
+  /** Orchestration contract ID for managed delegation loops. */
+  contractId?: string;
 };
 
 export type SpawnSubagentContext = {
@@ -319,6 +321,7 @@ export async function spawnSubagentDirect(
     announceMode,
     runTimeoutSeconds,
     expectsCompletionMessage: params.expectsCompletionMessage === true,
+    contractId: params.contractId,
   });
 
   return {
