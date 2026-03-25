@@ -23,9 +23,9 @@ import { resolveSessionAgentId } from "../agent-scope.js";
 import { resolveImageSanitizationLimits } from "../image-sanitization.js";
 import { optionalStringEnum, stringEnum } from "../schema/typebox.js";
 import { type AnyAgentTool, jsonResult, readStringParam } from "./common.js";
+import { sanitizeToolResultImages } from "./display/tool-images.js";
 import { callGatewayTool, readGatewayCallOptions } from "./gateway.js";
 import { listNodes, resolveNodeIdFromList, resolveNodeId } from "./nodes-utils.js";
-import { sanitizeToolResultImages } from "./tool-images.js";
 
 const NODES_TOOL_ACTIONS = [
   "status",

@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDiagnosticSessionStateForTest } from "../../logging/diagnostic-session-state.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { toClientToolDefinitions, toToolDefinitions } from "../pi-tool-definition-adapter.js";
-import { getEscalationManager, resetEscalationManager } from "./permission-escalation.js";
 import { wrapToolWithAbortSignal } from "./pi-tools.abort.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
+import { getEscalationManager, resetEscalationManager } from "./policy/permission-escalation.js";
 
 vi.mock("../../plugins/hook-runner-global.js");
 

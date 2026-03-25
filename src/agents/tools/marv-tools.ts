@@ -5,39 +5,44 @@ import { resolveSessionAgentId } from "../agent-scope.js";
 import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
 import { resolveWorkspaceRoot } from "../workspace-dir.js";
 import { createAgentsListTool } from "./agents-list-tool.js";
-import { createBrowserTool } from "./browser-tool.js";
-import { createCanvasTool } from "./canvas-tool.js";
-import { createCliInvokeTool } from "./cli-invoke-tool.js";
-import { createCliProfilesTool } from "./cli-profiles-tool.js";
-import { createCliSynthesizeTool } from "./cli-synthesize-tool.js";
+import { createBrowserTool } from "./browser/browser-tool.js";
+import { createCanvasTool } from "./browser/canvas-tool.js";
+import { createImageTool } from "./browser/image-tool.js";
+import { createIosDeployTool } from "./browser/ios-deploy-tool.js";
+import { createCliInvokeTool } from "./cli/cli-invoke-tool.js";
+import { createCliProfilesTool } from "./cli/cli-profiles-tool.js";
+import { createCliSynthesizeTool } from "./cli/cli-synthesize-tool.js";
+import { createExternalCliTool } from "./cli/external-cli-tool.js";
 // cli_verify no longer registered as an agent tool (cli_synthesize auto-verifies).
 import type { AnyAgentTool } from "./common.js";
 import { createCronTool } from "./cron-tool.js";
-import { createExternalCliTool } from "./external-cli-tool.js";
 import { createGatewayTool } from "./gateway-tool.js";
-import { createImageTool } from "./image-tool.js";
-import { createIosDeployTool } from "./ios-deploy-tool.js";
 import { createMessageTool } from "./message-tool.js";
 import { createNodesTool } from "./nodes-tool.js";
 import { createParallelSpawnTool } from "./parallel-spawn-tool.js";
-import { createProactiveBufferTool } from "./proactive-buffer-tool.js";
-import { createDeliverableTool } from "./proactive-deliverable-tool.js";
-import { createInfoSourcesTool } from "./proactive-sources-tool.js";
-import { createProactiveTasksTool } from "./proactive-tasks-tool.js";
+import { createRequestEscalationTool } from "./policy/request-escalation-tool.js";
+import { createRequestMissingToolsTool } from "./policy/request-missing-tools-tool.js";
+import { createProactiveBufferTool } from "./proactive/proactive-buffer-tool.js";
+import { createDeliverableTool } from "./proactive/proactive-deliverable-tool.js";
+import { createInfoSourcesTool } from "./proactive/proactive-sources-tool.js";
+import { createProactiveTasksTool } from "./proactive/proactive-tasks-tool.js";
 import { createReflectTool } from "./reflect-tool.js";
-import { createRequestEscalationTool } from "./request-escalation-tool.js";
-import { createRequestMissingToolsTool } from "./request-missing-tools-tool.js";
-import { createSelfInspectingTool } from "./self-inspecting-tool.js";
-import { createSelfSettingsTool } from "./self-settings-tool.js";
+import { createSelfInspectingTool } from "./self/self-inspecting-tool.js";
+import {
+  createSessionSettingsTool,
+  createMemorySettingsTool,
+  createHeartbeatSettingsTool,
+  createConfigManageTool,
+} from "./self/self-settings-tool.js";
 import { createSessionStatusTool } from "./session-status-tool.js";
-import { createSessionsHistoryTool } from "./sessions-history-tool.js";
-import { createSessionsListTool } from "./sessions-list-tool.js";
-import { createSessionsSendTool } from "./sessions-send-tool.js";
-import { createSessionsSpawnTool } from "./sessions-spawn-tool.js";
+import { createSessionsHistoryTool } from "./sessions/sessions-history-tool.js";
+import { createSessionsListTool } from "./sessions/sessions-list-tool.js";
+import { createSessionsSendTool } from "./sessions/sessions-send-tool.js";
+import { createSessionsSpawnTool } from "./sessions/sessions-spawn-tool.js";
 import { createSubagentsTool } from "./subagents-tool.js";
 import { createTaskDispatchTool } from "./task-dispatch-tool.js";
 import { createTtsTool } from "./tts-tool.js";
-import { createWebFetchTool, createWebSearchTool } from "./web-tools.js";
+import { createWebFetchTool, createWebSearchTool } from "./web/web-tools.js";
 
 export type CreateMarvToolsOptions = {
   sandboxBrowserBridgeUrl?: string;
@@ -258,7 +263,7 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
     }),
-    createSelfSettingsTool({
+    createSessionSettingsTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
       agentChannel: options?.agentChannel,
@@ -269,6 +274,19 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       senderUsername: options?.senderUsername,
       senderE164: options?.senderE164,
       directUserInstruction: options?.directUserInstruction,
+    }),
+    createMemorySettingsTool({
+      agentSessionKey: options?.agentSessionKey,
+      config: options?.config,
+      directUserInstruction: options?.directUserInstruction,
+    }),
+    createHeartbeatSettingsTool({
+      agentSessionKey: options?.agentSessionKey,
+      config: options?.config,
+      directUserInstruction: options?.directUserInstruction,
+    }),
+    createConfigManageTool({
+      agentSessionKey: options?.agentSessionKey,
     }),
     createRequestEscalationTool({
       agentSessionKey: options?.agentSessionKey,

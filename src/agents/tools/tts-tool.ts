@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
+import { SILENT_REPLY_TOKEN } from "../../auto-reply/support/tokens.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import { textToSpeech } from "../../tts/tts.js";

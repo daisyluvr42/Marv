@@ -6,7 +6,7 @@ import { Type } from "@sinclair/typebox";
 import { describe, expect, it, vi } from "vitest";
 import "../test-helpers/fast-coding-tools.js";
 import { createHostSandboxFsBridge } from "../test-helpers/host-sandbox-fs-bridge.js";
-import { createBrowserTool } from "./browser-tool.js";
+import { createBrowserTool } from "./browser/browser-tool.js";
 import { createMarvTools } from "./marv-tools.js";
 import { __testing, createMarvCodingTools } from "./pi-tools.js";
 import { createMarvReadTool, createSandboxedReadTool } from "./pi-tools.read.js";

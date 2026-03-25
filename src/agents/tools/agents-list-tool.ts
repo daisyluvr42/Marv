@@ -7,7 +7,7 @@ import {
 } from "../../routing/session-key.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult } from "./common.js";
-import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-helpers.js";
+import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions/sessions-helpers.js";
 
 const AgentsListToolSchema = Type.Object({});
 

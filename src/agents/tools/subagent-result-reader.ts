@@ -1,5 +1,5 @@
 import { callGateway } from "../../core/gateway/call.js";
-import { extractAssistantText, stripToolMessages } from "./sessions-helpers.js";
+import { extractAssistantText, stripToolMessages } from "./sessions/sessions-helpers.js";
 
 /**
  * Shared helper to wait for a subagent run to complete and extract its final output.

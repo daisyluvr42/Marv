@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
-import { normalizeGroupActivation } from "../../auto-reply/group-activation.js";
-import { getFollowupQueueDepth, resolveQueueSettings } from "../../auto-reply/reply/queue.js";
-import { buildStatusMessage } from "../../auto-reply/status.js";
+import { normalizeGroupActivation } from "../../auto-reply/inbound/group-activation.js";
+import { getFollowupQueueDepth, resolveQueueSettings } from "../../auto-reply/queue/index.js";
+import { buildStatusMessage } from "../../auto-reply/support/status.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import {
@@ -40,7 +40,7 @@ import {
   resolveInternalSessionKey,
   resolveMainSessionAlias,
   createAgentToAgentPolicy,
-} from "./sessions-helpers.js";
+} from "./sessions/sessions-helpers.js";
 
 const SessionStatusToolSchema = Type.Object({
   sessionKey: Type.Optional(Type.String()),

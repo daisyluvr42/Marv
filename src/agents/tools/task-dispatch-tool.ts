@@ -6,7 +6,7 @@ import { listSubagentRunsForRequester, type SubagentRunRecord } from "../subagen
 import { spawnSubagentDirect } from "../subagent-spawn.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringArrayParam, readStringParam } from "./common.js";
-import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-helpers.js";
+import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions/sessions-helpers.js";
 import { readSubagentResult } from "./subagent-result-reader.js";
 
 const TaskDispatchToolSchema = Type.Object({

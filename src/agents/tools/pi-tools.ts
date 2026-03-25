@@ -23,17 +23,11 @@ import {
   createProcessTool,
   type ExecToolDefaults,
   type ProcessToolDefaults,
-} from "./bash-tools.js";
+} from "./bash/bash-tools.js";
 import { listChannelAgentTools } from "./channel-tools.js";
 import { createMarvTools } from "./marv-tools.js";
 import { wrapToolWithAbortSignal } from "./pi-tools.abort.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
-import {
-  isToolAllowedByPolicies,
-  resolveEffectiveToolPolicy,
-  resolveGroupToolPolicy,
-  resolveSubagentToolPolicy,
-} from "./pi-tools.policy.js";
 import {
   assertRequiredParams,
   CLAUDE_PARAM_GROUPS,
@@ -49,15 +43,21 @@ import {
 import { cleanToolSchemaForGemini, normalizeToolParameters } from "./pi-tools.schema.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
 import {
+  isToolAllowedByPolicies,
+  resolveEffectiveToolPolicy,
+  resolveGroupToolPolicy,
+  resolveSubagentToolPolicy,
+} from "./policy/pi-tools.policy.js";
+import {
   applyToolPolicyPipeline,
   buildDefaultToolPolicyPipelineSteps,
-} from "./tool-policy-pipeline.js";
+} from "./policy/tool-policy-pipeline.js";
 import {
   applyOwnerOnlyToolPolicy,
   collectExplicitAllowlist,
   mergeAlsoAllowPolicy,
   resolveToolProfilePolicy,
-} from "./tool-policy.js";
+} from "./policy/tool-policy.js";
 
 function isOpenAIProvider(provider?: string) {
   const normalized = provider?.trim().toLowerCase();

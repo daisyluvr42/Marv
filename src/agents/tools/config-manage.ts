@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { loadConfig, writeConfigFile, type MarvConfig } from "../../core/config/config.js";
-import { listManagedCliProfiles } from "./cli-profile-registry.js";
+import { listManagedCliProfiles } from "./cli/cli-profile-registry.js";
 
 // --- Config get/set/unset via dot-path ---
 

@@ -7,9 +7,12 @@ import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { isPlainObject } from "../../utils.js";
 import type { AnyAgentTool } from "./common.js";
-import { buildEscalationBlockReason, classifyEscalationRequirement } from "./escalation-policy.js";
-import { getEscalationManager } from "./permission-escalation.js";
-import { normalizeToolName } from "./tool-policy.js";
+import {
+  buildEscalationBlockReason,
+  classifyEscalationRequirement,
+} from "./policy/escalation-policy.js";
+import { getEscalationManager } from "./policy/permission-escalation.js";
+import { normalizeToolName } from "./policy/tool-policy.js";
 
 export type HookContext = {
   agentId?: string;
@@ -87,7 +90,7 @@ async function recordLoopOutcome(args: {
   }
   try {
     const { getDiagnosticSessionState } = await import("../../logging/diagnostic-session-state.js");
-    const { recordToolCallOutcome } = await import("./tool-loop-detection.js");
+    const { recordToolCallOutcome } = await import("./meta/tool-loop-detection.js");
     const sessionState = getDiagnosticSessionState({
       sessionKey: args.ctx.sessionKey,
       sessionId: args.ctx?.agentId,
@@ -177,7 +180,7 @@ export async function runBeforeToolCallHook(args: {
     const { appendDiagnosticToolLoopEvent, getDiagnosticSessionState } =
       await import("../../logging/diagnostic-session-state.js");
     const { logToolLoopAction } = await import("../../logging/diagnostic.js");
-    const { detectToolCallLoop, recordToolCall } = await import("./tool-loop-detection.js");
+    const { detectToolCallLoop, recordToolCall } = await import("./meta/tool-loop-detection.js");
 
     const sessionState = getDiagnosticSessionState({
       sessionKey: args.ctx.sessionKey,

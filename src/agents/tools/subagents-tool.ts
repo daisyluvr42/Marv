@@ -1,12 +1,12 @@
 import crypto from "node:crypto";
 import { Type } from "@sinclair/typebox";
-import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
+import { clearSessionQueues } from "../../auto-reply/queue/index.js";
 import {
   resolveSubagentLabel,
   resolveSubagentTargetFromRuns,
   sortSubagentRuns,
   type SubagentTargetResolution,
-} from "../../auto-reply/reply/subagents-utils.js";
+} from "../../auto-reply/support/subagents-utils.js";
 import { loadConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import {
@@ -42,7 +42,7 @@ import {
 } from "../subagent-registry.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readNumberParam, readStringParam } from "./common.js";
-import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-helpers.js";
+import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions/sessions-helpers.js";
 
 const SUBAGENT_ACTIONS = ["list", "kill", "steer"] as const;
 type SubagentAction = (typeof SUBAGENT_ACTIONS)[number];

@@ -10,7 +10,7 @@ import { resolveSessionAgentId } from "../agent-scope.js";
 import { optionalStringEnum, stringEnum } from "../schema/typebox.js";
 import { type AnyAgentTool, jsonResult, readStringParam } from "./common.js";
 import { callGatewayTool, type GatewayCallOptions } from "./gateway.js";
-import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-helpers.js";
+import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions/sessions-helpers.js";
 
 // NOTE: We use Type.Object({}, { additionalProperties: true }) for job/patch
 // instead of CronAddParamsSchema/CronJobPatchSchema because the gateway schemas

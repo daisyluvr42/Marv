@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { addSubagentRunForTests, resetSubagentRegistryForTests } from "../subagent-registry.js";
-import { createSessionsSpawnTool } from "./sessions-spawn-tool.js";
+import { createSessionsSpawnTool } from "./sessions/sessions-spawn-tool.js";
 
 const callGatewayMock = vi.fn();
 

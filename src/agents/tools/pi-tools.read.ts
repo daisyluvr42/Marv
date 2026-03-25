@@ -8,8 +8,8 @@ import type { ImageSanitizationLimits } from "../image-sanitization.js";
 import type { SandboxFsBridge } from "../sandbox/fs-bridge.js";
 import { assertSandboxPath } from "../sandbox/sandbox-paths.js";
 import { jsonResult } from "./common.js";
+import { sanitizeToolResultImages } from "./display/tool-images.js";
 import type { AnyAgentTool } from "./pi-tools.types.js";
-import { sanitizeToolResultImages } from "./tool-images.js";
 
 // NOTE(steipete): Upstream read now does file-magic MIME detection; we keep the wrapper
 // to normalize payloads and sanitize oversized images before they hit providers.

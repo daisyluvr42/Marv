@@ -8,8 +8,11 @@ import { resetDiagnosticSessionStateForTest } from "../../logging/diagnostic-ses
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { captureEnv } from "../../test-utils/env.js";
 import type { AnyAgentTool } from "./common.js";
+import {
+  CRITICAL_THRESHOLD,
+  GLOBAL_CIRCUIT_BREAKER_THRESHOLD,
+} from "./meta/tool-loop-detection.js";
 import { wrapToolWithBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
-import { CRITICAL_THRESHOLD, GLOBAL_CIRCUIT_BREAKER_THRESHOLD } from "./tool-loop-detection.js";
 
 vi.mock("../../plugins/hook-runner-global.js");
 
