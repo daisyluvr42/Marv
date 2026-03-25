@@ -1,0 +1,51 @@
+import type { MarvConfig } from "../../core/config/config.js";
+import { parseInlineDirectives } from "../directives/index.js";
+import type { TurnContext } from "../support/templating.js";
+import { buildCommandContext } from "./dispatch.js";
+import type { HandleCommandsParams } from "./handler-types.js";
+
+export function buildCommandTestParams(
+  commandBody: string,
+  cfg: MarvConfig,
+  ctxOverrides?: Partial<TurnContext>,
+  options?: {
+    workspaceDir?: string;
+  },
+): HandleCommandsParams {
+  const ctx = {
+    Body: commandBody,
+    CommandBody: commandBody,
+    CommandSource: "text",
+    CommandAuthorized: true,
+    Provider: "whatsapp",
+    Surface: "whatsapp",
+    ...ctxOverrides,
+  } as TurnContext;
+
+  const command = buildCommandContext({
+    ctx,
+    cfg,
+    isGroup: false,
+    triggerBodyNormalized: commandBody.trim().toLowerCase(),
+    commandAuthorized: true,
+  });
+
+  const params: HandleCommandsParams = {
+    ctx,
+    cfg,
+    command,
+    directives: parseInlineDirectives(commandBody),
+    elevated: { enabled: true, allowed: true, failures: [] },
+    sessionKey: "agent:main:main",
+    workspaceDir: options?.workspaceDir ?? "/tmp",
+    defaultGroupActivation: () => "mention",
+    resolvedVerboseLevel: "off",
+    resolvedReasoningLevel: "off",
+    resolveDefaultThinkingLevel: async () => undefined,
+    provider: "whatsapp",
+    model: "test-model",
+    contextTokens: 0,
+    isGroup: false,
+  };
+  return params;
+}
