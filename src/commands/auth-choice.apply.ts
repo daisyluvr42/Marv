@@ -1,8 +1,6 @@
 import { refreshRuntimeModelRegistry } from "../agents/model/runtime-model-registry.js";
-import type { MarvConfig } from "../core/config/config.js";
 import { invalidateGatewayModelCatalogCache } from "../core/gateway/server-model-catalog.js";
-import type { RuntimeEnv } from "../runtime.js";
-import type { WizardPrompter } from "../wizard/prompts.js";
+import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply-types.js";
 import { applyAuthChoiceAnthropic } from "./auth-choice.apply.anthropic.js";
 import { applyAuthChoiceApiProviders } from "./auth-choice.apply.api-providers.js";
 import { applyAuthChoiceCopilotProxy } from "./auth-choice.apply.copilot-proxy.js";
@@ -16,30 +14,8 @@ import { applyAuthChoiceOpenAI } from "./auth-choice.apply.openai.js";
 import { applyAuthChoiceQwenPortal } from "./auth-choice.apply.qwen-portal.js";
 import { applyAuthChoiceVllm } from "./auth-choice.apply.vllm.js";
 import { applyAuthChoiceXAI } from "./auth-choice.apply.xai.js";
-import type { AuthChoice } from "./onboard-types.js";
 
-export type ApplyAuthChoiceParams = {
-  authChoice: AuthChoice;
-  config: MarvConfig;
-  prompter: WizardPrompter;
-  runtime: RuntimeEnv;
-  agentDir?: string;
-  setDefaultModel: boolean;
-  agentId?: string;
-  opts?: {
-    tokenProvider?: string;
-    token?: string;
-    cloudflareAiGatewayAccountId?: string;
-    cloudflareAiGatewayGatewayId?: string;
-    cloudflareAiGatewayApiKey?: string;
-    xaiApiKey?: string;
-  };
-};
-
-export type ApplyAuthChoiceResult = {
-  config: MarvConfig;
-  agentModelOverride?: string;
-};
+export type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply-types.js";
 
 export async function applyAuthChoice(
   params: ApplyAuthChoiceParams,

@@ -1,4 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
+
+const log = createSubsystemLogger("memory");
 
 export function deleteStaleIndexedPaths(params: {
   db: DatabaseSync;
@@ -27,7 +30,11 @@ export function deleteStaleIndexedPaths(params: {
           `DELETE FROM ${params.vectorTable} WHERE id IN (SELECT id FROM chunks WHERE path = ? AND source = ?)`,
         )
         .run(stale.path, params.source);
-    } catch {}
+    } catch (err) {
+      log.warn(
+        `DELETE from ${params.vectorTable} failed for stale path ${stale.path}: ${String(err)}`,
+      );
+    }
     params.db
       .prepare(`DELETE FROM chunks WHERE path = ? AND source = ?`)
       .run(stale.path, params.source);
@@ -36,7 +43,11 @@ export function deleteStaleIndexedPaths(params: {
         params.db
           .prepare(`DELETE FROM ${params.ftsTable} WHERE path = ? AND source = ? AND model = ?`)
           .run(stale.path, params.source, params.model);
-      } catch {}
+      } catch (err) {
+        log.warn(
+          `DELETE from ${params.ftsTable} failed for stale path ${stale.path}: ${String(err)}`,
+        );
+      }
     }
   }
 }

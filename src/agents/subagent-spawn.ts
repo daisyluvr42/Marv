@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/thinking.js";
+import { formatThinkingLevels, normalizeThinkLevel } from "../auto-reply/support/thinking.js";
 import { loadConfig } from "../core/config/config.js";
 import { callGateway } from "../core/gateway/call.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
@@ -16,7 +16,7 @@ import {
   resolveDisplaySessionKey,
   resolveInternalSessionKey,
   resolveMainSessionAlias,
-} from "./tools/sessions-helpers.js";
+} from "./tools/sessions/sessions-helpers.js";
 
 export type SpawnSubagentParams = {
   task: string;

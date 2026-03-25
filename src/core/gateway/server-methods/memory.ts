@@ -4,7 +4,6 @@ import {
   querySoulMemoryMulti,
   type SoulMemoryRecordKind,
   type SoulMemoryScope,
-  type SoulMemoryTier,
 } from "../../../memory/storage/soul-memory-store.js";
 import {
   ErrorCodes,
@@ -63,10 +62,7 @@ export const memoryHandlers: GatewayRequestHandlers = {
       scopeType: typeof params.scopeType === "string" ? params.scopeType.trim() : undefined,
       scopeId: typeof params.scopeId === "string" ? params.scopeId.trim() : undefined,
       kind: typeof params.kind === "string" ? params.kind.trim() : undefined,
-      tier:
-        typeof params.tier === "string"
-          ? (params.tier.trim().toUpperCase() as SoulMemoryTier)
-          : undefined,
+      tier: typeof params.tier === "string" ? params.tier.trim().toUpperCase() : undefined,
       recordKind:
         typeof params.recordKind === "string"
           ? (params.recordKind.trim().toLowerCase() as SoulMemoryRecordKind)

@@ -99,9 +99,9 @@ marv --dev health
 
 - `MARV_STATE_DIR=~/.marv-dev`
 - `MARV_CONFIG_PATH=~/.marv-dev/marv.json`
-- `MARV_GATEWAY_PORT=19001`（Gateway 网关 WS + HTTP）
-- 浏览器控制服务端口 = `19003`（派生：`gateway.port+2`，仅 loopback）
-- `canvasHost.port=19005`（派生：`gateway.port+4`）
+- `MARV_GATEWAY_PORT=4454`（Gateway 网关 WS + HTTP）
+- 浏览器控制服务端口 = `4456`（派生：`gateway.port+2`，仅 loopback）
+- `canvasHost.port=4458`（派生：`gateway.port+4`）
 - 当你在 `--dev` 下运行 `setup`/`onboard` 时，`agents.defaults.workspace` 默认变为 `~/.marv/workspace-dev`。
 
 派生端口（经验法则）：

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { ReplyPayload } from "../../auto-reply/types.js";
+import type { ReplyPayload } from "../../auto-reply/support/types.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveStateDir } from "../../core/config/paths.js";
 import type { OutboundChannel } from "./targets.js";

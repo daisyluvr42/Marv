@@ -1,10 +1,13 @@
 import {
+  DEFAULT_GROUP_HISTORY_LIMIT,
+  type HistoryEntry,
+} from "../../auto-reply/session/history.js";
+import {
   chunkTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "../../auto-reply/chunk.js";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../../auto-reply/reply/history.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
+} from "../../auto-reply/support/chunk.js";
+import type { ReplyPayload } from "../../auto-reply/support/types.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import type { SignalReactionNotificationMode } from "../../core/config/types.js";

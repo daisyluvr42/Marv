@@ -12,8 +12,8 @@ import {
 } from "../agents/sandbox/sandbox.js";
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
 import { loadWorkspaceSkillEntries } from "../agents/skills.js";
-import { isToolAllowedByPolicies } from "../agents/tools/pi-tools.policy.js";
-import { resolveToolProfilePolicy } from "../agents/tools/tool-policy.js";
+import { isToolAllowedByPolicies } from "../agents/tools/policy/pi-tools.policy.js";
+import { resolveToolProfilePolicy } from "../agents/tools/policy/tool-policy.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { resolveNativeSkillsEnabled } from "../core/config/commands.js";

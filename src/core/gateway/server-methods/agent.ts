@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { listAgentIds } from "../../../agents/agent-scope.js";
-import { BARE_SESSION_RESET_PROMPT } from "../../../auto-reply/reply/session-reset-prompt.js";
+import { BARE_SESSION_RESET_PROMPT } from "../../../auto-reply/session/reset-prompt.js";
 import { agentCommand } from "../../../commands/agent.js";
 import { registerAgentRunContext } from "../../../infra/agent-events.js";
 import {

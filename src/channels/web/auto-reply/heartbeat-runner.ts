@@ -1,12 +1,12 @@
 import { appendCronStyleCurrentTimeLine } from "../../../agents/current-time.js";
-import { resolveHeartbeatReplyPayload } from "../../../auto-reply/heartbeat-reply-payload.js";
+import { getReplyFromConfig } from "../../../auto-reply/index.js";
+import { resolveHeartbeatReplyPayload } from "../../../auto-reply/support/heartbeat-reply-payload.js";
 import {
   DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   resolveHeartbeatPrompt,
   stripHeartbeatToken,
-} from "../../../auto-reply/heartbeat.js";
-import { getReplyFromConfig } from "../../../auto-reply/reply.js";
-import { HEARTBEAT_TOKEN } from "../../../auto-reply/tokens.js";
+} from "../../../auto-reply/support/heartbeat.js";
+import { HEARTBEAT_TOKEN } from "../../../auto-reply/support/tokens.js";
 import { loadConfig } from "../../../core/config/config.js";
 import {
   loadSessionStore,

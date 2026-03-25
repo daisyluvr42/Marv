@@ -52,7 +52,7 @@ Use the dev profile to isolate state and spin up a safe, disposable setup for
 debugging. There are **two** `--dev` flags:
 
 - **Global `--dev` (profile):** isolates state under `~/.marv-dev` and
-  defaults the gateway port to `19001` (derived ports shift with it).
+  defaults the gateway port to `4454` (derived ports shift with it).
 - **`gateway --dev`: tells the Gateway to auto-create a default config +
   workspace** when missing (and skip BOOTSTRAP.md).
 
@@ -71,7 +71,7 @@ What this does:
    - `MARV_PROFILE=dev`
    - `MARV_STATE_DIR=~/.marv-dev`
    - `MARV_CONFIG_PATH=~/.marv-dev/marv.json`
-   - `MARV_GATEWAY_PORT=19001` (browser/canvas shift accordingly)
+   - `MARV_GATEWAY_PORT=4454` (browser/canvas shift accordingly)
 
 2. **Dev bootstrap** (`gateway --dev`)
    - Writes a minimal config if missing (`gateway.mode=local`, bind loopback).

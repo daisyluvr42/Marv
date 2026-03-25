@@ -168,7 +168,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     };
   }
 
-  it("produces a finalized MsgContext", async () => {
+  it("produces a finalized TurnContext", async () => {
     const message: SlackMessageEvent = {
       channel: "D123",
       channel_type: "im",

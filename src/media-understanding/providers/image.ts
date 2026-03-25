@@ -4,7 +4,7 @@ import { minimaxUnderstandImage } from "../../agents/model/minimax-vlm.js";
 import { getApiKeyForModel, requireApiKey } from "../../agents/model/model-auth.js";
 import { ensureMarvModelsJson } from "../../agents/model/models-config.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/model/pi-model-discovery.js";
-import { coerceImageAssistantText } from "../../agents/tools/image-tool.helpers.js";
+import { coerceImageAssistantText } from "../../agents/tools/browser/image-tool.helpers.js";
 import type { ImageDescriptionRequest, ImageDescriptionResult } from "../types.js";
 
 export async function describeImageWithModel(

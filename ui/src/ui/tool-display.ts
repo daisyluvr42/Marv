@@ -10,7 +10,7 @@ import {
   resolveWebSearchDetail,
   resolveWriteDetail,
   type ToolDisplaySpec as ToolDisplaySpecBase,
-} from "../../../src/agents/tools/tool-display-common.js";
+} from "../../../src/agents/tools/display/tool-display-common.js";
 import type { IconName } from "./icons.js";
 import rawConfig from "./tool-display.json" with { type: "json" };
 

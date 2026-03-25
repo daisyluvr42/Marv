@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { MsgContext } from "../src/auto-reply/templating.js";
+import type { TurnContext } from "../src/auto-reply/templating.js";
 import type { MarvConfig } from "../src/core/config/config.js";
 import { applyMediaUnderstanding } from "../src/media-understanding/apply.js";
 import { clearMediaUnderstandingBinaryCacheForTests } from "../src/media-understanding/runner.js";
@@ -72,7 +72,7 @@ describe("media understanding auto-detect (e2e)", () => {
       const { filePath } = await makeTempMedia(".wav");
       tempPaths.push(path.dirname(filePath));
 
-      const ctx: MsgContext = {
+      const ctx: TurnContext = {
         Body: "<media:audio>",
         MediaPath: filePath,
         MediaType: "audio/wav",
@@ -116,7 +116,7 @@ describe("media understanding auto-detect (e2e)", () => {
       const { filePath } = await makeTempMedia(".wav");
       tempPaths.push(path.dirname(filePath));
 
-      const ctx: MsgContext = {
+      const ctx: TurnContext = {
         Body: "<media:audio>",
         MediaPath: filePath,
         MediaType: "audio/wav",
@@ -148,7 +148,7 @@ describe("media understanding auto-detect (e2e)", () => {
       const { filePath } = await makeTempMedia(".png");
       tempPaths.push(path.dirname(filePath));
 
-      const ctx: MsgContext = {
+      const ctx: TurnContext = {
         Body: "<media:image>",
         MediaPath: filePath,
         MediaType: "image/png",

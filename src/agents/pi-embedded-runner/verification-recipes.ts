@@ -5,7 +5,7 @@
  */
 
 import type { ToolCallRecord } from "../../logging/diagnostic-session-state.js";
-import type { GoalFrame } from "./goal-loop.js";
+import type { GoalFrame } from "./goal-loop-types.js";
 
 export type VerificationDomain = "code" | "messaging" | "research" | "config" | "general";
 

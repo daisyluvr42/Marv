@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { GoalFrame } from "../pi-embedded-runner/goal-loop.js";
+import type { GoalFrame } from "../pi-embedded-runner/goal-loop-types.js";
 import {
   type AuditCriterion,
   type GoalContract,

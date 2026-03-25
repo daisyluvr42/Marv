@@ -1,6 +1,6 @@
 import type { WebhookRequestBody } from "@line/bot-sdk";
-import { chunkMarkdownText } from "../../auto-reply/chunk.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/delivery/provider-dispatcher.js";
+import { chunkMarkdownText } from "../../auto-reply/support/chunk.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { danger, logVerbose } from "../../globals.js";
 import { normalizePluginHttpPath } from "../../plugins/http-path.js";

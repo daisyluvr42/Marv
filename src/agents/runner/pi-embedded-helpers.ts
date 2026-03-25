@@ -61,5 +61,5 @@ export {
 } from "../pi-embedded-helpers/turns.js";
 export type { EmbeddedContextFile, FailoverReason } from "../pi-embedded-helpers/types.js";
 
-export type { ToolCallIdMode } from "../tools/tool-call-id.js";
-export { isValidCloudCodeAssistToolId, sanitizeToolCallId } from "../tools/tool-call-id.js";
+export type { ToolCallIdMode } from "../tools/meta/tool-call-id.js";
+export { isValidCloudCodeAssistToolId, sanitizeToolCallId } from "../tools/meta/tool-call-id.js";

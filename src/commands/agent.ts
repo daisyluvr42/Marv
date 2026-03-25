@@ -32,7 +32,7 @@ import {
   supportsXHighThinking,
   type ThinkLevel,
   type VerboseLevel,
-} from "../auto-reply/thinking.js";
+} from "../auto-reply/support/thinking.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { type CliDeps, createDefaultDeps } from "../cli/deps.js";
 import { loadConfig } from "../core/config/config.js";

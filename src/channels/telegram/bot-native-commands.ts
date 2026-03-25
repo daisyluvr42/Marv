@@ -1,6 +1,5 @@
 import type { Bot, Context } from "grammy";
-import { resolveChunkMode } from "../../auto-reply/chunk.js";
-import type { CommandArgs } from "../../auto-reply/commands-registry.js";
+import type { CommandArgs } from "../../auto-reply/commands/registry.js";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -8,10 +7,11 @@ import {
   listNativeCommandSpecsForConfig,
   parseCommandArgs,
   resolveCommandArgMenu,
-} from "../../auto-reply/commands-registry.js";
-import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
-import { listSkillCommandsForAgents } from "../../auto-reply/skill-commands.js";
+} from "../../auto-reply/commands/registry.js";
+import { listSkillCommandsForAgents } from "../../auto-reply/commands/skill-commands.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/delivery/provider-dispatcher.js";
+import { finalizeInboundContext } from "../../auto-reply/inbound/context.js";
+import { resolveChunkMode } from "../../auto-reply/support/chunk.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { ChannelGroupPolicy } from "../../core/config/group-policy.js";
 import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
@@ -47,7 +47,6 @@ import {
   syncTelegramMenuCommands,
 } from "./bot-native-command-menu.js";
 import { TelegramUpdateKeyContext } from "./bot-updates.js";
-import { TelegramBotOptions } from "./bot.js";
 import { deliverReplies } from "./bot/delivery.js";
 import {
   buildTelegramThreadParams,
@@ -58,6 +57,7 @@ import {
   resolveTelegramGroupAllowFromContext,
   resolveTelegramThreadSpec,
 } from "./bot/helpers.js";
+import type { TelegramBotOptions } from "./bot/types.js";
 import type { TelegramContext } from "./bot/types.js";
 import {
   evaluateTelegramGroupBaseAccess,

@@ -1,7 +1,7 @@
 import type { ChatType } from "../../channels/chat-type.js";
 import type { SubagentAnnounceMode } from "../../shared/subagent-metadata.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";
-import type { SessionEntry } from "../config/sessions.js";
+import type { SessionEntry } from "../config/sessions/types.js";
 
 export type GatewaySessionsDefaults = {
   modelProvider: string | null;

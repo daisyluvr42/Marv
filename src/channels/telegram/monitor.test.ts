@@ -92,7 +92,7 @@ vi.mock("./webhook.js", () => ({
   startTelegramWebhook: startTelegramWebhookSpy,
 }));
 
-vi.mock("../../auto-reply/reply.js", () => ({
+vi.mock("../../auto-reply/index.js", () => ({
   getReplyFromConfig: async (ctx: { Body?: string }) => ({
     text: `echo:${ctx.Body}`,
   }),

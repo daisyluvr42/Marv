@@ -4,7 +4,7 @@ import {
   formatThinkingLevels,
   normalizeUsageDisplay,
   resolveResponseUsageMode,
-} from "../auto-reply/thinking.js";
+} from "../auto-reply/support/thinking.js";
 import type { SessionsPatchResult } from "../core/gateway/protocol/index.js";
 import { formatRelativeTimestamp } from "../infra/format-time/format-relative.js";
 import { normalizeAgentId } from "../routing/session-key.js";

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { acquireSessionWriteLock } from "../../../agents/session-write-lock.js";
-import type { MsgContext } from "../../../auto-reply/templating.js";
+import type { TurnContext } from "../../../auto-reply/msg-context.js";
 import { parseByteSize } from "../../../cli/parse-bytes.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
@@ -18,7 +18,7 @@ import {
   cleanupArchivedSessionTranscripts,
 } from "../../gateway/session-utils.fs.js";
 import { getFileMtimeMs, isCacheEnabled, resolveCacheTtlMs } from "../cache-utils.js";
-import { loadConfig } from "../config.js";
+import { loadConfig } from "../io.js";
 import type { SessionMaintenanceConfig, SessionMaintenanceMode } from "../types.base.js";
 import { deriveSessionMetaPatch } from "./metadata.js";
 import { mergeSessionEntry, type SessionEntry } from "./types.js";
@@ -617,7 +617,20 @@ async function saveSessionStoreUnlocked(
   const tmp = `${storePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
   try {
     await fs.promises.writeFile(tmp, json, { mode: 0o600, encoding: "utf-8" });
-    await fs.promises.rename(tmp, storePath);
+    // Retry rename up to 2 times — rename can transiently fail on
+    // NFS / FUSE / network mounts (EBUSY, EIO) even on non-Windows.
+    for (let i = 0; i < 3; i++) {
+      try {
+        await fs.promises.rename(tmp, storePath);
+        break;
+      } catch (renameErr) {
+        if (i < 2) {
+          await new Promise((r) => setTimeout(r, 20 * (i + 1)));
+          continue;
+        }
+        throw renameErr;
+      }
+    }
     // Ensure permissions are set even if rename loses them
     await fs.promises.chmod(storePath, 0o600);
   } catch (err) {
@@ -825,7 +838,7 @@ export async function updateSessionStoreEntry(params: {
 export async function recordSessionMetaFromInbound(params: {
   storePath: string;
   sessionKey: string;
-  ctx: MsgContext;
+  ctx: TurnContext;
   groupResolution?: import("./types.js").GroupKeyResolution | null;
   createIfMissing?: boolean;
 }): Promise<SessionEntry | null> {
@@ -863,7 +876,7 @@ export async function updateLastRoute(params: {
   accountId?: string;
   threadId?: string | number;
   deliveryContext?: DeliveryContext;
-  ctx?: MsgContext;
+  ctx?: TurnContext;
   groupResolution?: import("./types.js").GroupKeyResolution | null;
 }) {
   const { storePath, sessionKey, channel, to, accountId, threadId, ctx } = params;

@@ -4,7 +4,7 @@ import type { SignalReactionMessage } from "./monitor/event-handler.types.js";
 const dispatchMock = vi.fn();
 const readAllowFromMock = vi.fn();
 
-vi.mock("../../auto-reply/dispatch.js", () => ({
+vi.mock("../../auto-reply/inbound/dispatch.js", () => ({
   dispatchInboundMessage: (...args: unknown[]) => dispatchMock(...args),
   dispatchInboundMessageWithDispatcher: (...args: unknown[]) => dispatchMock(...args),
   dispatchInboundMessageWithBufferedDispatcher: (...args: unknown[]) => dispatchMock(...args),

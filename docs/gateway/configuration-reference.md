@@ -1927,7 +1927,7 @@ MARV_STATE_DIR=~/.marv-a \
 marv gateway --port 19001
 ```
 
-Convenience flags: `--dev` (uses `~/.marv-dev` + port `19001`), `--profile <name>` (uses `~/.marv-<name>`).
+Convenience flags: `--dev` (uses `~/.marv-dev` + port `4454`), `--profile <name>` (uses `~/.marv-<name>`).
 
 See [Multiple Gateways](/gateway/multiple-gateways).
 

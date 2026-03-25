@@ -4,7 +4,7 @@ import { expectInboundContextContract } from "../../../test/helpers/inbound-cont
 import {
   listNativeCommandSpecs,
   listNativeCommandSpecsForConfig,
-} from "../../auto-reply/commands-registry.js";
+} from "../../auto-reply/commands/registry.js";
 import { normalizeTelegramCommandName } from "../../core/config/telegram-custom-commands.js";
 import {
   answerCallbackQuerySpy,

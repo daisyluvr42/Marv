@@ -1,4 +1,3 @@
-import type { MarvConfig } from "../core/config/config.js";
 import {
   resolveChannelGroupRequireMention,
   resolveChannelGroupToolsPolicy,
@@ -7,6 +6,7 @@ import { requireActivePluginRegistry } from "../plugins/runtime.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 import { escapeRegExp, normalizeE164 } from "../utils.js";
 import { resolveDiscordAccount } from "./discord/accounts.js";
+import type { ChannelDock } from "./dock.types.js";
 import { resolveIMessageAccount } from "./imessage/accounts.js";
 import {
   resolveDiscordGroupRequireMention,
@@ -24,16 +24,9 @@ import {
 } from "./plugins/group-mentions.js";
 import { normalizeSignalMessagingTarget } from "./plugins/normalize/signal.js";
 import type {
-  ChannelCapabilities,
-  ChannelCommandAdapter,
-  ChannelElevatedAdapter,
-  ChannelGroupAdapter,
   ChannelId,
-  ChannelAgentPromptAdapter,
-  ChannelMentionAdapter,
   ChannelPlugin,
   ChannelThreadingContext,
-  ChannelThreadingAdapter,
   ChannelThreadingToolContext,
 } from "./plugins/types.js";
 import { CHAT_CHANNEL_ORDER, type ChatChannelId, getChatChannelMeta } from "./registry.js";
@@ -43,39 +36,7 @@ import { buildSlackThreadingToolContext } from "./slack/threading-tool-context.j
 import { resolveTelegramAccount } from "./telegram/accounts.js";
 import { resolveWhatsAppAccount } from "./web/accounts.js";
 import { normalizeWhatsAppTarget } from "./whatsapp/normalize.js";
-
-export type ChannelDock = {
-  id: ChannelId;
-  capabilities: ChannelCapabilities;
-  commands?: ChannelCommandAdapter;
-  outbound?: {
-    textChunkLimit?: number;
-  };
-  streaming?: ChannelDockStreaming;
-  elevated?: ChannelElevatedAdapter;
-  config?: {
-    resolveAllowFrom?: (params: {
-      cfg: MarvConfig;
-      accountId?: string | null;
-    }) => Array<string | number> | undefined;
-    formatAllowFrom?: (params: {
-      cfg: MarvConfig;
-      accountId?: string | null;
-      allowFrom: Array<string | number>;
-    }) => string[];
-  };
-  groups?: ChannelGroupAdapter;
-  mentions?: ChannelMentionAdapter;
-  threading?: ChannelThreadingAdapter;
-  agentPrompt?: ChannelAgentPromptAdapter;
-};
-
-type ChannelDockStreaming = {
-  blockStreamingCoalesceDefaults?: {
-    minChars?: number;
-    idleMs?: number;
-  };
-};
+export type { ChannelDock, ChannelDockStreaming } from "./dock.types.js";
 
 const formatLower = (allowFrom: Array<string | number>) =>
   allowFrom

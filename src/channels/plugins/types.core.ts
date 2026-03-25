@@ -1,14 +1,14 @@
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TSchema } from "@sinclair/typebox";
-import type { MsgContext } from "../../auto-reply/templating.js";
-import type { MarvConfig } from "../../core/config/config.js";
+import type { TurnContext } from "../../auto-reply/msg-context.js";
+import type { MarvConfig } from "../../core/config/types.js";
 import type { PollInput } from "../../polls.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
+import type { ChannelId } from "../channel-ids.js";
 import type { ChatType } from "../chat-type.js";
-import type { ChatChannelId } from "../registry.js";
 import type { ChannelMessageActionName as ChannelMessageActionNameFromList } from "./message-action-names.js";
 
-export type ChannelId = ChatChannelId | (string & {});
+export type { ChannelId } from "../channel-ids.js";
 
 export type ChannelOutboundTargetMode = "explicit" | "implicit" | "heartbeat";
 
@@ -198,13 +198,13 @@ export type ChannelSecurityContext<ResolvedAccount = unknown> = {
 
 export type ChannelMentionAdapter = {
   stripPatterns?: (params: {
-    ctx: MsgContext;
+    ctx: TurnContext;
     cfg: MarvConfig | undefined;
     agentId?: string;
   }) => string[];
   stripMentions?: (params: {
     text: string;
-    ctx: MsgContext;
+    ctx: TurnContext;
     cfg: MarvConfig | undefined;
     agentId?: string;
   }) => string;

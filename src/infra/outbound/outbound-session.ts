@@ -1,4 +1,4 @@
-import type { MsgContext } from "../../auto-reply/templating.js";
+import type { TurnContext } from "../../auto-reply/support/templating.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import { parseDiscordTarget } from "../../channels/discord/targets.js";
 import { parseIMessageTarget, normalizeIMessageHandle } from "../../channels/imessage/targets.js";
@@ -961,7 +961,7 @@ export async function ensureOutboundSessionEntry(params: {
   const storePath = resolveStorePath(params.cfg.session?.store, {
     agentId: params.agentId,
   });
-  const ctx: MsgContext = {
+  const ctx: TurnContext = {
     From: params.route.from,
     To: params.route.to,
     SessionKey: params.route.sessionKey,

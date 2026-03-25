@@ -1,4 +1,6 @@
 import type { Message, UserFromGetMe } from "@grammyjs/types";
+import type { MarvConfig, ReplyToMode } from "../../../core/config/config.js";
+import type { RuntimeEnv } from "../../../runtime.js";
 
 /** App-specific stream mode for Telegram stream previews. */
 export type TelegramStreamMode = "off" | "partial" | "block";
@@ -14,16 +16,25 @@ export type TelegramContext = {
   getFile: () => Promise<{ file_path?: string }>;
 };
 
-/** Telegram sticker metadata for context enrichment and caching. */
-export interface StickerMetadata {
-  /** Emoji associated with the sticker. */
-  emoji?: string;
-  /** Name of the sticker set the sticker belongs to. */
-  setName?: string;
-  /** Telegram file_id for sending the sticker back. */
-  fileId?: string;
-  /** Stable file_unique_id for cache deduplication. */
-  fileUniqueId?: string;
-  /** Cached description from previous vision processing (skip re-processing if present). */
-  cachedDescription?: string;
-}
+export type TelegramBotOptions = {
+  token: string;
+  accountId?: string;
+  runtime?: RuntimeEnv;
+  requireMention?: boolean;
+  allowFrom?: Array<string | number>;
+  groupAllowFrom?: Array<string | number>;
+  mediaMaxMb?: number;
+  replyToMode?: ReplyToMode;
+  proxyFetch?: typeof fetch;
+  config?: MarvConfig;
+  updateOffset?: {
+    lastUpdateId?: number | null;
+    onUpdateId?: (updateId: number) => void | Promise<void>;
+  };
+  testTimings?: {
+    mediaGroupFlushMs?: number;
+    textFragmentGapMs?: number;
+  };
+};
+
+export type { StickerMetadata } from "./sticker-types.js";

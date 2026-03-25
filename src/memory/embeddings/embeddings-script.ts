@@ -13,7 +13,7 @@
  * 5. L2-normalize the resulting vector.
  */
 
-import type { EmbeddingProvider } from "./embeddings.js";
+import type { EmbeddingProvider } from "./embeddings-types.js";
 
 const SCRIPT_DIMENSIONS = 384;
 const TRIGRAM_N = 3;

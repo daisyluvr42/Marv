@@ -1,5 +1,5 @@
-import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
-import type { MsgContext } from "../auto-reply/templating.js";
+import { finalizeInboundContext } from "../auto-reply/inbound/context.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { formatLinkUnderstandingBody } from "./format.js";
 import { runLinkUnderstanding } from "./runner.js";
@@ -10,7 +10,7 @@ export type ApplyLinkUnderstandingResult = {
 };
 
 export async function applyLinkUnderstanding(params: {
-  ctx: MsgContext;
+  ctx: TurnContext;
   cfg: MarvConfig;
 }): Promise<ApplyLinkUnderstandingResult> {
   const result = await runLinkUnderstanding({

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import {
   buildProviderRegistry,
@@ -29,7 +29,7 @@ vi.mock("../agents/model/model-catalog.js", async () => {
 
 describe("runCapability image skip", () => {
   it("skips image understanding when the active model supports vision", async () => {
-    const ctx: MsgContext = { MediaPath: "/tmp/image.png", MediaType: "image/png" };
+    const ctx: TurnContext = { MediaPath: "/tmp/image.png", MediaType: "image/png" };
     const media = normalizeMediaAttachments(ctx);
     const cache = createMediaAttachmentCache(media);
     const cfg = {} as MarvConfig;

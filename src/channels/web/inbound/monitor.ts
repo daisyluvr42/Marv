@@ -1,6 +1,6 @@
 import type { AnyMessageContent, proto, WAMessage } from "@whiskeysockets/baileys";
 import { DisconnectReason, isJidGroup } from "@whiskeysockets/baileys";
-import { createInboundDebouncer } from "../../../auto-reply/inbound-debounce.js";
+import { createInboundDebouncer } from "../../../auto-reply/inbound/debounce.js";
 import { logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { recordChannelActivity } from "../../../infra/channel-activity.js";
 import { getChildLogger } from "../../../logging/logger.js";

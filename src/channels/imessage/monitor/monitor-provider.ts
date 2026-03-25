@@ -1,18 +1,18 @@
 import fs from "node:fs/promises";
 import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
-import { resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
-import { hasControlCommand } from "../../../auto-reply/command-detection.js";
-import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";
+import { hasControlCommand } from "../../../auto-reply/commands/detection.js";
+import { createReplyDispatcher } from "../../../auto-reply/delivery/dispatcher.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "../../../auto-reply/inbound-debounce.js";
+} from "../../../auto-reply/inbound/debounce.js";
+import { dispatchInboundMessage } from "../../../auto-reply/inbound/dispatch.js";
 import {
   clearHistoryEntriesIfEnabled,
   DEFAULT_GROUP_HISTORY_LIMIT,
   type HistoryEntry,
-} from "../../../auto-reply/reply/history.js";
-import { createReplyDispatcher } from "../../../auto-reply/reply/reply-dispatcher.js";
+} from "../../../auto-reply/session/history.js";
+import { resolveTextChunkLimit } from "../../../auto-reply/support/chunk.js";
 import { loadConfig } from "../../../core/config/config.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";

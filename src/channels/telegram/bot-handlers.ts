@@ -1,15 +1,15 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { hasControlCommand } from "../../auto-reply/command-detection.js";
+import { hasControlCommand } from "../../auto-reply/commands/detection.js";
+import { buildCommandsPaginationKeyboard } from "../../auto-reply/commands/handlers/info.js";
+import { buildModelsProviderData } from "../../auto-reply/commands/handlers/models.js";
+import { listSkillCommandsForAgents } from "../../auto-reply/commands/skill-commands.js";
+import { resolveStoredModelOverride } from "../../auto-reply/execution/model-selection.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "../../auto-reply/inbound-debounce.js";
-import { buildCommandsPaginationKeyboard } from "../../auto-reply/reply/commands-info.js";
-import { buildModelsProviderData } from "../../auto-reply/reply/commands-models.js";
-import { resolveStoredModelOverride } from "../../auto-reply/reply/model-selection.js";
-import { listSkillCommandsForAgents } from "../../auto-reply/skill-commands.js";
-import { buildCommandsMessagePaginated } from "../../auto-reply/status.js";
+} from "../../auto-reply/inbound/debounce.js";
+import { buildCommandsMessagePaginated } from "../../auto-reply/support/status.js";
 import { loadConfig } from "../../core/config/config.js";
 import { writeConfigFile } from "../../core/config/io.js";
 import { loadSessionStore, resolveStorePath } from "../../core/config/sessions.js";

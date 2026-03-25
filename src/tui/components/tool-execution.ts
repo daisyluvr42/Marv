@@ -1,5 +1,5 @@
 import { Box, Container, Markdown, Spacer, Text } from "@mariozechner/pi-tui";
-import { formatToolDetail, resolveToolDisplay } from "../../agents/tools/tool-display.js";
+import { formatToolDetail, resolveToolDisplay } from "../../agents/tools/display/tool-display.js";
 import { markdownTheme, theme } from "../theme/theme.js";
 import { sanitizeRenderableText } from "../tui-formatters.js";
 

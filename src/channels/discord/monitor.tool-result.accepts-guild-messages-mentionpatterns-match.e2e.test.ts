@@ -2,7 +2,7 @@ import type { Client } from "@buape/carbon";
 import { ChannelType, MessageType } from "@buape/carbon";
 import { Routes } from "discord-api-types/v10";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createReplyDispatcherWithTyping } from "../../auto-reply/reply/reply-dispatcher.js";
+import { createReplyDispatcherWithTyping } from "../../auto-reply/delivery/dispatcher.js";
 import {
   dispatchMock,
   readAllowFromStoreMock,

@@ -491,7 +491,9 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
               break;
             }
           }
-        } catch {}
+        } catch {
+          log.debug(`lstat failed for additional memory path: ${additionalPath}`);
+        }
       }
     }
     if (!allowedWorkspace && !allowedAdditional) {

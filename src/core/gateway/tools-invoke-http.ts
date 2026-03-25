@@ -6,16 +6,16 @@ import {
   resolveEffectiveToolPolicy,
   resolveGroupToolPolicy,
   resolveSubagentToolPolicy,
-} from "../../agents/tools/pi-tools.policy.js";
+} from "../../agents/tools/policy/pi-tools.policy.js";
 import {
   applyToolPolicyPipeline,
   buildDefaultToolPolicyPipelineSteps,
-} from "../../agents/tools/tool-policy-pipeline.js";
+} from "../../agents/tools/policy/tool-policy-pipeline.js";
 import {
   collectExplicitAllowlist,
   mergeAlsoAllowPolicy,
   resolveToolProfilePolicy,
-} from "../../agents/tools/tool-policy.js";
+} from "../../agents/tools/policy/tool-policy.js";
 import { logWarn } from "../../logger.js";
 import { isTestDefaultMemorySlotDisabled } from "../../plugins/config-state.js";
 import { getPluginToolMeta } from "../../plugins/tools.js";

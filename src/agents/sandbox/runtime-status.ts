@@ -5,7 +5,7 @@ import {
   resolveAgentMainSessionKey,
 } from "../../core/config/sessions.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
-import { expandToolGroups } from "../tools/tool-policy.js";
+import { expandToolGroups } from "../tools/policy/tool-policy.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
 import { resolveSandboxToolPolicyForAgent } from "./tool-policy.js";
 import type { SandboxConfig, SandboxToolPolicyResolved } from "./types.js";

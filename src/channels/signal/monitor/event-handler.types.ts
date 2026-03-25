@@ -1,5 +1,5 @@
-import type { HistoryEntry } from "../../../auto-reply/reply/history.js";
-import type { ReplyPayload } from "../../../auto-reply/types.js";
+import type { HistoryEntry } from "../../../auto-reply/session/history.js";
+import type { ReplyPayload } from "../../../auto-reply/support/types.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import type {
   DmPolicy,

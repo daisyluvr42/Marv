@@ -1,8 +1,8 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
-import { parseReplyDirectives } from "../../../auto-reply/reply/reply-directives.js";
-import type { ReasoningLevel, VerboseLevel } from "../../../auto-reply/thinking.js";
-import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../../auto-reply/tokens.js";
-import { formatToolAggregate } from "../../../auto-reply/tool-meta.js";
+import { parseReplyDirectives } from "../../../auto-reply/directives/reply-directives.js";
+import type { ReasoningLevel, VerboseLevel } from "../../../auto-reply/support/thinking.js";
+import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../../auto-reply/support/tokens.js";
+import { formatToolAggregate } from "../../../auto-reply/support/tool-meta.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import {
   BILLING_ERROR_USER_MESSAGE,
@@ -18,7 +18,7 @@ import {
   extractAssistantThinking,
   formatReasoningMessage,
 } from "../../runner/pi-embedded-utils.js";
-import { isLikelyMutatingToolName } from "../../tools/tool-mutation.js";
+import { isLikelyMutatingToolName } from "../../tools/meta/tool-mutation.js";
 
 type ToolMetaEntry = { toolName: string; meta?: string };
 type LastToolError = {

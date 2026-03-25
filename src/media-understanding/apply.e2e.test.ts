@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveApiKeyForProvider } from "../agents/model/model-auth.js";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { fetchRemoteMedia } from "../media/fetch.js";
 
@@ -57,7 +57,7 @@ function createGroqProviders(transcribedText = "transcribed text") {
 }
 
 function expectTranscriptApplied(params: {
-  ctx: MsgContext;
+  ctx: TurnContext;
   transcript: string;
   body: string;
   commandBody: string;
@@ -93,7 +93,7 @@ async function createAudioCtx(params?: {
   fileName?: string;
   mediaType?: string;
   content?: Buffer | string;
-}): Promise<MsgContext> {
+}): Promise<TurnContext> {
   const mediaPath = await createTempMediaFile({
     fileName: params?.fileName ?? "note.ogg",
     content: params?.content ?? Buffer.from([0, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8]),
@@ -102,7 +102,7 @@ async function createAudioCtx(params?: {
     Body: params?.body ?? "<media:audio>",
     MediaPath: mediaPath,
     MediaType: params?.mediaType ?? "audio/ogg",
-  } satisfies MsgContext;
+  } satisfies TurnContext;
 }
 
 async function applyWithDisabledMedia(params: {
@@ -112,7 +112,7 @@ async function applyWithDisabledMedia(params: {
   cfg?: MarvConfig;
 }) {
   const { applyMediaUnderstanding } = await loadApply();
-  const ctx: MsgContext = {
+  const ctx: TurnContext = {
     Body: params.body,
     MediaPath: params.mediaPath,
     ...(params.mediaType ? { MediaType: params.mediaType } : {}),
@@ -202,7 +202,7 @@ describe("applyMediaUnderstanding", () => {
 
   it("handles URL-only attachments for audio transcription", async () => {
     const { applyMediaUnderstanding } = await loadApply();
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       Body: "<media:audio>",
       MediaUrl: "https://example.com/note.ogg",
       MediaType: "audio/ogg",
@@ -322,7 +322,7 @@ describe("applyMediaUnderstanding", () => {
     const imagePath = path.join(dir, "photo.jpg");
     await fs.writeFile(imagePath, "image-bytes");
 
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       Body: "<media:image> show Dom",
       MediaPath: imagePath,
       MediaType: "image/jpeg",
@@ -369,7 +369,7 @@ describe("applyMediaUnderstanding", () => {
     const imagePath = path.join(dir, "shared.jpg");
     await fs.writeFile(imagePath, "image-bytes");
 
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       Body: "<media:image>",
       MediaPath: imagePath,
       MediaType: "image/jpeg",
@@ -410,7 +410,7 @@ describe("applyMediaUnderstanding", () => {
     const audioPath = path.join(dir, "fallback.ogg");
     await fs.writeFile(audioPath, Buffer.from([0, 255, 0, 1, 2, 3, 4, 5, 6]));
 
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       Body: "<media:audio>",
       MediaPath: audioPath,
       MediaType: "audio/ogg",
@@ -449,7 +449,7 @@ describe("applyMediaUnderstanding", () => {
     await fs.writeFile(audioPathA, Buffer.from([200, 201, 202, 203, 204, 205, 206, 207, 208]));
     await fs.writeFile(audioPathB, Buffer.from([200, 201, 202, 203, 204, 205, 206, 207, 208]));
 
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       Body: "<media:audio>",
       MediaPaths: [audioPathA, audioPathB],
       MediaTypes: ["audio/ogg", "audio/ogg"],
@@ -494,7 +494,7 @@ describe("applyMediaUnderstanding", () => {
     await fs.writeFile(audioPath, Buffer.from([200, 201, 202, 203, 204, 205, 206, 207, 208]));
     await fs.writeFile(videoPath, "video-bytes");
 
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       Body: "<media:mixed>",
       MediaPaths: [imagePath, audioPath, videoPath],
       MediaTypes: ["image/jpeg", "audio/ogg", "video/mp4"],

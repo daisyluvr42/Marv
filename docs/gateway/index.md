@@ -194,7 +194,9 @@ marv --dev gateway --allow-unconfigured
 marv --dev status
 ```
 
-Defaults include isolated state/config and base gateway port `19001`.
+Defaults include isolated state/config and base gateway port `4454`.
+
+> **Note:** `--dev` is for development/debugging only, not for normal installations. For standard setup, use `marv setup` without the `--dev` flag.
 
 ## Protocol quick reference (operator view)
 

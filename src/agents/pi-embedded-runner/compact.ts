@@ -7,8 +7,8 @@ import {
   SessionManager,
   SettingsManager,
 } from "@mariozechner/pi-coding-agent";
-import { resolveHeartbeatPrompt } from "../../auto-reply/heartbeat.js";
-import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/thinking.js";
+import { resolveHeartbeatPrompt } from "../../auto-reply/support/heartbeat.js";
+import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/support/thinking.js";
 import { resolveSignalReactionLevel } from "../../channels/signal/reaction-level.js";
 import { resolveTelegramInlineButtonsScope } from "../../channels/telegram/inline-buttons.js";
 import { resolveTelegramReactionLevel } from "../../channels/telegram/reaction-level.js";
@@ -55,7 +55,7 @@ import {
   resolveSkillsPromptForRun,
   type SkillSnapshot,
 } from "../skills.js";
-import type { ExecElevatedDefaults } from "../tools/bash-tools.js";
+import type { ExecElevatedDefaults } from "../tools/bash/bash-tools.js";
 import {
   listChannelSupportedActions,
   resolveChannelMessageToolHints,

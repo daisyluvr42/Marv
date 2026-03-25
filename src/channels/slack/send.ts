@@ -8,7 +8,7 @@ import {
   chunkMarkdownTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "../../auto-reply/chunk.js";
+} from "../../auto-reply/support/chunk.js";
 import { loadConfig } from "../../core/config/config.js";
 import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import { logVerbose } from "../../globals.js";

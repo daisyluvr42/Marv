@@ -9,7 +9,8 @@ import { getLogger, type LoggerSettings } from "./logger.js";
 import { loggingState } from "./state.js";
 import { formatLocalIsoWithOffset } from "./timestamps.js";
 
-export type ConsoleStyle = "pretty" | "compact" | "json";
+export type { ConsoleStyle } from "./console-types.js";
+import type { ConsoleStyle } from "./console-types.js";
 type ConsoleSettings = {
   level: LogLevel;
   style: ConsoleStyle;

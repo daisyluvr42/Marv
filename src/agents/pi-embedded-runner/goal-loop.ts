@@ -4,16 +4,11 @@ import type {
 } from "../../logging/diagnostic-session-state.js";
 import { buildContractFromGoalFrame } from "../orchestration/contract-builder.js";
 import type { OrchestrationConfig } from "../orchestration/types.js";
+import type { GoalFrame } from "./goal-loop-types.js";
 import type { EmbeddedRunAttemptResult } from "./run/types.js";
 import { resolveVerificationDomain, buildVerificationChecklist } from "./verification-recipes.js";
 
-export type GoalFrame = {
-  objective: string;
-  successCriteria: string[];
-  constraints: string[];
-  complexity: "trivial" | "moderate" | "complex";
-  goalType: "inquiry" | "mutation";
-};
+export type { GoalFrame } from "./goal-loop-types.js";
 
 export type ProblemShape =
   | "information_gap"

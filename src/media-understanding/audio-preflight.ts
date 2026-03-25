@@ -1,4 +1,4 @@
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { isAudioAttachment } from "./attachments.js";
@@ -17,7 +17,7 @@ import type { MediaUnderstandingProvider } from "./types.js";
  * Returns the transcript or undefined if transcription fails or no audio is found.
  */
 export async function transcribeFirstAudio(params: {
-  ctx: MsgContext;
+  ctx: TurnContext;
   cfg: MarvConfig;
   agentDir?: string;
   providers?: Record<string, MediaUnderstandingProvider>;

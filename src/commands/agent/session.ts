@@ -1,12 +1,12 @@
 import crypto from "node:crypto";
 import { listAgentIds } from "../../agents/agent-scope.js";
-import type { MsgContext } from "../../auto-reply/templating.js";
+import type { TurnContext } from "../../auto-reply/support/templating.js";
 import {
   normalizeThinkLevel,
   normalizeVerboseLevel,
   type ThinkLevel,
   type VerboseLevel,
-} from "../../auto-reply/thinking.js";
+} from "../../auto-reply/support/thinking.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import {
   evaluateSessionFreshness,
@@ -61,7 +61,7 @@ export function resolveSessionKeyForRequest(opts: {
   });
   const sessionStore = loadSessionStore(storePath);
 
-  const ctx: MsgContext | undefined = opts.to?.trim() ? { From: opts.to } : undefined;
+  const ctx: TurnContext | undefined = opts.to?.trim() ? { From: opts.to } : undefined;
   let sessionKey: string | undefined =
     explicitSessionKey ?? (ctx ? resolveSessionKey(scope, ctx, mainKey) : undefined);
 

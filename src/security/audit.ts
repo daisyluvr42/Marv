@@ -47,15 +47,8 @@ import {
 } from "./mutable-allowlist-detectors.js";
 import type { ExecFn } from "./windows-acl.js";
 
-export type SecurityAuditSeverity = "info" | "warn" | "critical";
-
-export type SecurityAuditFinding = {
-  checkId: string;
-  severity: SecurityAuditSeverity;
-  title: string;
-  detail: string;
-  remediation?: string;
-};
+export type { SecurityAuditFinding, SecurityAuditSeverity } from "./audit-types.js";
+import type { SecurityAuditFinding, SecurityAuditSeverity } from "./audit-types.js";
 
 export type SecurityAuditSummary = {
   critical: number;

@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { ImageContent } from "@mariozechner/pi-ai";
-import type { ThinkLevel } from "../../auto-reply/thinking.js";
+import type { ThinkLevel } from "../../auto-reply/support/thinking.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { CliBackendConfig } from "../../core/config/types.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
@@ -15,7 +15,7 @@ import { buildSystemPromptParams } from "../prompt/system-prompt-params.js";
 import { buildAgentSystemPrompt } from "../prompt/system-prompt.js";
 import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
 import { detectRuntimeShell } from "../shell-utils.js";
-import { buildToolSummaryMap } from "../tools/tool-summaries.js";
+import { buildToolSummaryMap } from "../tools/display/tool-summaries.js";
 export { buildCliSupervisorScopeKey, resolveCliNoOutputTimeoutMs } from "./reliability.js";
 
 const CLI_RUN_QUEUE = new Map<string, Promise<unknown>>();

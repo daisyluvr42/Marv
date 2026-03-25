@@ -1,8 +1,8 @@
 import { resolveHumanDelayConfig } from "../../../../agents/prompt/identity.js";
-import { dispatchInboundMessage } from "../../../../auto-reply/dispatch.js";
-import { clearHistoryEntriesIfEnabled } from "../../../../auto-reply/reply/history.js";
-import { createReplyDispatcherWithTyping } from "../../../../auto-reply/reply/reply-dispatcher.js";
-import type { ReplyPayload } from "../../../../auto-reply/types.js";
+import { createReplyDispatcherWithTyping } from "../../../../auto-reply/delivery/dispatcher.js";
+import { dispatchInboundMessage } from "../../../../auto-reply/inbound/dispatch.js";
+import { clearHistoryEntriesIfEnabled } from "../../../../auto-reply/session/history.js";
+import type { ReplyPayload } from "../../../../auto-reply/support/types.js";
 import { resolveStorePath, updateLastRoute } from "../../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../../globals.js";
 import { removeAckReactionAfterReply } from "../../../ack-reactions.js";

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { runExec } from "../process/exec.js";
 import {
@@ -45,7 +45,7 @@ describe("runCapability auto image OCR", () => {
       stdout: "Meeting notes\nShip dashboard first",
       stderr: "",
     });
-    const ctx: MsgContext = { MediaPath: imagePath, MediaType: "image/png" };
+    const ctx: TurnContext = { MediaPath: imagePath, MediaType: "image/png" };
     const media = normalizeMediaAttachments(ctx);
     const cache = createMediaAttachmentCache(media);
     const cfg = {} as MarvConfig;

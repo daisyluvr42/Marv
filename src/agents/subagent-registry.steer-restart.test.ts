@@ -29,8 +29,10 @@ vi.mock("../core/config/config.js", () => ({
 }));
 
 const announceSpy = vi.fn(async (_params: unknown) => true);
-vi.mock("./subagent-announce.js", () => ({
-  runSubagentAnnounceFlow: announceSpy,
+vi.mock("./subagent-announce-loader.js", () => ({
+  loadAnnounceModule: vi.fn(async () => ({
+    runSubagentAnnounceFlow: announceSpy,
+  })),
 }));
 
 vi.mock("./subagent-registry.store.js", () => ({

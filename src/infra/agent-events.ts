@@ -1,4 +1,4 @@
-import type { VerboseLevel } from "../auto-reply/thinking.js";
+import type { VerboseLevel } from "../auto-reply/support/thinking.js";
 import type { SpecialRunMode } from "../contracts/run-mode.js";
 
 export const AGENT_EVENT_CONTRACT_VERSION = 1;

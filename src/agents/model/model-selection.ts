@@ -1,14 +1,17 @@
-import type { MarvConfig } from "../../core/config/config.js";
+import type { MarvConfig } from "../../core/config/types.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
+import {
+  type ModelRef,
+  normalizeModelRef,
+  normalizeProviderId,
+  parseModelRef,
+} from "./model-ref.js";
 import { resolveSelectedModelRefs } from "./model-selections.js";
-import { normalizeGoogleModelId } from "./models-config.providers.js";
 
-export type ModelRef = {
-  provider: string;
-  model: string;
-};
+export type { ModelRef } from "./model-ref.js";
+export { normalizeModelRef, normalizeProviderId, parseModelRef } from "./model-ref.js";
 
 export type ThinkLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
@@ -17,35 +20,12 @@ export type ModelAliasIndex = {
   byKey: Map<string, string[]>;
 };
 
-const ANTHROPIC_MODEL_ALIASES: Record<string, string> = {
-  "opus-4.6": "claude-opus-4-6",
-  "opus-4.5": "claude-opus-4-5",
-  "sonnet-4.6": "claude-sonnet-4-6",
-  "sonnet-4.5": "claude-sonnet-4-5",
-};
 function normalizeAliasKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
 export function modelKey(provider: string, model: string) {
   return `${provider}/${model}`;
-}
-
-export function normalizeProviderId(provider: string): string {
-  const normalized = provider.trim().toLowerCase();
-  if (normalized === "z.ai" || normalized === "z-ai") {
-    return "zai";
-  }
-  if (normalized === "opencode-zen") {
-    return "opencode";
-  }
-  if (normalized === "qwen") {
-    return "qwen-portal";
-  }
-  if (normalized === "kimi-code") {
-    return "kimi-coding";
-  }
-  return normalized;
 }
 
 export function findNormalizedProviderValue<T>(
@@ -87,25 +67,6 @@ export function isCliProvider(provider: string, cfg?: MarvConfig): boolean {
   return Object.keys(backends).some((key) => normalizeProviderId(key) === normalized);
 }
 
-function normalizeAnthropicModelId(model: string): string {
-  const trimmed = model.trim();
-  if (!trimmed) {
-    return trimmed;
-  }
-  const lower = trimmed.toLowerCase();
-  return ANTHROPIC_MODEL_ALIASES[lower] ?? trimmed;
-}
-
-function normalizeProviderModelId(provider: string, model: string): string {
-  if (provider === "anthropic") {
-    return normalizeAnthropicModelId(model);
-  }
-  if (provider === "google") {
-    return normalizeGoogleModelId(model);
-  }
-  return model;
-}
-
 function inferProviderForBareModel(raw: string, defaultProvider: string): string {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) {
@@ -126,29 +87,6 @@ function inferProviderForBareModel(raw: string, defaultProvider: string): string
     return "google";
   }
   return defaultProvider;
-}
-
-export function normalizeModelRef(provider: string, model: string): ModelRef {
-  const normalizedProvider = normalizeProviderId(provider);
-  const normalizedModel = normalizeProviderModelId(normalizedProvider, model.trim());
-  return { provider: normalizedProvider, model: normalizedModel };
-}
-
-export function parseModelRef(raw: string, defaultProvider: string): ModelRef | null {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const slash = trimmed.indexOf("/");
-  if (slash === -1) {
-    return normalizeModelRef(defaultProvider, trimmed);
-  }
-  const providerRaw = trimmed.slice(0, slash).trim();
-  const model = trimmed.slice(slash + 1).trim();
-  if (!providerRaw || !model) {
-    return null;
-  }
-  return normalizeModelRef(providerRaw, model);
 }
 
 export function normalizeModelSelection(value: unknown): string | undefined {

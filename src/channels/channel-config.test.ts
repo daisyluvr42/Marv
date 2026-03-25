@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import {
   type ChannelMatchSource,
   buildChannelKeyCandidates,
@@ -127,19 +127,19 @@ describe("resolveChannelMatchConfig", () => {
 
 describe("validateSenderIdentity", () => {
   it("allows direct messages without sender fields", () => {
-    const ctx: MsgContext = { ChatType: "direct" };
+    const ctx: TurnContext = { ChatType: "direct" };
     expect(validateSenderIdentity(ctx)).toEqual([]);
   });
 
   it("requires some sender identity for non-direct chats", () => {
-    const ctx: MsgContext = { ChatType: "group" };
+    const ctx: TurnContext = { ChatType: "group" };
     expect(validateSenderIdentity(ctx)).toContain(
       "missing sender identity (SenderId/SenderName/SenderUsername/SenderE164)",
     );
   });
 
   it("validates SenderE164 and SenderUsername shape", () => {
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       ChatType: "group",
       SenderE164: "123",
       SenderUsername: "@ada lovelace",

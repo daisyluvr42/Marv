@@ -2,7 +2,7 @@ import { resolveMessagePrefix } from "../../../../agents/prompt/identity.js";
 import {
   formatInboundEnvelope,
   type EnvelopeFormatOptions,
-} from "../../../../auto-reply/envelope.js";
+} from "../../../../auto-reply/inbound/envelope.js";
 import type { loadConfig } from "../../../../core/config/config.js";
 import type { WebInboundMsg } from "../types.js";
 

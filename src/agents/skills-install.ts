@@ -8,6 +8,7 @@ import { resolveUserPath } from "../utils.js";
 import { markInstalledSkillUsageRecord } from "./skill-usage-records.js";
 import { installDownloadSpec } from "./skills-install-download.js";
 import { formatInstallFailureMessage } from "./skills-install-output.js";
+import type { SkillInstallResult, SkillInstallSafetyReport } from "./skills-install-types.js";
 import {
   hasBinary,
   loadWorkspaceSkillEntries,
@@ -17,6 +18,12 @@ import {
   type SkillsInstallPreferences,
 } from "./skills.js";
 
+export type {
+  SkillInstallResult,
+  SkillInstallSafetyLevel,
+  SkillInstallSafetyReport,
+} from "./skills-install-types.js";
+
 export type SkillInstallRequest = {
   workspaceDir: string;
   skillName: string;
@@ -25,31 +32,12 @@ export type SkillInstallRequest = {
   config?: MarvConfig;
 };
 
-export type SkillInstallResult = {
-  ok: boolean;
-  message: string;
-  stdout: string;
-  stderr: string;
-  code: number | null;
-  warnings?: string[];
-  scan?: SkillInstallSafetyReport;
-};
-
 export type DiscoverySkillInstallRequest = {
   workspaceDir: string;
   skillId: string;
   installId?: string;
   timeoutMs?: number;
   config?: MarvConfig;
-};
-
-export type SkillInstallSafetyLevel = "clean" | "warn" | "critical";
-
-export type SkillInstallSafetyReport = {
-  level: SkillInstallSafetyLevel;
-  warnings: string[];
-  findings: SkillScanFinding[];
-  blocked: boolean;
 };
 
 function withWarnings(result: SkillInstallResult, warnings: string[]): SkillInstallResult {

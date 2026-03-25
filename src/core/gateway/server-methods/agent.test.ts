@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { BARE_SESSION_RESET_PROMPT } from "../../../auto-reply/reply/session-reset-prompt.js";
+import { BARE_SESSION_RESET_PROMPT } from "../../../auto-reply/session/reset-prompt.js";
 import { agentHandlers } from "./agent.js";
 import type { GatewayRequestContext } from "./types.js";
 

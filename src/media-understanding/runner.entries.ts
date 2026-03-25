@@ -6,8 +6,8 @@ import {
   executeWithApiKeyRotation,
 } from "../agents/api-key-rotation.js";
 import { requireApiKey, resolveApiKeyForProvider } from "../agents/model/model-auth.js";
-import type { MsgContext } from "../auto-reply/templating.js";
-import { applyTemplate } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
+import { applyTemplate } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type {
   MediaUnderstandingConfig,
@@ -343,7 +343,7 @@ export async function runProviderEntry(params: {
   capability: MediaUnderstandingCapability;
   entry: MediaUnderstandingModelConfig;
   cfg: MarvConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
   attachmentIndex: number;
   cache: MediaAttachmentCache;
   agentDir?: string;
@@ -533,7 +533,7 @@ export async function runCliEntry(params: {
   capability: MediaUnderstandingCapability;
   entry: MediaUnderstandingModelConfig;
   cfg: MarvConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
   attachmentIndex: number;
   cache: MediaAttachmentCache;
   config?: MediaUnderstandingConfig;
@@ -559,7 +559,7 @@ export async function runCliEntry(params: {
   const mediaPath = pathResult.path;
   const outputBase = path.join(outputDir, path.parse(mediaPath).name);
 
-  const templCtx: MsgContext = {
+  const templCtx: TurnContext = {
     ...ctx,
     MediaPath: mediaPath,
     MediaDir: path.dirname(mediaPath),

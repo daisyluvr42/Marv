@@ -20,9 +20,9 @@ const sessionCleanupMocks = vi.hoisted(() => ({
   stopSubagentsForRequester: vi.fn(() => ({ stopped: 0 })),
 }));
 
-vi.mock("../../auto-reply/reply/queue.js", async () => {
-  const actual = await vi.importActual<typeof import("../../auto-reply/reply/queue.js")>(
-    "../../auto-reply/reply/queue.js",
+vi.mock("../../auto-reply/queue/index.js", async () => {
+  const actual = await vi.importActual<typeof import("../../auto-reply/queue/index.js")>(
+    "../../auto-reply/queue/index.js",
   );
   return {
     ...actual,
@@ -30,9 +30,9 @@ vi.mock("../../auto-reply/reply/queue.js", async () => {
   };
 });
 
-vi.mock("../../auto-reply/reply/abort.js", async () => {
-  const actual = await vi.importActual<typeof import("../../auto-reply/reply/abort.js")>(
-    "../../auto-reply/reply/abort.js",
+vi.mock("../../auto-reply/support/abort.js", async () => {
+  const actual = await vi.importActual<typeof import("../../auto-reply/support/abort.js")>(
+    "../../auto-reply/support/abort.js",
   );
   return {
     ...actual,

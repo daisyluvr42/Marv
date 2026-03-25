@@ -76,24 +76,42 @@ export function classifySessionKeyShape(sessionKey: string | undefined | null): 
   return raw.toLowerCase().startsWith("agent:") ? "malformed_agent" : "legacy_or_alias";
 }
 
+// Bounded cache for normalizeAgentId — called up to 37x per message with
+// repeated inputs. Cap at 256 entries to prevent unbounded growth.
+const NORMALIZE_AGENT_ID_CACHE_MAX = 256;
+const normalizeAgentIdCache = new Map<string, string>();
+
 export function normalizeAgentId(value: string | undefined | null): string {
-  const trimmed = (value ?? "").trim();
+  const raw = value ?? "";
+  const cached = normalizeAgentIdCache.get(raw);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const trimmed = raw.trim();
+  let result: string;
   if (!trimmed) {
-    return DEFAULT_AGENT_ID;
+    result = DEFAULT_AGENT_ID;
+  } else if (VALID_ID_RE.test(trimmed)) {
+    // Keep it path-safe + shell-friendly.
+    result = trimmed.toLowerCase();
+  } else {
+    // Best-effort fallback: collapse invalid characters to "-"
+    result =
+      trimmed
+        .toLowerCase()
+        .replace(INVALID_CHARS_RE, "-")
+        .replace(LEADING_DASH_RE, "")
+        .replace(TRAILING_DASH_RE, "")
+        .slice(0, 64) || DEFAULT_AGENT_ID;
   }
-  // Keep it path-safe + shell-friendly.
-  if (VALID_ID_RE.test(trimmed)) {
-    return trimmed.toLowerCase();
+
+  // Evict all entries when cache is full to keep it simple and bounded.
+  if (normalizeAgentIdCache.size >= NORMALIZE_AGENT_ID_CACHE_MAX) {
+    normalizeAgentIdCache.clear();
   }
-  // Best-effort fallback: collapse invalid characters to "-"
-  return (
-    trimmed
-      .toLowerCase()
-      .replace(INVALID_CHARS_RE, "-")
-      .replace(LEADING_DASH_RE, "")
-      .replace(TRAILING_DASH_RE, "")
-      .slice(0, 64) || DEFAULT_AGENT_ID
-  );
+  normalizeAgentIdCache.set(raw, result);
+  return result;
 }
 
 export function sanitizeAgentId(value: string | undefined | null): string {

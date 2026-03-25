@@ -9,7 +9,7 @@ import {
   loadModelCatalog,
   modelSupportsVision,
 } from "../agents/model/model-catalog.js";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type {
   MediaUnderstandingConfig,
@@ -66,7 +66,7 @@ export function buildProviderRegistry(
   return buildMediaUnderstandingRegistry(overrides);
 }
 
-export function normalizeMediaAttachments(ctx: MsgContext): MediaAttachment[] {
+export function normalizeMediaAttachments(ctx: TurnContext): MediaAttachment[] {
   return normalizeAttachments(ctx);
 }
 
@@ -583,7 +583,7 @@ async function resolveActiveModelEntry(params: {
 async function runAttachmentEntries(params: {
   capability: MediaUnderstandingCapability;
   cfg: MarvConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
   attachmentIndex: number;
   agentDir?: string;
   providerRegistry: ProviderRegistry;
@@ -670,7 +670,7 @@ async function runAttachmentEntries(params: {
 export async function runCapability(params: {
   capability: MediaUnderstandingCapability;
   cfg: MarvConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
   attachments: MediaAttachmentCache;
   media: MediaAttachment[];
   agentDir?: string;

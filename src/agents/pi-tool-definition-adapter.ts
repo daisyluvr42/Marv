@@ -13,7 +13,7 @@ import {
   isToolWrappedWithBeforeToolCallHook,
   runBeforeToolCallHook,
 } from "./tools/pi-tools.before-tool-call.js";
-import { normalizeToolName } from "./tools/tool-policy.js";
+import { normalizeToolName } from "./tools/policy/tool-policy.js";
 
 type AnyAgentTool = AgentTool;
 

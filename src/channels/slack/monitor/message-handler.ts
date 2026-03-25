@@ -1,8 +1,8 @@
-import { hasControlCommand } from "../../../auto-reply/command-detection.js";
+import { hasControlCommand } from "../../../auto-reply/commands/detection.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "../../../auto-reply/inbound-debounce.js";
+} from "../../../auto-reply/inbound/debounce.js";
 import type { ResolvedSlackAccount } from "../accounts.js";
 import type { SlackMessageEvent } from "../types.js";
 import { stripSlackMentionsForCommandDetection } from "./commands.js";

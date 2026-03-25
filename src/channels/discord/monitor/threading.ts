@@ -1,6 +1,6 @@
 import { ChannelType, type Client } from "@buape/carbon";
 import { Routes } from "discord-api-types/v10";
-import { createReplyReferencePlanner } from "../../../auto-reply/reply/reply-reference.js";
+import { createReplyReferencePlanner } from "../../../auto-reply/delivery/reference.js";
 import type { ReplyToMode } from "../../../core/config/config.js";
 import { logVerbose } from "../../../globals.js";
 import { buildAgentSessionKey } from "../../../routing/resolve-route.js";

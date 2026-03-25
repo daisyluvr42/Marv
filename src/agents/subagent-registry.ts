@@ -4,46 +4,16 @@ import { onAgentEvent } from "../infra/agent-events.js";
 import { defaultRuntime } from "../runtime.js";
 import type { SubagentAnnounceMode } from "../shared/subagent-metadata.js";
 import { type DeliveryContext, normalizeDeliveryContext } from "../utils/delivery-context.js";
+import { loadAnnounceModule } from "./subagent-announce-loader.js";
 import { resetAnnounceQueuesForTests } from "./subagent-announce-queue.js";
-import { runSubagentAnnounceFlow, type SubagentRunOutcome } from "./subagent-announce.js";
 import {
   loadSubagentRegistryFromDisk,
   saveSubagentRegistryToDisk,
 } from "./subagent-registry.store.js";
+import type { SubagentRunRecord } from "./subagent-types.js";
 import { resolveAgentTimeoutMs } from "./timeout.js";
 
-export type SubagentRunRecord = {
-  runId: string;
-  childSessionKey: string;
-  requesterSessionKey: string;
-  requesterOrigin?: DeliveryContext;
-  requesterDisplayKey: string;
-  task: string;
-  cleanup: "delete" | "keep";
-  label?: string;
-  model?: string;
-  role?: string;
-  preset?: string;
-  taskGroup?: string;
-  dispatchId?: string;
-  announceMode?: SubagentAnnounceMode;
-  runTimeoutSeconds?: number;
-  createdAt: number;
-  startedAt?: number;
-  endedAt?: number;
-  outcome?: SubagentRunOutcome;
-  archiveAtMs?: number;
-  cleanupCompletedAt?: number;
-  cleanupHandled?: boolean;
-  suppressAnnounceReason?: "steer-restart" | "killed";
-  expectsCompletionMessage?: boolean;
-  /** Number of times announce delivery has been attempted and returned false (deferred). */
-  announceRetryCount?: number;
-  /** Timestamp of the last announce retry attempt (for backoff). */
-  lastAnnounceRetryAt?: number;
-  /** Orchestration contract ID if this run is managed by the orchestration loop. */
-  contractId?: string;
-};
+export type { SubagentRunRecord } from "./subagent-types.js";
 
 const subagentRuns = new Map<string, SubagentRunRecord>();
 let sweeper: NodeJS.Timeout | null = null;
@@ -108,24 +78,30 @@ function startSubagentAnnounceCleanupFlow(runId: string, entry: SubagentRunRecor
     return true;
   }
   const requesterOrigin = normalizeDeliveryContext(entry.requesterOrigin);
-  void runSubagentAnnounceFlow({
-    childSessionKey: entry.childSessionKey,
-    childRunId: entry.runId,
-    requesterSessionKey: entry.requesterSessionKey,
-    requesterOrigin,
-    requesterDisplayKey: entry.requesterDisplayKey,
-    task: entry.task,
-    expectsCompletionMessage: entry.expectsCompletionMessage,
-    timeoutMs: SUBAGENT_ANNOUNCE_TIMEOUT_MS,
-    cleanup: entry.cleanup,
-    waitForCompletion: false,
-    startedAt: entry.startedAt,
-    endedAt: entry.endedAt,
-    label: entry.label,
-    outcome: entry.outcome,
-  }).then((didAnnounce) => {
-    finalizeSubagentCleanup(runId, entry.cleanup, didAnnounce);
-  });
+  void loadAnnounceModule()
+    .then(({ runSubagentAnnounceFlow }) =>
+      runSubagentAnnounceFlow({
+        childSessionKey: entry.childSessionKey,
+        childRunId: entry.runId,
+        requesterSessionKey: entry.requesterSessionKey,
+        requesterOrigin,
+        requesterDisplayKey: entry.requesterDisplayKey,
+        task: entry.task,
+        expectsCompletionMessage: entry.expectsCompletionMessage,
+        timeoutMs: SUBAGENT_ANNOUNCE_TIMEOUT_MS,
+        cleanup: entry.cleanup,
+        waitForCompletion: false,
+        startedAt: entry.startedAt,
+        endedAt: entry.endedAt,
+        label: entry.label,
+        outcome: entry.outcome,
+      }).then((didAnnounce: boolean) => {
+        finalizeSubagentCleanup(runId, entry.cleanup, didAnnounce);
+      }),
+    )
+    .catch(() => {
+      // Swallow errors from the fire-and-forget announce flow to prevent unhandled rejections.
+    });
   return true;
 }
 

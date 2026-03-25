@@ -1,5 +1,5 @@
-import type { MsgContext } from "../auto-reply/templating.js";
-import { applyTemplate } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
+import { applyTemplate } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { LinkModelConfig, LinkToolsConfig } from "../core/config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
@@ -20,7 +20,7 @@ export type LinkUnderstandingResult = {
 
 function resolveScopeDecision(params: {
   config?: LinkToolsConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
 }): "allow" | "deny" {
   return resolveMediaUnderstandingScope({
     scope: params.config?.scope,
@@ -40,7 +40,7 @@ function resolveTimeoutMsFromConfig(params: {
 
 async function runCliEntry(params: {
   entry: LinkModelConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
   url: string;
   config?: LinkToolsConfig;
 }): Promise<string | null> {
@@ -75,7 +75,7 @@ async function runCliEntry(params: {
 
 async function runLinkEntries(params: {
   entries: LinkModelConfig[];
-  ctx: MsgContext;
+  ctx: TurnContext;
   url: string;
   config?: LinkToolsConfig;
 }): Promise<string | null> {
@@ -106,7 +106,7 @@ async function runLinkEntries(params: {
 
 export async function runLinkUnderstanding(params: {
   cfg: MarvConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
   message?: string;
 }): Promise<LinkUnderstandingResult> {
   const config = params.cfg.tools?.links;

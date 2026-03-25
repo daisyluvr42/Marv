@@ -16,7 +16,7 @@ import {
   resolveAuthProfileOrder,
   resolveAuthStorePathForDisplay,
 } from "../auth-profiles.js";
-import { normalizeProviderId } from "./model-selection.js";
+import { normalizeProviderId } from "./model-ref.js";
 
 export { ensureAuthProfileStore, resolveAuthProfileOrder } from "../auth-profiles.js";
 

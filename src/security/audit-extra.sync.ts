@@ -10,8 +10,8 @@ import {
  */
 import type { SandboxToolPolicy } from "../agents/sandbox/types.js";
 import { getBlockedBindReason } from "../agents/sandbox/validate-sandbox-security.js";
-import { isToolAllowedByPolicies } from "../agents/tools/pi-tools.policy.js";
-import { resolveToolProfilePolicy } from "../agents/tools/tool-policy.js";
+import { isToolAllowedByPolicies } from "../agents/tools/policy/pi-tools.policy.js";
+import { resolveToolProfilePolicy } from "../agents/tools/policy/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { MarvConfig } from "../core/config/config.js";
@@ -21,13 +21,8 @@ import { resolveNodeCommandAllowlist } from "../core/gateway/node-command-policy
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 import { pickSandboxToolPolicy } from "./audit-tool-policy.js";
 
-export type SecurityAuditFinding = {
-  checkId: string;
-  severity: "info" | "warn" | "critical";
-  title: string;
-  detail: string;
-  remediation?: string;
-};
+export type { SecurityAuditFinding } from "./audit-types.js";
+import type { SecurityAuditFinding } from "./audit-types.js";
 
 const SMALL_MODEL_PARAM_B_MAX = 300;
 

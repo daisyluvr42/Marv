@@ -15,8 +15,8 @@ vi.mock("./send.js", () => ({
   },
 }));
 
-vi.mock("../../auto-reply/dispatch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../auto-reply/dispatch.js")>();
+vi.mock("../../auto-reply/inbound/dispatch.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../auto-reply/inbound/dispatch.js")>();
   return {
     ...actual,
     dispatchInboundMessage: (...args: unknown[]) => dispatchMock(...args),

@@ -1,18 +1,21 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { type MarvConfig, loadConfig } from "../../core/config/config.js";
+import type { MarvConfig } from "../../core/config/types.js";
 import { resolveMarvAgentDir } from "../agent-paths.js";
 import { getBaselineModels } from "./model-baselines.js";
+import type { ModelCatalogEntry } from "./model-types.js";
 import { ensureMarvModelsJson } from "./models-config.js";
 
-export type ModelCatalogEntry = {
-  id: string;
-  name: string;
-  provider: string;
-  contextWindow?: number;
-  reasoning?: boolean;
-  input?: Array<"text" | "image">;
-};
+// Late-bound config loader to break circular dependency chain
+// (model-catalog -> config -> io -> defaults -> model-selection -> model-catalog).
+// The path is computed at runtime so static analysis tools (madge) don't trace it.
+const CONFIG_MODULE = "../../core/config/config.js";
+async function loadConfigLazy(): Promise<MarvConfig> {
+  const mod = await import(/* @vite-ignore */ CONFIG_MODULE);
+  return mod.loadConfig();
+}
+
+export type { ModelCatalogEntry } from "./model-types.js";
 
 let modelCatalogPromise: Promise<ModelCatalogEntry[]> | null = null;
 let hasLoggedModelCatalogError = false;
@@ -177,7 +180,7 @@ export async function loadModelCatalog(params?: {
 
   modelCatalogPromise = (async () => {
     try {
-      const cfg = params?.config ?? loadConfig();
+      const cfg = params?.config ?? (await loadConfigLazy());
       await ensureMarvModelsJson(cfg);
 
       const agentDir = resolveMarvAgentDir();

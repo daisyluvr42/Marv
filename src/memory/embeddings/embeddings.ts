@@ -1,11 +1,16 @@
 import fsSync from "node:fs";
 import type { Llama, LlamaEmbeddingContext, LlamaModel } from "node-llama-cpp";
-import type { MarvConfig } from "../../core/config/config.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { resolveUserPath } from "../../utils.js";
 import { createGeminiEmbeddingProvider, type GeminiEmbeddingClient } from "./embeddings-gemini.js";
 import { createOpenAiEmbeddingProvider, type OpenAiEmbeddingClient } from "./embeddings-openai.js";
 import { createScriptEmbeddingProvider } from "./embeddings-script.js";
+import type {
+  EmbeddingProvider,
+  EmbeddingProviderId,
+  EmbeddingProviderOptions,
+  EmbeddingProviderRequest,
+} from "./embeddings-types.js";
 import { createVoyageEmbeddingProvider, type VoyageEmbeddingClient } from "./embeddings-voyage.js";
 import { importNodeLlamaCpp } from "./node-llama.js";
 
@@ -21,19 +26,13 @@ function sanitizeAndNormalizeEmbedding(vec: number[]): number[] {
 export type { GeminiEmbeddingClient } from "./embeddings-gemini.js";
 export type { OpenAiEmbeddingClient } from "./embeddings-openai.js";
 export type { VoyageEmbeddingClient } from "./embeddings-voyage.js";
-
-export type EmbeddingProvider = {
-  id: string;
-  model: string;
-  dimensions?: number;
-  maxInputTokens?: number;
-  embedQuery: (text: string) => Promise<number[]>;
-  embedBatch: (texts: string[]) => Promise<number[][]>;
-};
-
-export type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage" | "script";
-export type EmbeddingProviderRequest = EmbeddingProviderId | "auto";
-export type EmbeddingProviderFallback = EmbeddingProviderId | "none";
+export type {
+  EmbeddingProvider,
+  EmbeddingProviderFallback,
+  EmbeddingProviderId,
+  EmbeddingProviderOptions,
+  EmbeddingProviderRequest,
+} from "./embeddings-types.js";
 
 const REMOTE_EMBEDDING_PROVIDER_IDS = ["openai", "gemini", "voyage"] as const;
 
@@ -46,24 +45,6 @@ export type EmbeddingProviderResult = {
   openAi?: OpenAiEmbeddingClient;
   gemini?: GeminiEmbeddingClient;
   voyage?: VoyageEmbeddingClient;
-};
-
-export type EmbeddingProviderOptions = {
-  config: MarvConfig;
-  agentDir?: string;
-  provider: EmbeddingProviderRequest;
-  remote?: {
-    baseUrl?: string;
-    apiKey?: string;
-    headers?: Record<string, string>;
-  };
-  model: string;
-  dimensions?: number;
-  fallback: EmbeddingProviderFallback;
-  local?: {
-    modelPath?: string;
-    modelCacheDir?: string;
-  };
 };
 
 export const DEFAULT_LOCAL_MODEL =

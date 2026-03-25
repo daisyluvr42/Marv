@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
-import type { GetReplyOptions } from "../../auto-reply/types.js";
+import type { GetReplyOptions } from "../../auto-reply/support/types.js";
 import { __setMaxChatHistoryMessagesBytesForTest } from "./server-constants.js";
 import {
   connectOk,

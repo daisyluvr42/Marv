@@ -1,7 +1,7 @@
 import path from "node:path";
-import type { MarvConfig } from "../core/config/config.js";
 import { resolveStateDir } from "../core/config/paths.js";
 import type { AgentDefaultsConfig } from "../core/config/types.agent-defaults.js";
+import type { MarvConfig } from "../core/config/types.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,

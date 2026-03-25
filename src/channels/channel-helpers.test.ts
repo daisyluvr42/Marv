@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import { resolveConversationLabel } from "./conversation-label.js";
 import {
   formatChannelSelectionLine,
@@ -89,12 +89,12 @@ describe("channel targets", () => {
 
 describe("resolveConversationLabel", () => {
   it("prefers ConversationLabel when present", () => {
-    const ctx: MsgContext = { ConversationLabel: "Pinned Label", ChatType: "group" };
+    const ctx: TurnContext = { ConversationLabel: "Pinned Label", ChatType: "group" };
     expect(resolveConversationLabel(ctx)).toBe("Pinned Label");
   });
 
   it("prefers ThreadLabel over derived chat labels", () => {
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       ThreadLabel: "Thread Alpha",
       ChatType: "group",
       GroupSubject: "Ops",
@@ -104,22 +104,22 @@ describe("resolveConversationLabel", () => {
   });
 
   it("uses SenderName for direct chats when available", () => {
-    const ctx: MsgContext = { ChatType: "direct", SenderName: "Ada", From: "telegram:99" };
+    const ctx: TurnContext = { ChatType: "direct", SenderName: "Ada", From: "telegram:99" };
     expect(resolveConversationLabel(ctx)).toBe("Ada");
   });
 
   it("falls back to From for direct chats when SenderName is missing", () => {
-    const ctx: MsgContext = { ChatType: "direct", From: "telegram:99" };
+    const ctx: TurnContext = { ChatType: "direct", From: "telegram:99" };
     expect(resolveConversationLabel(ctx)).toBe("telegram:99");
   });
 
   it("derives Telegram-like group labels with numeric id suffix", () => {
-    const ctx: MsgContext = { ChatType: "group", GroupSubject: "Ops", From: "telegram:group:42" };
+    const ctx: TurnContext = { ChatType: "group", GroupSubject: "Ops", From: "telegram:group:42" };
     expect(resolveConversationLabel(ctx)).toBe("Ops id:42");
   });
 
   it("does not append ids for #rooms/channels", () => {
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       ChatType: "channel",
       GroupSubject: "#general",
       From: "slack:channel:C123",
@@ -128,7 +128,7 @@ describe("resolveConversationLabel", () => {
   });
 
   it("does not append ids when the base already contains the id", () => {
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       ChatType: "group",
       GroupSubject: "Family id:123@g.us",
       From: "whatsapp:group:123@g.us",
@@ -137,7 +137,7 @@ describe("resolveConversationLabel", () => {
   });
 
   it("appends ids for WhatsApp-like group ids when a subject exists", () => {
-    const ctx: MsgContext = {
+    const ctx: TurnContext = {
       ChatType: "group",
       GroupSubject: "Family",
       From: "whatsapp:group:123@g.us",

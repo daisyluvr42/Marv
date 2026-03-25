@@ -8,17 +8,17 @@ import {
 import { appendCronStyleCurrentTimeLine } from "../../agents/current-time.js";
 import { resolveEffectiveMessagesConfig } from "../../agents/prompt/identity.js";
 import { DEFAULT_HEARTBEAT_FILENAME } from "../../agents/workspace.js";
-import { resolveHeartbeatReplyPayload } from "../../auto-reply/heartbeat-reply-payload.js";
+import { getReplyFromConfig } from "../../auto-reply/index.js";
+import { resolveHeartbeatReplyPayload } from "../../auto-reply/support/heartbeat-reply-payload.js";
 import {
   DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   DEFAULT_HEARTBEAT_EVERY,
   isHeartbeatContentEffectivelyEmpty,
   resolveHeartbeatPrompt as resolveHeartbeatPromptText,
   stripHeartbeatToken,
-} from "../../auto-reply/heartbeat.js";
-import { getReplyFromConfig } from "../../auto-reply/reply.js";
-import { HEARTBEAT_TOKEN } from "../../auto-reply/tokens.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
+} from "../../auto-reply/support/heartbeat.js";
+import { HEARTBEAT_TOKEN } from "../../auto-reply/support/tokens.js";
+import type { ReplyPayload } from "../../auto-reply/support/types.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelHeartbeatDeps } from "../../channels/plugins/types.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";

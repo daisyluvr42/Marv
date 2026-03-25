@@ -1,4 +1,4 @@
-import { chunkText } from "../../../auto-reply/chunk.js";
+import { chunkText } from "../../../auto-reply/support/chunk.js";
 import { sendMessageSignal } from "../../signal/send.js";
 import { resolveChannelMediaMaxBytes } from "../media-limits.js";
 import type { ChannelOutboundAdapter } from "../types.js";

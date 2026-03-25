@@ -11,7 +11,7 @@ import {
   type CommandResolution,
   type ExecCommandSegment,
 } from "./exec-approvals-analysis.js";
-import type { ExecAllowlistEntry } from "./exec-approvals.js";
+import type { ExecAllowlistEntry } from "./exec-approvals-types.js";
 import { isTrustedSafeBinPath } from "./exec-safe-bin-trust.js";
 
 function isPathLikeToken(value: string): boolean {

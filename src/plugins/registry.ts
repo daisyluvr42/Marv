@@ -1,5 +1,5 @@
 import type { AnyAgentTool } from "../agents/tools/common.js";
-import type { ChannelDock } from "../channels/dock.js";
+import type { ChannelDock } from "../channels/dock.types.js";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type {
   GatewayRequestHandler,

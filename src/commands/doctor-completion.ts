@@ -2,18 +2,25 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { resolveCliName } from "../cli/cli-name.js";
-import {
-  completionCacheExists,
-  installCompletion,
-  isCompletionInstalled,
-  resolveCompletionCachePath,
-  resolveShellFromEnv,
-  usesSlowDynamicCompletion,
-} from "../cli/completion-cli.js";
 import { resolveMarvPackageRoot } from "../infra/marv-root.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
+
+// Late-bound import to break circular dependency chain
+// (completion-cli -> command-registry -> register.maintenance -> doctor -> doctor-completion -> completion-cli).
+type CompletionModule = {
+  resolveShellFromEnv: (env?: NodeJS.ProcessEnv) => string;
+  resolveCompletionCachePath: (shell: string, binName: string) => string;
+  completionCacheExists: (shell: string, binName: string) => Promise<boolean>;
+  isCompletionInstalled: (shell: string, binName: string) => Promise<boolean>;
+  usesSlowDynamicCompletion: (shell: string, binName: string) => Promise<boolean>;
+  installCompletion: (shell: string, yes: boolean, binName?: string) => Promise<void>;
+};
+const COMPLETION_MODULE = "../cli/completion-cli.js";
+async function loadCompletionModule(): Promise<CompletionModule> {
+  return import(/* @vite-ignore */ COMPLETION_MODULE);
+}
 
 type CompletionShell = "zsh" | "bash" | "fish" | "powershell";
 
@@ -54,11 +61,12 @@ export type ShellCompletionStatus = {
 
 /** Check the status of shell completion for the current shell. */
 export async function checkShellCompletionStatus(binName = "marv"): Promise<ShellCompletionStatus> {
-  const shell = resolveShellFromEnv() as CompletionShell;
-  const profileInstalled = await isCompletionInstalled(shell, binName);
-  const cacheExists = await completionCacheExists(shell, binName);
-  const cachePath = resolveCompletionCachePath(shell, binName);
-  const usesSlowPattern = await usesSlowDynamicCompletion(shell, binName);
+  const mod = await loadCompletionModule();
+  const shell = mod.resolveShellFromEnv() as CompletionShell;
+  const profileInstalled = await mod.isCompletionInstalled(shell, binName);
+  const cacheExists = await mod.completionCacheExists(shell, binName);
+  const cachePath = mod.resolveCompletionCachePath(shell, binName);
+  const usesSlowPattern = await mod.usesSlowDynamicCompletion(shell, binName);
 
   return {
     shell,
@@ -84,6 +92,7 @@ export async function doctorShellCompletion(
   prompter: DoctorPrompter,
   options: DoctorCompletionOptions = {},
 ): Promise<void> {
+  const mod = await loadCompletionModule();
   const cliName = resolveCliName();
   const status = await checkShellCompletionStatus(cliName);
 
@@ -107,7 +116,7 @@ export async function doctorShellCompletion(
     }
 
     // Upgrade profile to use cached file
-    await installCompletion(status.shell, true, cliName);
+    await mod.installCompletion(status.shell, true, cliName);
     note(
       `Shell completion upgraded. Restart your shell or run: source ~/.${status.shell === "zsh" ? "zshrc" : status.shell === "bash" ? "bashrc" : "config/fish/config.fish"}`,
       "Shell completion",
@@ -157,7 +166,7 @@ export async function doctorShellCompletion(
       }
 
       // Then install to profile
-      await installCompletion(status.shell, true, cliName);
+      await mod.installCompletion(status.shell, true, cliName);
       note(
         `Shell completion installed. Restart your shell or run: source ~/.${status.shell === "zsh" ? "zshrc" : status.shell === "bash" ? "bashrc" : "config/fish/config.fish"}`,
         "Shell completion",
@@ -172,9 +181,10 @@ export async function doctorShellCompletion(
  * This is a silent fix - no prompts.
  */
 export async function ensureCompletionCacheExists(binName = "marv"): Promise<boolean> {
+  const mod = await loadCompletionModule();
   const resolvedBinName = binName === "marv" ? "marv" : binName;
-  const shell = resolveShellFromEnv() as CompletionShell;
-  const cacheExists = await completionCacheExists(shell, resolvedBinName);
+  const shell = mod.resolveShellFromEnv() as CompletionShell;
+  const cacheExists = await mod.completionCacheExists(shell, resolvedBinName);
 
   if (cacheExists) {
     return true;

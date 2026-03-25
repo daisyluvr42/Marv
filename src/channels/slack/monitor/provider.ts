@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import SlackBolt from "@slack/bolt";
-import { resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
-import { DEFAULT_GROUP_HISTORY_LIMIT } from "../../../auto-reply/reply/history.js";
+import { DEFAULT_GROUP_HISTORY_LIMIT } from "../../../auto-reply/session/history.js";
+import { resolveTextChunkLimit } from "../../../auto-reply/support/chunk.js";
 import { loadConfig } from "../../../core/config/config.js";
 import type { SessionScope } from "../../../core/config/sessions.js";
 import { warn } from "../../../globals.js";

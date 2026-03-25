@@ -2,8 +2,8 @@ import type { AgentEvent } from "@mariozechner/pi-agent-core";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import type { PluginHookAfterToolCallEvent } from "../../plugins/types.js";
-import { buildToolMutationState, isSameToolMutationAction } from "../tools/tool-mutation.js";
-import { normalizeToolName } from "../tools/tool-policy.js";
+import { buildToolMutationState, isSameToolMutationAction } from "../tools/meta/tool-mutation.js";
+import { normalizeToolName } from "../tools/policy/tool-policy.js";
 import { normalizeTextForComparison } from "./pi-embedded-helpers.js";
 import { isMessagingTool, isMessagingToolSendAction } from "./pi-embedded-messaging.js";
 import type {

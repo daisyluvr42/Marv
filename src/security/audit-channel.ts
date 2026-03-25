@@ -13,7 +13,7 @@ import {
 import type { MarvConfig } from "../core/config/config.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
-import type { SecurityAuditFinding, SecurityAuditSeverity } from "./audit.js";
+import type { SecurityAuditFinding, SecurityAuditSeverity } from "./audit-types.js";
 import { resolveDmAllowState } from "./dm-policy-shared.js";
 
 function normalizeAllowFromList(list: Array<string | number> | undefined | null): string[] {

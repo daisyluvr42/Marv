@@ -1,6 +1,6 @@
 import type { AgentEvent, AgentMessage } from "@mariozechner/pi-agent-core";
-import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
-import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
+import { parseReplyDirectives } from "../../auto-reply/directives/reply-directives.js";
+import { SILENT_REPLY_TOKEN } from "../../auto-reply/support/tokens.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { createInlineCodeState } from "../../markdown/code-spans.js";
 import {

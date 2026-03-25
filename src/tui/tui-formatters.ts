@@ -1,5 +1,5 @@
 import { formatRawAssistantErrorForUi } from "../agents/runner/pi-embedded-helpers.js";
-import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
+import { stripInboundMetadata } from "../auto-reply/inbound/strip-meta.js";
 import { stripAnsi } from "../terminal/ansi.js";
 import { formatTokenCount } from "../utils/usage-format.js";
 

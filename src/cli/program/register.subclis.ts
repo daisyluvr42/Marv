@@ -264,7 +264,10 @@ const entries: SubCliEntry[] = [
     description: "Generate shell completion script",
     hasSubcommands: false,
     register: async (program) => {
-      const mod = await import("../completion-cli.js");
+      // Path in a variable to break circular dependency chain
+      // (completion-cli -> command-registry -> register.subclis -> completion-cli).
+      const completionPath = "../completion-cli.js";
+      const mod = await import(/* @vite-ignore */ completionPath);
       mod.registerCompletionCli(program);
     },
   },

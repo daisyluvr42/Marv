@@ -1,4 +1,3 @@
-import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 import type { InputProvenance } from "../../core/session/input-provenance.js";
 
@@ -7,6 +6,16 @@ export type ImageContent = {
   type: "image";
   data: string;
   mimeType: string;
+};
+
+/** Simplified tool definition for client-provided tools (OpenResponses hosted tools) */
+export type ClientToolDefinition = {
+  type: "function";
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
 };
 
 export type AgentStreamParams = {

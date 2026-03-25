@@ -1,7 +1,7 @@
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,
-} from "../../auto-reply/reply/history.js";
+} from "../../auto-reply/session/history.js";
 
 export type ConversationEntry = {
   role: "user" | "assistant" | "tool";

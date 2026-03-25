@@ -1,4 +1,4 @@
-import type { MsgContext } from "../../../auto-reply/templating.js";
+import type { TurnContext } from "../../../auto-reply/support/templating.js";
 import {
   buildAgentMainSessionKey,
   DEFAULT_AGENT_ID,
@@ -9,7 +9,7 @@ import { resolveGroupSessionKey } from "./group.js";
 import type { SessionScope } from "./types.js";
 
 // Decide which session bucket to use (per-sender vs global).
-export function deriveSessionKey(scope: SessionScope, ctx: MsgContext) {
+export function deriveSessionKey(scope: SessionScope, ctx: TurnContext) {
   if (scope === "global") {
     return "global";
   }
@@ -25,7 +25,7 @@ export function deriveSessionKey(scope: SessionScope, ctx: MsgContext) {
  * Resolve the session key with a canonical direct-chat bucket (default: "main").
  * All non-group direct chats collapse to this bucket; groups stay isolated.
  */
-export function resolveSessionKey(scope: SessionScope, ctx: MsgContext, mainKey?: string) {
+export function resolveSessionKey(scope: SessionScope, ctx: TurnContext, mainKey?: string) {
   const explicit = ctx.SessionKey?.trim();
   if (explicit) {
     return explicit.toLowerCase();

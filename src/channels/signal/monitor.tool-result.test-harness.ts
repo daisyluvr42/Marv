@@ -1,5 +1,5 @@
 import { beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../../auto-reply/reply/inbound-dedupe.js";
+import { resetInboundDedupe } from "../../auto-reply/inbound/dedupe.js";
 import { resetSystemEventsForTest } from "../../infra/system-events.js";
 import type { MockFn } from "../../test-utils/vitest-mock-fn.js";
 
@@ -55,7 +55,7 @@ vi.mock("../../core/config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../auto-reply/reply.js", () => ({
+vi.mock("../../auto-reply/index.js", () => ({
   getReplyFromConfig: (...args: unknown[]) => replyMock(...args),
 }));
 

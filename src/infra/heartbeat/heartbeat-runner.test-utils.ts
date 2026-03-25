@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { vi } from "vitest";
-import * as replyModule from "../../auto-reply/reply.js";
+import * as replyModule from "../../auto-reply/index.js";
 
 export type HeartbeatSessionSeed = {
   sessionId?: string;

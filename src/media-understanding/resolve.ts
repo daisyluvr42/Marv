@@ -1,4 +1,4 @@
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type {
   MediaUnderstandingConfig,
@@ -73,7 +73,7 @@ export function resolveCapabilityConfig(
 
 export function resolveScopeDecision(params: {
   scope?: MediaUnderstandingScopeConfig;
-  ctx: MsgContext;
+  ctx: TurnContext;
 }): "allow" | "deny" {
   return resolveMediaUnderstandingScope({
     scope: params.scope,

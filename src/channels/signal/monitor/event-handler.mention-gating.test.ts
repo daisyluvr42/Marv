@@ -1,27 +1,27 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildDispatchInboundCaptureMock } from "../../../../test/helpers/dispatch-inbound-capture.js";
-import type { MsgContext } from "../../../auto-reply/templating.js";
+import type { TurnContext } from "../../../auto-reply/support/templating.js";
 import type { MarvConfig } from "../../../core/config/types.js";
 import {
   createBaseSignalEventHandlerDeps,
   createSignalReceiveEvent,
 } from "./event-handler.test-harness.js";
 
-type SignalMsgContext = Pick<MsgContext, "Body" | "WasMentioned"> & {
+type SignalTurnContext = Pick<TurnContext, "Body" | "WasMentioned"> & {
   Body?: string;
   WasMentioned?: boolean;
 };
 
-let capturedCtx: SignalMsgContext | undefined;
+let capturedCtx: SignalTurnContext | undefined;
 
 function getCapturedCtx() {
-  return capturedCtx as SignalMsgContext;
+  return capturedCtx as SignalTurnContext;
 }
 
-vi.mock("../../../auto-reply/dispatch.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../auto-reply/dispatch.js")>();
+vi.mock("../../../auto-reply/inbound/dispatch.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../auto-reply/inbound/dispatch.js")>();
   return buildDispatchInboundCaptureMock(actual, (ctx) => {
-    capturedCtx = ctx as SignalMsgContext;
+    capturedCtx = ctx as SignalTurnContext;
   });
 });
 

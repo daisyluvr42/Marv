@@ -5,7 +5,7 @@ import { Logger as TsLogger } from "tslog";
 import type { MarvConfig } from "../core/config/types.js";
 import { resolvePreferredMarvTmpDir } from "../infra/tmp-marv-dir.js";
 import { readLoggingConfig } from "./config.js";
-import type { ConsoleStyle } from "./console.js";
+import type { ConsoleStyle } from "./console-types.js";
 import { type LogLevel, levelToMinLevel, normalizeLogLevel } from "./levels.js";
 import { loggingState } from "./state.js";
 

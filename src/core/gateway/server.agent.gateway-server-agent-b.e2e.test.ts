@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
 import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
-import { BARE_SESSION_RESET_PROMPT } from "../../auto-reply/reply/session-reset-prompt.js";
+import { BARE_SESSION_RESET_PROMPT } from "../../auto-reply/session/reset-prompt.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";

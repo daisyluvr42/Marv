@@ -1,17 +1,20 @@
-import { hasControlCommand } from "../../../auto-reply/command-detection.js";
+import { hasControlCommand } from "../../../auto-reply/commands/detection.js";
+import { finalizeInboundContext } from "../../../auto-reply/inbound/context.js";
 import {
   formatInboundEnvelope,
   formatInboundFromLabel,
   resolveEnvelopeFormatOptions,
   type EnvelopeFormatOptions,
-} from "../../../auto-reply/envelope.js";
+} from "../../../auto-reply/inbound/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "../../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
-import { buildMentionRegexes, matchesMentionPatterns } from "../../../auto-reply/reply/mentions.js";
+} from "../../../auto-reply/session/history.js";
+import {
+  buildMentionRegexes,
+  matchesMentionPatterns,
+} from "../../../auto-reply/support/mentions.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import {
   resolveChannelGroupPolicy,

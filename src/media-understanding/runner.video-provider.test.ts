@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import {
   buildProviderRegistry,
@@ -15,7 +15,7 @@ describe("runCapability video provider options", () => {
   it("merges provider options, headers, and baseUrl overrides", async () => {
     const tmpPath = path.join(os.tmpdir(), `marv-video-${Date.now()}.mp4`);
     await fs.writeFile(tmpPath, Buffer.from("video"));
-    const ctx: MsgContext = { MediaPath: tmpPath, MediaType: "video/mp4" };
+    const ctx: TurnContext = { MediaPath: tmpPath, MediaType: "video/mp4" };
     const media = normalizeMediaAttachments(ctx);
     const cache = createMediaAttachmentCache(media);
 

@@ -4,7 +4,7 @@ import type {
   GroupPolicy,
   MarkdownConfig,
 } from "./types.base.js";
-import type { ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
+import type { ChannelHeartbeatVisibilityConfig } from "./types.channels-base.js";
 import type { DmConfig } from "./types.messages.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 

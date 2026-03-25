@@ -1,6 +1,5 @@
-import type { MarvConfig } from "../../core/config/config.js";
-import { loadConfig } from "../../core/config/config.js";
-import { parseModelRef } from "./model-selection.js";
+import type { MarvConfig } from "../../core/config/types.js";
+import { parseModelRef } from "./model-ref.js";
 
 const LOCAL_PROVIDER_FAMILY = ["local", "ollama", "vllm", "lmstudio", "localai", "llamacpp"];
 
@@ -221,7 +220,10 @@ export function pruneUnsupportedModelFromSelections(params: {
   // Fire-and-forget: persist the pruned selections to config file.
   void (async () => {
     try {
-      const { writeConfigFile } = await import("../../core/config/io.js");
+      // Path in a variable to break circular dependency chain
+      // (io -> defaults -> model-selection -> model-selections -> io).
+      const configIoPath = "../../core/config/io.js";
+      const { writeConfigFile, loadConfig } = await import(/* @vite-ignore */ configIoPath);
       const freshConfig = loadConfig();
       const freshSelections = { ...freshConfig.models?.selections };
       for (const [sourceKey, refs] of Object.entries(freshSelections)) {

@@ -56,7 +56,7 @@ function makeProcessMessageArgs(params: {
   } as any;
 }
 
-vi.mock("../../../../auto-reply/reply/provider-dispatcher.js", () => ({
+vi.mock("../../../../auto-reply/delivery/provider-dispatcher.js", () => ({
   // oxlint-disable-next-line typescript/no-explicit-any
   dispatchReplyWithBufferedBlockDispatcher: vi.fn(async (params: any) => {
     capturedDispatchParams = params;
@@ -94,7 +94,7 @@ describe("web processMessage inbound contract", () => {
     }
   });
 
-  it("passes a finalized MsgContext to the dispatcher", async () => {
+  it("passes a finalized TurnContext to the dispatcher", async () => {
     await processMessage(
       makeProcessMessageArgs({
         routeSessionKey: "agent:main:whatsapp:group:123",

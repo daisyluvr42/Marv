@@ -4,7 +4,7 @@ import path from "node:path";
 import { serializePayload, type MessagePayloadObject, type RequestClient } from "@buape/carbon";
 import type { APIChannel } from "discord-api-types/v10";
 import { ChannelType, Routes } from "discord-api-types/v10";
-import { resolveChunkMode } from "../../auto-reply/chunk.js";
+import { resolveChunkMode } from "../../auto-reply/support/chunk.js";
 import { loadConfig } from "../../core/config/config.js";
 import { resolveMarkdownTableMode } from "../../core/config/markdown-tables.js";
 import { recordChannelActivity } from "../../infra/channel-activity.js";

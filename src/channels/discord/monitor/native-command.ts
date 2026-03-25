@@ -11,14 +11,13 @@ import {
 } from "@buape/carbon";
 import { ApplicationCommandOptionType, ButtonStyle } from "discord-api-types/v10";
 import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
 import type {
   ChatCommandDefinition,
   CommandArgDefinition,
   CommandArgValues,
   CommandArgs,
   NativeCommandSpec,
-} from "../../../auto-reply/commands-registry.js";
+} from "../../../auto-reply/commands/registry.js";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -27,10 +26,11 @@ import {
   resolveCommandArgChoices,
   resolveCommandArgMenu,
   serializeCommandArgs,
-} from "../../../auto-reply/commands-registry.js";
-import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithDispatcher } from "../../../auto-reply/reply/provider-dispatcher.js";
-import type { ReplyPayload } from "../../../auto-reply/types.js";
+} from "../../../auto-reply/commands/registry.js";
+import { dispatchReplyWithDispatcher } from "../../../auto-reply/delivery/provider-dispatcher.js";
+import { finalizeInboundContext } from "../../../auto-reply/inbound/context.js";
+import { resolveChunkMode, resolveTextChunkLimit } from "../../../auto-reply/support/chunk.js";
+import type { ReplyPayload } from "../../../auto-reply/support/types.js";
 import type { MarvConfig, loadConfig } from "../../../core/config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../../media/local-roots.js";
 import { buildPairingReply } from "../../../pairing/pairing-messages.js";

@@ -1,5 +1,5 @@
 import { beforeEach, vi, type Mock } from "vitest";
-import { resetInboundDedupe } from "../../auto-reply/reply/inbound-dedupe.js";
+import { resetInboundDedupe } from "../../auto-reply/inbound/dedupe.js";
 
 export const useSpy: Mock = vi.fn();
 export const middlewareUseSpy: Mock = vi.fn();
@@ -85,7 +85,7 @@ vi.mock("../../pairing/pairing-store.js", () => ({
   })),
 }));
 
-vi.mock("../../auto-reply/reply.js", () => {
+vi.mock("../../auto-reply/index.js", () => {
   const replySpy = vi.fn(async (_ctx, opts) => {
     await opts?.onReplyStart?.();
     return undefined;

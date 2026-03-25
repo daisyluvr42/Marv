@@ -4,15 +4,17 @@ import { type Message, type UserFromGetMe } from "@grammyjs/types";
 import type { ApiClientOptions } from "grammy";
 import { Bot, webhookCallback } from "grammy";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
-import { isAbortRequestText } from "../../auto-reply/reply/abort.js";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../../auto-reply/reply/history.js";
+import {
+  DEFAULT_GROUP_HISTORY_LIMIT,
+  type HistoryEntry,
+} from "../../auto-reply/session/history.js";
+import { isAbortRequestText } from "../../auto-reply/support/abort.js";
+import { resolveTextChunkLimit } from "../../auto-reply/support/chunk.js";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
 } from "../../core/config/commands.js";
-import type { MarvConfig, ReplyToMode } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import {
   resolveChannelGroupPolicy,
@@ -39,29 +41,11 @@ import {
   resolveTelegramForumThreadId,
   resolveTelegramStreamMode,
 } from "./bot/helpers.js";
+import type { TelegramBotOptions } from "./bot/types.js";
 import { resolveTelegramFetch } from "./fetch.js";
 import { TelegramExecApprovalHandler } from "./monitor/exec-approvals.js";
 
-export type TelegramBotOptions = {
-  token: string;
-  accountId?: string;
-  runtime?: RuntimeEnv;
-  requireMention?: boolean;
-  allowFrom?: Array<string | number>;
-  groupAllowFrom?: Array<string | number>;
-  mediaMaxMb?: number;
-  replyToMode?: ReplyToMode;
-  proxyFetch?: typeof fetch;
-  config?: MarvConfig;
-  updateOffset?: {
-    lastUpdateId?: number | null;
-    onUpdateId?: (updateId: number) => void | Promise<void>;
-  };
-  testTimings?: {
-    mediaGroupFlushMs?: number;
-    textFragmentGapMs?: number;
-  };
-};
+export type { TelegramBotOptions } from "./bot/types.js";
 
 export function getTelegramSequentialKey(ctx: {
   chat?: { id?: number };

@@ -1,5 +1,5 @@
 import { getActiveEmbeddedRunCount } from "../../agents/pi-embedded-runner/runs.js";
-import { getTotalPendingReplies } from "../../auto-reply/reply/dispatcher-registry.js";
+import { getTotalPendingReplies } from "../../auto-reply/delivery/dispatcher-registry.js";
 import type { CliDeps } from "../../cli/deps.js";
 import { startGmailWatcherWithLogs } from "../../hooks/gmail-watcher-lifecycle.js";
 import { stopGmailWatcher } from "../../hooks/gmail-watcher.js";

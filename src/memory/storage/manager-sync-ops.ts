@@ -297,7 +297,9 @@ export abstract class MemoryManagerSyncOps {
     } catch (err) {
       try {
         this.db.exec("ROLLBACK");
-      } catch {}
+      } catch (rollbackErr) {
+        log.warn(`ROLLBACK failed after seedEmbeddingCache error: ${String(rollbackErr)}`);
+      }
       throw err;
     }
   }
@@ -683,14 +685,22 @@ export abstract class MemoryManagerSyncOps {
             `DELETE FROM ${VECTOR_TABLE} WHERE id IN (SELECT id FROM chunks WHERE path = ? AND source = ?)`,
           )
           .run(stale.path, "memory");
-      } catch {}
+      } catch (err) {
+        log.warn(
+          `DELETE from ${VECTOR_TABLE} failed for stale memory path ${stale.path}: ${String(err)}`,
+        );
+      }
       this.db.prepare(`DELETE FROM chunks WHERE path = ? AND source = ?`).run(stale.path, "memory");
       if (this.fts.enabled && this.fts.available) {
         try {
           this.db
             .prepare(`DELETE FROM ${FTS_TABLE} WHERE path = ? AND source = ? AND model = ?`)
             .run(stale.path, "memory", this.provider.model);
-        } catch {}
+        } catch (err) {
+          log.warn(
+            `DELETE from ${FTS_TABLE} failed for stale memory path ${stale.path}: ${String(err)}`,
+          );
+        }
       }
     }
   }
@@ -788,7 +798,11 @@ export abstract class MemoryManagerSyncOps {
             `DELETE FROM ${VECTOR_TABLE} WHERE id IN (SELECT id FROM chunks WHERE path = ? AND source = ?)`,
           )
           .run(stale.path, "sessions");
-      } catch {}
+      } catch (err) {
+        log.warn(
+          `DELETE from ${VECTOR_TABLE} failed for stale session path ${stale.path}: ${String(err)}`,
+        );
+      }
       this.db
         .prepare(`DELETE FROM chunks WHERE path = ? AND source = ?`)
         .run(stale.path, "sessions");
@@ -797,7 +811,11 @@ export abstract class MemoryManagerSyncOps {
           this.db
             .prepare(`DELETE FROM ${FTS_TABLE} WHERE path = ? AND source = ? AND model = ?`)
             .run(stale.path, "sessions", this.provider.model);
-        } catch {}
+        } catch (err) {
+          log.warn(
+            `DELETE from ${FTS_TABLE} failed for stale session path ${stale.path}: ${String(err)}`,
+          );
+        }
       }
     }
   }
@@ -1077,7 +1095,9 @@ export abstract class MemoryManagerSyncOps {
     } catch (err) {
       try {
         this.db.close();
-      } catch {}
+      } catch (closeErr) {
+        log.warn(`db.close() failed during reindex cleanup: ${String(closeErr)}`);
+      }
       await this.removeIndexFiles(tempDbPath);
       restoreOriginalState();
       throw err;
@@ -1135,7 +1155,9 @@ export abstract class MemoryManagerSyncOps {
     if (this.fts.enabled && this.fts.available) {
       try {
         this.db.exec(`DELETE FROM ${FTS_TABLE}`);
-      } catch {}
+      } catch (err) {
+        log.warn(`DELETE FROM ${FTS_TABLE} failed during index reset: ${String(err)}`);
+      }
     }
     this.dropVectorTable();
     this.vector.dims = undefined;

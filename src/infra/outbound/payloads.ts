@@ -1,6 +1,6 @@
-import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
-import { isRenderablePayload } from "../../auto-reply/reply/reply-payloads.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
+import { isRenderablePayload } from "../../auto-reply/delivery/payloads.js";
+import { parseReplyDirectives } from "../../auto-reply/directives/reply-directives.js";
+import type { ReplyPayload } from "../../auto-reply/support/types.js";
 
 export type NormalizedOutboundPayload = {
   text: string;

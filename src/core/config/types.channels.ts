@@ -1,4 +1,5 @@
 import type { GroupPolicy } from "./types.base.js";
+import type { ChannelHeartbeatVisibilityConfig } from "./types.channels-base.js";
 import type { DiscordConfig } from "./types.discord.js";
 import type { GoogleChatConfig } from "./types.googlechat.js";
 import type { IMessageConfig } from "./types.imessage.js";
@@ -9,14 +10,7 @@ import type { SlackConfig } from "./types.slack.js";
 import type { TelegramConfig } from "./types.telegram.js";
 import type { WhatsAppConfig } from "./types.whatsapp.js";
 
-export type ChannelHeartbeatVisibilityConfig = {
-  /** Show HEARTBEAT_OK acknowledgments in chat (default: false). */
-  showOk?: boolean;
-  /** Show heartbeat alerts with actual content (default: true). */
-  showAlerts?: boolean;
-  /** Emit indicator events for UI status display (default: true). */
-  useIndicator?: boolean;
-};
+export type { ChannelHeartbeatVisibilityConfig } from "./types.channels-base.js";
 
 export type ChannelDefaultsConfig = {
   groupPolicy?: GroupPolicy;

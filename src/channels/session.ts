@@ -1,4 +1,4 @@
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import {
   recordSessionMetaFromInbound,
   type GroupKeyResolution,
@@ -17,7 +17,7 @@ export type InboundLastRouteUpdate = {
 export async function recordInboundSession(params: {
   storePath: string;
   sessionKey: string;
-  ctx: MsgContext;
+  ctx: TurnContext;
   groupResolution?: GroupKeyResolution | null;
   createIfMissing?: boolean;
   updateLastRoute?: InboundLastRouteUpdate;

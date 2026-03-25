@@ -13,7 +13,7 @@
  * Last updated: 2026-03-20
  */
 
-import type { ModelCatalogEntry } from "./model-catalog.js";
+import type { ModelCatalogEntry } from "./model-types.js";
 
 type BaselineModel = Omit<ModelCatalogEntry, "provider">;
 

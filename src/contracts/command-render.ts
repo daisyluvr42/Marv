@@ -1,4 +1,4 @@
-import type { CommandArgValues } from "../auto-reply/commands-registry.types.js";
+import type { CommandArgValues } from "../auto-reply/commands/types.js";
 
 export type CommandRenderContext = {
   commandName: string;

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 
-const srcDir = path.join(projectRoot, "src", "auto-reply", "reply", "export-html");
+const srcDir = path.join(projectRoot, "src", "auto-reply", "export-html");
 const distDir = path.join(projectRoot, "dist", "export-html");
 
 function copyExportHtmlTemplates() {

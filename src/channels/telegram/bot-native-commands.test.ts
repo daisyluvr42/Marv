@@ -19,8 +19,9 @@ const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => ({ delivered: true })),
 }));
 
-vi.mock("../../auto-reply/skill-commands.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../auto-reply/skill-commands.js")>();
+vi.mock("../../auto-reply/commands/skill-commands.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../auto-reply/commands/skill-commands.js")>();
   return {
     ...actual,
     listSkillCommandsForAgents,

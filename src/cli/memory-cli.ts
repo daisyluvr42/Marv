@@ -16,7 +16,6 @@ import {
   countSoulMemoryItemsByTier,
   listSoulMemoryItems,
   resolveSoulMemoryDbPath,
-  type SoulMemoryTier,
 } from "../memory/storage/soul-memory-store.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
@@ -565,6 +564,7 @@ export function registerMemoryCli(program: Command) {
   const memory = program
     .command("mem")
     .alias("memory")
+    .enablePositionalOptions()
     .description("Search, inspect, and reindex memory files")
     .addHelpText(
       "after",
@@ -579,6 +579,37 @@ export function registerMemoryCli(program: Command) {
           ['marv memory search "deployment notes"', "Search indexed memory entries."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/memory", "docs: /cli/memory")}\n`,
     );
+
+  // P0 subcommand (core memory sections)
+  const p0 = memory
+    .command("p0")
+    .description("Manage P0 core memory sections (soul, identity, user)")
+    .option("--json", "Print JSON output");
+
+  p0.action(async (opts: { json?: boolean }) => {
+    const { memoryP0ShowCommand } = await import("../commands/memory-p0.js");
+    await memoryP0ShowCommand(opts, defaultRuntime);
+  });
+
+  for (const section of ["soul", "identity", "user"] as const) {
+    p0.command(section)
+      .description(`View or set the ${section} section`)
+      .argument("[value]", `New value for ${section}`)
+      .option("--json", "Print JSON output")
+      .option("--file <path>", "Read value from file")
+      .option("--clear", "Clear the section")
+      .action(
+        async (
+          value: string | undefined,
+          opts: { json?: boolean; file?: string; clear?: boolean },
+        ) => {
+          // Inherit --json from parent p0 command if not set on subcommand
+          const merged = { ...p0.opts(), ...opts };
+          const { memoryP0SectionCommand } = await import("../commands/memory-p0.js");
+          await memoryP0SectionCommand(section, value, merged, defaultRuntime);
+        },
+      );
+  }
 
   memory
     .command("status")
@@ -800,8 +831,8 @@ export function registerMemoryCli(program: Command) {
     .action(async (opts: { agent?: string; tier?: string; output?: string }) => {
       const cfg = loadConfig();
       const agentId = resolveAgent(cfg, opts.agent);
-      const tier = opts.tier?.trim().toUpperCase() as SoulMemoryTier | undefined;
-      const validTier = tier && ["P0", "P1", "P2", "P3"].includes(tier) ? tier : undefined;
+      const rawTier = opts.tier?.trim().toUpperCase();
+      const validTier = rawTier && ["P0", "P1", "P2", "P3"].includes(rawTier) ? rawTier : undefined;
       const items = listSoulMemoryItems({
         agentId,
         tier: validTier,
@@ -886,8 +917,7 @@ export function registerMemoryCli(program: Command) {
         if (!kind || !content) {
           continue;
         }
-        const validTier =
-          tier && ["P0", "P1", "P2", "P3"].includes(tier) ? (tier as SoulMemoryTier) : "P3";
+        const validTier = tier && ["P0", "P1", "P2", "P3"].includes(tier) ? tier : "P3";
         const recordKind = entry.recordKind?.trim() || "experience";
         const result = writeSoulMemory({
           agentId,
@@ -929,7 +959,7 @@ export function registerMemoryCli(program: Command) {
       }) => {
         const cfg = loadConfig();
         const agentId = resolveAgent(cfg, opts.agent);
-        const tier = opts.tier?.trim().toUpperCase() as SoulMemoryTier | undefined;
+        const tier = opts.tier?.trim().toUpperCase();
         const items = listSoulMemoryItems({
           agentId,
           tier: tier && ["P0", "P1", "P2", "P3"].includes(tier) ? tier : undefined,

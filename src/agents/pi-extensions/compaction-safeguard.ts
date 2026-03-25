@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ExtensionAPI, FileOperations } from "@mariozechner/pi-coding-agent";
-import { extractSections } from "../../auto-reply/reply/post-compaction-context.js";
+import { extractSections } from "../../auto-reply/session/compaction-context.js";
 import {
   BASE_CHUNK_RATIO,
   MIN_CHUNK_RATIO,

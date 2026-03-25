@@ -1,4 +1,4 @@
-import { normalizeGroupActivation } from "../../../../auto-reply/group-activation.js";
+import { normalizeGroupActivation } from "../../../../auto-reply/inbound/group-activation.js";
 import type { loadConfig } from "../../../../core/config/config.js";
 import {
   resolveChannelGroupPolicy,

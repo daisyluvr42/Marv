@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildHistoryContextFromEntries } from "../../auto-reply/reply/history.js";
+import { buildHistoryContextFromEntries } from "../../auto-reply/session/history.js";
 import { buildAgentMessageFromConversationEntries } from "./agent-prompt.js";
 
 describe("gateway agent prompt", () => {

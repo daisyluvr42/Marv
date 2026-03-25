@@ -6,20 +6,23 @@ import {
 } from "../../agents/model/model-catalog.js";
 import { resolveDefaultModelForAgent } from "../../agents/model/model-selection.js";
 import { resolveAckReaction } from "../../agents/prompt/identity.js";
-import { hasControlCommand } from "../../auto-reply/command-detection.js";
-import { normalizeCommandBody } from "../../auto-reply/commands-registry.js";
-import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../auto-reply/envelope.js";
+import { hasControlCommand } from "../../auto-reply/commands/detection.js";
+import { normalizeCommandBody } from "../../auto-reply/commands/registry.js";
+import { finalizeInboundContext } from "../../auto-reply/inbound/context.js";
+import {
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+} from "../../auto-reply/inbound/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
+} from "../../auto-reply/session/history.js";
 import {
   buildMentionRegexes,
   matchesMentionWithExplicit,
-} from "../../auto-reply/reply/mentions.js";
-import type { MsgContext } from "../../auto-reply/templating.js";
+} from "../../auto-reply/support/mentions.js";
+import type { TurnContext } from "../../auto-reply/support/templating.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { loadConfig } from "../../core/config/config.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../core/config/sessions.js";
@@ -406,7 +409,7 @@ export const buildTelegramMessageContext = async ({
     try {
       const { transcribeFirstAudio } = await import("../../media-understanding/audio-preflight.js");
       // Build a minimal context for transcription
-      const tempCtx: MsgContext = {
+      const tempCtx: TurnContext = {
         MediaPaths: allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
         MediaTypes:
           allMedia.length > 0

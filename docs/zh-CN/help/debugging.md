@@ -55,7 +55,7 @@ tsx watch src/entry.ts gateway --force
 
 使用 dev 配置文件来隔离状态，并启动一个安全、可丢弃的调试设置。有**两个** `--dev` 标志：
 
-- **全局 `--dev`（配置文件）：** 将状态隔离到 `~/.marv-dev` 下，并将 Gateway 网关端口默认为 `19001`（派生端口随之移动）。
+- **全局 `--dev`（配置文件）：** 将状态隔离到 `~/.marv-dev` 下，并将 Gateway 网关端口默认为 `4454`（派生端口随之移动）。
 - **`gateway --dev`：告诉 Gateway 网关在缺失时自动创建默认配置 + 工作区**（并跳过 BOOTSTRAP.md）。
 
 推荐流程（dev 配置文件 + dev 引导）：
@@ -73,7 +73,7 @@ MARV_PROFILE=dev marv tui
    - `MARV_PROFILE=dev`
    - `MARV_STATE_DIR=~/.marv-dev`
    - `MARV_CONFIG_PATH=~/.marv-dev/marv.json`
-   - `MARV_GATEWAY_PORT=19001`（浏览器/画布相应移动）
+   - `MARV_GATEWAY_PORT=4454`（浏览器/画布相应移动）
 
 2. **Dev 引导**（`gateway --dev`）
    - 如果缺失则写入最小配置（`gateway.mode=local`，绑定 loopback）。

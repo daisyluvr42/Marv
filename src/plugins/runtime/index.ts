@@ -10,6 +10,25 @@ import {
 } from "../../agents/tools/memory-tool.js";
 import { handleSlackAction } from "../../agents/tools/slack-actions.js";
 import {
+  hasControlCommand,
+  isControlCommandMessage,
+  shouldComputeCommandAuthorized,
+} from "../../auto-reply/commands/detection.js";
+import { shouldHandleTextCommands } from "../../auto-reply/commands/registry.js";
+import { createReplyDispatcherWithTyping } from "../../auto-reply/delivery/dispatcher.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/delivery/provider-dispatcher.js";
+import { dispatchReplyFromConfig } from "../../auto-reply/dispatch-from-config.js";
+import { finalizeInboundContext } from "../../auto-reply/inbound/context.js";
+import {
+  createInboundDebouncer,
+  resolveInboundDebounceMs,
+} from "../../auto-reply/inbound/debounce.js";
+import {
+  formatAgentEnvelope,
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+} from "../../auto-reply/inbound/envelope.js";
+import {
   chunkByNewline,
   chunkMarkdownText,
   chunkMarkdownTextWithMode,
@@ -17,31 +36,12 @@ import {
   chunkTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "../../auto-reply/chunk.js";
-import {
-  hasControlCommand,
-  isControlCommandMessage,
-  shouldComputeCommandAuthorized,
-} from "../../auto-reply/command-detection.js";
-import { shouldHandleTextCommands } from "../../auto-reply/commands-registry.js";
-import {
-  formatAgentEnvelope,
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "../../auto-reply/envelope.js";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "../../auto-reply/inbound-debounce.js";
-import { dispatchReplyFromConfig } from "../../auto-reply/reply/dispatch-from-config.js";
-import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
+} from "../../auto-reply/support/chunk.js";
 import {
   buildMentionRegexes,
   matchesMentionPatterns,
   matchesMentionWithExplicit,
-} from "../../auto-reply/reply/mentions.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/reply/provider-dispatcher.js";
-import { createReplyDispatcherWithTyping } from "../../auto-reply/reply/reply-dispatcher.js";
+} from "../../auto-reply/support/mentions.js";
 import { removeAckReactionAfterReply, shouldAckReaction } from "../../channels/ack-reactions.js";
 import { resolveCommandAuthorizedFromAuthorizers } from "../../channels/command-gating.js";
 import { auditDiscordChannelPermissions } from "../../channels/discord/audit.js";

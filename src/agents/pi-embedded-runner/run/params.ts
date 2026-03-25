@@ -1,23 +1,19 @@
 import type { ImageContent } from "@mariozechner/pi-ai";
-import type { ReasoningLevel, ThinkLevel, VerboseLevel } from "../../../auto-reply/thinking.js";
-import type { AgentStreamParams } from "../../../commands/agent/types.js";
+import type {
+  ReasoningLevel,
+  ThinkLevel,
+  VerboseLevel,
+} from "../../../auto-reply/support/thinking.js";
+import type { AgentStreamParams, ClientToolDefinition } from "../../../commands/agent/types.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import type { InputProvenance } from "../../../core/session/input-provenance.js";
 import type { enqueueCommand } from "../../../process/command-queue.js";
 import type { BlockReplyPayload } from "../../runner/pi-embedded-payloads.js";
 import type { BlockReplyChunking, ToolResultFormat } from "../../runner/pi-embedded-subscribe.js";
 import type { SkillSnapshot } from "../../skills.js";
-import type { ExecElevatedDefaults, ExecToolDefaults } from "../../tools/bash-tools.js";
+import type { ExecElevatedDefaults, ExecToolDefaults } from "../../tools/bash/bash-tools.js";
 
-// Simplified tool definition for client-provided tools (OpenResponses hosted tools)
-export type ClientToolDefinition = {
-  type: "function";
-  function: {
-    name: string;
-    description?: string;
-    parameters?: Record<string, unknown>;
-  };
-};
+export type { ClientToolDefinition } from "../../../commands/agent/types.js";
 
 export type RunEmbeddedPiAgentParams = {
   sessionId: string;

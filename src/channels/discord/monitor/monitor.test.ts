@@ -67,7 +67,7 @@ vi.mock("../../../infra/system-events.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../../auto-reply/reply/provider-dispatcher.js", () => ({
+vi.mock("../../../auto-reply/delivery/provider-dispatcher.js", () => ({
   dispatchReplyWithBufferedBlockDispatcher: (...args: unknown[]) => dispatchReplyMock(...args),
 }));
 

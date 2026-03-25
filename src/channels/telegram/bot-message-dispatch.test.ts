@@ -12,7 +12,7 @@ vi.mock("./draft-stream.js", () => ({
   createTelegramDraftStream,
 }));
 
-vi.mock("../../auto-reply/reply/provider-dispatcher.js", () => ({
+vi.mock("../../auto-reply/delivery/provider-dispatcher.js", () => ({
   dispatchReplyWithBufferedBlockDispatcher,
 }));
 

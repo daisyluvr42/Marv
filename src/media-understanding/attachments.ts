@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MediaUnderstandingAttachmentsConfig } from "../core/config/types.tools.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { isAbortError } from "../infra/unhandled-rejections.js";
@@ -53,7 +53,7 @@ function normalizeAttachmentPath(raw?: string | null): string | undefined {
   return value;
 }
 
-export function normalizeAttachments(ctx: MsgContext): MediaAttachment[] {
+export function normalizeAttachments(ctx: TurnContext): MediaAttachment[] {
   const pathsFromArray = Array.isArray(ctx.MediaPaths) ? ctx.MediaPaths : undefined;
   const urlsFromArray = Array.isArray(ctx.MediaUrls) ? ctx.MediaUrls : undefined;
   const typesFromArray = Array.isArray(ctx.MediaTypes) ? ctx.MediaTypes : undefined;

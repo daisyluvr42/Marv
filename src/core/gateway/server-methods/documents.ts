@@ -35,6 +35,8 @@ const IGNORED_DIRS = new Set([
   "build",
   "node_modules",
 ]);
+/** Agent-managed files excluded from workspace document listings. */
+const EXCLUDED_ROOT_FILES = new Set(["SOUL.md", "Soul.md", "AGENTS.md", "CLAUDE.md"]);
 const MAX_FILES_PER_ROOT = 300;
 const MAX_SCAN_DEPTH = 6;
 const DEFAULT_DOCUMENT_LIMIT = 200;
@@ -172,6 +174,9 @@ async function scanWorkspaceRoot(root: WorkspaceRoot): Promise<DocumentEntry[]> 
       }
       const filePath = path.join(currentDir, name);
       if (!isTextDocument(filePath)) {
+        continue;
+      }
+      if (depth === 0 && EXCLUDED_ROOT_FILES.has(name)) {
         continue;
       }
       const relativePath = normalizeRelativePath(root.path, filePath);

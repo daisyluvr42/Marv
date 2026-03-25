@@ -9,7 +9,7 @@ import {
   type PromptScaffoldLevel,
 } from "../prompt/system-prompt.js";
 import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";
-import { buildToolSummaryMap } from "../tools/tool-summaries.js";
+import { buildToolSummaryMap } from "../tools/display/tool-summaries.js";
 import type { EmbeddedSandboxInfo } from "./types.js";
 import type { ReasoningLevel, ThinkLevel } from "./utils.js";
 

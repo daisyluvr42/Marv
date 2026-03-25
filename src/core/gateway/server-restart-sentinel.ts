@@ -1,5 +1,5 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import { resolveAnnounceTargetFromKey } from "../../agents/tools/sessions-send-helpers.js";
+import { resolveAnnounceTargetFromKey } from "../../agents/tools/sessions/sessions-send-helpers.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { CliDeps } from "../../cli/deps.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";

@@ -31,8 +31,8 @@ import {
   normalizeThinkLevel,
   normalizeVerboseLevel,
   supportsXHighThinking,
-} from "../../auto-reply/thinking.js";
-import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
+} from "../../auto-reply/support/thinking.js";
+import { SILENT_REPLY_TOKEN } from "../../auto-reply/support/tokens.js";
 import { createOutboundSendDeps, type CliDeps } from "../../cli/outbound-send-deps.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import {

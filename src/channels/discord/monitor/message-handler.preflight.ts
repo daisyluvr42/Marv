@@ -1,14 +1,14 @@
 import { ChannelType, MessageType, type User } from "@buape/carbon";
-import { hasControlCommand } from "../../../auto-reply/command-detection.js";
-import { shouldHandleTextCommands } from "../../../auto-reply/commands-registry.js";
+import { hasControlCommand } from "../../../auto-reply/commands/detection.js";
+import { shouldHandleTextCommands } from "../../../auto-reply/commands/registry.js";
 import {
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
-} from "../../../auto-reply/reply/history.js";
+} from "../../../auto-reply/session/history.js";
 import {
   buildMentionRegexes,
   matchesMentionWithExplicit,
-} from "../../../auto-reply/reply/mentions.js";
+} from "../../../auto-reply/support/mentions.js";
 import { loadConfig } from "../../../core/config/config.js";
 import { logVerbose, shouldLogVerbose } from "../../../globals.js";
 import { recordChannelActivity } from "../../../infra/channel-activity.js";

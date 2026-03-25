@@ -18,14 +18,14 @@ import {
 import type { APIStringSelectComponent } from "discord-api-types/v10";
 import { ButtonStyle, ChannelType } from "discord-api-types/v10";
 import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../../../auto-reply/delivery/provider-dispatcher.js";
+import { createReplyReferencePlanner } from "../../../auto-reply/delivery/reference.js";
+import { finalizeInboundContext } from "../../../auto-reply/inbound/context.js";
 import {
   formatInboundEnvelope,
   resolveEnvelopeFormatOptions,
-} from "../../../auto-reply/envelope.js";
-import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../../auto-reply/reply/provider-dispatcher.js";
-import { createReplyReferencePlanner } from "../../../auto-reply/reply/reply-reference.js";
+} from "../../../auto-reply/inbound/envelope.js";
+import { resolveChunkMode, resolveTextChunkLimit } from "../../../auto-reply/support/chunk.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import { resolveMarkdownTableMode } from "../../../core/config/markdown-tables.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";

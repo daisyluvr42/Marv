@@ -22,11 +22,11 @@ vi.mock("../send.js", () => ({
   removeReactionDiscord,
 }));
 
-vi.mock("../../../auto-reply/dispatch.js", () => ({
+vi.mock("../../../auto-reply/inbound/dispatch.js", () => ({
   dispatchInboundMessage,
 }));
 
-vi.mock("../../../auto-reply/reply/reply-dispatcher.js", () => ({
+vi.mock("../../../auto-reply/delivery/dispatcher.js", () => ({
   createReplyDispatcherWithTyping: vi.fn(() => ({
     dispatcher: {
       sendToolResult: vi.fn(() => true),

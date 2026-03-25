@@ -3,8 +3,8 @@ import {
   chunkMarkdownTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "../../auto-reply/chunk.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
+} from "../../auto-reply/support/chunk.js";
+import type { ReplyPayload } from "../../auto-reply/support/types.js";
 import type { sendMessageDiscord } from "../../channels/discord/send.js";
 import type { sendMessageIMessage } from "../../channels/imessage/send.js";
 import { resolveChannelMediaMaxBytes } from "../../channels/plugins/media-limits.js";

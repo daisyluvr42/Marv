@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HISTORY_CONTEXT_MARKER } from "../../auto-reply/reply/history.js";
-import { resetInboundDedupe } from "../../auto-reply/reply/inbound-dedupe.js";
-import { CURRENT_MESSAGE_MARKER } from "../../auto-reply/reply/mentions.js";
+import { resetInboundDedupe } from "../../auto-reply/inbound/dedupe.js";
+import { HISTORY_CONTEXT_MARKER } from "../../auto-reply/session/history.js";
+import { CURRENT_MESSAGE_MARKER } from "../../auto-reply/support/mentions.js";
 import {
   defaultSlackTestConfig,
   getSlackTestState,

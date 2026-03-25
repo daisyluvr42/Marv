@@ -1,4 +1,4 @@
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import { normalizeChatType } from "./chat-type.js";
 
 function extractConversationId(from?: string): string | undefined {
@@ -20,7 +20,7 @@ function shouldAppendId(id: string): boolean {
   return false;
 }
 
-export function resolveConversationLabel(ctx: MsgContext): string | undefined {
+export function resolveConversationLabel(ctx: TurnContext): string | undefined {
   const explicit = ctx.ConversationLabel?.trim();
   if (explicit) {
     return explicit;

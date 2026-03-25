@@ -4,9 +4,9 @@ import { CURRENT_SESSION_VERSION, SessionManager } from "@mariozechner/pi-coding
 import { resolveSessionAgentId } from "../../../agents/agent-scope.js";
 import { resolveThinkingDefault } from "../../../agents/model/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../../agents/timeout.js";
-import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";
-import { createReplyDispatcher } from "../../../auto-reply/reply/reply-dispatcher.js";
-import type { MsgContext } from "../../../auto-reply/templating.js";
+import { createReplyDispatcher } from "../../../auto-reply/delivery/dispatcher.js";
+import { dispatchInboundMessage } from "../../../auto-reply/inbound/dispatch.js";
+import type { TurnContext } from "../../../auto-reply/support/templating.js";
 import { createReplyPrefixOptions } from "../../../channels/reply-prefix.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../../utils/message-channel.js";
 import { resolveSessionFilePath } from "../../config/sessions.js";
@@ -843,7 +843,7 @@ export const chatHandlers: GatewayRequestHandlers = {
       // See: https://github.com/moltbot/moltbot/issues/3658
       const stampedMessage = injectTimestamp(parsedMessage, timestampOptsFromConfig(cfg));
 
-      const ctx: MsgContext = {
+      const ctx: TurnContext = {
         Body: parsedMessage,
         BodyForAgent: stampedMessage,
         BodyForCommands: commandBody,

@@ -1,4 +1,4 @@
-import type { MsgContext } from "../../../auto-reply/templating.js";
+import type { TurnContext } from "../../../auto-reply/support/templating.js";
 import { normalizeChatType } from "../../../channels/chat-type.js";
 import { resolveConversationLabel } from "../../../channels/conversation-label.js";
 import { getChannelDock } from "../../../channels/dock.js";
@@ -42,7 +42,7 @@ const mergeOrigin = (
   return Object.keys(merged).length > 0 ? merged : undefined;
 };
 
-export function deriveSessionOrigin(ctx: MsgContext): SessionOrigin | undefined {
+export function deriveSessionOrigin(ctx: TurnContext): SessionOrigin | undefined {
   const label = resolveConversationLabel(ctx)?.trim();
   const providerRaw =
     (typeof ctx.OriginatingChannel === "string" && ctx.OriginatingChannel) ||
@@ -94,7 +94,7 @@ export function snapshotSessionOrigin(entry?: SessionEntry): SessionOrigin | und
 }
 
 export function deriveGroupSessionPatch(params: {
-  ctx: MsgContext;
+  ctx: TurnContext;
   sessionKey: string;
   existing?: SessionEntry;
   groupResolution?: GroupKeyResolution | null;
@@ -151,7 +151,7 @@ export function deriveGroupSessionPatch(params: {
 }
 
 export function deriveSessionMetaPatch(params: {
-  ctx: MsgContext;
+  ctx: TurnContext;
   sessionKey: string;
   existing?: SessionEntry;
   groupResolution?: GroupKeyResolution | null;

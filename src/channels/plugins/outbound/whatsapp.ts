@@ -1,4 +1,4 @@
-import { chunkText } from "../../../auto-reply/chunk.js";
+import { chunkText } from "../../../auto-reply/support/chunk.js";
 import { shouldLogVerbose } from "../../../globals.js";
 import { sendPollWhatsApp } from "../../web/outbound.js";
 import { resolveWhatsAppOutboundTarget } from "../../whatsapp/resolve-outbound-target.js";

@@ -7,7 +7,7 @@ import {
   type TelegramMediaRef,
 } from "./bot-message-context.js";
 import { dispatchTelegramMessage } from "./bot-message-dispatch.js";
-import type { TelegramBotOptions } from "./bot.js";
+import type { TelegramBotOptions } from "./bot/types.js";
 import type { TelegramContext, TelegramStreamMode } from "./bot/types.js";
 
 /** Dependencies injected once when creating the message processor. */

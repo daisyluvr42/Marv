@@ -1,20 +1,20 @@
 import { resolveAckReaction } from "../../../../agents/prompt/identity.js";
-import { hasControlCommand } from "../../../../auto-reply/command-detection.js";
-import { shouldHandleTextCommands } from "../../../../auto-reply/commands-registry.js";
+import { hasControlCommand } from "../../../../auto-reply/commands/detection.js";
+import { shouldHandleTextCommands } from "../../../../auto-reply/commands/registry.js";
+import { finalizeInboundContext } from "../../../../auto-reply/inbound/context.js";
 import {
   formatInboundEnvelope,
   resolveEnvelopeFormatOptions,
-} from "../../../../auto-reply/envelope.js";
+} from "../../../../auto-reply/inbound/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
-} from "../../../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../../auto-reply/reply/inbound-context.js";
+} from "../../../../auto-reply/session/history.js";
 import {
   buildMentionRegexes,
   matchesMentionWithExplicit,
-} from "../../../../auto-reply/reply/mentions.js";
-import type { FinalizedMsgContext } from "../../../../auto-reply/templating.js";
+} from "../../../../auto-reply/support/mentions.js";
+import type { FinalizedTurnContext } from "../../../../auto-reply/support/templating.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../../core/config/sessions.js";
 import { logVerbose, shouldLogVerbose } from "../../../../globals.js";
 import { enqueueSystemEvent } from "../../../../infra/system-events.js";
@@ -630,7 +630,7 @@ export async function prepareSlackMessage(params: {
     CommandAuthorized: commandAuthorized,
     OriginatingChannel: "slack" as const,
     OriginatingTo: slackTo,
-  }) satisfies FinalizedMsgContext;
+  }) satisfies FinalizedTurnContext;
 
   await recordInboundSession({
     storePath,

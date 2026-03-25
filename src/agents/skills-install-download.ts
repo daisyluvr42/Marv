@@ -15,7 +15,7 @@ import { isWithinDir } from "../infra/path-safety.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { ensureDir, resolveUserPath } from "../utils.js";
 import { formatInstallFailureMessage } from "./skills-install-output.js";
-import type { SkillInstallResult } from "./skills-install.js";
+import type { SkillInstallResult } from "./skills-install-types.js";
 import type { SkillEntry, SkillInstallSpec } from "./skills.js";
 import { hasBinary } from "./skills.js";
 import { resolveSkillToolsRootDir } from "./skills/tools-dir.js";

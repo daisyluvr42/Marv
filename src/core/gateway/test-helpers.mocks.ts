@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Mock, vi } from "vitest";
-import type { MsgContext } from "../../auto-reply/templating.js";
-import type { GetReplyOptions, ReplyPayload } from "../../auto-reply/types.js";
+import type { TurnContext } from "../../auto-reply/support/templating.js";
+import type { GetReplyOptions, ReplyPayload } from "../../auto-reply/support/types.js";
 import type { ChannelPlugin, ChannelOutboundAdapter } from "../../channels/plugins/types.js";
 import type { TailscaleWhoisIdentity } from "../../infra/tailscale.js";
 import type { PluginRegistry } from "../../plugins/registry.js";
@@ -22,7 +22,7 @@ type StubChannelOptions = {
 };
 
 type GetReplyFromConfigFn = (
-  ctx: MsgContext,
+  ctx: TurnContext,
   opts?: GetReplyOptions,
   configOverride?: MarvConfig,
 ) => Promise<ReplyPayload | ReplyPayload[] | undefined>;
@@ -576,7 +576,7 @@ vi.mock("../../channels/web/index.js", async () => {
 vi.mock("../../commands/agent.js", () => ({
   agentCommand,
 }));
-vi.mock("../../auto-reply/reply.js", () => ({
+vi.mock("../../auto-reply/index.js", () => ({
   getReplyFromConfig,
 }));
 vi.mock("../../cli/deps.js", async () => {

@@ -1,6 +1,6 @@
 import { resolveRemoteEmbeddingBearerClient } from "./embeddings-remote-client.js";
 import { fetchRemoteEmbeddingVectors } from "./embeddings-remote-fetch.js";
-import type { EmbeddingProvider, EmbeddingProviderOptions } from "./embeddings.js";
+import type { EmbeddingProvider, EmbeddingProviderOptions } from "./embeddings-types.js";
 
 export type OpenAiEmbeddingClient = {
   baseUrl: string;

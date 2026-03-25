@@ -1,23 +1,26 @@
 import { resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
-import { hasControlCommand } from "../../../auto-reply/command-detection.js";
-import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";
+import { hasControlCommand } from "../../../auto-reply/commands/detection.js";
+import { createReplyDispatcherWithTyping } from "../../../auto-reply/delivery/dispatcher.js";
+import { finalizeInboundContext } from "../../../auto-reply/inbound/context.js";
+import {
+  createInboundDebouncer,
+  resolveInboundDebounceMs,
+} from "../../../auto-reply/inbound/debounce.js";
+import { dispatchInboundMessage } from "../../../auto-reply/inbound/dispatch.js";
 import {
   formatInboundEnvelope,
   formatInboundFromLabel,
   resolveEnvelopeFormatOptions,
-} from "../../../auto-reply/envelope.js";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "../../../auto-reply/inbound-debounce.js";
+} from "../../../auto-reply/inbound/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
   recordPendingHistoryEntryIfEnabled,
-} from "../../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
-import { buildMentionRegexes, matchesMentionPatterns } from "../../../auto-reply/reply/mentions.js";
-import { createReplyDispatcherWithTyping } from "../../../auto-reply/reply/reply-dispatcher.js";
+} from "../../../auto-reply/session/history.js";
+import {
+  buildMentionRegexes,
+  matchesMentionPatterns,
+} from "../../../auto-reply/support/mentions.js";
 import { resolveChannelGroupRequireMention } from "../../../core/config/group-policy.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";

@@ -5,7 +5,7 @@ import {
   readStringArrayParam,
   readStringParam,
 } from "../../agents/tools/common.js";
-import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
+import { parseReplyDirectives } from "../../auto-reply/directives/reply-directives.js";
 import { dispatchChannelMessageAction } from "../../channels/plugins/message-actions.js";
 import type {
   ChannelId,

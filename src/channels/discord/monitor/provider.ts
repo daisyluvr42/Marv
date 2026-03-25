@@ -7,10 +7,10 @@ import {
 } from "@buape/carbon";
 import type { GatewayPlugin } from "@buape/carbon/gateway";
 import { Routes } from "discord-api-types/v10";
-import { resolveTextChunkLimit } from "../../../auto-reply/chunk.js";
-import { listNativeCommandSpecsForConfig } from "../../../auto-reply/commands-registry.js";
-import type { HistoryEntry } from "../../../auto-reply/reply/history.js";
-import { listSkillCommandsForAgents } from "../../../auto-reply/skill-commands.js";
+import { listNativeCommandSpecsForConfig } from "../../../auto-reply/commands/registry.js";
+import { listSkillCommandsForAgents } from "../../../auto-reply/commands/skill-commands.js";
+import type { HistoryEntry } from "../../../auto-reply/session/history.js";
+import { resolveTextChunkLimit } from "../../../auto-reply/support/chunk.js";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,

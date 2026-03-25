@@ -18,6 +18,7 @@ import {
   buildHuggingfaceModelDefinition,
 } from "./huggingface-models.js";
 import { resolveAwsSdkEnvVarName, resolveEnvApiKey } from "./model-auth.js";
+import { normalizeGoogleModelId } from "./model-ref.js";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,
@@ -319,16 +320,9 @@ function resolveApiKeyFromProfiles(params: {
   return undefined;
 }
 
-export function normalizeGoogleModelId(id: string): string {
-  if (id === "gemini-3-pro" || id === "gemini-3-pro-preview") {
-    // gemini-3-pro-preview was shut down 2026-03-09; map to 3.1
-    return "gemini-3.1-pro-preview";
-  }
-  if (id === "gemini-3-flash") {
-    return "gemini-3-flash-preview";
-  }
-  return id;
-}
+// normalizeGoogleModelId lives in model-ref.ts to avoid circular dependencies.
+// Re-exported here for backward compatibility.
+export { normalizeGoogleModelId } from "./model-ref.js";
 
 function normalizeGoogleProvider(provider: ProviderConfig): ProviderConfig {
   let mutated = false;

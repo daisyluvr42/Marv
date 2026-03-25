@@ -1,7 +1,7 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
-import { createStreamingDirectiveAccumulator } from "../../auto-reply/reply/streaming-directives.js";
-import { formatToolAggregate } from "../../auto-reply/tool-meta.js";
+import { parseReplyDirectives } from "../../auto-reply/directives/reply-directives.js";
+import { createStreamingDirectiveAccumulator } from "../../auto-reply/directives/streaming.js";
+import { formatToolAggregate } from "../../auto-reply/support/tool-meta.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { InlineCodeState } from "../../markdown/code-spans.js";

@@ -2,9 +2,9 @@ import type { LogLevel } from "../../logging/levels.js";
 
 type ShouldLogVerbose = typeof import("../../globals.js").shouldLogVerbose;
 type DispatchReplyWithBufferedBlockDispatcher =
-  typeof import("../../auto-reply/reply/provider-dispatcher.js").dispatchReplyWithBufferedBlockDispatcher;
+  typeof import("../../auto-reply/delivery/provider-dispatcher.js").dispatchReplyWithBufferedBlockDispatcher;
 type CreateReplyDispatcherWithTyping =
-  typeof import("../../auto-reply/reply/reply-dispatcher.js").createReplyDispatcherWithTyping;
+  typeof import("../../auto-reply/delivery/dispatcher.js").createReplyDispatcherWithTyping;
 type ResolveEffectiveMessagesConfig =
   typeof import("../../agents/prompt/identity.js").resolveEffectiveMessagesConfig;
 type ResolveHumanDelayConfig =
@@ -18,11 +18,12 @@ type UpsertChannelPairingRequest =
 type FetchRemoteMedia = typeof import("../../media/fetch.js").fetchRemoteMedia;
 type SaveMediaBuffer = typeof import("../../media/store.js").saveMediaBuffer;
 type TextToSpeechTelephony = typeof import("../../tts/tts.js").textToSpeechTelephony;
-type BuildMentionRegexes = typeof import("../../auto-reply/reply/mentions.js").buildMentionRegexes;
+type BuildMentionRegexes =
+  typeof import("../../auto-reply/support/mentions.js").buildMentionRegexes;
 type MatchesMentionPatterns =
-  typeof import("../../auto-reply/reply/mentions.js").matchesMentionPatterns;
+  typeof import("../../auto-reply/support/mentions.js").matchesMentionPatterns;
 type MatchesMentionWithExplicit =
-  typeof import("../../auto-reply/reply/mentions.js").matchesMentionWithExplicit;
+  typeof import("../../auto-reply/support/mentions.js").matchesMentionWithExplicit;
 type ShouldAckReaction = typeof import("../../channels/ack-reactions.js").shouldAckReaction;
 type RemoveAckReactionAfterReply =
   typeof import("../../channels/ack-reactions.js").removeAckReactionAfterReply;
@@ -31,37 +32,40 @@ type ResolveChannelGroupPolicy =
 type ResolveChannelGroupRequireMention =
   typeof import("../../core/config/group-policy.js").resolveChannelGroupRequireMention;
 type CreateInboundDebouncer =
-  typeof import("../../auto-reply/inbound-debounce.js").createInboundDebouncer;
+  typeof import("../../auto-reply/inbound/debounce.js").createInboundDebouncer;
 type ResolveInboundDebounceMs =
-  typeof import("../../auto-reply/inbound-debounce.js").resolveInboundDebounceMs;
+  typeof import("../../auto-reply/inbound/debounce.js").resolveInboundDebounceMs;
 type ResolveCommandAuthorizedFromAuthorizers =
   typeof import("../../channels/command-gating.js").resolveCommandAuthorizedFromAuthorizers;
-type ResolveTextChunkLimit = typeof import("../../auto-reply/chunk.js").resolveTextChunkLimit;
-type ResolveChunkMode = typeof import("../../auto-reply/chunk.js").resolveChunkMode;
-type ChunkMarkdownText = typeof import("../../auto-reply/chunk.js").chunkMarkdownText;
+type ResolveTextChunkLimit =
+  typeof import("../../auto-reply/support/chunk.js").resolveTextChunkLimit;
+type ResolveChunkMode = typeof import("../../auto-reply/support/chunk.js").resolveChunkMode;
+type ChunkMarkdownText = typeof import("../../auto-reply/support/chunk.js").chunkMarkdownText;
 type ChunkMarkdownTextWithMode =
-  typeof import("../../auto-reply/chunk.js").chunkMarkdownTextWithMode;
-type ChunkText = typeof import("../../auto-reply/chunk.js").chunkText;
-type ChunkTextWithMode = typeof import("../../auto-reply/chunk.js").chunkTextWithMode;
-type ChunkByNewline = typeof import("../../auto-reply/chunk.js").chunkByNewline;
+  typeof import("../../auto-reply/support/chunk.js").chunkMarkdownTextWithMode;
+type ChunkText = typeof import("../../auto-reply/support/chunk.js").chunkText;
+type ChunkTextWithMode = typeof import("../../auto-reply/support/chunk.js").chunkTextWithMode;
+type ChunkByNewline = typeof import("../../auto-reply/support/chunk.js").chunkByNewline;
 type ResolveMarkdownTableMode =
   typeof import("../../core/config/markdown-tables.js").resolveMarkdownTableMode;
 type ConvertMarkdownTables = typeof import("../../markdown/tables.js").convertMarkdownTables;
-type HasControlCommand = typeof import("../../auto-reply/command-detection.js").hasControlCommand;
+type HasControlCommand = typeof import("../../auto-reply/commands/detection.js").hasControlCommand;
 type IsControlCommandMessage =
-  typeof import("../../auto-reply/command-detection.js").isControlCommandMessage;
+  typeof import("../../auto-reply/commands/detection.js").isControlCommandMessage;
 type ShouldComputeCommandAuthorized =
-  typeof import("../../auto-reply/command-detection.js").shouldComputeCommandAuthorized;
+  typeof import("../../auto-reply/commands/detection.js").shouldComputeCommandAuthorized;
 type ShouldHandleTextCommands =
-  typeof import("../../auto-reply/commands-registry.js").shouldHandleTextCommands;
+  typeof import("../../auto-reply/commands/registry.js").shouldHandleTextCommands;
 type DispatchReplyFromConfig =
-  typeof import("../../auto-reply/reply/dispatch-from-config.js").dispatchReplyFromConfig;
+  typeof import("../../auto-reply/dispatch-from-config.js").dispatchReplyFromConfig;
 type FinalizeInboundContext =
-  typeof import("../../auto-reply/reply/inbound-context.js").finalizeInboundContext;
-type FormatAgentEnvelope = typeof import("../../auto-reply/envelope.js").formatAgentEnvelope;
-type FormatInboundEnvelope = typeof import("../../auto-reply/envelope.js").formatInboundEnvelope;
+  typeof import("../../auto-reply/inbound/context.js").finalizeInboundContext;
+type FormatAgentEnvelope =
+  typeof import("../../auto-reply/inbound/envelope.js").formatAgentEnvelope;
+type FormatInboundEnvelope =
+  typeof import("../../auto-reply/inbound/envelope.js").formatInboundEnvelope;
 type ResolveEnvelopeFormatOptions =
-  typeof import("../../auto-reply/envelope.js").resolveEnvelopeFormatOptions;
+  typeof import("../../auto-reply/inbound/envelope.js").resolveEnvelopeFormatOptions;
 type ResolveStateDir = typeof import("../../core/config/paths.js").resolveStateDir;
 type RecordInboundSession = typeof import("../../channels/session.js").recordInboundSession;
 type RecordSessionMetaFromInbound =

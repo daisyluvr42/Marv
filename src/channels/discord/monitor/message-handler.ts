@@ -1,9 +1,9 @@
 import type { Client } from "@buape/carbon";
-import { hasControlCommand } from "../../../auto-reply/command-detection.js";
+import { hasControlCommand } from "../../../auto-reply/commands/detection.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
-} from "../../../auto-reply/inbound-debounce.js";
+} from "../../../auto-reply/inbound/debounce.js";
 import { danger } from "../../../globals.js";
 import type { DiscordMessageEvent, DiscordMessageHandler } from "./listeners.js";
 import { preflightDiscordMessage } from "./message-handler.preflight.js";

@@ -1,5 +1,5 @@
-import { resolveQueueSettings } from "../auto-reply/reply/queue.js";
-import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
+import { resolveQueueSettings } from "../auto-reply/queue/index.js";
+import { SILENT_REPLY_TOKEN } from "../auto-reply/support/tokens.js";
 import { loadConfig } from "../core/config/config.js";
 import {
   loadSessionStore,
@@ -30,7 +30,16 @@ import {
 } from "./runner/pi-embedded.js";
 import { type AnnounceQueueItem, enqueueAnnounce } from "./subagent-announce-queue.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
-import { sanitizeTextContent, extractAssistantText } from "./tools/sessions-helpers.js";
+import { sanitizeTextContent, extractAssistantText } from "./tools/sessions/sessions-helpers.js";
+
+// Path in a variable to break circular dependency chain
+// (subagent-announce <-> subagent-registry).
+const REGISTRY_MODULE = "./subagent-registry.js";
+async function loadRegistryModule() {
+  return import(/* @vite-ignore */ REGISTRY_MODULE) as Promise<
+    typeof import("./subagent-registry.js")
+  >;
+}
 
 type ToolResultMessage = {
   role?: unknown;
@@ -689,10 +698,8 @@ export function buildSubagentSystemPrompt(params: {
   return lines.join("\n");
 }
 
-export type SubagentRunOutcome = {
-  status: "ok" | "error" | "timeout" | "unknown";
-  error?: string;
-};
+import type { SubagentRunOutcome } from "./subagent-types.js";
+export type { SubagentRunOutcome } from "./subagent-types.js";
 
 export type SubagentAnnounceType = "subagent task" | "cron job";
 
@@ -826,7 +833,7 @@ export async function runSubagentAnnounceFlow(params: {
 
     let activeChildDescendantRuns = 0;
     try {
-      const { countActiveDescendantRuns } = await import("./subagent-registry.js");
+      const { countActiveDescendantRuns } = await loadRegistryModule();
       activeChildDescendantRuns = Math.max(0, countActiveDescendantRuns(params.childSessionKey));
     } catch {
       // Best-effort only; fall back to direct announce behavior when unavailable.
@@ -866,7 +873,7 @@ export async function runSubagentAnnounceFlow(params: {
     // still receive the announce — injecting will start a new agent turn.
     if (requesterIsSubagent) {
       const { isSubagentSessionRunActive, resolveRequesterForChildSession } =
-        await import("./subagent-registry.js");
+        await loadRegistryModule();
       if (!isSubagentSessionRunActive(targetRequesterSessionKey)) {
         // Parent run has ended. Check if parent SESSION still exists.
         // If it does, the parent may be waiting for child results — inject there.
@@ -899,7 +906,7 @@ export async function runSubagentAnnounceFlow(params: {
 
     let remainingActiveSubagentRuns = 0;
     try {
-      const { countActiveDescendantRuns } = await import("./subagent-registry.js");
+      const { countActiveDescendantRuns } = await loadRegistryModule();
       remainingActiveSubagentRuns = Math.max(
         0,
         countActiveDescendantRuns(targetRequesterSessionKey),

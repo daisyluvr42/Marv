@@ -12,11 +12,8 @@ import {
   resolveDefaultModelForAgent,
   resolveSubagentConfiguredModelSelection,
 } from "../../agents/model/model-selection.js";
-import { normalizeGroupActivation } from "../../auto-reply/group-activation.js";
-import {
-  normalizeQueueDropPolicy,
-  normalizeQueueMode,
-} from "../../auto-reply/reply/queue/normalize.js";
+import { normalizeGroupActivation } from "../../auto-reply/inbound/group-activation.js";
+import { normalizeQueueDropPolicy, normalizeQueueMode } from "../../auto-reply/queue/normalize.js";
 import {
   formatThinkingLevels,
   formatXHighModelHint,
@@ -25,7 +22,7 @@ import {
   normalizeThinkLevel,
   normalizeUsageDisplay,
   supportsXHighThinking,
-} from "../../auto-reply/thinking.js";
+} from "../../auto-reply/support/thinking.js";
 import {
   isSubagentSessionKey,
   normalizeAgentId,

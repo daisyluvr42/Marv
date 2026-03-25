@@ -1,6 +1,6 @@
 import path from "node:path";
-import { finalizeInboundContext } from "../auto-reply/reply/inbound-context.js";
-import type { MsgContext } from "../auto-reply/templating.js";
+import { finalizeInboundContext } from "../auto-reply/inbound/context.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import {
   buildCompatibilityPromptMedia,
   type MediaPromptCompatibility,
@@ -494,7 +494,7 @@ async function extractFileBlocks(params: {
 }
 
 export async function applyMediaUnderstanding(params: {
-  ctx: MsgContext;
+  ctx: TurnContext;
   cfg: MarvConfig;
   agentDir?: string;
   providers?: Record<string, MediaUnderstandingProvider>;

@@ -1,6 +1,6 @@
 import type { SlackActionMiddlewareArgs, SlackCommandMiddlewareArgs } from "@slack/bolt";
-import type { ChatCommandDefinition, CommandArgs } from "../../../auto-reply/commands-registry.js";
-import type { ReplyPayload } from "../../../auto-reply/types.js";
+import type { ChatCommandDefinition, CommandArgs } from "../../../auto-reply/commands/registry.js";
+import type { ReplyPayload } from "../../../auto-reply/support/types.js";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
@@ -117,11 +117,11 @@ function readSlackExternalArgMenuToken(raw: unknown): string | undefined {
   return token.length > 0 ? token : undefined;
 }
 
-type CommandsRegistry = typeof import("../../../auto-reply/commands-registry.js");
+type CommandsRegistry = typeof import("../../../auto-reply/commands/registry.js");
 let commandsRegistry: CommandsRegistry | undefined;
 async function getCommandsRegistry(): Promise<CommandsRegistry> {
   if (!commandsRegistry) {
-    commandsRegistry = await import("../../../auto-reply/commands-registry.js");
+    commandsRegistry = await import("../../../auto-reply/commands/registry.js");
   }
   return commandsRegistry;
 }
@@ -550,8 +550,8 @@ export async function registerSlackMonitorSlashCommands(params: {
       const [{ resolveAgentRoute }, { finalizeInboundContext }, { dispatchReplyWithDispatcher }] =
         await Promise.all([
           import("../../../routing/resolve-route.js"),
-          import("../../../auto-reply/reply/inbound-context.js"),
-          import("../../../auto-reply/reply/provider-dispatcher.js"),
+          import("../../../auto-reply/inbound/context.js"),
+          import("../../../auto-reply/delivery/provider-dispatcher.js"),
         ]);
       const [{ resolveConversationLabel }, { createReplyPrefixOptions }] = await Promise.all([
         import("../../conversation-label.js"),
@@ -630,7 +630,7 @@ export async function registerSlackMonitorSlashCommands(params: {
         const [{ deliverSlackSlashReplies }, { resolveChunkMode }, { resolveMarkdownTableMode }] =
           await Promise.all([
             import("./replies.js"),
-            import("../../../auto-reply/chunk.js"),
+            import("../../../auto-reply/support/chunk.js"),
             import("../../../core/config/markdown-tables.js"),
           ]);
         await deliverSlackSlashReplies({
@@ -690,7 +690,9 @@ export async function registerSlackMonitorSlashCommands(params: {
   if (nativeEnabled) {
     reg = await getCommandsRegistry();
     const skillCommands = nativeSkillsEnabled
-      ? (await import("../../../auto-reply/skill-commands.js")).listSkillCommandsForAgents({ cfg })
+      ? (await import("../../../auto-reply/commands/skill-commands.js")).listSkillCommandsForAgents(
+          { cfg },
+        )
       : [];
     nativeCommands = reg.listNativeCommandSpecsForConfig(cfg, { skillCommands, provider: "slack" });
   }

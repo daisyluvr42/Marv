@@ -1,5 +1,5 @@
-import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/thinking.js";
-import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
+import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/support/thinking.js";
+import { SILENT_REPLY_TOKEN } from "../../auto-reply/support/tokens.js";
 import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
 import type { ConfiguredModelTier } from "../../core/config/types.models.js";
 import { listDeliverableMessageChannels } from "../../utils/message-channel.js";

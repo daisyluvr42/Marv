@@ -6,7 +6,7 @@ import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
 import { setTelegramRuntime } from "../../../extensions/telegram/src/runtime.js";
 import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
 import { setWhatsAppRuntime } from "../../../extensions/whatsapp/src/runtime.js";
-import * as replyModule from "../../auto-reply/reply.js";
+import * as replyModule from "../../auto-reply/index.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveAgentMainSessionKey, resolveMainSessionKey } from "../../core/config/sessions.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";

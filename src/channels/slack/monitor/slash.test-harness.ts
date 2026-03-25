@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   createReplyPrefixOptionsMock: vi.fn(),
 }));
 
-vi.mock("../../../auto-reply/reply/provider-dispatcher.js", () => ({
+vi.mock("../../../auto-reply/delivery/provider-dispatcher.js", () => ({
   dispatchReplyWithDispatcher: (...args: unknown[]) => mocks.dispatchMock(...args),
 }));
 
@@ -23,7 +23,7 @@ vi.mock("../../../routing/resolve-route.js", () => ({
   resolveAgentRoute: (...args: unknown[]) => mocks.resolveAgentRouteMock(...args),
 }));
 
-vi.mock("../../../auto-reply/reply/inbound-context.js", () => ({
+vi.mock("../../../auto-reply/inbound/context.js", () => ({
   finalizeInboundContext: (...args: unknown[]) => mocks.finalizeInboundContextMock(...args),
 }));
 

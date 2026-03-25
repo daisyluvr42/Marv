@@ -1,5 +1,5 @@
 import { html, nothing } from "lit";
-import { normalizeToolName } from "../../../../src/agents/tools/tool-policy.js";
+import { normalizeToolName } from "../../../../src/agents/tools/policy/tool-policy.js";
 import type { SkillStatusEntry, SkillStatusReport } from "../types.js";
 import {
   isAllowedByPolicy,

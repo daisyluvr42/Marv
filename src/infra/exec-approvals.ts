@@ -2,10 +2,12 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_AGENT_ID } from "../routing/session-key.js";
+import type { ExecAllowlistEntry } from "./exec-approvals-types.js";
 import { expandHomePrefix } from "./home-dir.js";
 import { requestJsonlSocket } from "./jsonl-socket.js";
 export * from "./exec-approvals-analysis.js";
 export * from "./exec-approvals-allowlist.js";
+export type { ExecAllowlistEntry } from "./exec-approvals-types.js";
 
 export type ExecHost = "sandbox" | "gateway" | "node";
 export type ExecSecurity = "deny" | "allowlist" | "full";
@@ -41,14 +43,6 @@ export type ExecApprovalsDefaults = {
   ask?: ExecAsk;
   askFallback?: ExecSecurity;
   autoAllowSkills?: boolean;
-};
-
-export type ExecAllowlistEntry = {
-  id?: string;
-  pattern: string;
-  lastUsedAt?: number;
-  lastUsedCommand?: string;
-  lastResolvedPath?: string;
 };
 
 export type ExecApprovalsAgent = ExecApprovalsDefaults & {

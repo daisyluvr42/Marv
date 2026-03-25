@@ -3075,7 +3075,7 @@ Gateway 网关监视 `~/.marv/marv.json`（或 `MARV_CONFIG_PATH`）并自动应
 
 便利标志（CLI）：
 
-- `marv --dev …` → 使用 `~/.marv-dev` + 端口从基础 `19001` 偏移
+- `marv --dev …` → 使用 `~/.marv-dev` + 端口从基础 `4454` 偏移
 - `marv --profile <name> …` → 使用 `~/.marv-<name>`（端口通过配置/环境变量/标志）
 
 参见 [Gateway 网关运维手册](/gateway) 了解派生的端口映射（gateway/browser/canvas）。

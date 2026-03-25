@@ -1,4 +1,4 @@
-import type { MsgContext } from "../../../auto-reply/templating.js";
+import type { TurnContext } from "../../../auto-reply/support/templating.js";
 import { normalizeHyphenSlug } from "../../../shared/string-normalization.js";
 import { listDeliverableMessageChannels } from "../../../utils/message-channel.js";
 import type { GroupKeyResolution } from "./types.js";
@@ -51,7 +51,7 @@ export function buildGroupDisplayName(params: {
   return token ? `${providerKey}:${token}` : providerKey;
 }
 
-export function resolveGroupSessionKey(ctx: MsgContext): GroupKeyResolution | null {
+export function resolveGroupSessionKey(ctx: TurnContext): GroupKeyResolution | null {
   const from = typeof ctx.From === "string" ? ctx.From.trim() : "";
   const chatType = ctx.ChatType?.trim().toLowerCase();
   const normalizedChatType =

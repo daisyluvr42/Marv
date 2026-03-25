@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { callGateway } from "../core/gateway/call.js";
-import { extractAssistantText, stripToolMessages } from "./tools/sessions-helpers.js";
+import { extractAssistantText, stripToolMessages } from "./tools/sessions/sessions-helpers.js";
 
 /**
  * Specification for context to inject into a subagent task prompt.

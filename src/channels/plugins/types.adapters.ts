@@ -1,5 +1,5 @@
-import type { ReplyPayload } from "../../auto-reply/types.js";
-import type { MarvConfig } from "../../core/config/config.js";
+import type { ReplyPayload } from "../../auto-reply/support/types.js";
+import type { MarvConfig } from "../../core/config/types.js";
 import type { GroupToolPolicyConfig } from "../../core/config/types.tools.js";
 import type { OutboundDeliveryResult, OutboundSendDeps } from "../../infra/outbound/deliver.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity.js";

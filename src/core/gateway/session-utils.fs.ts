@@ -7,7 +7,7 @@ import {
   resolveSessionFilePath,
   resolveSessionTranscriptPath,
   resolveSessionTranscriptPathInDir,
-} from "../config/sessions.js";
+} from "../config/sessions/paths.js";
 import { hasInterSessionUserProvenance } from "../session/input-provenance.js";
 import { stripEnvelope } from "./chat-sanitize.js";
 import type { SessionPreviewItem } from "./session-utils.types.js";

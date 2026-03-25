@@ -31,7 +31,7 @@ async function createBotHandlerWithOptions(options: {
   runtimeError: ReturnType<typeof vi.fn>;
 }> {
   const { createTelegramBot } = await import("./bot.js");
-  const replyModule = await import("../../auto-reply/reply.js");
+  const replyModule = await import("../../auto-reply/index.js");
   const replySpy = (replyModule as unknown as { __replySpy: ReturnType<typeof vi.fn> }).__replySpy;
 
   onSpy.mockReset();
@@ -522,7 +522,7 @@ describe("telegram text fragments", () => {
     "buffers near-limit text and processes sequential parts as one message",
     async () => {
       const { createTelegramBot } = await import("./bot.js");
-      const replyModule = await import("../../auto-reply/reply.js");
+      const replyModule = await import("../../auto-reply/index.js");
       const replySpy = (replyModule as unknown as { __replySpy: ReturnType<typeof vi.fn> })
         .__replySpy;
 

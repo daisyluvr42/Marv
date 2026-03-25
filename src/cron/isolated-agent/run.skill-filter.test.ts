@@ -97,7 +97,7 @@ vi.mock("../../agents/cli-session.js", () => ({
   setCliSessionId: vi.fn(),
 }));
 
-vi.mock("../../auto-reply/thinking.js", () => ({
+vi.mock("../../auto-reply/support/thinking.js", () => ({
   normalizeThinkLevel: vi.fn().mockReturnValue(undefined),
   normalizeVerboseLevel: vi.fn().mockReturnValue("off"),
   supportsXHighThinking: vi.fn().mockReturnValue(false),

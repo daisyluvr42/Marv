@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import type { ThinkLevel } from "../../auto-reply/thinking.js";
+import type { ThinkLevel } from "../../auto-reply/support/thinking.js";
 import {
   getDiagnosticSessionState,
   type ToolCallRecord,
@@ -55,7 +55,7 @@ import {
   pickFallbackThinkingLevel,
   type FailoverReason,
 } from "../runner/pi-embedded-helpers.js";
-import { getEscalationManager } from "../tools/permission-escalation.js";
+import { getEscalationManager } from "../tools/policy/permission-escalation.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../usage.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "../workspace-run.js";
 import { compactEmbeddedPiSessionDirect } from "./compact.js";

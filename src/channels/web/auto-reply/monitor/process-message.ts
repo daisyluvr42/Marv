@@ -1,18 +1,18 @@
 import { resolveIdentityNamePrefix } from "../../../../agents/prompt/identity.js";
-import { resolveChunkMode, resolveTextChunkLimit } from "../../../../auto-reply/chunk.js";
-import { shouldComputeCommandAuthorized } from "../../../../auto-reply/command-detection.js";
+import { shouldComputeCommandAuthorized } from "../../../../auto-reply/commands/detection.js";
+import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../auto-reply/delivery/provider-dispatcher.js";
+import { finalizeInboundContext } from "../../../../auto-reply/inbound/context.js";
 import {
   formatInboundEnvelope,
   resolveEnvelopeFormatOptions,
-} from "../../../../auto-reply/envelope.js";
-import type { getReplyFromConfig } from "../../../../auto-reply/reply.js";
+} from "../../../../auto-reply/inbound/envelope.js";
+import type { getReplyFromConfig } from "../../../../auto-reply/index.js";
 import {
   buildHistoryContextFromEntries,
   type HistoryEntry,
-} from "../../../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../../auto-reply/reply/inbound-context.js";
-import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../auto-reply/reply/provider-dispatcher.js";
-import type { ReplyPayload } from "../../../../auto-reply/types.js";
+} from "../../../../auto-reply/session/history.js";
+import { resolveChunkMode, resolveTextChunkLimit } from "../../../../auto-reply/support/chunk.js";
+import type { ReplyPayload } from "../../../../auto-reply/support/types.js";
 import type { loadConfig } from "../../../../core/config/config.js";
 import { resolveMarkdownTableMode } from "../../../../core/config/markdown-tables.js";
 import {

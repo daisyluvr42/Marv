@@ -1,18 +1,18 @@
 import { ChannelType } from "@buape/carbon";
 import { resolveAckReaction, resolveHumanDelayConfig } from "../../../agents/prompt/identity.js";
-import { resolveChunkMode } from "../../../auto-reply/chunk.js";
-import { dispatchInboundMessage } from "../../../auto-reply/dispatch.js";
+import { createReplyDispatcherWithTyping } from "../../../auto-reply/delivery/dispatcher.js";
+import { finalizeInboundContext } from "../../../auto-reply/inbound/context.js";
+import { dispatchInboundMessage } from "../../../auto-reply/inbound/dispatch.js";
 import {
   formatInboundEnvelope,
   resolveEnvelopeFormatOptions,
-} from "../../../auto-reply/envelope.js";
+} from "../../../auto-reply/inbound/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
-} from "../../../auto-reply/reply/history.js";
-import { finalizeInboundContext } from "../../../auto-reply/reply/inbound-context.js";
-import { createReplyDispatcherWithTyping } from "../../../auto-reply/reply/reply-dispatcher.js";
-import type { ReplyPayload } from "../../../auto-reply/types.js";
+} from "../../../auto-reply/session/history.js";
+import { resolveChunkMode } from "../../../auto-reply/support/chunk.js";
+import type { ReplyPayload } from "../../../auto-reply/support/types.js";
 import { resolveMarkdownTableMode } from "../../../core/config/markdown-tables.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../core/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../globals.js";

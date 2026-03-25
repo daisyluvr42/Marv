@@ -1,6 +1,9 @@
 import type { MessageEvent, StickerEventMessage, EventSource, PostbackEvent } from "@line/bot-sdk";
-import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../auto-reply/envelope.js";
-import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
+import { finalizeInboundContext } from "../../auto-reply/inbound/context.js";
+import {
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+} from "../../auto-reply/inbound/envelope.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import {
   readSessionUpdatedAt,

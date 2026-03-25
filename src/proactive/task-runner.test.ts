@@ -139,7 +139,9 @@ const baseTask: ProactiveTask = {
   id: "task-1",
   title: "Test task",
   description: "Do something",
+  priority: "normal",
   status: "running",
+  attemptCount: 1,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };

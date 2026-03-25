@@ -14,7 +14,7 @@ vi.mock("../send.js", () => ({
     sendMessageIMessageMock(to, message, opts),
 }));
 
-vi.mock("../../../auto-reply/chunk.js", () => ({
+vi.mock("../../../auto-reply/support/chunk.js", () => ({
   chunkTextWithMode: (text: string) => chunkTextWithModeMock(text),
   resolveChunkMode: () => resolveChunkModeMock(),
 }));

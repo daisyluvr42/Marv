@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { getReplyFromConfig } from "./auto-reply/reply.js";
-import { applyTemplate } from "./auto-reply/templating.js";
+import { getReplyFromConfig } from "./auto-reply/index.js";
+import { applyTemplate } from "./auto-reply/support/templating.js";
 import { monitorWebChannel } from "./channels/web/channel-web.js";
 import { createDefaultDeps } from "./cli/deps.js";
 import { promptYesNo } from "./cli/prompt.js";

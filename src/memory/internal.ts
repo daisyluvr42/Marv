@@ -2,7 +2,10 @@ import crypto from "node:crypto";
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runTasksWithConcurrency } from "../utils/run-with-concurrency.js";
+
+const log = createSubsystemLogger("memory");
 
 export type MemoryFileEntry = {
   path: string;
@@ -22,7 +25,9 @@ export type MemoryChunk = {
 export function ensureDir(dir: string): string {
   try {
     fsSync.mkdirSync(dir, { recursive: true });
-  } catch {}
+  } catch {
+    log.debug(`mkdirSync failed for ${dir} (may already exist)`);
+  }
   return dir;
 }
 
@@ -95,7 +100,9 @@ export async function listMemoryFiles(
         return;
       }
       result.push(absPath);
-    } catch {}
+    } catch {
+      log.debug(`lstat failed for memory file candidate: ${absPath}`);
+    }
   };
 
   await addMarkdownFile(memoryFile);
@@ -105,7 +112,9 @@ export async function listMemoryFiles(
     if (!dirStat.isSymbolicLink() && dirStat.isDirectory()) {
       await walkDir(memoryDir, result);
     }
-  } catch {}
+  } catch {
+    log.debug(`failed to traverse memory directory: ${memoryDir}`);
+  }
 
   const normalizedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
   if (normalizedExtraPaths.length > 0) {
@@ -122,7 +131,9 @@ export async function listMemoryFiles(
         if (stat.isFile() && inputPath.endsWith(".md")) {
           result.push(inputPath);
         }
-      } catch {}
+      } catch {
+        log.debug(`failed to stat extra memory path: ${inputPath}`);
+      }
     }
   }
   if (result.length <= 1) {
@@ -134,7 +145,9 @@ export async function listMemoryFiles(
     let key = entry;
     try {
       key = await fs.realpath(entry);
-    } catch {}
+    } catch {
+      log.debug(`realpath failed for memory entry: ${entry}`);
+    }
     if (seen.has(key)) {
       continue;
     }

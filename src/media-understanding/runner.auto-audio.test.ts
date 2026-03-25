@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { MsgContext } from "../auto-reply/templating.js";
+import type { TurnContext } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
 import {
   buildProviderRegistry,
@@ -13,7 +13,7 @@ import {
 
 async function withAudioFixture(
   run: (params: {
-    ctx: MsgContext;
+    ctx: TurnContext;
     media: ReturnType<typeof normalizeMediaAttachments>;
     cache: ReturnType<typeof createMediaAttachmentCache>;
   }) => Promise<void>,
@@ -22,7 +22,7 @@ async function withAudioFixture(
   process.env.PATH = "/usr/bin:/bin";
   const tmpPath = path.join(os.tmpdir(), `marv-auto-audio-${Date.now()}.wav`);
   await fs.writeFile(tmpPath, Buffer.from("RIFF"));
-  const ctx: MsgContext = { MediaPath: tmpPath, MediaType: "audio/wav" };
+  const ctx: TurnContext = { MediaPath: tmpPath, MediaType: "audio/wav" };
   const media = normalizeMediaAttachments(ctx);
   const cache = createMediaAttachmentCache(media);
 

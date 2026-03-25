@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { getReplyFromConfig } from "../../../auto-reply/reply.js";
-import { HEARTBEAT_TOKEN } from "../../../auto-reply/tokens.js";
+import type { getReplyFromConfig } from "../../../auto-reply/index.js";
+import { HEARTBEAT_TOKEN } from "../../../auto-reply/support/tokens.js";
 import type { sendMessageWhatsApp } from "../outbound.js";
 
 const state = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ vi.mock("../../../agents/current-time.js", () => ({
 
 // Perf: this module otherwise pulls a large dependency graph that we don't need
 // for these unit tests.
-vi.mock("../../../auto-reply/reply.js", () => ({
+vi.mock("../../../auto-reply/index.js", () => ({
   getReplyFromConfig: vi.fn(async () => undefined),
 }));
 

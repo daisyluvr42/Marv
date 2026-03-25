@@ -156,7 +156,7 @@ vi.mock("../../core/config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../auto-reply/reply.js", () => ({
+vi.mock("../../auto-reply/index.js", () => ({
   getReplyFromConfig: (...args: unknown[]) => slackTestState.replyMock(...args),
 }));
 

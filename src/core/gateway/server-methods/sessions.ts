@@ -3,8 +3,8 @@ import fs from "node:fs";
 import { resolveDefaultAgentId } from "../../../agents/agent-scope.js";
 import { DEFAULT_EMBEDDED_TIMEOUT_MS } from "../../../agents/pi-embedded-runner/runs.js";
 import { abortEmbeddedPiRun, waitForEmbeddedPiRunEnd } from "../../../agents/runner/pi-embedded.js";
-import { stopSubagentsForRequester } from "../../../auto-reply/reply/abort.js";
-import { clearSessionQueues } from "../../../auto-reply/reply/queue.js";
+import { clearSessionQueues } from "../../../auto-reply/queue/index.js";
+import { stopSubagentsForRequester } from "../../../auto-reply/support/abort.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../../routing/session-key.js";
 import { loadConfig } from "../../config/config.js";
 import {

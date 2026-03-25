@@ -15,7 +15,7 @@ import type {
   ResolvedTtsModelOverrides,
   TtsDirectiveOverrides,
   TtsDirectiveParseResult,
-} from "./tts.js";
+} from "./tts-types.js";
 
 export const DEFAULT_ELEVENLABS_BASE_URL = "https://api.elevenlabs.io";
 const TEMP_FILE_CLEANUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes

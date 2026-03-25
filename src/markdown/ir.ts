@@ -1,5 +1,5 @@
 import MarkdownIt from "markdown-it";
-import { chunkText } from "../auto-reply/chunk.js";
+import { chunkText } from "../auto-reply/support/chunk.js";
 import type { MarkdownTableMode } from "../core/config/types.base.js";
 
 type ListState = {

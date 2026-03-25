@@ -4,7 +4,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ImageContent } from "@mariozechner/pi-ai";
 import { streamSimple } from "@mariozechner/pi-ai";
 import { createAgentSession, SessionManager, SettingsManager } from "@mariozechner/pi-coding-agent";
-import { resolveHeartbeatPrompt } from "../../../auto-reply/heartbeat.js";
+import { resolveHeartbeatPrompt } from "../../../auto-reply/support/heartbeat.js";
 import { resolveSignalReactionLevel } from "../../../channels/signal/reaction-level.js";
 import { resolveTelegramInlineButtonsScope } from "../../../channels/telegram/inline-buttons.js";
 import { resolveTelegramReactionLevel } from "../../../channels/telegram/reaction-level.js";

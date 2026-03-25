@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
+import { SILENT_REPLY_TOKEN } from "../auto-reply/support/tokens.js";
 
 type AgentCallRequest = { method?: string; params?: Record<string, unknown> };
 type RequesterResolution = {

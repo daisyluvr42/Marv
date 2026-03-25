@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { ReplyPayload } from "../auto-reply/types.js";
+import type { ReplyPayload } from "../auto-reply/support/types.js";
 import { stripMarkdown } from "../channels/line/markdown-to-line.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
@@ -18,7 +18,6 @@ import type { MarvConfig } from "../core/config/config.js";
 import type {
   TtsConfig,
   TtsAutoMode,
-  TtsMode,
   TtsProvider,
   TtsModelOverrideConfig,
 } from "../core/config/types.tts.js";
@@ -40,6 +39,12 @@ import {
   scheduleCleanup,
   summarizeText,
 } from "./tts-core.js";
+import type {
+  ResolvedTtsConfig,
+  ResolvedTtsModelOverrides,
+  TtsDirectiveOverrides,
+  TtsDirectiveParseResult,
+} from "./tts-types.js";
 export { OPENAI_TTS_MODELS, OPENAI_TTS_VOICES } from "./tts-core.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -85,51 +90,12 @@ const TELEPHONY_OUTPUT = {
 
 const TTS_AUTO_MODES = new Set<TtsAutoMode>(["off", "always", "inbound", "tagged"]);
 
-export type ResolvedTtsConfig = {
-  auto: TtsAutoMode;
-  mode: TtsMode;
-  provider: TtsProvider;
-  providerSource: "config" | "default";
-  summaryModel?: string;
-  modelOverrides: ResolvedTtsModelOverrides;
-  elevenlabs: {
-    apiKey?: string;
-    baseUrl: string;
-    voiceId: string;
-    modelId: string;
-    seed?: number;
-    applyTextNormalization?: "auto" | "on" | "off";
-    languageCode?: string;
-    voiceSettings: {
-      stability: number;
-      similarityBoost: number;
-      style: number;
-      useSpeakerBoost: boolean;
-      speed: number;
-    };
-  };
-  openai: {
-    apiKey?: string;
-    model: string;
-    voice: string;
-  };
-  edge: {
-    enabled: boolean;
-    voice: string;
-    lang: string;
-    outputFormat: string;
-    outputFormatConfigured: boolean;
-    pitch?: string;
-    rate?: string;
-    volume?: string;
-    saveSubtitles: boolean;
-    proxy?: string;
-    timeoutMs?: number;
-  };
-  prefsPath?: string;
-  maxTextLength: number;
-  timeoutMs: number;
-};
+export type {
+  ResolvedTtsConfig,
+  ResolvedTtsModelOverrides,
+  TtsDirectiveOverrides,
+  TtsDirectiveParseResult,
+} from "./tts-types.js";
 
 type TtsUserPrefs = {
   tts?: {
@@ -139,42 +105,6 @@ type TtsUserPrefs = {
     maxLength?: number;
     summarize?: boolean;
   };
-};
-
-export type ResolvedTtsModelOverrides = {
-  enabled: boolean;
-  allowText: boolean;
-  allowProvider: boolean;
-  allowVoice: boolean;
-  allowModelId: boolean;
-  allowVoiceSettings: boolean;
-  allowNormalization: boolean;
-  allowSeed: boolean;
-};
-
-export type TtsDirectiveOverrides = {
-  ttsText?: string;
-  provider?: TtsProvider;
-  openai?: {
-    voice?: string;
-    model?: string;
-  };
-  elevenlabs?: {
-    voiceId?: string;
-    modelId?: string;
-    seed?: number;
-    applyTextNormalization?: "auto" | "on" | "off";
-    languageCode?: string;
-    voiceSettings?: Partial<ResolvedTtsConfig["elevenlabs"]["voiceSettings"]>;
-  };
-};
-
-export type TtsDirectiveParseResult = {
-  cleanedText: string;
-  ttsText?: string;
-  hasDirective: boolean;
-  overrides: TtsDirectiveOverrides;
-  warnings: string[];
 };
 
 export type TtsResult = {

@@ -1,7 +1,7 @@
 import { beforeEach, vi } from "vitest";
-import { resetInboundDedupe } from "../../auto-reply/reply/inbound-dedupe.js";
-import type { MsgContext } from "../../auto-reply/templating.js";
-import type { GetReplyOptions, ReplyPayload } from "../../auto-reply/types.js";
+import { resetInboundDedupe } from "../../auto-reply/inbound/dedupe.js";
+import type { TurnContext } from "../../auto-reply/support/templating.js";
+import type { GetReplyOptions, ReplyPayload } from "../../auto-reply/support/types.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { MockFn } from "../../test-utils/vitest-mock-fn.js";
 
@@ -78,7 +78,7 @@ const skillCommandsHoisted = vi.hoisted(() => ({
 }));
 export const listSkillCommandsForAgents = skillCommandsHoisted.listSkillCommandsForAgents;
 
-vi.mock("../../auto-reply/skill-commands.js", () => ({
+vi.mock("../../auto-reply/commands/skill-commands.js", () => ({
   listSkillCommandsForAgents,
 }));
 
@@ -184,7 +184,7 @@ vi.mock("@grammyjs/transformer-throttler", () => ({
 
 export const replySpy: MockFn<
   (
-    ctx: MsgContext,
+    ctx: TurnContext,
     opts?: GetReplyOptions,
     configOverride?: MarvConfig,
   ) => Promise<ReplyPayload | ReplyPayload[] | undefined>
@@ -193,7 +193,7 @@ export const replySpy: MockFn<
   return undefined;
 });
 
-vi.mock("../../auto-reply/reply.js", () => ({
+vi.mock("../../auto-reply/index.js", () => ({
   getReplyFromConfig: replySpy,
   __replySpy: replySpy,
 }));

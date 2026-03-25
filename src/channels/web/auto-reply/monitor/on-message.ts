@@ -1,5 +1,5 @@
-import type { getReplyFromConfig } from "../../../../auto-reply/reply.js";
-import type { MsgContext } from "../../../../auto-reply/templating.js";
+import type { getReplyFromConfig } from "../../../../auto-reply/index.js";
+import type { TurnContext } from "../../../../auto-reply/support/templating.js";
 import { loadConfig } from "../../../../core/config/config.js";
 import { logVerbose } from "../../../../globals.js";
 import { resolveAgentRoute } from "../../../../routing/resolve-route.js";
@@ -111,7 +111,7 @@ export function createWebOnMessageHandler(params: {
         Surface: "whatsapp",
         OriginatingChannel: "whatsapp",
         OriginatingTo: conversationId,
-      } satisfies MsgContext;
+      } satisfies TurnContext;
       updateLastRouteInBackground({
         cfg: params.cfg,
         backgroundTasks: params.backgroundTasks,

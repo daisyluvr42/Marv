@@ -5,7 +5,7 @@ import {
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
 import { createAuthChoiceAgentModelNoter } from "./auth-choice.apply-helpers.js";
-import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply.js";
+import type { ApplyAuthChoiceParams, ApplyAuthChoiceResult } from "./auth-choice.apply-types.js";
 import { applyAuthChoicePluginProvider } from "./auth-choice.apply.plugin-provider.js";
 import { applyDefaultModelChoice } from "./auth-choice.default-model.js";
 import {

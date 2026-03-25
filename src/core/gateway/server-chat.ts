@@ -1,5 +1,5 @@
-import { normalizeVerboseLevel } from "../../auto-reply/thinking.js";
-import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
+import { normalizeVerboseLevel } from "../../auto-reply/support/thinking.js";
+import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../auto-reply/support/tokens.js";
 import {
   type AgentEventPayload,
   getAgentRunContext,
@@ -10,6 +10,12 @@ import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { loadConfig } from "../config/config.js";
 import { loadSessionEntry } from "./session-utils.js";
 import { formatForLog } from "./ws-log.js";
+
+/**
+ * Minimum interval (ms) between WebSocket chat delta emissions per run.
+ * Prevents flooding clients with high-frequency partial tokens during streaming.
+ */
+const CHAT_DELTA_THROTTLE_MS = 150;
 
 /**
  * Check if webchat broadcasts should be suppressed for heartbeat runs.
@@ -240,7 +246,7 @@ export function createAgentEventHandler({
     chatRunState.buffers.set(clientRunId, text);
     const now = Date.now();
     const last = chatRunState.deltaSentAt.get(clientRunId) ?? 0;
-    if (now - last < 150) {
+    if (now - last < CHAT_DELTA_THROTTLE_MS) {
       return;
     }
     chatRunState.deltaSentAt.set(clientRunId, now);

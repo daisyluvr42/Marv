@@ -2,8 +2,8 @@ import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/p
 import {
   extractShortModelName,
   type ResponsePrefixContext,
-} from "../auto-reply/reply/response-prefix-template.js";
-import type { GetReplyOptions } from "../auto-reply/types.js";
+} from "../auto-reply/delivery/response-prefix-template.js";
+import type { GetReplyOptions } from "../auto-reply/support/types.js";
 import type { MarvConfig } from "../core/config/config.js";
 
 type ModelSelectionContext = Parameters<NonNullable<GetReplyOptions["onModelSelected"]>>[0];
