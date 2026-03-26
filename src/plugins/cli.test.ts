@@ -43,4 +43,15 @@ describe("registerPluginCliCommands", () => {
     expect(mocks.memoryRegister).not.toHaveBeenCalled();
     expect(mocks.otherRegister).toHaveBeenCalledTimes(1);
   });
+
+  it("skips plugin CLI registrars when command exists as alias", () => {
+    const program = new Command();
+    program.command("mem").alias("memory");
+
+    // oxlint-disable-next-line typescript/no-explicit-any
+    registerPluginCliCommands(program, {} as any);
+
+    expect(mocks.memoryRegister).not.toHaveBeenCalled();
+    expect(mocks.otherRegister).toHaveBeenCalledTimes(1);
+  });
 });

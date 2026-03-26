@@ -23,7 +23,9 @@ export function registerPluginCliCommands(program: Command, cfg?: MarvConfig) {
     logger,
   });
 
-  const existingCommands = new Set(program.commands.map((cmd) => cmd.name()));
+  const existingCommands = new Set(
+    program.commands.flatMap((cmd) => [cmd.name(), ...cmd.aliases()]),
+  );
 
   for (const entry of registry.cliRegistrars) {
     if (entry.commands.length > 0) {
