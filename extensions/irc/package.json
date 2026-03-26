@@ -1,6 +1,6 @@
 {
   "name": "@marv/irc",
-  "version": "2026.03.19-new",
+  "version": "2026.3.26",
   "description": "Marv IRC channel plugin",
   "type": "module",
   "peerDependencies": {

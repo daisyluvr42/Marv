@@ -1,6 +1,6 @@
 {
   "name": "@marv/nostr",
-  "version": "2026.03.19-new",
+  "version": "2026.3.26",
   "description": "Marv Nostr channel plugin for NIP-04 encrypted DMs",
   "type": "module",
   "dependencies": {

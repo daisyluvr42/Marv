@@ -1,6 +1,6 @@
 {
   "name": "@marv/open-prose",
-  "version": "2026.03.19-new",
+  "version": "2026.3.26",
   "private": true,
   "description": "OpenProse VM skill pack plugin (slash command + telemetry).",
   "type": "module",
