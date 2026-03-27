@@ -32,11 +32,11 @@ If the Gateway is unreachable, the CLI **falls back** to the embedded local run.
 
 ```bash
 marv agent --to +15555550123 --message "status update"
-marv agent --agent ops --message "Summarize logs"
+marv agent --agent main --message "Summarize logs"
 marv agent --session-id 1234 --message "Summarize inbox" --thinking medium
 marv agent --to +15555550123 --message "Trace logs" --verbose on --json
 marv agent --to +15555550123 --message "Summon reply" --deliver
-marv agent --agent ops --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"
+marv agent --agent main --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"
 ```
 
 ## Flags

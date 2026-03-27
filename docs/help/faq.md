@@ -1544,7 +1544,7 @@ via SSH/Tailscale (see [Remote access](/gateway/remote)).
 Example pattern (run from a machine that can reach the target Gateway):
 
 ```bash
-marv agent --message "Hello from local bot" --deliver --channel telegram --reply-to <chat-id>
+marv agent --agent main --message "Hello from local bot" --deliver --channel telegram --reply-to <chat-id>
 ```
 
 Tip: add a guardrail so the two bots do not loop endlessly (mention-only, channel

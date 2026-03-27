@@ -60,7 +60,7 @@ export function registerAgentCommands(program: Command, args: { agentChannelOpti
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
   ['marv agent --to +15555550123 --message "status update"', "Start a new session."],
-  ['marv agent --agent ops --message "Summarize logs"', "Use a specific agent."],
+  ['marv agent --agent main --message "Summarize logs"', "Target the main agent directly."],
   [
     'marv agent --session-id 1234 --message "Summarize inbox" --thinking medium',
     "Target a session with explicit thinking level.",
@@ -71,7 +71,7 @@ ${formatHelpExamples([
   ],
   ['marv agent --to +15555550123 --message "Summon reply" --deliver', "Deliver reply."],
   [
-    'marv agent --agent ops --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"',
+    'marv agent --agent main --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"',
     "Send reply to a different channel/target.",
   ],
 ])}

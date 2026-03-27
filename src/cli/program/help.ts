@@ -52,7 +52,7 @@ export function configureProgramHelp(program: Command, ctx: ProgramContext) {
       "Use a named profile (isolates MARV_STATE_DIR/MARV_CONFIG_PATH under ~/.marv-<name>)",
     );
 
-  program.option("--no-color", "Disable ANSI colors", false);
+  program.option("--no-color", "Disable ANSI colors");
   program.helpOption("-h, --help", "Display help for command");
   program.helpCommand("help [command]", "Display help for command");
 

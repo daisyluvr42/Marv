@@ -56,6 +56,7 @@ import {
   applyProviderConfigWithDefaultModels,
   applyProviderConfigWithModelCatalog,
 } from "./onboard-auth.config-shared.js";
+import { OPENAI_CODEX_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from "./onboard-auth.constants.js";
 import {
   buildZaiModelDefinition,
   buildMoonshotModelDefinition,
@@ -72,6 +73,8 @@ import {
   XAI_BASE_URL,
   XAI_DEFAULT_MODEL_ID,
 } from "./onboard-auth.models.js";
+
+export { OPENAI_CODEX_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL };
 
 export function applyZaiProviderConfig(
   cfg: MarvConfig,
@@ -500,8 +503,6 @@ export function applyAnthropicConfig(cfg: MarvConfig): MarvConfig {
 }
 
 // OpenAI — catalog-driven models with metadata alias.
-export const OPENAI_DEFAULT_MODEL = "openai/gpt-5.1-codex";
-
 export function applyOpenAIProviderConfig(cfg: MarvConfig): MarvConfig {
   const modelMetadata = { ...cfg.models?.metadata };
   modelMetadata[OPENAI_DEFAULT_MODEL] = {
@@ -522,9 +523,6 @@ export function applyOpenAIConfig(cfg: MarvConfig): MarvConfig {
   const next = applyOpenAIProviderConfig(cfg);
   return applyAgentDefaultModelPrimary(next, OPENAI_DEFAULT_MODEL);
 }
-
-// OpenAI Codex — migrates users from openai/* models to the codex provider.
-export const OPENAI_CODEX_DEFAULT_MODEL = "openai-codex/gpt-5.3-codex";
 
 export function applyOpenAICodexProviderConfig(cfg: MarvConfig): MarvConfig {
   return cfg;

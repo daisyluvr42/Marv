@@ -215,7 +215,7 @@ marv message send --target +15555550123 --message "Hello from Marv"
 **Run an agent task:**
 
 ```bash
-marv agent --message "summarize today's changes"
+marv agent --agent main --message "summarize today's changes"
 marv agent --to +15555550123 --message "check server status"
 ```
 
@@ -470,20 +470,20 @@ journalctl --user -u marv-gateway -f
 
 ### Most-used commands
 
-| Command                                | Purpose                          |
-| -------------------------------------- | -------------------------------- |
-| `marv status --all`                    | Full system overview             |
-| `marv health`                          | Deep health probe                |
-| `marv logs --follow`                   | Live log tail                    |
-| `marv doctor`                          | Automated diagnostics and repair |
-| `marv tui`                             | Terminal UI                      |
-| `marv dashboard`                       | Web dashboard                    |
-| `marv channels status --probe`         | Channel connectivity check       |
-| `marv channels login --channel <name>` | (Re)authenticate a channel       |
-| `marv models status`                   | Model provider health            |
-| `marv config set <key> <value>`        | Change config                    |
-| `marv gateway run --force`             | Restart gateway                  |
-| `marv agent --message "..."`           | Run agent task                   |
+| Command                                   | Purpose                          |
+| ----------------------------------------- | -------------------------------- |
+| `marv status --all`                       | Full system overview             |
+| `marv health`                             | Deep health probe                |
+| `marv logs --follow`                      | Live log tail                    |
+| `marv doctor`                             | Automated diagnostics and repair |
+| `marv tui`                                | Terminal UI                      |
+| `marv dashboard`                          | Web dashboard                    |
+| `marv channels status --probe`            | Channel connectivity check       |
+| `marv channels login --channel <name>`    | (Re)authenticate a channel       |
+| `marv models status`                      | Model provider health            |
+| `marv config set <key> <value>`           | Change config                    |
+| `marv gateway run --force`                | Restart gateway                  |
+| `marv agent --agent main --message "..."` | Run agent task                   |
 
 ### Key file paths
 

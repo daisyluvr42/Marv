@@ -42,4 +42,18 @@ describe("acp cli option collisions", () => {
       }),
     );
   });
+
+  it("respects --no-prefix-cwd on `acp`", async () => {
+    const { registerAcpCli } = await import("./acp-cli.js");
+    const program = new Command();
+    registerAcpCli(program);
+
+    await program.parseAsync(["acp", "--no-prefix-cwd"], { from: "user" });
+
+    expect(serveAcpGateway).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prefixCwd: false,
+      }),
+    );
+  });
 });

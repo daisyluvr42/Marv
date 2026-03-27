@@ -18,7 +18,7 @@ Related:
 
 ```bash
 marv agent --to +15555550123 --message "status update" --deliver
-marv agent --agent ops --message "Summarize logs"
+marv agent --agent main --message "Summarize logs"
 marv agent --session-id 1234 --message "Summarize inbox" --thinking medium
-marv agent --agent ops --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"
+marv agent --agent main --message "Generate report" --deliver --reply-channel slack --reply-to "#reports"
 ```

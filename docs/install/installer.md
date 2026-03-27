@@ -78,25 +78,20 @@ Recommended for most interactive installs on macOS/Linux/WSL.
   </Step>
   <Step title="Install Marv">
     - `npm` method (default): global npm install
-    - `git` method: clone/update repo, install deps with pnpm, build, then install wrapper at `~/.local/bin/marv`
+    - `git` method: global npm install from a Git URL (`git+<repo>#<ref>`)
   </Step>
   <Step title="Post-install tasks">
-    - Runs `marv doctor --non-interactive` on upgrades and git installs (best effort)
-    - Attempts onboarding when appropriate (TTY available, onboarding not disabled, and bootstrap/config checks pass)
+    - Attempts onboarding when appropriate (onboarding not disabled)
+    - On macOS, prefers downloading and launching the matching Marv app when onboarding is enabled
     - Defaults `SHARP_IGNORE_GLOBAL_LIBVIPS=1`
   </Step>
 </Steps>
 
-### Source checkout detection
+### Behavior notes
 
-If run inside an Marv checkout (`package.json` + `pnpm-workspace.yaml`), the script offers:
-
-- use checkout (`git`), or
-- use global install (`npm`)
-
-If no TTY is available and no install method is set, it defaults to `npm` and warns.
-
-The script exits with code `2` for invalid method selection or invalid `--install-method` values.
+- `--install-method git` does **not** create or update a working checkout. It tells npm to install from the selected Git URL and ref.
+- `--no-git-update` is accepted for compatibility, but the current script only warns when it is passed outside `--install-method git`.
+- Unknown flags cause an immediate error.
 
 ### Examples (install.sh)
 
@@ -129,36 +124,36 @@ The script exits with code `2` for invalid method selection or invalid `--instal
 | Flag                            | Description                                               |
 | ------------------------------- | --------------------------------------------------------- |
 | `--install-method npm\|git`     | Choose install method (default: `npm`). Alias: `--method` |
-| `--npm`                         | Shortcut for npm method                                   |
-| `--git`                         | Shortcut for git method. Alias: `--github`                |
 | `--version <version\|dist-tag>` | npm version or dist-tag (default: `latest`)               |
 | `--beta`                        | Use beta dist-tag if available, else fallback to `latest` |
-| `--git-dir <path>`              | Checkout directory (default: `~/marv`). Alias: `--dir`    |
-| `--no-git-update`               | Skip `git pull` for existing checkout                     |
-| `--no-prompt`                   | Disable prompts                                           |
+| `--package <path-or-url>`       | Install from a local or remote package tarball            |
+| `--repo <url>`                  | Git repo URL used with `--install-method git`             |
+| `--ref <ref>`                   | Git ref used with `--install-method git`                  |
+| `--no-git-update`               | Compatibility flag; ignored by npm installs               |
+| `--set-npm-prefix`              | Force npm global prefix to `~/.npm-global` when needed    |
 | `--no-onboard`                  | Skip onboarding                                           |
 | `--onboard`                     | Enable onboarding                                         |
+| `--no-mac-app`                  | Skip Marv app download on macOS and use CLI onboarding    |
 | `--dry-run`                     | Print actions without applying changes                    |
-| `--verbose`                     | Enable debug output (`set -x`, npm notice-level logs)     |
+| `--verbose`                     | Enable shell tracing                                      |
 | `--help`                        | Show usage (`-h`)                                         |
 
   </Accordion>
 
   <Accordion title="Environment variables reference">
 
-| Variable                                | Description                                   |
-| --------------------------------------- | --------------------------------------------- |
-| `MARV_INSTALL_METHOD=git\|npm`          | Install method                                |
-| `MARV_VERSION=latest\|next\|<semver>`   | npm version or dist-tag                       |
-| `MARV_BETA=0\|1`                        | Use beta if available                         |
-| `MARV_GIT_DIR=<path>`                   | Checkout directory                            |
-| `MARV_GIT_UPDATE=0\|1`                  | Toggle git updates                            |
-| `MARV_NO_PROMPT=1`                      | Disable prompts                               |
-| `MARV_NO_ONBOARD=1`                     | Skip onboarding                               |
-| `MARV_DRY_RUN=1`                        | Dry run mode                                  |
-| `MARV_VERBOSE=1`                        | Debug mode                                    |
-| `MARV_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                 |
-| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`      | Control sharp/libvips behavior (default: `1`) |
+| Variable                            | Description                                    |
+| ----------------------------------- | ---------------------------------------------- |
+| `MARV_INSTALL_METHOD=git\|npm`      | Install method                                 |
+| `MARV_VERSION=<version-or-disttag>` | npm version or dist-tag                        |
+| `MARV_PACKAGE=<path-or-url>`        | Install from a local or remote package tarball |
+| `MARV_REPO=<url>`                   | Git repo URL                                   |
+| `MARV_REF=<ref>`                    | Git ref                                        |
+| `MARV_NO_ONBOARD=1`                 | Skip onboarding                                |
+| `MARV_NO_MAC_APP=1`                 | Skip Marv app download on macOS                |
+| `MARV_DRY_RUN=1`                    | Dry run mode                                   |
+| `MARV_VERBOSE=1`                    | Debug mode                                     |
+| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`  | Control sharp/libvips behavior (default: `1`)  |
 
   </Accordion>
 </AccordionGroup>
@@ -177,8 +172,8 @@ Designed for environments where you want everything under a local prefix (defaul
   <Step title="Install local Node runtime">
     Downloads Node tarball (default `22.22.0`) to `<prefix>/tools/node-v<version>` and verifies SHA-256.
   </Step>
-  <Step title="Ensure Git">
-    If Git is missing, attempts install via apt/dnf/yum on Linux or Homebrew on macOS.
+  <Step title="Prepare local wrapper">
+    Creates `<prefix>/package.json`, `<prefix>/home`, and the `<prefix>/bin/marv` wrapper.
   </Step>
   <Step title="Install Marv under prefix">
     Installs with npm using `--prefix <prefix>`, then writes wrapper to `<prefix>/bin/marv`.
@@ -213,30 +208,29 @@ Designed for environments where you want everything under a local prefix (defaul
 <AccordionGroup>
   <Accordion title="Flags reference">
 
-| Flag                   | Description                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `--prefix <path>`      | Install prefix (default: `~/.marv`)                                             |
-| `--version <ver>`      | Marv version or dist-tag (default: `latest`)                                    |
-| `--node-version <ver>` | Node version (default: `22.22.0`)                                               |
-| `--json`               | Emit NDJSON events                                                              |
-| `--onboard`            | Run `marv onboard` after install                                                |
-| `--no-onboard`         | Skip onboarding (default)                                                       |
-| `--set-npm-prefix`     | On Linux, force npm prefix to `~/.npm-global` if current prefix is not writable |
-| `--help`               | Show usage (`-h`)                                                               |
+| Flag                   | Description                                                 |
+| ---------------------- | ----------------------------------------------------------- |
+| `--prefix <path>`      | Install prefix (default: `~/.marv`)                         |
+| `--version <ver>`      | Marv version or dist-tag (default: `latest`)                |
+| `--node-version <ver>` | Node version (default: `22.22.0`)                           |
+| `--json`               | Emit NDJSON events                                          |
+| `--onboard`            | Run `marv onboard` after install                            |
+| `--no-onboard`         | Skip onboarding (default)                                   |
+| `--set-npm-prefix`     | Accepted for compatibility; local-prefix installs ignore it |
+| `--help`               | Show usage (`-h`)                                           |
 
   </Accordion>
 
   <Accordion title="Environment variables reference">
 
-| Variable                                | Description                                                                       |
-| --------------------------------------- | --------------------------------------------------------------------------------- |
-| `MARV_PREFIX=<path>`                    | Install prefix                                                                    |
-| `MARV_VERSION=<ver>`                    | Marv version or dist-tag                                                          |
-| `MARV_NODE_VERSION=<ver>`               | Node version                                                                      |
-| `MARV_NO_ONBOARD=1`                     | Skip onboarding                                                                   |
-| `MARV_NPM_LOGLEVEL=error\|warn\|notice` | npm log level                                                                     |
-| `MARV_GIT_DIR=<path>`                   | Legacy cleanup lookup path (used when removing old `Peekaboo` submodule checkout) |
-| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1`      | Control sharp/libvips behavior (default: `1`)                                     |
+| Variable                           | Description                                    |
+| ---------------------------------- | ---------------------------------------------- |
+| `MARV_PREFIX=<path>`               | Install prefix                                 |
+| `MARV_VERSION=<ver>`               | Marv version or dist-tag                       |
+| `MARV_NODE_VERSION=<ver>`          | Node version                                   |
+| `MARV_PACKAGE=<path-or-url>`       | Install from a local or remote package tarball |
+| `MARV_NO_ONBOARD=1`                | Skip onboarding                                |
+| `SHARP_IGNORE_GLOBAL_LIBVIPS=0\|1` | Control sharp/libvips behavior (default: `1`)  |
 
   </Accordion>
 </AccordionGroup>
@@ -255,11 +249,11 @@ Designed for environments where you want everything under a local prefix (defaul
     If missing, attempts install via winget, then Chocolatey, then Scoop.
   </Step>
   <Step title="Install Marv">
-    - `npm` method (default): global npm install using selected `-Tag`
-    - `git` method: clone/update repo, install/build with pnpm, and install wrapper at `%USERPROFILE%\.local\bin\marv.cmd`
+    - `npm` method (default): global npm install using the selected `-Version`
+    - `git` method: global npm install from a Git URL (`git+<repo>#<ref>`)
   </Step>
   <Step title="Post-install tasks">
-    Adds needed bin directory to user PATH when possible, then runs `marv doctor --non-interactive` on upgrades and git installs (best effort).
+    Resolves the installed `marv` command, prints its version, and optionally runs onboarding.
   </Step>
 </Steps>
 
@@ -274,11 +268,6 @@ Designed for environments where you want everything under a local prefix (defaul
   <Tab title="Git install">
     ```powershell
     & ([scriptblock]::Create((iwr -useb https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.ps1))) -InstallMethod git
-    ```
-  </Tab>
-  <Tab title="Custom git directory">
-    ```powershell
-    & ([scriptblock]::Create((iwr -useb https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.ps1))) -InstallMethod git -GitDir "C:\marv"
     ```
   </Tab>
   <Tab title="Dry run">
@@ -299,32 +288,37 @@ Designed for environments where you want everything under a local prefix (defaul
 <AccordionGroup>
   <Accordion title="Flags reference">
 
-| Flag                      | Description                                        |
-| ------------------------- | -------------------------------------------------- |
-| `-InstallMethod npm\|git` | Install method (default: `npm`)                    |
-| `-Tag <tag>`              | npm dist-tag (default: `latest`)                   |
-| `-GitDir <path>`          | Checkout directory (default: `%USERPROFILE%\marv`) |
-| `-NoOnboard`              | Skip onboarding                                    |
-| `-NoGitUpdate`            | Skip `git pull`                                    |
-| `-DryRun`                 | Print actions only                                 |
+| Flag                      | Description                                 |
+| ------------------------- | ------------------------------------------- |
+| `-InstallMethod npm\|git` | Install method (default: `npm`)             |
+| `-Version <tag>`          | npm dist-tag or version (default: `latest`) |
+| `-Package <path-or-url>`  | Install from a local or remote package file |
+| `-Repo <url>`             | Git repo URL for `-InstallMethod git`       |
+| `-Ref <git-ref>`          | Git ref for `-InstallMethod git`            |
+| `-NoOnboard`              | Skip onboarding                             |
+| `-Onboard`                | Force onboarding after install              |
+| `-Beta`                   | Shortcut for `-Version beta`                |
+| `-DryRun`                 | Print actions only                          |
 
   </Accordion>
 
   <Accordion title="Environment variables reference">
 
-| Variable                       | Description        |
-| ------------------------------ | ------------------ |
-| `MARV_INSTALL_METHOD=git\|npm` | Install method     |
-| `MARV_GIT_DIR=<path>`          | Checkout directory |
-| `MARV_NO_ONBOARD=1`            | Skip onboarding    |
-| `MARV_GIT_UPDATE=0`            | Disable git pull   |
-| `MARV_DRY_RUN=1`               | Dry run mode       |
+| Variable                       | Description                 |
+| ------------------------------ | --------------------------- |
+| `MARV_INSTALL_METHOD=git\|npm` | Install method              |
+| `MARV_VERSION=<version>`       | npm dist-tag or version     |
+| `MARV_PACKAGE=<path-or-url>`   | Package tarball path or URL |
+| `MARV_REPO=<url>`              | Git repo URL                |
+| `MARV_REF=<ref>`               | Git ref                     |
+| `MARV_NO_ONBOARD=1`            | Skip onboarding             |
+| `MARV_DRY_RUN=1`               | Dry run mode                |
 
   </Accordion>
 </AccordionGroup>
 
 <Note>
-If `-InstallMethod git` is used and Git is missing, the script exits and prints the Git for Windows link.
+If `-InstallMethod git` is used and Git is unavailable, npm will fail while resolving the Git dependency.
 </Note>
 
 ---
@@ -336,12 +330,12 @@ Use non-interactive flags/env vars for predictable runs.
 <Tabs>
   <Tab title="install.sh (non-interactive npm)">
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash -s -- --no-prompt --no-onboard
+    curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash -s -- --no-onboard
     ```
   </Tab>
   <Tab title="install.sh (non-interactive git)">
     ```bash
-    MARV_INSTALL_METHOD=git MARV_NO_PROMPT=1 \
+    MARV_INSTALL_METHOD=git MARV_NO_ONBOARD=1 \
       curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/daisyluvr42/Marv/main/install/install.sh | bash
     ```
   </Tab>

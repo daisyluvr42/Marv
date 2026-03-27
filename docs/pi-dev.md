@@ -43,7 +43,7 @@ Recommended flow:
 - Run the gateway in dev mode:
   - `pnpm gateway:dev`
 - Trigger the agent directly:
-  - `pnpm marv agent --message "Hello" --thinking low`
+  - `pnpm marv agent --agent main --message "Hello" --thinking low`
 - Use the TUI for interactive debugging:
   - `pnpm tui`
 

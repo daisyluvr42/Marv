@@ -91,8 +91,7 @@ vi.mock("./update-cli/restart-helper.js", () => ({
   runRestartScript: (...args: unknown[]) => runRestartScript(...args),
 }));
 
-// Mock completion-cli to break circular dependency (update-cli → completion-cli → command-registry → command-policies → update-cli)
-vi.mock("./completion-cli.js", () => ({
+vi.mock("./completion-utils.js", () => ({
   installCompletion: vi.fn(),
 }));
 

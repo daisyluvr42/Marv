@@ -469,7 +469,7 @@ Agent selection:
 marv cron add --name "Ops sweep" --cron "0 6 * * *" --session isolated --message "Check ops queue" --agent main
 
 # Switch or clear the agent on an existing job
-marv cron edit <jobId> --agent ops
+marv cron edit <jobId> --agent main
 marv cron edit <jobId> --clear-agent
 ```
 

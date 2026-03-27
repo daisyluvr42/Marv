@@ -47,7 +47,7 @@ Ask your agent to "refresh skills" or restart the gateway. Marv will discover th
 
 - **Be Concise**: Instruct the model on _what_ to do, not how to be an AI.
 - **Safety First**: If your skill uses `bash`, ensure the prompts don't allow arbitrary command injection from untrusted user input.
-- **Test Locally**: Use `marv agent --message "use my new skill"` to test.
+- **Test Locally**: Use `marv agent --agent main --message "use my new skill"` to test.
 
 ## Shared Skills
 

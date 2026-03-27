@@ -56,6 +56,23 @@ describe("registerMaintenanceCommands doctor action", () => {
     expect(runtime.exit).toHaveBeenCalledWith(0);
   });
 
+  it("forwards --no-workspace-suggestions to doctor", async () => {
+    doctorCommand.mockResolvedValue(undefined);
+
+    const { registerMaintenanceCommands } = await import("./register.maintenance.js");
+    const program = new Command();
+    registerMaintenanceCommands(program);
+
+    await program.parseAsync(["doctor", "--no-workspace-suggestions"], { from: "user" });
+
+    expect(doctorCommand).toHaveBeenCalledWith(
+      runtime,
+      expect.objectContaining({
+        workspaceSuggestions: false,
+      }),
+    );
+  });
+
   it("exits with code 1 when doctor fails", async () => {
     doctorCommand.mockRejectedValue(new Error("doctor failed"));
 
@@ -68,5 +85,28 @@ describe("registerMaintenanceCommands doctor action", () => {
     expect(runtime.error).toHaveBeenCalledWith("Error: doctor failed");
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(runtime.exit).not.toHaveBeenCalledWith(0);
+  });
+});
+
+describe("registerMaintenanceCommands dashboard action", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("forwards --no-open to dashboard", async () => {
+    dashboardCommand.mockResolvedValue(undefined);
+
+    const { registerMaintenanceCommands } = await import("./register.maintenance.js");
+    const program = new Command();
+    registerMaintenanceCommands(program);
+
+    await program.parseAsync(["dashboard", "--no-open"], { from: "user" });
+
+    expect(dashboardCommand).toHaveBeenCalledWith(
+      runtime,
+      expect.objectContaining({
+        noOpen: true,
+      }),
+    );
   });
 });

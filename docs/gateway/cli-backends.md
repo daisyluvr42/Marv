@@ -25,13 +25,15 @@ want “always works” text responses without relying on external APIs.
 You can use Claude Code CLI **without any config** (Marv ships a built-in default):
 
 ```bash
-marv agent --message "hi" --model claude-cli/opus-4.6
+marv models set claude-cli/opus-4.6
+marv agent --agent main --message "hi"
 ```
 
 Codex CLI also works out of the box:
 
 ```bash
-marv agent --message "hi" --model codex-cli/gpt-5.3-codex
+marv models set codex-cli/gpt-5.3-codex
+marv agent --agent main --message "hi"
 ```
 
 If your gateway runs under launchd/systemd and PATH is minimal, add just the

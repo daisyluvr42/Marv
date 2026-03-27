@@ -87,7 +87,7 @@ Run these commands to confirm everything is working:
 ```bash
 marv doctor              # Check config, auth, and gateway health
 marv gateway status      # Confirm the gateway is reachable
-marv agent -m "hello"    # Send a test message to the agent
+marv agent --agent main --message "hello"    # Send a test message to the main agent
 ```
 
 <Check>
