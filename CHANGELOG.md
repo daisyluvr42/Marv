@@ -4,10 +4,19 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
 ## Unreleased
 
+## 2026.3.27
+
 ### Changes
 
 - Sub-agents: add goal-driven orchestration loop that evaluates delegated sub-agent output against the parent's success criteria, delivers structured feedback, and iterates until accepted or budget exhausted.
 - Migration: `marv migrate export --scopes memory` now includes Soul.md identity files and Experience/Context files alongside vector databases, enabling complete one-command memory portability.
+
+### Fixes
+
+- Build/CLI: fix packaged and built CLI startup initialization cycles so release artifacts boot cleanly again instead of failing before command execution.
+- CLI: restore negated option handling for `--no-open`, `--no-workspace-suggestions`, `--no-prefix-cwd`, and `--no-color`.
+- Build/CLI: keep `doctor` and `completion` working in packaged builds instead of importing missing bundle-time CLI modules.
+- Install/Docs: align installer and first-use guidance with the actual supported installer flags and `marv agent` command behavior.
 
 ## 2026.3.16
 
