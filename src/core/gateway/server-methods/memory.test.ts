@@ -39,14 +39,14 @@ describe("memoryHandlers", () => {
     const respond = vi.fn();
 
     await memoryHandlers["memory.list"]({
-      params: { limit: 20, tier: "P1" },
+      params: { limit: 20, tier: "palace" },
       respond,
     } as never);
 
     expect(mocks.listSoulMemoryItems).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "main",
-        tier: "P1",
+        tier: "palace",
         limit: 20,
       }),
     );

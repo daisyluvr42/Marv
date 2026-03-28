@@ -18,7 +18,6 @@ export type MemoryStatusSnapshot = {
   knowledgeEnabled: boolean;
   runtimeIngestEnabled: boolean;
   totalItems: number;
-  tiers: Record<"P0" | "P1" | "P2" | "P3", number>;
   recordKinds: Record<"fact" | "relationship" | "experience" | "soul", number>;
   archiveEvents: number;
 };

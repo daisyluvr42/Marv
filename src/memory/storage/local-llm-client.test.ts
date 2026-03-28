@@ -45,6 +45,7 @@ describe("local-llm-client", () => {
       } as MarvConfig,
       model: {
         provider: "ollama",
+        model: "test-model",
       },
     });
 
@@ -120,6 +121,22 @@ describe("local-llm-client", () => {
         }),
       }),
     );
+  });
+
+  it("returns an error when no model is configured", async () => {
+    const result = await inferLocal({
+      cfg: {} as MarvConfig,
+      system: "system prompt",
+      prompt: "user prompt",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result).toEqual(
+      expect.objectContaining({
+        error: expect.stringContaining("no model configured"),
+      }),
+    );
+    expect(fetchWithSsrFGuardMock).not.toHaveBeenCalled();
   });
 
   it("returns an error for unsupported provider apis", async () => {

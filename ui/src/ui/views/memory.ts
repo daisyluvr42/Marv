@@ -29,7 +29,7 @@ function renderMemoryCard(
         <div class="muted" style="font-size: 0.75rem; white-space: nowrap;">${formatRelativeTimestamp(item.createdAt)}</div>
       </div>
       <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
-        <span class="pill" style="font-size: 0.7rem; text-transform: uppercase;">${item.tier}</span>
+        <span class="pill" style="font-size: 0.7rem; text-transform: uppercase;">${item.recordKind}</span>
         <span class="pill" style="font-size: 0.7rem;">${item.source}</span>
         <span class="pill" style="font-size: 0.7rem; font-family: var(--font-mono);">${item.scopeType}:${item.scopeId}</span>
         <span class="pill" style="font-size: 0.7rem;">${item.recordKind}</span>

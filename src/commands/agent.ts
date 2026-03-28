@@ -221,6 +221,14 @@ export async function agentCommand(
   });
   const workspaceDir = workspace.dir;
   const configuredPlan = resolveRuntimeModelPlan({ cfg, agentId: sessionAgentId, agentDir });
+  if (configuredPlan.candidates.length === 0 && configuredPlan.configured.length > 0) {
+    const reasons = configuredPlan.configured
+      .map((m) => `  ${m.ref}: ${m.availabilityReason ?? "unknown"}`)
+      .join("\n");
+    process.stderr.write(
+      `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
+    );
+  }
   const configuredModel = configuredPlan.candidates[0] ?? {
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
@@ -369,6 +377,14 @@ export async function agentCommand(
         requiredCapabilities: (opts.images?.length ?? 0) > 0 ? ["text", "vision"] : ["text"],
       },
     });
+    if (runtimePlan.candidates.length === 0 && runtimePlan.configured.length > 0) {
+      const reasons = runtimePlan.configured
+        .map((m) => `  ${m.ref}: ${m.availabilityReason ?? "unknown"}`)
+        .join("\n");
+      process.stderr.write(
+        `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
+      );
+    }
     const configuredDefaultRef = runtimePlan.candidates[0] ?? {
       provider: DEFAULT_PROVIDER,
       model: DEFAULT_MODEL,

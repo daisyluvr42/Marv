@@ -72,7 +72,7 @@ export function resolveDeepConsolidationConfig(cfg: MarvConfig): ResolvedDeepCon
  *
  * The old 3-stage LLM pipeline (cluster summarization, conflict judgment,
  * cross-scope reflection) has been replaced by EXPERIENCE.md weekly calibration.
- * P3 index maintenance (dedupe → consolidate → compact) runs via the standard
+ * Memory Palace index maintenance (dedupe → consolidate → compact) runs via the standard
  * maintenance pipeline in soul-memory-maintenance.ts.
  */
 export async function runSoulMemoryDeepConsolidation(params: {
@@ -101,11 +101,15 @@ export async function runSoulMemoryDeepConsolidation(params: {
     );
 
     // EXPERIENCE.md weekly calibration (attribution-driven culling)
+    // Pass recent Memory Palace episodic fragments as reference material
     try {
       const { weeklyCalibration } = await import("../experience/experience-rebuild.js");
+      const { loadRecentEpisodicFragments } = await import("./soul-memory-crud.js");
+      const p3Fragments = loadRecentEpisodicFragments({ agentId, days: 30, maxItems: 50 });
       await weeklyCalibration({
         agentId,
         cfg: params.cfg,
+        p3Fragments: p3Fragments || undefined,
       });
     } catch (err) {
       errors.push(`experienceCalibration: ${err instanceof Error ? err.message : String(err)}`);

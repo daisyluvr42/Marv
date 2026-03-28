@@ -11,7 +11,10 @@ export const SOURCE_AUTO_EXTRACTION = "auto_extraction";
 export const SOURCE_RUNTIME_EVENT = "runtime_event";
 
 // ── Tier constant ───────────────────────────────────────────────────────────
-export const TIER_P3 = "P3";
+// All items reside in the "Memory Palace" — a full episodic memory store with
+// structured indexing. The legacy P0–P3 tier hierarchy has been collapsed; the
+// operational memory layers are Soul.md + EXPERIENCE + CONTEXT.
+export const TIER_PALACE = "palace";
 
 // ── Record kind constants ───────────────────────────────────────────────────
 export const RECORD_KIND_FACT = "fact";
@@ -21,7 +24,10 @@ export const RECORD_KIND_SOUL = "soul";
 
 // ── Retrieval constants ─────────────────────────────────────────────────────
 export const DEFAULT_INJECT_THRESHOLD = 0.65;
+/** Default embedding dimensions (legacy hash-based vectors). */
 export const EMBEDDING_DIMS = 128;
+/** Alias for migration detection — matches the legacy hash vector size. */
+export const LEGACY_EMBEDDING_DIMS = 128;
 export const SOUL_MEMORY_PATH_PREFIX = "soul-memory/";
 export const SOUL_ARCHIVE_PATH_PREFIX = "soul-archive/";
 
@@ -29,10 +35,11 @@ export const SOUL_ARCHIVE_PATH_PREFIX = "soul-archive/";
 export const SOUL_MEMORY_FTS_TABLE = "memory_items_fts";
 export const SOUL_MEMORY_VEC_TABLE = "memory_items_vec";
 export const SOUL_MEMORY_ENTITY_TABLE = "memory_item_entities";
+export const SOUL_MEMORY_META_TABLE = "soul_memory_meta";
 export const MEMORY_ITEM_SELECT_COLUMNS =
   "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, " +
   "record_kind, summary, metadata_json, created_at, last_accessed_at, reinforcement_count, last_reinforced_at, " +
-  "memory_type, valid_from, valid_until, source_detail, is_compacted, semantic_key";
+  "memory_type, valid_from, valid_until, source_detail, is_compacted, semantic_key, embedding_version";
 export const SOUL_ARCHIVE_TABLE = "memory_archive";
 export const SOUL_ARCHIVE_FTS_TABLE = "memory_archive_fts";
 
@@ -60,16 +67,16 @@ export const soulVectorStateByDbPath = new Map<string, SoulVectorState>();
 
 export type SourceProfile = {
   confidence: number;
-  tier: SoulMemoryTier;
 };
 
-// All sources now map to P3. Tier promotion is replaced by EXPERIENCE.md distillation.
+// All sources reside in the Memory Palace. Tier promotion is replaced by
+// EXPERIENCE.md distillation + reinforcement.
 export const SOURCE_PROFILE: Record<SoulMemorySource, SourceProfile> = {
-  [SOURCE_CORE_PREFERENCE]: { confidence: 0.95, tier: TIER_P3 },
-  [SOURCE_MANUAL_LOG]: { confidence: 0.85, tier: TIER_P3 },
-  [SOURCE_MIGRATION]: { confidence: 0.85, tier: TIER_P3 },
-  [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5, tier: TIER_P3 },
-  [SOURCE_RUNTIME_EVENT]: { confidence: 0.5, tier: TIER_P3 },
+  [SOURCE_CORE_PREFERENCE]: { confidence: 0.95 },
+  [SOURCE_MANUAL_LOG]: { confidence: 0.85 },
+  [SOURCE_MIGRATION]: { confidence: 0.85 },
+  [SOURCE_AUTO_EXTRACTION]: { confidence: 0.5 },
+  [SOURCE_RUNTIME_EVENT]: { confidence: 0.5 },
 };
 
 // ── Stopwords ───────────────────────────────────────────────────────────────
@@ -134,13 +141,15 @@ export type MemoryItemRow = {
   last_accessed_at: number | null;
   reinforcement_count: number;
   last_reinforced_at: number | null;
-  // P3 compaction fields
+  // Compaction fields
   memory_type: string | null;
   valid_from: number | null;
   valid_until: number | null;
   source_detail: string | null;
   is_compacted: number | null;
   semantic_key: string | null;
+  /** 0 = legacy hash (128-dim), 1 = ML embedding */
+  embedding_version: number | null;
 };
 
 export type ArchiveRow = {
@@ -167,6 +176,7 @@ export type SoulMemorySource =
   | typeof SOURCE_AUTO_EXTRACTION
   | typeof SOURCE_RUNTIME_EVENT;
 
+/** All items reside in the Memory Palace. Kept as a string field for DB backward compat. */
 export type SoulMemoryTier = string;
 
 export type SoulMemoryRecordKind =
@@ -200,13 +210,15 @@ export type SoulMemoryItem = {
   lastAccessedAt: number | null;
   reinforcementCount: number;
   lastReinforcedAt: number | null;
-  // P3 compaction fields
+  // Compaction fields
   memoryType: SoulMemoryType;
   validFrom: number | null;
   validUntil: number | null;
   sourceDetail: SoulMemorySourceDetail;
   isCompacted: boolean;
   semanticKey: string | null;
+  /** 0 = legacy hash (128-dim), 1 = ML embedding. */
+  embeddingVersion: number;
 };
 
 export type SoulArchiveEvent = {
@@ -267,7 +279,18 @@ export type SoulMemoryConfig = {
   referenceBoostWeight?: number;
   referenceMaxBoost?: number;
   referenceSeedTopKMultiplier?: number;
+  /** @deprecated Use `compaction` instead. */
   p3Compaction?: {
+    enabled?: boolean;
+    minClusterSize?: number;
+    similarityMin?: number;
+    similarityMax?: number;
+    archiveAgeDays?: number;
+    orphanAgeDays?: number;
+    compactedDiscount?: number;
+    batchLimit?: number;
+  };
+  compaction?: {
     enabled?: boolean;
     minClusterSize?: number;
     similarityMin?: number;
@@ -279,7 +302,7 @@ export type SoulMemoryConfig = {
   };
 };
 
-export type ResolvedP3CompactionConfig = {
+export type ResolvedCompactionConfig = {
   enabled: boolean;
   minClusterSize: number;
   similarityMin: number;
@@ -303,7 +326,7 @@ export type ResolvedSoulMemoryConfig = {
   referenceBoostWeight: number;
   referenceMaxBoost: number;
   referenceSeedTopKMultiplier: number;
-  p3Compaction: ResolvedP3CompactionConfig;
+  compaction: ResolvedCompactionConfig;
 };
 
 // ── Utility functions ───────────────────────────────────────────────────────
@@ -316,12 +339,9 @@ export function normalizeText(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-export function normalizeTier(value: string): SoulMemoryTier {
-  const normalized = value.trim().toUpperCase();
-  if (normalized === "P0" || normalized === "P1" || normalized === "P2" || normalized === TIER_P3) {
-    return normalized;
-  }
-  return TIER_P3;
+/** All items belong to the Memory Palace. Legacy tiers (P0–P3) are normalized. */
+export function normalizeTier(_value: string): SoulMemoryTier {
+  return TIER_PALACE;
 }
 
 export function normalizeSource(value: string): SoulMemorySource {
@@ -383,16 +403,16 @@ export function resolveMemorySource(params: {
   if (normalized === SOURCE_RUNTIME_EVENT || normalized === "runtime" || normalized === "event") {
     return SOURCE_RUNTIME_EVENT;
   }
-  if (normalized === "p0" || normalized === SOURCE_CORE_PREFERENCE || normalized === "explicit") {
+  if (normalized === SOURCE_CORE_PREFERENCE || normalized === "explicit") {
     return SOURCE_CORE_PREFERENCE;
   }
-  if (normalized === "p2" || normalized === SOURCE_AUTO_EXTRACTION || normalized === "auto") {
+  if (normalized === SOURCE_AUTO_EXTRACTION || normalized === "auto") {
     return SOURCE_AUTO_EXTRACTION;
   }
   if (normalized === SOURCE_MIGRATION || normalized === "migration") {
     return SOURCE_MIGRATION;
   }
-  if (normalized === "p1" || normalized === SOURCE_MANUAL_LOG || normalized === "manual") {
+  if (normalized === SOURCE_MANUAL_LOG || normalized === "manual") {
     return SOURCE_MANUAL_LOG;
   }
   const confidence = Number.isFinite(params.inputConfidence)
@@ -492,13 +512,13 @@ export function resolveSoulMemoryConfig(raw?: SoulMemoryConfig): ResolvedSoulMem
       1,
       10,
     ),
-    p3Compaction: resolveP3CompactionConfig(config.p3Compaction),
+    compaction: resolveCompactionConfig(config.compaction ?? config.p3Compaction),
   };
 }
 
-export function resolveP3CompactionConfig(
-  raw?: SoulMemoryConfig["p3Compaction"],
-): ResolvedP3CompactionConfig {
+export function resolveCompactionConfig(
+  raw?: SoulMemoryConfig["compaction"],
+): ResolvedCompactionConfig {
   const cfg = raw ?? {};
   return {
     enabled: cfg.enabled ?? false,
@@ -679,6 +699,7 @@ export function rowToMemoryItem(row: MemoryItemRow): SoulMemoryItem {
     sourceDetail: normalizeSourceDetail(row.source_detail),
     isCompacted: (row.is_compacted ?? 0) === 1,
     semanticKey: row.semantic_key == null ? null : String(row.semantic_key),
+    embeddingVersion: Number(row.embedding_version ?? 0),
   };
 }
 

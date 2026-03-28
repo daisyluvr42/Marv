@@ -184,13 +184,20 @@ export async function agentCliCommand(opts: AgentCliOpts, runtime: RuntimeEnv, d
     replyAccountId: opts.replyAccount,
   };
   if (opts.local === true) {
-    return await agentCommand(localOpts, runtime, deps);
+    const result = await agentCommand(localOpts, runtime, deps);
+    // Embedded agent runs may leave open handles (HTTP keep-alive, SQLite, etc.)
+    // that prevent the Node event loop from draining. Force-exit once the
+    // one-shot CLI command is done.
+    process.exit(0);
+    return result;
   }
 
   try {
     return await agentViaGatewayCommand(opts, runtime);
   } catch (err) {
     runtime.error?.(`Gateway agent failed; falling back to embedded: ${String(err)}`);
-    return await agentCommand(localOpts, runtime, deps);
+    const result = await agentCommand(localOpts, runtime, deps);
+    process.exit(0);
+    return result;
   }
 }

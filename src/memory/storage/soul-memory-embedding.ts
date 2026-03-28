@@ -1,7 +1,11 @@
 import crypto from "node:crypto";
 import { EMBEDDING_DIMS, ENTITY_EN_STOPWORDS, ENTITY_ZH_STOPWORDS } from "./soul-memory-types.js";
 
-export function embedText(value: string): number[] {
+/**
+ * Legacy hash-based embedding (128-dim, no semantic understanding).
+ * Use ML embeddings via soul-memory-embedder.ts for real semantic search.
+ */
+export function embedTextLegacy(value: string): number[] {
   const tokens = tokenize(value);
   if (tokens.size === 0) {
     return [];
@@ -126,3 +130,6 @@ export function buildFtsMatchQuery(query: string): string | null {
   }
   return tokens.map((token) => `"${token.replaceAll('"', '""')}"`).join(" OR ");
 }
+
+/** @deprecated Use `embedTextLegacy` directly, or ML embeddings via soul-memory-embedder.ts. */
+export const embedText = embedTextLegacy;

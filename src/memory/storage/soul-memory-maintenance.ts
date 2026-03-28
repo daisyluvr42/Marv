@@ -1,7 +1,7 @@
 import { listAgentIds } from "../../agents/agent-scope.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
-import { compactP3Episodic } from "./soul-memory-compaction.js";
+import { compactEpisodic } from "./soul-memory-compaction.js";
 import { detectSoulMemoryConflicts, type SoulMemoryConflict } from "./soul-memory-conflict.js";
 import { consolidateSoulMemories } from "./soul-memory-consolidation.js";
 import { dedupeSoulMemories } from "./soul-memory-dedupe.js";
@@ -84,28 +84,29 @@ export function runSoulMemoryMaintenance(params: {
 
   for (const agentId of agentIds) {
     try {
-      const p3CompactionEnabled = soulConfig?.p3Compaction?.enabled === true;
+      const compactionCfg = soulConfig?.compaction ?? soulConfig?.p3Compaction;
+      const compactionEnabled = compactionCfg?.enabled === true;
       const dedupe = dedupeSoulMemories({
         agentId,
-        p3CompactionEnabled,
+        compactionEnabled: compactionEnabled,
       });
       const consolidation = consolidateSoulMemories({
         agentId,
         nowMs,
       });
-      // P3 compaction: cluster episodic -> semantic, archive compacted footage
-      const compaction = p3CompactionEnabled
-        ? compactP3Episodic({
+      // Compaction: cluster episodic -> semantic, archive compacted footage
+      const compaction = compactionEnabled
+        ? compactEpisodic({
             agentId,
             config: {
               enabled: true,
-              minClusterSize: soulConfig?.p3Compaction?.minClusterSize ?? 3,
-              similarityMin: soulConfig?.p3Compaction?.similarityMin ?? 0.45,
-              similarityMax: soulConfig?.p3Compaction?.similarityMax ?? 0.85,
-              archiveAgeDays: soulConfig?.p3Compaction?.archiveAgeDays ?? 30,
-              orphanAgeDays: soulConfig?.p3Compaction?.orphanAgeDays ?? 60,
-              compactedDiscount: soulConfig?.p3Compaction?.compactedDiscount ?? 0.5,
-              batchLimit: soulConfig?.p3Compaction?.batchLimit ?? 1000,
+              minClusterSize: compactionCfg?.minClusterSize ?? 3,
+              similarityMin: compactionCfg?.similarityMin ?? 0.45,
+              similarityMax: compactionCfg?.similarityMax ?? 0.85,
+              archiveAgeDays: compactionCfg?.archiveAgeDays ?? 30,
+              orphanAgeDays: compactionCfg?.orphanAgeDays ?? 60,
+              compactedDiscount: compactionCfg?.compactedDiscount ?? 0.5,
+              batchLimit: compactionCfg?.batchLimit ?? 1000,
             },
             nowMs,
           })

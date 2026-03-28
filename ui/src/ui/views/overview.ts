@@ -45,12 +45,9 @@ export function renderOverview(props: OverviewProps) {
     value == null ? t("common.na") : value ? t("common.enabled") : t("common.disabled");
   const formatList = (values: string[] | undefined) =>
     values && values.length > 0 ? values.join(", ") : t("common.na");
-  const tierSummary = props.memoryStats
-    ? ["P0", "P1", "P2", "P3"]
-        .map(
-          (tier) =>
-            `${tier} ${props.memoryStats?.tiers[tier as keyof typeof props.memoryStats.tiers] ?? 0}`,
-        )
+  const kindsSummary = props.memoryStats?.recordKinds
+    ? (["fact", "relationship", "experience", "soul"] as const)
+        .map((kind) => `${kind} ${props.memoryStats?.recordKinds[kind] ?? 0}`)
         .join(" · ")
     : t("common.na");
   const snapshot = props.hello?.snapshot as
@@ -399,7 +396,7 @@ export function renderOverview(props: OverviewProps) {
           </div>
         </div>
         <div class="muted" style="margin-top: 12px">
-          ${t("overview.advanced.tiers")}: ${tierSummary}
+          ${t("overview.advanced.tiers")}: ${kindsSummary}
         </div>
         <div class="muted" style="margin-top: 8px">
           ${t("overview.advanced.backend")}: ${props.memoryStats?.backend ?? t("common.na")}

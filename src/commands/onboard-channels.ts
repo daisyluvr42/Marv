@@ -16,7 +16,11 @@ import { enablePluginInConfig } from "../plugins/enable.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
-import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
+import {
+  WizardCancelledError,
+  type WizardPrompter,
+  type WizardSelectOption,
+} from "../wizard/prompts.js";
 import type { ChannelChoice } from "./onboard-types.js";
 import {
   ensureOnboardingPluginInstalled,
@@ -574,6 +578,8 @@ export async function setupChannels(
   const handleChannelChoice = async (channel: ChannelChoice) => {
     const { catalogById } = getChannelEntries();
     const catalogEntry = catalogById.get(channel);
+    // Snapshot config before plugin enablement so we can roll back if configure fails.
+    const preEnableConfig = next;
     if (catalogEntry) {
       const workspaceDir = resolveAgentWorkspaceDir(next, resolveDefaultAgentId(next));
       const result = await ensureOnboardingPluginInstalled({
@@ -609,6 +615,13 @@ export async function setupChannels(
       return;
     }
     await configureChannel(channel);
+
+    // Roll back plugin enablement if configure did not produce a configured channel.
+    await refreshStatus(channel);
+    const postStatus = statusByChannel.get(channel);
+    if (!postStatus?.configured) {
+      next = preEnableConfig;
+    }
   };
 
   if (options?.quickstartDefaults) {
@@ -626,7 +639,17 @@ export async function setupChannels(
       initialValue: quickstartDefault,
     })) as ChannelChoice | "__skip__";
     if (choice !== "__skip__") {
-      await handleChannelChoice(choice);
+      try {
+        await handleChannelChoice(choice);
+      } catch (err) {
+        if (err instanceof WizardCancelledError) {
+          throw err;
+        }
+        await prompter.note(
+          `${choice} setup failed: ${err instanceof Error ? err.message : String(err)}`,
+          "Channel setup",
+        );
+      }
     }
   } else {
     const doneValue = "__done__" as const;
@@ -648,7 +671,17 @@ export async function setupChannels(
       if (choice === doneValue) {
         break;
       }
-      await handleChannelChoice(choice);
+      try {
+        await handleChannelChoice(choice);
+      } catch (err) {
+        if (err instanceof WizardCancelledError) {
+          throw err;
+        }
+        await prompter.note(
+          `${choice} setup failed: ${err instanceof Error ? err.message : String(err)}`,
+          "Channel setup",
+        );
+      }
     }
   }
 

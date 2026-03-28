@@ -73,6 +73,9 @@ type ProviderGuide = {
 type OpenAIModelsApiResponse = {
   data?: Array<{
     id?: string;
+    // OpenAI spec uses context_window; vLLM uses max_model_len.
+    context_window?: number;
+    max_model_len?: number;
   }>;
 };
 
@@ -408,19 +411,27 @@ async function fetchOpenAICompatibleLocalModels(
   }
   const payload = (await response.json()) as OpenAIModelsApiResponse;
   return (payload.data ?? [])
-    .map((entry) => String(entry.id ?? "").trim())
-    .filter(Boolean)
-    .map((model) => ({
-      ref: `${provider}/${model}`,
-      provider,
-      model,
-      displayName: model,
-      source: "official_api" as const,
-      status: "active" as const,
-      capabilities: inferCapabilities({ provider, model }),
-      tier: normalizeTier(model),
-      location: "local" as const,
-    }));
+    .filter((entry) => String(entry.id ?? "").trim())
+    .map((entry) => {
+      const model = String(entry.id ?? "").trim();
+      const ctxRaw = entry.context_window ?? entry.max_model_len;
+      const contextWindow =
+        typeof ctxRaw === "number" && Number.isFinite(ctxRaw) && ctxRaw > 0
+          ? Math.floor(ctxRaw)
+          : undefined;
+      return {
+        ref: `${provider}/${model}`,
+        provider,
+        model,
+        displayName: model,
+        source: "official_api" as const,
+        status: "active" as const,
+        capabilities: inferCapabilities({ provider, model }),
+        tier: normalizeTier(model),
+        location: "local" as const,
+        ...(contextWindow ? { contextWindow } : {}),
+      };
+    });
 }
 
 const KNOWN_PROVIDER_GUIDES: ProviderGuide[] = [

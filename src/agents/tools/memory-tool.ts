@@ -2,8 +2,8 @@ import { Type } from "@sinclair/typebox";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
 import { syncConfiguredKnowledgeBases } from "../../knowledge/indexer.js";
-import { appendLedgerEvent } from "../../ledger/event-store.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
+import { enqueueDistillation } from "../../memory/experience/experience-distiller.js";
 import { getMemorySearchManager } from "../../memory/index.js";
 import { SMALL_TALK_RE } from "../../memory/small-talk.js";
 import {
@@ -17,8 +17,6 @@ import {
   querySoulArchive,
   querySoulMemoryMulti,
   type SoulMemoryConfig,
-  writeSoulMemory,
-  type SoulMemoryItem,
   type SoulMemoryQueryResult,
   type SoulArchiveQueryResult,
 } from "../../memory/storage/soul-memory-store.js";
@@ -120,6 +118,23 @@ export function createMemorySearchTool(options: {
         config: cfg,
       });
 
+      // Resolve ML query embedding (best-effort, non-blocking on failure)
+      let queryEmbedding: number[] | undefined;
+      try {
+        const { resolveMlQueryEmbedding } =
+          await import("../../memory/storage/soul-memory-ml-bridge.js");
+        const mlVec = await resolveMlQueryEmbedding({
+          cfg,
+          agentId,
+          query: effectiveQuery,
+        });
+        if (mlVec) {
+          queryEmbedding = mlVec;
+        }
+      } catch {
+        // ML embedding unavailable — fall back to legacy hash
+      }
+
       const soulResults = querySoulMemoryMulti({
         agentId,
         scopes: resolveSoulScopes({ agentId, sessionKey: options.agentSessionKey }),
@@ -127,6 +142,7 @@ export function createMemorySearchTool(options: {
         topK: maxResults,
         minScore: minScore ?? undefined,
         soulConfig,
+        queryEmbedding,
       }).map((entry) => toSoulSearchResult(entry));
       const archiveResults = querySoulArchive({
         agentId,
@@ -134,6 +150,7 @@ export function createMemorySearchTool(options: {
         query: effectiveQuery,
         topK: maxResults,
         minScore: Math.max(0.12, minScore ?? 0.12),
+        queryEmbedding,
       }).map((entry) => toSoulArchiveSearchResult(entry));
 
       const managerResult = await getMemorySearchManager({
@@ -361,7 +378,6 @@ export function createMemoryWriteTool(options: {
     return null;
   }
   const { agentId, cfg } = ctx;
-  const soulConfig = resolveMemorySoulConfig(cfg);
   return {
     label: "Memory Write",
     name: "memory_write",
@@ -403,41 +419,32 @@ export function createMemoryWriteTool(options: {
         });
       }
 
-      // All writes go to P3 (episodic). Source defaults to runtime_event.
-      const item = writeSoulMemory({
+      // Agent writes are mediated through the distillation pipeline (agent is read-only
+      // with respect to Soul Memory). The distiller decides what to retain and how.
+      const distillContent = [
+        `[${kind}] ${heuristics.normalizedContent}`,
+        `scope: ${scopeType}/${scopeId}`,
+        source ? `source: ${source}` : "",
+        confidence != null ? `confidence: ${confidence}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      enqueueDistillation(
         agentId,
-        scopeType,
-        scopeId,
-        kind,
-        content: heuristics.normalizedContent,
-        confidence: confidence ?? undefined,
-        source: source ?? "runtime_event",
-        soulConfig,
-      });
-      if (!item) {
-        return jsonResult({
-          ok: false,
-          error: "content required",
-        });
-      }
-      appendMemoryWriteLedgerEvent({
-        item,
-        agentId,
-        sessionKey: options.agentSessionKey,
-      });
-      const references = listSoulMemoryReferences({ agentId, itemId: item.id });
+        {
+          source: "reflect",
+          content: distillContent,
+          timestamp: Date.now(),
+        },
+        { cfg },
+      );
+
       return jsonResult({
         ok: true,
-        id: item.id,
-        path: buildSoulMemoryPath(item.id),
-        scopeType: item.scopeType,
-        scopeId: item.scopeId,
-        kind: item.kind,
-        tier: item.tier,
-        source: item.source,
-        confidence: item.confidence,
+        queued: true,
         classification: heuristics.classification,
-        references,
+        notice: "Memory note queued for distillation",
       });
     },
   };
@@ -645,28 +652,4 @@ function deriveChatTypeFromSessionKey(sessionKey?: string): "direct" | "group" |
     return "group";
   }
   return "direct";
-}
-
-function appendMemoryWriteLedgerEvent(params: {
-  item: SoulMemoryItem;
-  agentId: string;
-  sessionKey?: string;
-}): void {
-  try {
-    appendLedgerEvent({
-      conversationId: params.sessionKey?.trim() || `memory:agent:${params.agentId}`,
-      type: "MemoryWrittenEvent",
-      payload: {
-        memoryId: params.item.id,
-        scopeType: params.item.scopeType,
-        scopeId: params.item.scopeId,
-        kind: params.item.kind,
-        tier: params.item.tier,
-        source: params.item.source,
-        confidence: params.item.confidence,
-      },
-    });
-  } catch {
-    // Ledger writes are best-effort and must not break memory_write.
-  }
 }

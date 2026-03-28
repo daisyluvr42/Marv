@@ -71,6 +71,14 @@ export async function modelsStatusCommand(
   const agentId = resolveKnownAgentId({ cfg, rawAgentId: opts.agent });
   const agentDir = agentId ? resolveAgentDir(cfg, agentId) : resolveMarvAgentDir();
   const runtimePlan = resolveRuntimeModelPlan({ cfg, agentId, agentDir });
+  if (runtimePlan.candidates.length === 0 && runtimePlan.configured.length > 0) {
+    const reasons = runtimePlan.configured
+      .map((m) => `  ${m.ref}: ${m.availabilityReason ?? "unknown"}`)
+      .join("\n");
+    process.stderr.write(
+      `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
+    );
+  }
   const resolved = runtimePlan.candidates[0] ?? {
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,

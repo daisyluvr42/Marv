@@ -159,7 +159,7 @@ export const en: TranslationMap = {
       archiveEvents: "Archive Events",
       autoRecall: "Auto Recall",
       runtimeIngest: "Runtime Ingest",
-      tiers: "Tiers",
+      tiers: "Kinds",
       backend: "Backend",
       citations: "Citations",
       vaults: "Vaults",

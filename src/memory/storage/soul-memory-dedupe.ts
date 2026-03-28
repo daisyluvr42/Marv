@@ -40,7 +40,7 @@ export function dedupeSoulMemories(params: {
   similarityThreshold?: number;
   maxItems?: number;
   nowMs?: number;
-  p3CompactionEnabled?: boolean;
+  compactionEnabled?: boolean;
 }): SoulMemoryDedupeResult {
   const threshold = clamp(params.similarityThreshold ?? 0.9, 0.5, 1);
   const maxItems = Number.isFinite(params.maxItems)
@@ -49,7 +49,7 @@ export function dedupeSoulMemories(params: {
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
   const db = openSoulMemoryDb(params.agentId);
   try {
-    const items = loadMemoryItems(db, maxItems, params.p3CompactionEnabled ?? false);
+    const items = loadMemoryItems(db, maxItems, params.compactionEnabled ?? false);
     if (items.length < 2) {
       return { mergedPairs: 0, removedIds: [] };
     }
@@ -217,11 +217,11 @@ function normalizeText(value: string): string {
 function loadMemoryItems(
   db: DatabaseSync,
   limit: number,
-  excludeP3Episodic: boolean,
+  excludeEpisodic: boolean,
 ): MutableMemoryItem[] {
-  // When P3 compaction is enabled, exclude P3 episodic items from dedupe
-  const whereClause = excludeP3Episodic
-    ? " WHERE NOT (tier = 'P3' AND (memory_type = 'episodic' OR memory_type IS NULL)) "
+  // When compaction is enabled, exclude episodic items from dedupe
+  const whereClause = excludeEpisodic
+    ? " WHERE NOT ((memory_type = 'episodic' OR memory_type IS NULL)) "
     : " ";
   const rows = db
     .prepare(
@@ -243,11 +243,11 @@ function loadMemoryItems(
 }
 
 function normalizeTier(value: string): string {
-  const normalized = value.trim().toUpperCase();
-  if (normalized === "P0" || normalized === "P1" || normalized === "P2" || normalized === "P3") {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "palace") {
     return normalized;
   }
-  return "P3";
+  return "palace";
 }
 
 function openSoulMemoryDb(agentId: string): DatabaseSync {

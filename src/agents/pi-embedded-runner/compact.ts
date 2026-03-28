@@ -645,7 +645,7 @@ export async function compactEmbeddedPiSessionDirect(
           );
         }
 
-        // 3-way writeout: before compacting, capture evicted messages for P3 + experience distillation
+        // 3-way writeout: before compacting, capture evicted messages for Memory Palace + experience distillation
         try {
           const evictedMessages = preCompactionMessages.filter((msg) => !limited.includes(msg));
           if (evictedMessages.length > 0) {
@@ -670,7 +670,7 @@ export async function compactEmbeddedPiSessionDirect(
 
             // Fire-and-forget: non-blocking 3-way writeout
             Promise.allSettled([
-              // 1. Write to P3 episodic memory
+              // 1. Write to Memory Palace episodic memory
               (async () => {
                 try {
                   const { writeSoulMemory } =

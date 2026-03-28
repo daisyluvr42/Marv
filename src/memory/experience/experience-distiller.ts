@@ -94,7 +94,7 @@ export async function distillExperience(
   const currentExperience = await readExperienceFile(agentId, "MARV_EXPERIENCE.md");
   const budget = experienceConfig.experienceBudgetChars ?? EXPERIENCE_BUDGET_CHARS;
 
-  // Try LLM-based distillation
+  // Try LLM-based distillation (uses dynamic model selection)
   const result = await distillWithLlm({
     agentId,
     currentExperience,
@@ -114,6 +114,11 @@ export async function distillExperience(
 
   // Append to log
   await appendDistillLog(agentId, newData, result.action, result.changes);
+
+  // Write skill candidates to disk (fire-and-forget)
+  if (result.skillCandidates && result.skillCandidates.length > 0) {
+    writeSkillCandidatesToDisk(agentId, result.skillCandidates);
+  }
 
   // Update debounce timestamp
   lastDistillTimestamps.set(agentId, Date.now());
@@ -159,19 +164,19 @@ async function distillWithLlm(params: {
   budget: number;
   cfg?: MarvConfig;
 }): Promise<LlmDistillResult> {
-  // Try to use local LLM for distillation
+  // Use dynamic model selection: picks the best available model for the distiller role
   try {
-    const { inferLocal } = await import("../storage/local-llm-client.js");
+    const { experienceInfer } = await import("./experience-inference.js");
 
-    const modelConfig = params.cfg?.memory?.soul?.deepConsolidation?.model;
     const systemPrompt = DISTILL_SYSTEM_PROMPT.replace("{budget}", String(params.budget));
     const userPrompt = buildDistillUserPrompt(params);
 
-    const result = await inferLocal({
+    const result = await experienceInfer({
       cfg: params.cfg ?? {},
-      model: modelConfig,
+      role: "distiller",
       system: systemPrompt,
       prompt: userPrompt,
+      agentId: params.agentId,
     });
 
     if (!result.ok) {
@@ -301,4 +306,13 @@ async function appendDistillLog(
 
 function resolveExperienceConfig(cfg?: MarvConfig): Partial<ExperienceConfig> {
   return cfg?.memory?.experience ?? {};
+}
+
+/** Fire-and-forget: write skill candidates to disk without blocking distillation. */
+function writeSkillCandidatesToDisk(agentId: string, candidates: string[]): void {
+  import("./experience-skill-pipeline.js")
+    .then(({ writeSkillCandidates }) => writeSkillCandidates(agentId, candidates))
+    .catch((err) => {
+      console.error(`[experience-distiller] skill candidate write failed for ${agentId}:`, err);
+    });
 }

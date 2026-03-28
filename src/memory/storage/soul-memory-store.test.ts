@@ -50,7 +50,7 @@ describe("soul-memory-store", () => {
       confidence: 0.01,
     });
     expect(first).not.toBeNull();
-    expect(first?.tier).toBe("P3");
+    expect(first?.tier).toBe("palace");
     expect(first?.confidence).toBeCloseTo(0.95);
     expect(first?.reinforcementCount).toBe(1);
 
@@ -265,7 +265,7 @@ describe("soul-memory-store", () => {
     expect(cResult?.score ?? 0).toBeGreaterThan(0);
   });
 
-  it("assigns all sources to P3 with no tier-based preference for stale records", () => {
+  it("assigns all sources to palace with no tier-based preference for stale records", () => {
     const oldMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = oldMs + 30 * 24 * 60 * 60 * 1000;
     const p0 = writeSoulMemory({
@@ -299,9 +299,9 @@ describe("soul-memory-store", () => {
       nowMs,
     });
     expect(results).toHaveLength(2);
-    // All sources map to P3 — no tier-based preference
-    expect(results[0]?.tier).toBe("P3");
-    expect(results[1]?.tier).toBe("P3");
+    // All sources map to palace — no tier-based preference
+    expect(results[0]?.tier).toBe("palace");
+    expect(results[1]?.tier).toBe("palace");
   });
 
   it("preserves core_preference source regardless of kind", () => {
@@ -314,12 +314,12 @@ describe("soul-memory-store", () => {
       source: "core_preference",
     });
     expect(item).not.toBeNull();
-    expect(item?.tier).toBe("P3");
+    expect(item?.tier).toBe("palace");
     expect(item?.source).toBe("core_preference");
     expect(item?.confidence).toBeCloseTo(0.95);
   });
 
-  it("keeps core_preference source and assigns P3 tier", () => {
+  it("keeps core_preference source and assigns palace tier", () => {
     const item = writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
@@ -329,8 +329,8 @@ describe("soul-memory-store", () => {
       source: "core_preference",
     });
     expect(item).not.toBeNull();
-    // All sources map to P3
-    expect(item?.tier).toBe("P3");
+    // All sources map to palace
+    expect(item?.tier).toBe("palace");
     expect(item?.source).toBe("core_preference");
     expect(item?.confidence).toBeCloseTo(0.95);
   });
@@ -509,7 +509,7 @@ describe("soul-memory-store", () => {
     expect(crossScope?.scopePenalty).toBeCloseTo(0.55);
   });
 
-  it("no longer boosts dormant memories — all items are P3 with no recall boost", () => {
+  it("no longer boosts dormant memories — all items are palace with no recall boost", () => {
     const baseMs = Date.UTC(2024, 0, 1, 0, 0, 0);
     const nowMs = baseMs + 720 * 24 * 60 * 60 * 1000;
     const item = writeSoulMemory({
@@ -535,8 +535,8 @@ describe("soul-memory-store", () => {
       nowMs,
     });
     expect(results).toHaveLength(1);
-    // All sources map to P3, no recall boost in the new architecture
-    expect(results[0]?.tier).toBe("P3");
+    // All sources map to palace, no recall boost in the new architecture
+    expect(results[0]?.tier).toBe("palace");
     expect(results[0]?.wasRecallBoosted).toBe(false);
     // clarityScore = confidence directly (no decay); computed before reinforcement bump
     expect(results[0]?.clarityScore).toBeCloseTo(0.95);
@@ -566,7 +566,7 @@ describe("soul-memory-store", () => {
     expect(loaded?.content).toBe("remember this");
   });
 
-  it("ingests recent facts into P3 and archive together", () => {
+  it("ingests recent facts into palace and archive together", () => {
     const ingested = ingestSoulMemoryEvent({
       agentId: "main",
       scopeType: "session",
@@ -584,7 +584,7 @@ describe("soul-memory-store", () => {
       throw new Error("ingested event missing");
     }
 
-    expect(ingested.activeItem.tier).toBe("P3");
+    expect(ingested.activeItem.tier).toBe("palace");
     expect(ingested.archiveEvent).toBeDefined();
     expect(countSoulArchiveEvents({ agentId: "main" })).toBe(1);
 

@@ -12,6 +12,7 @@ import {
   SOUL_ARCHIVE_TABLE,
   SOUL_MEMORY_ENTITY_TABLE,
   SOUL_MEMORY_FTS_TABLE,
+  SOUL_MEMORY_META_TABLE,
   SOUL_MEMORY_VEC_TABLE,
   soulVectorStateByDbPath,
 } from "./soul-memory-types.js";
@@ -39,7 +40,7 @@ export function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
       "content TEXT NOT NULL, " +
       "embedding_json TEXT NOT NULL, " +
       "confidence REAL NOT NULL, " +
-      "tier TEXT NOT NULL DEFAULT 'P3', " +
+      "tier TEXT NOT NULL DEFAULT 'palace', " +
       "source TEXT NOT NULL DEFAULT 'manual_log', " +
       "record_kind TEXT NOT NULL DEFAULT 'experience', " +
       "summary TEXT, " +
@@ -55,13 +56,22 @@ export function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
   ensureMemoryItemsColumn(db, "record_kind", "TEXT NOT NULL DEFAULT 'experience'");
   ensureMemoryItemsColumn(db, "summary", "TEXT");
   ensureMemoryItemsColumn(db, "metadata_json", "TEXT");
-  // P3 compaction columns
+  // Compaction columns
   ensureMemoryItemsColumn(db, "memory_type", "TEXT NOT NULL DEFAULT 'episodic'");
   ensureMemoryItemsColumn(db, "valid_from", "INTEGER");
   ensureMemoryItemsColumn(db, "valid_until", "INTEGER");
   ensureMemoryItemsColumn(db, "source_detail", "TEXT NOT NULL DEFAULT 'inferred'");
   ensureMemoryItemsColumn(db, "is_compacted", "INTEGER NOT NULL DEFAULT 0");
   ensureMemoryItemsColumn(db, "semantic_key", "TEXT");
+  // ML embedding version: 0 = legacy hash (128-dim), 1 = ML provider
+  ensureMemoryItemsColumn(db, "embedding_version", "INTEGER NOT NULL DEFAULT 0");
+  // Meta table for storing embedding config (current dims, provider ID, etc.)
+  db.exec(
+    `CREATE TABLE IF NOT EXISTS ${SOUL_MEMORY_META_TABLE} (` +
+      "key TEXT PRIMARY KEY, " +
+      "value TEXT NOT NULL" +
+      ");",
+  );
   db.exec(
     "UPDATE memory_items SET reinforcement_count = 1 " +
       "WHERE reinforcement_count IS NULL OR reinforcement_count < 1",
@@ -70,19 +80,20 @@ export function ensureSoulMemorySchema(db: DatabaseSync, dbPath: string): void {
     "UPDATE memory_items SET record_kind = 'experience' " +
       "WHERE record_kind IS NULL OR TRIM(record_kind) = ''",
   );
+  // Normalize all legacy tiers (P0/P1/P2/P3) to "palace" (Memory Palace).
+  // Tier promotion is replaced by EXPERIENCE.md distillation + reinforcement.
+  db.exec("UPDATE memory_items SET tier = 'palace' WHERE tier != 'palace';");
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_soul_memory_scope ON memory_items (scope_type, scope_id);",
   );
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_tier ON memory_items (tier);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_source ON memory_items (source);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_soul_memory_record_kind ON memory_items (record_kind);");
-  // P3 compaction indexes
-  db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_items (memory_type) WHERE tier = 'P3';",
-  );
+  // Compaction indexes (all items are in the Memory Palace)
+  db.exec("CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_items (memory_type);");
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_memory_compacted ON memory_items (is_compacted) " +
-      "WHERE tier = 'P3' AND memory_type = 'episodic';",
+      "WHERE memory_type = 'episodic';",
   );
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_memory_semantic_key ON memory_items (semantic_key) " +
@@ -298,14 +309,15 @@ export function ensureSoulArchiveFts(db: DatabaseSync): void {
 }
 
 export function ensureSoulMemoryVec(db: DatabaseSync, dbPath: string): void {
-  if (!ensureSoulVectorReady(db, dbPath, EMBEDDING_DIMS)) {
+  const storedDims = getStoredEmbeddingDims(db);
+  if (!ensureSoulVectorReady(db, dbPath, storedDims)) {
     return;
   }
   const hadTable = hasSoulMemoryVecTable(db);
   db.exec(
     `CREATE VIRTUAL TABLE IF NOT EXISTS ${SOUL_MEMORY_VEC_TABLE} USING vec0(` +
       "id TEXT PRIMARY KEY, " +
-      `embedding FLOAT[${EMBEDDING_DIMS}]` +
+      `embedding FLOAT[${storedDims}]` +
       ")",
   );
   if (!hadTable) {
@@ -407,4 +419,90 @@ export function hasTable(db: DatabaseSync, tableName: string): boolean {
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
     .get(tableName) as { name?: string } | undefined;
   return row?.name === tableName;
+}
+
+// ── Meta table helpers ──────────────────────────────────────────────────────
+
+/** Read the stored embedding dimensions from the meta table. Defaults to EMBEDDING_DIMS (128). */
+export function getStoredEmbeddingDims(db: DatabaseSync): number {
+  try {
+    const row = db
+      .prepare(`SELECT value FROM ${SOUL_MEMORY_META_TABLE} WHERE key = 'embedding_dims'`)
+      .get() as { value?: string } | undefined;
+    if (row?.value) {
+      const dims = Number(row.value);
+      if (Number.isFinite(dims) && dims > 0) {
+        return dims;
+      }
+    }
+  } catch {
+    // Meta table may not exist yet during initial schema creation
+  }
+  return EMBEDDING_DIMS;
+}
+
+/** Write the current embedding dimensions into the meta table. */
+export function setStoredEmbeddingDims(db: DatabaseSync, dims: number): void {
+  db.prepare(
+    `INSERT OR REPLACE INTO ${SOUL_MEMORY_META_TABLE} (key, value) VALUES ('embedding_dims', ?)`,
+  ).run(String(dims));
+}
+
+/** Read the ML embedding provider ID from the meta table (or null). */
+export function getStoredEmbeddingProvider(db: DatabaseSync): string | null {
+  try {
+    const row = db
+      .prepare(`SELECT value FROM ${SOUL_MEMORY_META_TABLE} WHERE key = 'embedding_provider'`)
+      .get() as { value?: string } | undefined;
+    return row?.value?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Write the ML embedding provider ID into the meta table. */
+export function setStoredEmbeddingProvider(db: DatabaseSync, providerId: string): void {
+  db.prepare(
+    `INSERT OR REPLACE INTO ${SOUL_MEMORY_META_TABLE} (key, value) VALUES ('embedding_provider', ?)`,
+  ).run(providerId);
+}
+
+/**
+ * Migrate the vec table to a new dimension count.
+ * Drops the existing vec table and recreates it with the new dimensions.
+ * Existing vec entries are lost — items must be re-embedded.
+ * Returns true if migration was performed, false if dims already matched.
+ */
+export function migrateSoulVecDimensions(
+  db: DatabaseSync,
+  dbPath: string,
+  newDims: number,
+): boolean {
+  const currentDims = getStoredEmbeddingDims(db);
+  if (currentDims === newDims) {
+    return false;
+  }
+  // Drop existing vec table
+  if (hasSoulMemoryVecTable(db)) {
+    try {
+      db.exec(`DROP TABLE ${SOUL_MEMORY_VEC_TABLE}`);
+    } catch {
+      // Ignore drop failures
+    }
+  }
+  // Update meta
+  setStoredEmbeddingDims(db, newDims);
+  // Clear cached vector state
+  soulVectorStateByDbPath.delete(dbPath);
+  // Recreate with new dimensions
+  if (!ensureSoulVectorReady(db, dbPath, newDims)) {
+    return false;
+  }
+  db.exec(
+    `CREATE VIRTUAL TABLE IF NOT EXISTS ${SOUL_MEMORY_VEC_TABLE} USING vec0(` +
+      "id TEXT PRIMARY KEY, " +
+      `embedding FLOAT[${newDims}]` +
+      ")",
+  );
+  return true;
 }

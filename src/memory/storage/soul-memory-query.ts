@@ -15,7 +15,7 @@ import {
 } from "../salience/salience-compute.js";
 import {
   cosineSimilarity,
-  embedText,
+  embedTextLegacy,
   lexicalOverlap,
   parseEmbedding,
 } from "./soul-memory-embedding.js";
@@ -69,6 +69,10 @@ export function querySoulMemoryMulti(params: {
   /** Point-in-time query: only return semantic nodes valid at this timestamp.
    *  When omitted, retired semantics (valid_until IS NOT NULL) are excluded. */
   temporalMs?: number;
+  /** Pre-computed ML embedding for the query. When provided, used for vec0 search
+   *  and as the primary vectorScore for items with matching-dimension embeddings.
+   *  The legacy hash embedding is used as fallback for items without ML embeddings. */
+  queryEmbedding?: number[];
 }): SoulMemoryQueryResult[] {
   const topK = Math.max(0, Math.floor(params.topK));
   if (topK <= 0) {
@@ -91,7 +95,12 @@ export function querySoulMemoryMulti(params: {
     ? Math.floor(params.temporalMs as number)
     : null;
   const soulConfig = resolveSoulMemoryConfig(params.soulConfig);
-  const queryVec = embedText(cleanedQuery);
+  const legacyQueryVec = embedTextLegacy(cleanedQuery);
+  // Use ML query embedding for vec0 search if provided; fall back to legacy hash
+  const queryVec =
+    params.queryEmbedding && params.queryEmbedding.length > 0
+      ? params.queryEmbedding
+      : legacyQueryVec;
   const activeScopeKeySet = new Set<string>(
     uniqueScopes.map((scope) => scopeKey(scope.scopeType, scope.scopeId)),
   );
@@ -105,6 +114,12 @@ export function querySoulMemoryMulti(params: {
     const bm25ById = searchByBm25({
       db,
       query: cleanedQuery,
+      limit: Math.max(topK * 8, 40),
+    });
+    // Vec0 search — also used for direct distance-based vectorScore
+    const vec0ScoresById = searchByVector({
+      db,
+      queryVec,
       limit: Math.max(topK * 8, 40),
     });
     const totalItems = countMemoryItemsInternal(db);
@@ -142,7 +157,7 @@ export function querySoulMemoryMulti(params: {
       const item = rowToMemoryItem(row);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      // No tier-based TTL exemption: all items are P3. TTL applies uniformly.
+      // No tier-based TTL exemption: all items are in the Memory Palace. TTL applies uniformly.
       if (ttlDays > 0 && ageDays > ttlDays) {
         continue;
       }
@@ -172,8 +187,16 @@ export function querySoulMemoryMulti(params: {
       const decayFactor = 1;
       const clarityScore = clamp(item.confidence, 0, 1);
 
-      const itemVec = parseEmbedding(row.embedding_json);
-      const vectorScore = cosineSimilarity(queryVec, itemVec);
+      // Use vec0 distance score when available (ML or legacy vec0 match).
+      // Fall back to inline cosine with legacy hash vectors for items not in vec0.
+      const vec0Result = vec0ScoresById.get(item.id);
+      let vectorScore: number;
+      if (vec0Result) {
+        vectorScore = vec0Result.score;
+      } else {
+        const itemVec = parseEmbedding(row.embedding_json);
+        vectorScore = cosineSimilarity(legacyQueryVec, itemVec);
+      }
       const lexicalScore = lexicalOverlap(cleanedQuery, item.content);
       candidatesById.set(item.id, {
         item,
@@ -241,11 +264,11 @@ export function querySoulMemoryMulti(params: {
       const salienceDecay = decayScore;
       const salienceReinforcement = reinforcementFactor;
       const salienceScore = salienceReinforcement; // score = relevance x scope x reinforcement
-      const tierMultiplier = 1; // All items are P3
+      const tierMultiplier = 1; // All items are in the Memory Palace
       // Discount compacted episodic items so semantic distillations rank higher
       const compactedFactor =
         candidate.item.isCompacted && candidate.item.memoryType === "episodic"
-          ? soulConfig.p3Compaction.compactedDiscount
+          ? soulConfig.compaction.compactedDiscount
           : 1;
       // Simplified scoring: relevance x scope x reinforcement
       const score = clamp(
@@ -329,6 +352,8 @@ export function querySoulArchive(params: {
   topK: number;
   minScore?: number;
   nowMs?: number;
+  /** Pre-computed ML embedding for the query (same as querySoulMemoryMulti). */
+  queryEmbedding?: number[];
 }): SoulArchiveQueryResult[] {
   const topK = Math.max(0, Math.floor(params.topK));
   if (topK <= 0) {
@@ -339,7 +364,11 @@ export function querySoulArchive(params: {
     return [];
   }
   const uniqueScopes = dedupeScopes(params.scopes);
-  const queryVec = embedText(cleanedQuery);
+  // Use ML embedding for inline cosine if provided; otherwise legacy hash
+  const queryVec =
+    params.queryEmbedding && params.queryEmbedding.length > 0
+      ? params.queryEmbedding
+      : embedTextLegacy(cleanedQuery);
   const nowMs = Number.isFinite(params.nowMs) ? Math.floor(params.nowMs as number) : Date.now();
   const minScore = clamp(params.minScore ?? 0.15, 0, 1.5);
   const db = openSoulMemoryDb(params.agentId);

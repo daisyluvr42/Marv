@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { compactP3Episodic } from "./soul-memory-compaction.js";
+import { compactEpisodic } from "./soul-memory-compaction.js";
 import { listSoulMemoryConflicts } from "./soul-memory-conflict.js";
 import { listSoulMemoryItems, querySoulMemoryMulti, writeSoulMemory } from "./soul-memory-store.js";
 
@@ -20,7 +20,7 @@ const DEFAULT_CONFIG = {
   batchLimit: 1000,
 };
 
-function writeP3(content: string, kind = "preference", recordKind = "fact") {
+function writePalace(content: string, kind = "preference", recordKind = "fact") {
   return writeSoulMemory({
     agentId: "main",
     scopeType: "agent",
@@ -28,7 +28,7 @@ function writeP3(content: string, kind = "preference", recordKind = "fact") {
     kind,
     content,
     source: "runtime_event",
-    tier: "P3",
+    tier: "palace",
     recordKind: recordKind as "fact",
   });
 }
@@ -50,13 +50,13 @@ afterEach(async () => {
   }
 });
 
-describe("compactP3Episodic", () => {
+describe("compactEpisodic (Memory Palace compaction)", () => {
   it("does nothing when disabled", () => {
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
-    const result = compactP3Episodic({
+    const result = compactEpisodic({
       agentId: "main",
       config: { ...DEFAULT_CONFIG, enabled: false },
     });
@@ -64,12 +64,12 @@ describe("compactP3Episodic", () => {
     expect(result.compactedEpisodic).toBe(0);
   });
 
-  it("clusters similar P3 episodic items and creates P3 semantic node", () => {
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+  it("clusters similar palace episodic items and creates palace semantic node", () => {
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
-    const result = compactP3Episodic({
+    const result = compactEpisodic({
       agentId: "main",
       config: DEFAULT_CONFIG,
     });
@@ -78,30 +78,30 @@ describe("compactP3Episodic", () => {
     expect(result.compactedEpisodic).toBe(3);
     expect(result.semanticIds).toHaveLength(1);
 
-    // P3 semantic node should exist (all items are P3 in new architecture)
+    // Palace semantic node should exist (all items are palace in new architecture)
     const items = listSoulMemoryItems({
       agentId: "main",
-      tier: "P3",
+      tier: "palace",
     });
     const semantic = items.find((i) => i.memoryType === "semantic");
     expect(semantic).toBeDefined();
     expect(semantic?.sourceDetail).toBe("system");
 
-    // Original P3 items should be marked as compacted
-    const p3Items = listSoulMemoryItems({
+    // Original palace items should be marked as compacted
+    const palaceItems = listSoulMemoryItems({
       agentId: "main",
-      tier: "P3",
+      tier: "palace",
     });
-    const compactedCount = p3Items.filter((i) => i.isCompacted).length;
+    const compactedCount = palaceItems.filter((i) => i.isCompacted).length;
     expect(compactedCount).toBe(3);
   });
 
   it("does not cluster items below minClusterSize", () => {
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
     // Only 2 items, minClusterSize = 3
 
-    const result = compactP3Episodic({
+    const result = compactEpisodic({
       agentId: "main",
       config: DEFAULT_CONFIG,
     });
@@ -109,33 +109,33 @@ describe("compactP3Episodic", () => {
   });
 
   it("does not compact already-compacted items", () => {
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
     // First compaction
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
 
     // Second compaction should find no new items
-    const result = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const result = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(result.compactedClusters).toBe(0);
     expect(result.compactedEpisodic).toBe(0);
   });
 
   it("no archival — compacted episodic items are retained permanently", () => {
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
 
     // 3 episodic + 1 semantic node, all retained
-    let p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.length).toBe(4);
+    let palaceItems = listSoulMemoryItems({ agentId: "main", tier: "palace" });
+    expect(palaceItems.length).toBe(4);
 
     // Even with far-future time, nothing is archived (memory palace model)
     const futureTime = Date.now() + 365 * 86_400_000;
-    const result = compactP3Episodic({
+    const result = compactEpisodic({
       agentId: "main",
       config: DEFAULT_CONFIG,
       nowMs: futureTime,
@@ -144,23 +144,23 @@ describe("compactP3Episodic", () => {
     expect(result.archivedOrphans).toBe(0);
 
     // All items still present
-    p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.length).toBe(4);
+    palaceItems = listSoulMemoryItems({ agentId: "main", tier: "palace" });
+    expect(palaceItems.length).toBe(4);
   });
 
   it("no archival — orphan episodic items are retained permanently", () => {
-    writeP3("User's favorite color is blue");
-    writeP3("The weather today is sunny and warm");
-    writeP3("Project deadline is next Friday");
+    writePalace("User's favorite color is blue");
+    writePalace("The weather today is sunny and warm");
+    writePalace("Project deadline is next Friday");
 
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
 
-    let p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.every((i) => !i.isCompacted)).toBe(true);
+    let palaceItems = listSoulMemoryItems({ agentId: "main", tier: "palace" });
+    expect(palaceItems.every((i) => !i.isCompacted)).toBe(true);
 
     // Even with far-future time, orphans are not archived
     const futureTime = Date.now() + 365 * 86_400_000;
-    const result = compactP3Episodic({
+    const result = compactEpisodic({
       agentId: "main",
       config: DEFAULT_CONFIG,
       nowMs: futureTime,
@@ -168,8 +168,8 @@ describe("compactP3Episodic", () => {
     expect(result.archivedOrphans).toBe(0);
 
     // All items retained
-    p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    expect(p3Items.length).toBe(3);
+    palaceItems = listSoulMemoryItems({ agentId: "main", tier: "palace" });
+    expect(palaceItems.length).toBe(3);
   });
 
   it("new memory items have correct memoryType and sourceDetail defaults", () => {
@@ -196,7 +196,7 @@ describe("compactP3Episodic", () => {
       kind: "preference",
       content: "User mentioned liking coffee",
       source: "runtime_event",
-      tier: "P3",
+      tier: "palace",
     });
 
     expect(item?.sourceDetail).toBe("inferred");
@@ -206,58 +206,58 @@ describe("compactP3Episodic", () => {
 
   it("evolves semantic node when explicit evidence matches existing semantic_key", () => {
     // First round: create initial semantic
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
-    const r1 = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const r1 = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(r1.compactedClusters).toBeGreaterThanOrEqual(1);
     expect(r1.semanticIds).toHaveLength(1);
     const oldSemanticId = r1.semanticIds[0];
 
     // Second round: new explicit evidence (manual_log = explicit source_detail)
-    writeP3Explicit("User adores sushi rolls every day");
-    writeP3Explicit("User craves sushi rolls constantly");
-    writeP3Explicit("User wants sushi rolls for every meal");
+    writePalaceExplicit("User adores sushi rolls every day");
+    writePalaceExplicit("User craves sushi rolls constantly");
+    writePalaceExplicit("User wants sushi rolls for every meal");
 
-    const r2 = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const r2 = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(r2.evolvedSemantics).toBe(1);
     expect(r2.semanticIds).toHaveLength(1);
     const newSemanticId = r2.semanticIds[0];
     expect(newSemanticId).not.toBe(oldSemanticId);
 
     // Old semantic should have valid_until set (retired)
-    const p3Semantics = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    const oldSemantic = p3Semantics.find((i) => i.id === oldSemanticId);
+    const palaceSemantics = listSoulMemoryItems({ agentId: "main", tier: "palace" });
+    const oldSemantic = palaceSemantics.find((i) => i.id === oldSemanticId);
     expect(oldSemantic?.validUntil).not.toBeNull();
 
     // New semantic should have valid_from set and valid_until null (active)
-    const newSemantic = p3Semantics.find((i) => i.id === newSemanticId);
+    const newSemantic = palaceSemantics.find((i) => i.id === newSemanticId);
     expect(newSemantic?.validFrom).not.toBeNull();
     expect(newSemantic?.validUntil).toBeNull();
   });
 
   it("marks evolution conflict for inferred evidence instead of evolving", () => {
     // First round: create initial semantic
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
-    const r1 = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const r1 = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(r1.compactedClusters).toBeGreaterThanOrEqual(1);
 
     // Second round: inferred evidence (runtime_event = inferred)
-    writeP3("User mentions sushi rolls again today");
-    writeP3("User talks about sushi rolls once more");
-    writeP3("User brings up sushi rolls in conversation");
+    writePalace("User mentions sushi rolls again today");
+    writePalace("User talks about sushi rolls once more");
+    writePalace("User brings up sushi rolls in conversation");
 
-    const r2 = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const r2 = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(r2.evolutionConflicts).toBe(1);
     expect(r2.evolvedSemantics).toBe(0);
 
     // Episodic items should still be marked compacted even though evolution was deferred
-    const p3Items = listSoulMemoryItems({ agentId: "main", tier: "P3" });
-    const compactedCount = p3Items.filter((i) => i.isCompacted).length;
+    const palaceItems = listSoulMemoryItems({ agentId: "main", tier: "palace" });
+    const compactedCount = palaceItems.filter((i) => i.isCompacted).length;
     expect(compactedCount).toBe(6); // all 6 items compacted
 
     // Conflict should be recorded with ask_user strategy
@@ -271,15 +271,15 @@ describe("compactP3Episodic", () => {
 
   it("excludes retired semantics from default search", () => {
     // Create and then evolve a semantic
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
 
-    writeP3Explicit("User adores sushi rolls every day");
-    writeP3Explicit("User craves sushi rolls constantly");
-    writeP3Explicit("User wants sushi rolls for every meal");
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    writePalaceExplicit("User adores sushi rolls every day");
+    writePalaceExplicit("User craves sushi rolls constantly");
+    writePalaceExplicit("User wants sushi rolls for every meal");
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
 
     // Default search should only return the active (new) semantic, not the retired one
     const results = querySoulMemoryMulti({
@@ -298,23 +298,23 @@ describe("compactP3Episodic", () => {
 
   it("includes retired semantics in point-in-time temporal query", () => {
     const t0 = Date.now();
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG, nowMs: t0 });
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG, nowMs: t0 });
 
     const t1 = t0 + 86_400_000; // 1 day later
-    writeP3Explicit("User adores sushi rolls every day");
-    writeP3Explicit("User craves sushi rolls constantly");
-    writeP3Explicit("User wants sushi rolls for every meal");
-    compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG, nowMs: t1 });
+    writePalaceExplicit("User adores sushi rolls every day");
+    writePalaceExplicit("User craves sushi rolls constantly");
+    writePalaceExplicit("User wants sushi rolls for every meal");
+    compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG, nowMs: t1 });
 
     // Verify the evolution happened: old semantic retired, new semantic active
-    const p3Semantics = listSoulMemoryItems({ agentId: "main", tier: "P3" }).filter(
+    const palaceSemantics = listSoulMemoryItems({ agentId: "main", tier: "palace" }).filter(
       (i) => i.memoryType === "semantic",
     );
-    const retired = p3Semantics.filter((i) => i.validUntil !== null);
-    const active = p3Semantics.filter((i) => i.validUntil === null);
+    const retired = palaceSemantics.filter((i) => i.validUntil !== null);
+    const active = palaceSemantics.filter((i) => i.validUntil === null);
     expect(retired.length).toBe(1);
     expect(active.length).toBe(1);
     expect(retired[0].validFrom).toBeLessThanOrEqual(t0);
@@ -353,20 +353,20 @@ describe("compactP3Episodic", () => {
 
   it("annotates search results with unresolved conflict IDs", () => {
     // Create memories that conflict
-    writeP3("User likes sushi rolls for dinner");
-    writeP3("User loves sushi rolls for lunch");
-    writeP3("User enjoys sushi rolls for breakfast");
+    writePalace("User likes sushi rolls for dinner");
+    writePalace("User loves sushi rolls for lunch");
+    writePalace("User enjoys sushi rolls for breakfast");
 
-    const r1 = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const r1 = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(r1.compactedClusters).toBeGreaterThanOrEqual(1);
     const semanticId = r1.semanticIds[0];
 
     // Create a second batch to trigger evolution conflict (inferred)
-    writeP3("User mentions sushi rolls again today");
-    writeP3("User talks about sushi rolls once more");
-    writeP3("User brings up sushi rolls in conversation");
+    writePalace("User mentions sushi rolls again today");
+    writePalace("User talks about sushi rolls once more");
+    writePalace("User brings up sushi rolls in conversation");
 
-    const r2 = compactP3Episodic({ agentId: "main", config: DEFAULT_CONFIG });
+    const r2 = compactEpisodic({ agentId: "main", config: DEFAULT_CONFIG });
     expect(r2.evolutionConflicts).toBe(1);
 
     // Verify conflict exists via conflict API
@@ -406,8 +406,8 @@ describe("compactP3Episodic", () => {
   });
 });
 
-/** Write P3 episodic with explicit source_detail (manual_log). */
-function writeP3Explicit(content: string) {
+/** Write palace episodic with explicit source_detail (manual_log). */
+function writePalaceExplicit(content: string) {
   return writeSoulMemory({
     agentId: "main",
     scopeType: "agent",
@@ -415,7 +415,7 @@ function writeP3Explicit(content: string) {
     kind: "preference",
     content,
     source: "manual_log",
-    tier: "P3",
+    tier: "palace",
     recordKind: "fact",
   });
 }

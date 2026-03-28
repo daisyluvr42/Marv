@@ -89,12 +89,33 @@ export async function autoRecallFromSoulMemory(params: {
     agentId: params.agentId,
     sessionKey: params.sessionKey,
   });
+
+  // Resolve ML query embedding if config is available (async, best-effort)
+  let queryEmbedding: number[] | undefined;
+  if (params.marvConfig) {
+    try {
+      const { resolveMlQueryEmbedding } =
+        await import("../memory/storage/soul-memory-ml-bridge.js");
+      const mlVec = await resolveMlQueryEmbedding({
+        cfg: params.marvConfig,
+        agentId: params.agentId,
+        query: queryUsed,
+      });
+      if (mlVec) {
+        queryEmbedding = mlVec;
+      }
+    } catch {
+      // ML embedding unavailable — fall back to legacy hash
+    }
+  }
+
   const active = querySoulMemoryMulti({
     agentId: params.agentId,
     scopes,
     query: queryUsed,
     topK: config.maxResults,
     minScore: config.minScore,
+    queryEmbedding,
   });
   const archive = querySoulArchive({
     agentId: params.agentId,
@@ -102,6 +123,7 @@ export async function autoRecallFromSoulMemory(params: {
     query: queryUsed,
     topK: config.maxResults,
     minScore: Math.max(0.12, config.minScore * 0.6),
+    queryEmbedding,
   });
   const merged = mergeRecallEntries(active, archive, config.maxResults);
   const contextFile = buildRecalledContextFile(merged, config.maxContextChars);

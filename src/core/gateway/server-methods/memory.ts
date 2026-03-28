@@ -62,7 +62,7 @@ export const memoryHandlers: GatewayRequestHandlers = {
       scopeType: typeof params.scopeType === "string" ? params.scopeType.trim() : undefined,
       scopeId: typeof params.scopeId === "string" ? params.scopeId.trim() : undefined,
       kind: typeof params.kind === "string" ? params.kind.trim() : undefined,
-      tier: typeof params.tier === "string" ? params.tier.trim().toUpperCase() : undefined,
+      tier: typeof params.tier === "string" ? params.tier.trim().toLowerCase() : undefined,
       recordKind:
         typeof params.recordKind === "string"
           ? (params.recordKind.trim().toLowerCase() as SoulMemoryRecordKind)

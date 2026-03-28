@@ -67,8 +67,7 @@ function isUnsupportedMessage(message: string): boolean {
     lower.includes("not authorized to access this model") ||
     lower.includes("not available for your account") ||
     lower.includes("does not have access to model") ||
-    lower.includes("access to the requested model is denied") ||
-    lower.includes("context window too small")
+    lower.includes("access to the requested model is denied")
   );
 }
 

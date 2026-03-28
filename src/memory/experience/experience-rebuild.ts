@@ -20,12 +20,12 @@ const CALIBRATION_SYSTEM_PROMPT = `You are an experience calibration engine. You
 Input:
 1. Current EXPERIENCE.md (with a/p attribution markers)
 2. Complete EXPERIENCE_LOG.md (audit trail)
-3. Recent P3 episodic fragments (last 30 days)
+3. Recent Memory Palace episodic fragments (last 30 days)
 
 Calibration rules:
 - Check if the experience document has progressive drift from consecutive distillation biases
 - Use the LOG as ground truth, compare with current document
-- If needed, extract important missed experiences from P3 fragments
+- If needed, extract important missed experiences from Memory Palace fragments
 
 [Attribution-driven culling rules]:
 - "Zombie experience": a:0 and exists > 30 days → remove (never activated, not relevant to actual work)
@@ -64,10 +64,9 @@ export async function weeklyCalibration(params: {
     };
   }
 
-  // Try LLM calibration
+  // Use dynamic model selection: picks the highest-tier model for calibration
   try {
-    const { inferLocal } = await import("../storage/local-llm-client.js");
-    const modelConfig = params.cfg?.memory?.soul?.deepConsolidation?.model;
+    const { experienceInfer } = await import("./experience-inference.js");
 
     const userPrompt = [
       "## Current EXPERIENCE.md",
@@ -76,15 +75,16 @@ export async function weeklyCalibration(params: {
       "## EXPERIENCE_LOG.md",
       log || "(empty)",
       "",
-      "## Recent P3 Episodic Fragments",
+      "## Recent Memory Palace Fragments",
       params.p3Fragments || "(none available)",
     ].join("\n");
 
-    const result = await inferLocal({
+    const result = await experienceInfer({
       cfg: params.cfg ?? {},
-      model: modelConfig,
+      role: "calibration",
       system: CALIBRATION_SYSTEM_PROMPT,
       prompt: userPrompt,
+      agentId: params.agentId,
     });
 
     if (result.ok) {

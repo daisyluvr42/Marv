@@ -19,9 +19,8 @@ let archiveSearchImpl: () => unknown[] = () => [];
 let archiveReadImpl: (
   eventId: string,
 ) => { id: string; content: string; summary: string } | null = () => null;
-let soulWriteImpl: (content: string) => { id: string } = () => ({ id: "mem_mock" });
-let lastSoulWriteContent: string | null = null;
 let soulRefsImpl: (itemId: string) => string[] = () => [];
+const enqueueDistillationMock = vi.fn();
 
 const stubManager = {
   search: vi.fn(async () => await searchImpl()),
@@ -57,10 +56,6 @@ vi.mock("../../memory/storage/soul-memory-store.js", () => {
     getSoulMemoryItem: ({ itemId }: { itemId: string }) => soulReadImpl(itemId),
     getSoulArchiveEvent: ({ eventId }: { eventId: string }) => archiveReadImpl(eventId),
     listSoulMemoryReferences: ({ itemId }: { itemId: string }) => soulRefsImpl(itemId),
-    writeSoulMemory: ({ content }: { content: string }) => {
-      lastSoulWriteContent = content;
-      return soulWriteImpl(content);
-    },
     buildSoulMemoryPath: (itemId: string) => `soul-memory/${itemId}`,
     buildSoulArchivePath: (eventId: string) => `soul-archive/${eventId}`,
     parseSoulMemoryPath: (value: string) =>
@@ -69,6 +64,10 @@ vi.mock("../../memory/storage/soul-memory-store.js", () => {
       value.startsWith("soul-archive/") ? value.slice("soul-archive/".length) : null,
   };
 });
+
+vi.mock("../../memory/experience/experience-distiller.js", () => ({
+  enqueueDistillation: (...args: unknown[]) => enqueueDistillationMock(...args),
+}));
 
 import {
   createMemoryGetTool,
@@ -97,9 +96,8 @@ beforeEach(() => {
   soulReadImpl = () => null;
   archiveSearchImpl = () => [];
   archiveReadImpl = () => null;
-  soulWriteImpl = () => ({ id: "mem_mock" });
-  lastSoulWriteContent = null;
   soulRefsImpl = () => [];
+  enqueueDistillationMock.mockReset();
   vi.clearAllMocks();
 });
 
@@ -196,7 +194,7 @@ describe("memory search citations", () => {
         kind: "document_chunk",
         content: "Install Node 22 and run pnpm install.",
         confidence: 1,
-        tier: "P1",
+        tier: "palace",
         source: "manual_log",
         recordKind: "fact",
         metadata: {
@@ -377,9 +375,7 @@ describe("memory tools", () => {
     });
   });
 
-  it("writes structured soul memory with memory_write", async () => {
-    soulWriteImpl = () => ({ id: "mem_written" });
-    soulRefsImpl = () => ["mem_anchor"];
+  it("queues memory_write through distillation instead of direct DB write", async () => {
     const cfg = { agents: { defaults: {} } };
     const tool = createMemoryWriteTool({ config: cfg });
     expect(tool).not.toBeNull();
@@ -392,12 +388,19 @@ describe("memory tools", () => {
     });
     expect(result.details).toMatchObject({
       ok: true,
-      id: "mem_written",
-      path: "soul-memory/mem_written",
+      queued: true,
       classification: "explicit_memory",
-      references: ["mem_anchor"],
+      notice: "Memory note queued for distillation",
     });
-    expect(lastSoulWriteContent).toBe("I prefer concise replies.");
+    expect(enqueueDistillationMock).toHaveBeenCalledTimes(1);
+    expect(enqueueDistillationMock).toHaveBeenCalledWith(
+      expect.any(String), // agentId
+      expect.objectContaining({
+        source: "reflect",
+        content: expect.stringContaining("I prefer concise replies."),
+      }),
+      expect.objectContaining({ cfg }),
+    );
   });
 
   it("skips transient memory_write requests", async () => {
@@ -416,7 +419,7 @@ describe("memory tools", () => {
       classification: "reject_transient",
       error: "memory write skipped by heuristics",
     });
-    expect(lastSoulWriteContent).toBeNull();
+    expect(enqueueDistillationMock).not.toHaveBeenCalled();
   });
 
   it("includes [ref:item_id] chain and salience metadata in soul search results", async () => {
@@ -428,7 +431,7 @@ describe("memory tools", () => {
         kind: "note",
         content: "linked memory content",
         confidence: 0.9,
-        tier: "P1",
+        tier: "palace",
         source: "manual_log",
         createdAt: 100,
         lastAccessedAt: 100,

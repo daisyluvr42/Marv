@@ -11,7 +11,6 @@ import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const DEFAULT_OPENAI_COMPAT_BASE_URL = "http://127.0.0.1:8000/v1";
-const DEFAULT_MODEL_ID = "qwen2.5:3b";
 const DEFAULT_TIMEOUT_MS = 30_000;
 const PRIVATE_NETWORK_POLICY: SsrFPolicy = { allowPrivateNetwork: true };
 
@@ -54,10 +53,12 @@ export function resolveLocalLlmConfig(params: {
     typeof model.timeoutMs === "number" && Number.isFinite(model.timeoutMs) && model.timeoutMs > 0
       ? Math.floor(model.timeoutMs)
       : DEFAULT_TIMEOUT_MS;
-  const modelId =
-    model.model?.trim() ||
-    providerEntry?.models.find((entry) => entry.id.trim())?.id ||
-    DEFAULT_MODEL_ID;
+  const modelId = model.model?.trim() || providerEntry?.models.find((entry) => entry.id.trim())?.id;
+  if (!modelId) {
+    throw new Error(
+      "no model configured for local inference (set memory.soul.deepConsolidation.model.model or use experience model config)",
+    );
+  }
   const headers = buildHeaders(providerEntry);
 
   return {

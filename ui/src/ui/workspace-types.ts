@@ -27,7 +27,7 @@ export type WorkspaceMemoryItem = {
   content: string;
   summary?: string;
   confidence: number;
-  tier: "P0" | "P1" | "P2" | "P3";
+  tier: string;
   source: "core_preference" | "manual_log" | "migration" | "auto_extraction" | "runtime_event";
   recordKind: "fact" | "relationship" | "experience" | "soul";
   metadata?: Record<string, unknown>;
@@ -48,7 +48,7 @@ export type WorkspaceMemorySearchItem = WorkspaceMemoryItem & {
   relevanceScore: number;
   scopePenalty: number;
   clarityScore: number;
-  tierMultiplier: number;
+  tierMultiplier?: number;
   wasRecallBoosted: boolean;
   timeDecay: number;
   salienceScore: number;

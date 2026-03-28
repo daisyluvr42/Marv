@@ -157,7 +157,7 @@ export function persistGoalStrategyMemory(params: {
   const summary = isSuccess
     ? `${params.state.strategyFamily} worked for ${params.state.goalFrame.objective}`
     : `${params.state.strategyFamily} failed for ${params.state.goalFrame.objective} (${params.state.problemShape ?? "unknown"})`;
-  // 1. Write to P3 as episodic record (all writes go to P3 now)
+  // 1. Write to Memory Palace as episodic record
   writeSoulMemory({
     agentId: params.agentId,
     scopeType: primaryScope.scopeType,
@@ -228,8 +228,8 @@ export function persistExperimentMemory(params: {
     content,
     summary,
     source: STRATEGY_MEMORY_SOURCE,
-    // All items are P3 in the new architecture
-    tier: "P3",
+    // All items are in the Memory Palace
+    tier: "palace",
     recordKind: "experience",
     metadata: {
       experimentId: state.spec.id,

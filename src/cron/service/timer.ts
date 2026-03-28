@@ -190,6 +190,9 @@ export function armTimer(state: CronServiceState) {
       state.deps.log.error({ err: String(err) }, "cron: timer tick failed");
     });
   }, clampedDelay);
+  // Allow the process to exit naturally when this is the only active handle
+  // (e.g. after `marv agent --local` completes its turn).
+  state.timer.unref();
   state.deps.log.debug(
     { nextAt, delayMs: clampedDelay, clamped: delay > MAX_TIMER_DELAY_MS },
     "cron: timer armed",

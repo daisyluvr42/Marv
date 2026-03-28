@@ -458,11 +458,7 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
 
     if (!forceAllowFrom) {
       await prompter.note(
-        [
-          "Telegram token is valid.",
-          "Direct chats still default to pairing until you open or allowlist DM access.",
-          `Check later: ${formatCliCommand("marv channels status --probe")}`,
-        ].join("\n"),
+        "Telegram token saved. DM access defaults to pairing mode (unknown users get a pairing code).",
         "Telegram",
       );
     }

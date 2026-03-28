@@ -22,6 +22,14 @@ export async function warnIfModelConfigLooksOff(
     model: DEFAULT_MODEL,
   };
   const warnings: string[] = [];
+  if (runtimePlan.candidates.length === 0 && runtimePlan.configured.length > 0) {
+    const reasons = runtimePlan.configured
+      .map((m) => `  ${m.ref}: ${m.availabilityReason ?? "unknown"}`)
+      .join("\n");
+    warnings.push(
+      `All configured models are unavailable (falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}):\n${reasons}`,
+    );
+  }
   const catalog = await loadModelCatalog({
     config,
     useCache: false,

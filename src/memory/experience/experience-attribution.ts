@@ -80,8 +80,13 @@ export async function detectActivatedExperiences(params: {
     return { activatedEntries: [], outcome: params.taskOutcome };
   }
 
-  // Stage 2: LLM confirmation (if available)
-  const confirmed = await confirmActivation(candidates, params.agentResponse, params.cfg);
+  // Stage 2: LLM confirmation (if available, uses dynamic model selection)
+  const confirmed = await confirmActivation(
+    candidates,
+    params.agentResponse,
+    params.cfg,
+    params.agentId,
+  );
 
   return {
     activatedEntries: confirmed.map((c) => ({
@@ -138,21 +143,22 @@ async function confirmActivation(
   candidates: ScoredCandidate[],
   response: string,
   cfg?: MarvConfig,
+  agentId?: string,
 ): Promise<ConfirmedCandidate[]> {
   try {
-    const { inferLocal } = await import("../storage/local-llm-client.js");
-    const modelConfig = cfg?.memory?.soul?.deepConsolidation?.model;
+    const { experienceInfer } = await import("./experience-inference.js");
 
     const candidateList = candidates.map((c, i) => `${i + 1}. ${c.text}`).join("\n");
 
-    const result = await inferLocal({
+    const result = await experienceInfer({
       cfg: cfg ?? {},
-      model: modelConfig,
+      role: "attribution",
       system:
         "You are an attribution detector. Given an agent response and a list of experience entries, " +
         "determine which experiences influenced the response. Output ONLY the numbers of activated entries, " +
         "comma-separated. If none are activated, output NONE.",
       prompt: `Agent response:\n${response.slice(0, 1000)}\n\nCandidate experiences:\n${candidateList}`,
+      agentId,
     });
 
     if (result.ok) {

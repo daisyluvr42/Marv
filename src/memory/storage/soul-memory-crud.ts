@@ -1,9 +1,12 @@
 import crypto from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { SOUL_MEMORY_REF_TABLE, upsertItemReferences } from "../salience/reference-expansion.js";
-import { embedText, extractEntities, vectorToBlob } from "./soul-memory-embedding.js";
-import { openSoulMemoryDb } from "./soul-memory-schema.js";
-import { hasSoulMemoryVecTable } from "./soul-memory-schema.js";
+import { embedTextLegacy, extractEntities, vectorToBlob } from "./soul-memory-embedding.js";
+import {
+  getStoredEmbeddingDims,
+  hasSoulMemoryVecTable,
+  openSoulMemoryDb,
+} from "./soul-memory-schema.js";
 import {
   MEMORY_ITEM_SELECT_COLUMNS,
   RECORD_KIND_EXPERIENCE,
@@ -13,7 +16,7 @@ import {
   SOURCE_MANUAL_LOG,
   SOURCE_PROFILE,
   SOURCE_RUNTIME_EVENT,
-  TIER_P3,
+  TIER_PALACE,
   type ArchiveRow,
   type MemoryItemRow,
   type SoulArchiveEvent,
@@ -21,7 +24,6 @@ import {
   type SoulMemoryItem,
   type SoulMemoryRecordKind,
   type SoulMemorySource,
-  type SoulMemoryTier,
   deriveSourceDetail,
   normalizeOptionalSummary,
   normalizeRecordKind,
@@ -47,12 +49,13 @@ export function writeSoulMemory(params: {
   summary?: string;
   confidence?: number;
   source?: string;
-  tier?: SoulMemoryTier;
+  /** @deprecated All items are in the Memory Palace. Value is ignored. */
+  tier?: string;
   recordKind?: SoulMemoryRecordKind;
   metadata?: Record<string, unknown>;
   nowMs?: number;
   soulConfig?: SoulMemoryConfig;
-  /** Memory type: 'episodic' (default), 'semantic', or 'knowledge'. Knowledge items are exempt from P3 compaction/archival. */
+  /** Memory type: 'episodic' (default), 'semantic', or 'knowledge'. Knowledge items are exempt from compaction/archival. */
   memoryType?: "episodic" | "semantic" | "knowledge";
 }): SoulMemoryItem | null {
   const content = params.content.trim();
@@ -71,8 +74,6 @@ export function writeSoulMemory(params: {
   const recordKind = resolveRecordKind(params.recordKind, kind, source);
   const metadataJson = stringifyMetadata(params.metadata);
   const sourceProfile = SOURCE_PROFILE[source];
-  const explicitTier = params.tier ? normalizeTier(params.tier) : null;
-  const resolvedTier = explicitTier ?? sourceProfile.tier;
   const resolvedConfidence = Math.max(
     sourceProfile.confidence,
     clamp(params.confidence ?? sourceProfile.confidence, 0, 1),
@@ -90,16 +91,14 @@ export function writeSoulMemory(params: {
     });
     if (existing) {
       const nextConfidence = Math.max(existing.confidence, resolvedConfidence);
-      const nextTier = resolvedTier;
-      const nextSource = source;
       db.prepare(
         "UPDATE memory_items SET confidence = ?, tier = ?, source = ?, record_kind = ?, summary = ?, metadata_json = ?, " +
           "reinforcement_count = COALESCE(reinforcement_count, 1) + 1, last_reinforced_at = ? " +
           "WHERE id = ?",
       ).run(
         nextConfidence,
-        nextTier,
-        nextSource,
+        TIER_PALACE,
+        source,
         recordKind,
         summary,
         metadataJson,
@@ -109,7 +108,7 @@ export function writeSoulMemory(params: {
       return getSoulMemoryItemInternal(db, existing.id);
     }
 
-    const embeddingVec = embedText(content);
+    const embeddingVec = embedTextLegacy(content);
     const embedding = JSON.stringify(embeddingVec);
     const id = `mem_${crypto.randomUUID().replace(/-/g, "")}`;
     const sourceDetail = deriveSourceDetail(source);
@@ -118,8 +117,8 @@ export function writeSoulMemory(params: {
       "INSERT INTO memory_items (" +
         "id, scope_type, scope_id, kind, content, embedding_json, confidence, tier, source, record_kind, summary, metadata_json, " +
         "created_at, last_accessed_at, reinforcement_count, last_reinforced_at, " +
-        "memory_type, source_detail" +
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, ?, ?)",
+        "memory_type, source_detail, embedding_version" +
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, ?, ?, 0)",
     ).run(
       id,
       scopeType,
@@ -128,7 +127,7 @@ export function writeSoulMemory(params: {
       content,
       embedding,
       resolvedConfidence,
-      resolvedTier,
+      TIER_PALACE,
       source,
       recordKind,
       summary,
@@ -203,7 +202,8 @@ export function listSoulMemoryItems(params: {
   scopeType?: string;
   scopeId?: string;
   kind?: string;
-  tier?: SoulMemoryTier;
+  /** @deprecated All items are in the Memory Palace. Value is ignored. */
+  tier?: string;
   recordKind?: SoulMemoryRecordKind;
   limit?: number;
 }): SoulMemoryItem[] {
@@ -245,21 +245,10 @@ export function listSoulMemoryItems(params: {
   }
 }
 
+/** @deprecated All items are in the Memory Palace. Use countSoulMemoryItems() instead. */
 export function countSoulMemoryItemsByTier(params: { agentId: string }): Record<string, number> {
-  const db = openSoulMemoryDb(params.agentId);
-  try {
-    type Row = { tier?: string; count?: number };
-    const rows = db
-      .prepare("SELECT tier, COUNT(*) as count FROM memory_items GROUP BY tier")
-      .all() as Row[];
-    const counts: Record<string, number> = {};
-    for (const row of rows) {
-      counts[normalizeTier(String(row.tier ?? "P3"))] = Number(row.count ?? 0);
-    }
-    return counts;
-  } finally {
-    db.close();
-  }
+  const total = countSoulMemoryItems(params);
+  return { palace: total };
 }
 
 export function countSoulMemoryItemsByRecordKind(params: {
@@ -331,7 +320,7 @@ export function ingestSoulMemoryEvent(params: {
   metadata?: Record<string, unknown>;
   nowMs?: number;
   recordKind?: SoulMemoryRecordKind;
-  /** When true, skip the immediate archive write. P3 items will be archived
+  /** When true, skip the immediate archive write. Items will be archived
    *  later when they are pruned from active memory. */
   skipArchive?: boolean;
 }): { activeItem: SoulMemoryItem; archiveEvent?: SoulArchiveEvent } | null {
@@ -343,7 +332,7 @@ export function ingestSoulMemoryEvent(params: {
     content: params.content,
     summary: params.summary,
     source: params.source ?? SOURCE_RUNTIME_EVENT,
-    tier: TIER_P3,
+    tier: TIER_PALACE,
     recordKind: params.recordKind,
     metadata: params.metadata,
     confidence: SOURCE_PROFILE[SOURCE_RUNTIME_EVENT].confidence,
@@ -418,7 +407,7 @@ export function writeSoulArchiveEvent(params: {
   try {
     const id = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
     const normalizedSummary = normalizeOptionalSummary(params.summary, params.content) ?? "";
-    const embedding = JSON.stringify(embedText(`${normalizedSummary}\n${params.content}`));
+    const embedding = JSON.stringify(embedTextLegacy(`${normalizedSummary}\n${params.content}`));
     db.prepare(
       `INSERT INTO ${SOUL_ARCHIVE_TABLE} (` +
         "id, scope_type, scope_id, kind, record_kind, content, summary, embedding_json, source, created_at, active_memory_id, metadata_json" +
@@ -562,8 +551,8 @@ export function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): num
   if (unique.length === 0) {
     return 0;
   }
-  // Archive P3 items before deletion so they remain recallable.
-  archiveP3BeforeDelete(db, unique);
+  // Archive items before deletion so they remain recallable.
+  archiveBeforeDelete(db, unique);
   deleteSoulMemoryVectorRows(db, unique);
   const deleteStmt = db.prepare("DELETE FROM memory_items WHERE id = ?");
   let deleted = 0;
@@ -574,18 +563,18 @@ export function pruneSoulMemoryItems(db: DatabaseSync, memoryIds: string[]): num
   return deleted;
 }
 
-/** Migrate P3 items from active memory into the archive table before pruning.
+/** Migrate Memory Palace items from active memory into the archive table before pruning.
  *  Items sharing the same sessionKey are grouped into a single episode-level
  *  archive event instead of being archived one-by-one. */
-export function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): void {
+export function archiveBeforeDelete(db: DatabaseSync, memoryIds: string[]): void {
   const selectStmt = db.prepare(
-    `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id = ? AND tier = 'P3'`,
+    `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items WHERE id = ?`,
   );
 
-  // Collect P3 rows and group by sessionKey.
-  type P3Row = MemoryItemRow & { _memoryId: string };
-  const sessionGroups = new Map<string, P3Row[]>();
-  const ungrouped: P3Row[] = [];
+  // Collect rows and group by sessionKey.
+  type ArchiveableRow = MemoryItemRow & { _memoryId: string };
+  const sessionGroups = new Map<string, ArchiveableRow[]>();
+  const ungrouped: ArchiveableRow[] = [];
   for (const memoryId of memoryIds) {
     const row = selectStmt.get(memoryId) as MemoryItemRow | undefined;
     if (!row) {
@@ -593,7 +582,7 @@ export function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): vo
     }
     const meta = parseMetadataJson(row.metadata_json);
     const sessionKey = typeof meta?.sessionKey === "string" ? meta.sessionKey.trim() : "";
-    const tagged: P3Row = { ...row, _memoryId: memoryId };
+    const tagged: ArchiveableRow = { ...row, _memoryId: memoryId };
     if (sessionKey) {
       const group = sessionGroups.get(sessionKey) ?? [];
       group.push(tagged);
@@ -620,7 +609,7 @@ export function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): vo
     const archiveId = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
     const memberIds = sorted.map((r) => r._memoryId);
     const episodeMeta = buildEpisodeMetadata(sorted, sessionKey);
-    const embedding = JSON.stringify(embedText(episode.content));
+    const embedding = JSON.stringify(embedTextLegacy(episode.content));
     insertStmt.run(
       archiveId,
       String(head.scope_type),
@@ -637,7 +626,7 @@ export function archiveP3BeforeDelete(db: DatabaseSync, memoryIds: string[]): vo
     );
   }
 
-  // Archive ungrouped P3 items individually (fallback for items without sessionKey).
+  // Archive ungrouped items individually (fallback for items without sessionKey).
   for (const row of ungrouped) {
     const archiveId = `arch_${crypto.randomUUID().replace(/-/g, "")}`;
     const summary = normalizeOptionalSummary(row.summary ?? undefined, String(row.content)) ?? "";
@@ -670,6 +659,96 @@ export function buildEpisodeContent(rows: MemoryItemRow[]): { content: string; s
   const preview = firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
   const summary = `Episode (${rows.length} turns): ${preview}`;
   return { content, summary };
+}
+
+/**
+ * Load recent episodic fragments from the Memory Palace for weekly calibration.
+ * Returns up to `maxItems` items from the last `days` days, truncated to `maxChars`.
+ */
+export function loadRecentEpisodicFragments(params: {
+  agentId: string;
+  days?: number;
+  maxItems?: number;
+  maxChars?: number;
+}): string {
+  const days = params.days ?? 30;
+  const maxItems = params.maxItems ?? 50;
+  const maxChars = params.maxChars ?? 4000;
+  const cutoffMs = Date.now() - days * 24 * 60 * 60 * 1000;
+
+  const db = openSoulMemoryDb(params.agentId);
+  try {
+    const rows = db
+      .prepare(
+        `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items ` +
+          `WHERE record_kind = 'episodic' AND created_at >= ? ` +
+          `ORDER BY created_at DESC LIMIT ?`,
+      )
+      .all(cutoffMs, maxItems) as MemoryItemRow[];
+
+    if (rows.length === 0) {
+      return "";
+    }
+
+    let output = "";
+    for (const row of rows) {
+      const line = `[${row.kind}] ${String(row.content).trim().slice(0, 200)}`;
+      if (output.length + line.length + 1 > maxChars) {
+        break;
+      }
+      output += output ? `\n${line}` : line;
+    }
+    return output;
+  } finally {
+    db.close();
+  }
+}
+
+// ── ML re-embedding helpers ─────────────────────────────────────────────────
+
+/**
+ * Update a single memory item with an ML embedding vector.
+ * Upserts the new vector into the vec table and marks `embedding_version = 1`.
+ * The `embedding_json` column is also updated so inline cosine scoring works.
+ */
+export function reembedMemoryItem(db: DatabaseSync, memoryId: string, mlEmbedding: number[]): void {
+  if (!memoryId || mlEmbedding.length === 0) {
+    return;
+  }
+  const embeddingJson = JSON.stringify(mlEmbedding);
+  db.prepare("UPDATE memory_items SET embedding_json = ?, embedding_version = 1 WHERE id = ?").run(
+    embeddingJson,
+    memoryId,
+  );
+  // Only upsert to vec table if dimensions match the stored vec table dims
+  const storedDims = getStoredEmbeddingDims(db);
+  if (mlEmbedding.length === storedDims) {
+    upsertSoulMemoryVector(db, memoryId, mlEmbedding);
+  }
+}
+
+/**
+ * Load memory items that still have legacy (version 0) embeddings.
+ * Returns `[id, content]` tuples for batch re-embedding.
+ */
+export function loadLegacyEmbeddingItems(
+  agentId: string,
+  batchSize: number,
+): Array<{ id: string; content: string }> {
+  const db = openSoulMemoryDb(agentId);
+  try {
+    type Row = { id?: string; content?: string };
+    const rows = db
+      .prepare(
+        "SELECT id, content FROM memory_items WHERE embedding_version = 0 ORDER BY created_at DESC LIMIT ?",
+      )
+      .all(Math.max(1, batchSize)) as Row[];
+    return rows
+      .filter((row) => row.id && row.content)
+      .map((row) => ({ id: String(row.id), content: String(row.content) }));
+  } finally {
+    db.close();
+  }
 }
 
 export function buildEpisodeMetadata(

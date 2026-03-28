@@ -1,8 +1,8 @@
 import type { MarvConfig } from "../core/config/config.js";
 import {
   countSoulArchiveEvents,
+  countSoulMemoryItems,
   countSoulMemoryItemsByRecordKind,
-  countSoulMemoryItemsByTier,
 } from "./storage/soul-memory-store.js";
 
 export type MemoryStatusSnapshot = {
@@ -13,7 +13,6 @@ export type MemoryStatusSnapshot = {
   knowledgeEnabled: boolean;
   runtimeIngestEnabled: boolean;
   totalItems: number;
-  tiers: Record<"P0" | "P1" | "P2" | "P3", number>;
   recordKinds: Record<"fact" | "relationship" | "experience" | "soul", number>;
   archiveEvents: number;
 };
@@ -23,9 +22,8 @@ export function getMemoryStatusSnapshot(params: {
   config?: MarvConfig;
 }): MemoryStatusSnapshot {
   const cfg = params.config ?? {};
-  const tiers = countSoulMemoryItemsByTier({ agentId: params.agentId });
   const recordKinds = countSoulMemoryItemsByRecordKind({ agentId: params.agentId });
-  const totalItems = Object.values(tiers).reduce((sum, count) => sum + count, 0);
+  const totalItems = countSoulMemoryItems({ agentId: params.agentId });
   return {
     agentId: params.agentId,
     backend: cfg.memory?.backend ?? "builtin",
@@ -34,7 +32,6 @@ export function getMemoryStatusSnapshot(params: {
     knowledgeEnabled: cfg.memory?.knowledge?.enabled === true,
     runtimeIngestEnabled: cfg.memory?.runtimeIngest !== false,
     totalItems,
-    tiers,
     recordKinds,
     archiveEvents: countSoulArchiveEvents({ agentId: params.agentId }),
   };

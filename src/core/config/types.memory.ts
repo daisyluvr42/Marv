@@ -79,7 +79,7 @@ export type ExperienceConfig = {
 export type MemoryConfig = {
   backend?: MemoryBackend;
   citations?: MemoryCitationsMode;
-  /** Enable automatic runtime message ingestion into P3. Default: true. */
+  /** Enable automatic runtime message ingestion into the Memory Palace. Default: true. */
   runtimeIngest?: boolean;
   soul?: MemorySoulConfig;
   autoRecall?: MemoryAutoRecallConfig;

@@ -19,19 +19,19 @@ export async function distillSessionContext(params: {
 }): Promise<void> {
   const budget = params.cfg?.memory?.experience?.contextBudgetChars ?? CONTEXT_BUDGET_CHARS;
 
-  // Try LLM-based summarization
+  // Use dynamic model selection: picks a cheap/local model for context summarization
   try {
-    const { inferLocal } = await import("../storage/local-llm-client.js");
-    const modelConfig = params.cfg?.memory?.soul?.deepConsolidation?.model;
+    const { experienceInfer } = await import("./experience-inference.js");
 
-    const result = await inferLocal({
+    const result = await experienceInfer({
       cfg: params.cfg ?? {},
-      model: modelConfig,
+      role: "context",
       system:
         "Summarize the following session into key working context points and progress. " +
         `Keep it concise, under ${budget} characters. ` +
         "Focus on: current task state, important decisions made, pending items, and any blockers.",
       prompt: params.sessionSummary,
+      agentId: params.agentId,
     });
 
     if (result.ok) {

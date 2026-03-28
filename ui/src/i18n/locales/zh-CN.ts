@@ -157,7 +157,7 @@ export const zh_CN: TranslationMap = {
       archiveEvents: "归档事件",
       autoRecall: "自动回忆",
       runtimeIngest: "运行摄入",
-      tiers: "层级",
+      tiers: "类别",
       backend: "后端",
       citations: "引用",
       vaults: "仓库",

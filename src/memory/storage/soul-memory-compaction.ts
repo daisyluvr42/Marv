@@ -8,7 +8,7 @@ import {
   type ConsolidationItem,
 } from "./soul-memory-consolidation.js";
 import {
-  type ResolvedP3CompactionConfig,
+  type ResolvedCompactionConfig,
   resolveSoulMemoryDbPath,
   writeSoulMemory,
 } from "./soul-memory-store.js";
@@ -18,7 +18,7 @@ import { requireNodeSqlite } from "./sqlite.js";
 // Types
 // ---------------------------------------------------------------------------
 
-export type P3CompactionResult = {
+export type CompactionResult = {
   /** Number of new semantic index nodes created from clusters. */
   compactedClusters: number;
   /** Number of episodic items marked is_compacted = 1. */
@@ -149,12 +149,12 @@ const STOPWORDS = new Set([
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export function compactP3Episodic(params: {
+export function compactEpisodic(params: {
   agentId: string;
-  config: ResolvedP3CompactionConfig;
+  config: ResolvedCompactionConfig;
   nowMs?: number;
   summarizeCluster?: (items: ConsolidationItem[]) => string;
-}): P3CompactionResult {
+}): CompactionResult {
   if (!params.config.enabled) {
     return {
       compactedClusters: 0,
@@ -171,7 +171,7 @@ export function compactP3Episodic(params: {
   const db = openSoulMemoryDb(params.agentId);
   try {
     const result = runCompaction(db, params.agentId, params.config, nowMs, params.summarizeCluster);
-    // Archival disabled: P3 is an append-only "memory palace".
+    // Archival disabled: Memory Palace is an append-only store.
     // Compaction generates semantic index nodes but never deletes episodic originals.
     return {
       ...result,
@@ -190,10 +190,10 @@ export function compactP3Episodic(params: {
 function runCompaction(
   db: DatabaseSync,
   agentId: string,
-  config: ResolvedP3CompactionConfig,
+  config: ResolvedCompactionConfig,
   nowMs: number,
   summarizeCluster?: (items: ConsolidationItem[]) => string,
-): Omit<P3CompactionResult, "archivedCompacted" | "archivedOrphans"> {
+): Omit<CompactionResult, "archivedCompacted" | "archivedOrphans"> {
   // Ensure conflict table exists for evolution conflict insertion
   ensureConflictSchemaCompact(db);
 
@@ -209,12 +209,12 @@ function runCompaction(
       ") VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 'ask_user')",
   );
 
-  // Load uncompacted P3 episodic items (batch-limited, oldest first for fairness)
+  // Load uncompacted episodic items (batch-limited, oldest first for fairness)
   const rows = db
     .prepare(
       "SELECT id, scope_type, scope_id, kind, content, record_kind, source, source_detail, " +
         "confidence, created_at, metadata_json " +
-        "FROM memory_items WHERE tier = 'P3' AND memory_type = 'episodic' AND is_compacted = 0 " +
+        "FROM memory_items WHERE memory_type = 'episodic' AND is_compacted = 0 " +
         "ORDER BY created_at ASC LIMIT ?",
     )
     .all(config.batchLimit) as EpisodicRow[];
@@ -327,7 +327,7 @@ function runCompaction(
         continue;
       }
 
-      // Write the semantic node via writeSoulMemory (all items are P3 now)
+      // Write the semantic node via writeSoulMemory (all items are in the Memory Palace)
       const semanticItem = writeSoulMemory({
         agentId,
         scopeType: head.scopeType,
@@ -336,11 +336,11 @@ function runCompaction(
         content: summary,
         confidence: 0.7,
         source: "auto_extraction",
-        tier: "P3",
+        tier: "palace",
         recordKind: normalizeRecordKind(headRow.record_kind),
         metadata: {
           compactedFrom: cluster.map((c) => c.id),
-          compactionSource: "p3_compaction",
+          compactionSource: "compaction",
           ...(existingSemanticId ? { supersedes: existingSemanticId } : {}),
         },
         nowMs,
@@ -384,7 +384,7 @@ function runCompaction(
   };
 }
 
-// Archival removed: P3 is an append-only "memory palace". Compaction generates
+// Archival removed: Memory Palace is an append-only store. Compaction generates
 // semantic index nodes but never deletes or archives original episodic items.
 
 // ---------------------------------------------------------------------------

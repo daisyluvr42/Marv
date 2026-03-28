@@ -265,7 +265,7 @@ function normalizeText(value: string): string {
 function loadMemoryItems(db: DatabaseSync, limit: number): ConsolidationItem[] {
   const rows = db
     .prepare(
-      // Consolidation applies to all non-compacted semantic knowledge (all tiers are P3 now)
+      // Consolidation applies to all non-compacted semantic knowledge (all items are in the Memory Palace)
       "SELECT id, scope_type, scope_id, kind, content, tier, record_kind " +
         "FROM memory_items WHERE record_kind IN ('experience', 'soul') AND (is_compacted IS NULL OR is_compacted = 0) " +
         "ORDER BY created_at DESC LIMIT ?",

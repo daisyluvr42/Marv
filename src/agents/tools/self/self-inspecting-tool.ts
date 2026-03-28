@@ -468,13 +468,12 @@ async function formatHealthSection(params: {
   try {
     const { readExperienceFileSync, resolveExperienceDir } =
       await import("../../../memory/experience/experience-files.js");
-    const { listSoulMemoryItems, countSoulMemoryItemsByTier } =
+    const { listSoulMemoryItems, countSoulMemoryItems } =
       await import("../../../memory/storage/soul-memory-store.js");
 
-    // P3 item counts
+    // Memory Palace item count
     try {
-      const tierCounts = countSoulMemoryItemsByTier({ agentId: params.agentId });
-      const total = Object.values(tierCounts).reduce((a, b) => a + b, 0);
+      const total = countSoulMemoryItems({ agentId: params.agentId });
       lines.push(`Memory items: ${total} total`);
     } catch {
       lines.push("Memory items: unavailable");

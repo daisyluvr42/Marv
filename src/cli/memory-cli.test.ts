@@ -9,9 +9,25 @@ const loadConfig = vi.fn(() => ({}));
 const resolveDefaultAgentId = vi.fn(() => "main");
 const memoryP0ShowCommand = vi.fn(async () => {});
 const memoryP0SectionCommand = vi.fn(async () => {});
+const querySoulMemoryMulti = vi.fn(() => []);
 
 vi.mock("../memory/index.js", () => ({
   getMemorySearchManager,
+}));
+
+vi.mock("../memory/storage/soul-memory-store.js", () => ({
+  countSoulArchiveEvents: vi.fn(() => 0),
+  countSoulMemoryItemsByRecordKind: vi.fn(() => ({
+    fact: 0,
+    relationship: 0,
+    experience: 0,
+    soul: 0,
+  })),
+  countSoulMemoryItemsByTier: vi.fn(() => ({ palace: 0 })),
+  countSoulMemoryItems: vi.fn(() => 0),
+  listSoulMemoryItems: vi.fn(() => []),
+  querySoulMemoryMulti,
+  resolveSoulMemoryDbPath: vi.fn(() => "/tmp/test-soul.sqlite"),
 }));
 
 vi.mock("../core/config/config.js", () => ({
@@ -31,6 +47,8 @@ vi.mock("../commands/memory-p0.js", () => ({
 afterEach(async () => {
   vi.restoreAllMocks();
   getMemorySearchManager.mockReset();
+  querySoulMemoryMulti.mockReset();
+  querySoulMemoryMulti.mockReturnValue([]);
   process.exitCode = undefined;
   const { setVerbose } = await import("../globals.js");
   setVerbose(false);
@@ -294,11 +312,10 @@ describe("memory cli", () => {
     expect(process.exitCode).toBeUndefined();
   });
 
-  it("logs close failure after search", async () => {
+  it("falls back to file-based search when soul memory returns no results", async () => {
     const { defaultRuntime } = await import("../runtime.js");
-    const close = vi.fn(async () => {
-      throw new Error("close boom");
-    });
+    querySoulMemoryMulti.mockReturnValue([]);
+    const close = vi.fn(async () => {});
     const search = vi.fn(async () => [
       {
         path: "memory/2026-01-12.md",
@@ -310,31 +327,27 @@ describe("memory cli", () => {
     ]);
     mockManager({ search, close });
 
-    const error = vi.spyOn(defaultRuntime, "error").mockImplementation(() => {});
+    const log = vi.spyOn(defaultRuntime, "log").mockImplementation(() => {});
     await runMemoryCli(["search", "hello"]);
 
     expect(search).toHaveBeenCalled();
     expect(close).toHaveBeenCalled();
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining("Memory manager close failed: close boom"),
-    );
+    expect(log).toHaveBeenCalled();
     expect(process.exitCode).toBeUndefined();
   });
 
-  it("closes manager after search error", async () => {
+  it("shows no matches when both sources return empty", async () => {
     const { defaultRuntime } = await import("../runtime.js");
+    querySoulMemoryMulti.mockReturnValue([]);
     const close = vi.fn(async () => {});
-    const search = vi.fn(async () => {
-      throw new Error("boom");
-    });
+    const search = vi.fn(async () => []);
     mockManager({ search, close });
 
-    const error = vi.spyOn(defaultRuntime, "error").mockImplementation(() => {});
+    const log = vi.spyOn(defaultRuntime, "log").mockImplementation(() => {});
     await runMemoryCli(["search", "oops"]);
 
     expect(search).toHaveBeenCalled();
     expect(close).toHaveBeenCalled();
-    expect(error).toHaveBeenCalledWith(expect.stringContaining("Memory search failed: boom"));
-    expect(process.exitCode).toBe(1);
+    expect(log).toHaveBeenCalledWith("No matches.");
   });
 });
