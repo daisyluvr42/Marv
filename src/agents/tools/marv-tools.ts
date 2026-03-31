@@ -39,6 +39,8 @@ import { createSessionsHistoryTool } from "./sessions/sessions-history-tool.js";
 import { createSessionsListTool } from "./sessions/sessions-list-tool.js";
 import { createSessionsSendTool } from "./sessions/sessions-send-tool.js";
 import { createSessionsSpawnTool } from "./sessions/sessions-spawn-tool.js";
+import { createSkillCrystallizeTool } from "./skill-crystallize-tool.js";
+import { createSkillViewTool } from "./skill-view-tool.js";
 import { createSubagentsTool } from "./subagents-tool.js";
 import { createTaskDispatchTool } from "./task-dispatch-tool.js";
 import { createTtsTool } from "./tts-tool.js";
@@ -93,6 +95,8 @@ export type CreateMarvToolsOptions = {
   enableProactiveBuffer?: boolean;
   /** Enable proactive tasks/goals tooling (continuous loop mode). */
   enableProactiveTasks?: boolean;
+  /** Optional active skill filter for the current run/session. */
+  skillFilter?: string[];
 };
 
 export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[] {
@@ -296,6 +300,15 @@ export function createMarvTools(options?: CreateMarvToolsOptions): AnyAgentTool[
       workspaceDir,
       config: options?.config,
       agentSessionKey: options?.agentSessionKey,
+    }),
+    createSkillViewTool({
+      workspaceDir,
+      config: options?.config,
+      skillFilter: options?.skillFilter,
+    }),
+    createSkillCrystallizeTool({
+      workspaceDir,
+      config: options?.config,
     }),
     ...(webSearchTool ? [webSearchTool] : []),
     ...(webFetchTool ? [webFetchTool] : []),

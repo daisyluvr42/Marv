@@ -39,6 +39,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "self_inspecting",
     "self_settings",
   ],
+  // Skill discovery / refinement helpers
+  "group:skills": ["skill_view", "skill_crystallize"],
   // UI helpers
   "group:ui": ["browser", "canvas"],
   // Automation + infra
@@ -66,6 +68,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     "self_settings",
     "request_escalation",
     "request_missing_tools",
+    "skill_view",
+    "skill_crystallize",
     "memory_search",
     "memory_get",
     "memory_write",
@@ -87,7 +91,15 @@ const TOOL_PROFILES: Record<ToolProfileId, ToolProfilePolicy> = {
     allow: ["session_status", "self_inspecting", "self_settings"],
   },
   coding: {
-    allow: ["group:fs", "group:runtime", "group:sessions", "group:memory", "gateway", "image"],
+    allow: [
+      "group:fs",
+      "group:runtime",
+      "group:sessions",
+      "group:skills",
+      "group:memory",
+      "gateway",
+      "image",
+    ],
   },
   messaging: {
     allow: [

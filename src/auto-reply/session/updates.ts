@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
+import { resolveMarvCodingToolNames } from "../../agents/tools/pi-tools.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
@@ -152,6 +153,12 @@ export async function ensureSkillSnapshot(params: {
   let nextEntry = sessionEntry;
   let systemSent = sessionEntry?.systemSent ?? false;
   const remoteEligibility = getRemoteSkillEligibility();
+  const availableTools = resolveMarvCodingToolNames({
+    sessionKey: sessionKey ?? sessionId,
+    workspaceDir,
+    config: cfg,
+    skillFilter,
+  });
   const snapshotVersion = getSkillsSnapshotVersion(workspaceDir);
   ensureSkillsWatcher({ workspaceDir, config: cfg });
   const shouldRefreshSnapshot =
@@ -168,7 +175,7 @@ export async function ensureSkillSnapshot(params: {
         ? buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
-            eligibility: { remote: remoteEligibility },
+            eligibility: { remote: remoteEligibility, availableTools },
             snapshotVersion,
             loadingMode: cfg?.skills?.loadingMode,
           })
@@ -193,7 +200,7 @@ export async function ensureSkillSnapshot(params: {
     ? buildWorkspaceSkillSnapshot(workspaceDir, {
         config: cfg,
         skillFilter,
-        eligibility: { remote: remoteEligibility },
+        eligibility: { remote: remoteEligibility, availableTools },
         snapshotVersion,
         loadingMode: cfg?.skills?.loadingMode,
       })
@@ -203,7 +210,7 @@ export async function ensureSkillSnapshot(params: {
         : buildWorkspaceSkillSnapshot(workspaceDir, {
             config: cfg,
             skillFilter,
-            eligibility: { remote: remoteEligibility },
+            eligibility: { remote: remoteEligibility, availableTools },
             snapshotVersion,
             loadingMode: cfg?.skills?.loadingMode,
           })));

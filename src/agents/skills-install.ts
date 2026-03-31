@@ -17,6 +17,7 @@ import {
   type SkillInstallSpec,
   type SkillsInstallPreferences,
 } from "./skills.js";
+import { resolveSkillTrustLevelForSource } from "./skills/package-metadata.js";
 
 export type {
   SkillInstallResult,
@@ -98,6 +99,16 @@ export async function inspectSkillInstallSafety(
 ): Promise<SkillInstallSafetyReport> {
   const skillName = entry.skill.name;
   const skillDir = path.resolve(entry.skill.baseDir);
+  const trust = entry.packageMetadata?.trust ?? resolveSkillTrustLevelForSource(entry.skill.source);
+
+  if (trust === "builtin") {
+    return {
+      level: "clean",
+      warnings: [],
+      findings: [],
+      blocked: false,
+    };
+  }
 
   try {
     const summary = await scanDirectoryWithSummary(skillDir);

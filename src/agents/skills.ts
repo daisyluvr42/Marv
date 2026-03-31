@@ -27,6 +27,7 @@ export {
   buildWorkspaceSkillSnapshot,
   buildWorkspaceSkillsPrompt,
   buildWorkspaceSkillCommandSpecs,
+  findWorkspaceSkillEntryByName,
   filterWorkspaceSkillEntries,
   loadWorkspaceSkillEntries,
   resolveSkillsPromptForRun,

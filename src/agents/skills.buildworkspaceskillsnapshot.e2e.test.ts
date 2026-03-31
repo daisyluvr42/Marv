@@ -68,6 +68,38 @@ describe("buildWorkspaceSkillSnapshot", () => {
     ]);
   });
 
+  it("filters skills by activation.requiresTools and fallbackForTools", async () => {
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-"));
+    await _writeSkill({
+      dir: path.join(workspaceDir, "skills", "browser-only"),
+      name: "browser-only",
+      description: "Needs browser tool",
+      metadata: '{"marv":{"activation":{"requiresTools":["browser"]}}}',
+    });
+    await _writeSkill({
+      dir: path.join(workspaceDir, "skills", "manual-fallback"),
+      name: "manual-fallback",
+      description: "Only useful without browser",
+      metadata: '{"marv":{"activation":{"fallbackForTools":["browser"]}}}',
+    });
+
+    const withoutBrowser = buildWorkspaceSkillSnapshot(workspaceDir, {
+      managedSkillsDir: path.join(workspaceDir, ".managed"),
+      bundledSkillsDir: path.join(workspaceDir, ".bundled"),
+      eligibility: { availableTools: ["read", "exec"] },
+    });
+    expect(withoutBrowser.prompt).not.toContain("browser-only");
+    expect(withoutBrowser.prompt).toContain("manual-fallback");
+
+    const withBrowser = buildWorkspaceSkillSnapshot(workspaceDir, {
+      managedSkillsDir: path.join(workspaceDir, ".managed"),
+      bundledSkillsDir: path.join(workspaceDir, ".bundled"),
+      eligibility: { availableTools: ["read", "browser"] },
+    });
+    expect(withBrowser.prompt).toContain("browser-only");
+    expect(withBrowser.prompt).not.toContain("manual-fallback");
+  });
+
   it("truncates the skills prompt when it exceeds the configured char budget", async () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-"));
 

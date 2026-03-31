@@ -119,6 +119,49 @@ describe("buildWorkspaceSkillsPrompt", () => {
     ).toBe(true);
     expect(await pathExists(absoluteDest)).toBe(false);
   });
+  it("preserves locally modified synced skills on subsequent syncs", async () => {
+    const sourceWorkspace = await fs.mkdtemp(path.join(os.tmpdir(), "marv-"));
+    const targetWorkspace = await fs.mkdtemp(path.join(os.tmpdir(), "marv-"));
+
+    await writeSkill({
+      dir: path.join(sourceWorkspace, "skills", "demo-skill"),
+      name: "demo-skill",
+      description: "Source version",
+      body: "# Source\n",
+    });
+
+    await syncSkillsToWorkspace({
+      sourceWorkspaceDir: sourceWorkspace,
+      targetWorkspaceDir: targetWorkspace,
+      bundledSkillsDir: path.join(sourceWorkspace, ".bundled"),
+      managedSkillsDir: path.join(sourceWorkspace, ".managed"),
+    });
+
+    const targetSkillPath = path.join(targetWorkspace, "skills", "demo-skill", "SKILL.md");
+    await fs.writeFile(
+      targetSkillPath,
+      `---\nname: demo-skill\ndescription: Local override\n---\n\n# Local\n`,
+      "utf-8",
+    );
+
+    await writeSkill({
+      dir: path.join(sourceWorkspace, "skills", "demo-skill"),
+      name: "demo-skill",
+      description: "Updated source version",
+      body: "# Updated Source\n",
+    });
+
+    await syncSkillsToWorkspace({
+      sourceWorkspaceDir: sourceWorkspace,
+      targetWorkspaceDir: targetWorkspace,
+      bundledSkillsDir: path.join(sourceWorkspace, ".bundled"),
+      managedSkillsDir: path.join(sourceWorkspace, ".managed"),
+    });
+
+    const finalContent = await fs.readFile(targetSkillPath, "utf-8");
+    expect(finalContent).toContain("Local override");
+    expect(finalContent).not.toContain("Updated source version");
+  });
   it("filters skills based on env/config gates", async () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "marv-"));
     const skillDir = path.join(workspaceDir, "skills", "nano-banana-pro");

@@ -16,6 +16,22 @@ export type SkillInstallSpec = {
   targetDir?: string;
 };
 
+export type SkillActivationMetadata = {
+  requiresTools?: string[];
+  requiresAnyTool?: string[];
+  fallbackForTools?: string[];
+};
+
+export type SkillTrustLevel = "builtin" | "managed" | "workspace" | "agent-created" | "community";
+
+export type SkillPackageMetadata = {
+  source?: string;
+  originHash?: string;
+  trust?: SkillTrustLevel;
+  adaptedAt?: string;
+  adaptedFrom?: string;
+};
+
 export type MarvSkillMetadata = {
   always?: boolean;
   skillKey?: string;
@@ -23,6 +39,7 @@ export type MarvSkillMetadata = {
   emoji?: string;
   homepage?: string;
   os?: string[];
+  activation?: SkillActivationMetadata;
   requires?: {
     bins?: string[];
     anyBins?: string[];
@@ -67,10 +84,12 @@ export type SkillEntry = {
   skill: Skill;
   frontmatter: ParsedSkillFrontmatter;
   metadata?: MarvSkillMetadata;
+  packageMetadata?: SkillPackageMetadata;
   invocation?: SkillInvocationPolicy;
 };
 
 export type SkillEligibilityContext = {
+  availableTools?: string[];
   remote?: {
     platforms: string[];
     hasBin: (bin: string) => boolean;

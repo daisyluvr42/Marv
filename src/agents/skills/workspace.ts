@@ -19,8 +19,14 @@ import {
   resolveMarvMetadata,
   resolveSkillInvocationPolicy,
 } from "./frontmatter.js";
+import { readSkillPackageMetadataSync } from "./package-metadata.js";
 import { resolvePluginSkillDirs } from "./plugin-skills.js";
 import { serializeByKey } from "./serialize.js";
+import {
+  computeSkillDirectoryHash,
+  readSkillSyncManifest,
+  writeSkillSyncManifest,
+} from "./sync-manifest.js";
 import type {
   ParsedSkillFrontmatter,
   SkillEligibilityContext,
@@ -399,6 +405,7 @@ function loadSkillEntries(
       skill,
       frontmatter,
       metadata: resolveMarvMetadata(frontmatter),
+      packageMetadata: readSkillPackageMetadataSync(skill.baseDir),
       invocation: resolveSkillInvocationPolicy(frontmatter),
     };
   });
@@ -604,6 +611,27 @@ export function loadWorkspaceSkillEntries(
   return loadSkillEntries(workspaceDir, opts);
 }
 
+export function findWorkspaceSkillEntryByName(
+  workspaceDir: string,
+  skillName: string,
+  opts?: {
+    config?: MarvConfig;
+    managedSkillsDir?: string;
+    bundledSkillsDir?: string;
+    entries?: SkillEntry[];
+    skillFilter?: string[];
+    eligibility?: SkillEligibilityContext;
+  },
+): SkillEntry | undefined {
+  const trimmed = skillName.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const entries = opts?.entries ?? loadSkillEntries(workspaceDir, opts);
+  const eligible = filterSkillEntries(entries, opts?.config, opts?.skillFilter, opts?.eligibility);
+  return eligible.find((entry) => entry.skill.name === trimmed);
+}
+
 function resolveUniqueSyncedSkillDirName(base: string, used: Set<string>): string {
   if (!used.has(base)) {
     used.add(base);
@@ -658,17 +686,17 @@ export async function syncSkillsToWorkspace(params: {
 
   await serializeByKey(`syncSkills:${targetDir}`, async () => {
     const targetSkillsDir = path.join(targetDir, "skills");
+    await fsp.mkdir(targetSkillsDir, { recursive: true });
+    const previousManifest = await readSkillSyncManifest(targetSkillsDir);
 
     const entries = loadSkillEntries(sourceDir, {
       config: params.config,
       managedSkillsDir: params.managedSkillsDir,
       bundledSkillsDir: params.bundledSkillsDir,
-    });
-
-    await fsp.rm(targetSkillsDir, { recursive: true, force: true });
-    await fsp.mkdir(targetSkillsDir, { recursive: true });
+    }).sort((left, right) => left.skill.name.localeCompare(right.skill.name));
 
     const usedDirNames = new Set<string>();
+    const nextManifest: Record<string, string> = {};
     for (const entry of entries) {
       let dest: string | null = null;
       try {
@@ -690,16 +718,70 @@ export async function syncSkillsToWorkspace(params: {
         );
         continue;
       }
+      const destDirName = path.basename(dest);
       try {
-        await fsp.cp(entry.skill.baseDir, dest, {
-          recursive: true,
-          force: true,
-        });
+        const sourceHash = await computeSkillDirectoryHash(entry.skill.baseDir);
+        const previousHash = previousManifest[destDirName];
+        let targetHash: string | undefined;
+        try {
+          targetHash = await computeSkillDirectoryHash(dest);
+        } catch {
+          targetHash = undefined;
+        }
+
+        const targetModified =
+          targetHash !== undefined && previousHash !== undefined && targetHash !== previousHash;
+        if (targetModified) {
+          console.warn(
+            `[skills] Skipping modified synced skill ${entry.skill.name}; local target differs from the last synced manifest.`,
+          );
+          nextManifest[destDirName] = previousHash;
+          continue;
+        }
+        if (targetHash !== undefined && previousHash === undefined && targetHash !== sourceHash) {
+          console.warn(
+            `[skills] Preserving pre-existing target skill ${entry.skill.name}; no sync manifest baseline existed.`,
+          );
+          nextManifest[destDirName] = targetHash;
+          continue;
+        }
+        await fsp.rm(dest, { recursive: true, force: true });
+        await fsp.cp(entry.skill.baseDir, dest, { recursive: true, force: true });
+        nextManifest[destDirName] = sourceHash;
       } catch (error) {
         const message = error instanceof Error ? error.message : JSON.stringify(error);
         console.warn(`[skills] Failed to copy ${entry.skill.name} to sandbox: ${message}`);
       }
     }
+
+    const existingEntries = await fsp.readdir(targetSkillsDir, { withFileTypes: true });
+    for (const entry of existingEntries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      if (nextManifest[entry.name]) {
+        continue;
+      }
+      const targetSkillDir = path.join(targetSkillsDir, entry.name);
+      const previousHash = previousManifest[entry.name];
+      let currentHash: string | undefined;
+      try {
+        currentHash = await computeSkillDirectoryHash(targetSkillDir);
+      } catch {
+        currentHash = undefined;
+      }
+      if (previousHash && currentHash === previousHash) {
+        await fsp.rm(targetSkillDir, { recursive: true, force: true });
+        continue;
+      }
+      if (previousHash) {
+        nextManifest[entry.name] = previousHash;
+      } else if (currentHash) {
+        nextManifest[entry.name] = currentHash;
+      }
+    }
+
+    await writeSkillSyncManifest(targetSkillsDir, nextManifest);
   });
 }
 

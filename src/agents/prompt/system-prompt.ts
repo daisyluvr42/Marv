@@ -51,6 +51,9 @@ function buildSkillsSection(params: {
   skillsPrompt?: string;
   isMinimal: boolean;
   readToolName: string;
+  skillViewToolName: string;
+  skillCrystallizeToolName: string;
+  availableTools: Set<string>;
 }) {
   if (params.isMinimal) {
     return [];
@@ -59,13 +62,24 @@ function buildSkillsSection(params: {
   if (!trimmed) {
     return [];
   }
+  const hasSkillView = params.availableTools.has(params.skillViewToolName.toLowerCase());
+  const hasSkillCrystallize = params.availableTools.has(
+    params.skillCrystallizeToolName.toLowerCase(),
+  );
   return [
     "## Skills (mandatory)",
     "Before replying: scan <available_skills> <description> entries.",
-    `- If exactly one skill clearly applies: read its SKILL.md at <location> with \`${params.readToolName}\`, then follow it.`,
+    hasSkillView
+      ? `- If exactly one skill clearly applies: load it with \`${params.skillViewToolName}\` before following it.`
+      : `- If exactly one skill clearly applies: read its SKILL.md at <location> with \`${params.readToolName}\`, then follow it.`,
     "- If multiple could apply: choose the most specific one, then read/follow it.",
     "- If none clearly apply: do not read any SKILL.md.",
     "Constraints: never read more than one skill up front; only read after selecting.",
+    ...(hasSkillCrystallize
+      ? [
+          `- If you improve a skill and verify the task succeeded, persist the improved canonical version with \`${params.skillCrystallizeToolName}\`.`,
+        ]
+      : []),
     trimmed,
     "",
   ];
@@ -91,7 +105,7 @@ function buildMemorySection(params: {
   ];
   if (hasWrite) {
     lines.push(
-      "Use memory_write for durable updates. Memory tools are the primary interface; .md files are read-only projections.",
+      "Use memory_write for durable structured updates (facts, preferences, identity). Memory tools are the primary interface; .md files are read-only projections.",
     );
   }
   if (params.availableTools.has("reflect")) {
@@ -462,6 +476,8 @@ export function buildAgentSystemPrompt(params: {
   const findCanonical = (name: string) =>
     canonicalToolNames.find((t) => t.toLowerCase() === name) ?? name;
   const readToolName = findCanonical("read");
+  const skillViewToolName = findCanonical("skill_view");
+  const skillCrystallizeToolName = findCanonical("skill_crystallize");
   const execToolName = findCanonical("exec");
   const processToolName = findCanonical("process");
   const extraSystemPrompt = params.extraSystemPrompt?.trim();
@@ -509,7 +525,14 @@ export function buildAgentSystemPrompt(params: {
     params.sandboxInfo?.enabled && sanitizedSandboxContainerWorkspace
       ? `For read/write/edit/apply_patch, file paths resolve against host workspace: ${sanitizedWorkspaceDir}. For bash/exec commands, use sandbox container paths under ${sanitizedSandboxContainerWorkspace} (or relative paths from that workdir), not host paths. Prefer relative paths so both sandboxed exec and file tools work consistently.`
       : "";
-  const skillsSection = buildSkillsSection({ skillsPrompt, isMinimal, readToolName });
+  const skillsSection = buildSkillsSection({
+    skillsPrompt,
+    isMinimal,
+    readToolName,
+    skillViewToolName,
+    skillCrystallizeToolName,
+    availableTools,
+  });
   const memorySection = buildMemorySection({
     isMinimal,
     availableTools,

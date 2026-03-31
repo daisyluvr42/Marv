@@ -67,6 +67,36 @@ export function isBundledSkillAllowed(entry: SkillEntry, allowlist?: string[]): 
   return allowlist.includes(key) || allowlist.includes(entry.skill.name);
 }
 
+function resolveAvailableToolsSet(eligibility?: SkillEligibilityContext): Set<string> {
+  return new Set(
+    (eligibility?.availableTools ?? []).map((tool) => tool.trim().toLowerCase()).filter(Boolean),
+  );
+}
+
+function matchesActivation(entry: SkillEntry, eligibility?: SkillEligibilityContext): boolean {
+  const activation = entry.metadata?.activation;
+  if (!activation) {
+    return true;
+  }
+  const availableTools = resolveAvailableToolsSet(eligibility);
+  if (availableTools.size === 0) {
+    return true;
+  }
+  const requiresTools = (activation.requiresTools ?? []).map((tool) => tool.toLowerCase());
+  if (requiresTools.length > 0 && !requiresTools.every((tool) => availableTools.has(tool))) {
+    return false;
+  }
+  const requiresAnyTool = (activation.requiresAnyTool ?? []).map((tool) => tool.toLowerCase());
+  if (requiresAnyTool.length > 0 && !requiresAnyTool.some((tool) => availableTools.has(tool))) {
+    return false;
+  }
+  const fallbackForTools = (activation.fallbackForTools ?? []).map((tool) => tool.toLowerCase());
+  if (fallbackForTools.some((tool) => availableTools.has(tool))) {
+    return false;
+  }
+  return true;
+}
+
 export function shouldIncludeSkill(params: {
   entry: SkillEntry;
   config?: MarvConfig;
@@ -89,6 +119,10 @@ export function shouldIncludeSkill(params: {
     !osList.includes(resolveRuntimePlatform()) &&
     !remotePlatforms.some((platform) => osList.includes(platform))
   ) {
+    return false;
+  }
+
+  if (!matchesActivation(entry, eligibility)) {
     return false;
   }
 

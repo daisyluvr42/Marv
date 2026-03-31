@@ -23,6 +23,7 @@ import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
 import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";
+import { resolveMarvCodingToolNames } from "../agents/tools/pi-tools.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import {
   formatThinkingLevels,
@@ -322,10 +323,20 @@ export async function agentCommand(
     const needsSkillsSnapshot = isNewSession || !sessionEntry?.skillsSnapshot;
     const skillsSnapshotVersion = getSkillsSnapshotVersion(workspaceDir);
     const skillFilter = resolveAgentSkillsFilter(cfg, sessionAgentId);
+    const availableSkillTools = resolveMarvCodingToolNames({
+      sessionKey: sessionKey ?? sessionId,
+      agentDir,
+      workspaceDir,
+      config: cfg,
+      skillFilter,
+    });
     const skillsSnapshot = needsSkillsSnapshot
       ? buildWorkspaceSkillSnapshot(workspaceDir, {
           config: cfg,
-          eligibility: { remote: getRemoteSkillEligibility() },
+          eligibility: {
+            remote: getRemoteSkillEligibility(),
+            availableTools: availableSkillTools,
+          },
           snapshotVersion: skillsSnapshotVersion,
           skillFilter,
           loadingMode: cfg?.skills?.loadingMode,

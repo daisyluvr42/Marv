@@ -11,6 +11,7 @@ import {
   resolveMarvManifestRequires,
 } from "../../shared/frontmatter.js";
 import type {
+  SkillActivationMetadata,
   MarvSkillMetadata,
   ParsedSkillFrontmatter,
   SkillEntry,
@@ -73,6 +74,35 @@ function parseInstallSpec(input: unknown): SkillInstallSpec | undefined {
   return spec;
 }
 
+function resolveActivationMetadata(
+  metadataObj: Record<string, unknown>,
+): SkillActivationMetadata | undefined {
+  const raw =
+    typeof metadataObj.activation === "object" && metadataObj.activation !== null
+      ? (metadataObj.activation as Record<string, unknown>)
+      : undefined;
+  if (!raw) {
+    return undefined;
+  }
+  const activation: SkillActivationMetadata = {
+    requiresTools: normalizeStringList(raw.requiresTools),
+    requiresAnyTool: normalizeStringList(raw.requiresAnyTool),
+    fallbackForTools: normalizeStringList(raw.fallbackForTools),
+  };
+  if (
+    !activation.requiresTools?.length &&
+    !activation.requiresAnyTool?.length &&
+    !activation.fallbackForTools?.length
+  ) {
+    return undefined;
+  }
+  return {
+    requiresTools: activation.requiresTools?.length ? activation.requiresTools : undefined,
+    requiresAnyTool: activation.requiresAnyTool?.length ? activation.requiresAnyTool : undefined,
+    fallbackForTools: activation.fallbackForTools?.length ? activation.fallbackForTools : undefined,
+  };
+}
+
 export function resolveMarvMetadata(
   frontmatter: ParsedSkillFrontmatter,
 ): MarvSkillMetadata | undefined {
@@ -85,6 +115,7 @@ export function resolveMarvMetadata(
   const osRaw = resolveMarvManifestOs(metadataObj);
   return {
     always: typeof metadataObj.always === "boolean" ? metadataObj.always : undefined,
+    activation: resolveActivationMetadata(metadataObj),
     emoji: typeof metadataObj.emoji === "string" ? metadataObj.emoji : undefined,
     homepage: typeof metadataObj.homepage === "string" ? metadataObj.homepage : undefined,
     skillKey: typeof metadataObj.skillKey === "string" ? metadataObj.skillKey : undefined,

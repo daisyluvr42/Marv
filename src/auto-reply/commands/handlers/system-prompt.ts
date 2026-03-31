@@ -9,7 +9,10 @@ import { resolveSandboxRuntimeStatus } from "../../../agents/sandbox/sandbox.js"
 import { buildWorkspaceSkillSnapshot } from "../../../agents/skills.js";
 import { getSkillsSnapshotVersion } from "../../../agents/skills/refresh.js";
 import { buildToolSummaryMap } from "../../../agents/tools/display/tool-summaries.js";
-import { createMarvCodingTools } from "../../../agents/tools/pi-tools.js";
+import {
+  createMarvCodingTools,
+  resolveMarvCodingToolNames,
+} from "../../../agents/tools/pi-tools.js";
 import type { WorkspaceBootstrapFile } from "../../../agents/workspace.js";
 import { getRemoteSkillEligibility } from "../../../infra/skills-remote.js";
 import { buildTtsSystemPromptHint } from "../../../tts/tts.js";
@@ -35,12 +38,27 @@ export async function resolveCommandsSystemPromptBundle(
     sessionId: params.sessionEntry?.sessionId,
   });
   const skillsSnapshot = (() => {
+    const availableTools = resolveMarvCodingToolNames({
+      config: params.cfg,
+      workspaceDir,
+      sessionKey: params.sessionKey,
+      messageProvider: params.command.channel,
+      groupId: params.sessionEntry?.groupId ?? undefined,
+      groupChannel: params.sessionEntry?.groupChannel ?? undefined,
+      groupSpace: params.sessionEntry?.space ?? undefined,
+      spawnedBy: params.sessionEntry?.spawnedBy ?? undefined,
+      senderIsOwner: params.command.senderIsOwner,
+      modelProvider: params.provider,
+      modelId: params.model,
+      skillFilter: params.sessionEntry?.skillsSnapshot?.skillFilter,
+    });
     try {
       return buildWorkspaceSkillSnapshot(workspaceDir, {
         config: params.cfg,
-        eligibility: { remote: getRemoteSkillEligibility() },
+        eligibility: { remote: getRemoteSkillEligibility(), availableTools },
         snapshotVersion: getSkillsSnapshotVersion(workspaceDir),
         loadingMode: params.cfg?.skills?.loadingMode,
+        skillFilter: params.sessionEntry?.skillsSnapshot?.skillFilter,
       });
     } catch {
       return { prompt: "", skills: [], resolvedSkills: [] };
@@ -65,6 +83,7 @@ export async function resolveCommandsSystemPromptBundle(
         senderIsOwner: params.command.senderIsOwner,
         modelProvider: params.provider,
         modelId: params.model,
+        skillFilter: skillsSnapshot.skillFilter,
       });
     } catch {
       return [];

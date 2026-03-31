@@ -151,6 +151,8 @@ describe("ToolDiscoveryService", () => {
         "github-repos": {
           skillId: "github-repos",
           installedAt: Date.now(),
+          successCount: 0,
+          failureCount: 0,
           ok: false,
           quarantined: true,
         },

@@ -222,6 +222,8 @@ export function createMarvCodingTools(options?: {
   enableProactiveBuffer?: boolean;
   /** Enable proactive tasks/goals tooling (continuous loop mode). */
   enableProactiveTasks?: boolean;
+  /** Active skill filter for the current run/session, if any. */
+  skillFilter?: string[];
 }): AnyAgentTool[] {
   const execToolName = "exec";
   const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
@@ -477,6 +479,7 @@ export function createMarvCodingTools(options?: {
       senderUsername: options?.senderUsername ?? undefined,
       senderE164: options?.senderE164 ?? undefined,
       directUserInstruction: options?.directUserInstruction,
+      skillFilter: options?.skillFilter,
     }),
   ];
   // Security: treat unknown/undefined as unauthorized (opt-in, not opt-out)
@@ -527,4 +530,10 @@ export function createMarvCodingTools(options?: {
   // pi-ai's Anthropic OAuth transport remaps tool names to Claude Code-style names
   // on the wire and maps them back for tool dispatch.
   return withAbort;
+}
+
+export function resolveMarvCodingToolNames(
+  options?: Parameters<typeof createMarvCodingTools>[0],
+): string[] {
+  return createMarvCodingTools(options).map((tool) => tool.name);
 }
