@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { resolveConfiguredModelRef } from "../../agents/model/model-selection.js";
+import { VERSION } from "../../infra/version.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import type { loadConfig } from "../config/config.js";
 
@@ -22,6 +23,9 @@ export function logGatewayStartup(params: {
   params.log.info(`agent model: ${modelRef}`, {
     consoleMessage: `agent model: ${chalk.whiteBright(modelRef)}`,
   });
+  const execPath = process.execPath;
+  const entrypoint = process.argv[1] || execPath;
+  params.log.info(`build: version ${VERSION} · exec ${execPath} · entry ${entrypoint}`);
   const scheme = params.tlsEnabled ? "wss" : "ws";
   const formatHost = (host: string) => (host.includes(":") ? `[${host}]` : host);
   const hosts =

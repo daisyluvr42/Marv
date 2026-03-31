@@ -88,4 +88,42 @@ describe("runServiceRestart token drift", () => {
     const payload = JSON.parse(jsonLine ?? "{}") as { warnings?: string[] };
     expect(payload.warnings).toBeUndefined();
   });
+
+  it("includes post-restart warnings in the restart payload", async () => {
+    const { runServiceRestart } = await import("./lifecycle-core.js");
+
+    await runServiceRestart({
+      serviceNoun: "Gateway",
+      service,
+      renderStartHints: () => [],
+      opts: { json: true },
+      postRestartCheck: async () => ({
+        warnings: ["port owner identity unavailable"],
+      }),
+    });
+
+    const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
+    const payload = JSON.parse(jsonLine ?? "{}") as { warnings?: string[] };
+    expect(payload.warnings).toEqual(["port owner identity unavailable"]);
+  });
+
+  it("fails the restart when the post-restart check rejects", async () => {
+    const { runServiceRestart } = await import("./lifecycle-core.js");
+
+    await expect(
+      runServiceRestart({
+        serviceNoun: "Gateway",
+        service,
+        renderStartHints: () => ["marv gateway install"],
+        opts: { json: false },
+        postRestartCheck: async () => {
+          throw new Error("old gateway pid 101 is still active after restart");
+        },
+      }),
+    ).rejects.toThrow("__exit__:1");
+
+    expect(defaultRuntime.error).toHaveBeenCalledWith(
+      expect.stringContaining("Gateway restart failed: Error: old gateway pid 101"),
+    );
+  });
 });

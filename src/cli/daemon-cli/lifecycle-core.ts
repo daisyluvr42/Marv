@@ -17,6 +17,10 @@ type DaemonLifecycleOptions = {
   json?: boolean;
 };
 
+type PostRestartCheckResult = {
+  warnings?: string[];
+};
+
 async function maybeAugmentSystemdHints(hints: string[]): Promise<string[]> {
   if (process.platform !== "linux") {
     return hints;
@@ -252,6 +256,7 @@ export async function runServiceRestart(params: {
   renderStartHints: () => string[];
   opts?: DaemonLifecycleOptions;
   checkTokenDrift?: boolean;
+  postRestartCheck?: () => Promise<PostRestartCheckResult | void>;
 }): Promise<boolean> {
   const json = Boolean(params.opts?.json);
   const { stdout, emit, fail } = createActionIO({ action: "restart", json });
@@ -312,6 +317,10 @@ export async function runServiceRestart(params: {
       restarted = await params.service.isLoaded({ env: process.env });
     } catch {
       restarted = true;
+    }
+    const postRestart = await params.postRestartCheck?.();
+    if (postRestart?.warnings?.length) {
+      warnings.push(...postRestart.warnings);
     }
     emit({
       ok: true,
