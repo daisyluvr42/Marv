@@ -20,7 +20,7 @@ describe("context-window-guard", () => {
     expect(guard.source).toBe("model");
     expect(guard.tokens).toBe(8000);
     expect(guard.shouldWarn).toBe(true);
-    expect(guard.shouldBlock).toBe(true);
+    expect(guard.shouldBlock).toBe(false);
   });
 
   it("warns below 32k but does not block at 16k+", () => {
@@ -82,7 +82,7 @@ describe("context-window-guard", () => {
     });
     const guard = evaluateContextWindowGuard({ info });
     expect(info.source).toBe("modelsConfig");
-    expect(guard.shouldBlock).toBe(true);
+    expect(guard.shouldBlock).toBe(false);
   });
 
   it("caps with agents.defaults.contextTokens", () => {
@@ -131,7 +131,7 @@ describe("context-window-guard", () => {
     expect(guard.shouldBlock).toBe(false);
   });
 
-  it("allows overriding thresholds", () => {
+  it("keeps hard-min checks disabled even when thresholds are overridden", () => {
     const info = { tokens: 10_000, source: "model" as const };
     const guard = evaluateContextWindowGuard({
       info,

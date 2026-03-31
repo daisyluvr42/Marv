@@ -63,12 +63,13 @@ export function evaluateContextWindowGuard(params: {
     1,
     Math.floor(params.warnBelowTokens ?? CONTEXT_WINDOW_WARN_BELOW_TOKENS),
   );
-  const hardMin = Math.max(1, Math.floor(params.hardMinTokens ?? CONTEXT_WINDOW_HARD_MIN_TOKENS));
   const tokens = Math.max(0, Math.floor(params.info.tokens));
   return {
     ...params.info,
     tokens,
     shouldWarn: tokens > 0 && tokens < warnBelow,
-    shouldBlock: tokens > 0 && tokens < hardMin,
+    // Provider metadata is often missing or under-reported, especially for
+    // local/self-hosted OpenAI-compatible servers. Keep it advisory only.
+    shouldBlock: false,
   };
 }

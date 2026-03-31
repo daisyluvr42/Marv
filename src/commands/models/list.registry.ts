@@ -11,6 +11,7 @@ import {
   ANTIGRAVITY_OPUS_46_FORWARD_COMPAT_CANDIDATES,
   resolveForwardCompatModel,
 } from "../../agents/model/model-forward-compat.js";
+import { normalizeProviderId } from "../../agents/model/model-selection.js";
 import { ensureMarvModelsJson } from "../../agents/model/models-config.js";
 import type { ModelRegistry } from "../../agents/model/pi-model-discovery.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/model/pi-model-discovery.js";
@@ -23,6 +24,27 @@ import {
 } from "./list.errors.js";
 import type { ModelRow } from "./list.types.js";
 import { isLocalBaseUrl, modelKey } from "./shared.js";
+
+type ConfiguredProviderEntry = NonNullable<NonNullable<MarvConfig["models"]>["providers"]>[string];
+
+function resolveConfiguredProviderEntry(
+  cfg: MarvConfig | undefined,
+  provider: string,
+): ConfiguredProviderEntry | undefined {
+  const providers = cfg?.models?.providers ?? {};
+  const direct = providers[provider];
+  if (direct) {
+    return direct;
+  }
+
+  const normalized = normalizeProviderId(provider);
+  return Object.entries(providers).find(([key]) => normalizeProviderId(key) === normalized)?.[1];
+}
+
+function isKeylessBaseUrlProvider(cfg: MarvConfig | undefined, provider: string): boolean {
+  const entry = resolveConfiguredProviderEntry(cfg, provider);
+  return Boolean(entry?.baseUrl?.trim() && !getCustomProviderApiKey(cfg, provider));
+}
 
 const hasAuthForProvider = (provider: string, cfg?: MarvConfig, authStore?: AuthProfileStore) => {
   if (!cfg || !authStore) {
@@ -38,6 +60,9 @@ const hasAuthForProvider = (provider: string, cfg?: MarvConfig, authStore?: Auth
     return true;
   }
   if (getCustomProviderApiKey(cfg, provider)) {
+    return true;
+  }
+  if (isKeylessBaseUrlProvider(cfg, provider)) {
     return true;
   }
   return false;
@@ -102,7 +127,7 @@ export async function loadModelRegistry(cfg: MarvConfig) {
   const authStorage = discoverAuthStorage(agentDir);
   const registry = discoverModels(authStorage, agentDir);
   const appended = appendAntigravityForwardCompatModels(registry.getAll(), registry);
-  const models = appended.models;
+  const models = mergeConfiguredBaseUrlModels(cfg, appended.models);
   const synthesizedForwardCompat = appended.synthesizedForwardCompat;
   let availableKeys: Set<string> | undefined;
   let availabilityErrorMessage: string | undefined;
@@ -110,6 +135,11 @@ export async function loadModelRegistry(cfg: MarvConfig) {
   try {
     const availableModels = loadAvailableModels(registry);
     availableKeys = new Set(availableModels.map((model) => modelKey(model.provider, model.id)));
+    for (const model of models) {
+      if (isKeylessBaseUrlProvider(cfg, model.provider)) {
+        availableKeys.add(modelKey(model.provider, model.id));
+      }
+    }
     for (const synthesized of synthesizedForwardCompat) {
       if (hasAvailableTemplate(availableKeys, synthesized.templatePrefixes)) {
         availableKeys.add(synthesized.key);
@@ -128,6 +158,51 @@ export async function loadModelRegistry(cfg: MarvConfig) {
     }
   }
   return { registry, models, availableKeys, availabilityErrorMessage };
+}
+
+function mergeConfiguredBaseUrlModels(
+  cfg: MarvConfig,
+  discoveredModels: Model<Api>[],
+): Model<Api>[] {
+  const merged = [...discoveredModels];
+  const seen = new Set(discoveredModels.map((model) => modelKey(model.provider, model.id)));
+
+  for (const [provider, providerEntry] of Object.entries(cfg.models?.providers ?? {})) {
+    if (!providerEntry?.baseUrl?.trim() || getCustomProviderApiKey(cfg, provider)) {
+      continue;
+    }
+
+    for (const modelEntry of providerEntry.models ?? []) {
+      const modelId = modelEntry.id?.trim();
+      if (!modelId) {
+        continue;
+      }
+      const modelName = (modelEntry as { name?: string }).name?.trim() || modelId;
+
+      const key = modelKey(provider, modelId);
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      merged.push({
+        id: modelId,
+        name: modelName,
+        provider,
+        baseUrl: providerEntry.baseUrl,
+        api: (modelEntry.api ?? providerEntry.api ?? "openai-completions") as Api,
+        reasoning: modelEntry.reasoning,
+        input: modelEntry.input,
+        cost: modelEntry.cost,
+        contextWindow: modelEntry.contextWindow,
+        maxTokens: modelEntry.maxTokens,
+        headers: modelEntry.headers,
+        compat: modelEntry.compat as never,
+      });
+    }
+  }
+
+  return merged;
 }
 
 type SynthesizedForwardCompat = {

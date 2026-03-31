@@ -198,6 +198,21 @@ describe("promptCustomApiConfig", () => {
 });
 
 describe("applyCustomApiConfig", () => {
+  it("uses a usable maxTokens default for custom providers", () => {
+    const result = applyCustomApiConfig({
+      config: {},
+      baseUrl: "https://llm.example.com/v1",
+      modelId: "foo-large",
+      compatibility: "openai",
+    });
+
+    expect(result.config.models?.providers?.custom?.models?.[0]).toMatchObject({
+      id: "foo-large",
+      contextWindow: 128_000,
+      maxTokens: 16_384,
+    });
+  });
+
   it("rejects invalid compatibility values at runtime", () => {
     expect(() =>
       applyCustomApiConfig({

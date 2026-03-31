@@ -350,6 +350,49 @@ describe("runEmbeddedPiAgent", () => {
     }
   });
 
+  it("does not pre-block local baseUrl providers when context metadata is tiny", async () => {
+    const sessionFile = nextSessionFile();
+    const cfg = {
+      models: {
+        providers: {
+          "custom-local": {
+            api: "openai-completions",
+            baseUrl: "http://127.0.0.1:1234/v1",
+            models: [
+              {
+                id: "mock-1",
+                name: "Mock Local",
+                reasoning: false,
+                input: ["text"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: 4096,
+                maxTokens: 4096,
+              },
+            ],
+          },
+        },
+      },
+    } satisfies MarvConfig;
+    await ensureModels(cfg);
+
+    const result = await runEmbeddedPiAgent({
+      sessionId: "session:test-local-small-context",
+      sessionKey: testSessionKey,
+      sessionFile,
+      workspaceDir,
+      config: cfg,
+      prompt: "hello",
+      provider: "custom-local",
+      model: "mock-1",
+      timeoutMs: 5_000,
+      agentDir,
+      runId: nextRunId("local-small-context"),
+      enqueue: immediateEnqueue,
+    });
+
+    expect(result.payloads?.[0]?.text).toBe("ok");
+  });
+
   it("persists the user message when prompt fails before assistant output", async () => {
     const sessionFile = nextSessionFile();
     const cfg = makeOpenAiConfig(["mock-error"]);

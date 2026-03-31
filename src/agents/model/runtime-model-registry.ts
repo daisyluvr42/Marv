@@ -17,6 +17,7 @@ const REGISTRY_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
 const REGISTRY_FILENAME = "model-registry.json";
 const REGISTRY_DIRNAME = "runtime";
 const LOCAL_PROVIDERS = new Set(["local", "ollama", "vllm", "lmstudio", "localai", "llamacpp"]);
+const LOCAL_PROVIDER_DEFAULT_CONTEXT_WINDOW = 128_000;
 let refreshTimer: NodeJS.Timeout | null = null;
 
 export type RuntimeRegistryModelStatus = "active" | "deprecated" | "removed";
@@ -397,6 +398,7 @@ async function fetchOllamaModels(
         capabilities: inferCapabilities({ provider, model }),
         tier: normalizeTier(model),
         location: "local" as const,
+        contextWindow: LOCAL_PROVIDER_DEFAULT_CONTEXT_WINDOW,
       }));
   } finally {
     await release();
@@ -428,7 +430,7 @@ async function fetchOpenAICompatibleLocalModels(
         const contextWindow =
           typeof ctxRaw === "number" && Number.isFinite(ctxRaw) && ctxRaw > 0
             ? Math.floor(ctxRaw)
-            : undefined;
+            : LOCAL_PROVIDER_DEFAULT_CONTEXT_WINDOW;
         return {
           ref: `${provider}/${model}`,
           provider,
@@ -439,7 +441,7 @@ async function fetchOpenAICompatibleLocalModels(
           capabilities: inferCapabilities({ provider, model }),
           tier: normalizeTier(model),
           location: "local" as const,
-          ...(contextWindow ? { contextWindow } : {}),
+          contextWindow,
         };
       });
   } finally {

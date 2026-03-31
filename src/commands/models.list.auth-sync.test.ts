@@ -98,4 +98,72 @@ describe("models list auth-profile sync", () => {
       await fs.rm(root, { recursive: true, force: true });
     }
   });
+
+  it("keeps keyless baseUrl custom provider models visible after a fresh reload", async () => {
+    const env = captureEnv();
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "marv-models-list-custom-baseurl-"));
+
+    try {
+      const stateDir = path.join(root, "state");
+      const agentDir = path.join(stateDir, "agents", "main", "agent");
+      const configPath = path.join(stateDir, "marv.json");
+      await fs.mkdir(agentDir, { recursive: true });
+      await fs.writeFile(
+        configPath,
+        JSON.stringify(
+          {
+            models: {
+              providers: {
+                "custom-lan": {
+                  baseUrl: "http://lan-box.local/v1",
+                  api: "openai-completions",
+                  models: [
+                    {
+                      id: "foo-large",
+                      name: "Foo Large",
+                      reasoning: false,
+                      input: ["text"],
+                      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                      contextWindow: 32768,
+                      maxTokens: 8192,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ) + "\n",
+        "utf8",
+      );
+
+      process.env.MARV_STATE_DIR = stateDir;
+      process.env.MARV_AGENT_DIR = agentDir;
+      process.env.PI_CODING_AGENT_DIR = agentDir;
+      process.env.MARV_CONFIG_PATH = configPath;
+      delete process.env.OPENROUTER_API_KEY;
+
+      clearConfigCache();
+      const runtime = {
+        log: vi.fn(),
+        error: vi.fn(),
+      };
+
+      await modelsListCommand({ all: true, json: true }, runtime as never);
+
+      expect(runtime.error).not.toHaveBeenCalled();
+      expect(runtime.log).toHaveBeenCalledTimes(1);
+      const payload = JSON.parse(String(runtime.log.mock.calls[0]?.[0])) as {
+        models?: Array<{ key?: string; available?: boolean }>;
+      };
+      const custom = payload.models?.find((model) => model.key === "custom-lan/foo-large");
+      expect(custom).toBeDefined();
+      expect(custom?.available).toBe(true);
+    } finally {
+      clearConfigCache();
+      restoreEnv(env);
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
 });

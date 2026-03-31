@@ -132,6 +132,14 @@ describe("models list/status", () => {
     baseUrl: "https://api.openai.com/v1",
     contextWindow: 128000,
   };
+  const CUSTOM_LAN_MODEL = {
+    id: "foo-large",
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 32000,
+    maxTokens: 8192,
+  };
   const GOOGLE_ANTIGRAVITY_TEMPLATE_BASE = {
     provider: "google-antigravity",
     api: "google-gemini-cli",
@@ -333,6 +341,33 @@ describe("models list/status", () => {
     expect(payload.models[0]?.available).toBe(false);
   });
 
+  it("models list includes configured keyless baseUrl custom provider models when registry omits them", async () => {
+    loadConfig.mockReturnValue({
+      models: {
+        providers: {
+          "custom-lan": {
+            baseUrl: "http://lan-box.local/v1",
+            api: "openai-completions",
+            models: [CUSTOM_LAN_MODEL],
+          },
+        },
+      },
+    });
+    modelRegistryState.models = [OPENAI_MODEL];
+    modelRegistryState.available = [OPENAI_MODEL];
+    const runtime = makeRuntime();
+
+    await modelsListCommand({ all: true, json: true }, runtime);
+
+    const payload = parseJsonLog(runtime);
+    const custom = payload.models.find(
+      (model: { key?: string }) => model.key === "custom-lan/foo-large",
+    );
+    expect(custom).toBeDefined();
+    expect(custom?.available).toBe(true);
+    expect(custom?.missing).toBe(false);
+  });
+
   it("models list resolves antigravity opus 4.6 thinking from 4.5 template", async () => {
     const payload = await runGoogleAntigravityListCase({
       configuredModelId: "claude-opus-4-6-thinking",
@@ -429,6 +464,36 @@ describe("models list/status", () => {
       },
       expectedErrorDetail: "availability unsupported: getAvailable failed",
     });
+  });
+
+  it("models list fallback heuristics keep keyless baseUrl custom providers available", async () => {
+    loadConfig.mockReturnValue({
+      models: {
+        providers: {
+          "custom-lan": {
+            baseUrl: "http://lan-box.local/v1",
+            api: "openai-completions",
+            models: [CUSTOM_LAN_MODEL],
+          },
+        },
+      },
+    });
+    modelRegistryState.models = [];
+    modelRegistryState.available = [];
+    modelRegistryState.getAvailableError = Object.assign(
+      new Error("availability unsupported: getAvailable failed"),
+      { code: "MODEL_AVAILABILITY_UNAVAILABLE" },
+    );
+    const runtime = makeRuntime();
+
+    await modelsListCommand({ all: true, json: true }, runtime);
+
+    const payload = parseJsonLog(runtime);
+    const custom = payload.models.find(
+      (model: { key?: string }) => model.key === "custom-lan/foo-large",
+    );
+    expect(custom).toBeDefined();
+    expect(custom?.available).toBe(true);
   });
 
   it("models list does not treat availability-unavailable code as discovery fallback", async () => {
