@@ -1,6 +1,6 @@
 {
   "name": "@marv/bluebubbles",
-  "version": "2026.3.27",
+  "version": "2026.3.31",
   "description": "Marv BlueBubbles channel plugin",
   "type": "module",
   "peerDependencies": {

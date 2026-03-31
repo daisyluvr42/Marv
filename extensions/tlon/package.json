@@ -1,6 +1,6 @@
 {
   "name": "@marv/tlon",
-  "version": "2026.3.27",
+  "version": "2026.3.31",
   "private": true,
   "description": "Marv Tlon/Urbit channel plugin",
   "type": "module",

@@ -4,12 +4,14 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
 ## Unreleased
 
-## 2026.3.27
+## 2026.3.31
 
 ### Changes
 
 - Sub-agents: add goal-driven orchestration loop that evaluates delegated sub-agent output against the parent's success criteria, delivers structured feedback, and iterates until accepted or budget exhausted.
 - Migration: `marv migrate export --scopes memory` now includes Soul.md identity files and Experience/Context files alongside vector databases, enabling complete one-command memory portability.
+- Onboarding/Local Models: add first-class Ollama setup, verify vLLM/Ollama endpoints before saving config, and include memory-search setup in quickstart when a model is configured.
+- Memory: make `memory_write` persist structured Soul entries directly, hard-filter unrelated scoped recall, and isolate knowledge-vault document scopes per vault.
 
 ### Fixes
 
@@ -17,6 +19,8 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 - CLI: restore negated option handling for `--no-open`, `--no-workspace-suggestions`, `--no-prefix-cwd`, and `--no-color`.
 - Build/CLI: keep `doctor` and `completion` working in packaged builds instead of importing missing bundle-time CLI modules.
 - Install/Docs: align installer and first-use guidance with the actual supported installer flags and `marv agent` command behavior.
+- Local Models: route local/LAN embedding, reranker, batch embedding, model discovery, and onboarding verification through the guarded private-network fetch path.
+- Memory: stop runtime-event memories from being reinforced into high-confidence facts, fix episodic fragment loading, and add SQLite busy timeouts across Soul maintenance jobs.
 
 ## 2026.3.16
 

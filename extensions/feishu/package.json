@@ -1,6 +1,6 @@
 {
   "name": "@marv/feishu",
-  "version": "2026.3.27",
+  "version": "2026.3.31",
   "description": "Marv Feishu/Lark channel plugin (community maintained by @m1heng)",
   "type": "module",
   "dependencies": {

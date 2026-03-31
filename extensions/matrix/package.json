@@ -1,6 +1,6 @@
 {
   "name": "@marv/matrix",
-  "version": "2026.3.27",
+  "version": "2026.3.31",
   "description": "Marv Matrix channel plugin",
   "type": "module",
   "dependencies": {

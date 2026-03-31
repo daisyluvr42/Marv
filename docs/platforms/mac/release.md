@@ -34,17 +34,17 @@ Notes:
 # From repo root; set release IDs so Sparkle feed is enabled.
 # APP_BUILD must be numeric + monotonic for Sparkle compare.
 BUNDLE_ID=ai.marv.mac \
-APP_VERSION=2026.3.27 \
+APP_VERSION=2026.3.31 \
 APP_BUILD="$(git rev-list --count HEAD)" \
 BUILD_CONFIG=release \
 SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
 scripts/package-mac-app.sh
 
 # Zip for distribution (includes resource forks for Sparkle delta support)
-ditto -c -k --sequesterRsrc --keepParent dist/Marv.app dist/Marv-2026.3.27.zip
+ditto -c -k --sequesterRsrc --keepParent dist/Marv.app dist/Marv-2026.3.31.zip
 
 # Optional: also build a styled DMG for humans (drag to /Applications)
-scripts/create-dmg.sh dist/Marv.app dist/Marv-2026.3.27.dmg
+scripts/create-dmg.sh dist/Marv.app dist/Marv-2026.3.31.dmg
 
 # Recommended: build + notarize/staple zip + DMG
 # First, create a keychain profile once:
@@ -52,14 +52,14 @@ scripts/create-dmg.sh dist/Marv.app dist/Marv-2026.3.27.dmg
 #     --apple-id "<apple-id>" --team-id "<team-id>" --password "<app-specific-password>"
 NOTARIZE=1 NOTARYTOOL_PROFILE=marv-notary \
 BUNDLE_ID=ai.marv.mac \
-APP_VERSION=2026.3.27 \
+APP_VERSION=2026.3.31 \
 APP_BUILD="$(git rev-list --count HEAD)" \
 BUILD_CONFIG=release \
 SIGN_IDENTITY="Developer ID Application: <Developer Name> (<TEAMID>)" \
 scripts/package-mac-dist.sh
 
 # Optional: ship dSYM alongside the release
-ditto -c -k --keepParent apps/macos/.build/release/Marv.app.dSYM dist/Marv-2026.3.27.dSYM.zip
+ditto -c -k --keepParent apps/macos/.build/release/Marv.app.dSYM dist/Marv-2026.3.31.dSYM.zip
 ```
 
 ## Appcast entry
@@ -67,7 +67,7 @@ ditto -c -k --keepParent apps/macos/.build/release/Marv.app.dSYM dist/Marv-2026.
 Use the release note generator so Sparkle renders formatted HTML notes:
 
 ```bash
-SPARKLE_PRIVATE_KEY_FILE=/path/to/ed25519-private-key scripts/make_appcast.sh dist/Marv-2026.3.27.zip https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml
+SPARKLE_PRIVATE_KEY_FILE=/path/to/ed25519-private-key scripts/make_appcast.sh dist/Marv-2026.3.31.zip https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml
 ```
 
 Generates HTML release notes from `CHANGELOG.md` (via [`scripts/changelog-to-html.sh`](scripts/changelog-to-html.sh)) and embeds them in the appcast entry.
@@ -75,7 +75,7 @@ Commit the updated `appcast.xml` alongside the release assets (zip + dSYM) when 
 
 ## Publish & verify
 
-- Upload `Marv-2026.3.27.zip` (and `Marv-2026.3.27.dSYM.zip`) to the GitHub release for tag `v2026.3.27`.
+- Upload `Marv-2026.3.31.zip` (and `Marv-2026.3.31.dSYM.zip`) to the GitHub release for tag `v2026.3.31`.
 - Ensure the raw appcast URL matches the baked feed: `https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml`.
 - Sanity checks:
   - `curl -I https://raw.githubusercontent.com/daisyluvr42/Marv/main/appcast.xml` returns 200.
