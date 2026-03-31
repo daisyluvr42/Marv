@@ -126,3 +126,113 @@
 - Broader spot checks surfaced pre-existing failures outside this skill work:
   - `pnpm vitest run --config vitest.e2e.config.ts src/agents/prompt/system-prompt.e2e.test.ts`
   - `pnpm vitest run --config vitest.e2e.config.ts src/agents/tools/pi-tools-agent-config.e2e.test.ts`
+
+## Local Model Context Fix (2026-03-31)
+
+- [x] Replace the custom local-provider `maxTokens: 4096` default with a usable value during onboarding/config generation.
+- [x] Ensure local provider discovery keeps a usable default context window when `/v1/models` omits context metadata.
+- [x] Add focused regression tests and run targeted verification for the missing-metadata local-model path.
+
+## Review
+
+- Custom OpenAI-compatible local providers now write `maxTokens: 16384` instead of `4096`, which keeps the fallback path above the agent's 16k minimum when upstream metadata is missing.
+- Runtime local-model discovery now assigns a default `contextWindow: 128000` for local providers when `/v1/models` omits `context_window` and `max_model_len`, so discovered local models stay usable instead of appearing undersized.
+- Added a regression test for runtime local-model discovery and a focused assertion for custom-provider onboarding defaults.
+- Verified with:
+  - `pnpm vitest run src/agents/model/runtime-model-registry.test.ts`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/context-window-guard.e2e.test.ts`
+  - `pnpm tsgo`
+  - `pnpm exec oxfmt --check src/commands/onboard-custom.ts src/commands/onboard-custom.e2e.test.ts src/agents/model/runtime-model-registry.ts src/agents/model/runtime-model-registry.test.ts`
+  - `pnpm exec tsx -e 'import { applyCustomApiConfig } from "./src/commands/onboard-custom.ts"; ...'` smoke check confirming custom-provider output now writes `contextWindow: 128000` and `maxTokens: 16384`
+
+## Cron Mutation Policy Plan (2026-03-31)
+
+- [x] Remove escalation blocking for `cron add/update/remove`.
+- [x] Enrich cron mutation events so notifications can show readable job details.
+- [x] Add non-blocking Web UI notifications for cron mutations.
+- [x] Add Telegram cron mutation notifications for configured operator recipients.
+- [x] Update focused tests and docs, then record verification results.
+
+## Review
+
+- `cron add/update/remove` no longer require permission escalation. The policy now treats cron mutations as notify-and-audit operations instead of approval-gated ones.
+- Cron mutation events now carry readable metadata (`jobName`, `agentId`, `sessionKey`, `sessionTarget`, `deliveryMode`, `nextRunAtMs`) so operator surfaces can notify without reloading or re-querying first.
+- Control UI now shows non-blocking toast notifications for cron adds, updates, and removals from gateway `cron` events.
+- Telegram now forwards the same cron mutation events to configured operator chats, reusing `channels.telegram.execApprovals.approvers` as the recipient list for now.
+- Docs were updated to remove the old claim that cron mutations need escalation and to note the notification-first behavior.
+- Verified with:
+  - `pnpm vitest run src/agents/tools/policy/escalation-policy.test.ts src/agents/tools/pi-tools.before-tool-call.e2e.test.ts src/channels/telegram/monitor/cron-mutations.test.ts ui/src/ui/controllers/cron-mutation-notice.test.ts ui/src/ui/app-gateway.node.test.ts`
+  - `pnpm tsgo`
+  - `pnpm exec oxfmt --check src/agents/tools/policy/escalation-policy.ts src/agents/tools/policy/escalation-policy.test.ts src/agents/tools/pi-tools.before-tool-call.e2e.test.ts src/cron/service/state.ts src/cron/service/ops.ts src/channels/telegram/bot.ts src/channels/telegram/monitor.ts src/channels/telegram/monitor/cron-mutations.ts src/channels/telegram/monitor/cron-mutations.test.ts ui/src/ui/app-gateway.ts ui/src/ui/app.ts ui/src/ui/app-view-state.ts ui/src/ui/app-render.ts ui/src/ui/controllers/cron-mutation-notice.ts ui/src/ui/controllers/cron-mutation-notice.test.ts ui/src/ui/views/cron-mutation-notice.ts ui/src/ui/app-gateway.node.test.ts`
+  - `pnpm exec oxlint --type-aware src/agents/tools/policy/escalation-policy.ts src/agents/tools/policy/escalation-policy.test.ts src/agents/tools/pi-tools.before-tool-call.e2e.test.ts src/cron/service/state.ts src/cron/service/ops.ts src/channels/telegram/bot.ts src/channels/telegram/monitor.ts src/channels/telegram/monitor/cron-mutations.ts src/channels/telegram/monitor/cron-mutations.test.ts ui/src/ui/app-gateway.ts ui/src/ui/app.ts ui/src/ui/app-view-state.ts ui/src/ui/app-render.ts ui/src/ui/controllers/cron-mutation-notice.ts ui/src/ui/controllers/cron-mutation-notice.test.ts ui/src/ui/views/cron-mutation-notice.ts ui/src/ui/app-gateway.node.test.ts`
+
+## Gateway Restart Validation Plan (2026-04-01)
+
+- [x] Trace the current `marv gateway restart` flow and identify the exact success path that can report success while an old listener still serves the port.
+- [x] Add a post-restart verification step that proves the old gateway listener is gone and the serving process matches the configured gateway command.
+- [x] Improve startup logs so the serving gateway reports version/build identity and PID clearly at boot.
+- [x] Add focused tests for restart verification and startup logging.
+- [x] Run targeted verification and record the results.
+
+## Review
+
+- `marv gateway restart` no longer reports success immediately after `launchctl/systemd/schtasks` returns. The CLI now captures the pre-restart gateway PID/port state, polls the configured gateway port after restart, and fails if the old PID still survives or if the port is held by a process that does not match the configured gateway command.
+- When port inspection cannot identify the serving process but the service runtime PID clearly changed and the port is busy, restart succeeds with a warning instead of a silent false positive.
+- Gateway startup logs now include a `build:` line with version, executable path, and entrypoint path before the listen address line, making it much easier to confirm which build is actually serving.
+- Verified with:
+  - `pnpm vitest run src/cli/daemon-cli/lifecycle-core.test.ts src/cli/daemon-cli/lifecycle.test.ts src/core/gateway/server-startup-log.test.ts`
+  - `pnpm exec oxfmt --check src/cli/daemon-cli/lifecycle-core.ts src/cli/daemon-cli/lifecycle.ts src/core/gateway/server-startup-log.ts src/cli/daemon-cli/lifecycle-core.test.ts src/cli/daemon-cli/lifecycle.test.ts src/core/gateway/server-startup-log.test.ts`
+  - `pnpm exec oxlint --type-aware src/cli/daemon-cli/lifecycle-core.ts src/cli/daemon-cli/lifecycle.ts src/core/gateway/server-startup-log.ts src/cli/daemon-cli/lifecycle-core.test.ts src/cli/daemon-cli/lifecycle.test.ts src/core/gateway/server-startup-log.test.ts`
+  - `pnpm tsgo`
+
+## Tavily Config Schema Plan (2026-04-01)
+
+- [x] Confirm Tavily web search runtime support and identify the config-layer gaps.
+- [x] Add Tavily support to the config schema and config types.
+- [x] Update config help and web tool docs so Tavily is listed as a supported provider.
+- [x] Add focused Tavily validation tests and record verification results.
+
+## Review
+
+- Added `tavily` to the strict config schema for `tools.web.search.provider`, and added a strict `tools.web.search.tavily` object with `apiKey`, `searchDepth`, and `includeAnswer`.
+- Updated the config TypeScript types and config help/labels so the config surface now matches the existing Tavily runtime support.
+- Updated the web tools docs to list Tavily as a supported provider, include a Tavily config example, and note the Tavily API key path in the requirements section.
+- Added focused validation coverage for Tavily config acceptance plus invalid `searchDepth` rejection.
+- Verified with:
+  - `pnpm vitest run src/core/config/config-misc.test.ts`
+  - `pnpm tsgo`
+  - `pnpm exec oxfmt --check src/core/config/zod-schema.agent-runtime.ts src/core/config/types.tools.ts src/core/config/schema.help.ts src/core/config/schema.labels.ts src/core/config/config-misc.test.ts docs/tools/web.md`
+  - `pnpm exec oxlint --type-aware src/core/config/zod-schema.agent-runtime.ts src/core/config/types.tools.ts src/core/config/schema.help.ts src/core/config/schema.labels.ts src/core/config/config-misc.test.ts`
+  - `HOME="$(mktemp -d)" pnpm marv config set tools.web.search.provider tavily`
+  - `HOME="$(mktemp -d)" pnpm marv config set tools.web.search.tavily.searchDepth advanced`
+
+## Local Context Window Guard Removal Plan (2026-04-01)
+
+- [x] Trace the embedded-runner context-window precheck that blocks small/unknown local model metadata.
+- [x] Remove the runtime hard block so context window stays advisory instead of gating execution.
+- [x] Add focused regression coverage for local/baseUrl providers with undersized or missing context metadata.
+- [x] Run targeted verification and record the results.
+
+## Review
+
+- Embedded runner no longer fail-fast rejects models just because their reported `contextWindow` is below 16k. The value is still used for advisory warnings and budgeting, but not as a preflight availability gate.
+- Added a regression test proving a local `baseUrl` provider with `contextWindow: 4096` and `maxTokens: 4096` still completes a run instead of entering failover.
+- Verified with:
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/context-window-guard.e2e.test.ts`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/runner/pi-embedded-runner.e2e.test.ts -t "does not pre-block local baseUrl providers when context metadata is tiny"`
+  - `pnpm exec oxfmt --check src/agents/context-window-guard.ts src/agents/pi-embedded-runner/run.ts src/agents/context-window-guard.e2e.test.ts src/agents/runner/pi-embedded-runner.e2e.test.ts`
+  - `pnpm tsgo`
+- Broader suite note:
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/context-window-guard.e2e.test.ts src/agents/runner/pi-embedded-runner.e2e.test.ts` still hits a pre-existing failure in `persists prompt transport errors as transcript entries` (`ENOENT` on the session file after an unhandled `transport failed` rejection).
+
+## Models List Base URL Visibility Fix (2026-04-01)
+
+- [x] Keep configured keyless `baseUrl` custom provider models visible when runtime discovery omits them.
+- [x] Preserve those models across fresh auth-sync reloads and fallback availability heuristics.
+- [x] Add focused regression coverage for the config-backed listing path.
+
+## Review
+
+- `models list` now merges configured keyless `baseUrl` provider models into the registry-backed output instead of hiding them whenever runtime discovery omits `/v1/models` metadata.
+- The availability/auth sync path now treats those configured local providers as usable without requiring an API key, so a fresh reload keeps them visible instead of marking them missing.
+- Added focused regression coverage in `models list` and auth-sync tests for the config-backed fallback path.
