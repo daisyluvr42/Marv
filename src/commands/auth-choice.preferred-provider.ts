@@ -3,6 +3,7 @@ import type { AuthChoice } from "./onboard-types.js";
 const PREFERRED_PROVIDER_BY_AUTH_CHOICE: Partial<Record<AuthChoice, string>> = {
   token: "anthropic",
   apiKey: "anthropic",
+  ollama: "ollama",
   vllm: "vllm",
   "openai-codex": "openai-codex",
   chutes: "chutes",

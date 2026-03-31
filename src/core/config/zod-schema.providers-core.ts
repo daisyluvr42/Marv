@@ -33,6 +33,13 @@ const DiscordIdSchema = z
 const DiscordIdListSchema = z.array(DiscordIdSchema);
 
 const TelegramInlineButtonsScopeSchema = z.enum(["off", "dm", "group", "all", "allowlist"]);
+const HttpUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  }, "Expected http:// or https:// URL");
 
 const TelegramCapabilitiesSchema = z.union([
   z.array(z.string()),
@@ -132,7 +139,7 @@ export const TelegramAccountSchemaBase = z
       .strict()
       .optional(),
     proxy: z.string().optional(),
-    webhookUrl: z.string().optional(),
+    webhookUrl: HttpUrlSchema.optional(),
     webhookSecret: z.string().optional().register(sensitive),
     webhookPath: z.string().optional(),
     webhookHost: z.string().optional(),
@@ -451,7 +458,7 @@ export const GoogleChatAccountSchema = z
     audienceType: z.enum(["app-url", "project-number"]).optional(),
     audience: z.string().optional(),
     webhookPath: z.string().optional(),
-    webhookUrl: z.string().optional(),
+    webhookUrl: HttpUrlSchema.optional(),
     botUser: z.string().optional(),
     historyLimit: z.number().int().min(0).optional(),
     dmHistoryLimit: z.number().int().min(0).optional(),

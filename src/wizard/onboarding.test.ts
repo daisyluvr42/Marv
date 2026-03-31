@@ -41,6 +41,17 @@ const runAuthProbes = vi.hoisted(() =>
 );
 const describeProbeSummary = vi.hoisted(() => vi.fn(() => "Probed 1 target in 1ms"));
 const promptCustomApiConfig = vi.hoisted(() => vi.fn(async (args) => ({ config: args.config })));
+const promptMemorySearchForOnboarding = vi.hoisted(() => vi.fn(async (args) => args.config));
+const promptAutoRouting = vi.hoisted(() => vi.fn(async (args) => args.config));
+const getMemorySearchManager = vi.hoisted(() =>
+  vi.fn(async () => ({
+    manager: {
+      status: () => ({ provider: "openai", model: "text-embedding-3-small" }),
+      probeEmbeddingAvailability: async () => ({ ok: true }),
+      close: async () => {},
+    },
+  })),
+);
 const configureGatewayForOnboarding = vi.hoisted(() =>
   vi.fn(async (args) => ({
     nextConfig: args.nextConfig,
@@ -146,6 +157,18 @@ vi.mock("../commands/models/list.probe.js", () => ({
 
 vi.mock("../commands/onboard-custom.js", () => ({
   promptCustomApiConfig,
+}));
+
+vi.mock("../commands/configure.memory.js", () => ({
+  promptMemorySearchForOnboarding,
+}));
+
+vi.mock("../commands/onboard-auto-routing.js", () => ({
+  promptAutoRouting,
+}));
+
+vi.mock("../memory/index.js", () => ({
+  getMemorySearchManager,
 }));
 
 vi.mock("../commands/health.js", () => ({
@@ -303,6 +326,18 @@ describe("runOnboardingWizard", () => {
     applyPrimaryModel.mockImplementation((cfg) => cfg);
     promptDefaultModel.mockReset();
     promptDefaultModel.mockResolvedValue({ config: undefined, model: undefined });
+    promptMemorySearchForOnboarding.mockReset();
+    promptMemorySearchForOnboarding.mockImplementation(async (args) => args.config);
+    promptAutoRouting.mockReset();
+    promptAutoRouting.mockImplementation(async (args) => args.config);
+    getMemorySearchManager.mockReset();
+    getMemorySearchManager.mockResolvedValue({
+      manager: {
+        status: () => ({ provider: "openai", model: "text-embedding-3-small" }),
+        probeEmbeddingAvailability: async () => ({ ok: true }),
+        close: async () => {},
+      },
+    });
     configureGatewayForOnboarding.mockReset();
     configureGatewayForOnboarding.mockImplementation(async (args) => ({
       nextConfig: args.nextConfig,
@@ -786,6 +821,47 @@ describe("runOnboardingWizard", () => {
         }),
       }),
     );
+  });
+
+  it("prompts for memory search during quickstart once a model is configured", async () => {
+    promptAuthChoiceGrouped.mockResolvedValueOnce("token");
+    promptDefaultModel.mockResolvedValueOnce({
+      config: undefined,
+      model: "openai/gpt-5.2",
+    });
+    applyPrimaryModel.mockImplementationOnce((rawCfg: unknown, model?: string) => {
+      const cfg = rawCfg as Record<string, Record<string, unknown>>;
+      return {
+        ...cfg,
+        agents: {
+          ...cfg?.agents,
+          defaults: {
+            ...(cfg?.agents?.defaults as Record<string, unknown>),
+            model: { primary: model },
+          },
+        },
+      };
+    });
+
+    const prompter = createWizardPrompter();
+    const runtime = createRuntime();
+
+    await runOnboardingWizard(
+      {
+        acceptRisk: true,
+        flow: "quickstart",
+        mode: "local",
+        skipChannels: true,
+        skipSkills: true,
+        skipHealth: true,
+        skipUi: true,
+      },
+      runtime,
+      prompter,
+    );
+
+    expect(promptMemorySearchForOnboarding).toHaveBeenCalledTimes(1);
+    expect(promptAutoRouting).not.toHaveBeenCalled();
   });
 
   it("announces the staged local flow in order", async () => {

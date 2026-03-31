@@ -87,6 +87,26 @@ describe("resolveTelegramToken", () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
+  it("reports an empty tokenFile instead of failing silently", () => {
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "");
+    const dir = withTempDir();
+    const tokenFile = path.join(dir, "empty-token.txt");
+    fs.writeFileSync(tokenFile, "   \n", "utf-8");
+    const logMissingFile = vi.fn();
+    const cfg = {
+      channels: { telegram: { tokenFile } },
+    } as MarvConfig;
+
+    const res = resolveTelegramToken(cfg, { logMissingFile });
+
+    expect(res.token).toBe("");
+    expect(res.source).toBe("none");
+    expect(logMissingFile).toHaveBeenCalledWith(
+      `channels.telegram.tokenFile is empty: ${tokenFile}`,
+    );
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
   it("resolves per-account tokens when the config account key casing doesn't match routing normalization", () => {
     vi.stubEnv("TELEGRAM_BOT_TOKEN", "");
     const cfg = {

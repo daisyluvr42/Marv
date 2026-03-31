@@ -5,14 +5,12 @@ import type {
   DeepConsolidationModelConfig,
 } from "../../core/config/types.memory.js";
 import type { ModelProviderConfig } from "../../core/config/types.models.js";
-import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
-import type { SsrFPolicy } from "../../infra/net/ssrf.js";
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const DEFAULT_OPENAI_COMPAT_BASE_URL = "http://127.0.0.1:8000/v1";
 const DEFAULT_TIMEOUT_MS = 30_000;
-const PRIVATE_NETWORK_POLICY: SsrFPolicy = { allowPrivateNetwork: true };
 
 export type LocalLlmApi = DeepConsolidationModelApi;
 export type LocalLlmConfig = DeepConsolidationModelConfig;
@@ -87,14 +85,13 @@ export async function probeLocalModel(params: {
       ? joinApiPath(resolved.baseUrl, "api/tags")
       : joinApiPath(resolved.baseUrl, "models");
   try {
-    const { response, release } = await fetchWithSsrFGuard({
+    const { response, release } = await fetchWithPrivateNetworkAccess({
       url,
       init: {
         method: "GET",
         headers: resolved.headers,
       },
       timeoutMs: resolved.timeoutMs,
-      policy: PRIVATE_NETWORK_POLICY,
       auditContext: "deep-consolidation.probe",
     });
     try {
@@ -208,7 +205,7 @@ async function inferWithOllama(
   prompt: string,
 ): Promise<InferenceResult> {
   const url = joinApiPath(resolved.baseUrl, "api/chat");
-  const { response, release } = await fetchWithSsrFGuard({
+  const { response, release } = await fetchWithPrivateNetworkAccess({
     url,
     init: {
       method: "POST",
@@ -230,7 +227,6 @@ async function inferWithOllama(
       }),
     },
     timeoutMs: resolved.timeoutMs,
-    policy: PRIVATE_NETWORK_POLICY,
     auditContext: "deep-consolidation.ollama",
   });
   try {
@@ -260,7 +256,7 @@ async function inferWithOpenAiCompatible(
   prompt: string,
 ): Promise<InferenceResult> {
   const url = joinApiPath(resolved.baseUrl, "chat/completions");
-  const { response, release } = await fetchWithSsrFGuard({
+  const { response, release } = await fetchWithPrivateNetworkAccess({
     url,
     init: {
       method: "POST",
@@ -279,7 +275,6 @@ async function inferWithOpenAiCompatible(
       }),
     },
     timeoutMs: resolved.timeoutMs,
-    policy: PRIVATE_NETWORK_POLICY,
     auditContext: "deep-consolidation.openai-compatible",
   });
   try {

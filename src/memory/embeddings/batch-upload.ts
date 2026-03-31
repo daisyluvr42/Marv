@@ -1,3 +1,4 @@
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import { hashText } from "../internal.js";
 import {
   buildBatchHeaders,
@@ -20,18 +21,26 @@ export async function uploadBatchJsonlFile(params: {
     `memory-embeddings.${hashText(String(Date.now()))}.jsonl`,
   );
 
-  const fileRes = await fetch(`${baseUrl}/files`, {
-    method: "POST",
-    headers: buildBatchHeaders(params.client, { json: false }),
-    body: form,
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url: `${baseUrl}/files`,
+    init: {
+      method: "POST",
+      headers: buildBatchHeaders(params.client, { json: false }),
+      body: form,
+    },
+    auditContext: "memory.embeddings.batch.upload",
   });
-  if (!fileRes.ok) {
-    const text = await fileRes.text();
-    throw new Error(`${params.errorPrefix}: ${fileRes.status} ${text}`);
+  try {
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`${params.errorPrefix}: ${response.status} ${text}`);
+    }
+    const filePayload = (await response.json()) as { id?: string };
+    if (!filePayload.id) {
+      throw new Error(`${params.errorPrefix}: missing file id`);
+    }
+    return filePayload.id;
+  } finally {
+    await release();
   }
-  const filePayload = (await fileRes.json()) as { id?: string };
-  if (!filePayload.id) {
-    throw new Error(`${params.errorPrefix}: missing file id`);
-  }
-  return filePayload.id;
 }

@@ -1,3 +1,4 @@
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import { extractBatchErrorMessage, formatUnavailableBatchError } from "./batch-error-utils.js";
 import { postJsonWithRetry } from "./batch-http.js";
 import { applyEmbeddingBatchOutputLine } from "./batch-output.js";
@@ -73,14 +74,22 @@ async function fetchOpenAiBatchStatus(params: {
   batchId: string;
 }): Promise<OpenAiBatchStatus> {
   const baseUrl = normalizeBatchBaseUrl(params.openAi);
-  const res = await fetch(`${baseUrl}/batches/${params.batchId}`, {
-    headers: buildBatchHeaders(params.openAi, { json: true }),
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url: `${baseUrl}/batches/${params.batchId}`,
+    init: {
+      headers: buildBatchHeaders(params.openAi, { json: true }),
+    },
+    auditContext: "memory.embeddings.batch.openai.status",
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`openai batch status failed: ${res.status} ${text}`);
+  try {
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`openai batch status failed: ${response.status} ${text}`);
+    }
+    return (await response.json()) as OpenAiBatchStatus;
+  } finally {
+    await release();
   }
-  return (await res.json()) as OpenAiBatchStatus;
 }
 
 async function fetchOpenAiFileContent(params: {
@@ -88,14 +97,22 @@ async function fetchOpenAiFileContent(params: {
   fileId: string;
 }): Promise<string> {
   const baseUrl = normalizeBatchBaseUrl(params.openAi);
-  const res = await fetch(`${baseUrl}/files/${params.fileId}/content`, {
-    headers: buildBatchHeaders(params.openAi, { json: true }),
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url: `${baseUrl}/files/${params.fileId}/content`,
+    init: {
+      headers: buildBatchHeaders(params.openAi, { json: true }),
+    },
+    auditContext: "memory.embeddings.batch.openai.content",
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`openai batch file content failed: ${res.status} ${text}`);
+  try {
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`openai batch file content failed: ${response.status} ${text}`);
+    }
+    return await response.text();
+  } finally {
+    await release();
   }
-  return await res.text();
 }
 
 function parseOpenAiBatchOutput(text: string): OpenAiBatchOutputLine[] {

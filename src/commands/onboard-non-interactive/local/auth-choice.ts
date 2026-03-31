@@ -93,10 +93,10 @@ async function applyNonInteractiveAuthChoiceInner(params: {
   const { authChoice, opts, runtime, baseConfig, agentDir } = params;
   let nextConfig = params.nextConfig;
 
-  if (authChoice === "vllm") {
+  if (authChoice === "vllm" || authChoice === "ollama") {
     runtime.error(
       [
-        'Auth choice "vllm" requires interactive mode.',
+        `Auth choice "${authChoice}" requires interactive mode.`,
         "Use interactive onboard/configure to enter base URL, API key, and model ID.",
       ].join("\n"),
     );

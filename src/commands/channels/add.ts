@@ -67,7 +67,7 @@ export async function channelsAddCommand(
     let selection: ChannelChoice[] = [];
     const accountIds: Partial<Record<ChannelChoice, string>> = {};
     await prompter.intro("Channel setup");
-    let nextConfig = await setupChannels(cfg, runtime, prompter, {
+    nextConfig = await setupChannels(cfg, runtime, prompter, {
       allowDisable: false,
       allowSignalInstall: true,
       promptAccountIds: true,

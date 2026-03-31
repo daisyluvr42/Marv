@@ -39,6 +39,12 @@ const AUTH_CHOICE_GROUP_DEFS: {
     choices: ["chutes"],
   },
   {
+    value: "ollama",
+    label: "Ollama",
+    hint: "Local/self-hosted native Ollama",
+    choices: ["ollama"],
+  },
+  {
     value: "vllm",
     label: "vLLM",
     hint: "Local/self-hosted OpenAI-compatible",
@@ -171,6 +177,11 @@ const BASE_AUTH_CHOICE_OPTIONS: ReadonlyArray<AuthChoiceOption> = [
     label: "OpenAI Codex (ChatGPT OAuth)",
   },
   { value: "chutes", label: "Chutes (OAuth)" },
+  {
+    value: "ollama",
+    label: "Ollama (local URL + model)",
+    hint: "Native Ollama API",
+  },
   {
     value: "vllm",
     label: "vLLM (custom URL + model)",

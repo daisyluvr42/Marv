@@ -5,6 +5,7 @@ export type OnboardMode = "local" | "remote";
 export type AuthChoice =
   | "token"
   | "chutes"
+  | "ollama"
   | "vllm"
   | "openai-codex"
   | "openai-api-key"
@@ -46,6 +47,7 @@ export type AuthChoiceGroupId =
   | "openai"
   | "anthropic"
   | "chutes"
+  | "ollama"
   | "vllm"
   | "google"
   | "copilot"

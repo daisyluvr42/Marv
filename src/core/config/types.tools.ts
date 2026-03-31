@@ -409,6 +409,8 @@ export type MemorySearchConfig = {
         model?: string;
         /** Optional reranker API key (sensitive). */
         apiKey?: string;
+        /** Optional extra headers to send to the reranker API. */
+        headers?: Record<string, string>;
         /** Max candidates to send to the reranker (default: 24). */
         maxCandidates?: number;
         /** Parsed for compatibility; inactive in the first release (default: false). */

@@ -133,6 +133,9 @@ append_line_if_missing() {
 }
 
 ensure_home_npm_prefix() {
+  if [[ -z "${HOME:-}" ]]; then
+    fail "HOME must be set before running install.sh"
+  fi
   local target_prefix="$HOME/.npm-global"
   local current_prefix writable=0
   current_prefix="$(npm config get prefix 2>/dev/null || true)"

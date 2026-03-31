@@ -81,6 +81,7 @@ export type ResolvedMemorySearchConfig = {
         apiUrl?: string;
         model?: string;
         apiKey?: string;
+        headers?: Record<string, string>;
         maxCandidates: number;
         ftsFirst: boolean;
         warning?: string;
@@ -318,6 +319,8 @@ function mergeConfig(
       model: overrides?.query?.hybrid?.reranker?.model ?? defaults?.query?.hybrid?.reranker?.model,
       apiKey:
         overrides?.query?.hybrid?.reranker?.apiKey ?? defaults?.query?.hybrid?.reranker?.apiKey,
+      headers:
+        overrides?.query?.hybrid?.reranker?.headers ?? defaults?.query?.hybrid?.reranker?.headers,
       maxCandidates:
         overrides?.query?.hybrid?.reranker?.maxCandidates ??
         defaults?.query?.hybrid?.reranker?.maxCandidates ??
@@ -410,6 +413,7 @@ function mergeConfig(
           apiUrl: rerankerApiUrl,
           model: rerankerModel,
           apiKey: hybrid.reranker.apiKey?.trim() || undefined,
+          headers: hybrid.reranker.headers,
           maxCandidates: rerankerMaxCandidates,
           ftsFirst: Boolean(hybrid.reranker.ftsFirst),
           warning: rerankerWarning,

@@ -32,13 +32,13 @@ export function resolveUserPathWithHome(input: string, home?: string): string {
 }
 
 export function resolveGatewayStateDir(env: Record<string, string | undefined>): string {
-  const override = env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim();
+  const override = env.MARV_STATE_DIR?.trim();
   if (override) {
     const home = override.startsWith("~") ? resolveHomeDir(env) : undefined;
     return resolveUserPathWithHome(override, home);
   }
   const home = resolveHomeDir(env);
-  const suffix = resolveGatewayProfileSuffix(env.MARV_PROFILE ?? env.MARV_PROFILE);
+  const suffix = resolveGatewayProfileSuffix(env.MARV_PROFILE);
   const marvDir = path.join(home, `.marv${suffix}`);
   const legacyDir = path.join(home, `.marv${suffix}`);
   try {

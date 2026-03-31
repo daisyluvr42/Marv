@@ -56,6 +56,9 @@ export function resolveTelegramToken(
       if (token) {
         return { token, source: "tokenFile" };
       }
+      opts.logMissingFile?.(
+        `channels.telegram.accounts.${accountId}.tokenFile is empty: ${accountTokenFile}`,
+      );
     } catch (err) {
       opts.logMissingFile?.(
         `channels.telegram.accounts.${accountId}.tokenFile read failed: ${String(err)}`,
@@ -82,6 +85,7 @@ export function resolveTelegramToken(
       if (token) {
         return { token, source: "tokenFile" };
       }
+      opts.logMissingFile?.(`channels.telegram.tokenFile is empty: ${tokenFile}`);
     } catch (err) {
       opts.logMissingFile?.(`channels.telegram.tokenFile read failed: ${String(err)}`);
       return { token: "", source: "none" };

@@ -312,8 +312,7 @@ export function resolveConfigDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const override =
-    env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const override = env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override);
   }
@@ -344,9 +343,9 @@ function resolveHomeDisplayPrefix(): { home: string; prefix: string } | undefine
   if (!home) {
     return undefined;
   }
-  const explicitHome = process.env.MARV_HOME?.trim() || process.env.MARV_HOME?.trim();
+  const explicitHome = process.env.MARV_HOME?.trim();
   if (explicitHome) {
-    return { home, prefix: process.env.MARV_HOME?.trim() ? "$MARV_HOME" : "$MARV_HOME" };
+    return { home, prefix: "$MARV_HOME" };
   }
   return { home, prefix: "~" };
 }

@@ -397,6 +397,7 @@ export class MemoryIndexManager extends MemoryManagerEmbeddingOps implements Mem
       apiUrl?: string;
       model?: string;
       apiKey?: string;
+      headers?: Record<string, string>;
       maxCandidates: number;
       ftsFirst: boolean;
     };

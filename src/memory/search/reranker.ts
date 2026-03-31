@@ -1,8 +1,11 @@
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
+
 export type HybridRerankerConfig = {
   enabled: boolean;
   apiUrl?: string;
   model?: string;
   apiKey?: string;
+  headers?: Record<string, string>;
   maxCandidates: number;
   /** Parsed for compatibility; inactive in the first reranker release. */
   ftsFirst: boolean;
@@ -92,54 +95,69 @@ export async function rerankHybridResults<
 
   const head = params.results.slice(0, topCount);
   const tail = params.results.slice(topCount);
-  const controller = new AbortController();
   const timeoutMs = Math.max(1, reranker.timeoutMs ?? DEFAULT_RERANKER_CONFIG.timeoutMs!);
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(reranker.apiKey?.trim() ? { Authorization: `Bearer ${reranker.apiKey.trim()}` } : {}),
-      },
-      body: JSON.stringify({
-        model,
-        query,
-        documents: head.map((result) => result.snippet),
-        top_n: head.length,
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`reranker request failed: ${res.status} ${text}`);
+    const requestHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...reranker.headers,
+    };
+    const hasAuthorizationHeader = Object.keys(requestHeaders).some(
+      (key) => key.trim().toLowerCase() === "authorization",
+    );
+    if (
+      reranker.apiKey?.trim() &&
+      !hasAuthorizationHeader &&
+      Object.keys(reranker.headers ?? {}).length === 0
+    ) {
+      requestHeaders.Authorization = `Bearer ${reranker.apiKey.trim()}`;
     }
+    const { response, release } = await fetchWithPrivateNetworkAccess({
+      url: apiUrl,
+      init: {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({
+          model,
+          query,
+          documents: head.map((result) => result.snippet),
+          top_n: head.length,
+        }),
+      },
+      timeoutMs,
+      auditContext: "memory.reranker",
+    });
+    try {
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`reranker request failed: ${response.status} ${text}`);
+      }
 
-    const ranked = parseRerankerResults(await res.json(), head.length);
-    const rankedByIndex = new Map(ranked.map((item) => [item.index, item.score]));
-    const rerankedHead = head
-      .map((result, index) => ({
-        result,
-        index,
-        rerankScore: rankedByIndex.get(index),
-      }))
-      .toSorted((a, b) => {
-        const scoreA = a.rerankScore ?? Number.NEGATIVE_INFINITY;
-        const scoreB = b.rerankScore ?? Number.NEGATIVE_INFINITY;
-        if (scoreA !== scoreB) {
-          return scoreB - scoreA;
-        }
-        return a.index - b.index;
-      })
-      .map(({ result, rerankScore }) =>
-        rerankScore === undefined ? result : { ...result, rerankScore },
-      );
-    return [...rerankedHead, ...tail];
+      const ranked = parseRerankerResults(await response.json(), head.length);
+      const rankedByIndex = new Map(ranked.map((item) => [item.index, item.score]));
+      const rerankedHead = head
+        .map((result, index) => ({
+          result,
+          index,
+          rerankScore: rankedByIndex.get(index),
+        }))
+        .toSorted((a, b) => {
+          const scoreA = a.rerankScore ?? Number.NEGATIVE_INFINITY;
+          const scoreB = b.rerankScore ?? Number.NEGATIVE_INFINITY;
+          if (scoreA !== scoreB) {
+            return scoreB - scoreA;
+          }
+          return a.index - b.index;
+        })
+        .map(({ result, rerankScore }) =>
+          rerankScore === undefined ? result : { ...result, rerankScore },
+        );
+      return [...rerankedHead, ...tail];
+    } finally {
+      await release();
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     params.warn?.(`memory reranker failed; using hybrid order: ${message}`);
     return [...params.results];
-  } finally {
-    clearTimeout(timer);
   }
 }

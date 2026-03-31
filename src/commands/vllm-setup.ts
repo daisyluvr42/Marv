@@ -1,5 +1,6 @@
 import { upsertAuthProfileWithLock } from "../agents/auth-profiles.js";
 import type { MarvConfig } from "../core/config/config.js";
+import { fetchWithPrivateNetworkAccess } from "../infra/net/private-network-fetch.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
 export const VLLM_DEFAULT_BASE_URL = "http://127.0.0.1:8000/v1";
@@ -11,6 +12,53 @@ export const VLLM_DEFAULT_COST = {
   cacheRead: 0,
   cacheWrite: 0,
 };
+const VLLM_VERIFY_TIMEOUT_MS = 5000;
+
+type VllmModelsResponse = {
+  data?: Array<{
+    id?: string;
+  }>;
+};
+
+async function verifyVllmModel(params: {
+  baseUrl: string;
+  apiKey: string;
+  modelId: string;
+}): Promise<void> {
+  const url = `${params.baseUrl}/models`;
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url,
+    init: {
+      headers: {
+        Authorization: `Bearer ${params.apiKey}`,
+      },
+    },
+    timeoutMs: VLLM_VERIFY_TIMEOUT_MS,
+    auditContext: "onboard.vllm.verify",
+  });
+  try {
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(
+        `vLLM endpoint verification failed (${response.status})${detail ? `: ${detail}` : ""}`,
+      );
+    }
+    const payload = (await response.json()) as VllmModelsResponse;
+    const availableModels = (payload.data ?? [])
+      .map((entry) => String(entry.id ?? "").trim())
+      .filter(Boolean);
+    if (availableModels.length === 0) {
+      throw new Error(`No models found at ${params.baseUrl}.`);
+    }
+    if (!availableModels.includes(params.modelId)) {
+      throw new Error(
+        `vLLM model "${params.modelId}" not found at ${params.baseUrl}. Available models: ${availableModels.join(", ")}`,
+      );
+    }
+  } finally {
+    await release();
+  }
+}
 
 export async function promptAndConfigureVllm(params: {
   cfg: MarvConfig;
@@ -40,6 +88,16 @@ export async function promptAndConfigureVllm(params: {
   const apiKey = String(apiKeyRaw ?? "").trim();
   const modelId = String(modelIdRaw ?? "").trim();
   const modelRef = `vllm/${modelId}`;
+
+  const progress = params.prompter.progress("Verifying vLLM endpoint...");
+  try {
+    await verifyVllmModel({ baseUrl, apiKey, modelId });
+    progress.stop("vLLM endpoint verified.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    progress.stop(`vLLM verification failed: ${message}`);
+    throw error;
+  }
 
   await upsertAuthProfileWithLock({
     profileId: "vllm:default",

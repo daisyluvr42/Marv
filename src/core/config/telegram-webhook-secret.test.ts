@@ -14,6 +14,21 @@ describe("Telegram webhook config", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("rejects non-http webhookUrl values", () => {
+    const res = validateConfigObject({
+      channels: {
+        telegram: {
+          webhookUrl: "ftp://example.com/telegram-webhook",
+          webhookSecret: "secret",
+        },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.issues.some((issue) => issue.path === "channels.telegram.webhookUrl")).toBe(true);
+    }
+  });
+
   it("rejects webhookUrl without webhookSecret", () => {
     const res = validateConfigObject({
       channels: {
@@ -42,6 +57,27 @@ describe("Telegram webhook config", () => {
       },
     });
     expect(res.ok).toBe(true);
+  });
+
+  it("rejects non-http account webhookUrl values", () => {
+    const res = validateConfigObject({
+      channels: {
+        telegram: {
+          webhookSecret: "secret",
+          accounts: {
+            ops: {
+              webhookUrl: "ftp://example.com/telegram-webhook",
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(
+        res.issues.some((issue) => issue.path === "channels.telegram.accounts.ops.webhookUrl"),
+      ).toBe(true);
+    }
   });
 
   it("rejects account webhookUrl without webhookSecret", () => {

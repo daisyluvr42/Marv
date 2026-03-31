@@ -623,6 +623,7 @@ export const MemorySearchSchema = z
                 apiUrl: z.string().optional(),
                 model: z.string().optional(),
                 apiKey: z.string().optional().register(sensitive),
+                headers: z.record(z.string(), z.string()).optional(),
                 maxCandidates: z.number().int().positive().optional(),
                 ftsFirst: z.boolean().optional(),
               })

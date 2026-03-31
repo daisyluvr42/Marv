@@ -45,6 +45,14 @@ describe("state + config path candidates", () => {
     expect(resolveStateDir(env, () => "/home/test")).toBe(path.resolve("/new/state"));
   });
 
+  it("falls back to CLAWDBOT_STATE_DIR when MARV_STATE_DIR is unset", () => {
+    const env = {
+      CLAWDBOT_STATE_DIR: "/legacy/state",
+    } as NodeJS.ProcessEnv;
+
+    expect(resolveStateDir(env, () => "/home/test")).toBe(path.resolve("/legacy/state"));
+  });
+
   it("uses MARV_HOME for default state/config locations", () => {
     const env = {
       MARV_HOME: "/srv/marv-home",
@@ -137,5 +145,15 @@ describe("state + config path candidates", () => {
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }
+  });
+
+  it("honors CLAWDBOT_CONFIG_PATH when the canonical config path is unset", () => {
+    const env = {
+      CLAWDBOT_CONFIG_PATH: "/legacy/marv.json",
+    } as NodeJS.ProcessEnv;
+
+    expect(resolveConfigPathCandidate(env, () => "/home/test")).toBe(
+      path.resolve("/legacy/marv.json"),
+    );
   });
 });

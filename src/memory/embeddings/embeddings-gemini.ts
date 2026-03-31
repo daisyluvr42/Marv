@@ -4,6 +4,7 @@ import {
 } from "../../agents/api-key-rotation.js";
 import { requireApiKey, resolveApiKeyForProvider } from "../../agents/model/model-auth.js";
 import { parseGeminiAuth } from "../../infra/gemini-auth.js";
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import { debugEmbeddingsLog } from "./embeddings-debug.js";
 import type { EmbeddingProvider, EmbeddingProviderOptions } from "./embeddings-types.js";
 
@@ -73,19 +74,27 @@ export async function createGeminiEmbeddingProvider(
       ...authHeaders.headers,
       ...client.headers,
     };
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
+    const { response, release } = await fetchWithPrivateNetworkAccess({
+      url: endpoint,
+      init: {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      },
+      auditContext: "memory.embeddings.gemini",
     });
-    if (!res.ok) {
-      const payload = await res.text();
-      throw new Error(`gemini embeddings failed: ${res.status} ${payload}`);
+    try {
+      if (!response.ok) {
+        const payload = await response.text();
+        throw new Error(`gemini embeddings failed: ${response.status} ${payload}`);
+      }
+      return (await response.json()) as {
+        embedding?: { values?: number[] };
+        embeddings?: Array<{ values?: number[] }>;
+      };
+    } finally {
+      await release();
     }
-    return (await res.json()) as {
-      embedding?: { values?: number[] };
-      embeddings?: Array<{ values?: number[] }>;
-    };
   };
 
   const embedQuery = async (text: string): Promise<number[]> => {

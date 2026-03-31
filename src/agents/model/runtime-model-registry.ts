@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { MarvConfig } from "../../core/config/config.js";
 import { resolveStateDir } from "../../core/config/paths.js";
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
 import { resolveApiKeyForProvider } from "./model-auth.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
@@ -373,53 +374,20 @@ async function fetchOllamaModels(
 ): Promise<RuntimeRegistryModel[]> {
   // Strip /v1 suffix if present (users often configure the OpenAI-compat URL).
   const apiBase = baseUrl.replace(/\/v1$/i, "");
-  const response = await fetch(`${apiBase}/api/tags`, {
-    signal: AbortSignal.timeout(5_000),
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url: `${apiBase}/api/tags`,
+    timeoutMs: 5_000,
+    auditContext: "runtime-model-registry.ollama",
   });
-  if (!response.ok) {
-    return [];
-  }
-  const payload = (await response.json()) as { models?: Array<{ name?: string }> };
-  return (payload.models ?? [])
-    .map((entry) => String(entry.name ?? "").trim())
-    .filter(Boolean)
-    .map((model) => ({
-      ref: `${provider}/${model}`,
-      provider,
-      model,
-      displayName: model,
-      source: "official_api" as const,
-      status: "active" as const,
-      capabilities: inferCapabilities({ provider, model }),
-      tier: normalizeTier(model),
-      location: "local" as const,
-    }));
-}
-
-/** Fetch models from an OpenAI-compatible local server (LM Studio, vLLM, etc.) via /v1/models. */
-async function fetchOpenAICompatibleLocalModels(
-  baseUrl: string,
-  provider: string,
-): Promise<RuntimeRegistryModel[]> {
-  // Ensure the URL ends with /v1/models.
-  const url = baseUrl.replace(/\/v1\/?$/, "");
-  const response = await fetch(`${url}/v1/models`, {
-    signal: AbortSignal.timeout(5_000),
-  });
-  if (!response.ok) {
-    return [];
-  }
-  const payload = (await response.json()) as OpenAIModelsApiResponse;
-  return (payload.data ?? [])
-    .filter((entry) => String(entry.id ?? "").trim())
-    .map((entry) => {
-      const model = String(entry.id ?? "").trim();
-      const ctxRaw = entry.context_window ?? entry.max_model_len;
-      const contextWindow =
-        typeof ctxRaw === "number" && Number.isFinite(ctxRaw) && ctxRaw > 0
-          ? Math.floor(ctxRaw)
-          : undefined;
-      return {
+  try {
+    if (!response.ok) {
+      return [];
+    }
+    const payload = (await response.json()) as { models?: Array<{ name?: string }> };
+    return (payload.models ?? [])
+      .map((entry) => String(entry.name ?? "").trim())
+      .filter(Boolean)
+      .map((model) => ({
         ref: `${provider}/${model}`,
         provider,
         model,
@@ -429,9 +397,54 @@ async function fetchOpenAICompatibleLocalModels(
         capabilities: inferCapabilities({ provider, model }),
         tier: normalizeTier(model),
         location: "local" as const,
-        ...(contextWindow ? { contextWindow } : {}),
-      };
-    });
+      }));
+  } finally {
+    await release();
+  }
+}
+
+/** Fetch models from an OpenAI-compatible local server (LM Studio, vLLM, etc.) via /v1/models. */
+async function fetchOpenAICompatibleLocalModels(
+  baseUrl: string,
+  provider: string,
+): Promise<RuntimeRegistryModel[]> {
+  // Ensure the URL ends with /v1/models.
+  const url = baseUrl.replace(/\/v1\/?$/, "");
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url: `${url}/v1/models`,
+    timeoutMs: 5_000,
+    auditContext: `runtime-model-registry.${provider}`,
+  });
+  try {
+    if (!response.ok) {
+      return [];
+    }
+    const payload = (await response.json()) as OpenAIModelsApiResponse;
+    return (payload.data ?? [])
+      .filter((entry) => String(entry.id ?? "").trim())
+      .map((entry) => {
+        const model = String(entry.id ?? "").trim();
+        const ctxRaw = entry.context_window ?? entry.max_model_len;
+        const contextWindow =
+          typeof ctxRaw === "number" && Number.isFinite(ctxRaw) && ctxRaw > 0
+            ? Math.floor(ctxRaw)
+            : undefined;
+        return {
+          ref: `${provider}/${model}`,
+          provider,
+          model,
+          displayName: model,
+          source: "official_api" as const,
+          status: "active" as const,
+          capabilities: inferCapabilities({ provider, model }),
+          tier: normalizeTier(model),
+          location: "local" as const,
+          ...(contextWindow ? { contextWindow } : {}),
+        };
+      });
+  } finally {
+    await release();
+  }
 }
 
 const KNOWN_PROVIDER_GUIDES: ProviderGuide[] = [

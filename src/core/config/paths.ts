@@ -62,8 +62,7 @@ export function resolveStateDir(
   homedir: () => string = envHomedir(env),
 ): string {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
-  const override =
-    env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const override = env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, effectiveHomedir);
   }
@@ -117,10 +116,7 @@ export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {
-  const override =
-    env.MARV_CONFIG_PATH?.trim() ||
-    env.MARV_CONFIG_PATH?.trim() ||
-    env.CLAWDBOT_CONFIG_PATH?.trim();
+  const override = env.MARV_CONFIG_PATH?.trim() || env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
   }
@@ -157,11 +153,11 @@ export function resolveConfigPath(
   stateDir: string = resolveStateDir(env, envHomedir(env)),
   homedir: () => string = envHomedir(env),
 ): string {
-  const override = env.MARV_CONFIG_PATH?.trim() || env.MARV_CONFIG_PATH?.trim();
+  const override = env.MARV_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, homedir);
   }
-  const stateOverride = env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim();
+  const stateOverride = env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   const candidates = [
     path.join(stateDir, CONFIG_FILENAME),
     ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(stateDir, name)),
@@ -197,17 +193,13 @@ export function resolveDefaultConfigCandidates(
   homedir: () => string = envHomedir(env),
 ): string[] {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
-  const explicit =
-    env.MARV_CONFIG_PATH?.trim() ||
-    env.MARV_CONFIG_PATH?.trim() ||
-    env.CLAWDBOT_CONFIG_PATH?.trim();
+  const explicit = env.MARV_CONFIG_PATH?.trim() || env.CLAWDBOT_CONFIG_PATH?.trim();
   if (explicit) {
     return [resolveUserPath(explicit, env, effectiveHomedir)];
   }
 
   const candidates: string[] = [];
-  const marvStateDir =
-    env.MARV_STATE_DIR?.trim() || env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  const marvStateDir = env.MARV_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (marvStateDir) {
     const resolved = resolveUserPath(marvStateDir, env, effectiveHomedir);
     candidates.push(path.join(resolved, CONFIG_FILENAME));

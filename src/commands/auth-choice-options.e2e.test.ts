@@ -37,6 +37,7 @@ describe("buildAuthChoiceOptions", () => {
     ["Together AI auth choice", ["together-api-key"]],
     ["Synthetic auth choice", ["synthetic-api-key"]],
     ["Chutes OAuth auth choice", ["chutes"]],
+    ["Ollama auth choice", ["ollama"]],
     ["Qwen auth choice", ["qwen-portal"]],
     ["xAI auth choice", ["xai-api-key"]],
     ["vLLM auth choice", ["vllm"]],

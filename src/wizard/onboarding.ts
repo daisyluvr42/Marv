@@ -150,6 +150,60 @@ async function validateConfiguredModelEarly(params: {
   }
 }
 
+async function validateMemorySearchEarly(params: { config: MarvConfig; prompter: WizardPrompter }) {
+  const configured = params.config.agents?.defaults?.memorySearch;
+  if (!configured) {
+    return;
+  }
+
+  const progress = params.prompter.progress("Memory search check");
+  let progressStopped = false;
+  let manager: {
+    status: () => { provider: string; model?: string; fallback?: { reason?: string } };
+    probeEmbeddingAvailability: () => Promise<{ ok: boolean; error?: string }>;
+    close?: () => Promise<void>;
+  } | null = null;
+  try {
+    progress.update("Checking embeddings…");
+    const { getMemorySearchManager } = await import("../memory/index.js");
+    const result = await getMemorySearchManager({
+      cfg: params.config,
+      agentId: resolveDefaultAgentId(params.config),
+    });
+    if (!result.manager) {
+      throw new Error(result.error ?? "memory search unavailable");
+    }
+    manager = result.manager;
+    const probe = await manager.probeEmbeddingAvailability();
+    if (!probe.ok) {
+      throw new Error(probe.error ?? "memory embeddings unavailable");
+    }
+
+    const status = manager.status();
+    const providerLabel = status.model ? `${status.provider}/${status.model}` : status.provider;
+    const lines = status.fallback?.reason
+      ? [
+          `Memory search is available and currently using ${providerLabel}.`,
+          `Fallback reason: ${status.fallback.reason}`,
+        ]
+      : [`Validated memory search provider: ${providerLabel}`];
+    await params.prompter.note(
+      lines.join("\n"),
+      status.fallback?.reason ? "Memory search fallback" : "Memory search ready",
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    progress.stop(`Memory search check failed: ${message}`);
+    progressStopped = true;
+    throw error;
+  } finally {
+    await manager?.close?.().catch(() => {});
+    if (!progressStopped) {
+      progress.stop("Memory search check complete.");
+    }
+  }
+}
+
 function inferExistingOnboardMode(config: MarvConfig): OnboardMode | undefined {
   const hasRemote = Boolean(config.gateway?.remote?.url?.trim());
   const hasLocalWorkspace = Boolean(config.agents?.defaults?.workspace?.trim());
@@ -458,14 +512,8 @@ async function stepModeSelection(
   const localUrl = `ws://127.0.0.1:${localPort}`;
   const localProbe = await ctx.onboardHelpers.probeGatewayReachable({
     url: localUrl,
-    token:
-      baseConfig.gateway?.auth?.token ??
-      process.env.MARV_GATEWAY_TOKEN ??
-      process.env.MARV_GATEWAY_TOKEN,
-    password:
-      baseConfig.gateway?.auth?.password ??
-      process.env.MARV_GATEWAY_PASSWORD ??
-      process.env.MARV_GATEWAY_PASSWORD,
+    token: baseConfig.gateway?.auth?.token ?? process.env.MARV_GATEWAY_TOKEN,
+    password: baseConfig.gateway?.auth?.password ?? process.env.MARV_GATEWAY_PASSWORD,
   });
   const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
   const remoteProbe = remoteUrl
@@ -666,8 +714,8 @@ async function stepWorkspaceAndP0(
   return { ...state, nextConfig, workspaceDir };
 }
 
-/** Step 6 (local, non-reuse, advanced): Memory search + auto-routing. */
-async function stepAdvancedConfig(
+/** Step 6 (local, non-reuse): Memory search. */
+async function stepMemorySearchConfig(
   state: OnboardStepState,
   ctx: OnboardStepCtx,
 ): Promise<OnboardStepState> {
@@ -679,13 +727,25 @@ async function stepAdvancedConfig(
     prompter: ctx.prompter,
   });
 
+  await validateMemorySearchEarly({ config: nextConfig, prompter: ctx.rawPrompter });
+
+  return { ...state, nextConfig };
+}
+
+/** Step 7 (local, non-reuse, advanced): Auto-routing. */
+async function stepAutoRoutingConfig(
+  state: OnboardStepState,
+  ctx: OnboardStepCtx,
+): Promise<OnboardStepState> {
+  let nextConfig = state.nextConfig;
+
   const { promptAutoRouting } = await import("../commands/onboard-auto-routing.js");
   nextConfig = await promptAutoRouting({ config: nextConfig, prompter: ctx.prompter });
 
   return { ...state, nextConfig };
 }
 
-/** Step 7 (local, non-reuse): Gateway configuration. */
+/** Step 8 (local, non-reuse): Gateway configuration. */
 async function stepGateway(
   state: OnboardStepState,
   ctx: OnboardStepCtx,
@@ -704,7 +764,7 @@ async function stepGateway(
   return { ...state, nextConfig: gateway.nextConfig, settings: gateway.settings };
 }
 
-/** Step 8 (local, non-reuse): Channel setup. */
+/** Step 9 (local, non-reuse): Channel setup. */
 async function stepChannels(
   state: OnboardStepState,
   ctx: OnboardStepCtx,
@@ -732,7 +792,7 @@ async function stepChannels(
   return { ...state, nextConfig };
 }
 
-/** Step 9 (local): Write config + workspace + skills. */
+/** Step 10 (local): Write config + workspace + skills. */
 async function stepPersistAndSkills(
   state: OnboardStepState,
   ctx: OnboardStepCtx,
@@ -888,6 +948,11 @@ export async function runOnboardingWizard(
     const isRemote = (s: OnboardStepState) => s.mode === "remote";
     const isLocalNonReuse = (s: OnboardStepState) =>
       s.mode === "local" && !s.reuseExistingLocalSetup;
+    const needsMemorySearchConfig = (s: OnboardStepState) =>
+      isLocalNonReuse(s) &&
+      (s.flow !== "quickstart" ||
+        Boolean(resolvePrimaryModel(s.nextConfig.agents?.defaults?.model)?.trim()) ||
+        Boolean(s.nextConfig.agents?.defaults?.memorySearch));
     const isLocalReuse = (s: OnboardStepState) => s.mode === "local" && s.reuseExistingLocalSetup;
     const isAdvancedNonReuse = (s: OnboardStepState) =>
       s.mode === "local" && !s.reuseExistingLocalSetup && s.flow !== "quickstart";
@@ -903,7 +968,8 @@ export async function runOnboardingWizard(
       // Local non-reuse path
       { name: "auth-model", run: stepAuthAndModel, shouldRun: isLocalNonReuse },
       { name: "workspace-p0", run: stepWorkspaceAndP0, shouldRun: isLocalNonReuse },
-      { name: "advanced-config", run: stepAdvancedConfig, shouldRun: isAdvancedNonReuse },
+      { name: "memory-search", run: stepMemorySearchConfig, shouldRun: needsMemorySearchConfig },
+      { name: "auto-routing", run: stepAutoRoutingConfig, shouldRun: isAdvancedNonReuse },
       { name: "gateway", run: stepGateway, shouldRun: isLocalNonReuse },
       { name: "channels", run: stepChannels, shouldRun: isLocalNonReuse },
       // Local common

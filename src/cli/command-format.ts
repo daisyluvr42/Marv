@@ -11,7 +11,7 @@ export function formatCliCommand(
 ): string {
   const cliName = resolveCliName();
   const normalizedCommand = replaceCliName(command, cliName);
-  const profile = normalizeProfileName(env.MARV_PROFILE ?? env.MARV_PROFILE);
+  const profile = normalizeProfileName(env.MARV_PROFILE);
   if (!profile) {
     return normalizedCommand;
   }

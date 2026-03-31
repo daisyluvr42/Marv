@@ -3,8 +3,8 @@ import { buildModelAliasIndex, modelKey } from "../agents/model/model-selection.
 import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { ModelProviderConfig } from "../core/config/types.models.js";
+import { fetchWithPrivateNetworkAccess } from "../infra/net/private-network-fetch.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { fetchWithTimeout } from "../utils/fetch-timeout.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { applyPrimaryModel } from "./model-picker.js";
 import { normalizeAlias } from "./models/shared.js";
@@ -270,9 +270,9 @@ async function requestVerification(params: {
   body: Record<string, unknown>;
 }): Promise<VerificationResult> {
   try {
-    const res = await fetchWithTimeout(
-      params.endpoint,
-      {
+    const { response, release } = await fetchWithPrivateNetworkAccess({
+      url: params.endpoint,
+      init: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -280,9 +280,14 @@ async function requestVerification(params: {
         },
         body: JSON.stringify(params.body),
       },
-      VERIFY_TIMEOUT_MS,
-    );
-    return { ok: res.ok, status: res.status };
+      timeoutMs: VERIFY_TIMEOUT_MS,
+      auditContext: "onboard.custom.verify",
+    });
+    try {
+      return { ok: response.ok, status: response.status };
+    } finally {
+      await release();
+    }
   } catch (error) {
     return { ok: false, error };
   }

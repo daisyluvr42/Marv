@@ -1,3 +1,4 @@
+import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import { retryAsync } from "../../infra/retry.js";
 
 export async function postJsonWithRetry<T>(params: {
@@ -8,20 +9,28 @@ export async function postJsonWithRetry<T>(params: {
 }): Promise<T> {
   const res = await retryAsync(
     async () => {
-      const res = await fetch(params.url, {
-        method: "POST",
-        headers: params.headers,
-        body: JSON.stringify(params.body),
+      const { response, release } = await fetchWithPrivateNetworkAccess({
+        url: params.url,
+        init: {
+          method: "POST",
+          headers: params.headers,
+          body: JSON.stringify(params.body),
+        },
+        auditContext: "memory.embeddings.batch.post",
       });
-      if (!res.ok) {
-        const text = await res.text();
-        const err = new Error(`${params.errorPrefix}: ${res.status} ${text}`) as Error & {
-          status?: number;
-        };
-        err.status = res.status;
-        throw err;
+      try {
+        if (!response.ok) {
+          const text = await response.text();
+          const err = new Error(`${params.errorPrefix}: ${response.status} ${text}`) as Error & {
+            status?: number;
+          };
+          err.status = response.status;
+          throw err;
+        }
+        return (await response.json()) as T;
+      } finally {
+        await release();
       }
-      return res;
     },
     {
       attempts: 3,
@@ -34,5 +43,5 @@ export async function postJsonWithRetry<T>(params: {
       },
     },
   );
-  return (await res.json()) as T;
+  return res;
 }
