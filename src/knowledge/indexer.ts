@@ -114,7 +114,7 @@ export async function indexSingleFile(params: {
   const raw = await fs.readFile(params.filePath, "utf-8");
   const { frontmatter, body } = extractFrontmatter(raw);
   const chunks = chunkMarkdownByHeadings(raw);
-  const scopeId = buildDocumentScopeId(params.relativePath);
+  const scopeId = buildDocumentScopeId(params.relativePath, params.vaultName);
   deleteSoulMemoryScopeItems({
     agentId: params.agentId,
     scopeType: "document",
@@ -161,11 +161,10 @@ export async function removeFileFromIndex(params: {
   relativePath: string;
   vaultName: string;
 }): Promise<void> {
-  void params.vaultName;
   deleteSoulMemoryScopeItems({
     agentId: params.agentId,
     scopeType: "document",
-    scopeId: buildDocumentScopeId(params.relativePath),
+    scopeId: buildDocumentScopeId(params.relativePath, params.vaultName),
   });
 }
 
@@ -213,8 +212,13 @@ export async function syncConfiguredKnowledgeBases(params: {
   }
 }
 
-function buildDocumentScopeId(relativePath: string): string {
-  return `obsidian:${relativePath}`;
+function buildDocumentScopeId(relativePath: string, vaultName: string): string {
+  const normalizedVault = vaultName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `obsidian:${normalizedVault || "vault"}:${relativePath}`;
 }
 
 async function collectMarkdownFiles(root: string, exclude: string[]): Promise<string[]> {

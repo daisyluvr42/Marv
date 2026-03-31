@@ -254,7 +254,9 @@ function openSoulMemoryDb(agentId: string): DatabaseSync {
   const dbPath = resolveSoulMemoryDbPath(agentId);
   fsSync.mkdirSync(path.dirname(dbPath), { recursive: true });
   const { DatabaseSync } = requireNodeSqlite();
-  return new DatabaseSync(dbPath);
+  const db = new DatabaseSync(dbPath);
+  db.exec("PRAGMA busy_timeout = 5000;");
+  return db;
 }
 
 function prepareDeleteVectorStmt(db: DatabaseSync): { run: (memoryId: string) => void } | null {

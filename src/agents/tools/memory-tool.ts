@@ -3,7 +3,6 @@ import type { MarvConfig } from "../../core/config/config.js";
 import type { MemoryCitationsMode } from "../../core/config/types.memory.js";
 import { syncConfiguredKnowledgeBases } from "../../knowledge/indexer.js";
 import { resolveMemoryBackendConfig } from "../../memory/backend-config.js";
-import { enqueueDistillation } from "../../memory/experience/experience-distiller.js";
 import { getMemorySearchManager } from "../../memory/index.js";
 import { SMALL_TALK_RE } from "../../memory/small-talk.js";
 import {
@@ -16,6 +15,7 @@ import {
   parseSoulMemoryPath,
   querySoulArchive,
   querySoulMemoryMulti,
+  writeSoulMemory,
   type SoulMemoryConfig,
   type SoulMemoryQueryResult,
   type SoulArchiveQueryResult,
@@ -377,7 +377,7 @@ export function createMemoryWriteTool(options: {
   if (!ctx) {
     return null;
   }
-  const { agentId, cfg } = ctx;
+  const { agentId } = ctx;
   return {
     label: "Memory Write",
     name: "memory_write",
@@ -419,32 +419,31 @@ export function createMemoryWriteTool(options: {
         });
       }
 
-      // Agent writes are mediated through the distillation pipeline (agent is read-only
-      // with respect to Soul Memory). The distiller decides what to retain and how.
-      const distillContent = [
-        `[${kind}] ${heuristics.normalizedContent}`,
-        `scope: ${scopeType}/${scopeId}`,
-        source ? `source: ${source}` : "",
-        confidence != null ? `confidence: ${confidence}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      enqueueDistillation(
+      const item = writeSoulMemory({
         agentId,
-        {
-          source: "reflect",
-          content: distillContent,
-          timestamp: Date.now(),
+        scopeType,
+        scopeId,
+        kind,
+        content: heuristics.normalizedContent,
+        confidence: confidence ?? undefined,
+        source: source ?? undefined,
+        metadata: {
+          sessionKey: options.agentSessionKey,
+          toolOrigin: "memory_write",
         },
-        { cfg },
-      );
+      });
+
+      if (!item) {
+        return jsonResult({
+          ok: false,
+          error: "memory write returned null (empty content or write failure)",
+        });
+      }
 
       return jsonResult({
         ok: true,
-        queued: true,
+        id: item.id,
         classification: heuristics.classification,
-        notice: "Memory note queued for distillation",
       });
     },
   };

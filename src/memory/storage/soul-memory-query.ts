@@ -184,6 +184,15 @@ export function querySoulMemoryMulti(params: {
         }
       }
 
+      // Hard scope isolation: exclude items from unrelated scopes entirely.
+      // Global, user, and document scopes are shared by design and pass through.
+      const isActiveScope = activeScopeKeySet.has(scopeKey(item.scopeType, item.scopeId));
+      const isSharedScope =
+        item.scopeType === "global" || item.scopeType === "user" || item.scopeType === "document";
+      if (!isActiveScope && !isSharedScope) {
+        continue;
+      }
+
       const decayFactor = 1;
       const clarityScore = clamp(item.confidence, 0, 1);
 
@@ -333,7 +342,11 @@ export function querySoulMemoryMulti(params: {
     for (const entry of ranked) {
       entry.references = referencesByMemoryId.get(entry.id) ?? [];
     }
-    reinforceRetrievedItems(db, ranked, nowMs);
+    reinforceRetrievedItems(
+      db,
+      ranked.map((r) => ({ id: r.id, wasRecallBoosted: r.wasRecallBoosted, source: r.source })),
+      nowMs,
+    );
     recordScopeHits(db, ranked, activeScopeId, nowMs);
 
     // Annotate results with unresolved conflict IDs

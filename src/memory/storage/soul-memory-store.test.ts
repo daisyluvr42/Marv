@@ -443,7 +443,7 @@ describe("soul-memory-store", () => {
     expect(linked?.clusterScore).toBeGreaterThan(0);
   });
 
-  it("applies strong cross-scope penalty for unrelated memories", () => {
+  it("hard-filters unrelated cross-scope memories", () => {
     writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
@@ -468,15 +468,13 @@ describe("soul-memory-store", () => {
       topK: 2,
       minScore: 0,
     });
-    expect(results).toHaveLength(2);
+    // Cross-scope items are hard-filtered, not just penalized
+    expect(results).toHaveLength(1);
     expect(results[0]?.scopeId).toBe("main");
     expect(results[0]?.scopePenalty).toBeCloseTo(1);
-    expect(results[1]?.scopeId).toBe("other");
-    expect(results[1]?.scopePenalty).toBeCloseTo(0.2);
-    expect((results[0]?.score ?? 0) > (results[1]?.score ?? 0)).toBe(true);
   });
 
-  it("applies configurable scope penalty coefficients", () => {
+  it("applies configurable scope penalty to shared-scope items while hard-filtering cross-scope", () => {
     writeSoulMemory({
       agentId: "main",
       scopeType: "agent",
@@ -485,6 +483,16 @@ describe("soul-memory-store", () => {
       content: "ops runbook sync policy",
       source: "manual_log",
     });
+    // global scope items pass the hard filter with soft penalty
+    writeSoulMemory({
+      agentId: "main",
+      scopeType: "global",
+      scopeId: "shared",
+      kind: "note",
+      content: "ops runbook sync policy global",
+      source: "manual_log",
+    });
+    // project scope items are hard-filtered out
     writeSoulMemory({
       agentId: "main",
       scopeType: "project",
@@ -498,15 +506,18 @@ describe("soul-memory-store", () => {
       agentId: "main",
       scopes: [{ scopeType: "agent", scopeId: "main", weight: 1 }],
       query: "ops runbook sync policy",
-      topK: 2,
+      topK: 3,
       minScore: 0,
       soulConfig: {
-        crossScopePenalty: 0.55,
+        globalScopePenalty: 0.55,
       },
     });
+    // project:other is hard-filtered; global:shared passes with soft penalty
     expect(results).toHaveLength(2);
-    const crossScope = results.find((entry) => entry.scopeId === "other");
-    expect(crossScope?.scopePenalty).toBeCloseTo(0.55);
+    const globalItem = results.find((entry) => entry.scopeType === "global");
+    expect(globalItem?.scopePenalty).toBeCloseTo(0.55);
+    const projectItem = results.find((entry) => entry.scopeType === "project");
+    expect(projectItem).toBeUndefined();
   });
 
   it("no longer boosts dormant memories — all items are palace with no recall boost", () => {

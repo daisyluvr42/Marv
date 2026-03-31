@@ -1,6 +1,11 @@
 import type { DatabaseSync } from "node:sqlite";
+import { SOURCE_RUNTIME_EVENT } from "../storage/soul-memory-types.js";
+
 export const REINFORCEMENT_LOG_WEIGHT = 0.2;
 export const SOUL_MEMORY_SCOPE_HITS_TABLE = "memory_scope_hits";
+
+/** Maximum confidence that runtime_event items can reach through reinforcement. */
+const RUNTIME_EVENT_CONFIDENCE_CAP = 0.65;
 
 const MEMORY_ITEMS_TABLE = "memory_items";
 
@@ -25,7 +30,7 @@ export function computeReinforcementFactor(
 
 export function reinforceRetrievedItems(
   db: DatabaseSync,
-  results: Array<{ id: string; wasRecallBoosted: boolean }>,
+  results: Array<{ id: string; wasRecallBoosted: boolean; source?: string }>,
   nowMs: number,
   options?: { memoryItemsTable?: string },
 ): void {
@@ -38,10 +43,20 @@ export function reinforceRetrievedItems(
       "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
       "confidence = 1.0 WHERE id = ?",
   );
+  const boostedCapped = db.prepare(
+    `UPDATE ${memoryItemsTable} SET ` +
+      "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
+      "confidence = MIN(?, confidence + 0.05) WHERE id = ?",
+  );
   const reinforce = db.prepare(
     `UPDATE ${memoryItemsTable} SET ` +
       "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
       "confidence = MIN(1.0, confidence + 0.05) WHERE id = ?",
+  );
+  const reinforceCapped = db.prepare(
+    `UPDATE ${memoryItemsTable} SET ` +
+      "last_accessed_at = ?, last_reinforced_at = ?, reinforcement_count = reinforcement_count + 1, " +
+      "confidence = MIN(?, confidence + 0.05) WHERE id = ?",
   );
   const handled = new Set<string>();
   for (const result of results) {
@@ -50,11 +65,20 @@ export function reinforceRetrievedItems(
       continue;
     }
     handled.add(itemId);
+    const isRuntimeEvent = result.source === SOURCE_RUNTIME_EVENT;
     if (result.wasRecallBoosted) {
-      boosted.run(nowMs, nowMs, itemId);
+      if (isRuntimeEvent) {
+        boostedCapped.run(nowMs, nowMs, RUNTIME_EVENT_CONFIDENCE_CAP, itemId);
+      } else {
+        boosted.run(nowMs, nowMs, itemId);
+      }
       continue;
     }
-    reinforce.run(nowMs, nowMs, itemId);
+    if (isRuntimeEvent) {
+      reinforceCapped.run(nowMs, nowMs, RUNTIME_EVENT_CONFIDENCE_CAP, itemId);
+    } else {
+      reinforce.run(nowMs, nowMs, itemId);
+    }
   }
 }
 

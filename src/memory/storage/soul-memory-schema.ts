@@ -26,6 +26,7 @@ export function openSoulMemoryDb(agentId: string): DatabaseSync {
   const { DatabaseSync } = requireNodeSqlite();
   const db = new DatabaseSync(dbPath, { allowExtension: true });
   db.exec("PRAGMA foreign_keys = ON;");
+  db.exec("PRAGMA busy_timeout = 5000;");
   ensureSoulMemorySchema(db, dbPath);
   return db;
 }

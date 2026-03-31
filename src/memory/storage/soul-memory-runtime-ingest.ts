@@ -59,7 +59,7 @@ export function ingestInboundMessageToSoulMemory(params: {
       content,
       summary: relationship ? `Relationship memory: ${content}` : `User said: ${content}`,
       source: "runtime_event",
-      recordKind: relationship ? "relationship" : "fact",
+      recordKind: relationship ? "relationship" : "experience",
       nowMs: params.nowMs,
       skipArchive: true,
       metadata: {
@@ -74,7 +74,7 @@ export function ingestInboundMessageToSoulMemory(params: {
       },
     });
   } catch (err) {
-    log.debug(`Failed inbound structured memory ingestion: ${String(err)}`);
+    log.warn(`Failed inbound structured memory ingestion: ${String(err)}`);
   }
 }
 
@@ -108,7 +108,7 @@ export function ingestOutboundMessageToSoulMemory(params: {
       content,
       summary: relationship ? `Relationship reply: ${content}` : `Assistant replied: ${content}`,
       source: "runtime_event",
-      recordKind: relationship ? "relationship" : "fact",
+      recordKind: relationship ? "relationship" : "experience",
       nowMs: params.nowMs,
       skipArchive: true,
       metadata: {
@@ -124,6 +124,6 @@ export function ingestOutboundMessageToSoulMemory(params: {
       },
     });
   } catch (err) {
-    log.debug(`Failed outbound structured memory ingestion: ${String(err)}`);
+    log.warn(`Failed outbound structured memory ingestion: ${String(err)}`);
   }
 }

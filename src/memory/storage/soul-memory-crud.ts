@@ -681,7 +681,7 @@ export function loadRecentEpisodicFragments(params: {
     const rows = db
       .prepare(
         `SELECT ${MEMORY_ITEM_SELECT_COLUMNS} FROM memory_items ` +
-          `WHERE record_kind = 'episodic' AND created_at >= ? ` +
+          `WHERE memory_type = 'episodic' AND created_at >= ? ` +
           `ORDER BY created_at DESC LIMIT ?`,
       )
       .all(cutoffMs, maxItems) as MemoryItemRow[];
