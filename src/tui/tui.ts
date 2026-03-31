@@ -34,7 +34,7 @@ import type {
   TuiOptions,
   TuiStateAccess,
 } from "./tui-types.js";
-import { buildWaitingStatusMessage, defaultWaitingPhrases } from "./tui-waiting.js";
+import { buildWaitingStatusMessage, defaultWaitingPhrases, shimmerText } from "./tui-waiting.js";
 
 export { resolveFinalAssistantText } from "./tui-formatters.js";
 export type { TuiOptions } from "./tui-types.js";
@@ -225,7 +225,6 @@ export async function runTui(opts: TuiOptions) {
   let activityStatus = "idle";
   let connectionStatus = "connecting";
   let statusTimeout: NodeJS.Timeout | null = null;
-  let statusTimer: NodeJS.Timeout | null = null;
   let statusStartedAt: number | null = null;
   let lastActivityStatus = activityStatus;
 
@@ -478,81 +477,64 @@ export async function runTui(opts: TuiOptions) {
     statusContainer.addChild(statusLoader);
   };
 
-  let waitingTick = 0;
-  let waitingTimer: NodeJS.Timeout | null = null;
-  let waitingPhrase: string | null = null;
+  let shimmerTick = 0;
+  let shimmerTimer: NodeJS.Timeout | null = null;
+  let shimmerPhrase: string | null = null;
 
   const updateBusyStatusMessage = () => {
     if (!statusLoader || !statusStartedAt) {
       return;
     }
     const elapsed = formatElapsed(statusStartedAt);
+    shimmerTick++;
 
     if (activityStatus === "waiting") {
-      waitingTick++;
       statusLoader.setMessage(
         buildWaitingStatusMessage({
           theme,
-          tick: waitingTick,
+          tick: shimmerTick,
           elapsed,
           connectionStatus,
-          phrases: waitingPhrase ? [waitingPhrase] : undefined,
+          phrases: shimmerPhrase ? [shimmerPhrase] : undefined,
         }),
       );
       return;
     }
 
-    statusLoader.setMessage(`${activityStatus} • ${elapsed} | ${connectionStatus}`);
+    // Apply shimmer to all busy states (streaming, sending, running)
+    const label = `${activityStatus}…`;
+    const shimmered = shimmerText(theme, label, shimmerTick);
+    statusLoader.setMessage(`${shimmered} • ${elapsed} | ${connectionStatus}`);
   };
 
-  const startStatusTimer = () => {
-    if (statusTimer) {
-      return;
-    }
-    statusTimer = setInterval(() => {
-      if (!busyStates.has(activityStatus)) {
-        return;
-      }
-      updateBusyStatusMessage();
-    }, 1000);
-  };
-
-  const stopStatusTimer = () => {
-    if (!statusTimer) {
-      return;
-    }
-    clearInterval(statusTimer);
-    statusTimer = null;
-  };
-
-  const startWaitingTimer = () => {
-    if (waitingTimer) {
+  const startShimmerTimer = () => {
+    if (shimmerTimer) {
       return;
     }
 
     // Pick a phrase once per waiting session.
-    if (!waitingPhrase) {
+    if (!shimmerPhrase) {
       const idx = Math.floor(Math.random() * defaultWaitingPhrases.length);
-      waitingPhrase = defaultWaitingPhrases[idx] ?? defaultWaitingPhrases[0] ?? "waiting";
+      shimmerPhrase = defaultWaitingPhrases[idx] ?? defaultWaitingPhrases[0] ?? "waiting";
     }
 
-    waitingTick = 0;
+    shimmerTick = 0;
 
-    waitingTimer = setInterval(() => {
-      if (activityStatus !== "waiting") {
+    shimmerTimer = setInterval(() => {
+      if (!busyStates.has(activityStatus)) {
         return;
       }
       updateBusyStatusMessage();
     }, 120);
   };
 
-  const stopWaitingTimer = () => {
-    if (!waitingTimer) {
+  const stopShimmerTimer = () => {
+    if (!shimmerTimer) {
       return;
     }
-    clearInterval(waitingTimer);
-    waitingTimer = null;
-    waitingPhrase = null;
+    clearInterval(shimmerTimer);
+    shimmerTimer = null;
+    shimmerPhrase = null;
   };
 
   const renderStatus = () => {
@@ -562,18 +544,11 @@ export async function runTui(opts: TuiOptions) {
         statusStartedAt = Date.now();
       }
       ensureStatusLoader();
-      if (activityStatus === "waiting") {
-        stopStatusTimer();
-        startWaitingTimer();
-      } else {
-        stopWaitingTimer();
-        startStatusTimer();
-      }
+      startShimmerTimer();
       updateBusyStatusMessage();
     } else {
       statusStartedAt = null;
-      stopStatusTimer();
-      stopWaitingTimer();
+      stopShimmerTimer();
       statusLoader?.stop();
       statusLoader = null;
       ensureStatusText();
