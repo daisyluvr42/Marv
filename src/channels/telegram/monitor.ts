@@ -155,6 +155,16 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
         log(`[telegram] Failed to start exec approval handler: ${String(err)}`);
       });
     }
+    const cronMutationHandler = (bot as unknown as Record<string, unknown>)
+      .cronMutationHandler as import("./monitor/cron-mutations.js").TelegramCronMutationHandler;
+    if (cronMutationHandler) {
+      opts.abortSignal?.addEventListener("abort", () => void cronMutationHandler.stop(), {
+        once: true,
+      });
+      Promise.resolve(cronMutationHandler.start()).catch((err) => {
+        log(`[telegram] Failed to start cron mutation handler: ${String(err)}`);
+      });
+    }
 
     if (opts.useWebhook) {
       await startTelegramWebhook({

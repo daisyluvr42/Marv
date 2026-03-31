@@ -43,6 +43,7 @@ import {
 } from "./bot/helpers.js";
 import type { TelegramBotOptions } from "./bot/types.js";
 import { resolveTelegramFetch } from "./fetch.js";
+import { TelegramCronMutationHandler } from "./monitor/cron-mutations.js";
 import { TelegramExecApprovalHandler } from "./monitor/exec-approvals.js";
 
 export type { TelegramBotOptions } from "./bot/types.js";
@@ -366,9 +367,16 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     cfg,
     runtime,
   });
+  const cronMutationHandler = new TelegramCronMutationHandler({
+    bot,
+    config: telegramCfg.execApprovals,
+    cfg,
+    runtime,
+  });
 
   // Attach to the bot object so other parts can use it or shut it down.
   (bot as unknown as { execApprovalHandler: unknown }).execApprovalHandler = execApprovalHandler;
+  (bot as unknown as { cronMutationHandler: unknown }).cronMutationHandler = cronMutationHandler;
 
   return bot;
 }

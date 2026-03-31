@@ -145,6 +145,7 @@ function createHost() {
     compactionStatus: null,
     compactionClearTimer: null,
     refreshSessionsAfterChat: new Set<string>(),
+    cronMutationNotices: [],
     execApprovalQueue: [],
     execApprovalError: null,
   } as unknown as Parameters<typeof connectGateway>[0];
@@ -193,6 +194,28 @@ describe("connectGateway", () => {
     secondClient.emitEvent({ event: "presence", payload: { presence: [{ host: "active" }] } });
     expect(host.eventLogBuffer).toHaveLength(1);
     expect(host.eventLogBuffer[0]?.event).toBe("presence");
+  });
+
+  it("queues cron mutation notices from active gateway events", () => {
+    const host = createHost();
+
+    connectGateway(host);
+    const client = gatewayClientInstances[0];
+    expect(client).toBeDefined();
+
+    client.emitEvent({
+      event: "cron",
+      seq: 7,
+      payload: {
+        action: "added",
+        jobId: "job-1",
+        jobName: "Morning brief",
+        sessionTarget: "isolated",
+      },
+    });
+
+    expect(host.cronMutationNotices).toHaveLength(1);
+    expect(host.cronMutationNotices[0]?.id).toBe("cron:7:added:job-1");
   });
 
   it("ignores stale client onClose callbacks after reconnect", () => {

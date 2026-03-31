@@ -23,6 +23,7 @@ Troubleshooting: [/automation/troubleshooting](/automation/troubleshooting)
 
 - Cron runs **inside the Gateway** (not inside the model).
 - Jobs persist under `~/.marv/cron/` so restarts don’t lose schedules.
+- Agent-created cron adds/updates/removals are allowed by default and should surface as notifications in operator surfaces instead of approval prompts.
 - Two execution styles:
   - **Main session**: enqueue a system event, then run on the next heartbeat.
   - **Isolated**: run a dedicated agent turn in `cron:<jobId>`, with delivery (announce by default or none).

@@ -2,6 +2,7 @@ import type { CronConfig } from "../../core/config/types.cron.js";
 import type { HeartbeatRunResult } from "../../infra/heartbeat/heartbeat-wake.js";
 import type { CronJobListEntry } from "../health.js";
 import type {
+  CronDeliveryMode,
   CronJob,
   CronJobCreate,
   CronJobPatch,
@@ -9,12 +10,17 @@ import type {
   CronRunOutcome,
   CronRunStatus,
   CronRunTelemetry,
+  CronSessionTarget,
   CronStoreFile,
 } from "../types.js";
 
 export type CronEvent = {
   jobId: string;
+  jobName?: string;
   action: "added" | "updated" | "removed" | "started" | "finished";
+  agentId?: string;
+  sessionTarget?: CronSessionTarget;
+  deliveryMode?: CronDeliveryMode;
   runAtMs?: number;
   durationMs?: number;
   status?: CronRunStatus;

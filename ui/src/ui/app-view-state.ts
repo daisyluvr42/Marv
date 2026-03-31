@@ -1,5 +1,6 @@
 import type { EventLogEntry } from "./app-events.js";
 import type { CompactionStatus } from "./app-tool-stream.js";
+import type { CronMutationNotice } from "./controllers/cron-mutation-notice.js";
 import type { DevicePairingList } from "./controllers/devices.js";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.js";
@@ -105,6 +106,7 @@ export type AppViewState = {
   execApprovalsSelectedAgent: string | null;
   execApprovalsTarget: "gateway" | "node";
   execApprovalsTargetNodeId: string | null;
+  cronMutationNotices: CronMutationNotice[];
   execApprovalQueue: ExecApprovalRequest[];
   execApprovalBusy: boolean;
   execApprovalError: string | null;

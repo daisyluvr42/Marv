@@ -178,6 +178,29 @@ describe("before_tool_call hook integration", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  it("allows cron mutations without escalation", async () => {
+    hookRunner.hasHooks.mockReturnValue(false);
+    const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const tool = wrapToolWithBeforeToolCallHook({ name: "cron", execute } as any, {
+      agentId: "main",
+      sessionKey: "agent:main:main",
+      taskId: "task-cron-1",
+    });
+
+    await expect(
+      tool.execute("call-cron-1", {
+        action: "add",
+        job: {
+          name: "Morning brief",
+          sessionTarget: "isolated",
+          payload: { kind: "agentTurn", message: "Summarize overnight updates" },
+        },
+      }),
+    ).resolves.toBeDefined();
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks resource transfer messages by default", async () => {
     hookRunner.hasHooks.mockReturnValue(false);
     const execute = vi.fn().mockResolvedValue({ content: [], details: { ok: true } });

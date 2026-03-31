@@ -76,6 +76,7 @@ import { renderCalendar } from "./views/calendar.js";
 import { renderChannels } from "./views/channels.js";
 import { renderChat } from "./views/chat.js";
 import { renderConfig } from "./views/config.js";
+import { renderCronMutationNotices } from "./views/cron-mutation-notice.js";
 import { renderCron } from "./views/cron.js";
 import { renderDebug } from "./views/debug.js";
 import { renderDocuments } from "./views/documents.js";
@@ -1212,6 +1213,7 @@ export function renderApp(state: AppViewState) {
             : nothing
         }
       </main>
+      ${renderCronMutationNotices(state)}
       ${renderExecApprovalPrompt(state)}
       ${renderGatewayUrlConfirmation(state)}
     </div>

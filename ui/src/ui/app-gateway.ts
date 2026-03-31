@@ -13,6 +13,12 @@ import { loadAgents } from "./controllers/agents.js";
 import { loadAssistantIdentity } from "./controllers/assistant-identity.js";
 import { loadChatHistory } from "./controllers/chat.js";
 import { handleChatEvent, type ChatEventPayload } from "./controllers/chat.js";
+import type { CronMutationNotice } from "./controllers/cron-mutation-notice.js";
+import {
+  addCronMutationNotice,
+  parseCronMutationNotice,
+  removeCronMutationNotice,
+} from "./controllers/cron-mutation-notice.js";
 import { loadDevices } from "./controllers/devices.js";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
 import {
@@ -54,6 +60,7 @@ type GatewayHost = {
   sessionKey: string;
   chatRunId: string | null;
   refreshSessionsAfterChat: Set<string>;
+  cronMutationNotices: CronMutationNotice[];
   execApprovalQueue: ExecApprovalRequest[];
   execApprovalError: string | null;
 };
@@ -121,6 +128,7 @@ export function connectGateway(host: GatewayHost) {
   host.lastError = null;
   host.hello = null;
   host.connected = false;
+  host.cronMutationNotices = [];
   host.execApprovalQueue = [];
   host.execApprovalError = null;
 
@@ -251,8 +259,21 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
     return;
   }
 
-  if (evt.event === "cron" && host.tab === "operations" && host.operationsSection === "cron") {
-    void loadCron(host as unknown as Parameters<typeof loadCron>[0]);
+  if (evt.event === "cron") {
+    const notice = parseCronMutationNotice(evt.payload, evt.seq);
+    if (notice) {
+      host.cronMutationNotices = addCronMutationNotice(host.cronMutationNotices, notice);
+      window.setTimeout(
+        () => {
+          host.cronMutationNotices = removeCronMutationNotice(host.cronMutationNotices, notice.id);
+        },
+        Math.max(0, notice.expiresAtMs - Date.now() + 250),
+      );
+    }
+    if (host.tab === "operations" && host.operationsSection === "cron") {
+      void loadCron(host as unknown as Parameters<typeof loadCron>[0]);
+    }
+    return;
   }
 
   if (evt.event === "device.pair.requested" || evt.event === "device.pair.resolved") {

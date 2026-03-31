@@ -119,7 +119,12 @@ export async function add(state: CronServiceState, input: CronJobCreate) {
 
     emit(state, {
       jobId: job.id,
+      jobName: job.name,
       action: "added",
+      agentId: job.agentId,
+      sessionKey: job.sessionKey,
+      sessionTarget: job.sessionTarget,
+      deliveryMode: job.delivery?.mode,
       nextRunAtMs: job.state.nextRunAtMs,
     });
     return job;
@@ -173,7 +178,12 @@ export async function update(state: CronServiceState, id: string, patch: CronJob
     armTimer(state);
     emit(state, {
       jobId: id,
+      jobName: job.name,
       action: "updated",
+      agentId: job.agentId,
+      sessionKey: job.sessionKey,
+      sessionTarget: job.sessionTarget,
+      deliveryMode: job.delivery?.mode,
       nextRunAtMs: job.state.nextRunAtMs,
     });
     return job;
@@ -188,12 +198,21 @@ export async function remove(state: CronServiceState, id: string) {
     if (!state.store) {
       return { ok: false, removed: false } as const;
     }
+    const removedJob = state.store.jobs.find((j) => j.id === id);
     state.store.jobs = state.store.jobs.filter((j) => j.id !== id);
     const removed = (state.store.jobs.length ?? 0) !== before;
     await persist(state);
     armTimer(state);
     if (removed) {
-      emit(state, { jobId: id, action: "removed" });
+      emit(state, {
+        jobId: id,
+        jobName: removedJob?.name,
+        action: "removed",
+        agentId: removedJob?.agentId,
+        sessionKey: removedJob?.sessionKey,
+        sessionTarget: removedJob?.sessionTarget,
+        deliveryMode: removedJob?.delivery?.mode,
+      });
     }
     return { ok: true, removed } as const;
   });

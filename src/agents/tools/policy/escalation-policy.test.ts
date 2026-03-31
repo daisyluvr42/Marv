@@ -30,6 +30,21 @@ describe("escalation-policy", () => {
     );
   });
 
+  it("does not require escalation for cron mutations", () => {
+    expect(
+      classifyEscalationRequirement({
+        toolName: "cron",
+        params: {
+          action: "add",
+          job: {
+            name: "Morning brief",
+            delivery: { mode: "webhook", to: "https://example.com/hook" },
+          },
+        },
+      }),
+    ).toEqual({ category: "none" });
+  });
+
   it("classifies secret-bearing message sends as resource transfer", () => {
     expect(
       classifyEscalationRequirement({

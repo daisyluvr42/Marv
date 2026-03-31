@@ -56,6 +56,7 @@ import {
 import type { AppViewState } from "./app-view-state.js";
 import { normalizeAssistantIdentity } from "./assistant-identity.js";
 import { loadAssistantIdentity as loadAssistantIdentityInternal } from "./controllers/assistant-identity.js";
+import type { CronMutationNotice } from "./controllers/cron-mutation-notice.js";
 import type { DevicePairingList } from "./controllers/devices.js";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.js";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.js";
@@ -192,6 +193,7 @@ export class MarvApp extends LitElement {
   @state() execApprovalsSelectedAgent: string | null = null;
   @state() execApprovalsTarget: "gateway" | "node" = "gateway";
   @state() execApprovalsTargetNodeId: string | null = null;
+  @state() cronMutationNotices: CronMutationNotice[] = [];
   @state() execApprovalQueue: ExecApprovalRequest[] = [];
   @state() execApprovalBusy = false;
   @state() execApprovalError: string | null = null;

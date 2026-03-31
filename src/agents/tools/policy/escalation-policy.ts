@@ -22,7 +22,6 @@ const GATEWAY_ADMIN_ACTIONS = new Set([
   "update.rollback",
 ]);
 
-const CRON_ADMIN_ACTIONS = new Set(["add", "update", "remove"]);
 const MESSAGE_ACCESS_GRANT_ACTIONS = new Set(["addParticipant", "role-add"]);
 
 const SECRET_PATTERN =
@@ -171,33 +170,9 @@ function classifyGateway(record: Record<string, unknown> | null): EscalationRequ
 }
 
 function classifyCron(record: Record<string, unknown> | null): EscalationRequirement {
-  const action = readString(record, "action");
-  if (!action) {
-    return { category: "none" };
-  }
-  if (CRON_ADMIN_ACTIONS.has(action)) {
-    return {
-      category: "admin",
-      requiredLevel: "admin",
-      reason: `Cron action "${action}" changes durable automation state.`,
-      scope: "cron",
-    };
-  }
-  const job = readNestedRecord(record, "job");
-  const patch = readNestedRecord(record, "patch");
-  const joined = [
-    ...extractTextFragments(record),
-    ...extractTextFragments(job),
-    ...extractTextFragments(patch),
-  ].join("\n");
-  if (looksLikeSecretTransfer(joined) || looksLikeValueTransfer(joined)) {
-    return {
-      category: "resource_transfer",
-      requiredLevel: "admin",
-      reason: `Cron action "${action}" appears to create or trigger outward transfer of value or access.`,
-      scope: "cron",
-    };
-  }
+  // Cron mutations are durable, but product policy treats them as notify-and-audit
+  // operations rather than escalation-gated ones.
+  void record;
   return { category: "none" };
 }
 

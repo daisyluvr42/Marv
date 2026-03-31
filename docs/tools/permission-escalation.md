@@ -27,7 +27,6 @@ Escalation is reserved for actions with higher blast radius:
 
 - destructive or system-level `exec`
 - control-plane changes through `gateway`
-- persistent automation through `cron`
 - resource transfer, access gifting, or authority delegation
 
 ## Levels
@@ -79,6 +78,10 @@ Without explicit approval, it should refuse actions like:
 
 If the model is blocked here, it should request escalation rather than trying to
 work around the policy.
+
+Cron mutations are handled differently: agent-created `cron add/update/remove`
+operations are allowed by default and should be surfaced as operator
+notifications instead of approval prompts.
 
 ## Related docs
 
