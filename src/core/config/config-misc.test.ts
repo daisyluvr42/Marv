@@ -72,6 +72,43 @@ describe("web search provider config", () => {
 
     expect(res.ok).toBe(true);
   });
+
+  it("accepts tavily provider and config", () => {
+    const res = validateConfigObject({
+      tools: {
+        web: {
+          search: {
+            enabled: true,
+            provider: "tavily",
+            tavily: {
+              apiKey: "tvly-test-key",
+              searchDepth: "advanced",
+              includeAnswer: true,
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects invalid tavily search depth", () => {
+    const res = validateConfigObject({
+      tools: {
+        web: {
+          search: {
+            provider: "tavily",
+            tavily: {
+              searchDepth: "deep",
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(false);
+  });
 });
 
 describe("memory soul tuning schema", () => {
