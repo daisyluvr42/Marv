@@ -1,6 +1,7 @@
 import type { StreamFn } from "@mariozechner/pi-agent-core";
 import type { SimpleStreamOptions } from "@mariozechner/pi-ai";
 import { streamSimple } from "@mariozechner/pi-ai";
+import type { ThinkLevel } from "../../auto-reply/support/thinking.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { log } from "./logger.js";
 
@@ -107,6 +108,33 @@ function createStreamFnWithExtraParams(
   return wrappedStreamFn;
 }
 
+function createPayloadFieldWrapper(
+  baseStreamFn: StreamFn | undefined,
+  fields: Record<string, unknown>,
+): StreamFn | undefined {
+  const entries = Object.entries(fields).filter(([, value]) => value !== undefined);
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  const underlying = baseStreamFn ?? streamSimple;
+  return (model, context, options) => {
+    const originalOnPayload = options?.onPayload;
+    return underlying(model, context, {
+      ...options,
+      onPayload: (payload) => {
+        if (payload && typeof payload === "object") {
+          const payloadRecord = payload as Record<string, unknown>;
+          for (const [key, value] of entries) {
+            payloadRecord[key] = value;
+          }
+        }
+        originalOnPayload?.(payload);
+      },
+    });
+  };
+}
+
 function isDirectOpenAIBaseUrl(baseUrl: unknown): boolean {
   if (typeof baseUrl !== "string" || !baseUrl.trim()) {
     return true;
@@ -119,6 +147,66 @@ function isDirectOpenAIBaseUrl(baseUrl: unknown): boolean {
     const normalized = baseUrl.toLowerCase();
     return normalized.includes("api.openai.com") || normalized.includes("chatgpt.com");
   }
+}
+
+function isPrivateNetworkBaseUrl(baseUrl: unknown): boolean {
+  if (typeof baseUrl !== "string" || !baseUrl.trim()) {
+    return false;
+  }
+
+  try {
+    const url = new URL(baseUrl);
+    const host = url.hostname.trim().toLowerCase();
+    if (host === "localhost" || host === "::1") {
+      return true;
+    }
+    if (/^127(?:\.\d{1,3}){3}$/.test(host)) {
+      return true;
+    }
+    if (/^10(?:\.\d{1,3}){3}$/.test(host)) {
+      return true;
+    }
+    if (/^192\.168(?:\.\d{1,3}){2}$/.test(host)) {
+      return true;
+    }
+    const match172 = /^172\.(\d{1,3})(?:\.\d{1,3}){2}$/.exec(host);
+    if (match172) {
+      const second = Number(match172[1]);
+      return second >= 16 && second <= 31;
+    }
+    return host.endsWith(".local");
+  } catch {
+    return false;
+  }
+}
+
+function isLikelyLocalQwenOpenAiModel(model: {
+  api?: unknown;
+  baseUrl?: unknown;
+  id?: unknown;
+}): boolean {
+  if (model.api !== "openai-completions") {
+    return false;
+  }
+  if (!isPrivateNetworkBaseUrl(model.baseUrl)) {
+    return false;
+  }
+  const modelId = typeof model.id === "string" ? model.id.trim().toLowerCase() : "";
+  return modelId.startsWith("qwen");
+}
+
+function resolveThinkPayloadValue(params: {
+  extraParams: Record<string, unknown> | undefined;
+  model?: { api?: unknown; baseUrl?: unknown; id?: unknown };
+  thinkLevel?: ThinkLevel;
+}): boolean | undefined {
+  if (typeof params.extraParams?.think === "boolean") {
+    return params.extraParams.think;
+  }
+  if (!params.model || !isLikelyLocalQwenOpenAiModel(params.model)) {
+    return undefined;
+  }
+  return params.thinkLevel !== undefined ? params.thinkLevel !== "off" : false;
 }
 
 function shouldForceResponsesStore(model: {
@@ -291,6 +379,10 @@ export function applyExtraParamsToAgent(
   provider: string,
   modelId: string,
   extraParamsOverride?: Record<string, unknown>,
+  options?: {
+    model?: { api?: unknown; baseUrl?: unknown; id?: unknown };
+    thinkLevel?: ThinkLevel;
+  },
 ): void {
   const extraParams = resolveExtraParams({
     cfg,
@@ -309,6 +401,22 @@ export function applyExtraParamsToAgent(
   if (wrappedStreamFn) {
     log.debug(`applying extraParams to agent streamFn for ${provider}/${modelId}`);
     agent.streamFn = wrappedStreamFn;
+  }
+
+  const thinkPayloadValue = resolveThinkPayloadValue({
+    extraParams: merged,
+    model: options?.model,
+    thinkLevel: options?.thinkLevel,
+  });
+  const payloadWrapper =
+    thinkPayloadValue === undefined
+      ? undefined
+      : createPayloadFieldWrapper(agent.streamFn, { think: thinkPayloadValue });
+  if (payloadWrapper) {
+    log.debug(
+      `applying think=${String(thinkPayloadValue)} payload flag for ${provider}/${modelId}`,
+    );
+    agent.streamFn = payloadWrapper;
   }
 
   const anthropicBetas = resolveAnthropicBetas(merged, provider, modelId);

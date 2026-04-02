@@ -282,4 +282,139 @@ describe("applyExtraParamsToAgent", () => {
 
     expect(payload.store).toBe(false);
   });
+
+  it("injects think=false for local openai-compatible qwen models when thinking is off", () => {
+    const payload: Record<string, unknown> = {};
+    const baseStreamFn: StreamFn = (_model, _context, options) => {
+      options?.onPayload?.(payload);
+      return {} as ReturnType<StreamFn>;
+    };
+    const agent = { streamFn: baseStreamFn };
+
+    applyExtraParamsToAgent(agent, undefined, "local", "qwen3.5-122b", undefined, {
+      model: {
+        api: "openai-completions",
+        provider: "local",
+        id: "qwen3.5-122b",
+        baseUrl: "http://192.168.0.42:11434/v1",
+      } as Model<"openai-completions">,
+      thinkLevel: "off",
+    });
+
+    const model = {
+      api: "openai-completions",
+      provider: "local",
+      id: "qwen3.5-122b",
+      baseUrl: "http://192.168.0.42:11434/v1",
+    } as Model<"openai-completions">;
+    const context: Context = { messages: [] };
+
+    void agent.streamFn?.(model, context, {});
+
+    expect(payload.think).toBe(false);
+  });
+
+  it("injects think=true for local openai-compatible qwen models when thinking is enabled", () => {
+    const payload: Record<string, unknown> = {};
+    const baseStreamFn: StreamFn = (_model, _context, options) => {
+      options?.onPayload?.(payload);
+      return {} as ReturnType<StreamFn>;
+    };
+    const agent = { streamFn: baseStreamFn };
+
+    applyExtraParamsToAgent(agent, undefined, "local", "qwen3.5-35b", undefined, {
+      model: {
+        api: "openai-completions",
+        provider: "local",
+        id: "qwen3.5-35b",
+        baseUrl: "http://192.168.0.42:11434/v1",
+      } as Model<"openai-completions">,
+      thinkLevel: "low",
+    });
+
+    const model = {
+      api: "openai-completions",
+      provider: "local",
+      id: "qwen3.5-35b",
+      baseUrl: "http://192.168.0.42:11434/v1",
+    } as Model<"openai-completions">;
+    const context: Context = { messages: [] };
+
+    void agent.streamFn?.(model, context, {});
+
+    expect(payload.think).toBe(true);
+  });
+
+  it("does not inject think for non-local qwen models", () => {
+    const payload: Record<string, unknown> = {};
+    const baseStreamFn: StreamFn = (_model, _context, options) => {
+      options?.onPayload?.(payload);
+      return {} as ReturnType<StreamFn>;
+    };
+    const agent = { streamFn: baseStreamFn };
+
+    applyExtraParamsToAgent(agent, undefined, "openrouter", "qwen/qwen3-32b", undefined, {
+      model: {
+        api: "openai-completions",
+        provider: "openrouter",
+        id: "qwen/qwen3-32b",
+        baseUrl: "https://openrouter.ai/api/v1",
+      } as Model<"openai-completions">,
+      thinkLevel: "off",
+    });
+
+    const model = {
+      api: "openai-completions",
+      provider: "openrouter",
+      id: "qwen/qwen3-32b",
+      baseUrl: "https://openrouter.ai/api/v1",
+    } as Model<"openai-completions">;
+    const context: Context = { messages: [] };
+
+    void agent.streamFn?.(model, context, {});
+
+    expect(payload).not.toHaveProperty("think");
+  });
+
+  it("prefers explicit params.think over inferred local qwen defaults", () => {
+    const payload: Record<string, unknown> = {};
+    const baseStreamFn: StreamFn = (_model, _context, options) => {
+      options?.onPayload?.(payload);
+      return {} as ReturnType<StreamFn>;
+    };
+    const agent = { streamFn: baseStreamFn };
+    const cfg = {
+      models: {
+        metadata: {
+          "local/qwen3.5-122b": {
+            params: {
+              think: false,
+            },
+          },
+        },
+      },
+    };
+
+    applyExtraParamsToAgent(agent, cfg, "local", "qwen3.5-122b", undefined, {
+      model: {
+        api: "openai-completions",
+        provider: "local",
+        id: "qwen3.5-122b",
+        baseUrl: "http://192.168.0.42:11434/v1",
+      } as Model<"openai-completions">,
+      thinkLevel: "high",
+    });
+
+    const model = {
+      api: "openai-completions",
+      provider: "local",
+      id: "qwen3.5-122b",
+      baseUrl: "http://192.168.0.42:11434/v1",
+    } as Model<"openai-completions">;
+    const context: Context = { messages: [] };
+
+    void agent.streamFn?.(model, context, {});
+
+    expect(payload.think).toBe(false);
+  });
 });

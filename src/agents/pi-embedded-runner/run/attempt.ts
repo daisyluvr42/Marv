@@ -696,6 +696,10 @@ export async function runEmbeddedAttempt(
         params.provider,
         params.modelId,
         params.streamParams,
+        {
+          model: params.model,
+          thinkLevel: params.thinkLevel,
+        },
       );
 
       if (cacheTrace) {
