@@ -221,6 +221,12 @@ describe("gateway server sessions", () => {
       to: "+1555",
       accountId: "work",
     });
+    expect(main).toEqual(
+      expect.objectContaining({
+        updatedAt: expect.any(Number),
+      }),
+    );
+    expect(main).not.toHaveProperty("lastActiveAt");
 
     const active = await rpcReq<{
       sessions: Array<{ key: string }>;

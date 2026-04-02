@@ -7,7 +7,7 @@ if [[ -n "${IOS_DEVELOPMENT_TEAM:-}" ]]; then
 fi
 
 preferred_team="${IOS_PREFERRED_TEAM_ID:-${MARV_IOS_DEFAULT_TEAM_ID:-}}"
-allow_keychain_fallback="${IOS_ALLOW_KEYCHAIN_TEAM_FALLBACK:-0}"
+allow_keychain_fallback="${IOS_ALLOW_KEYCHAIN_TEAM_FALLBACK:-1}"
 prefer_non_free_team="${IOS_PREFER_NON_FREE_TEAM:-1}"
 
 declare -a team_ids=()
@@ -27,6 +27,21 @@ append_team() {
 
   team_ids+=("$candidate_id")
   team_is_free+=("$candidate_is_free")
+}
+
+append_profile_teams() {
+  local profile_dir="$1"
+  local profile_path
+  [[ -d "$profile_dir" ]] || return 0
+
+  while IFS= read -r -d '' profile_path; do
+    local team
+    team="$(
+      security cms -D -i "$profile_path" 2>/dev/null \
+        | plutil -extract TeamIdentifier.0 raw -o - - 2>/dev/null || true
+    )"
+    [[ -z "$team" ]] || append_team "$team" "0"
+  done < <(find "$profile_dir" -maxdepth 1 -name '*.mobileprovision' -print0 2>/dev/null)
 }
 
 while IFS=$'\t' read -r team_id is_free; do
@@ -74,14 +89,20 @@ if [[ ${#team_ids[@]} -eq 0 && "$allow_keychain_fallback" == "1" ]]; then
     append_team "$team" "0"
   done < <(
     security find-identity -p codesigning -v 2>/dev/null \
+      | grep -E 'Apple Development:|iPhone Developer:' \
       | grep -Eo '\([A-Z0-9]{10}\)' \
       | tr -d '()' || true
   )
 fi
 
 if [[ ${#team_ids[@]} -eq 0 ]]; then
-  echo "No Apple Team ID found in Xcode accounts. Open Xcode -> Settings -> Accounts and sign in, then retry." >&2
-  echo "(Set IOS_ALLOW_KEYCHAIN_TEAM_FALLBACK=1 to allow keychain-only team detection.)" >&2
+  append_profile_teams "${HOME}/Library/Developer/Xcode/UserData/Provisioning Profiles"
+  append_profile_teams "${HOME}/Library/MobileDevice/Provisioning Profiles"
+fi
+
+if [[ ${#team_ids[@]} -eq 0 ]]; then
+  echo "No Apple Team ID found in Xcode accounts, Apple Development signing identities, or local provisioning profiles." >&2
+  echo "Open Xcode -> Settings -> Accounts and sign in, or create an Apple Development certificate, then retry." >&2
   exit 1
 fi
 

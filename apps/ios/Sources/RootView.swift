@@ -18,5 +18,7 @@ struct RootView: View {
             SettingsTab()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
     }
 }

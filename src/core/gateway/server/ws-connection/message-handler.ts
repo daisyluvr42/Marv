@@ -614,6 +614,12 @@ export function attachGatewayWsMessageHandler(params: {
           return;
         }
 
+        const isFirstPartyIosClient =
+          connectParams.client.id === GATEWAY_CLIENT_IDS.IOS_APP &&
+          connectParams.client.platform === "ios" &&
+          (connectParams.client.mode === "ui" || connectParams.client.mode === "node");
+        const canSilentAutoApprovePairing =
+          isLocalClient || (isFirstPartyIosClient && sharedAuthOk);
         const skipPairing = allowControlUiBypass && sharedAuthOk;
         if (device && devicePublicKey && !skipPairing) {
           const requirePairing = async (reason: string, _paired?: { deviceId: string }) => {
@@ -627,7 +633,7 @@ export function attachGatewayWsMessageHandler(params: {
               role,
               scopes,
               remoteIp: reportedClientIp,
-              silent: isLocalClient,
+              silent: canSilentAutoApprovePairing,
             });
             const context = buildRequestContext();
             if (pairing.request.silent === true) {

@@ -795,6 +795,46 @@ describe("gateway server auth/connect", () => {
     }
   });
 
+  test("auto-approves first-party iOS pairing when shared auth is valid", async () => {
+    testState.gatewayAuth = { mode: "token", token: "secret" };
+    const prevToken = process.env.MARV_GATEWAY_TOKEN;
+    process.env.MARV_GATEWAY_TOKEN = "secret";
+    try {
+      await withGatewayServer(async ({ port }) => {
+        const { loadOrCreateDeviceIdentity } = await import("../../infra/device-identity.js");
+        const { getPairedDevice, listDevicePairing } =
+          await import("../../infra/device-pairing.js");
+
+        const ws = await openWs(port);
+        const res = await connectReq(ws, {
+          token: "secret",
+          scopes: ["operator.read"],
+          client: {
+            id: GATEWAY_CLIENT_NAMES.IOS_APP,
+            version: "1.0.0",
+            platform: "ios",
+            mode: GATEWAY_CLIENT_MODES.UI,
+            deviceFamily: "iphone",
+          },
+        });
+
+        expect(res.ok).toBe(true);
+
+        const identity = loadOrCreateDeviceIdentity();
+        const pairing = await listDevicePairing();
+        expect(pairing.pending).toHaveLength(0);
+
+        const paired = await getPairedDevice(identity.deviceId);
+        expect(paired?.clientId).toBe(GATEWAY_CLIENT_NAMES.IOS_APP);
+        expect(paired?.clientMode).toBe(GATEWAY_CLIENT_MODES.UI);
+        expect(paired?.scopes).toEqual(expect.arrayContaining(["operator.read"]));
+        ws.close();
+      });
+    } finally {
+      restoreGatewayToken(prevToken);
+    }
+  });
+
   test("accepts device token auth for paired device", async () => {
     const { server, ws, port, prevToken } = await startServerWithClient("secret");
     const { deviceToken } = await ensurePairedDeviceTokenForCurrentIdentity(ws);

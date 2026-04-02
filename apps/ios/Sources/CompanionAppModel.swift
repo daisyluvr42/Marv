@@ -7,6 +7,10 @@ import SwiftUI
 @MainActor
 @Observable
 final class CompanionAppModel {
+    private static let iosClientId = "marv-ios"
+    private static let operatorClientMode = "ui"
+    private static let nodeClientMode = "node"
+
     var gatewayURL = ""
     var gatewayToken = ""
     var gatewayPassword = ""
@@ -17,6 +21,8 @@ final class CompanionAppModel {
     var nodeStatusText = "Camera node disabled"
     var isConnecting = false
     var isForegroundActive = true
+    var operatorConnected = false
+    var nodeConnected = false
 
     let dashboard = DashboardState()
     let speechInput = SpeechInputModel()
@@ -35,7 +41,7 @@ final class CompanionAppModel {
     private var hasLoadedSettings = false
 
     var isOperatorConnected: Bool {
-        self.operatorStatusText == "Connected"
+        self.operatorConnected
     }
 
     func loadAndConnectIfPossible() async {
@@ -78,13 +84,33 @@ final class CompanionAppModel {
         self.isForegroundActive = phase == .active
     }
 
+    func handleSceneDidBecomeActive() async {
+        if !self.hasLoadedSettings {
+            self.loadPersistedSettings()
+        }
+        guard !self.missingGatewayConfiguration else { return }
+        guard !self.isConnecting else { return }
+
+        let connectionHealthy = await self.isOperatorSessionHealthy()
+        if !connectionHealthy {
+            await self.connect()
+            return
+        }
+
+        if self.cameraNodeEnabled, !self.nodeConnected, let url = self.validatedGatewayURL() {
+            await self.connectNode(url: url)
+        }
+        await self.refreshDashboard()
+    }
+
     func connect() async {
-        let trimmedURL = self.gatewayURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmedURL), let scheme = url.scheme, scheme == "ws" || scheme == "wss" else {
+        guard let url = self.validatedGatewayURL() else {
             self.operatorStatusText = "Enter a ws:// or wss:// gateway URL"
+            self.operatorConnected = false
             return
         }
         self.isConnecting = true
+        self.operatorConnected = false
         self.operatorStatusText = "Connecting"
         self.dashboard.errorText = nil
 
@@ -101,18 +127,20 @@ final class CompanionAppModel {
                     caps: [],
                     commands: [],
                     permissions: [:],
-                    clientId: "marv-ios-companion",
-                    clientMode: "companion-ui",
+                    clientId: Self.iosClientId,
+                    clientMode: Self.operatorClientMode,
                     clientDisplayName: "Marv Companion",
                     includeDeviceIdentity: true),
                 sessionBox: nil,
                 onConnected: { [weak self] in
                     await MainActor.run {
+                        self?.operatorConnected = true
                         self?.operatorStatusText = "Connected"
                     }
                 },
                 onDisconnected: { [weak self] reason in
                     await MainActor.run {
+                        self?.operatorConnected = false
                         self?.operatorStatusText = "Disconnected: \(reason)"
                     }
                 },
@@ -122,12 +150,14 @@ final class CompanionAppModel {
                         ok: false,
                         error: OpenClawNodeError(code: .invalidRequest, message: "operator session cannot handle node invokes"))
                 })
+            self.operatorConnected = true
             self.operatorStatusText = "Connected"
             await self.refreshDashboard()
             if self.cameraNodeEnabled {
                 await self.connectNode(url: url)
             }
         } catch {
+            self.operatorConnected = false
             self.operatorStatusText = error.localizedDescription
             self.dashboard.errorText = error.localizedDescription
         }
@@ -139,12 +169,15 @@ final class CompanionAppModel {
         self.speechInput.stopListening()
         await self.operatorGateway.disconnect()
         await self.nodeGateway.disconnect()
+        self.operatorConnected = false
+        self.nodeConnected = false
         self.operatorStatusText = "Not connected"
         self.nodeStatusText = self.cameraNodeEnabled ? "Not connected" : "Camera node disabled"
     }
 
     func disconnectNodeOnly() async {
         await self.nodeGateway.disconnect()
+        self.nodeConnected = false
         self.nodeStatusText = self.cameraNodeEnabled ? "Not connected" : "Camera node disabled"
     }
 
@@ -236,18 +269,20 @@ final class CompanionAppModel {
                     caps: ["camera"],
                     commands: ["camera.list", "camera.snap"],
                     permissions: ["camera": true],
-                    clientId: "marv-ios-camera-node",
-                    clientMode: "companion-node",
+                    clientId: Self.iosClientId,
+                    clientMode: Self.nodeClientMode,
                     clientDisplayName: "Marv Camera Node",
                     includeDeviceIdentity: true),
                 sessionBox: nil,
                 onConnected: { [weak self] in
                     await MainActor.run {
+                        self?.nodeConnected = true
                         self?.nodeStatusText = "Camera node connected"
                     }
                 },
                 onDisconnected: { [weak self] reason in
                     await MainActor.run {
+                        self?.nodeConnected = false
                         self?.nodeStatusText = "Disconnected: \(reason)"
                     }
                 },
@@ -260,8 +295,10 @@ final class CompanionAppModel {
                     }
                     return await self.handleNodeInvoke(request)
                 })
+            self.nodeConnected = true
             self.nodeStatusText = "Camera node connected"
         } catch {
+            self.nodeConnected = false
             self.nodeStatusText = error.localizedDescription
         }
     }
@@ -311,8 +348,16 @@ final class CompanionAppModel {
     }
 
     private func requestDecoded<T: Decodable>(_ method: String, as _: T.Type, paramsJSON: String? = nil) async throws -> T {
-        let data = try await self.operatorGateway.request(method: method, paramsJSON: paramsJSON, timeoutSeconds: 15)
-        return try self.decoder.decode(T.self, from: data)
+        do {
+            let data = try await self.operatorGateway.request(method: method, paramsJSON: paramsJSON, timeoutSeconds: 15)
+            return try self.decoder.decode(T.self, from: data)
+        } catch {
+            if error.localizedDescription.localizedCaseInsensitiveContains("not connected") {
+                self.operatorConnected = false
+                self.operatorStatusText = "Disconnected: \(error.localizedDescription)"
+            }
+            throw error
+        }
     }
 
     private func successResponse<T: Encodable>(id: String, payload: T) async throws -> BridgeInvokeResponse {
@@ -336,6 +381,32 @@ final class CompanionAppModel {
     private var resolvedSessionKey: String {
         let trimmed = self.sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "main" : trimmed
+    }
+
+    private var missingGatewayConfiguration: Bool {
+        self.gatewayURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func validatedGatewayURL() -> URL? {
+        let trimmedURL = self.gatewayURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmedURL), let scheme = url.scheme, scheme == "ws" || scheme == "wss" else {
+            return nil
+        }
+        return url
+    }
+
+    private func isOperatorSessionHealthy() async -> Bool {
+        guard self.operatorConnected else {
+            return false
+        }
+        do {
+            _ = try await self.operatorGateway.request(method: "health", paramsJSON: nil, timeoutSeconds: 5)
+            return true
+        } catch {
+            self.operatorConnected = false
+            self.operatorStatusText = "Disconnected: \(error.localizedDescription)"
+            return false
+        }
     }
 
     private func nonEmpty(_ value: String) -> String? {

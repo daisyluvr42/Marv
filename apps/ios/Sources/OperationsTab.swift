@@ -30,6 +30,7 @@ struct OperationsTab: View {
                 }
             }
             .navigationTitle("Operations")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Refresh") {
@@ -70,7 +71,7 @@ struct OperationsTab: View {
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                             }
-                            if let lastActive = session.lastActiveAt {
+                            if let lastActive = session.updatedAt {
                                 Text("Active \(Self.formatRelativeTime(lastActive))")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -142,8 +143,8 @@ struct OperationsTab: View {
         if let usage = self.appModel.dashboard.usage {
             Section("Usage (7 days)") {
                 OpsKeyValueRow(label: "Total Cost", value: Self.formatCost(usage.totalCost))
-                if let days = usage.days, !days.isEmpty {
-                    ForEach(days.suffix(7).reversed(), id: \.date) { day in
+                if !usage.daily.isEmpty {
+                    ForEach(usage.daily.suffix(7).reversed(), id: \.date) { day in
                         HStack {
                             Text(day.date)
                                 .font(.caption)

@@ -1,5 +1,72 @@
 # Todo
 
+## iOS Companion Runtime Follow-up Plan (2026-04-02)
+
+- [x] Align `apps/ios/Sources/DashboardModels.swift` with the current gateway response shapes and add focused contract coverage for the drifted payloads.
+- [x] Rework the iOS root/dashboard presentation so the app fills the usable iPhone screen height and the dashboard uses glanceable cards instead of plain sections.
+- [x] Reconnect the operator/node sessions automatically when the app returns to the foreground and only refresh dashboard data after the connection is healthy again.
+- [x] Relax first-party iOS shared-auth pairing so valid companion connections auto-approve without the manual pairing prompt.
+- [x] Re-run focused iOS and gateway verification, then capture the reviewed results below.
+
+## Review
+
+- `apps/ios/Sources/DashboardModels.swift` now matches the current gateway contract again: session rows decode `updatedAt`, cost usage decodes `daily` plus nested `totals`, and the iOS views read those current shapes directly instead of older fields.
+- `apps/ios/Sources/DashboardTab.swift`, `apps/ios/Sources/RootView.swift`, `apps/ios/Sources/MarvCompanionApp.swift`, and `apps/ios/Sources/Info.plist` now present the companion as a full-height portrait iPhone app and replace the old dashboard list with glanceable cards that fit shorter screens better.
+- `apps/ios/Sources/CompanionAppModel.swift` now keeps explicit operator/node connection state, checks session health on foreground return, reconnects when needed, and only refreshes the dashboard after the operator session is healthy again.
+- `src/core/gateway/server/ws-connection/message-handler.ts` now silently auto-approves first-party iOS device pairing when shared token/password auth already succeeded, and the iOS app now identifies itself with the canonical `marv-ios` client id plus `ui`/`node` modes.
+- Focused contract coverage now guards the drifted shapes in `src/core/gateway/server-methods/usage.test.ts`, `src/core/gateway/server.sessions.gateway-server-sessions-a.e2e.test.ts`, and the new iOS pairing path in `src/core/gateway/server.auth.e2e.test.ts`.
+- Verified with:
+  - `xcodebuild -project apps/ios/MarvCompanion.xcodeproj -scheme MarvCompanion -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build`
+  - `pnpm vitest run src/core/gateway/server-methods/usage.test.ts`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/core/gateway/server.auth.e2e.test.ts src/core/gateway/server.ios-client-id.e2e.test.ts`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/core/gateway/server.sessions.gateway-server-sessions-a.e2e.test.ts -t 'lists and patches session store via sessions.* RPC'`
+- Broader note:
+  - `pnpm vitest run --config vitest.e2e.config.ts src/core/gateway/server.sessions.gateway-server-sessions-a.e2e.test.ts src/core/gateway/server.auth.e2e.test.ts src/core/gateway/server.ios-client-id.e2e.test.ts` still reports multiple pre-existing failures elsewhere in `server.sessions.gateway-server-sessions-a.e2e.test.ts`; those failures were outside this iOS follow-up scope, so I verified the specific updated `sessions.list` contract path with a targeted run instead of widening the task.
+
+## iOS Local Deploy Follow-up Plan (2026-04-02)
+
+- [x] Patch `scripts/ios-deploy.sh` to prefer the hardware UDID, add earlier deploy preflights, and keep repo-root deploy reliable.
+- [x] Patch `scripts/ios-team-id.sh` to fall back to usable Xcode-managed provisioning profiles when plist/keychain discovery is incomplete.
+- [x] Patch the iOS Swift sources so shared settings rows compile across files, settings storage stays Swift 6-friendly, and the UI fits shorter iPhone 11 Pro-height layouts.
+- [x] Re-run targeted verification for shell syntax, package resolution, and a generic iOS device build.
+
+## Review
+
+- `scripts/ios-deploy.sh` now prefers the classic hardware UDID exposed by CoreDevice JSON, validates iPhoneOS platform/SDK availability before device selection, checks per-device readiness before build, and keeps `--dry-run` working end to end instead of failing after the mocked build step.
+- `scripts/ios-team-id.sh` now falls back to local provisioning profiles under both Xcode UserData and MobileDevice profile directories, and the missing-directory path no longer trips `set -e`.
+- `apps/shared/OpenClawKit/Package.swift` now checks for the optional test target relative to the manifest location instead of relying on the caller’s current working directory.
+- The iOS app now compiles cleanly again: `KeyValueRow` is module-visible for `SettingsTab`, `CompanionSettingsStore` no longer keeps `UserDefaults.standard` in shared static stored state, and the list-based tabs use inline titles while the transcript editor relaxes its minimum height in compact vertical space for shorter iPhone layouts.
+- Verified with:
+  - `bash -n scripts/ios-deploy.sh scripts/ios-team-id.sh scripts/ios-configure-signing.sh`
+  - `cd apps/shared/OpenClawKit && swift package dump-package`
+  - `xcodebuild -project apps/ios/MarvCompanion.xcodeproj -scheme MarvCompanion -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build`
+  - mocked `scripts/ios-team-id.sh` run returning `PROFIL1234` from a provisioning profile with keychain fallback disabled
+  - mocked `scripts/ios-deploy.sh --yes --dry-run --force` path proving hardware UDID selection and explicit `-project .../MarvCompanion.xcodeproj` usage
+  - checked local simulator inventory for `iPhone 11 Pro`; no matching simulator runtime was installed, so exact simulator rendering was not available for verification
+
+## iOS Local Deploy Fixes Plan (2026-04-01)
+
+- [x] Inspect the current iOS deploy, signing, and package setup and confirm the reported blockers in code.
+- [x] Patch `scripts/ios-deploy.sh` so repo-root deploy targets the generated Xcode project and performs an early platform-support preflight.
+- [x] Patch `apps/shared/OpenClawKit/Package.swift` so missing packaged test sources do not block local package resolution.
+- [x] Patch `scripts/ios-team-id.sh` so Apple Development identities in the keychain are accepted by default.
+- [x] Run targeted verification and add a short review note with the verified results.
+
+## Review
+
+- `scripts/ios-deploy.sh` now builds against `apps/ios/MarvCompanion.xcodeproj` explicitly, so repo-root deploy no longer depends on the current working directory containing an Xcode project.
+- The deploy flow now compares the connected device OS version with the locally installed iOS SDK/platform support and fails early with an Xcode Components install hint when the device requires a newer iOS platform.
+- `apps/shared/OpenClawKit/Package.swift` now omits `OpenClawKitTests` when the packaged snapshot does not include `Tests/OpenClawKitTests`, allowing project/package resolution to proceed.
+- `scripts/ios-team-id.sh` now allows keychain-based Apple Development identity discovery by default, which unblocks local signing setups where Xcode account plist metadata is incomplete.
+- Verified with:
+  - `bash -n scripts/ios-deploy.sh scripts/ios-team-id.sh scripts/ios-configure-signing.sh`
+  - `cd apps/shared/OpenClawKit && swift package dump-package`
+  - `IOS_DEVELOPMENT_TEAM=ABCDEFGHIJ bash scripts/ios-open.sh --generate-only`
+  - `xcodebuild -project apps/ios/MarvCompanion.xcodeproj -list`
+  - mocked `scripts/ios-team-id.sh` run returning a keychain-only Apple Development team id
+  - mocked `scripts/ios-deploy.sh --yes --dry-run` run showing the explicit `-project` build command
+  - mocked `scripts/ios-deploy.sh --yes --dry-run` run failing early for a device on iOS 26.4 when local support only reached iOS 26.2
+
 - [x] Map the current memory system from code, covering entrypoints, storage layers, read/write paths, and compaction/distillation.
 - [x] Collect concrete file and line references for each major component and flow.
 - [x] Call out any mismatches between docs/comments and current code behavior.

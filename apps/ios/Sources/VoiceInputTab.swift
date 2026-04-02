@@ -3,6 +3,7 @@ import SwiftUI
 struct VoiceInputTab: View {
     @Environment(CompanionAppModel.self) private var appModel
     @Environment(SpeechInputModel.self) private var speechInput
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         @Bindable var appModel = self.appModel
@@ -20,7 +21,7 @@ struct VoiceInputTab: View {
 
                 Section("Transcript") {
                     TextEditor(text: $speechInput.transcript)
-                        .frame(minHeight: 160)
+                        .frame(minHeight: self.verticalSizeClass == .compact ? 120 : 160)
                     Text(speechInput.authorizationText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)

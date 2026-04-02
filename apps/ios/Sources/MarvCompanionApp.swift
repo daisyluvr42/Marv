@@ -8,6 +8,8 @@ struct MarvCompanionApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
                 .environment(self.appModel)
                 .environment(self.appModel.speechInput)
                 .task {
@@ -17,7 +19,7 @@ struct MarvCompanionApp: App {
                     self.appModel.setScenePhase(newPhase)
                     if newPhase == .active {
                         Task {
-                            await self.appModel.refreshDashboard()
+                            await self.appModel.handleSceneDidBecomeActive()
                         }
                     }
                 }

@@ -59,9 +59,15 @@ struct ProactiveStatusSnapshot: Decodable, Sendable {
 
 struct SessionEntry: Decodable, Sendable {
     var key: String
-    var lastActiveAt: Double?
+    var updatedAt: Double?
     var totalTokens: Int?
     var label: String?
+    var displayName: String?
+    var derivedTitle: String?
+
+    var title: String {
+        self.displayName ?? self.label ?? self.derivedTitle ?? self.key
+    }
 }
 
 struct SessionsListResult: Decodable, Sendable {
@@ -95,13 +101,27 @@ struct CronListResult: Decodable, Sendable {
 struct CostDayEntry: Decodable, Sendable {
     var date: String
     var totalCost: Double
-    var inputTokens: Int?
-    var outputTokens: Int?
+    var totalTokens: Int
+}
+
+struct CostUsageTotals: Decodable, Sendable {
+    var input: Int
+    var output: Int
+    var cacheRead: Int
+    var cacheWrite: Int
+    var totalTokens: Int
+    var totalCost: Double
 }
 
 struct CostUsageSummary: Decodable, Sendable {
-    var totalCost: Double
-    var days: [CostDayEntry]?
+    var updatedAt: Double
+    var days: Int
+    var daily: [CostDayEntry]
+    var totals: CostUsageTotals
+
+    var totalCost: Double {
+        self.totals.totalCost
+    }
 }
 
 // MARK: - Dashboard state

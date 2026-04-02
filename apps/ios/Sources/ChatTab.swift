@@ -16,7 +16,7 @@ struct ChatTab: View {
                 ContentUnavailableView(
                     "Gateway Not Connected",
                     systemImage: "bolt.horizontal.circle",
-                    description: Text("Connect the iPhone companion in Settings, then approved pairings will show up here."))
+                    description: Text("Connect the iPhone companion in Settings, then your gateway session will show up here."))
             }
         }
     }

@@ -28,7 +28,7 @@ struct SettingsTab: View {
                     Text("When enabled, the app opens a separate node connection that only declares `camera.list` and `camera.snap`.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Text("The camera node still needs deliberate gateway allowlisting (`gateway.nodes.allowCommands: [\"camera.snap\"]`) and usually a second pairing approval for the `node` role.")
+                    Text("The camera node still needs deliberate gateway allowlisting (`gateway.nodes.allowCommands: [\"camera.snap\"]`) before agents can use snapshots.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

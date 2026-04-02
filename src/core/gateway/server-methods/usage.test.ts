@@ -80,4 +80,24 @@ describe("gateway usage helpers", () => {
     expect(b.totals.totalTokens).toBe(1);
     expect(vi.mocked(loadCostUsageSummary)).toHaveBeenCalledTimes(1);
   });
+
+  it("preserves the gateway cost summary shape used by the iOS dashboard", async () => {
+    const config = {} as MarvConfig;
+    const summary = await __test.loadCostUsageSummaryCached({
+      startMs: 1,
+      endMs: 2,
+      config,
+    });
+
+    expect(summary).toEqual(
+      expect.objectContaining({
+        updatedAt: expect.any(Number),
+        daily: expect.any(Array),
+        totals: expect.objectContaining({
+          totalTokens: 1,
+          totalCost: 0,
+        }),
+      }),
+    );
+  });
 });

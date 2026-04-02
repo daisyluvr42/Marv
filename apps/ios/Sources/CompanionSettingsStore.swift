@@ -12,7 +12,7 @@ struct CompanionGatewaySettings: Equatable, Sendable {
 }
 
 enum CompanionSettingsStore {
-    private static let defaults = UserDefaults.standard
+    private static var defaults: UserDefaults { .standard }
     private static let gatewayURLKey = "companion.gateway.url"
     private static let sessionKeyKey = "companion.session.key"
     private static let cameraNodeEnabledKey = "companion.cameraNode.enabled"

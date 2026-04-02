@@ -6,6 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 IOS_DIR="$REPO_ROOT/apps/ios"
+IOS_PROJECT="$IOS_DIR/MarvCompanion.xcodeproj"
 DERIVED_DATA="$IOS_DIR/.build/derivedData"
 CONFIGURATION="Debug"
 TARGET_DEVICE=""
@@ -58,6 +59,20 @@ ensure_xcodegen() {
   fi
 }
 
+ensure_ios_platform_support() {
+  local developer_path ios_platform_dir
+  developer_path="${DEVELOPER_DIR:-$(xcode-select -p 2>/dev/null || true)}"
+  ios_platform_dir="$developer_path/Platforms/iPhoneOS.platform"
+
+  if [[ -z "$developer_path" || ! -d "$ios_platform_dir" ]]; then
+    die_json "The iPhoneOS platform is not installed in the selected Xcode. Open Xcode and ensure the full iOS platform is available, then retry."
+  fi
+
+  if ! xcodebuild -showsdks 2>/dev/null | grep -qE '^[[:space:]]+iOS[[:space:]]+[0-9]+(\.[0-9]+)*[[:space:]]'; then
+    die_json "No iOS SDKs are available in the selected Xcode. Open Xcode > Settings > Components, install the required iOS platform support, then retry."
+  fi
+}
+
 # -- Device discovery ---------------------------------------------------------
 
 list_connected_devices() {
@@ -83,7 +98,7 @@ list_connected_devices() {
              .connectionProperties.transportType != null) |
       {
         name: .deviceProperties.name,
-        udid: .identifier,
+        udid: (.hardwareProperties.udid // .identifier),
         model: .deviceProperties.marketingName,
         osVersion: .deviceProperties.osVersionNumber,
         transport: .connectionProperties.transportType
@@ -119,7 +134,7 @@ resolve_device_udid() {
     [.result.devices[] |
       select(.connectionProperties.tunnelState == "connected" or
              .connectionProperties.transportType != null)] |
-    .[] | [.identifier, .deviceProperties.name,
+    .[] | [(.hardwareProperties.udid // .identifier), .deviceProperties.name,
            .deviceProperties.marketingName, .deviceProperties.osVersionNumber] |
     @tsv
   ' "$json_out" 2>/dev/null || true)
@@ -197,28 +212,100 @@ resolve_device_udid() {
 
   RESOLVED_UDID="${device_udids[$chosen]}"
   RESOLVED_DEVICE_NAME="${device_names[$chosen]}"
+  RESOLVED_DEVICE_OS_VERSION="${device_versions[$chosen]}"
 }
 
 # -- Build & deploy -----------------------------------------------------------
 
+ensure_ios_project() {
+  if [[ ! -d "$IOS_PROJECT" ]]; then
+    die_json "Failed to generate Xcode project at $IOS_PROJECT"
+  fi
+}
+
+preflight_device_readiness() {
+  local json_out="/tmp/marv-ios-device-details-$$.json"
+  xcrun devicectl device info details --device "$RESOLVED_UDID" --json-output "$json_out" >/dev/null 2>&1 || {
+    rm -f "$json_out"
+    return 0
+  }
+
+  if have jq; then
+    local developer_mode_status developer_mode_normalized
+    developer_mode_status="$(
+      jq -r '
+        first(
+          .. | objects | .developerModeStatus? // empty,
+          .. | objects | .developerMode? // empty,
+          .. | objects | .developerModeEnabled? // empty
+        ) // empty
+      ' "$json_out" 2>/dev/null || true
+    )"
+    developer_mode_normalized="$(printf '%s' "$developer_mode_status" | tr '[:upper:]' '[:lower:]')"
+
+    case "$developer_mode_normalized" in
+      disabled|off|false|0|notenabled)
+        rm -f "$json_out"
+        die_json "Developer Mode is not enabled on $RESOLVED_DEVICE_NAME. Enable it in Settings > Privacy & Security > Developer Mode on the device, then reconnect and retry."
+        ;;
+    esac
+  fi
+
+  rm -f "$json_out"
+}
+
+preflight_device_platform_support() {
+  local latest_ios_sdk=""
+  latest_ios_sdk="$(
+    xcodebuild -showsdks 2>/dev/null \
+      | grep -E '^[[:space:]]+iOS[[:space:]]+[0-9]+(\.[0-9]+)*[[:space:]]' \
+      | awk '{ print $2 }' \
+      | sort -V \
+      | tail -1
+  )"
+
+  if [[ -z "$latest_ios_sdk" || -z "${RESOLVED_DEVICE_OS_VERSION:-}" ]]; then
+    return 0
+  fi
+
+  if [[ "$(printf '%s\n%s\n' "$latest_ios_sdk" "$RESOLVED_DEVICE_OS_VERSION" | sort -V | tail -1)" != "$RESOLVED_DEVICE_OS_VERSION" ]]; then
+    return 0
+  fi
+
+  if [[ "$latest_ios_sdk" == "$RESOLVED_DEVICE_OS_VERSION" ]]; then
+    return 0
+  fi
+
+  die_json "Connected device $RESOLVED_DEVICE_NAME is running iOS $RESOLVED_DEVICE_OS_VERSION, but this Xcode install only has iOS SDK support up to $latest_ios_sdk. Open Xcode > Settings > Components, install the iOS $RESOLVED_DEVICE_OS_VERSION platform/device support, then retry."
+}
+
 do_build() {
+  log "Checking signing readiness..."
+  bash "$SCRIPT_DIR/ios-team-id.sh" >/dev/null
+
   log "Configuring signing..."
   bash "$SCRIPT_DIR/ios-configure-signing.sh"
 
   log "Generating Xcode project..."
   (cd "$IOS_DIR" && xcodegen generate --quiet 2>/dev/null || xcodegen generate)
+  ensure_ios_project
+
+  log "Checking local iOS platform support for $RESOLVED_DEVICE_NAME (iOS $RESOLVED_DEVICE_OS_VERSION)..."
+  preflight_device_platform_support
 
   log "Building MarvCompanion ($CONFIGURATION) for device $RESOLVED_DEVICE_NAME ($RESOLVED_UDID)..."
   if [[ "$DRY_RUN" == "1" ]]; then
-    log "[dry-run] xcodebuild build -scheme MarvCompanion -configuration $CONFIGURATION -destination id=$RESOLVED_UDID -derivedDataPath $DERIVED_DATA -quiet"
+    log "[dry-run] xcodebuild -project $IOS_PROJECT -scheme MarvCompanion -configuration $CONFIGURATION -destination id=$RESOLVED_UDID -derivedDataPath $DERIVED_DATA build -quiet"
     return 0
   fi
 
-  xcodebuild build \
+  xcodebuild \
+    -project "$IOS_PROJECT" \
     -scheme MarvCompanion \
     -configuration "$CONFIGURATION" \
     -destination "id=$RESOLVED_UDID" \
     -derivedDataPath "$DERIVED_DATA" \
+    build \
     -quiet 2>&1 | tail -5 >&2 || {
     die_json "xcodebuild failed. Check Xcode signing and device trust settings."
   }
@@ -253,8 +340,10 @@ do_install() {
 }
 
 do_launch() {
-  local bundle_id
-  bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$1/Info.plist" 2>/dev/null || echo "ai.marv.ios")"
+  local bundle_id="ai.marv.ios"
+  if [[ -f "$1/Info.plist" ]]; then
+    bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$1/Info.plist" 2>/dev/null || echo "ai.marv.ios")"
+  fi
 
   log "Launching $bundle_id on $RESOLVED_DEVICE_NAME..."
   if [[ "$DRY_RUN" == "1" ]]; then
@@ -333,6 +422,7 @@ done
 
 ensure_xcode_developer
 ensure_xcodegen
+ensure_ios_platform_support
 
 if [[ "$LIST_DEVICES" == "1" ]]; then
   list_connected_devices
@@ -340,6 +430,7 @@ if [[ "$LIST_DEVICES" == "1" ]]; then
 fi
 
 resolve_device_udid
+preflight_device_readiness
 
 # Skip deploy if the same commit was already deployed to this device.
 CURRENT_COMMIT="$(cd "$REPO_ROOT" && git rev-parse HEAD 2>/dev/null || echo "unknown")"
@@ -359,7 +450,12 @@ if [[ "$SKIP_BUILD" == "0" ]]; then
   do_build
 fi
 
-APP_PATH="$(locate_app_bundle)"
+if [[ "$DRY_RUN" == "1" ]]; then
+  APP_PATH="$DERIVED_DATA/Build/Products/${CONFIGURATION}-iphoneos/MarvCompanion.app"
+else
+  APP_PATH="$(locate_app_bundle)"
+fi
+
 do_install "$APP_PATH"
 do_launch "$APP_PATH"
 
