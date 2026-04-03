@@ -1,6 +1,6 @@
 {
   "name": "@marv/line",
-  "version": "2026.3.31",
+  "version": "2026.4.3",
   "private": true,
   "description": "Marv LINE channel plugin",
   "type": "module",

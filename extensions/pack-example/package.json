@@ -1,6 +1,6 @@
 {
   "name": "@marv/pack-example",
-  "version": "2026.3.31",
+  "version": "2026.4.3",
   "private": true,
   "description": "Example profession pack — scaffold for building industry-specific Marv packs",
   "type": "module",

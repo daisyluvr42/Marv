@@ -1,6 +1,6 @@
 {
   "name": "@marv/diagnostics-otel",
-  "version": "2026.3.31",
+  "version": "2026.4.3",
   "description": "Marv diagnostics OpenTelemetry exporter",
   "type": "module",
   "dependencies": {

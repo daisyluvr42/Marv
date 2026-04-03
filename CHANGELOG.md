@@ -4,6 +4,18 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
 ## Unreleased
 
+## 2026.4.3
+
+### Changes
+
+- Local Models: custom providers with a `baseUrl` are now classified as local in the runtime candidate pool, prioritized over cloud models in fallback ordering.
+- CLI: add `marv models pool list` and `marv models pool clear [model]` to inspect and manage runtime model availability state, useful for recovering local models marked unavailable after slow cold starts.
+- Local Models: alias re-assignment within the same provider now transfers the alias automatically instead of rejecting the change.
+
+### Fixes
+
+- Models: fix session model drift where an explicitly selected model matching the configured default had its override silently cleared, causing later auto-runs to fall back to the first runnable cloud candidate (e.g. Gemini) instead of staying on the pinned local model.
+
 ## 2026.3.31
 
 ### Changes

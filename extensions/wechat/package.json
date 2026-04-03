@@ -1,6 +1,6 @@
 {
   "name": "@marv/wechat",
-  "version": "2026.3.31",
+  "version": "2026.4.3",
   "description": "Marv WeChat channel plugin (via Wechaty)",
   "type": "module",
   "dependencies": {

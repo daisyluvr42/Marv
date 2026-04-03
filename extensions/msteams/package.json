@@ -1,6 +1,6 @@
 {
   "name": "@marv/msteams",
-  "version": "2026.3.31",
+  "version": "2026.4.3",
   "description": "Marv Microsoft Teams channel plugin",
   "type": "module",
   "dependencies": {
