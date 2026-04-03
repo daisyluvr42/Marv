@@ -224,7 +224,7 @@ export function createSessionSettingsTool(opts?: SelfSettingsToolOpts): AnyAgent
             }),
           };
       if (!applied.ok) {
-        return buildInvalidResult();
+        return buildInvalidResult(applied.error?.message);
       }
 
       let nextEntry =
@@ -255,11 +255,13 @@ export function createSessionSettingsTool(opts?: SelfSettingsToolOpts): AnyAgent
             allowKeychainPrompt: false,
           });
           const profile = authStore.profiles[authProfile];
-          if (
-            !profile ||
-            normalizeProviderId(profile.provider) !== normalizeProviderId(effectiveProvider)
-          ) {
-            return buildInvalidResult();
+          if (!profile) {
+            return buildInvalidResult(`auth profile not found: ${authProfile}`);
+          }
+          if (normalizeProviderId(profile.provider) !== normalizeProviderId(effectiveProvider)) {
+            return buildInvalidResult(
+              `auth profile "${authProfile}" is for provider ${profile.provider}, but current model uses ${effectiveProvider}`,
+            );
           }
           nextEntry = {
             ...nextEntry,

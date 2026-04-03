@@ -1,11 +1,37 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// Default required files — constants, extensible to config later
-const DEFAULT_REQUIRED_READS: Array<string | RegExp> = [
-  "WORKFLOW_AUTO.md",
-  /memory\/\d{4}-\d{2}-\d{2}\.md/, // daily memory files
-];
+// Candidate startup files in priority order — the first that exists on disk is required.
+// This makes the audit project-aware rather than assuming a specific repo layout.
+const STARTUP_FILE_CANDIDATES = ["WORKFLOW_AUTO.md", "AGENTS.md", "CLAUDE.md"];
+
+/**
+ * Build the required-reads list for a workspace by probing which startup files
+ * actually exist on disk.  Falls back to an empty list when none are found.
+ */
+export function resolveRequiredReads(workspaceDir: string): Array<string | RegExp> {
+  const required: Array<string | RegExp> = [];
+  for (const candidate of STARTUP_FILE_CANDIDATES) {
+    try {
+      if (fs.existsSync(path.resolve(workspaceDir, candidate))) {
+        required.push(candidate);
+        break; // only require the first matching startup file
+      }
+    } catch {
+      // Ignore permission / fs errors — best-effort
+    }
+  }
+  // Daily memory file is still expected when the memory directory exists
+  try {
+    const memoryDir = path.resolve(workspaceDir, "memory");
+    if (fs.existsSync(memoryDir) && fs.statSync(memoryDir).isDirectory()) {
+      required.push(/memory\/\d{4}-\d{2}-\d{2}\.md/);
+    }
+  } catch {
+    // best-effort
+  }
+  return required;
+}
 
 /**
  * Audit whether agent read required startup files after compaction.
@@ -14,8 +40,14 @@ const DEFAULT_REQUIRED_READS: Array<string | RegExp> = [
 export function auditPostCompactionReads(
   readFilePaths: string[],
   workspaceDir: string,
-  requiredReads: Array<string | RegExp> = DEFAULT_REQUIRED_READS,
+  requiredReads?: Array<string | RegExp>,
 ): { passed: boolean; missingPatterns: string[] } {
+  if (!requiredReads) {
+    requiredReads = resolveRequiredReads(workspaceDir);
+  }
+  if (requiredReads.length === 0) {
+    return { passed: true, missingPatterns: [] };
+  }
   const normalizedReads = readFilePaths.map((p) => path.resolve(workspaceDir, p));
   const missingPatterns: string[] = [];
 
@@ -79,7 +111,9 @@ export function readSessionMessages(
 
 /**
  * Extract file paths from Read tool calls in agent messages.
- * Looks for tool_use blocks with name="read" and extracts path/file_path args.
+ * Supports both transcript shapes:
+ *   - `tool_use`  blocks with `input.file_path` / `input.path`  (SessionManager JSONL)
+ *   - `toolCall`  blocks with `arguments.file_path` / `arguments.path`  (pi-agent-core)
  */
 export function extractReadPaths(messages: Array<{ role?: string; content?: unknown }>): string[] {
   const paths: string[] = [];
@@ -90,6 +124,11 @@ export function extractReadPaths(messages: Array<{ role?: string; content?: unkn
     for (const block of msg.content) {
       if (block.type === "tool_use" && block.name === "read") {
         const filePath = block.input?.file_path ?? block.input?.path;
+        if (typeof filePath === "string") {
+          paths.push(filePath);
+        }
+      } else if (block.type === "toolCall" && block.name === "read") {
+        const filePath = block.arguments?.file_path ?? block.arguments?.path;
         if (typeof filePath === "string") {
           paths.push(filePath);
         }

@@ -399,13 +399,16 @@ export async function runPreparedReply(
   });
   const isGroupSession = sessionEntry?.chatType === "group" || sessionEntry?.chatType === "channel";
   const isMainSession = !isGroupSession && sessionKey === normalizeMainKey(sessionCfg?.mainKey);
-  prefixedBodyBase = await prependSystemEvents({
+  const systemEventsResult = await prependSystemEvents({
     cfg,
     sessionKey,
     isMainSession,
     isNewSession,
     prefixedBodyBase,
+    separateSystemEvents: true,
   });
+  prefixedBodyBase = systemEventsResult.body;
+  const systemEventBlock = systemEventsResult.systemEventBlock;
   prefixedBodyBase = appendUntrustedContext(prefixedBodyBase, sessionCtx.UntrustedContext);
   const threadStarterBody = ctx.ThreadStarterBody?.trim();
   const threadHistoryBody = ctx.ThreadHistoryBody?.trim();
@@ -583,7 +586,8 @@ export async function runPreparedReply(
       timeoutMs,
       blockReplyBreak: resolvedBlockStreamingBreak,
       ownerNumbers: command.ownerList.length > 0 ? command.ownerList : undefined,
-      extraSystemPrompt: extraSystemPrompt || undefined,
+      extraSystemPrompt:
+        [extraSystemPrompt, systemEventBlock].filter(Boolean).join("\n\n") || undefined,
       ...(isReasoningTagProvider(provider) ? { enforceFinalTag: true } : {}),
     },
   };

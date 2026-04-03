@@ -391,6 +391,38 @@ describe("gateway sessions patch", () => {
     expect(res.error.message).toContain("invalid groupActivation");
   });
 
+  test("rejects invalid model with specific error message", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:main",
+      patch: { key: "agent:main:main", model: "" },
+      loadGatewayModelCatalog: async () => [],
+    });
+    expect(res.ok).toBe(false);
+    if (res.ok) {
+      return;
+    }
+    expect(res.error.message).toContain("invalid model");
+  });
+
+  test("returns specific error when model catalog is unavailable", async () => {
+    const store: Record<string, SessionEntry> = {};
+    const res = await applySessionsPatchToStore({
+      cfg: {} as MarvConfig,
+      store,
+      storeKey: "agent:main:main",
+      patch: { key: "agent:main:main", model: "anthropic/claude-sonnet-4-6" },
+      // omit loadGatewayModelCatalog to trigger UNAVAILABLE
+    });
+    expect(res.ok).toBe(false);
+    if (res.ok) {
+      return;
+    }
+    expect(res.error.message).toContain("model catalog unavailable");
+  });
+
   test("allows target agent own model for subagent session even when missing from global allowlist", async () => {
     const cfg = {
       models: {
@@ -406,9 +438,10 @@ describe("gateway sessions patch", () => {
     } as MarvConfig;
 
     const entry = await applySubagentModelPatch(cfg);
-    // Selected model matches the target agent default, so no override is stored.
-    expect(entry.providerOverride).toBeUndefined();
-    expect(entry.modelOverride).toBeUndefined();
+    // Even when the selected model matches the configured default, the explicit
+    // selection is preserved as an override so the session stays pinned.
+    expect(entry.providerOverride).toBe("synthetic");
+    expect(entry.modelOverride).toBe("hf:moonshotai/Kimi-K2.5");
   });
 
   test("allows target agent subagents.model for subagent session even when missing from global allowlist", async () => {

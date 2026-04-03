@@ -3,6 +3,7 @@ import {
   auditPostCompactionReads,
   extractReadPaths,
   formatAuditWarning,
+  resolveRequiredReads,
 } from "./compaction-audit.js";
 
 describe("extractReadPaths", () => {
@@ -104,21 +105,123 @@ describe("extractReadPaths", () => {
     const paths = extractReadPaths(messages);
     expect(paths).toEqual([]);
   });
+
+  it("extracts file paths from toolCall blocks (pi-agent-core shape)", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "tc_1",
+            name: "read",
+            arguments: { file_path: "/workspace/AGENTS.md" },
+          },
+        ],
+      },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "tc_2",
+            name: "read",
+            arguments: { file_path: "memory/2026-04-03.md" },
+          },
+        ],
+      },
+    ];
+
+    const paths = extractReadPaths(messages);
+    expect(paths).toEqual(["/workspace/AGENTS.md", "memory/2026-04-03.md"]);
+  });
+
+  it("extracts path param from toolCall blocks", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "tc_1",
+            name: "read",
+            arguments: { path: "CLAUDE.md" },
+          },
+        ],
+      },
+    ];
+
+    const paths = extractReadPaths(messages);
+    expect(paths).toEqual(["CLAUDE.md"]);
+  });
+
+  it("ignores non-read toolCall blocks", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "tc_1",
+            name: "exec",
+            arguments: { command: "ls" },
+          },
+        ],
+      },
+    ];
+
+    const paths = extractReadPaths(messages);
+    expect(paths).toEqual([]);
+  });
+
+  it("handles mixed tool_use and toolCall blocks in a single session", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "tool_use",
+            name: "read",
+            input: { file_path: "WORKFLOW_AUTO.md" },
+          },
+        ],
+      },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "tc_1",
+            name: "read",
+            arguments: { file_path: "AGENTS.md" },
+          },
+        ],
+      },
+    ];
+
+    const paths = extractReadPaths(messages);
+    expect(paths).toEqual(["WORKFLOW_AUTO.md", "AGENTS.md"]);
+  });
 });
 
 describe("auditPostCompactionReads", () => {
   const workspaceDir = "/Users/test/workspace";
+  // Explicit required reads for tests (workspace dir does not exist on disk)
+  const testRequired: Array<string | RegExp> = [
+    "WORKFLOW_AUTO.md",
+    /memory\/\d{4}-\d{2}-\d{2}\.md/,
+  ];
 
   it("passes when all required files are read", () => {
     const readPaths = ["WORKFLOW_AUTO.md", "memory/2026-02-16.md"];
-    const result = auditPostCompactionReads(readPaths, workspaceDir);
+    const result = auditPostCompactionReads(readPaths, workspaceDir, testRequired);
 
     expect(result.passed).toBe(true);
     expect(result.missingPatterns).toEqual([]);
   });
 
   it("fails when no files are read", () => {
-    const result = auditPostCompactionReads([], workspaceDir);
+    const result = auditPostCompactionReads([], workspaceDir, testRequired);
 
     expect(result.passed).toBe(false);
     expect(result.missingPatterns).toContain("WORKFLOW_AUTO.md");
@@ -127,7 +230,7 @@ describe("auditPostCompactionReads", () => {
 
   it("reports only missing files", () => {
     const readPaths = ["WORKFLOW_AUTO.md"];
-    const result = auditPostCompactionReads(readPaths, workspaceDir);
+    const result = auditPostCompactionReads(readPaths, workspaceDir, testRequired);
 
     expect(result.passed).toBe(false);
     expect(result.missingPatterns).not.toContain("WORKFLOW_AUTO.md");
@@ -136,7 +239,7 @@ describe("auditPostCompactionReads", () => {
 
   it("matches RegExp patterns against relative paths", () => {
     const readPaths = ["memory/2026-02-16.md"];
-    const result = auditPostCompactionReads(readPaths, workspaceDir);
+    const result = auditPostCompactionReads(readPaths, workspaceDir, testRequired);
 
     expect(result.passed).toBe(false);
     expect(result.missingPatterns).toContain("WORKFLOW_AUTO.md");
@@ -145,7 +248,7 @@ describe("auditPostCompactionReads", () => {
 
   it("normalizes relative paths when matching", () => {
     const readPaths = ["./WORKFLOW_AUTO.md", "memory/2026-02-16.md"];
-    const result = auditPostCompactionReads(readPaths, workspaceDir);
+    const result = auditPostCompactionReads(readPaths, workspaceDir, testRequired);
 
     expect(result.passed).toBe(true);
     expect(result.missingPatterns).toEqual([]);
@@ -156,7 +259,7 @@ describe("auditPostCompactionReads", () => {
       "/Users/test/workspace/WORKFLOW_AUTO.md",
       "/Users/test/workspace/memory/2026-02-16.md",
     ];
-    const result = auditPostCompactionReads(readPaths, workspaceDir);
+    const result = auditPostCompactionReads(readPaths, workspaceDir, testRequired);
 
     expect(result.passed).toBe(true);
     expect(result.missingPatterns).toEqual([]);
@@ -167,6 +270,22 @@ describe("auditPostCompactionReads", () => {
     const customRequired = ["custom.md"];
     const result = auditPostCompactionReads(readPaths, workspaceDir, customRequired);
 
+    expect(result.passed).toBe(true);
+    expect(result.missingPatterns).toEqual([]);
+  });
+});
+
+describe("resolveRequiredReads", () => {
+  it("returns empty when no startup files or memory dir exist", () => {
+    // Use a path that certainly does not exist
+    const required = resolveRequiredReads("/tmp/__nonexistent_workspace_test__");
+    expect(required).toEqual([]);
+  });
+});
+
+describe("auditPostCompactionReads — project-aware defaults", () => {
+  it("passes when no required files are resolved (empty workspace)", () => {
+    const result = auditPostCompactionReads([], "/tmp/__nonexistent_workspace_test__");
     expect(result.passed).toBe(true);
     expect(result.missingPatterns).toEqual([]);
   });

@@ -240,33 +240,6 @@ export async function runReplyAgent(params: {
 
   await typingSignals.signalRunStart();
 
-  activeSessionEntry = await runMemoryFlushIfNeeded({
-    cfg,
-    followupRun,
-    sessionCtx,
-    opts,
-    defaultModel,
-    agentCfgContextTokens,
-    resolvedVerboseLevel,
-    sessionEntry: activeSessionEntry,
-    sessionStore: activeSessionStore,
-    sessionKey,
-    storePath,
-    isHeartbeat,
-  });
-
-  const runFollowupTurn = createFollowupRunner({
-    opts,
-    typing,
-    typingMode,
-    sessionEntry: activeSessionEntry,
-    sessionStore: activeSessionStore,
-    sessionKey,
-    storePath,
-    defaultModel,
-    agentCfgContextTokens,
-  });
-
   let responseUsageLine: string | undefined;
   type SessionResetOptions = {
     failureLabel: string;
@@ -333,6 +306,51 @@ export async function runReplyAgent(params: {
     }
     return true;
   };
+
+  const memoryFlushResult = await runMemoryFlushIfNeeded({
+    cfg,
+    followupRun,
+    sessionCtx,
+    opts,
+    defaultModel,
+    agentCfgContextTokens,
+    resolvedVerboseLevel,
+    sessionEntry: activeSessionEntry,
+    sessionStore: activeSessionStore,
+    sessionKey,
+    storePath,
+    isHeartbeat,
+  });
+  activeSessionEntry = memoryFlushResult.entry;
+
+  // If memory flush failed due to context overflow on the active backend,
+  // auto-reset the session instead of continuing into a failure loop.
+  if (memoryFlushResult.memoryFlushOverflow) {
+    const didReset = await resetSession({
+      failureLabel: "memory flush overflow",
+      buildLogMessage: (nextSessionId) =>
+        `Memory flush failed (context overflow). Restarting session ${sessionKey} -> ${nextSessionId}.`,
+    });
+    if (didReset) {
+      typing.cleanup();
+      return {
+        text: "⚠️ Context limit exceeded. I've reset our conversation to start fresh - please try again.\n\nTo prevent this, increase your compaction buffer by setting `agents.defaults.compaction.reserveTokensFloor` to 4000 or higher in your config.",
+      };
+    }
+  }
+
+  const runFollowupTurn = createFollowupRunner({
+    opts,
+    typing,
+    typingMode,
+    sessionEntry: activeSessionEntry,
+    sessionStore: activeSessionStore,
+    sessionKey,
+    storePath,
+    defaultModel,
+    agentCfgContextTokens,
+  });
+
   const resetSessionAfterCompactionFailure = async (reason: string): Promise<boolean> =>
     resetSession({
       failureLabel: "compaction failure",
@@ -565,7 +583,7 @@ export async function runReplyAgent(params: {
 
       // Inject post-compaction workspace context for the next agent turn
       if (sessionKey) {
-        const workspaceDir = process.cwd();
+        const workspaceDir = followupRun.run.workspaceDir ?? process.cwd();
         readPostCompactionContext(workspaceDir)
           .then((contextContent) => {
             if (contextContent) {
@@ -600,7 +618,7 @@ export async function runReplyAgent(params: {
         if (sessionFile) {
           const messages = readSessionMessages(sessionFile);
           const readPaths = extractReadPaths(messages);
-          const workspaceDir = process.cwd();
+          const workspaceDir = followupRun.run.workspaceDir ?? process.cwd();
           const audit = auditPostCompactionReads(readPaths, workspaceDir);
           if (!audit.passed) {
             enqueueSystemEvent(formatAuditWarning(audit.missingPatterns), { sessionKey });

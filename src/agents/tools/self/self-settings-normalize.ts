@@ -34,10 +34,11 @@ export function buildGenericDeniedResult() {
   };
 }
 
-export function buildInvalidResult() {
+export function buildInvalidResult(reason?: string) {
+  const text = reason ? `${GENERIC_INVALID_MESSAGE} Reason: ${reason}` : GENERIC_INVALID_MESSAGE;
   return {
-    content: [{ type: "text" as const, text: GENERIC_INVALID_MESSAGE }],
-    details: { ok: false, applied: false, invalid: true },
+    content: [{ type: "text" as const, text }],
+    details: { ok: false, applied: false, invalid: true, ...(reason ? { reason } : {}) },
   };
 }
 

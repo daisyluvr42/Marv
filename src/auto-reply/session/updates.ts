@@ -14,13 +14,36 @@ import {
 import { getRemoteSkillEligibility } from "../../infra/skills-remote.js";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
+export type SystemEventsResult = {
+  /** The user body, unchanged (system events are no longer embedded here). */
+  body: string;
+  /** Formatted system event lines for injection into the system prompt (ephemeral). */
+  systemEventBlock: string | undefined;
+};
+
 export async function prependSystemEvents(params: {
   cfg: MarvConfig;
   sessionKey: string;
   isMainSession: boolean;
   isNewSession: boolean;
   prefixedBodyBase: string;
-}): Promise<string> {
+}): Promise<string>;
+export async function prependSystemEvents(params: {
+  cfg: MarvConfig;
+  sessionKey: string;
+  isMainSession: boolean;
+  isNewSession: boolean;
+  prefixedBodyBase: string;
+  separateSystemEvents: true;
+}): Promise<SystemEventsResult>;
+export async function prependSystemEvents(params: {
+  cfg: MarvConfig;
+  sessionKey: string;
+  isMainSession: boolean;
+  isNewSession: boolean;
+  prefixedBodyBase: string;
+  separateSystemEvents?: boolean;
+}): Promise<string | SystemEventsResult> {
   const compactSystemEvent = (line: string): string | null => {
     const trimmed = line.trim();
     if (!trimmed) {
@@ -105,10 +128,17 @@ export async function prependSystemEvents(params: {
     }
   }
   if (systemLines.length === 0) {
+    if (params.separateSystemEvents) {
+      return { body: params.prefixedBodyBase, systemEventBlock: undefined };
+    }
     return params.prefixedBodyBase;
   }
 
   const block = systemLines.map((l) => `System: ${l}`).join("\n");
+  if (params.separateSystemEvents) {
+    return { body: params.prefixedBodyBase, systemEventBlock: block };
+  }
+  // Legacy path: embed in user body (for callers that haven't migrated yet)
   return `${block}\n\n${params.prefixedBodyBase}`;
 }
 
