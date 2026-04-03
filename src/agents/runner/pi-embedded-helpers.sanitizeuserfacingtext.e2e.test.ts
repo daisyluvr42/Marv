@@ -120,6 +120,53 @@ describe("sanitizeUserFacingText", () => {
     expect(sanitizeUserFacingText("\n\n")).toBe("");
     expect(sanitizeUserFacingText("  \n  ")).toBe("");
   });
+
+  it("strips echoed inbound metadata blocks from assistant replies", () => {
+    const metaPrefix = [
+      "Conversation info (untrusted metadata):",
+      "```json",
+      '{"message_id":"abc123","sender":"Alice"}',
+      "```",
+      "",
+    ].join("\n");
+    const reply = "Sure, I can help with that!";
+    expect(sanitizeUserFacingText(metaPrefix + reply)).toBe(reply);
+  });
+
+  it("strips multiple echoed metadata blocks from assistant replies", () => {
+    const blocks = [
+      "Conversation info (untrusted metadata):",
+      "```json",
+      '{"message_id":"abc123"}',
+      "```",
+      "",
+      "Sender (untrusted metadata):",
+      "```json",
+      '{"label":"Alice","name":"Alice Smith"}',
+      "```",
+      "",
+      "Here is my response.",
+    ].join("\n");
+    expect(sanitizeUserFacingText(blocks)).toBe("Here is my response.");
+  });
+
+  it("leaves clean text unchanged when no metadata sentinels present", () => {
+    const text = "This is a normal reply with no metadata.";
+    expect(sanitizeUserFacingText(text)).toBe(text);
+  });
+
+  it("strips metadata even when mixed with final tags", () => {
+    const text = [
+      "<final>",
+      "Conversation info (untrusted metadata):",
+      "```json",
+      '{"conversation_label":"test"}',
+      "```",
+      "",
+      "Hello!</final>",
+    ].join("\n");
+    expect(sanitizeUserFacingText(text)).toBe("Hello!");
+  });
 });
 
 describe("stripThoughtSignatures", () => {

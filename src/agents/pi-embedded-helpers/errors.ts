@@ -1,4 +1,5 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
+import { stripInboundMetadata } from "../../auto-reply/inbound/strip-meta.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { formatSandboxToolPolicyBlockedMessage } from "../sandbox/sandbox.js";
 import { stableStringify } from "../stable-stringify.js";
@@ -50,7 +51,10 @@ export function isContextOverflowError(errorMessage?: string): boolean {
     lower.includes("exceeds model context window") ||
     (hasRequestSizeExceeds && hasContextWindow) ||
     lower.includes("context overflow:") ||
-    (lower.includes("413") && lower.includes("too large"))
+    (lower.includes("413") && lower.includes("too large")) ||
+    // Local OpenAI-compatible backends (e.g. llama.cpp) reject with n_keep >= n_ctx
+    // when the session outgrows the runtime context window.
+    (lower.includes("n_keep") && lower.includes("n_ctx"))
   );
 }
 
@@ -509,7 +513,7 @@ export function sanitizeUserFacingText(text: string, opts?: { errorContext?: boo
     return text;
   }
   const errorContext = opts?.errorContext ?? false;
-  const stripped = stripFinalTagsFromText(text);
+  const stripped = stripInboundMetadata(stripFinalTagsFromText(text));
   const trimmed = stripped.trim();
   if (!trimmed) {
     return "";
