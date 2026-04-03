@@ -11,10 +11,14 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 - Local Models: custom providers with a `baseUrl` are now classified as local in the runtime candidate pool, prioritized over cloud models in fallback ordering.
 - CLI: add `marv models pool list` and `marv models pool clear [model]` to inspect and manage runtime model availability state, useful for recovering local models marked unavailable after slow cold starts.
 - Local Models: alias re-assignment within the same provider now transfers the alias automatically instead of rejecting the change.
+- Update: `marv update` now defaults to git-based updates instead of npm. Package installs auto-migrate to a git checkout at `~/.marv/source`; use `--channel stable` to stay on the npm registry path.
 
 ### Fixes
 
 - Models: fix session model drift where an explicitly selected model matching the configured default had its override silently cleared, causing later auto-runs to fall back to the first runnable cloud candidate (e.g. Gemini) instead of staying on the pinned local model.
+- Update: fix stored `update.channel=dev` being ignored on subsequent `marv update` calls, requiring `--channel dev` to be passed again each time.
+- Update: fix default git checkout target resolving to `~/.marv` (state directory) instead of a dedicated `~/.marv/source` path.
+- Update: when running from a Marv git checkout, `marv update` now detects and uses the cwd checkout directly.
 
 ## 2026.3.31
 

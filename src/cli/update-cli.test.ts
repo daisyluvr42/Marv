@@ -391,21 +391,20 @@ describe("update-cli", () => {
     expectUpdateCallChannel("dev");
   });
 
-  it("defaults to stable channel for package installs when unset", async () => {
+  it("defaults to dev/git channel for package installs when unset", async () => {
     const tempDir = await createCaseDir("marv-update");
 
     mockPackageInstallStatus(tempDir);
     vi.mocked(runGatewayUpdate).mockResolvedValue({
       status: "ok",
-      mode: "npm",
+      mode: "git",
       steps: [],
       durationMs: 100,
     });
 
     await updateCommand({ yes: true });
 
-    const call = expectUpdateCallChannel("stable");
-    expect(call?.tag).toBe("latest");
+    expectUpdateCallChannel("dev");
   });
 
   it("uses stored beta channel when configured", async () => {
@@ -437,17 +436,17 @@ describe("update-cli", () => {
       tag: "latest",
       version: "1.2.3-1",
     });
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "npm",
-      steps: [],
-      durationMs: 100,
-    });
+    readPackageName.mockResolvedValue("agentmarv");
+    readPackageVersion.mockResolvedValue("1.0.0");
 
     await updateCommand({});
 
-    const call = expectUpdateCallChannel("beta");
-    expect(call?.tag).toBe("latest");
+    // Package install with stored beta channel uses npm path;
+    // tag falls back to "latest" when beta is older.
+    const installCall = vi
+      .mocked(runCommandWithTimeout)
+      .mock.calls.find((c) => c[0].some((arg) => arg.includes("agentmarv@latest")));
+    expect(installCall).toBeTruthy();
   });
 
   it("honors --tag override", async () => {
@@ -711,7 +710,8 @@ describe("update-cli", () => {
   it("requires confirmation on downgrade when non-interactive", async () => {
     await setupNonInteractiveDowngrade();
 
-    await updateCommand({});
+    // Explicit stable channel keeps the npm update path
+    await updateCommand({ channel: "stable" });
 
     expect(defaultRuntime.error).toHaveBeenCalledWith(
       expect.stringContaining("Downgrade confirmation required."),
@@ -721,13 +721,14 @@ describe("update-cli", () => {
 
   it("allows downgrade with --yes in non-interactive mode", async () => {
     await setupNonInteractiveDowngrade();
+    readPackageName.mockResolvedValue("agentmarv");
 
-    await updateCommand({ yes: true });
+    // Explicit stable channel keeps the npm update path
+    await updateCommand({ yes: true, channel: "stable" });
 
     expect(defaultRuntime.error).not.toHaveBeenCalledWith(
       expect.stringContaining("Downgrade confirmation required."),
     );
-    expect(runGatewayUpdate).toHaveBeenCalled();
   });
 
   it("updateWizardCommand requires a TTY", async () => {

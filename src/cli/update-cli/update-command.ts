@@ -506,7 +506,14 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   }
 
   const installKind = updateStatus.installKind;
-  const switchToGit = requestedChannel === "dev" && installKind !== "git";
+
+  // Default to git updates: switch to git unless explicitly requesting stable/beta
+  const effectiveChannelForSwitch = requestedChannel ?? storedChannel;
+  const switchToGit =
+    (effectiveChannelForSwitch === "dev" || effectiveChannelForSwitch === null) &&
+    installKind !== "git";
+
+  // Switch to package only if explicitly requesting stable/beta on a git install
   const switchToPackage =
     requestedChannel !== null && requestedChannel !== "dev" && installKind === "git";
   const updateInstallKind = switchToGit ? "git" : switchToPackage ? "package" : installKind;
@@ -601,7 +608,11 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     }
   }
 
-  const result = switchToPackage
+  // Use package update when explicitly switching to package, or when staying
+  // on a package install without switching to git (e.g. stored channel is beta/stable).
+  const usePackageUpdate = switchToPackage || (installKind === "package" && !switchToGit);
+
+  const result = usePackageUpdate
     ? await runPackageInstallUpdate({
         root,
         installKind,

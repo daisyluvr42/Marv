@@ -130,7 +130,7 @@ export function resolveGitInstallDir(): string {
 }
 
 function resolveDefaultGitDir(): string {
-  return resolveStateDir(process.env, os.homedir);
+  return path.join(resolveStateDir(process.env, os.homedir), "source");
 }
 
 export function resolveNodeRunner(): string {
@@ -142,12 +142,17 @@ export function resolveNodeRunner(): string {
 }
 
 export async function resolveUpdateRoot(): Promise<string> {
+  // Prefer cwd if it's a Marv git checkout (dev workflow)
+  const cwd = process.cwd();
+  if ((await isGitCheckout(cwd)) && (await isCorePackage(cwd))) {
+    return cwd;
+  }
   return (
     (await resolveMarvPackageRoot({
       moduleUrl: import.meta.url,
       argv1: process.argv[1],
-      cwd: process.cwd(),
-    })) ?? process.cwd()
+      cwd,
+    })) ?? cwd
   );
 }
 
