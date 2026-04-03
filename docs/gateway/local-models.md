@@ -142,9 +142,36 @@ vLLM, LiteLLM, OAI-proxy, or custom gateways work if they expose an OpenAI-style
 
 Keep `models.mode: "merge"` so hosted models stay available as fallbacks.
 
+## Local provider classification
+
+Any custom provider with a `baseUrl` (LM Studio, vLLM, llama-swap, etc.) is automatically classified as a **local** model in the runtime candidate pool. Local models are prioritized over cloud models in the fallback order, so your local endpoint is tried first when it is the configured default.
+
+This applies to both well-known provider names (`ollama`, `vllm`, `lmstudio`, `localai`, `llamacpp`) and custom provider IDs with a `baseUrl` configured under `models.providers`.
+
+## Session model pinning
+
+When you select a model with `/model <provider/model>`, Marv pins that model for the session. The pin is preserved even when the selected model matches the configured default. To clear the pin and fall back to automatic selection, use `/model default` (or send `model: null` via the API).
+
 ## Troubleshooting
 
 - Gateway can reach the proxy? `curl http://127.0.0.1:1234/v1/models`.
 - LM Studio model unloaded? Reload; cold start is a common “hanging” cause.
 - Context errors? Lower `contextWindow` or raise your server limit.
 - Safety: local models skip provider-side filters; keep agents narrow and compaction on to limit prompt injection blast radius.
+
+### Model marked unavailable after cold start
+
+Local servers with slow model loading (llama-swap, large GGUF models) can time out during cold start. Marv marks the model as temporarily unavailable and falls back to the next candidate. To recover immediately:
+
+```bash
+marv models pool list                # check which models are marked unavailable
+marv models pool clear <model-ref>   # clear the failure state
+```
+
+Or clear all entries:
+
+```bash
+marv models pool clear
+```
+
+The availability state also expires automatically (5 minutes for timeouts, 30 minutes for other failures), but `pool clear` lets you recover instantly.

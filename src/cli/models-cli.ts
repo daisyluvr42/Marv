@@ -21,6 +21,8 @@ import {
   modelsImageFallbacksListCommand,
   modelsImageFallbacksRemoveCommand,
   modelsListCommand,
+  modelsPoolClearCommand,
+  modelsPoolListCommand,
   modelsScanCommand,
   modelsSetCommand,
   modelsSetImageCommand,
@@ -40,6 +42,16 @@ export const MODELS_CLI_COMMAND_POLICIES = defineCommandPolicies("models", [
   },
   {
     path: "status",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "pool list",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "pool clear",
     cliBootstrap: "skip",
     sideEffect: "none",
   },
@@ -259,6 +271,29 @@ export function registerModelsCli(program: Command) {
     .action(async () => {
       await runModelsCommand(async () => {
         await modelsImageFallbacksClearCommand(defaultRuntime);
+      });
+    });
+
+  const pool = models.command("pool").description("Manage runtime model availability state");
+
+  pool
+    .command("list")
+    .description("Show model availability entries (failure states, cooldowns)")
+    .option("--json", "Output JSON", false)
+    .option("--plain", "Plain output", false)
+    .action(async (opts) => {
+      await runModelsCommand(async () => {
+        await modelsPoolListCommand(opts, defaultRuntime);
+      });
+    });
+
+  pool
+    .command("clear")
+    .description("Clear availability state (all, or a specific model ref)")
+    .argument("[model]", "Model ref to clear (e.g. custom-192-168-0-42-11434/qwen3.5-122b)")
+    .action(async (model?: string) => {
+      await runModelsCommand(async () => {
+        await modelsPoolClearCommand(model, defaultRuntime);
       });
     });
 

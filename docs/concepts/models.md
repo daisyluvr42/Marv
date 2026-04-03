@@ -22,12 +22,19 @@ Marv selects models in this order:
 3. **Provider auth failover** happens inside one selected model before moving to
    the next candidate in the pool.
 
+Manual session selection is pinned: once you select a model, the session stays
+on that model until you explicitly clear it (even if the selected model matches
+the configured default). Send `/model default` or `model: null` via the API to
+clear the pin and return to automatic selection.
+
 Related:
 
 - `models.catalog` is the configured inventory of models Marv can use.
 - `agents.modelPools` defines named automatic pools.
 - `agents.defaults.modelPool` picks the default pool.
 - `agents.defaults.modelPool` can override the pool for a specific agent.
+- Custom providers with a `baseUrl` are classified as **local** and prioritized over cloud models in the candidate pool.
+- `marv models pool list` / `pool clear` manage runtime availability state. See [CLI: models](/cli/models#pool-management).
 
 ## Quick model picks (anecdotal)
 

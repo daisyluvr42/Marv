@@ -136,6 +136,35 @@ timeouts that exhausted profile rotation (other errors do not advance fallback).
 When a run starts with a model override (hooks or CLI), fallbacks still end at
 the current pool order after trying the selected model first.
 
+### Runtime availability state
+
+When a model fails, Marv records the failure in a runtime availability store
+(`model-availability.json`). Failure states and their retry windows:
+
+| Status                  | Retry window                                           | Cause                          |
+| ----------------------- | ------------------------------------------------------ | ------------------------------ |
+| `temporary_unavailable` | 5 min (timeout), 15 min (rate limit), 60 min (billing) | Transient errors               |
+| `unsupported`           | 30 min TTL                                             | 404, unknown model, deprecated |
+| `auth_invalid`          | 30 min TTL                                             | Auth errors                    |
+
+Models in `unsupported` or `auth_invalid` state are excluded from the candidate
+pool until the entry expires or is manually cleared. `temporary_unavailable` does
+not block candidates; the fallback loop handles skipping at runtime.
+
+Use `marv models pool list` to inspect the current state, and
+`marv models pool clear` to remove entries and let models re-enter the pool
+immediately. See [CLI: models](/cli/models#pool-management).
+
+### Local model cold-start recovery
+
+Local servers (llama-swap, Ollama, vLLM) may time out during cold start or
+model swapping. When this happens, the model is marked `temporary_unavailable`
+and Marv falls back to the next candidate. To recover without waiting:
+
+```bash
+marv models pool clear <provider/model>
+```
+
 ## Related config
 
 See [Gateway configuration](/gateway/configuration) for:

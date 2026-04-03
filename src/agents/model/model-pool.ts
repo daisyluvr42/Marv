@@ -50,11 +50,20 @@ export type RuntimeModelRequirements = {
 function inferLocation(
   provider: string,
   entry?: ConfiguredModelCatalogEntry,
+  providerConfig?: { baseUrl?: string },
 ): ConfiguredModelLocation {
   if (entry?.location) {
     return entry.location;
   }
-  return LOCAL_PROVIDERS.has(normalizeProviderId(provider)) ? "local" : "cloud";
+  if (LOCAL_PROVIDERS.has(normalizeProviderId(provider))) {
+    return "local";
+  }
+  // Custom providers with a baseUrl are typically local/private-network servers
+  // and should be prioritized like local models in the candidate pool.
+  if (providerConfig?.baseUrl) {
+    return "local";
+  }
+  return "cloud";
 }
 
 function inferTier(entry?: ConfiguredModelCatalogEntry): ConfiguredModelTier {
@@ -244,7 +253,9 @@ function buildConfiguredModelList(params: {
       ref,
       provider: parsed.provider,
       model: parsed.model,
-      location: registryEntry?.location ?? inferLocation(parsed.provider, catalogEntry),
+      location:
+        registryEntry?.location ??
+        inferLocation(parsed.provider, catalogEntry, configuredProviderEntries[parsed.provider]),
       tier: registryEntry?.tier ?? inferTier(catalogEntry),
       capabilities: registryEntry?.capabilities ?? inferCapabilities(catalogEntry, parsed.model),
       priority: catalogEntry?.priority ?? 0,

@@ -178,6 +178,8 @@ function resolveAliasError(params: {
   raw: string;
   cfg: MarvConfig;
   modelRef: string;
+  /** When set, allow the alias to be transferred from another model on the same provider. */
+  allowSameProviderTransfer?: boolean;
 }): string | undefined {
   const trimmed = params.raw.trim();
   if (!trimmed) {
@@ -201,6 +203,14 @@ function resolveAliasError(params: {
   const existingKey = modelKey(existing.ref.provider, existing.ref.model);
   if (existingKey === params.modelRef) {
     return undefined;
+  }
+  // Allow re-assigning the alias when both models belong to the same provider
+  // (e.g. switching from qwen3.5-35b to qwen3.5-122b on the same local endpoint).
+  if (params.allowSameProviderTransfer) {
+    const newProvider = params.modelRef.split("/")[0];
+    if (existing.ref.provider === newProvider) {
+      return undefined;
+    }
   }
   return `Alias ${normalized} already points to ${existingKey}.`;
 }
@@ -510,6 +520,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     raw: alias,
     cfg: params.config,
     modelRef,
+    allowSameProviderTransfer: true,
   });
   if (aliasError) {
     throw new CustomApiError("invalid_alias", aliasError);
@@ -557,17 +568,20 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     defaultProvider: providerId,
   });
   if (alias) {
+    // Clear the alias from any other model on the same provider so the transfer
+    // is clean (avoids stale alias entries when switching e.g. 35b → 122b).
+    const nextMetadata = { ...config.models?.metadata };
+    for (const [key, entry] of Object.entries(nextMetadata)) {
+      if (key !== modelRef && entry?.alias?.trim().toLowerCase() === alias.toLowerCase()) {
+        nextMetadata[key] = { ...entry, alias: undefined };
+      }
+    }
+    nextMetadata[modelRef] = { ...nextMetadata[modelRef], alias };
     config = {
       ...config,
       models: {
         ...config.models,
-        metadata: {
-          ...config.models?.metadata,
-          [modelRef]: {
-            ...config.models?.metadata?.[modelRef],
-            alias,
-          },
-        },
+        metadata: nextMetadata,
       },
     };
   }
@@ -706,7 +720,12 @@ export async function promptCustomApiConfig(params: {
         providers,
       });
       const modelRef = modelKey(providerIdResult.providerId, modelId);
-      return resolveAliasError({ raw: value, cfg: config, modelRef });
+      return resolveAliasError({
+        raw: value,
+        cfg: config,
+        modelRef,
+        allowSameProviderTransfer: true,
+      });
     },
   });
   const resolvedCompatibility = compatibility ?? "openai";

@@ -820,6 +820,15 @@ Options:
 - `remove <model>`
 - `clear`
 
+### `models pool list|clear`
+
+Options:
+
+- `list`: show runtime model availability state
+  - `--json`
+  - `--plain`
+- `clear [model]`: clear availability entries (all, or a specific model ref)
+
 ### `models scan`
 
 Options:

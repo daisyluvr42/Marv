@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { resolveAgentConfig, resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import {
   findModelInCatalog,
   findReasoningModelForProvider,
   type ModelCatalogEntry,
 } from "../../agents/model/model-catalog.js";
 import {
-  normalizeModelSelection,
-  parseModelRef,
   resolveAllowedModelRef,
   resolveDefaultModelForAgent,
   resolveSubagentConfiguredModelSelection,
@@ -120,11 +118,6 @@ export async function applySessionsPatchToStore(params: {
   const subagentModelHint = isSubagentSessionKey(storeKey)
     ? resolveSubagentConfiguredModelSelection({ cfg, agentId: sessionAgentId })
     : undefined;
-  const explicitSubagentModelHint = isSubagentSessionKey(storeKey)
-    ? (normalizeModelSelection(resolveAgentConfig(cfg, sessionAgentId)?.subagents?.model) ??
-      normalizeModelSelection(cfg.agents?.defaults?.subagents?.model))
-    : undefined;
-
   const existing = store[storeKey];
   const next: SessionEntry = existing
     ? {
@@ -492,19 +485,16 @@ export async function applySessionsPatchToStore(params: {
       if ("error" in resolved) {
         return invalid(resolved.error);
       }
-      const effectiveDefaultRef =
-        subagentModelHint && isSubagentSessionKey(storeKey) && !explicitSubagentModelHint
-          ? (parseModelRef(subagentModelHint, resolvedDefault.provider) ?? resolvedDefault)
-          : resolvedDefault;
-      const isDefault =
-        resolved.ref.provider === effectiveDefaultRef.provider &&
-        resolved.ref.model === effectiveDefaultRef.model;
+      // When the user explicitly names a model — even if it matches the configured
+      // default — treat it as a deliberate pin so the session stays on that model.
+      // The `isDefault: true` (clear-override) path is already handled above when
+      // `raw === null`, which is the explicit "reset to default" signal.
       applyModelOverrideToSessionEntry({
         entry: next,
         selection: {
           provider: resolved.ref.provider,
           model: resolved.ref.model,
-          isDefault,
+          isDefault: false,
         },
       });
     }
@@ -549,14 +539,14 @@ export async function applySessionsPatchToStore(params: {
         if (!catalogEntry?.reasoning) {
           const reasoningModel = findReasoningModelForProvider(catalog, effectiveProvider);
           if (reasoningModel) {
+            // Auto-switch to a reasoning model is a deliberate selection;
+            // preserve it as a manual override so later runs don't drift.
             applyModelOverrideToSessionEntry({
               entry: next,
               selection: {
                 provider: reasoningModel.provider,
                 model: reasoningModel.id,
-                isDefault:
-                  reasoningModel.provider === resolvedDefault.provider &&
-                  reasoningModel.id === resolvedDefault.model,
+                isDefault: false,
               },
             });
             notices.push(

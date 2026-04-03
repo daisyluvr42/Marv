@@ -1,8 +1,9 @@
 ---
-summary: "CLI reference for `marv models` (status/list/set/scan, aliases, fallbacks, auth)"
+summary: "CLI reference for `marv models` (status/list/set/scan, aliases, fallbacks, pool, auth)"
 read_when:
   - You want to change default models or view provider auth status
   - You want to scan available models/providers and debug auth profiles
+  - You want to manage runtime model availability (pool list/clear)
 title: "models"
 ---
 
@@ -53,6 +54,23 @@ Options:
 - `--probe-concurrency <n>`
 - `--probe-max-tokens <n>`
 - `--agent <id>` (configured agent id; overrides `MARV_AGENT_DIR`/`PI_CODING_AGENT_DIR`)
+
+## Pool management
+
+```bash
+marv models pool list              # show runtime availability state
+marv models pool list --json       # JSON output
+marv models pool clear             # clear all availability entries
+marv models pool clear <model-ref> # clear a specific model
+```
+
+`models pool list` shows the runtime availability state for each model: status
+(`ready`, `temporary_unavailable`, `unsupported`, `auth_invalid`), last check
+time, retry countdown, and last error.
+
+`models pool clear` removes failure entries so models re-enter the candidate
+pool immediately. This is useful when a local model was transiently unavailable
+(slow cold-start, server restart) and got marked as failed.
 
 ## Aliases + fallbacks
 

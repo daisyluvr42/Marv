@@ -153,6 +153,34 @@ export function clearProviderFailureStates(provider: string): void {
   }
 }
 
+/**
+ * Clear the availability entry for a single model ref so it re-enters
+ * the candidate pool immediately.
+ */
+export function clearRuntimeModelAvailability(ref: string): boolean {
+  const store = readStore();
+  if (!store.models[ref]) {
+    return false;
+  }
+  delete store.models[ref];
+  writeStore(store);
+  return true;
+}
+
+/**
+ * Clear all entries from the availability store (full reset).
+ * Returns the number of entries removed.
+ */
+export function clearAllRuntimeModelAvailability(): number {
+  const store = readStore();
+  const count = Object.keys(store.models).length;
+  if (count === 0) {
+    return 0;
+  }
+  writeStore({ models: {} });
+  return count;
+}
+
 export function markRuntimeModelReady(ref: string): void {
   const store = readStore();
   store.models[ref] = {
