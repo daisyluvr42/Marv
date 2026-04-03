@@ -3,6 +3,7 @@ import { agents } from "../../agents/gateway.js";
 
 const {
   runner: { runEmbedded: runEmbeddedPiAgent, runWithFallback: runWithModelFallback },
+  errors: { isLikelyContextOverflowError },
   models: { isCliProvider },
   sandbox: { resolveSandboxRuntimeStatus, resolveSandboxConfigForAgent },
 } = agents;
@@ -40,10 +41,10 @@ export async function runMemoryFlushIfNeeded(params: {
   sessionKey?: string;
   storePath?: string;
   isHeartbeat: boolean;
-}): Promise<SessionEntry | undefined> {
+}): Promise<{ entry: SessionEntry | undefined; memoryFlushOverflow: boolean }> {
   const memoryFlushSettings = resolveMemoryFlushSettings(params.cfg);
   if (!memoryFlushSettings) {
-    return params.sessionEntry;
+    return { entry: params.sessionEntry, memoryFlushOverflow: false };
   }
 
   const memoryFlushWritable = (() => {
@@ -79,7 +80,7 @@ export async function runMemoryFlushIfNeeded(params: {
     });
 
   if (!shouldFlushMemory) {
-    return params.sessionEntry;
+    return { entry: params.sessionEntry, memoryFlushOverflow: false };
   }
 
   let activeSessionEntry = params.sessionEntry;
@@ -169,8 +170,12 @@ export async function runMemoryFlushIfNeeded(params: {
       }
     }
   } catch (err) {
-    logVerbose(`memory flush run failed: ${String(err)}`);
+    const errMsg = String(err);
+    logVerbose(`memory flush run failed: ${errMsg}`);
+    if (isLikelyContextOverflowError(errMsg)) {
+      return { entry: activeSessionEntry, memoryFlushOverflow: true };
+    }
   }
 
-  return activeSessionEntry;
+  return { entry: activeSessionEntry, memoryFlushOverflow: false };
 }
