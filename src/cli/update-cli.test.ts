@@ -391,20 +391,20 @@ describe("update-cli", () => {
     expectUpdateCallChannel("dev");
   });
 
-  it("defaults to dev/git channel for package installs when unset", async () => {
+  it("defaults to stable channel for package installs when unset", async () => {
     const tempDir = await createCaseDir("marv-update");
 
     mockPackageInstallStatus(tempDir);
-    vi.mocked(runGatewayUpdate).mockResolvedValue({
-      status: "ok",
-      mode: "git",
-      steps: [],
-      durationMs: 100,
-    });
+    readPackageName.mockResolvedValue("agentmarv");
+    readPackageVersion.mockResolvedValue("1.0.0");
 
     await updateCommand({ yes: true });
 
-    expectUpdateCallChannel("dev");
+    // Package installs with no stored channel use npm path (stable)
+    const installCall = vi
+      .mocked(runCommandWithTimeout)
+      .mock.calls.find((c) => c[0].some((arg) => arg.includes("agentmarv@latest")));
+    expect(installCall).toBeTruthy();
   });
 
   it("uses stored beta channel when configured", async () => {

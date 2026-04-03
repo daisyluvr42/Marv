@@ -507,11 +507,9 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   const installKind = updateStatus.installKind;
 
-  // Default to git updates: switch to git unless explicitly requesting stable/beta
+  // Switch to git when channel is dev (explicit or stored config)
   const effectiveChannelForSwitch = requestedChannel ?? storedChannel;
-  const switchToGit =
-    (effectiveChannelForSwitch === "dev" || effectiveChannelForSwitch === null) &&
-    installKind !== "git";
+  const switchToGit = effectiveChannelForSwitch === "dev" && installKind !== "git";
 
   // Switch to package only if explicitly requesting stable/beta on a git install
   const switchToPackage =
