@@ -49,8 +49,7 @@ describe("task context builder", () => {
       content: "Must preserve backward compatibility with old session format.",
       createdAt: 1200,
     });
-    // All items are palace tier now. Memory is included based on
-    // relevance scoring from querySoulMemoryMulti, not tier-based filtering.
+    // Memory is included based on relevance scoring from querySoulMemoryMulti.
     writeSoulMemory({
       agentId: "main",
       scopeType: "task",
@@ -84,7 +83,7 @@ describe("task context builder", () => {
 
     expect(built.layers.rollingSummary).toContain("Summarized project background");
     expect(built.layers.keyDecisions[0]).toContain("backward compatibility");
-    // p0Memory layer now contains all relevance-scored items (all palace tier), not just P0-tier items
+    // p0Memory layer contains all relevance-scored items from the Memory Palace
     expect(built.layers.p0Memory.some((line) => line.includes("migration flow"))).toBe(true);
     expect(built.layers.recentEntries.length).toBeGreaterThan(0);
     expect(built.layers.recentEntries.length).toBeLessThan(8);

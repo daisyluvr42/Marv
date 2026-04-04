@@ -78,7 +78,7 @@
 
 ## Review
 
-- The current memory implementation is split across multiple persistence layers rather than a single subsystem: config-backed P0 sections, structured soul-memory SQLite, builtin legacy memory index SQLite, optional QMD index state, task-context SQLite plus archive files, and experience markdown files.
+- The current memory implementation is split across multiple persistence layers rather than a single subsystem: config-backed soul/identity/user sections, structured soul-memory SQLite (Memory Palace), builtin legacy memory index SQLite, optional QMD index state, task-context SQLite plus archive files, and experience markdown files.
 - Agent recall paths are not uniform: `memory_search` queries active soul memory, archive, and legacy fallback; CLI search omits archive; gateway `memory.search` hits active soul memory only.
 - The strongest implementation mismatches are:
   - builtin manager advertises FTS-only search but skips provider-less indexing, so fresh FTS-only indexes are not built
@@ -132,7 +132,7 @@
 ## Review: Memory Audit
 
 - Verified current memory architecture across `src/memory`, `src/agents`, `src/auto-reply`, `src/knowledge`, and gateway/MCP memory surfaces.
-- Confirmed the system now spans multiple layers: config-backed P0/Soul injection, structured Soul SQLite memory, legacy/QMD markdown indexers, task-context stores, and `MARV_EXPERIENCE.md` / `MARV_CONTEXT.md`.
+- Confirmed the system now spans multiple layers: config-backed soul/identity/user injection, structured Soul SQLite memory (Memory Palace), legacy/QMD markdown indexers, task-context stores, and `MARV_EXPERIENCE.md` / `MARV_CONTEXT.md`.
 - Highest-risk findings:
   - `memory_write` is advertised and used as a structured factual memory writer, but actually routes into experience distillation, so scope/kind/factual persistence semantics do not match the implementation.
   - Active Soul recall is scored globally with scope penalties rather than hard scope filtering, which can surface unrelated-session memory under strong matches.

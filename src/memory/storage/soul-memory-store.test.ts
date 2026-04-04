@@ -265,7 +265,7 @@ describe("soul-memory-store", () => {
     expect(cResult?.score ?? 0).toBeGreaterThan(0);
   });
 
-  it("assigns all sources to palace with no tier-based preference for stale records", () => {
+  it("assigns all sources to palace for stale records", () => {
     const oldMs = Date.UTC(2026, 0, 1, 0, 0, 0);
     const nowMs = oldMs + 30 * 24 * 60 * 60 * 1000;
     const p0 = writeSoulMemory({
@@ -299,7 +299,7 @@ describe("soul-memory-store", () => {
       nowMs,
     });
     expect(results).toHaveLength(2);
-    // All sources map to palace — no tier-based preference
+    // All sources map to palace
     expect(results[0]?.tier).toBe("palace");
     expect(results[1]?.tier).toBe("palace");
   });

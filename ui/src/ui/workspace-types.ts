@@ -48,7 +48,6 @@ export type WorkspaceMemorySearchItem = WorkspaceMemoryItem & {
   relevanceScore: number;
   scopePenalty: number;
   clarityScore: number;
-  tierMultiplier?: number;
   wasRecallBoosted: boolean;
   timeDecay: number;
   salienceScore: number;

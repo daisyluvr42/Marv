@@ -14,6 +14,10 @@ vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
   resolveDefaultAgentId: vi.fn().mockReturnValue("main"),
   resolveAgentSkillsFilter: resolveAgentSkillsFilterMock,
+  resolveSessionAgentId: vi.fn().mockReturnValue("main"),
+  listAgentIds: vi.fn().mockReturnValue(["main"]),
+  resolveSessionAgentIds: vi.fn().mockReturnValue(["main"]),
+  resolveAgentIdFromSessionKey: vi.fn().mockReturnValue("main"),
 }));
 
 vi.mock("../../agents/skills.js", () => ({
@@ -26,6 +30,7 @@ vi.mock("../../agents/skills/refresh.js", () => ({
 
 vi.mock("../../agents/workspace.js", () => ({
   ensureAgentWorkspace: vi.fn().mockResolvedValue({ dir: "/tmp/workspace" }),
+  resolveDefaultAgentWorkspaceDir: vi.fn().mockReturnValue("/tmp/workspace"),
 }));
 
 vi.mock("../../agents/model/model-catalog.js", () => ({
@@ -39,10 +44,18 @@ vi.mock("../../agents/model/model-selection.js", () => ({
   resolveConfiguredModelRef: vi.fn().mockReturnValue({ provider: "openai", model: "gpt-4" }),
   resolveHooksGmailModel: vi.fn().mockReturnValue(null),
   resolveThinkingDefault: vi.fn().mockReturnValue(undefined),
+  buildAllowedModelSet: vi.fn().mockReturnValue(new Set()),
+  modelKey: vi.fn((p: string, m: string) => `${p}/${m}`),
+  normalizeProviderId: vi.fn((id: string) => id),
+  resolveModelRefFromString: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock("../../agents/model/model-pool.js", () => ({
   resolveRuntimeModelPlan: vi.fn().mockReturnValue({ candidates: [] }),
+  applyThinkingModelPreferences: vi.fn((p: unknown) => p),
+  resolveModelTier: vi.fn().mockReturnValue("standard"),
+  resolveThinkingModelTier: vi.fn().mockReturnValue("standard"),
+  resolveAgentModelPoolName: vi.fn().mockReturnValue("default"),
 }));
 
 vi.mock("../../agents/model/model-fallback.js", () => ({
@@ -63,6 +76,11 @@ vi.mock("../../agents/runner/pi-embedded.js", () => ({
     payloads: [{ text: "test output" }],
     meta: { agentMeta: { usage: { input: 10, output: 20 } } },
   }),
+  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
+  abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
+  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
+  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+  resolveEmbeddedSessionLane: vi.fn((key: string) => `session:${key?.trim() || "main"}`),
 }));
 
 vi.mock("../../agents/context.js", () => ({
@@ -143,6 +161,8 @@ vi.mock("../../security/external-content.js", () => ({
   detectSuspiciousPatterns: vi.fn().mockReturnValue([]),
   getHookType: vi.fn().mockReturnValue("unknown"),
   isExternalHookSession: vi.fn().mockReturnValue(false),
+  wrapWebContent: vi.fn((_c: string, _w: string) => ""),
+  wrapExternalContent: vi.fn((_c: string) => ""),
 }));
 
 vi.mock("../delivery.js", () => ({
@@ -170,6 +190,26 @@ vi.mock("./helpers.js", () => ({
 const resolveCronSessionMock = vi.fn();
 vi.mock("./session.js", () => ({
   resolveCronSession: resolveCronSessionMock,
+}));
+
+vi.mock("../../agents/current-time.js", () => ({
+  resolveCronStyleNow: vi.fn().mockReturnValue("2026-04-04 12:00"),
+}));
+
+vi.mock("../../agents/subagent-registry.js", () => ({
+  countActiveDescendantRuns: vi.fn().mockReturnValue(0),
+}));
+
+vi.mock("../../auto-reply/support/tokens.js", () => ({
+  SILENT_REPLY_TOKEN: "__SILENT__",
+}));
+
+vi.mock("../../infra/outbound/identity.js", () => ({
+  resolveAgentOutboundIdentity: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock("../../infra/outbound/outbound-session.js", () => ({
+  resolveOutboundSessionRoute: vi.fn().mockReturnValue(undefined),
 }));
 
 vi.mock("../../agents/defaults.js", () => ({

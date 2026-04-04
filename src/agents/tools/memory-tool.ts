@@ -88,7 +88,7 @@ export function createMemorySearchTool(options: {
     label: "Memory Search",
     name: "memory_search",
     description:
-      "Mandatory recall step: search structured memory first across active tiers and archived history, then use legacy Markdown search only as compatibility fallback. Use before answering questions about prior work, decisions, dates, people, preferences, or todos.",
+      "Mandatory recall step: search structured memory first across Memory Palace and archived history, then use legacy Markdown search only as compatibility fallback. Use before answering questions about prior work, decisions, dates, people, preferences, or todos.",
     parameters: MemorySearchSchema,
     execute: async (_toolCallId, params) => {
       const query = readStringParam(params, "query", { required: true });

@@ -157,7 +157,7 @@ export function querySoulMemoryMulti(params: {
       const item = rowToMemoryItem(row);
       const effectiveTs = item.lastAccessedAt ?? item.createdAt;
       const ageDays = Math.max(0, (nowMs - effectiveTs) / MILLIS_PER_DAY);
-      // No tier-based TTL exemption: all items are in the Memory Palace. TTL applies uniformly.
+      // TTL applies uniformly to all Memory Palace items.
       if (ttlDays > 0 && ageDays > ttlDays) {
         continue;
       }
@@ -273,7 +273,6 @@ export function querySoulMemoryMulti(params: {
       const salienceDecay = decayScore;
       const salienceReinforcement = reinforcementFactor;
       const salienceScore = salienceReinforcement; // score = relevance x scope x reinforcement
-      const tierMultiplier = 1; // All items are in the Memory Palace
       // Discount compacted episodic items so semantic distillations rank higher
       const compactedFactor =
         candidate.item.isCompacted && candidate.item.memoryType === "episodic"
@@ -297,7 +296,6 @@ export function querySoulMemoryMulti(params: {
         relevanceScore,
         scopePenalty: candidate.scopePenalty,
         clarityScore,
-        tierMultiplier,
         wasRecallBoosted,
         timeDecay: decayFactor,
         salienceScore,

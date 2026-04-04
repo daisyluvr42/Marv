@@ -215,7 +215,7 @@ describe("memory search citations", () => {
         relevanceScore: 0.9,
         scopePenalty: 1,
         clarityScore: 1,
-        tierMultiplier: 1,
+
         wasRecallBoosted: false,
         timeDecay: 1,
         salienceScore: 1,
@@ -447,7 +447,7 @@ describe("memory tools", () => {
         relevanceScore: 0.8,
         scopePenalty: 1,
         clarityScore: 0.9,
-        tierMultiplier: 1,
+
         wasRecallBoosted: false,
         timeDecay: 0.9,
         salienceScore: 1.1,

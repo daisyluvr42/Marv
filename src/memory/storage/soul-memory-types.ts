@@ -253,7 +253,6 @@ export type SoulMemoryQueryResult = SoulMemoryItem & {
   relevanceScore: number;
   scopePenalty: number;
   clarityScore: number;
-  tierMultiplier: number;
   wasRecallBoosted: boolean;
   timeDecay: number;
   salienceScore: number;

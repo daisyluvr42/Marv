@@ -245,12 +245,6 @@ export function listSoulMemoryItems(params: {
   }
 }
 
-/** @deprecated All items are in the Memory Palace. Use countSoulMemoryItems() instead. */
-export function countSoulMemoryItemsByTier(params: { agentId: string }): Record<string, number> {
-  const total = countSoulMemoryItems(params);
-  return { palace: total };
-}
-
 export function countSoulMemoryItemsByRecordKind(params: {
   agentId: string;
 }): Record<SoulMemoryRecordKind, number> {

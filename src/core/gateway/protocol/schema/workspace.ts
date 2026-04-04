@@ -62,7 +62,6 @@ export const MemorySearchItemSchema = Type.Object(
     relevanceScore: Type.Number(),
     scopePenalty: Type.Number(),
     clarityScore: Type.Number(),
-    tierMultiplier: Type.Number(),
     wasRecallBoosted: Type.Boolean(),
     timeDecay: Type.Number(),
     salienceScore: Type.Number(),

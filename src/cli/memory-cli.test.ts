@@ -23,7 +23,6 @@ vi.mock("../memory/storage/soul-memory-store.js", () => ({
     experience: 0,
     soul: 0,
   })),
-  countSoulMemoryItemsByTier: vi.fn(() => ({ palace: 0 })),
   countSoulMemoryItems: vi.fn(() => 0),
   listSoulMemoryItems: vi.fn(() => []),
   querySoulMemoryMulti,
