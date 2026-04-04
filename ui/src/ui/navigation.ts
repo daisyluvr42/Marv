@@ -26,7 +26,13 @@ export type OperationsSection = (typeof OPERATIONS_SECTIONS)[number];
 export const AGENTS_SECTIONS = ["agents", "skills", "nodes"] as const;
 export type AgentsSection = (typeof AGENTS_SECTIONS)[number];
 
-export const WORKSPACE_SECTIONS = ["projects", "memory", "documents", "calendar"] as const;
+export const WORKSPACE_SECTIONS = [
+  "projects",
+  "workbench",
+  "memory",
+  "documents",
+  "calendar",
+] as const;
 export type WorkspaceSection = (typeof WORKSPACE_SECTIONS)[number];
 
 export const SETTINGS_SECTIONS = ["config"] as const;
@@ -77,6 +83,7 @@ const AGENTS_SECTION_PATHS: Record<AgentsSection, string> = {
 
 const WORKSPACE_SECTION_PATHS: Record<WorkspaceSection, string> = {
   projects: "/projects",
+  workbench: "/workbench",
   memory: "/memory",
   documents: "/documents",
   calendar: "/calendar",
@@ -136,6 +143,15 @@ const PATH_TO_ROUTE = new Map<string, RouteState>([
   [
     "/projects",
     { ...DEFAULT_ROUTE_STATE, tab: "workspace", workspaceSection: "projects", path: "/projects" },
+  ],
+  [
+    "/workbench",
+    {
+      ...DEFAULT_ROUTE_STATE,
+      tab: "workspace",
+      workspaceSection: "workbench",
+      path: "/workbench",
+    },
   ],
   [
     "/memory",
@@ -318,4 +334,8 @@ export function isDebugView(tab: Tab, operationsSection: OperationsSection): boo
 
 export function isCronView(tab: Tab, operationsSection: OperationsSection): boolean {
   return tab === "operations" && operationsSection === "cron";
+}
+
+export function isWorkbenchView(tab: Tab, workspaceSection: WorkspaceSection): boolean {
+  return tab === "workspace" && workspaceSection === "workbench";
 }

@@ -57,6 +57,7 @@ export const zh_TW: TranslationMap = {
   },
   workspaceSections: {
     projects: "專案",
+    workbench: "工作台",
     memory: "記憶",
     documents: "文件",
     calendar: "行事曆",
@@ -170,6 +171,16 @@ export const zh_TW: TranslationMap = {
       lastFlush: "最近投遞",
       digests: "摘要時間",
       delivery: "投遞",
+    },
+    workbench: {
+      title: "工作",
+      subtitle: "目前任務與主動佇列快照。",
+      active: "進行中",
+      blocked: "阻塞 / 暫停",
+      queued: "排隊中",
+      deliverables: "交付物",
+      open: "開啟工作台",
+      empty: "目前沒有活躍工作項目。",
     },
   },
   chat: {

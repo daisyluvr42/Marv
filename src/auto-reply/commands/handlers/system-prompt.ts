@@ -51,6 +51,7 @@ export async function resolveCommandsSystemPromptBundle(
       modelProvider: params.provider,
       modelId: params.model,
       skillFilter: params.sessionEntry?.skillsSnapshot?.skillFilter,
+      currentInstructionText: params.command.commandBodyNormalized,
     });
     try {
       return buildWorkspaceSkillSnapshot(workspaceDir, {
@@ -84,6 +85,7 @@ export async function resolveCommandsSystemPromptBundle(
         modelProvider: params.provider,
         modelId: params.model,
         skillFilter: skillsSnapshot.skillFilter,
+        currentInstructionText: params.command.commandBodyNormalized,
       });
     } catch {
       return [];

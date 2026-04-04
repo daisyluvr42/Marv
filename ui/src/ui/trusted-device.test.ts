@@ -90,7 +90,7 @@ describe("trusted device lifecycle", () => {
         navCollapsed: boolean;
         operationsSection: "sessions" | "instances" | "usage" | "cron" | "logs" | "debug";
         agentsSection: "agents" | "skills" | "nodes";
-        workspaceSection: "projects" | "memory" | "documents" | "calendar";
+        workspaceSection: "projects" | "workbench" | "memory" | "documents" | "calendar";
         settingsSection: "config";
       }) {
         this.settings = next;

@@ -254,6 +254,13 @@ export type FsToolsConfig = {
   workspaceOnly?: boolean;
 };
 
+export type ToolsetSelectionConfig = {
+  /** Master switch for session-level toolset planning. */
+  enabled?: boolean;
+  /** Rollout mode. */
+  mode?: "off" | "observe" | "enforce";
+};
+
 export type AgentToolsConfig = {
   /** Base tool profile applied before allow/deny lists. */
   profile?: ToolProfileId;
@@ -274,6 +281,8 @@ export type AgentToolsConfig = {
   exec?: ExecToolConfig;
   /** Filesystem tool path guards. */
   fs?: FsToolsConfig;
+  /** Session-level toolset planner settings. */
+  selection?: ToolsetSelectionConfig;
   /** Runtime loop detection for repetitive/ stuck tool-call patterns. */
   loopDetection?: ToolLoopDetectionConfig;
   sandbox?: {

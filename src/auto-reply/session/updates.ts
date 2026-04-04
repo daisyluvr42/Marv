@@ -2,7 +2,10 @@ import crypto from "node:crypto";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 import { buildWorkspaceSkillSnapshot } from "../../agents/skills.js";
 import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skills/refresh.js";
-import { resolveMarvCodingToolNames } from "../../agents/tools/pi-tools.js";
+import {
+  resolveMarvCodingToolNames,
+  resolveMarvCodingToolsetPlan,
+} from "../../agents/tools/pi-tools.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
@@ -153,6 +156,11 @@ export async function ensureSkillSnapshot(params: {
   cfg: MarvConfig;
   /** If provided, only load skills with these names (for per-channel skill filtering) */
   skillFilter?: string[];
+  messageProvider?: string;
+  currentInstructionText?: string;
+  directUserInstruction?: boolean;
+  modelProvider?: string;
+  modelId?: string;
 }): Promise<{
   sessionEntry?: SessionEntry;
   skillsSnapshot?: SessionEntry["skillsSnapshot"];
@@ -178,6 +186,11 @@ export async function ensureSkillSnapshot(params: {
     workspaceDir,
     cfg,
     skillFilter,
+    messageProvider,
+    currentInstructionText,
+    directUserInstruction,
+    modelProvider,
+    modelId,
   } = params;
 
   let nextEntry = sessionEntry;
@@ -188,6 +201,22 @@ export async function ensureSkillSnapshot(params: {
     workspaceDir,
     config: cfg,
     skillFilter,
+    messageProvider,
+    currentInstructionText,
+    directUserInstruction,
+    modelProvider,
+    modelId,
+  });
+  const toolsetPlanBase = resolveMarvCodingToolsetPlan({
+    sessionKey: sessionKey ?? sessionId,
+    workspaceDir,
+    config: cfg,
+    skillFilter,
+    messageProvider,
+    currentInstructionText,
+    directUserInstruction,
+    modelProvider,
+    modelId,
   });
   const snapshotVersion = getSkillsSnapshotVersion(workspaceDir);
   ensureSkillsWatcher({ workspaceDir, config: cfg });
@@ -216,6 +245,11 @@ export async function ensureSkillSnapshot(params: {
       updatedAt: Date.now(),
       systemSent: true,
       skillsSnapshot: skillSnapshot,
+      toolsetPlan: {
+        ...toolsetPlanBase,
+        effectiveSkillCount: skillSnapshot?.skills.length ?? toolsetPlanBase.effectiveSkillCount,
+        generatedAt: Date.now(),
+      },
     };
     sessionStore[sessionKey] = { ...sessionStore[sessionKey], ...nextEntry };
     if (storePath) {
@@ -260,6 +294,11 @@ export async function ensureSkillSnapshot(params: {
       sessionId: sessionId ?? current.sessionId ?? crypto.randomUUID(),
       updatedAt: Date.now(),
       skillsSnapshot,
+      toolsetPlan: {
+        ...toolsetPlanBase,
+        effectiveSkillCount: skillsSnapshot.skills.length,
+        generatedAt: Date.now(),
+      },
     };
     sessionStore[sessionKey] = { ...sessionStore[sessionKey], ...nextEntry };
     if (storePath) {
@@ -267,6 +306,36 @@ export async function ensureSkillSnapshot(params: {
         store[sessionKey] = { ...store[sessionKey], ...nextEntry };
       });
     }
+  }
+
+  const nextToolsetPlan = {
+    ...toolsetPlanBase,
+    effectiveSkillCount: skillsSnapshot?.skills.length ?? toolsetPlanBase.effectiveSkillCount,
+    generatedAt: Date.now(),
+  };
+  if (sessionStore && sessionKey) {
+    const current = nextEntry ??
+      sessionStore[sessionKey] ?? {
+        sessionId: sessionId ?? crypto.randomUUID(),
+        updatedAt: Date.now(),
+      };
+    nextEntry = {
+      ...current,
+      sessionId: sessionId ?? current.sessionId ?? crypto.randomUUID(),
+      updatedAt: Date.now(),
+      toolsetPlan: nextToolsetPlan,
+    };
+    sessionStore[sessionKey] = { ...sessionStore[sessionKey], ...nextEntry };
+    if (storePath) {
+      await updateSessionStore(storePath, (store) => {
+        store[sessionKey] = { ...store[sessionKey], ...nextEntry };
+      });
+    }
+  } else if (nextEntry) {
+    nextEntry = {
+      ...nextEntry,
+      toolsetPlan: nextToolsetPlan,
+    };
   }
 
   return { sessionEntry: nextEntry, skillsSnapshot, systemSent };

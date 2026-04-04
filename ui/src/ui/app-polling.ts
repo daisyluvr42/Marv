@@ -2,14 +2,24 @@ import type { MarvApp } from "./app.js";
 import { loadDebug } from "./controllers/debug.js";
 import { loadLogs } from "./controllers/logs.js";
 import { loadNodes } from "./controllers/nodes.js";
-import { isDebugView, isLogsView, type OperationsSection, type Tab } from "./navigation.js";
+import { loadWorkbench, WORKBENCH_POLL_INTERVAL_MS } from "./controllers/workbench.js";
+import {
+  isDebugView,
+  isLogsView,
+  isWorkbenchView,
+  type OperationsSection,
+  type Tab,
+  type WorkspaceSection,
+} from "./navigation.js";
 
 type PollingHost = {
   nodesPollInterval: number | null;
   logsPollInterval: number | null;
   debugPollInterval: number | null;
+  workbenchPollInterval: number | null;
   tab: Tab;
   operationsSection?: OperationsSection;
+  workspaceSection?: WorkspaceSection;
 };
 
 export function startNodesPolling(host: PollingHost) {
@@ -68,4 +78,24 @@ export function stopDebugPolling(host: PollingHost) {
   }
   clearInterval(host.debugPollInterval);
   host.debugPollInterval = null;
+}
+
+export function startWorkbenchPolling(host: PollingHost) {
+  if (host.workbenchPollInterval != null) {
+    return;
+  }
+  host.workbenchPollInterval = window.setInterval(() => {
+    if (!isWorkbenchView(host.tab, host.workspaceSection ?? "projects")) {
+      return;
+    }
+    void loadWorkbench(host as unknown as MarvApp);
+  }, WORKBENCH_POLL_INTERVAL_MS);
+}
+
+export function stopWorkbenchPolling(host: PollingHost) {
+  if (host.workbenchPollInterval == null) {
+    return;
+  }
+  clearInterval(host.workbenchPollInterval);
+  host.workbenchPollInterval = null;
 }

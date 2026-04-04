@@ -1,5 +1,55 @@
 # Todo
 
+## Toolset Planner Runtime Wiring And Read-First Workbench (2026-04-05)
+
+- [x] Wire the Phase 0 toolset planner contract into coding-tool assembly, session snapshots, and inspection surfaces without bypassing existing hard tool policy.
+- [x] Expose a unified workbench snapshot through gateway RPC and add the Control UI overview/workbench surfaces with route-aware polling.
+- [x] Run focused unit, e2e, typecheck, and format verification for the new planner/workbench paths and capture the reviewed results below.
+
+## Review
+
+- `createMarvCodingTools()` now computes a session-level toolset plan after the existing hard policy pipeline, logs the selected mode/intent, and only shrinks the final tool surface in `enforce` mode.
+- The current toolset plan is now stored on the session entry and exposed through `self_inspecting`, so operators can see planner mode, intent, reasons, and suppressed tools alongside the effective tool list.
+- `ensureSkillSnapshot()` now records planner metadata next to the workspace skill snapshot, while the planner-filtered tool list is reused as the skill eligibility surface so tool-incompatible skills stop inflating prompts when tool shrinking is active.
+- Added a new `src/workbench/` aggregation module plus `workbench.status` gateway RPC so task-context rows, proactive rows, and deliverable counts are normalized once on the server.
+- Control UI now has a Workbench workspace section, overview summary card, dedicated read-first workbench view, and 30s polling that only stays active while the workbench route is open.
+- Verified with:
+  - `pnpm tsgo`
+  - `pnpm vitest run src/agents/tools/policy/toolset-plan.test.ts src/workbench/types.test.ts src/workbench/snapshot.test.ts src/core/gateway/server-methods/dashboard.test.ts ui/src/ui/controllers/workbench.test.ts ui/src/ui/navigation.test.ts ui/src/ui/storage.test.ts ui/src/ui/trusted-device.test.ts ui/src/ui/app-settings.test.ts ui/src/ui/app-gateway.node.test.ts ui/src/ui/navigation.browser.test.ts src/agents/tools/self/marv-tools.self-inspecting.test.ts src/auto-reply/execution/get-reply-run.test.ts src/agents/pi-embedded-runner/run.overflow-compaction.test.ts`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/skills.buildworkspaceskillsnapshot.e2e.test.ts src/agents/tools/policy/pi-tools.policy.e2e.test.ts`
+  - `pnpm exec oxfmt --check $(git status --porcelain --untracked-files=all | awk '{print $2}' | rg '\\.(ts|md)$')`
+
+## Phase 0 Contract Lock-In For Tool Shrinking And Task Workbench (2026-04-05)
+
+- [x] Re-read the revised plans and extract the explicit Phase 0 contract requirements before coding.
+- [x] Add a pure contract module for toolset planning intent/order/suppression rules and override detection.
+- [x] Add a pure contract module for workbench row/snapshot/status/deep-link types and refresh defaults.
+- [x] Run focused tests for the new contract modules and capture results below.
+
+## Review
+
+- Added `src/agents/tools/policy/toolset-plan.ts` as the Phase 0 contract source for tool-selection modes, intent priority, suppression groups, suppression expansion, and explicit-tool override detection.
+- Added `src/workbench/types.ts` as the Phase 0 contract source for unified workbench statuses, row/snapshot shapes, deep-link inventory, polling defaults, and summary truncation rules.
+- Added focused tests in `src/agents/tools/policy/toolset-plan.test.ts` and `src/workbench/types.test.ts` so the revised Phase 0 rules are locked before any runtime integration work begins.
+- Updated `tasks/lessons.md` after the user correction so future implementation work re-reads revised plans before coding.
+- Verified with:
+  - `pnpm vitest run src/agents/tools/policy/toolset-plan.test.ts src/workbench/types.test.ts`
+  - `pnpm exec oxfmt --check src/agents/tools/policy/toolset-plan.ts src/agents/tools/policy/toolset-plan.test.ts src/workbench/types.ts src/workbench/types.test.ts tasks/lessons.md tasks/todo.md`
+
+## Goose-Inspired Tool Shrinking and Task Workbench Plans (2026-04-05)
+
+- [x] Review the current tool-policy, plugin-tool, task-context, proactive, and dashboard surfaces to anchor both plans in existing Marv architecture.
+- [x] Write a local implementation plan for session-level tool/plugin shrinking in `Plan/2026-04-05-session-tool-shrinking-implementation-plan.md`.
+- [x] Write a local implementation plan for a first-class task workbench in `Plan/2026-04-05-task-workbench-implementation-plan.md`.
+- [x] Record the planning review below.
+
+## Review
+
+- Wrote two implementation plans under `Plan/` so they stay as local operator notes instead of repo docs.
+- The tool-shrinking plan is intentionally subtractive-first and reuses the current `createMarvTools()` -> `resolvePluginTools()` -> `applyToolPolicyPipeline()` path instead of introducing a parallel tool system.
+- The task-workbench plan is intentionally read-first and unifies `task-context` plus `proactive` data through a gateway snapshot instead of forcing a storage merge up front.
+- No code or behavior changes were made for this task, so there was no test run beyond source inspection.
+
 ## iOS Companion Runtime Follow-up Plan (2026-04-02)
 
 - [x] Align `apps/ios/Sources/DashboardModels.swift` with the current gateway response shapes and add focused contract coverage for the drifted payloads.

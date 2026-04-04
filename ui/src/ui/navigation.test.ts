@@ -120,6 +120,7 @@ describe("path helpers", () => {
     expect(pathForOperationsSection("sessions")).toBe("/sessions");
     expect(pathForAgentsSection("skills")).toBe("/skills");
     expect(pathForWorkspaceSection("documents")).toBe("/documents");
+    expect(pathForWorkspaceSection("workbench")).toBe("/workbench");
   });
 
   it("prepends base paths", () => {
@@ -147,6 +148,10 @@ describe("resolveRoute", () => {
     expect(resolveRoute("/projects")).toMatchObject({
       tab: "workspace",
       workspaceSection: "projects",
+    });
+    expect(resolveRoute("/workbench")).toMatchObject({
+      tab: "workspace",
+      workspaceSection: "workbench",
     });
     expect(resolveRoute("/config")).toMatchObject({
       tab: "settings",

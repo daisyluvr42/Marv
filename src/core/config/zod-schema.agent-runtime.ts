@@ -368,6 +368,14 @@ const ToolFsSchema = z
   .strict()
   .optional();
 
+const ToolSelectionSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    mode: z.enum(["off", "observe", "enforce"]).optional(),
+  })
+  .strict()
+  .optional();
+
 const ToolLoopDetectionDetectorSchema = z
   .object({
     genericRepeat: z.boolean().optional(),
@@ -482,6 +490,7 @@ export const AgentToolsSchema = z
       .optional(),
     exec: AgentToolExecSchema,
     fs: ToolFsSchema,
+    selection: ToolSelectionSchema,
     loopDetection: ToolLoopDetectionSchema,
     sandbox: z
       .object({

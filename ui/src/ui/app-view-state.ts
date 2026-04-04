@@ -50,6 +50,7 @@ import type {
   WorkspaceDocumentsReadResult,
   WorkspaceMemoryListResult,
   WorkspaceMemorySearchResult,
+  WorkspaceWorkbenchSnapshot,
   WorkspaceSummarySnapshot,
 } from "./workspace-types.js";
 
@@ -197,6 +198,9 @@ export type AppViewState = {
   workspaceCalendarError: string | null;
   workspaceCalendar: WorkspaceCalendarSnapshot | null;
   workspaceCalendarSelectedDay: string | null;
+  workspaceWorkbenchLoading: boolean;
+  workspaceWorkbenchError: string | null;
+  workspaceWorkbench: WorkspaceWorkbenchSnapshot | null;
   workspaceMemoryLoading: boolean;
   workspaceMemoryError: string | null;
   workspaceMemoryQuery: string;

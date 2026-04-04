@@ -58,6 +58,11 @@ import {
   mergeAlsoAllowPolicy,
   resolveToolProfilePolicy,
 } from "./policy/tool-policy.js";
+import {
+  applyToolsetPlanToTools,
+  createToolsetPlan,
+  type ToolsetPlan,
+} from "./policy/toolset-plan.js";
 
 function isOpenAIProvider(provider?: string) {
   const normalized = provider?.trim().toLowerCase();
@@ -161,6 +166,31 @@ export const __testing = {
   assertRequiredParams,
 } as const;
 
+function buildToolsetPlanForCodingTools(params: {
+  agentId?: string;
+  profile?: string;
+  providerProfile?: string;
+  toolNames?: string[];
+  skillNames?: string[];
+  options?: Parameters<typeof createMarvCodingTools>[0];
+}): ToolsetPlan {
+  return createToolsetPlan({
+    cfg: params.options?.config,
+    agentId: params.agentId,
+    instruction: params.options?.currentInstructionText,
+    directUserInstruction: params.options?.directUserInstruction,
+    taskId: params.options?.taskId,
+    sessionKey: params.options?.sessionKey,
+    messageProvider: params.options?.messageProvider,
+    toolProfile: params.profile,
+    providerToolProfile: params.providerProfile,
+    counts: {
+      toolNames: params.toolNames,
+      skillNames: params.skillNames,
+    },
+  });
+}
+
 export function createMarvCodingTools(options?: {
   exec?: ExecToolDefaults & ProcessToolDefaults;
   messageProvider?: string;
@@ -224,6 +254,8 @@ export function createMarvCodingTools(options?: {
   enableProactiveTasks?: boolean;
   /** Active skill filter for the current run/session, if any. */
   skillFilter?: string[];
+  /** Current user/task instruction text used for toolset planning heuristics. */
+  currentInstructionText?: string;
 }): AnyAgentTool[] {
   const execToolName = "exec";
   const sandbox = options?.sandbox?.enabled ? options.sandbox : undefined;
@@ -506,10 +538,23 @@ export function createMarvCodingTools(options?: {
       { policy: subagentPolicy, label: "subagent tools.allow" },
     ],
   });
+  const toolsetPlan = buildToolsetPlanForCodingTools({
+    agentId,
+    profile,
+    providerProfile,
+    toolNames: subagentFiltered.map((tool) => tool.name),
+    options,
+  });
+  if (toolsetPlan.mode !== "off") {
+    logDebug(
+      `Toolset plan for ${options?.sessionKey ?? agentId ?? "session"}: mode=${toolsetPlan.mode} intent=${toolsetPlan.intent} suppressed=[${toolsetPlan.suppressedTools.join(",")}]`,
+    );
+  }
+  const plannerFiltered = applyToolsetPlanToTools(subagentFiltered, toolsetPlan);
   // Always normalize tool JSON Schemas before handing them to pi-agent/pi-ai.
   // Without this, some providers (notably OpenAI) will reject root-level union schemas.
   // Provider-specific cleaning: Gemini needs constraint keywords stripped, but Anthropic expects them.
-  const normalized = subagentFiltered.map((tool) =>
+  const normalized = plannerFiltered.map((tool) =>
     normalizeToolParameters(tool, { modelProvider: options?.modelProvider }),
   );
   const withHooks = normalized.map((tool) =>
@@ -536,4 +581,21 @@ export function resolveMarvCodingToolNames(
   options?: Parameters<typeof createMarvCodingTools>[0],
 ): string[] {
   return createMarvCodingTools(options).map((tool) => tool.name);
+}
+
+export function resolveMarvCodingToolsetPlan(
+  options?: Parameters<typeof createMarvCodingTools>[0],
+): ToolsetPlan {
+  const { agentId, profile, providerProfile } = resolveEffectiveToolPolicy({
+    config: options?.config,
+    sessionKey: options?.sessionKey,
+    modelProvider: options?.modelProvider,
+    modelId: options?.modelId,
+  });
+  return buildToolsetPlanForCodingTools({
+    agentId,
+    profile,
+    providerProfile,
+    options,
+  });
 }

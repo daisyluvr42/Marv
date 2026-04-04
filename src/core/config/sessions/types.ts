@@ -109,6 +109,7 @@ export type SessionEntry = {
   lastAccountId?: string;
   lastThreadId?: string | number;
   skillsSnapshot?: SessionSkillSnapshot;
+  toolsetPlan?: SessionToolsetPlanReport;
   systemPromptReport?: SessionSystemPromptReport;
 };
 
@@ -157,6 +158,17 @@ export type SessionSkillSnapshot = {
   skillFilter?: string[];
   resolvedSkills?: Skill[];
   version?: number;
+};
+
+export type SessionToolsetPlanReport = {
+  mode: "off" | "observe" | "enforce";
+  intent: "coding" | "research" | "messaging" | "operator" | "mixed";
+  reasons: string[];
+  suppressedTools: string[];
+  suppressedSkills: string[];
+  effectiveToolCount: number;
+  effectiveSkillCount: number;
+  generatedAt: number;
 };
 
 export type SessionSystemPromptReport = {

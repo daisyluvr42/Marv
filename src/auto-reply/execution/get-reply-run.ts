@@ -428,6 +428,13 @@ export async function runPreparedReply(
     workspaceDir,
     cfg,
     skillFilter: opts?.skillFilter,
+    messageProvider: sessionCtx.Provider?.trim().toLowerCase() || undefined,
+    currentInstructionText: prefixedBodyBase,
+    directUserInstruction: !(
+      sessionCtx.ReplyToIsQuote === true || Boolean(sessionCtx.ForwardedFrom)
+    ),
+    modelProvider: provider,
+    modelId: model,
   });
   sessionEntry = skillResult.sessionEntry ?? sessionEntry;
   currentSystemSent = skillResult.systemSent;

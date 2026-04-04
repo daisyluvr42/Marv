@@ -4,6 +4,8 @@ import {
   stopLogsPolling,
   startDebugPolling,
   stopDebugPolling,
+  startWorkbenchPolling,
+  stopWorkbenchPolling,
 } from "./app-polling.js";
 import { scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.js";
 import type { MarvApp } from "./app.js";
@@ -27,11 +29,13 @@ import { loadPresence } from "./controllers/presence.js";
 import { loadWorkspaceProjects } from "./controllers/projects.js";
 import { loadSessions } from "./controllers/sessions.js";
 import { loadSkills } from "./controllers/skills.js";
+import { loadWorkbench } from "./controllers/workbench.js";
 import { loadWorkspaceSummary } from "./controllers/workspace-summary.js";
 import {
   inferBasePathFromPathname,
   isDebugView,
   isLogsView,
+  isWorkbenchView,
   normalizeBasePath,
   normalizePath,
   pathForAgentsSection,
@@ -75,6 +79,7 @@ type SettingsHost = {
   themeMedia: MediaQueryList | null;
   themeMediaHandler: ((event: MediaQueryListEvent) => void) | null;
   pendingGatewayUrl?: string | null;
+  workbenchPollInterval?: number | null;
 };
 
 function updatePollingForActiveView(host: SettingsHost) {
@@ -87,6 +92,11 @@ function updatePollingForActiveView(host: SettingsHost) {
     startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
   } else {
     stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
+  }
+  if (isWorkbenchView(host.tab, host.workspaceSection)) {
+    startWorkbenchPolling(host as unknown as Parameters<typeof startWorkbenchPolling>[0]);
+  } else {
+    stopWorkbenchPolling(host as unknown as Parameters<typeof stopWorkbenchPolling>[0]);
   }
 }
 
@@ -308,6 +318,10 @@ export async function refreshActiveTab(host: SettingsHost) {
     await loadWorkspaceSummary(host as unknown as Parameters<typeof loadWorkspaceSummary>[0]);
     if (host.workspaceSection === "projects") {
       await loadWorkspaceProjects(host as unknown as Parameters<typeof loadWorkspaceProjects>[0]);
+      return;
+    }
+    if (host.workspaceSection === "workbench") {
+      await loadWorkbench(host as unknown as Parameters<typeof loadWorkbench>[0]);
       return;
     }
     if (host.workspaceSection === "calendar") {
@@ -584,6 +598,7 @@ export async function loadOverview(host: SettingsHost) {
     loadSessions(host as unknown as MarvApp),
     loadCronStatus(host as unknown as MarvApp),
     loadDashboard(host as unknown as MarvApp),
+    loadWorkbench(host as unknown as MarvApp),
     loadDebug(host as unknown as MarvApp),
   ]);
 }

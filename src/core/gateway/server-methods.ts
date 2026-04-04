@@ -69,6 +69,7 @@ const READ_METHODS = new Set([
   "knowledge.status",
   "proactive.buffer",
   "proactive.continuous",
+  "workbench.status",
   "documents.list",
   "documents.read",
   "usage.status",

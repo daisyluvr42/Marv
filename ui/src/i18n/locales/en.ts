@@ -57,6 +57,7 @@ export const en: TranslationMap = {
   },
   workspaceSections: {
     projects: "Projects",
+    workbench: "Work",
     memory: "Memory",
     documents: "Documents",
     calendar: "Calendar",
@@ -172,6 +173,16 @@ export const en: TranslationMap = {
       lastFlush: "Last Flush",
       digests: "Digest Times",
       delivery: "Delivery",
+    },
+    workbench: {
+      title: "Work",
+      subtitle: "Current task and proactive queue snapshot.",
+      active: "Active",
+      blocked: "Blocked / Paused",
+      queued: "Queued",
+      deliverables: "Deliverables",
+      open: "Open Workbench",
+      empty: "No active work items right now.",
     },
   },
   chat: {

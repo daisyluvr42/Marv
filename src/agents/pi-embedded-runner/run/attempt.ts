@@ -371,6 +371,7 @@ export async function runEmbeddedAttempt(
             isCronSessionKey(params.sessionKey) && isProactiveBufferPrompt(params.prompt),
           enableProactiveTasks: params.config?.autonomy?.proactive?.continuousLoop === true,
           skillFilter: params.skillsSnapshot?.skillFilter,
+          currentInstructionText: params.prompt,
         });
     let tools = sanitizeToolsForGoogle({ tools: toolsRaw, provider: params.provider });
     // O2: Stage-aware tool deny — filter out mutation tools during early stages

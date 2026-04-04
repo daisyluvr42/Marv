@@ -104,6 +104,7 @@ import type {
   WorkspaceDocumentsReadResult,
   WorkspaceMemoryListResult,
   WorkspaceMemorySearchResult,
+  WorkspaceWorkbenchSnapshot,
   WorkspaceSummarySnapshot,
 } from "./workspace-types.js";
 
@@ -290,6 +291,9 @@ export class MarvApp extends LitElement {
   @state() workspaceCalendarError: string | null = null;
   @state() workspaceCalendar: WorkspaceCalendarSnapshot | null = null;
   @state() workspaceCalendarSelectedDay: string | null = null;
+  @state() workspaceWorkbenchLoading = false;
+  @state() workspaceWorkbenchError: string | null = null;
+  @state() workspaceWorkbench: WorkspaceWorkbenchSnapshot | null = null;
   @state() workspaceMemoryLoading = false;
   @state() workspaceMemoryError: string | null = null;
   @state() workspaceMemoryQuery = "";
@@ -412,6 +416,7 @@ export class MarvApp extends LitElement {
   private nodesPollInterval: number | null = null;
   private logsPollInterval: number | null = null;
   private debugPollInterval: number | null = null;
+  private workbenchPollInterval: number | null = null;
   private logsScrollFrame: number | null = null;
   private toolStreamById = new Map<string, ToolStreamEntry>();
   private toolStreamOrder: string[] = [];

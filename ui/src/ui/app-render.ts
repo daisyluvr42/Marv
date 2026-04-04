@@ -56,6 +56,7 @@ import {
   updateSkillEdit,
   updateSkillEnabled,
 } from "./controllers/skills.js";
+import { loadWorkbench } from "./controllers/workbench.js";
 import { icons } from "./icons.js";
 import {
   AGENTS_SECTIONS,
@@ -90,6 +91,7 @@ import { renderOverview } from "./views/overview.js";
 import { renderProjects } from "./views/projects.js";
 import { renderSessions } from "./views/sessions.js";
 import { renderSkills } from "./views/skills.js";
+import { renderWorkbench } from "./views/workbench.js";
 import { renderWorkspaceSummary } from "./views/workspace-summary.js";
 
 const AVATAR_DATA_RE = /^data:/i;
@@ -217,6 +219,11 @@ export function renderApp(state: AppViewState) {
       key: "projects",
       label: titleForWorkspaceSection("projects"),
       description: "Session activity, costs, and recent work threads.",
+    },
+    {
+      key: "workbench",
+      label: titleForWorkspaceSection("workbench"),
+      description: "Current task context, proactive queue, and completions.",
     },
     {
       key: "memory",
@@ -382,6 +389,7 @@ export function renderApp(state: AppViewState) {
                 memoryStats: state.memoryStats,
                 knowledgeStatus: state.knowledgeStatus,
                 proactiveStatus: state.proactiveStatus,
+                workbench: state.workspaceWorkbench,
                 onSettingsChange: (next) => state.applySettings(next),
                 onPasswordChange: (next) => (state.password = next),
                 onSessionKeyChange: (next) => {
@@ -398,8 +406,10 @@ export function renderApp(state: AppViewState) {
                 onConnect: () => state.connect(),
                 onForgetDevice: () => state.forgetTrustedDevice(),
                 onRefresh: () => state.loadOverview(),
+                onRefreshWorkbench: () => void loadWorkbench(state),
                 onOpenOperationsSection: (section) => state.selectOperationsSection(section),
                 onOpenTab: (tab) => state.setTab(tab),
+                onOpenWorkbench: () => state.selectWorkspaceSection("workbench"),
               })
             : nothing
         }
@@ -532,6 +542,26 @@ export function renderApp(state: AppViewState) {
                 },
                 onSelectSession: (sessionKey) => {
                   void selectWorkspaceProjectSession(state, sessionKey);
+                },
+              })
+            : nothing
+        }
+
+        ${
+          state.tab === "workspace" && state.workspaceSection === "workbench"
+            ? renderWorkbench({
+                loading: state.workspaceWorkbenchLoading,
+                error: state.workspaceWorkbenchError,
+                snapshot: state.workspaceWorkbench,
+                onRefresh: () => void loadWorkbench(state),
+                onOpenDeepLink: (link) => {
+                  if (link.view === "session") {
+                    state.selectOperationsSection("sessions");
+                    return;
+                  }
+                  if (link.view === "project") {
+                    state.selectWorkspaceSection("projects");
+                  }
                 },
               })
             : nothing

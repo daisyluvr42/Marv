@@ -106,6 +106,7 @@ export function loadSettings(): UiSettings {
           : defaults.agentsSection,
       workspaceSection:
         parsed.workspaceSection === "projects" ||
+        parsed.workspaceSection === "workbench" ||
         parsed.workspaceSection === "memory" ||
         parsed.workspaceSection === "documents" ||
         parsed.workspaceSection === "calendar"

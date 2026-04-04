@@ -143,3 +143,39 @@ export type WorkspaceCalendarSnapshot = {
   endDate: string;
   days: WorkspaceCalendarDay[];
 };
+
+export type WorkspaceWorkbenchStatus =
+  | "active"
+  | "paused"
+  | "blocked"
+  | "queued"
+  | "completed"
+  | "archived";
+
+export type WorkspaceWorkbenchRowSource = "task-context" | "proactive-goal" | "proactive-task";
+
+export type WorkspaceWorkbenchDeepLink = {
+  view: "session" | "project" | "task-context";
+  params: Record<string, string>;
+};
+
+export type WorkspaceWorkbenchRow = {
+  id: string;
+  source: WorkspaceWorkbenchRowSource;
+  title: string;
+  status: WorkspaceWorkbenchStatus;
+  updatedAt: string;
+  summary: string;
+  deepLink: WorkspaceWorkbenchDeepLink | null;
+};
+
+export type WorkspaceWorkbenchSnapshot = {
+  agentId: string;
+  rows: WorkspaceWorkbenchRow[];
+  counts: Record<WorkspaceWorkbenchStatus, number>;
+  deliverableSummary: {
+    total: number;
+    completed: number;
+  };
+  fetchedAt: string;
+};

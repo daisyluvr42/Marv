@@ -445,10 +445,24 @@ function formatTasksSection(params: {
 function formatToolsSection(params: {
   availableToolNames: string[];
   directUserInstruction?: boolean;
+  sessionEntry?: SessionEntry;
 }): string {
-  const lines = [
-    `Available tools (${params.availableToolNames.length}): ${params.availableToolNames.join(", ")}`,
-  ];
+  const toolsetPlan = params.sessionEntry?.toolsetPlan;
+  const suppressed = new Set((toolsetPlan?.suppressedTools ?? []).map((tool) => tool.trim()));
+  const effectiveTools =
+    toolsetPlan?.mode === "enforce"
+      ? params.availableToolNames.filter((toolName) => !suppressed.has(toolName))
+      : params.availableToolNames;
+  const lines = [`Available tools (${effectiveTools.length}): ${effectiveTools.join(", ")}`];
+  if (toolsetPlan) {
+    lines.push(`Toolset planner: ${toolsetPlan.mode} / ${toolsetPlan.intent}`);
+    if (toolsetPlan.reasons.length > 0) {
+      lines.push(`Planner reasons: ${toolsetPlan.reasons.join("; ")}`);
+    }
+    if (toolsetPlan.suppressedTools.length > 0) {
+      lines.push(`Suppressed tools: ${toolsetPlan.suppressedTools.join(", ")}`);
+    }
+  }
   if (params.directUserInstruction === false) {
     lines.push(
       "Some self-modifying actions are currently blocked because the instruction is not direct user input.",
@@ -685,6 +699,7 @@ export function createSelfInspectingTool(opts?: {
       const toolsSection = formatToolsSection({
         availableToolNames: [...new Set(opts?.availableToolNames ?? [])].toSorted(),
         directUserInstruction: opts?.directUserInstruction,
+        sessionEntry,
       });
 
       const healthSection = await formatHealthSection({ cfg, agentId, sessionKey });
@@ -817,6 +832,7 @@ export function createSelfInspectingTool(opts?: {
           },
           tools: {
             available: [...new Set(opts?.availableToolNames ?? [])].toSorted(),
+            toolsetPlan: sessionEntry?.toolsetPlan ?? null,
           },
         },
       };

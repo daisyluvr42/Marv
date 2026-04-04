@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getMemoryStatusSnapshot: vi.fn(),
   getKnowledgeStatusSnapshot: vi.fn(),
   getProactiveStatusSnapshot: vi.fn(),
+  getWorkbenchSnapshot: vi.fn(),
 }));
 
 vi.mock("../../config/config.js", () => ({
@@ -30,6 +31,10 @@ vi.mock("../../../proactive/status.js", () => ({
   getProactiveStatusSnapshot: mocks.getProactiveStatusSnapshot,
 }));
 
+vi.mock("../../../workbench/snapshot.js", () => ({
+  getWorkbenchSnapshot: mocks.getWorkbenchSnapshot,
+}));
+
 import { dashboardHandlers } from "./dashboard.js";
 
 describe("dashboardHandlers", () => {
@@ -41,6 +46,7 @@ describe("dashboardHandlers", () => {
     mocks.getMemoryStatusSnapshot.mockReturnValue({ agentId: "main", totalItems: 3 });
     mocks.getKnowledgeStatusSnapshot.mockResolvedValue({ agentId: "main", vaultCount: 1 });
     mocks.getProactiveStatusSnapshot.mockResolvedValue({ agentId: "main", pendingEntries: 2 });
+    mocks.getWorkbenchSnapshot.mockResolvedValue({ agentId: "main", rows: [] });
   });
 
   it("returns memory stats for the default agent", async () => {
@@ -96,6 +102,24 @@ describe("dashboardHandlers", () => {
       expect.objectContaining({
         message: 'unknown agent id "unknown"',
       }),
+    );
+  });
+
+  it("returns the aggregated workbench snapshot", async () => {
+    const respond = vi.fn();
+
+    await dashboardHandlers["workbench.status"]({
+      params: { agentId: "main" },
+      respond,
+    } as never);
+
+    expect(mocks.getWorkbenchSnapshot).toHaveBeenCalledWith({
+      agentId: "main",
+    });
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ agentId: "main", rows: [] }),
+      undefined,
     );
   });
 });

@@ -6,6 +6,8 @@ import {
   stopNodesPolling,
   startDebugPolling,
   stopDebugPolling,
+  startWorkbenchPolling,
+  stopWorkbenchPolling,
 } from "./app-polling.js";
 import { observeTopbar, scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.js";
 import {
@@ -17,12 +19,20 @@ import {
   syncThemeWithSettings,
 } from "./app-settings.js";
 import { loadControlUiBootstrapConfig } from "./controllers/control-ui-bootstrap.js";
-import { isDebugView, isLogsView, type OperationsSection, type Tab } from "./navigation.js";
+import {
+  isDebugView,
+  isLogsView,
+  isWorkbenchView,
+  type OperationsSection,
+  type Tab,
+  type WorkspaceSection,
+} from "./navigation.js";
 
 type LifecycleHost = {
   basePath: string;
   tab: Tab;
   operationsSection?: OperationsSection;
+  workspaceSection?: WorkspaceSection;
   assistantName: string;
   assistantAvatar: string | null;
   assistantAgentId: string | null;
@@ -55,6 +65,9 @@ export function handleConnected(host: LifecycleHost) {
   if (isDebugView(host.tab, host.operationsSection ?? "sessions")) {
     startDebugPolling(host as unknown as Parameters<typeof startDebugPolling>[0]);
   }
+  if (isWorkbenchView(host.tab, host.workspaceSection ?? "projects")) {
+    startWorkbenchPolling(host as unknown as Parameters<typeof startWorkbenchPolling>[0]);
+  }
 }
 
 export function handleFirstUpdated(host: LifecycleHost) {
@@ -66,6 +79,7 @@ export function handleDisconnected(host: LifecycleHost) {
   stopNodesPolling(host as unknown as Parameters<typeof stopNodesPolling>[0]);
   stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
   stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
+  stopWorkbenchPolling(host as unknown as Parameters<typeof stopWorkbenchPolling>[0]);
   detachThemeListener(host as unknown as Parameters<typeof detachThemeListener>[0]);
   host.topbarObserver?.disconnect();
   host.topbarObserver = null;

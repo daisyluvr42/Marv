@@ -10,6 +10,7 @@ import type {
   MemoryStatusSnapshot,
   ProactiveStatusSnapshot,
 } from "../types.js";
+import type { WorkspaceWorkbenchSnapshot } from "../workspace-types.js";
 
 export type OverviewProps = {
   connected: boolean;
@@ -28,14 +29,17 @@ export type OverviewProps = {
   memoryStats: MemoryStatusSnapshot | null;
   knowledgeStatus: KnowledgeStatusSnapshot | null;
   proactiveStatus: ProactiveStatusSnapshot | null;
+  workbench: WorkspaceWorkbenchSnapshot | null;
   onSettingsChange: (next: UiSettings) => void;
   onPasswordChange: (next: string) => void;
   onSessionKeyChange: (next: string) => void;
   onConnect: () => void;
   onForgetDevice: () => void;
   onRefresh: () => void;
+  onRefreshWorkbench: () => void;
   onOpenOperationsSection: (section: OperationsSection) => void;
   onOpenTab: (tab: Tab) => void;
+  onOpenWorkbench: () => void;
 };
 
 export function renderOverview(props: OverviewProps) {
@@ -469,6 +473,56 @@ export function renderOverview(props: OverviewProps) {
             ? html`<div class="muted" style="margin-top: 8px">${t("overview.advanced.loading")}</div>`
             : ""
         }
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="card-title">${t("overview.workbench.title")}</div>
+            <div class="card-sub">${t("overview.workbench.subtitle")}</div>
+          </div>
+          <button class="btn btn--sm" @click=${props.onRefreshWorkbench}>${t("common.refresh")}</button>
+        </div>
+        <div class="stat-grid" style="margin-top: 16px;">
+          <div class="stat">
+            <div class="stat-label">${t("overview.workbench.active")}</div>
+            <div class="stat-value">${props.workbench?.counts.active ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.workbench.blocked")}</div>
+            <div class="stat-value">
+              ${(props.workbench?.counts.blocked ?? 0) + (props.workbench?.counts.paused ?? 0)}
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.workbench.queued")}</div>
+            <div class="stat-value">${props.workbench?.counts.queued ?? t("common.na")}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">${t("overview.workbench.deliverables")}</div>
+            <div class="stat-value">
+              ${
+                props.workbench
+                  ? `${props.workbench.deliverableSummary.completed}/${props.workbench.deliverableSummary.total}`
+                  : t("common.na")
+              }
+            </div>
+          </div>
+        </div>
+        <div class="muted" style="margin-top: 12px">
+          ${
+            (props.workbench?.rows ?? [])
+              .filter((row) => row.status === "active")
+              .slice(0, 2)
+              .map((row) => row.title)
+              .join(" · ") || t("overview.workbench.empty")
+          }
+        </div>
+        <div class="row" style="margin-top: 14px;">
+          <button class="btn btn--sm" @click=${props.onOpenWorkbench}>
+            ${t("overview.workbench.open")}
+          </button>
+        </div>
       </div>
     </section>
 
