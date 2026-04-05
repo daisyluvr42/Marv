@@ -274,11 +274,15 @@ export function registerModelsCli(program: Command) {
       });
     });
 
-  const pool = models.command("pool").description("Manage runtime model availability state");
+  const pool = models
+    .command("pool")
+    .description("Inspect runtime model availability state (cache + configured refs)");
 
   pool
     .command("list")
-    .description("Show model availability entries (failure states, cooldowns)")
+    .description(
+      "Show configured model refs merged with cached availability (unprobed, ready, cooldowns)",
+    )
     .option("--json", "Output JSON", false)
     .option("--plain", "Plain output", false)
     .action(async (opts) => {
