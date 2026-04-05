@@ -44,7 +44,6 @@ import {
   updateSessionStore,
 } from "../core/config/sessions.js";
 import { applyVerboseOverride } from "../core/session/level-overrides.js";
-import { applyModelOverrideToSessionEntry } from "../core/session/model-overrides.js";
 import { resolveSessionModelSelectionState } from "../core/session/model-selection-state.js";
 import { resolveSendPolicy } from "../core/session/send-policy.js";
 import {
@@ -433,18 +432,35 @@ export async function agentCommand(
           allowedModelKeys.size > 0 &&
           !allowedModelKeys.has(key)
         ) {
-          const { updated } = applyModelOverrideToSessionEntry({
-            entry,
-            selection: { provider: defaultProvider, model: defaultModel, isDefault: true },
-          });
-          if (updated) {
-            await persistSessionEntry({
-              sessionStore,
-              sessionKey,
-              storePath,
-              entry,
-            });
+          // Do NOT silently rewrite the user's manual model selection back to
+          // the default. If the override is missing from the runtime candidate
+          // set (e.g. config drift, disabled/unsupported provider, or a local
+          // provider model id that no longer matches `/v1/models`), fail fast
+          // with an explicit error that tells the operator why and where to
+          // look. Silent rewrites can reroute sessions to a different provider
+          // without the operator noticing.
+          const selectedRef = `${normalizedOverride.provider}/${normalizedOverride.model}`;
+          const configuredMatch = runtimePlan.configured.find(
+            (c) => modelKey(c.provider, c.model) === key,
+          );
+          let reasonSuffix = " (not configured for this agent's model pool)";
+          if (configuredMatch) {
+            if (configuredMatch.availabilityReason) {
+              reasonSuffix = `: ${configuredMatch.availabilityReason}`;
+            } else if (!configuredMatch.enabled) {
+              reasonSuffix = " (disabled)";
+            } else if (!configuredMatch.available) {
+              reasonSuffix = " (unavailable)";
+            } else {
+              reasonSuffix = " (not an allowed candidate for this run)";
+            }
           }
+          throw new Error(
+            `Selected model "${selectedRef}" is not available${reasonSuffix}. ` +
+              `Run \`marv models list\` / \`marv models status\` to reconcile, ` +
+              `then switch with \`marv models set <provider>/<model>\` or clear ` +
+              `the manual selection.`,
+          );
         }
       }
     }
