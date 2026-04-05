@@ -12,6 +12,14 @@ vi.mock("../agent-scope.js", () => ({
 import { createCronTool } from "./cron-tool.js";
 
 describe("cron tool", () => {
+  it("documents that normal cron mutations do not need escalation", () => {
+    const tool = createCronTool();
+
+    expect(tool.description).toContain(
+      "do not call request_escalation just to schedule, edit, or remove a normal cron job",
+    );
+  });
+
   async function executeAddAndReadDelivery(params: {
     callId: string;
     agentSessionKey: string;

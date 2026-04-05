@@ -1,5 +1,24 @@
 # Todo
 
+## Cron Mutation Escalation Prompt Fix (2026-04-05)
+
+- [x] Confirm whether cron add/update/remove are still hard-gated or whether the issue is model guidance.
+- [x] Patch the agent guidance so normal cron mutations default to direct execution plus notification, not `request_escalation`.
+- [x] Add focused tests and record the verified result below.
+
+## Review
+
+- Confirmed the hard gate already treats `cron` mutations as notify-and-audit operations, not escalation-gated ones, in [src/agents/tools/policy/escalation-policy.ts](/Users/daisyluvr/Documents/Marv/src/agents/tools/policy/escalation-policy.ts).
+- The likely regression was model guidance, so I added an explicit rule to the system prompt telling the agent that normal `cron` add/update/remove work should be executed directly and audited via notifications instead of `request_escalation`.
+- I also added the same rule to the `cron` tool description so the tool contract itself reinforces the expected behavior.
+- Verified with:
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/tools/pi-tools.before-tool-call.e2e.test.ts -t 'allows cron mutations without escalation'`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/prompt/system-prompt.e2e.test.ts -t 'tells the agent not to escalate ordinary cron mutations'`
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/tools/cron-tool.e2e.test.ts -t 'documents that normal cron mutations do not need escalation'`
+  - `pnpm exec oxfmt --check src/agents/prompt/system-prompt.ts src/agents/prompt/system-prompt.e2e.test.ts src/agents/tools/cron-tool.ts src/agents/tools/cron-tool.e2e.test.ts tasks/todo.md`
+- Broader note:
+  - `pnpm vitest run --config vitest.e2e.config.ts src/agents/prompt/system-prompt.e2e.test.ts` still reports multiple pre-existing failures elsewhere in that file; the new cron-specific prompt assertion passed in isolation and the broader failures were not introduced by this change.
+
 ## Toolset Planner Runtime Wiring And Read-First Workbench (2026-04-05)
 
 - [x] Wire the Phase 0 toolset planner contract into coding-tool assembly, session snapshots, and inspection surfaces without bypassing existing hard tool policy.

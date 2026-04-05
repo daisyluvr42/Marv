@@ -250,6 +250,8 @@ CRITICAL CONSTRAINTS:
 - sessionTarget="main" REQUIRES payload.kind="systemEvent"
 - sessionTarget="isolated" REQUIRES payload.kind="agentTurn"
 - For webhook callbacks, use delivery.mode="webhook" with delivery.to set to a URL.
+- Ordinary cron add/update/remove operations are allowed by default; do not call request_escalation just to schedule, edit, or remove a normal cron job.
+- Escalate only when the payload itself would require higher privilege even outside cron.
 Default: prefer isolated agentTurn jobs unless the user explicitly wants a main-session system event.
 
 WAKE MODES (for wake action):

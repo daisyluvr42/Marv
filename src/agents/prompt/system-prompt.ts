@@ -271,6 +271,11 @@ function buildAutonomyToolsSection(params: { isMinimal: boolean; availableTools:
       "- For risky operations requiring higher privileges, call `request_escalation` with requested level, reason, and scope before retrying.",
     );
   }
+  if (params.availableTools.has("cron")) {
+    lines.push(
+      "- Normal `cron` add/update/remove work does not require `request_escalation`. Do the cron mutation directly and rely on operator notifications/audit unless the underlying action itself needs higher privilege.",
+    );
+  }
   if (params.availableTools.has("external_cli")) {
     lines.push(
       "- If a difficult task is better handled by a stronger local AI CLI, consider delegating with `external_cli`.",

@@ -155,6 +155,18 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain("approvalId");
   });
 
+  it("tells the agent not to escalate ordinary cron mutations", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/marv",
+      toolNames: ["cron", "request_escalation"],
+    });
+
+    expect(prompt).toContain(
+      "Normal `cron` add/update/remove work does not require `request_escalation`",
+    );
+    expect(prompt).toContain("operator notifications/audit");
+  });
+
   it("preserves tool casing in the prompt", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/marv",
