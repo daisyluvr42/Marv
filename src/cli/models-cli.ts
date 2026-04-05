@@ -23,6 +23,7 @@ import {
   modelsListCommand,
   modelsPoolClearCommand,
   modelsPoolListCommand,
+  modelsPoolRefreshCommand,
   modelsScanCommand,
   modelsSetCommand,
   modelsSetImageCommand,
@@ -52,6 +53,11 @@ export const MODELS_CLI_COMMAND_POLICIES = defineCommandPolicies("models", [
   },
   {
     path: "pool clear",
+    cliBootstrap: "skip",
+    sideEffect: "none",
+  },
+  {
+    path: "pool refresh",
     cliBootstrap: "skip",
     sideEffect: "none",
   },
@@ -288,6 +294,19 @@ export function registerModelsCli(program: Command) {
     .action(async (opts) => {
       await runModelsCommand(async () => {
         await modelsPoolListCommand(opts, defaultRuntime);
+      });
+    });
+
+  pool
+    .command("refresh")
+    .description(
+      "Probe configured providers' /v1/models and mark each configured ref ready/unsupported",
+    )
+    .option("--json", "Output JSON", false)
+    .option("--timeout <ms>", "Per-provider probe timeout in ms (default 5000)")
+    .action(async (opts) => {
+      await runModelsCommand(async () => {
+        await modelsPoolRefreshCommand(opts, defaultRuntime);
       });
     });
 

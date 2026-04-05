@@ -29,7 +29,11 @@ export {
   modelsImageFallbacksRemoveCommand,
 } from "./models/image-fallbacks.js";
 export { modelsListCommand, modelsStatusCommand } from "./models/list.js";
-export { modelsPoolClearCommand, modelsPoolListCommand } from "./models/pool.js";
+export {
+  modelsPoolClearCommand,
+  modelsPoolListCommand,
+  modelsPoolRefreshCommand,
+} from "./models/pool.js";
 export { modelsScanCommand } from "./models/scan.js";
 export { modelsSetCommand } from "./models/set.js";
 export { modelsSetImageCommand } from "./models/set-image.js";
