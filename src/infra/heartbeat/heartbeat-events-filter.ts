@@ -14,7 +14,9 @@ export function buildCronEventPrompt(pendingEvents: string[]): string {
   return (
     "A scheduled reminder has been triggered. The reminder content is:\n\n" +
     eventText +
-    "\n\nPlease relay this reminder to the user in a helpful and friendly way."
+    "\n\nPlease relay this reminder to the user in a helpful and friendly way. " +
+    "You MUST only restate or summarize the reminder content above. " +
+    "Do NOT promise, claim, or suggest any follow-up actions (such as switching models, generating reports, sending messages, or retrying) unless you are actually executing them with a tool call in this same turn."
   );
 }
 
