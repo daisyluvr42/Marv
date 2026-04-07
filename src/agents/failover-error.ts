@@ -1,3 +1,9 @@
+import {
+  extractErrorCode,
+  getErrorMessage,
+  getErrorName,
+  getStatusCode,
+} from "../infra/errors.js";
 import { classifyFailoverReason, type FailoverReason } from "./runner/pi-embedded-helpers.js";
 
 const TIMEOUT_HINT_RE =
@@ -56,63 +62,6 @@ export function resolveFailoverStatus(reason: FailoverReason): number | undefine
   }
 }
 
-function getStatusCode(err: unknown): number | undefined {
-  if (!err || typeof err !== "object") {
-    return undefined;
-  }
-  const candidate =
-    (err as { status?: unknown; statusCode?: unknown }).status ??
-    (err as { statusCode?: unknown }).statusCode;
-  if (typeof candidate === "number") {
-    return candidate;
-  }
-  if (typeof candidate === "string" && /^\d+$/.test(candidate)) {
-    return Number(candidate);
-  }
-  return undefined;
-}
-
-function getErrorName(err: unknown): string {
-  if (!err || typeof err !== "object") {
-    return "";
-  }
-  return "name" in err ? String(err.name) : "";
-}
-
-function getErrorCode(err: unknown): string | undefined {
-  if (!err || typeof err !== "object") {
-    return undefined;
-  }
-  const candidate = (err as { code?: unknown }).code;
-  if (typeof candidate !== "string") {
-    return undefined;
-  }
-  const trimmed = candidate.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  if (typeof err === "string") {
-    return err;
-  }
-  if (typeof err === "number" || typeof err === "boolean" || typeof err === "bigint") {
-    return String(err);
-  }
-  if (typeof err === "symbol") {
-    return err.description ?? "";
-  }
-  if (err && typeof err === "object") {
-    const message = (err as { message?: unknown }).message;
-    if (typeof message === "string") {
-      return message;
-    }
-  }
-  return "";
-}
-
 function hasTimeoutHint(err: unknown): boolean {
   if (!err) {
     return false;
@@ -165,7 +114,7 @@ export function resolveFailoverReasonFromError(err: unknown): FailoverReason | n
     return "format";
   }
 
-  const code = (getErrorCode(err) ?? "").toUpperCase();
+  const code = (extractErrorCode(err) ?? "").toUpperCase();
   if (["ETIMEDOUT", "ESOCKETTIMEDOUT", "ECONNRESET", "ECONNABORTED"].includes(code)) {
     return "timeout";
   }
@@ -199,7 +148,7 @@ export function describeFailoverError(err: unknown): {
     message,
     reason: resolveFailoverReasonFromError(err) ?? undefined,
     status: getStatusCode(err),
-    code: getErrorCode(err),
+    code: extractErrorCode(err),
   };
 }
 
@@ -221,7 +170,7 @@ export function coerceToFailoverError(
 
   const message = getErrorMessage(err) || String(err);
   const status = getStatusCode(err) ?? resolveFailoverStatus(reason);
-  const code = getErrorCode(err);
+  const code = extractErrorCode(err);
 
   return new FailoverError(message, {
     reason,

@@ -16,6 +16,7 @@ import {
   mergeAlsoAllowPolicy,
   resolveToolProfilePolicy,
 } from "../../agents/tools/policy/tool-policy.js";
+import { getErrorMessage } from "../../infra/errors.js";
 import { logWarn } from "../../logger.js";
 import { isTestDefaultMemorySlotDisabled } from "../../plugins/config-state.js";
 import { getPluginToolMeta } from "../../plugins/tools.js";
@@ -103,15 +104,6 @@ function mergeActionIntoArgsIfSupported(params: {
   return { ...args, action };
 }
 
-function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message || String(err);
-  }
-  if (typeof err === "string") {
-    return err;
-  }
-  return String(err);
-}
 
 function isToolInputError(err: unknown): boolean {
   if (err instanceof ToolInputError) {

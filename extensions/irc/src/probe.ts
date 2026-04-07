@@ -1,14 +1,8 @@
 import { resolveIrcAccount } from "./accounts.js";
 import { connectIrcClient } from "./client.js";
 import { buildIrcConnectOptions } from "./connect-options.js";
+import { formatErrorMessage } from "agentmarv/plugin-sdk";
 import type { CoreConfig, IrcProbe } from "./types.js";
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return typeof err === "string" ? err : JSON.stringify(err);
-}
 
 export async function probeIrc(
   cfg: CoreConfig,
@@ -47,7 +41,7 @@ export async function probeIrc(
   } catch (err) {
     return {
       ...base,
-      error: formatError(err),
+      error: formatErrorMessage(err),
     };
   }
 }

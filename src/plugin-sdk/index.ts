@@ -319,7 +319,13 @@ export type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
 
 export { createDedupeCache } from "../infra/dedupe.js";
 export type { DedupeCache } from "../infra/dedupe.js";
-export { formatErrorMessage } from "../infra/errors.js";
+export {
+  extractErrorCode,
+  formatErrorMessage,
+  getErrorMessage,
+  getErrorName,
+  getStatusCode,
+} from "../infra/errors.js";
 export { missingTargetError } from "../infra/outbound/target-errors.js";
 
 // === Logging & diagnostics =================================================

@@ -1,3 +1,4 @@
+import { extractErrorCode, getErrorMessage, getStatusCode } from "../../infra/errors.js";
 import { defaultVoiceWakeTriggers } from "../../infra/voicewake.js";
 
 export function normalizeVoiceWakeTriggers(input: unknown): string[] {
@@ -10,27 +11,16 @@ export function normalizeVoiceWakeTriggers(input: unknown): string[] {
   return cleaned.length > 0 ? cleaned : defaultVoiceWakeTriggers();
 }
 
+/** Gateway-specific error formatting that includes status/code when available. */
 export function formatError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
+  const msg = getErrorMessage(err);
+  if (msg) {
+    return msg;
   }
-  if (typeof err === "string") {
-    return err;
-  }
-  const statusValue = (err as { status?: unknown })?.status;
-  const codeValue = (err as { code?: unknown })?.code;
-  const hasStatus = statusValue !== undefined;
-  const hasCode = codeValue !== undefined;
-  if (hasStatus || hasCode) {
-    const statusText =
-      typeof statusValue === "string" || typeof statusValue === "number"
-        ? String(statusValue)
-        : "unknown";
-    const codeText =
-      typeof codeValue === "string" || typeof codeValue === "number"
-        ? String(codeValue)
-        : "unknown";
-    return `status=${statusText} code=${codeText}`;
+  const status = getStatusCode(err);
+  const code = extractErrorCode(err);
+  if (status !== undefined || code !== undefined) {
+    return `status=${status ?? "unknown"} code=${code ?? "unknown"}`;
   }
   try {
     return JSON.stringify(err, null, 2);

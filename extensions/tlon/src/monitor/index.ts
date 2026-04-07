@@ -1,5 +1,6 @@
 import { format } from "node:util";
 import type { RuntimeEnv, ReplyPayload, MarvConfig } from "agentmarv/plugin-sdk";
+import { formatErrorMessage } from "agentmarv/plugin-sdk";
 import { createReplyPrefixOptions } from "agentmarv/plugin-sdk";
 import { getTlonRuntime } from "../runtime.js";
 import { normalizeShip, parseChannelNest } from "../targets.js";
@@ -19,10 +20,6 @@ import {
   isSummarizationRequest,
 } from "./utils.js";
 
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return String(err);
-}
 
 export type MonitorTlonOpts = {
   runtime?: RuntimeEnv;
@@ -126,7 +123,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       },
     });
   } catch (error) {
-    runtime.error?.(`[tlon] Failed to authenticate: ${formatError(error)}`);
+    runtime.error?.(`[tlon] Failed to authenticate: ${formatErrorMessage(error)}`);
     throw error;
   }
 
@@ -140,7 +137,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         groupChannels = discoveredChannels;
       }
     } catch (error) {
-      runtime.error?.(`[tlon] Auto-discovery failed: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Auto-discovery failed: ${formatErrorMessage(error)}`);
     }
   }
 
@@ -192,7 +189,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         timestamp: memo.sent || Date.now(),
       });
     } catch (error) {
-      runtime.error?.(`[tlon] Error handling DM: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Error handling DM: ${formatErrorMessage(error)}`);
     }
   };
 
@@ -276,7 +273,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         parentId,
       });
     } catch (error) {
-      runtime.error?.(`[tlon] Error handling group message: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Error handling group message: ${formatErrorMessage(error)}`);
     }
   };
 
@@ -335,7 +332,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
           "3. Action items if any\n" +
           "4. Notable participants";
       } catch (error) {
-        const errorMsg = `Sorry, I encountered an error while fetching the channel history: ${formatError(error)}`;
+        const errorMsg = `Sorry, I encountered an error while fetching the channel history: ${formatErrorMessage(error)}`;
         if (isGroup && groupChannel) {
           const parsed = parseChannelNest(groupChannel);
           if (parsed) {
@@ -491,7 +488,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       subscribedChannels.add(channelNest);
       runtime.log?.(`[tlon] Subscribed to group channel: ${channelNest}`);
     } catch (error) {
-      runtime.error?.(`[tlon] Failed to subscribe to ${channelNest}: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Failed to subscribe to ${channelNest}: ${formatErrorMessage(error)}`);
     }
   }
 
@@ -517,7 +514,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       subscribedDMs.add(dmShip);
       runtime.log?.(`[tlon] Subscribed to DM with ${dmShip}`);
     } catch (error) {
-      runtime.error?.(`[tlon] Failed to subscribe to DM with ${dmShip}: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Failed to subscribe to DM with ${dmShip}: ${formatErrorMessage(error)}`);
     }
   }
 
@@ -537,7 +534,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         }
       }
     } catch (error) {
-      runtime.error?.(`[tlon] Channel refresh failed: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Channel refresh failed: ${formatErrorMessage(error)}`);
     }
   }
 
@@ -552,7 +549,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         runtime.log?.(`[tlon] Found ${dmShips.length} DM conversation(s)`);
       }
     } catch (error) {
-      runtime.error?.(`[tlon] Failed to fetch DM list: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Failed to fetch DM list: ${formatErrorMessage(error)}`);
     }
 
     for (const dmShip of dmShips) {
@@ -571,7 +568,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       () => {
         if (!opts.abortSignal?.aborted) {
           refreshChannelSubscriptions().catch((error) => {
-            runtime.error?.(`[tlon] Channel refresh error: ${formatError(error)}`);
+            runtime.error?.(`[tlon] Channel refresh error: ${formatErrorMessage(error)}`);
           });
         }
       },
@@ -597,7 +594,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
     try {
       await api?.close();
     } catch (error) {
-      runtime.error?.(`[tlon] Cleanup error: ${formatError(error)}`);
+      runtime.error?.(`[tlon] Cleanup error: ${formatErrorMessage(error)}`);
     }
   }
 }

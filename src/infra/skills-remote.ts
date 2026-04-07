@@ -3,6 +3,7 @@ import { loadWorkspaceSkillEntries } from "../agents/skills.js";
 import { bumpSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import type { MarvConfig } from "../core/config/config.js";
+import { getErrorMessage } from "./errors.js";
 import type { NodeRegistry } from "../core/gateway/node-registry.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { listNodePairing, updatePairedNodeMetadata } from "./node-pairing.js";
@@ -29,37 +30,8 @@ function describeNode(nodeId: string): string {
   return ip ? `${base} @ ${ip}` : base;
 }
 
-function extractErrorMessage(err: unknown): string | undefined {
-  if (!err) {
-    return undefined;
-  }
-  if (typeof err === "string") {
-    return err;
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  if (typeof err === "object" && "message" in err && typeof err.message === "string") {
-    return err.message;
-  }
-  if (typeof err === "number" || typeof err === "boolean" || typeof err === "bigint") {
-    return String(err);
-  }
-  if (typeof err === "symbol") {
-    return err.toString();
-  }
-  if (typeof err === "object") {
-    try {
-      return JSON.stringify(err);
-    } catch {
-      return undefined;
-    }
-  }
-  return undefined;
-}
-
 function logRemoteBinProbeFailure(nodeId: string, err: unknown) {
-  const message = extractErrorMessage(err);
+  const message = getErrorMessage(err) || undefined;
   const label = describeNode(nodeId);
   // Node unavailable errors (not connected or disconnected mid-operation) are expected
   // when nodes have transient connections - log at info level instead of warn

@@ -4,6 +4,7 @@ import {
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   requestBodyErrorToText,
+  formatErrorMessage,
 } from "agentmarv/plugin-sdk";
 import { resolveNextcloudTalkAccount } from "./accounts.js";
 import { handleNextcloudTalkInbound } from "./inbound.js";
@@ -23,12 +24,6 @@ const DEFAULT_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const DEFAULT_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
 const HEALTH_PATH = "/healthz";
 
-function formatError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return typeof err === "string" ? err : JSON.stringify(err);
-}
 
 function parseWebhookPayload(body: string): NextcloudTalkWebhookPayload | null {
   try {
@@ -151,7 +146,7 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
       try {
         await onMessage(message);
       } catch (err) {
-        onError?.(err instanceof Error ? err : new Error(formatError(err)));
+        onError?.(err instanceof Error ? err : new Error(formatErrorMessage(err)));
       }
     } catch (err) {
       if (isRequestBodyLimitError(err, "PAYLOAD_TOO_LARGE")) {
@@ -168,7 +163,7 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
         }
         return;
       }
-      const error = err instanceof Error ? err : new Error(formatError(err));
+      const error = err instanceof Error ? err : new Error(formatErrorMessage(err));
       onError?.(error);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "application/json" });

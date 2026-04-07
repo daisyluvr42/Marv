@@ -7,6 +7,7 @@ import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveUserPath } from "../utils.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 import { safeJsonStringify } from "../utils/safe-json.js";
+import { getErrorMessage } from "../infra/errors.js";
 import { getQueuedFileWriter, type QueuedFileWriter } from "./queued-file-writer.js";
 
 type PayloadLogStage = "request" | "usage";
@@ -50,21 +51,6 @@ function getWriter(filePath: string): PayloadLogWriter {
   return getQueuedFileWriter(writers, filePath);
 }
 
-function formatError(error: unknown): string | undefined {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === "string") {
-    return error;
-  }
-  if (typeof error === "number" || typeof error === "boolean" || typeof error === "bigint") {
-    return String(error);
-  }
-  if (error && typeof error === "object") {
-    return safeJsonStringify(error) ?? "unknown error";
-  }
-  return undefined;
-}
 
 function digest(value: unknown): string | undefined {
   const serialized = safeJsonStringify(value);
@@ -154,7 +140,7 @@ export function createAnthropicPayloadLogger(params: {
 
   const recordUsage: AnthropicPayloadLogger["recordUsage"] = (messages, error) => {
     const usage = findLastAssistantUsage(messages);
-    const errorMessage = formatError(error);
+    const errorMessage = getErrorMessage(error) || undefined;
     if (!usage) {
       if (errorMessage) {
         record({

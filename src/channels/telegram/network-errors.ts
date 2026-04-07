@@ -1,4 +1,4 @@
-import { extractErrorCode, formatErrorMessage } from "../../infra/errors.js";
+import { extractErrorCode, formatErrorMessage, getErrorName } from "../../infra/errors.js";
 
 const RECOVERABLE_ERROR_CODES = new Set([
   "ECONNRESET",
@@ -44,12 +44,6 @@ function normalizeCode(code?: string): string {
   return code?.trim().toUpperCase() ?? "";
 }
 
-function getErrorName(err: unknown): string {
-  if (!err || typeof err !== "object") {
-    return "";
-  }
-  return "name" in err ? String(err.name) : "";
-}
 
 function getErrorCode(err: unknown): string | undefined {
   const direct = extractErrorCode(err);
