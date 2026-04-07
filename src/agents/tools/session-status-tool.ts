@@ -10,7 +10,10 @@ import {
   type SessionEntry,
   updateSessionStore,
 } from "../../core/config/sessions.js";
-import { loadCombinedSessionStoreForGateway } from "../../core/gateway/session-utils.js";
+import {
+  loadCombinedSessionStoreForGateway,
+  resolveSessionModelRef,
+} from "../../core/gateway/session-utils.js";
 import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
 import {
   formatUsageWindowSummary,
@@ -25,9 +28,8 @@ import {
 import { resolveAgentDir } from "../agent-scope.js";
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
 import { resolveModelAuthLabel } from "../model/model-auth-label.js";
-import { loadModelCatalog } from "../model/model-catalog.js";
+import { resolveRuntimeModelPlan } from "../model/model-pool.js";
 import {
-  buildAllowedModelSet,
   buildModelAliasIndex,
   modelKey,
   resolveDefaultModelForAgent,
@@ -135,20 +137,19 @@ async function resolveModelOverride(params: {
     cfg: params.cfg,
     agentId: params.agentId,
   });
-  const currentProvider = params.sessionEntry?.providerOverride?.trim() || configDefault.provider;
-  const currentModel = params.sessionEntry?.modelOverride?.trim() || configDefault.model;
+  const current = resolveSessionModelRef(params.cfg, params.sessionEntry, params.agentId);
+  const currentProvider = current.provider || configDefault.provider;
 
   const aliasIndex = buildModelAliasIndex({
     cfg: params.cfg,
     defaultProvider: currentProvider,
   });
-  const catalog = await loadModelCatalog({ config: params.cfg });
-  const allowed = buildAllowedModelSet({
+  const runtimePlan = resolveRuntimeModelPlan({
     cfg: params.cfg,
-    catalog,
-    defaultProvider: currentProvider,
-    defaultModel: currentModel,
+    agentId: params.agentId,
+    agentDir: resolveAgentDir(params.cfg, params.agentId),
   });
+  const allowedKeys = new Set(runtimePlan.candidates.map((entry) => entry.ref));
 
   const resolved = resolveModelRefFromString({
     raw,
@@ -159,7 +160,7 @@ async function resolveModelOverride(params: {
     throw new Error(`Unrecognized model "${raw}".`);
   }
   const key = modelKey(resolved.ref.provider, resolved.ref.model);
-  if (allowed.allowedKeys.size > 0 && !allowed.allowedKeys.has(key)) {
+  if (allowedKeys.size > 0 && !allowedKeys.has(key)) {
     throw new Error(`Model "${key}" is not allowed.`);
   }
   const isDefault =
@@ -295,10 +296,7 @@ export function createSessionStatusTool(opts?: {
       }
 
       const agentDir = resolveAgentDir(cfg, agentId);
-      const providerForCard =
-        resolved.entry.providerOverride?.trim() ||
-        resolved.entry.modelProvider?.trim() ||
-        configured.provider;
+      const providerForCard = resolveSessionModelRef(cfg, resolved.entry, agentId).provider;
       const usageProvider = resolveUsageProviderId(providerForCard);
       let usageLine: string | undefined;
       if (usageProvider) {

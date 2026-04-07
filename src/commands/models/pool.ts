@@ -47,10 +47,12 @@ function buildPoolRows(): PoolListRow[] {
   // Merge configured refs so operators can see models that are in config but
   // have not yet been probed by a run. Safe-guard against config load errors
   // so `pool list` still works even if the config is broken.
+  const orderedRefs: string[] = [];
   try {
     const cfg = loadConfig();
     const plan = resolveRuntimeModelPlan({ cfg });
     for (const configured of plan.configured) {
+      orderedRefs.push(configured.ref);
       const existing = rows.get(configured.ref);
       if (existing) {
         existing.configured = true;
@@ -66,7 +68,11 @@ function buildPoolRows(): PoolListRow[] {
     // Config unavailable / invalid: fall back to raw store view.
   }
 
-  return [...rows.values()].toSorted((a, b) => a.ref.localeCompare(b.ref));
+  const remaining = [...rows.values()].filter((row) => !orderedRefs.includes(row.ref));
+  return [
+    ...orderedRefs.map((ref) => rows.get(ref)).filter((row): row is PoolListRow => Boolean(row)),
+    ...remaining.toSorted((a, b) => a.ref.localeCompare(b.ref)),
+  ];
 }
 
 export async function modelsPoolListCommand(

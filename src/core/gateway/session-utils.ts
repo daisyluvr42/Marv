@@ -592,7 +592,6 @@ export function resolveSessionModelRef(
         defaultModel: DEFAULT_MODEL,
       });
 
-  // Prefer explicit manual selection state.
   let provider = resolved.provider;
   let model = resolved.model;
   const selectionState = resolveSessionModelSelectionState(entry);
@@ -607,15 +606,16 @@ export function resolveSessionModelRef(
     } else {
       model = selectionState.manualModelRef;
     }
+    return { provider, model };
   }
 
-  if (selectionState.mode !== "manual") {
-    const entryModel = entry?.model?.trim();
-    const entryProvider = entry?.modelProvider?.trim();
-    if (entryModel) {
-      provider = entryProvider || provider;
-      model = entryModel;
-    }
+  const entryModel = entry?.model?.trim();
+  const entryProvider = entry?.modelProvider?.trim();
+  if (entryModel) {
+    return {
+      provider: entryProvider || provider,
+      model: entryModel,
+    };
   }
   return { provider, model };
 }

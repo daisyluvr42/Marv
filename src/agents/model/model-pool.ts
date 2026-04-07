@@ -11,7 +11,13 @@ import { resolveAgentConfig, resolveDefaultAgentId } from "../agent-scope.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
 import { getRuntimeModelAvailability } from "./model-availability-state.js";
-import { buildModelAliasIndex, normalizeProviderId, parseModelRef } from "./model-selection.js";
+import {
+  buildModelAliasIndex,
+  compareDefaultSessionModelPreference,
+  comparePoolModelPreference,
+  normalizeProviderId,
+  parseModelRef,
+} from "./model-selection.js";
 import { resolveProviderFamilyProviders, resolveSelectedModelRefs } from "./model-selections.js";
 import {
   listConfiguredProviders,
@@ -168,14 +174,14 @@ function buildConfiguredModelList(params: {
     cfg: params.cfg,
     defaultProvider,
   });
-  const refs = new Set<string>();
+  const providerModelRefs = new Set<string>();
   let registryEntries: RuntimeRegistryModel[] = [];
   const addParsedRef = (rawRef: string) => {
     const parsed = parseModelRef(rawRef, defaultProvider);
     if (!parsed) {
       return;
     }
-    refs.add(`${parsed.provider}/${parsed.model}`);
+    providerModelRefs.add(`${parsed.provider}/${parsed.model}`);
   };
 
   // Always include inline models from configured providers (models.providers.*.models).
@@ -185,7 +191,7 @@ function buildConfiguredModelList(params: {
   for (const [providerId, providerEntry] of Object.entries(configuredProviderEntries)) {
     if (providerEntry?.models?.length) {
       for (const modelDef of providerEntry.models) {
-        refs.add(`${providerId}/${modelDef.id}`);
+        providerModelRefs.add(`${providerId}/${modelDef.id}`);
       }
     }
   }
@@ -195,7 +201,7 @@ function buildConfiguredModelList(params: {
       configuredProviders.has(normalizeProviderId(entry.provider)),
     );
     for (const entry of registryEntries) {
-      refs.add(entry.ref);
+      providerModelRefs.add(entry.ref);
     }
     for (const raw of Object.keys(explicitCatalog)) {
       const parsed = parseModelRef(raw, defaultProvider);
@@ -208,13 +214,6 @@ function buildConfiguredModelList(params: {
       if (parsed && configuredProviders.has(normalizeProviderId(parsed.provider))) {
         addParsedRef(raw);
       }
-    }
-    for (const ref of selectedRefs) {
-      addParsedRef(ref);
-    }
-  } else if (selectedRefs.size > 0) {
-    for (const ref of selectedRefs) {
-      addParsedRef(ref);
     }
   } else {
     for (const raw of Object.keys(explicitCatalog)) {
@@ -225,9 +224,18 @@ function buildConfiguredModelList(params: {
     }
   }
 
+  const poolMembershipRefs =
+    selectedRefs.size > 0 ? new Set(selectedRefs) : new Set(providerModelRefs);
+  for (const raw of params.pool?.include ?? []) {
+    const parsed = parseModelRef(raw, defaultProvider);
+    if (parsed) {
+      poolMembershipRefs.add(`${parsed.provider}/${parsed.model}`);
+    }
+  }
+
   const registryByRef = new Map(registryEntries.map((entry) => [entry.ref, entry] as const));
   const configuredModels: RuntimeConfiguredModel[] = [];
-  for (const rawRef of refs) {
+  for (const rawRef of poolMembershipRefs) {
     const parsed = parseModelRef(rawRef, defaultProvider);
     if (!parsed) {
       continue;
@@ -241,10 +249,6 @@ function buildConfiguredModelList(params: {
       provider: parsed.provider,
       agentDir: params.agentDir,
     });
-    const enabledBySelection =
-      registryEntries.length > 0
-        ? configuredProviders.has(normalizeProviderId(parsed.provider))
-        : selectedRefs.size === 0 || selectedRefs.has(ref);
     const blockedByUnsupportedState = runtimeAvailability?.status === "unsupported";
     const blockedByAuthState = runtimeAvailability?.status === "auth_invalid";
     // temporary_unavailable (rate-limit, timeout) does NOT block candidates.
@@ -259,7 +263,7 @@ function buildConfiguredModelList(params: {
       tier: registryEntry?.tier ?? inferTier(catalogEntry),
       capabilities: registryEntry?.capabilities ?? inferCapabilities(catalogEntry, parsed.model),
       priority: catalogEntry?.priority ?? 0,
-      enabled: catalogEntry?.enabled !== false && enabledBySelection,
+      enabled: catalogEntry?.enabled !== false,
       available:
         catalogEntry?.enabled === false
           ? false
@@ -277,7 +281,7 @@ function buildConfiguredModelList(params: {
       aliases: aliasIndex.byKey.get(ref) ?? [],
     });
   }
-  return configuredModels;
+  return configuredModels.toSorted(comparePoolModelPreference);
 }
 
 function matchesPool(entry: RuntimeConfiguredModel, pool?: ModelPoolConfig): boolean {
@@ -321,19 +325,10 @@ function matchesRequirements(
   return true;
 }
 
-function tierWeight(tier: ConfiguredModelTier): number {
-  switch (tier) {
-    case "low":
-      return 0;
-    case "standard":
-      return 1;
-    case "high":
-      return 2;
-  }
-}
-
-function locationWeight(location: ConfiguredModelLocation): number {
-  return location === "local" ? 0 : 1;
+export function resolveDefaultSessionModelCandidate(
+  candidates: readonly RuntimeConfiguredModel[],
+): RuntimeConfiguredModel | undefined {
+  return candidates.toSorted(compareDefaultSessionModelPreference)[0];
 }
 
 export function resolveRuntimeModelPlan(params: {
@@ -352,21 +347,7 @@ export function resolveRuntimeModelPlan(params: {
     .filter((entry) => entry.enabled && entry.available)
     .filter((entry) => matchesPool(entry, poolConfig.pool))
     .filter((entry) => matchesRequirements(entry, params.requirements))
-    .toSorted((a, b) => {
-      const byLocation = locationWeight(a.location) - locationWeight(b.location);
-      if (byLocation !== 0) {
-        return byLocation;
-      }
-      const byTier = tierWeight(a.tier) - tierWeight(b.tier);
-      if (byTier !== 0) {
-        return byTier;
-      }
-      const byPriority = (a.priority ?? 0) - (b.priority ?? 0);
-      if (byPriority !== 0) {
-        return byPriority;
-      }
-      return a.ref.localeCompare(b.ref);
-    });
+    .toSorted(comparePoolModelPreference);
 
   return {
     poolName: poolConfig.poolName,

@@ -12,6 +12,14 @@ import { createAssistantMessageEventStream } from "@mariozechner/pi-ai";
 
 export const OLLAMA_NATIVE_BASE_URL = "http://127.0.0.1:11434";
 
+export function resolveOllamaNativeBaseUrl(baseUrl?: string): string {
+  const trimmed = (baseUrl ?? "").trim();
+  if (!trimmed) {
+    return OLLAMA_NATIVE_BASE_URL;
+  }
+  return trimmed.replace(/\/+$/, "").replace(/\/v1$/i, "");
+}
+
 // ── Ollama /api/chat request types ──────────────────────────────────────────
 
 interface OllamaChatRequest {

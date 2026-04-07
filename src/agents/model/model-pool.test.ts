@@ -3,6 +3,7 @@ import type { MarvConfig } from "../../core/config/config.js";
 import type { RuntimeConfiguredModel } from "./model-pool.js";
 import {
   applyThinkingModelPreferences,
+  resolveDefaultSessionModelCandidate,
   resolveRuntimeModelPlan,
   resolveThinkingModelTier,
 } from "./model-pool.js";
@@ -48,7 +49,7 @@ vi.mock("./runtime-model-registry.js", () => ({
 }));
 
 describe("resolveRuntimeModelPlan", () => {
-  it("keeps auth-backed runtime registry models even when selections are narrower", () => {
+  it("treats selections as pool membership even when provider registry is broader", () => {
     readRuntimeModelRegistryMock.mockReturnValue({
       models: [
         {
@@ -100,17 +101,11 @@ describe("resolveRuntimeModelPlan", () => {
 
     const plan = resolveRuntimeModelPlan({ cfg, agentId: "main" });
 
-    expect(plan.configured.map((entry) => entry.ref)).toEqual([
-      "google/gemini-2.0-flash",
-      "google/gemini-2.5-flash",
-    ]);
-    expect(plan.candidates.map((entry) => entry.ref)).toEqual([
-      "google/gemini-2.0-flash",
-      "google/gemini-2.5-flash",
-    ]);
+    expect(plan.configured.map((entry) => entry.ref)).toEqual(["google/gemini-2.0-flash"]);
+    expect(plan.candidates.map((entry) => entry.ref)).toEqual(["google/gemini-2.0-flash"]);
   });
 
-  it("prefers local low-tier candidates before cloud candidates", () => {
+  it("orders pool inspection and fallback candidates from high tier to low tier", () => {
     readRuntimeModelRegistryMock.mockReturnValue(null);
     listConfiguredProvidersMock.mockReturnValue(new Set());
 
@@ -145,14 +140,45 @@ describe("resolveRuntimeModelPlan", () => {
 
     expect(plan.poolName).toBe("default");
     expect(plan.configured.map((entry) => entry.ref)).toEqual([
-      "ollama/qwen2.5-coder",
-      "openai/gpt-4o",
       "anthropic/claude-sonnet-4-5",
+      "openai/gpt-4o",
+      "ollama/qwen2.5-coder",
     ]);
     expect(plan.candidates.map((entry) => entry.ref)).toEqual([
-      "ollama/qwen2.5-coder",
       "openai/gpt-4o",
+      "ollama/qwen2.5-coder",
     ]);
+  });
+
+  it("chooses the lightest viable default session model separately from pool order", () => {
+    const selected = resolveDefaultSessionModelCandidate([
+      {
+        ref: "anthropic/claude-sonnet-4-5",
+        provider: "anthropic",
+        model: "claude-sonnet-4-5",
+        location: "cloud",
+        tier: "high",
+        capabilities: ["text", "coding"],
+        priority: 0,
+        enabled: true,
+        available: true,
+        aliases: [],
+      },
+      {
+        ref: "openai/gpt-4o-mini",
+        provider: "openai",
+        model: "gpt-4o-mini",
+        location: "cloud",
+        tier: "low",
+        capabilities: ["text"],
+        priority: 0,
+        enabled: true,
+        available: true,
+        aliases: [],
+      },
+    ]);
+
+    expect(selected?.ref).toBe("openai/gpt-4o-mini");
   });
 
   it("filters candidates by pool capability requirements", () => {

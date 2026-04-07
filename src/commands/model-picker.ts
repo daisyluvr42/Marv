@@ -2,6 +2,7 @@ import { ensureAuthProfileStore, listProfilesForProvider } from "../agents/auth-
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "../agents/model/model-auth.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
+import { resolveRuntimeModelPlan } from "../agents/model/model-pool.js";
 import {
   buildAllowedModelSet,
   buildModelAliasIndex,
@@ -200,8 +201,15 @@ export async function promptDefaultModel(
   const resolvedKey = modelKey(resolved.provider, resolved.model);
   const configuredKey = configuredRaw ? resolvedKey : "";
 
-  const catalog = await loadModelCatalog({ config: cfg, useCache: false });
-  if (catalog.length === 0) {
+  const runtimeModels = !ignoreAllowlist
+    ? resolveRuntimeModelPlan({
+        cfg,
+        agentDir: params.agentDir,
+      }).candidates
+    : [];
+  const catalog =
+    runtimeModels.length === 0 ? await loadModelCatalog({ config: cfg, useCache: false }) : [];
+  if (runtimeModels.length === 0 && catalog.length === 0) {
     return promptManualModel({
       prompter: params.prompter,
       allowBlank: allowKeep,
@@ -213,8 +221,14 @@ export async function promptDefaultModel(
     cfg,
     defaultProvider: DEFAULT_PROVIDER,
   });
-  let models = catalog;
-  if (!ignoreAllowlist) {
+  let models =
+    runtimeModels.length > 0
+      ? runtimeModels.map((entry) => ({
+          provider: entry.provider,
+          id: entry.model,
+        }))
+      : catalog;
+  if (!ignoreAllowlist && runtimeModels.length === 0) {
     const { allowedCatalog } = buildAllowedModelSet({
       cfg,
       catalog,

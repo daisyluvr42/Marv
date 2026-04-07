@@ -3,7 +3,7 @@ import { clearProviderFailureStates } from "../agents/model/model-availability-s
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import { normalizeProviderId, parseModelRef } from "../agents/model/model-selection.js";
 import {
-  replaceSelectedModelRefsByProvider,
+  replaceSelectedModelRefsForProviderFamily,
   resolveProviderFamilyProviders,
 } from "../agents/model/model-selections.js";
 import type { MarvConfig } from "../core/config/config.js";
@@ -32,8 +32,10 @@ export async function syncProviderSelectionsAfterAuth(
     .map((entry) => `${entry.provider}/${entry.id}`);
 
   refs.push(`${parsed.provider}/${parsed.model}`);
-  return replaceSelectedModelRefsByProvider({
+  return replaceSelectedModelRefsForProviderFamily({
     cfg: config,
+    provider: parsed.provider,
+    sourceKey: parsed.provider,
     refs,
     defaultProvider: parsed.provider,
   });

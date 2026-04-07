@@ -8,6 +8,23 @@ export type SessionModelSelectionState = {
   source: "session" | "legacy" | "default";
 };
 
+function splitModelRef(ref: string): { provider?: string; model: string } | null {
+  const trimmed = ref.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const slash = trimmed.indexOf("/");
+  if (slash <= 0) {
+    return { model: trimmed };
+  }
+  const provider = trimmed.slice(0, slash).trim();
+  const model = trimmed.slice(slash + 1).trim();
+  if (!provider || !model) {
+    return null;
+  }
+  return { provider, model };
+}
+
 export function resolveSessionModelSelectionState(
   entry?: Pick<
     SessionEntry,
@@ -42,6 +59,47 @@ export function setSessionManualModelSelection(entry: SessionEntry, modelRef: st
   }
   if (entry.manualModelRef !== trimmed) {
     entry.manualModelRef = trimmed;
+    updated = true;
+  }
+  if (updated) {
+    entry.updatedAt = Date.now();
+  }
+  return updated;
+}
+
+export function setSessionCurrentModelRef(entry: SessionEntry, modelRef: string): boolean {
+  const parsed = splitModelRef(modelRef);
+  if (!parsed?.model) {
+    return false;
+  }
+  let updated = false;
+  if (parsed.provider) {
+    if (entry.modelProvider !== parsed.provider) {
+      entry.modelProvider = parsed.provider;
+      updated = true;
+    }
+  } else if (entry.modelProvider) {
+    delete entry.modelProvider;
+    updated = true;
+  }
+  if (entry.model !== parsed.model) {
+    entry.model = parsed.model;
+    updated = true;
+  }
+  if (updated) {
+    entry.updatedAt = Date.now();
+  }
+  return updated;
+}
+
+export function clearSessionCurrentModelRef(entry: SessionEntry): boolean {
+  let updated = false;
+  if (entry.modelProvider) {
+    delete entry.modelProvider;
+    updated = true;
+  }
+  if (entry.model) {
+    delete entry.model;
     updated = true;
   }
   if (updated) {

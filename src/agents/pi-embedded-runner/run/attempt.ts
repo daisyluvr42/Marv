@@ -10,6 +10,7 @@ import { resolveTelegramInlineButtonsScope } from "../../../channels/telegram/in
 import { resolveTelegramReactionLevel } from "../../../channels/telegram/reaction-level.js";
 import { resolveChannelCapabilities } from "../../../core/config/channel-capabilities.js";
 import { getMachineDisplayName } from "../../../infra/machine-name.js";
+import { fetchWithPrivateNetworkAccess } from "../../../infra/net/private-network-fetch.js";
 import { MAX_IMAGE_BYTES } from "../../../media/constants.js";
 import { getGlobalHookRunner } from "../../../plugins/hook-runner-global.js";
 import { isProactiveBufferPrompt } from "../../../proactive/constants.js";
@@ -34,7 +35,7 @@ import { isTimeoutError } from "../../failover-error.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
 import { resolveModelAuthMode } from "../../model/model-auth.js";
 import { resolveDefaultModelForAgent } from "../../model/model-selection.js";
-import { createOllamaStreamFn, OLLAMA_NATIVE_BASE_URL } from "../../ollama-stream.js";
+import { createOllamaStreamFn, resolveOllamaNativeBaseUrl } from "../../ollama-stream.js";
 import { toClientToolDefinitions } from "../../pi-tool-definition-adapter.js";
 import { buildSystemPromptParams } from "../../prompt/system-prompt-params.js";
 import { buildSystemPromptReport } from "../../prompt/system-prompt-report.js";
@@ -156,6 +157,36 @@ export function injectHistoryImagesIntoMessages(
   }
 
   return didMutate;
+}
+
+/** @internal Exported for testing only */
+export async function warmOllamaModel(params: { baseUrl: string; modelId: string }): Promise<void> {
+  const { response, release } = await fetchWithPrivateNetworkAccess({
+    url: `${resolveOllamaNativeBaseUrl(params.baseUrl)}/api/generate`,
+    init: {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: params.modelId,
+        prompt: "",
+        stream: false,
+        keep_alive: "60m",
+      }),
+    },
+    timeoutMs: 15_000,
+    auditContext: "agent.ollama.warmup",
+  });
+  try {
+    if (!response.ok) {
+      console.warn(
+        `[ollama-warmup] Failed to warm ${params.modelId} (${response.status}) at ${params.baseUrl}`,
+      );
+    }
+  } finally {
+    await release();
+  }
 }
 
 function summarizeMessagePayload(msg: AgentMessage): { textChars: number; imageBlocks: number } {
@@ -684,7 +715,17 @@ export async function runEmbeddedAttempt(
           typeof params.model.baseUrl === "string" ? params.model.baseUrl.trim() : "";
         const providerBaseUrl =
           typeof providerConfig?.baseUrl === "string" ? providerConfig.baseUrl.trim() : "";
-        const ollamaBaseUrl = modelBaseUrl || providerBaseUrl || OLLAMA_NATIVE_BASE_URL;
+        const ollamaBaseUrl = resolveOllamaNativeBaseUrl(modelBaseUrl || providerBaseUrl);
+        try {
+          await warmOllamaModel({
+            baseUrl: ollamaBaseUrl,
+            modelId: params.modelId,
+          });
+        } catch (error) {
+          console.warn(
+            `[ollama-warmup] Skipping warmup for ${params.modelId}: ${describeUnknownError(error)}`,
+          );
+        }
         activeSession.agent.streamFn = createOllamaStreamFn(ollamaBaseUrl);
       } else {
         // Force a stable streamFn reference so vitest can reliably mock @mariozechner/pi-ai.

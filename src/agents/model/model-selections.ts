@@ -143,6 +143,42 @@ export function setSelectedModelRefsForSource(params: {
   };
 }
 
+export function replaceSelectedModelRefsForProviderFamily(params: {
+  cfg: MarvConfig;
+  provider: string;
+  sourceKey: string;
+  refs: readonly string[];
+  defaultProvider: string;
+}): MarvConfig {
+  const sourceKey = params.sourceKey.trim();
+  if (!sourceKey) {
+    return params.cfg;
+  }
+  const providerFamily = resolveProviderFamilyProviders(params.provider);
+  const nextRefs = normalizeModelRefsForSelection(params.refs, params.defaultProvider);
+  const nextSelections = { ...params.cfg.models?.selections };
+
+  for (const existingSourceKey of Object.keys(nextSelections)) {
+    const sourceProviders = resolveSelectionSourceProviders(params.cfg, existingSourceKey);
+    const overlapsFamily = [...sourceProviders].some((provider) => providerFamily.has(provider));
+    if (overlapsFamily) {
+      delete nextSelections[existingSourceKey];
+    }
+  }
+
+  if (nextRefs.length > 0) {
+    nextSelections[sourceKey] = nextRefs;
+  }
+
+  return {
+    ...params.cfg,
+    models: {
+      ...params.cfg.models,
+      selections: Object.keys(nextSelections).length > 0 ? nextSelections : undefined,
+    },
+  };
+}
+
 export function syncProviderSelectionsFromProviderConfig(params: {
   cfg: MarvConfig;
   providerId: string;

@@ -1,14 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { resolveAgentDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import {
   findModelInCatalog,
   findReasoningModelForProvider,
   type ModelCatalogEntry,
 } from "../../agents/model/model-catalog.js";
+import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
 import {
-  resolveAllowedModelRef,
+  buildModelAliasIndex,
+  modelKey,
   resolveDefaultModelForAgent,
-  resolveSubagentConfiguredModelSelection,
+  resolveModelRefFromString,
 } from "../../agents/model/model-selection.js";
 import { normalizeGroupActivation } from "../../auto-reply/inbound/group-activation.js";
 import { normalizeQueueDropPolicy, normalizeQueueMode } from "../../auto-reply/queue/normalize.js";
@@ -115,9 +117,6 @@ export async function applySessionsPatchToStore(params: {
   const parsedAgent = parseAgentSessionKey(storeKey);
   const sessionAgentId = normalizeAgentId(parsedAgent?.agentId ?? resolveDefaultAgentId(cfg));
   const resolvedDefault = resolveDefaultModelForAgent({ cfg, agentId: sessionAgentId });
-  const subagentModelHint = isSubagentSessionKey(storeKey)
-    ? resolveSubagentConfiguredModelSelection({ cfg, agentId: sessionAgentId })
-    : undefined;
   const existing = store[storeKey];
   const next: SessionEntry = existing
     ? {
@@ -468,22 +467,27 @@ export async function applySessionsPatchToStore(params: {
       if (!trimmed) {
         return invalid("invalid model: empty");
       }
-      if (!params.loadGatewayModelCatalog) {
-        return {
-          ok: false,
-          error: errorShape(ErrorCodes.UNAVAILABLE, "model catalog unavailable"),
-        };
-      }
-      const catalog = await params.loadGatewayModelCatalog();
-      const resolved = resolveAllowedModelRef({
+      const aliasIndex = buildModelAliasIndex({
         cfg,
-        catalog,
+        defaultProvider: resolvedDefault.provider,
+      });
+      const resolved = resolveModelRefFromString({
         raw: trimmed,
         defaultProvider: resolvedDefault.provider,
-        defaultModel: subagentModelHint ?? resolvedDefault.model,
+        aliasIndex,
       });
-      if ("error" in resolved) {
-        return invalid(resolved.error);
+      if (!resolved) {
+        return invalid(`invalid model: ${trimmed}`);
+      }
+      const runtimePlan = resolveRuntimeModelPlan({
+        cfg,
+        agentId: sessionAgentId,
+        agentDir: resolveAgentDir(cfg, sessionAgentId),
+      });
+      const allowedKeys = new Set(runtimePlan.candidates.map((entry) => entry.ref));
+      const resolvedKey = modelKey(resolved.ref.provider, resolved.ref.model);
+      if (allowedKeys.size > 0 && !allowedKeys.has(resolvedKey)) {
+        return invalid(`model not allowed: ${resolvedKey}`);
       }
       // When the user explicitly names a model — even if it matches the configured
       // default — treat it as a deliberate pin so the session stays on that model.

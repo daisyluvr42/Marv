@@ -1,4 +1,8 @@
-import type { MarvConfig } from "../../core/config/types.js";
+import type {
+  ConfiguredModelLocation,
+  ConfiguredModelTier,
+  MarvConfig,
+} from "../../core/config/types.js";
 import { resolveAgentConfig } from "../agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
@@ -18,6 +22,15 @@ export type ThinkLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh"
 export type ModelAliasIndex = {
   byAlias: Map<string, { alias: string; ref: ModelRef }>;
   byKey: Map<string, string[]>;
+};
+
+type ModelOrderingEntry = {
+  provider: string;
+  model: string;
+  location?: ConfiguredModelLocation;
+  tier?: ConfiguredModelTier;
+  priority?: number;
+  capabilities?: string[];
 };
 
 function normalizeAliasKey(value: string): string {
@@ -117,6 +130,82 @@ export function buildConfiguredSelectionKeys(params: {
     defaultProvider: params.defaultProvider,
   });
   return keys.size > 0 ? keys : null;
+}
+
+function poolTierWeight(tier?: ConfiguredModelTier): number {
+  switch (tier) {
+    case "high":
+      return 2;
+    case "standard":
+      return 1;
+    case "low":
+    default:
+      return 0;
+  }
+}
+
+function defaultSessionTierWeight(tier?: ConfiguredModelTier): number {
+  switch (tier) {
+    case "low":
+      return 0;
+    case "standard":
+      return 1;
+    case "high":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function locationWeight(location?: ConfiguredModelLocation): number {
+  return location === "local" ? 0 : 1;
+}
+
+function capabilityWeight(capabilities?: string[]): number {
+  return capabilities?.length ?? 0;
+}
+
+export function comparePoolModelPreference(a: ModelOrderingEntry, b: ModelOrderingEntry): number {
+  const byTier = poolTierWeight(b.tier) - poolTierWeight(a.tier);
+  if (byTier !== 0) {
+    return byTier;
+  }
+  const byCapabilities = capabilityWeight(b.capabilities) - capabilityWeight(a.capabilities);
+  if (byCapabilities !== 0) {
+    return byCapabilities;
+  }
+  const byPriority = (a.priority ?? 0) - (b.priority ?? 0);
+  if (byPriority !== 0) {
+    return byPriority;
+  }
+  const byLocation = locationWeight(a.location) - locationWeight(b.location);
+  if (byLocation !== 0) {
+    return byLocation;
+  }
+  return modelKey(a.provider, a.model).localeCompare(modelKey(b.provider, b.model));
+}
+
+export function compareDefaultSessionModelPreference(
+  a: ModelOrderingEntry,
+  b: ModelOrderingEntry,
+): number {
+  const byTier = defaultSessionTierWeight(a.tier) - defaultSessionTierWeight(b.tier);
+  if (byTier !== 0) {
+    return byTier;
+  }
+  const byLocation = locationWeight(a.location) - locationWeight(b.location);
+  if (byLocation !== 0) {
+    return byLocation;
+  }
+  const byCapabilities = capabilityWeight(a.capabilities) - capabilityWeight(b.capabilities);
+  if (byCapabilities !== 0) {
+    return byCapabilities;
+  }
+  const byPriority = (a.priority ?? 0) - (b.priority ?? 0);
+  if (byPriority !== 0) {
+    return byPriority;
+  }
+  return modelKey(a.provider, a.model).localeCompare(modelKey(b.provider, b.model));
 }
 
 export function buildModelAliasIndex(params: {
@@ -232,24 +321,26 @@ export function resolveConfiguredModelRef(params: {
       return true;
     })
     .toSorted((a, b) => {
-      const entryA = catalog[`${a.provider}/${a.model}`] ?? {};
-      const entryB = catalog[`${b.provider}/${b.model}`] ?? {};
-      const locationWeight = (entry: { location?: string }) => (entry.location === "cloud" ? 1 : 0);
-      const tierWeight = (entry: { tier?: string }) =>
-        entry.tier === "high" ? 2 : entry.tier === "standard" ? 1 : 0;
-      const byLocation = locationWeight(entryA) - locationWeight(entryB);
-      if (byLocation !== 0) {
-        return byLocation;
-      }
-      const byTier = tierWeight(entryA) - tierWeight(entryB);
-      if (byTier !== 0) {
-        return byTier;
-      }
-      const byPriority = (entryA.priority ?? 0) - (entryB.priority ?? 0);
-      if (byPriority !== 0) {
-        return byPriority;
-      }
-      return modelKey(a.provider, a.model).localeCompare(modelKey(b.provider, b.model));
+      const entryA = catalog[`${a.provider}/${a.model}`] ?? catalog[a.model] ?? {};
+      const entryB = catalog[`${b.provider}/${b.model}`] ?? catalog[b.model] ?? {};
+      return compareDefaultSessionModelPreference(
+        {
+          provider: a.provider,
+          model: a.model,
+          location: entryA.location,
+          tier: entryA.tier,
+          priority: entryA.priority,
+          capabilities: entryA.capabilities,
+        },
+        {
+          provider: b.provider,
+          model: b.model,
+          location: entryB.location,
+          tier: entryB.tier,
+          priority: entryB.priority,
+          capabilities: entryB.capabilities,
+        },
+      );
     });
   if (refs.length > 0) {
     return refs[0];

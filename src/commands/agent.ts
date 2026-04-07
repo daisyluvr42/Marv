@@ -11,7 +11,10 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import { runWithModelFallback } from "../agents/model/model-fallback.js";
-import { resolveRuntimeModelPlan } from "../agents/model/model-pool.js";
+import {
+  resolveDefaultSessionModelCandidate,
+  resolveRuntimeModelPlan,
+} from "../agents/model/model-pool.js";
 import {
   isCliProvider,
   modelKey,
@@ -44,6 +47,7 @@ import {
   updateSessionStore,
 } from "../core/config/sessions.js";
 import { applyVerboseOverride } from "../core/session/level-overrides.js";
+import { setSessionCurrentModelRef } from "../core/session/model-selection-state.js";
 import { resolveSessionModelSelectionState } from "../core/session/model-selection-state.js";
 import { resolveSendPolicy } from "../core/session/send-policy.js";
 import {
@@ -395,36 +399,37 @@ export async function agentCommand(
         `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
       );
     }
-    const configuredDefaultRef = runtimePlan.candidates[0] ?? {
+    const configuredDefaultRef = resolveDefaultSessionModelCandidate(runtimePlan.candidates) ?? {
+      provider: runtimePlan.candidates[0]?.provider ?? DEFAULT_PROVIDER,
+      model: runtimePlan.candidates[0]?.model ?? DEFAULT_MODEL,
+    };
+    const normalizedDefaultRef = configuredDefaultRef ?? {
       provider: DEFAULT_PROVIDER,
       model: DEFAULT_MODEL,
     };
     const { provider: defaultProvider, model: defaultModel } = normalizeModelRef(
-      configuredDefaultRef.provider,
-      configuredDefaultRef.model,
+      normalizedDefaultRef.provider,
+      normalizedDefaultRef.model,
     );
     let provider = defaultProvider;
     let model = defaultModel;
-    const hasStoredOverride = Boolean(
-      sessionEntry?.modelOverride || sessionEntry?.providerOverride,
-    );
+    const selectionState = resolveSessionModelSelectionState(sessionEntry);
+    const storedModelOverride =
+      selectionState.mode === "manual" ? selectionState.manualModelRef : undefined;
     let allowedModelKeys = new Set<string>(
       runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
     );
     let modelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> | null = null;
 
-    if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {
-      const entry = sessionEntry;
-      const selectionState = resolveSessionModelSelectionState(entry);
-      const overrideRef =
-        selectionState.mode === "manual" ? selectionState.manualModelRef : undefined;
-      if (overrideRef) {
-        const slash = overrideRef.indexOf("/");
+    if (sessionEntry && sessionStore && sessionKey && storedModelOverride) {
+      if (storedModelOverride) {
+        const slash = storedModelOverride.indexOf("/");
         const overrideProvider =
           slash > 0
-            ? overrideRef.slice(0, slash)
+            ? storedModelOverride.slice(0, slash)
             : sessionEntry.providerOverride?.trim() || defaultProvider;
-        const overrideModel = slash > 0 ? overrideRef.slice(slash + 1) : overrideRef;
+        const overrideModel =
+          slash > 0 ? storedModelOverride.slice(slash + 1) : storedModelOverride;
         const normalizedOverride = normalizeModelRef(overrideProvider, overrideModel);
         const key = modelKey(normalizedOverride.provider, normalizedOverride.model);
         if (
@@ -465,9 +470,6 @@ export async function agentCommand(
       }
     }
 
-    const selectionState = resolveSessionModelSelectionState(sessionEntry);
-    const storedModelOverride =
-      selectionState.mode === "manual" ? selectionState.manualModelRef : undefined;
     if (storedModelOverride) {
       const slash = storedModelOverride.indexOf("/");
       const candidateProvider =
@@ -568,9 +570,23 @@ export async function agentCommand(
         model,
         agentDir,
         fallbacksOverride: activeFallbacks,
-        run: (providerOverride, modelOverride) => {
+        run: async (providerOverride, modelOverride) => {
           const isFallbackRetry = fallbackAttemptIndex > 0;
           fallbackAttemptIndex += 1;
+          if (sessionStore && sessionKey) {
+            const currentEntry = sessionStore[sessionKey] ??
+              sessionEntry ?? { sessionId, updatedAt: Date.now() };
+            const nextEntry: SessionEntry = { ...currentEntry };
+            if (setSessionCurrentModelRef(nextEntry, `${providerOverride}/${modelOverride}`)) {
+              await persistSessionEntry({
+                sessionStore,
+                sessionKey,
+                storePath,
+                entry: nextEntry,
+              });
+              sessionEntry = nextEntry;
+            }
+          }
           return runAgentAttempt({
             providerOverride,
             modelOverride,

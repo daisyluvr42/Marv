@@ -1,6 +1,7 @@
 import type { SessionEntry } from "../config/sessions.js";
 import {
   clearSessionManualModelSelection,
+  setSessionCurrentModelRef,
   setSessionManualModelSelection,
 } from "./model-selection-state.js";
 
@@ -32,10 +33,7 @@ export function applyModelOverrideToSessionEntry(params: {
       delete entry.modelOverride;
       updated = true;
     }
-    // Clear stale runtime model fields so the display falls back to config defaults.
-    if (entry.model || entry.modelProvider) {
-      delete entry.model;
-      delete entry.modelProvider;
+    if (setSessionCurrentModelRef(entry, `${selection.provider}/${selection.model}`)) {
       updated = true;
     }
   } else {
@@ -50,12 +48,7 @@ export function applyModelOverrideToSessionEntry(params: {
       entry.modelOverride = selection.model;
       updated = true;
     }
-    // Clear stale runtime model fields so resolveSessionModelRef picks up the
-    // new override instead of the last-run model (runtime fields take priority
-    // over overrides in the resolver).
-    if (entry.model || entry.modelProvider) {
-      delete entry.model;
-      delete entry.modelProvider;
+    if (setSessionCurrentModelRef(entry, `${selection.provider}/${selection.model}`)) {
       updated = true;
     }
   }

@@ -14,6 +14,7 @@ import {
   type SessionEntry,
   type SessionScope,
 } from "../../core/config/sessions.js";
+import { resolveSessionModelSelectionState } from "../../core/session/model-selection-state.js";
 import { formatTimeAgo } from "../../infra/format-time/format-relative.js";
 import { resolveCommitHash } from "../../infra/git-commit.js";
 import type { MediaUnderstandingDecision } from "../../media-understanding/types.js";
@@ -347,17 +348,15 @@ export function buildStatusMessage(args: StatusArgs): string {
     : null;
   const configuredProvider = configuredModelRef?.provider ?? resolved.provider ?? DEFAULT_PROVIDER;
   const configuredModel = configuredModelRef?.model ?? resolved.model ?? DEFAULT_MODEL;
-  const overrideProvider = entry?.providerOverride?.trim();
-  const overrideModel = entry?.modelOverride?.trim();
   const runtimeProvider = entry?.modelProvider?.trim();
   const runtimeModel = entry?.model?.trim();
-  const provider =
-    overrideProvider ||
-    (overrideModel ? configuredProvider : undefined) ||
-    runtimeProvider ||
-    configuredProvider ||
-    DEFAULT_PROVIDER;
-  let model = overrideModel || runtimeModel || configuredModel || DEFAULT_MODEL;
+  const selectionState = resolveSessionModelSelectionState(entry);
+  const manualRef =
+    selectionState.mode === "manual" && selectionState.manualModelRef
+      ? parseModelRef(selectionState.manualModelRef, configuredProvider)
+      : null;
+  const provider = runtimeProvider || manualRef?.provider || configuredProvider || DEFAULT_PROVIDER;
+  let model = runtimeModel || manualRef?.model || configuredModel || DEFAULT_MODEL;
   let contextTokens =
     entry?.contextTokens ??
     args.agent?.contextTokens ??

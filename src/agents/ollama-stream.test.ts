@@ -4,6 +4,7 @@ import {
   convertToOllamaMessages,
   buildAssistantMessage,
   parseNdjsonStream,
+  resolveOllamaNativeBaseUrl,
 } from "./ollama-stream.js";
 
 describe("convertToOllamaMessages", () => {
@@ -247,6 +248,15 @@ describe("parseNdjsonStream", () => {
 });
 
 describe("createOllamaStreamFn", () => {
+  it("normalizes native Ollama base URLs without hardcoding a host", () => {
+    expect(resolveOllamaNativeBaseUrl("http://192.168.0.42:11434/v1")).toBe(
+      "http://192.168.0.42:11434",
+    );
+    expect(resolveOllamaNativeBaseUrl("http://ollama-host:11434/")).toBe(
+      "http://ollama-host:11434",
+    );
+  });
+
   it("normalizes /v1 baseUrl and maps maxTokens + signal", async () => {
     const originalFetch = globalThis.fetch;
     const fetchMock = vi.fn(async () => {

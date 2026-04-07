@@ -1,7 +1,14 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ImageContent } from "@mariozechner/pi-ai";
-import { describe, expect, it } from "vitest";
-import { injectHistoryImagesIntoMessages } from "./attempt.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const fetchWithPrivateNetworkAccessMock = vi.fn();
+
+vi.mock("../../../infra/net/private-network-fetch.js", () => ({
+  fetchWithPrivateNetworkAccess: (params: unknown) => fetchWithPrivateNetworkAccessMock(params),
+}));
+
+import { injectHistoryImagesIntoMessages, warmOllamaModel } from "./attempt.js";
 
 describe("injectHistoryImagesIntoMessages", () => {
   const image: ImageContent = { type: "image", data: "abc", mimeType: "image/png" };
@@ -56,5 +63,40 @@ describe("injectHistoryImagesIntoMessages", () => {
     expect(didMutate).toBe(false);
     const firstAssistant = messages[0] as Extract<AgentMessage, { role: "assistant" }> | undefined;
     expect(firstAssistant?.content).toBe("noop");
+  });
+});
+
+describe("warmOllamaModel", () => {
+  beforeEach(() => {
+    fetchWithPrivateNetworkAccessMock.mockReset();
+    fetchWithPrivateNetworkAccessMock.mockResolvedValue({
+      response: new Response("{}", { status: 200 }),
+      release: vi.fn(async () => {}),
+    });
+  });
+
+  it("uses the resolved runtime model id and normalized configured base URL", async () => {
+    await warmOllamaModel({
+      baseUrl: "http://192.168.0.42:11434/v1",
+      modelId: "qwen3.5:122b-a10b",
+    });
+
+    expect(fetchWithPrivateNetworkAccessMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: "http://192.168.0.42:11434/api/generate",
+        auditContext: "agent.ollama.warmup",
+      }),
+    );
+
+    const call = fetchWithPrivateNetworkAccessMock.mock.calls[0]?.[0] as {
+      init?: { body?: string };
+    };
+    expect(call.init?.body).toBeDefined();
+    expect(JSON.parse(call.init?.body ?? "{}")).toEqual({
+      model: "qwen3.5:122b-a10b",
+      prompt: "",
+      stream: false,
+      keep_alive: "60m",
+    });
   });
 });

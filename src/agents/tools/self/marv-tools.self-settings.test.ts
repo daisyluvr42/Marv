@@ -106,6 +106,8 @@ vi.mock("../../../core/gateway/server-methods/sessions.js", () => ({
 
 vi.mock("../../model/runtime-model-registry.js", () => ({
   refreshRuntimeModelRegistry: (params?: unknown) => refreshRuntimeModelRegistryMock(params),
+  readRuntimeModelRegistry: () => null,
+  listConfiguredProviders: () => new Set<string>(),
   resolveRuntimeRegistryPathForDisplay: () => "/tmp/main/runtime/model-registry.json",
 }));
 
