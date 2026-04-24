@@ -187,7 +187,7 @@ describe("buildStatusMessage", () => {
     expect(optionsLine).not.toContain("elevated");
   });
 
-  it("prefers model overrides over last-run model", () => {
+  it("prefers manual selection over stale runtime model", () => {
     const text = buildStatusMessage({
       agent: {
         model: "anthropic/claude-opus-4-5",
@@ -196,6 +196,8 @@ describe("buildStatusMessage", () => {
       sessionEntry: {
         sessionId: "override-1",
         updatedAt: 0,
+        selectionMode: "manual",
+        manualModelRef: "openai/gpt-4.1-mini",
         providerOverride: "openai",
         modelOverride: "gpt-4.1-mini",
         modelProvider: "anthropic",

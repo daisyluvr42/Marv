@@ -292,6 +292,9 @@ export function createEventHandlers(context: EventHandlerContext) {
       if (phase === "error") {
         setActivityStatus("error");
       }
+      if (phase === "model_selected") {
+        void refreshSessionInfo?.();
+      }
       tui.requestRender();
     }
   };

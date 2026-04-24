@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model/model-auth.js";
-import { parseModelRef, resolveConfiguredModelRef } from "../../agents/model/model-selection.js";
+import { parseModelRef, resolveConfiguredModelRef } from "../../agents/model/model-resolve.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
 import { derivePromptTokens, normalizeUsage, type UsageLike } from "../../agents/usage.js";
@@ -355,8 +355,8 @@ export function buildStatusMessage(args: StatusArgs): string {
     selectionState.mode === "manual" && selectionState.manualModelRef
       ? parseModelRef(selectionState.manualModelRef, configuredProvider)
       : null;
-  const provider = runtimeProvider || manualRef?.provider || configuredProvider || DEFAULT_PROVIDER;
-  let model = runtimeModel || manualRef?.model || configuredModel || DEFAULT_MODEL;
+  const provider = manualRef?.provider || runtimeProvider || configuredProvider || DEFAULT_PROVIDER;
+  let model = manualRef?.model || runtimeModel || configuredModel || DEFAULT_MODEL;
   let contextTokens =
     entry?.contextTokens ??
     args.agent?.contextTokens ??

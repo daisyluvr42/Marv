@@ -23,7 +23,9 @@ import {
   resolveSessionTranscriptPath,
   type SessionEntry,
   updateSessionStore,
+  updateSessionStoreEntry,
 } from "../../core/config/sessions.js";
+import { setSessionCurrentModelRef } from "../../core/session/model-selection-state.js";
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -180,6 +182,26 @@ export async function runAgentTurnWithFallback(params: {
             model,
             thinkLevel: params.followupRun.run.thinkLevel,
           });
+
+          // Broadcast model selection so TUI/WebSocket clients can refresh immediately.
+          emitAgentEvent({
+            runId,
+            stream: "lifecycle",
+            data: { phase: "model_selected", provider, model },
+          });
+
+          // Persist the actual model to the session store right away so the
+          // footer reflects the real model before the run completes.
+          if (params.storePath && params.sessionKey) {
+            void updateSessionStoreEntry({
+              storePath: params.storePath,
+              sessionKey: params.sessionKey,
+              update: async (entry) => {
+                setSessionCurrentModelRef(entry, `${provider}/${model}`);
+                return {};
+              },
+            }).catch(() => {});
+          }
 
           if (isCliProvider(provider, params.followupRun.run.config)) {
             const startedAt = Date.now();

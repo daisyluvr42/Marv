@@ -7,7 +7,7 @@ import {
   parseModelRef,
   resolveConfiguredModelRef,
   resolveDefaultModelForAgent,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import {
   normalizeAgentId,
   normalizeMainKey,
@@ -594,6 +594,9 @@ export function resolveSessionModelRef(
 
   let provider = resolved.provider;
   let model = resolved.model;
+
+  // Manual selection state, including legacy override fields, must win over
+  // stale persisted runtime state.
   const selectionState = resolveSessionModelSelectionState(entry);
   if (selectionState.mode === "manual" && selectionState.manualModelRef) {
     const parsedOverride = parseModelRef(
@@ -609,6 +612,7 @@ export function resolveSessionModelRef(
     return { provider, model };
   }
 
+  // Runtime model (actually used after fallback/run) takes precedence in auto mode.
   const entryModel = entry?.model?.trim();
   const entryProvider = entry?.modelProvider?.trim();
   if (entryModel) {
@@ -617,6 +621,7 @@ export function resolveSessionModelRef(
       model: entryModel,
     };
   }
+
   return { provider, model };
 }
 

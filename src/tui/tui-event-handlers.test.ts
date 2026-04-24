@@ -248,6 +248,31 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     expect(tui.requestRender).toHaveBeenCalled();
   });
 
+  it("refreshes session info on model_selected lifecycle event", () => {
+    const refreshSessionInfo = vi.fn().mockResolvedValue(undefined);
+    const state = makeState({ activeChatRunId: "run-model" });
+    const context = makeContext(state);
+    const handlers = createEventHandlers({
+      chatLog: context.chatLog as unknown as HandlerChatLog,
+      tui: context.tui,
+      state,
+      setActivityStatus: context.setActivityStatus,
+      loadHistory: context.loadHistory,
+      isLocalRunId: context.isLocalRunId,
+      forgetLocalRunId: context.forgetLocalRunId,
+      refreshSessionInfo,
+    });
+
+    handlers.handleAgentEvent({
+      runId: "run-model",
+      stream: "lifecycle",
+      data: { phase: "model_selected", provider: "anthropic", model: "claude-3-5-sonnet" },
+    });
+
+    expect(refreshSessionInfo).toHaveBeenCalledTimes(1);
+    expect(context.tui.requestRender).toHaveBeenCalled();
+  });
+
   it("ignores lifecycle updates for non-active runs in the same session", () => {
     const { state, tui, setActivityStatus, handleChatEvent, handleAgentEvent } =
       createHandlersHarness({

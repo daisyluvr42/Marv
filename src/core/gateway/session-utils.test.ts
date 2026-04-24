@@ -211,7 +211,7 @@ describe("gateway session utils", () => {
 });
 
 describe("resolveSessionModelRef", () => {
-  test("prefers explicit override over the last runtime model/provider", () => {
+  test("prefers legacy manual override fields over stale runtime model", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -270,7 +270,7 @@ describe("resolveSessionModelRef", () => {
     expect(resolved).toEqual({ provider: "openai-codex", model: "gpt-5.3-codex" });
   });
 
-  test("prefers explicit manual selection state over legacy runtime fields", () => {
+  test("prefers manual selection over stale runtime model when both are present", () => {
     const cfg = {
       agents: {
         defaults: {
@@ -284,6 +284,25 @@ describe("resolveSessionModelRef", () => {
       updatedAt: Date.now(),
       modelProvider: "openai-codex",
       model: "gpt-5.3-codex",
+      selectionMode: "manual",
+      manualModelRef: "openai/gpt-4o",
+    });
+
+    expect(resolved).toEqual({ provider: "openai", model: "gpt-4o" });
+  });
+
+  test("shows manual selection when no runtime model exists", () => {
+    const cfg = {
+      agents: {
+        defaults: {
+          model: { primary: "anthropic/claude-opus-4-6" },
+        },
+      },
+    } as MarvConfig;
+
+    const resolved = resolveSessionModelRef(cfg, {
+      sessionId: "s5",
+      updatedAt: Date.now(),
       selectionMode: "manual",
       manualModelRef: "openai/gpt-4o",
     });
@@ -596,7 +615,7 @@ describe("listSessionsFromStore search", () => {
     expect(missing?.totalTokensFresh).toBe(false);
   });
 
-  test("keeps raw override fields alongside the resolved footer model", () => {
+  test("keeps raw override fields and footer honors the manual override", () => {
     const store: Record<string, SessionEntry> = {
       "agent:main:main": {
         sessionId: "sess-main",
@@ -615,6 +634,8 @@ describe("listSessionsFromStore search", () => {
       opts: {},
     });
 
+    // Legacy override fields represent manual selection state and should win
+    // over stale runtime model fields until a new run persists an updated model.
     expect(result.sessions[0]).toMatchObject({
       key: "agent:main:main",
       providerOverride: "anthropic",
