@@ -1,7 +1,7 @@
+import { formatErrorMessage } from "agentmarv/plugin-sdk";
 import { resolveIrcAccount } from "./accounts.js";
 import { connectIrcClient } from "./client.js";
 import { buildIrcConnectOptions } from "./connect-options.js";
-import { formatErrorMessage } from "agentmarv/plugin-sdk";
 import type { CoreConfig, IrcProbe } from "./types.js";
 
 export async function probeIrc(

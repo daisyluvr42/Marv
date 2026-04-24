@@ -24,7 +24,6 @@ const DEFAULT_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const DEFAULT_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
 const HEALTH_PATH = "/healthz";
 
-
 function parseWebhookPayload(body: string): NextcloudTalkWebhookPayload | null {
   try {
     const data = JSON.parse(body);

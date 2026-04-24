@@ -104,7 +104,6 @@ function mergeActionIntoArgsIfSupported(params: {
   return { ...args, action };
 }
 
-
 function isToolInputError(err: unknown): boolean {
   if (err instanceof ToolInputError) {
     return true;

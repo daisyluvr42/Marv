@@ -3,9 +3,9 @@ import { loadWorkspaceSkillEntries } from "../agents/skills.js";
 import { bumpSkillsSnapshotVersion } from "../agents/skills/refresh.js";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import type { MarvConfig } from "../core/config/config.js";
-import { getErrorMessage } from "./errors.js";
 import type { NodeRegistry } from "../core/gateway/node-registry.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { getErrorMessage } from "./errors.js";
 import { listNodePairing, updatePairedNodeMetadata } from "./node-pairing.js";
 
 type RemoteNodeRecord = {

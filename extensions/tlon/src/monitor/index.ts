@@ -20,7 +20,6 @@ import {
   isSummarizationRequest,
 } from "./utils.js";
 
-
 export type MonitorTlonOpts = {
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
@@ -514,7 +513,9 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       subscribedDMs.add(dmShip);
       runtime.log?.(`[tlon] Subscribed to DM with ${dmShip}`);
     } catch (error) {
-      runtime.error?.(`[tlon] Failed to subscribe to DM with ${dmShip}: ${formatErrorMessage(error)}`);
+      runtime.error?.(
+        `[tlon] Failed to subscribe to DM with ${dmShip}: ${formatErrorMessage(error)}`,
+      );
     }
   }
 

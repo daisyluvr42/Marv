@@ -44,7 +44,6 @@ function normalizeCode(code?: string): string {
   return code?.trim().toUpperCase() ?? "";
 }
 
-
 function getErrorCode(err: unknown): string | undefined {
   const direct = extractErrorCode(err);
   if (direct) {

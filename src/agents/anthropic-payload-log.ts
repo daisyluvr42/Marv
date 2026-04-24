@@ -3,11 +3,11 @@ import path from "node:path";
 import type { AgentMessage, StreamFn } from "@mariozechner/pi-agent-core";
 import type { Api, Model } from "@mariozechner/pi-ai";
 import { resolveStateDir } from "../core/config/paths.js";
+import { getErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveUserPath } from "../utils.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 import { safeJsonStringify } from "../utils/safe-json.js";
-import { getErrorMessage } from "../infra/errors.js";
 import { getQueuedFileWriter, type QueuedFileWriter } from "./queued-file-writer.js";
 
 type PayloadLogStage = "request" | "usage";
@@ -50,7 +50,6 @@ function resolvePayloadLogConfig(env: NodeJS.ProcessEnv): PayloadLogConfig {
 function getWriter(filePath: string): PayloadLogWriter {
   return getQueuedFileWriter(writers, filePath);
 }
-
 
 function digest(value: unknown): string | undefined {
   const serialized = safeJsonStringify(value);
