@@ -1,3 +1,5 @@
+import { stripInboundMetadata } from "../auto-reply/inbound/strip-meta.js";
+
 const ENVELOPE_PREFIX = /^\[([^\]]+)\]\s*/;
 const ENVELOPE_CHANNELS = [
   "WebChat",
@@ -46,4 +48,8 @@ export function stripMessageIdHints(text: string): string {
   const lines = text.split(/\r?\n/);
   const filtered = lines.filter((line) => !MESSAGE_ID_LINE.test(line));
   return filtered.length === lines.length ? text : filtered.join("\n");
+}
+
+export function sanitizeUserChatTextForDisplay(text: string): string {
+  return stripInboundMetadata(stripMessageIdHints(stripEnvelope(text)));
 }

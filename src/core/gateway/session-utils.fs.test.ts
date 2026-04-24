@@ -178,6 +178,30 @@ describe("readFirstUserMessageFromTranscript", () => {
     expect(result).toBe("Padded message");
   });
 
+  test("strips inbound metadata from first user message", () => {
+    const sessionId = "test-session-strip-meta";
+    const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
+    const lines = [
+      JSON.stringify({
+        message: {
+          role: "user",
+          content: [
+            "Conversation info (untrusted metadata):",
+            "```json",
+            '{ "message_id": "187", "sender": "936144835" }',
+            "```",
+            "",
+            "Visible text",
+          ].join("\n"),
+        },
+      }),
+    ];
+    fs.writeFileSync(transcriptPath, lines.join("\n"), "utf-8");
+
+    const result = readFirstUserMessageFromTranscript(sessionId, storePath);
+    expect(result).toBe("Visible text");
+  });
+
   test("returns null for empty content", () => {
     const sessionId = "test-session-8";
     const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
@@ -240,6 +264,30 @@ describe("readLastMessagePreviewFromTranscript", () => {
 
     const result = readLastMessagePreviewFromTranscript(sessionId, storePath);
     expect(result).toBe("Final assistant reply");
+  });
+
+  test("strips inbound metadata from last user preview", () => {
+    const sessionId = "test-last-strip-meta";
+    const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
+    const lines = [
+      JSON.stringify({
+        message: {
+          role: "user",
+          content: [
+            "Conversation info (untrusted metadata):",
+            "```json",
+            '{ "message_id": "187", "sender": "936144835" }',
+            "```",
+            "",
+            "Preview text",
+          ].join("\n"),
+        },
+      }),
+    ];
+    fs.writeFileSync(transcriptPath, lines.join("\n"), "utf-8");
+
+    const result = readLastMessagePreviewFromTranscript(sessionId, storePath);
+    expect(result).toBe("Preview text");
   });
 
   test("skips system messages to find last user/assistant", () => {
@@ -605,6 +653,29 @@ describe("readSessionPreviewItemsFromTranscript", () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.text.length).toBe(24);
     expect(result[0]?.text.endsWith("...")).toBe(true);
+  });
+
+  test("strips inbound metadata from user preview items", () => {
+    const sessionId = "preview-strip-meta";
+    const lines = [
+      JSON.stringify({
+        message: {
+          role: "user",
+          content: [
+            "Conversation info (untrusted metadata):",
+            "```json",
+            '{ "message_id": "187", "sender": "936144835" }',
+            "```",
+            "",
+            "Shown in preview",
+          ].join("\n"),
+        },
+      }),
+    ];
+    writeTranscriptLines(sessionId, lines);
+
+    const result = readPreview(sessionId, 1, 120);
+    expect(result).toEqual([{ role: "user", text: "Shown in preview" }]);
   });
 });
 

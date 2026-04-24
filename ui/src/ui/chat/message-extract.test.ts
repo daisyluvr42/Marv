@@ -23,6 +23,22 @@ describe("extractTextCached", () => {
     expect(extractTextCached(message)).toBe("plain text");
     expect(extractTextCached(message)).toBe("plain text");
   });
+
+  it("strips inbound metadata from user messages", () => {
+    const message = {
+      role: "user",
+      content: [
+        "Conversation info (untrusted metadata):",
+        "```json",
+        '{ "message_id": "187", "sender": "936144835" }',
+        "```",
+        "",
+        "？",
+      ].join("\n"),
+    };
+    expect(extractText(message)).toBe("？");
+    expect(extractTextCached(message)).toBe("？");
+  });
 });
 
 describe("extractThinkingCached", () => {

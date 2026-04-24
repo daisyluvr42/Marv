@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
+import { sanitizeUserChatTextForDisplay } from "../../shared/chat-envelope.js";
 import { extractToolCallNames, hasToolCall } from "../../utils/transcript-tools.js";
 import {
   resolveSessionFilePath,
@@ -9,7 +10,6 @@ import {
   resolveSessionTranscriptPathInDir,
 } from "../config/sessions/paths.js";
 import { hasInterSessionUserProvenance } from "../session/input-provenance.js";
-import { stripEnvelope } from "./chat-sanitize.js";
 import type { SessionPreviewItem } from "./session-utils.types.js";
 
 type SessionTitleFields = {
@@ -416,7 +416,7 @@ function extractFirstUserMessageFromTranscriptChunk(
       }
       const text = extractTextFromContent(msg.content);
       if (text) {
-        return text;
+        return sanitizeUserChatTextForDisplay(text);
       }
     } catch {
       // skip malformed lines
@@ -497,7 +497,7 @@ function readLastMessagePreviewFromOpenTranscript(params: {
       }
       const text = extractTextFromContent(msg.content);
       if (text) {
-        return text;
+        return msg.role === "user" ? sanitizeUserChatTextForDisplay(text) : text;
       }
     } catch {
       // skip malformed
@@ -646,7 +646,7 @@ function buildPreviewItems(
       continue;
     }
     if (role === "user") {
-      trimmed = stripEnvelope(trimmed);
+      trimmed = sanitizeUserChatTextForDisplay(trimmed);
     }
     trimmed = truncatePreviewText(trimmed, maxChars);
     items.push({ role, text: trimmed });

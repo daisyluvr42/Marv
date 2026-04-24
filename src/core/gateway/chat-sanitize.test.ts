@@ -39,4 +39,43 @@ describe("stripEnvelopeFromMessage", () => {
     const result = stripEnvelopeFromMessage(input) as { content?: string };
     expect(result.content).toBe("note\n[message_id: 123]");
   });
+
+  test("removes inbound metadata blocks from user string content", () => {
+    const input = {
+      role: "user",
+      content: [
+        "Conversation info (untrusted metadata):",
+        "```json",
+        '{ "message_id": "187", "sender": "936144835" }',
+        "```",
+        "",
+        "？",
+      ].join("\n"),
+    };
+    const result = stripEnvelopeFromMessage(input) as { content?: string };
+    expect(result.content).toBe("？");
+  });
+
+  test("removes inbound metadata blocks from user text content arrays", () => {
+    const input = {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: [
+            "Conversation info (untrusted metadata):",
+            "```json",
+            '{ "message_id": "187", "sender": "936144835" }',
+            "```",
+            "",
+            "Hello",
+          ].join("\n"),
+        },
+      ],
+    };
+    const result = stripEnvelopeFromMessage(input) as {
+      content?: Array<{ type: string; text?: string }>;
+    };
+    expect(result.content?.[0]?.text).toBe("Hello");
+  });
 });
