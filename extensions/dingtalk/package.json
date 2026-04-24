@@ -1,6 +1,6 @@
 {
   "name": "@marv/dingtalk",
-  "version": "2026.4.3",
+  "version": "2026.4.24",
   "description": "Marv DingTalk channel plugin",
   "type": "module",
   "dependencies": {

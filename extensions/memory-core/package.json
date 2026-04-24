@@ -1,6 +1,6 @@
 {
   "name": "@marv/memory-core",
-  "version": "2026.4.3",
+  "version": "2026.4.24",
   "private": true,
   "description": "Marv core memory search plugin",
   "type": "module",

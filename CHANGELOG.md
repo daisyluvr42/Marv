@@ -4,6 +4,15 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
 ## Unreleased
 
+## 2026.4.24
+
+### Fixes
+
+- Memory: prevent pre-compaction memory flushes from livelocking when persisting session summaries.
+- Models: keep runtime model availability and selected session model status fresh across provider/config changes.
+- Chat: hide inbound metadata markers from user-visible transcript displays.
+- Sub-agents: avoid selecting models already marked unavailable for delegated runs.
+
 ## 2026.4.3
 
 ### Changes

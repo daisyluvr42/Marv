@@ -1,6 +1,6 @@
 {
   "name": "@marv/telegram",
-  "version": "2026.4.3",
+  "version": "2026.4.24",
   "private": true,
   "description": "Marv Telegram channel plugin",
   "type": "module",
