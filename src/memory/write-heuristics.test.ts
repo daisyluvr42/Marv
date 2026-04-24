@@ -25,6 +25,18 @@ describe("evaluateMemoryWriteHeuristics", () => {
     });
   });
 
+  it("accepts session summaries requested by the default memory flush prompt", () => {
+    const result = evaluateMemoryWriteHeuristics({
+      content: "2026-04-24: User prefers direct fixes with targeted verification.",
+      kind: "session_summary",
+    });
+    expect(result).toEqual({
+      shouldWrite: true,
+      classification: "session_summary",
+      normalizedContent: "2026-04-24: User prefers direct fixes with targeted verification.",
+    });
+  });
+
   it("rejects question-shaped writes", () => {
     const result = evaluateMemoryWriteHeuristics({
       content: "Can you check whether the deploy is healthy right now?",

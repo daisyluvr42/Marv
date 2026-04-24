@@ -199,7 +199,7 @@ describe("tool-loop-detection", () => {
       }
     });
 
-    it("keeps generic loops warn-only below global breaker threshold", () => {
+    it("warns on generic no-progress loops below the critical threshold", () => {
       const state = createState();
       const params = { path: "/same.txt" };
       const result = {
@@ -207,7 +207,7 @@ describe("tool-loop-detection", () => {
         details: { ok: true },
       };
 
-      for (let i = 0; i < CRITICAL_THRESHOLD; i += 1) {
+      for (let i = 0; i < CRITICAL_THRESHOLD - 1; i += 1) {
         recordSuccessfulCall(state, "read", params, result, i);
       }
 
@@ -215,6 +215,50 @@ describe("tool-loop-detection", () => {
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
         expect(loopResult.level).toBe("warning");
+      }
+    });
+
+    it("blocks generic no-progress loops at the critical threshold", () => {
+      const state = createState();
+      const params = {
+        content: "Working note that does not pass heuristics.",
+        kind: "note",
+      };
+      const result = {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              ok: false,
+              skipped: true,
+              classification: "reject_unclear",
+              error: "memory write skipped by heuristics",
+            }),
+          },
+        ],
+        details: {
+          ok: false,
+          skipped: true,
+          classification: "reject_unclear",
+          error: "memory write skipped by heuristics",
+        },
+      };
+
+      for (let i = 0; i < CRITICAL_THRESHOLD; i += 1) {
+        recordSuccessfulCall(state, "memory_write", params, result, i);
+      }
+
+      const loopResult = detectToolCallLoop(
+        state,
+        "memory_write",
+        params,
+        enabledLoopDetectionConfig,
+      );
+      expect(loopResult.stuck).toBe(true);
+      if (loopResult.stuck) {
+        expect(loopResult.level).toBe("critical");
+        expect(loopResult.detector).toBe("generic_repeat");
+        expect(loopResult.message).toContain("CRITICAL");
       }
     });
 

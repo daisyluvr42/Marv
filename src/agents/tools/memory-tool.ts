@@ -517,15 +517,15 @@ function mergeMemoryResults(params: {
   maxResults: number;
 }): MemorySearchResult[] {
   const combined = [...params.primary, ...params.secondary].toSorted((a, b) => {
-    const scoreDelta = (b.score ?? 0) - (a.score ?? 0);
-    if (Math.abs(scoreDelta) > 1e-9) {
-      return scoreDelta;
-    }
     if (isStructuredMemoryPath(a.path) && !isStructuredMemoryPath(b.path)) {
       return -1;
     }
     if (!isStructuredMemoryPath(a.path) && isStructuredMemoryPath(b.path)) {
       return 1;
+    }
+    const scoreDelta = (b.score ?? 0) - (a.score ?? 0);
+    if (Math.abs(scoreDelta) > 1e-9) {
+      return scoreDelta;
     }
     return a.path.localeCompare(b.path);
   });

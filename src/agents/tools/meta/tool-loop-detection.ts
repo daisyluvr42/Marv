@@ -434,6 +434,24 @@ export function detectToolCallLoop(
     };
   }
 
+  if (
+    !knownPollTool &&
+    resolvedConfig.detectors.genericRepeat &&
+    noProgressStreak >= resolvedConfig.criticalThreshold
+  ) {
+    log.error(
+      `Critical generic no-progress loop detected: ${toolName} repeated ${noProgressStreak} times`,
+    );
+    return {
+      stuck: true,
+      level: "critical",
+      detector: "generic_repeat",
+      count: noProgressStreak,
+      message: `CRITICAL: ${toolName} has repeated identical arguments and identical no-progress outcomes ${noProgressStreak} times. Session execution blocked to prevent runaway loops.`,
+      warningKey: `generic:${toolName}:${currentHash}:${noProgress.latestResultHash ?? "none"}`,
+    };
+  }
+
   const pingPongWarningKey = pingPong.pairedSignature
     ? `pingpong:${canonicalPairKey(currentHash, pingPong.pairedSignature)}`
     : `pingpong:${toolName}:${currentHash}`;

@@ -3,6 +3,7 @@ export type MemoryWriteHeuristicClassification =
   | "durable_preference"
   | "durable_identity_fact"
   | "project_convention"
+  | "session_summary"
   | "reject_small_talk"
   | "reject_question"
   | "reject_transient"
@@ -15,14 +16,19 @@ export type MemoryWriteHeuristicDecision =
         | "explicit_memory"
         | "durable_preference"
         | "durable_identity_fact"
-        | "project_convention";
+        | "project_convention"
+        | "session_summary";
       normalizedContent: string;
     }
   | {
       shouldWrite: false;
       classification: Exclude<
         MemoryWriteHeuristicClassification,
-        "explicit_memory" | "durable_preference" | "durable_identity_fact" | "project_convention"
+        | "explicit_memory"
+        | "durable_preference"
+        | "durable_identity_fact"
+        | "project_convention"
+        | "session_summary"
       >;
       normalizedContent: string;
     };
@@ -73,8 +79,16 @@ function classifyDurableSignal(params: {
   normalized: string;
   lowered: string;
   kind: string;
-}): "durable_preference" | "durable_identity_fact" | "project_convention" | "reject_unclear" {
+}):
+  | "durable_preference"
+  | "durable_identity_fact"
+  | "project_convention"
+  | "session_summary"
+  | "reject_unclear" {
   const { normalized, lowered, kind } = params;
+  if (kind === "session_summary") {
+    return "session_summary";
+  }
   if (kind === "preference" || PREFERENCE_RE.test(lowered) || PREFERENCE_ZH_RE.test(normalized)) {
     return "durable_preference";
   }

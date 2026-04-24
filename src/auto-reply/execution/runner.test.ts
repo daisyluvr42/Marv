@@ -1004,6 +1004,49 @@ describe("runReplyAgent memory flush", () => {
     });
   });
 
+  it("continues the foreground reply when a memory flush turn is blocked", async () => {
+    await withTempStore(async (storePath) => {
+      const sessionKey = "main";
+      const sessionEntry = {
+        sessionId: "session",
+        updatedAt: Date.now(),
+        totalTokens: 80_000,
+        compactionCount: 1,
+      };
+
+      await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
+
+      const calls: Array<{ prompt?: string }> = [];
+      state.runEmbeddedPiAgentMock.mockImplementation(async (params: EmbeddedRunParams) => {
+        calls.push({ prompt: params.prompt });
+        if (params.prompt?.includes("Pre-compaction memory flush.")) {
+          throw new Error("CRITICAL: memory_write repeated identical no-progress outcomes");
+        }
+        return {
+          payloads: [{ text: "ok" }],
+          meta: { agentMeta: { usage: { input: 1, output: 1 } } },
+        };
+      });
+
+      const baseRun = createBaseRun({
+        storePath,
+        sessionEntry,
+      });
+
+      await runReplyAgentWithBase({
+        baseRun,
+        storePath,
+        sessionKey,
+        sessionEntry,
+        commandBody: "hello",
+      });
+
+      expect(calls).toHaveLength(2);
+      expect(calls[0]?.prompt).toContain("Pre-compaction memory flush.");
+      expect(calls[1]?.prompt).toBe("hello");
+    });
+  });
+
   it("skips memory flush after a prior flush in the same compaction cycle", async () => {
     await withTempStore(async (storePath) => {
       const sessionKey = "main";

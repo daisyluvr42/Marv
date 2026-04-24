@@ -20,6 +20,7 @@ let archiveReadImpl: (
   eventId: string,
 ) => { id: string; content: string; summary: string } | null = () => null;
 let soulRefsImpl: (itemId: string) => string[] = () => [];
+const writeSoulMemoryMock = vi.fn();
 const enqueueDistillationMock = vi.fn();
 
 const stubManager = {
@@ -56,6 +57,7 @@ vi.mock("../../memory/storage/soul-memory-store.js", () => {
     getSoulMemoryItem: ({ itemId }: { itemId: string }) => soulReadImpl(itemId),
     getSoulArchiveEvent: ({ eventId }: { eventId: string }) => archiveReadImpl(eventId),
     listSoulMemoryReferences: ({ itemId }: { itemId: string }) => soulRefsImpl(itemId),
+    writeSoulMemory: (...args: unknown[]) => writeSoulMemoryMock(...args),
     buildSoulMemoryPath: (itemId: string) => `soul-memory/${itemId}`,
     buildSoulArchivePath: (eventId: string) => `soul-archive/${eventId}`,
     parseSoulMemoryPath: (value: string) =>
@@ -97,6 +99,8 @@ beforeEach(() => {
   archiveSearchImpl = () => [];
   archiveReadImpl = () => null;
   soulRefsImpl = () => [];
+  writeSoulMemoryMock.mockReset();
+  writeSoulMemoryMock.mockReturnValue({ id: "mem_written", content: "written memory" });
   enqueueDistillationMock.mockReset();
   vi.clearAllMocks();
 });
@@ -375,7 +379,7 @@ describe("memory tools", () => {
     });
   });
 
-  it("queues memory_write through distillation instead of direct DB write", async () => {
+  it("writes accepted memory_write requests to structured memory", async () => {
     const cfg = { agents: { defaults: {} } };
     const tool = createMemoryWriteTool({ config: cfg });
     expect(tool).not.toBeNull();
@@ -388,18 +392,13 @@ describe("memory tools", () => {
     });
     expect(result.details).toMatchObject({
       ok: true,
-      queued: true,
+      id: "mem_written",
       classification: "explicit_memory",
-      notice: "Memory note queued for distillation",
     });
-    expect(enqueueDistillationMock).toHaveBeenCalledTimes(1);
-    expect(enqueueDistillationMock).toHaveBeenCalledWith(
-      expect.any(String), // agentId
+    expect(writeSoulMemoryMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        source: "reflect",
         content: expect.stringContaining("I prefer concise replies."),
       }),
-      expect.objectContaining({ cfg }),
     );
   });
 
@@ -420,6 +419,34 @@ describe("memory tools", () => {
       error: "memory write skipped by heuristics",
     });
     expect(enqueueDistillationMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts session_summary writes from the default memory flush prompt", async () => {
+    const cfg = { agents: { defaults: {} } };
+    const tool = createMemoryWriteTool({ config: cfg });
+    expect(tool).not.toBeNull();
+    if (!tool) {
+      throw new Error("tool missing");
+    }
+
+    const result = await tool.execute("call_flush", {
+      scopeType: "agent",
+      kind: "session_summary",
+      content: "2026-04-24: User prefers direct fixes with targeted verification.",
+    });
+
+    expect(result.details).toMatchObject({
+      ok: true,
+      id: "mem_written",
+      classification: "session_summary",
+    });
+    expect(writeSoulMemoryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeType: "agent",
+        kind: "session_summary",
+        content: "2026-04-24: User prefers direct fixes with targeted verification.",
+      }),
+    );
   });
 
   it("includes [ref:item_id] chain and salience metadata in soul search results", async () => {
