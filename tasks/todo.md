@@ -1,5 +1,110 @@
 # Todo
 
+## MarvMem Extraction (2026-04-18)
+
+- [x] Confirm the reusable boundary between Marv's long-term memory, runtime recall, and Marv-specific working memory.
+- [x] Write the standalone `marvmem` design doc under `Plan/`.
+- [x] Create a new `marvmem/` project directory with its own package metadata and TypeScript config.
+- [x] Implement a standalone memory core with structured records, scopes, file-backed persistence, and hybrid search.
+- [x] Implement runtime recall/capture helpers that produce prompt-ready context for other agents.
+- [x] Implement MCP handlers and thin adapters for Marv, Hermes-style agents, and OpenClaw-style agents.
+- [x] Add focused tests and a README with integration examples.
+
+## Review
+
+- Added a new standalone project at `marvmem/` instead of folding the extraction into Marv internals, so the memory system now has its own package metadata, build/test scripts, and README.
+- Kept the extracted boundary focused on reusable long-term memory and runtime recall: `src/core` handles durable records, scopes, file-backed persistence, and hybrid lexical/hash-embedding search; `src/runtime` handles prompt injection and turn capture; `src/mcp` exposes tool calls; `src/adapters` provides thin agent-facing wrappers.
+- Chose a file-backed JSON store for the first pass so external agents can embed MarvMem without native SQLite/vector dependencies, while keeping the public API stable enough to add a different backend later.
+- Added focused tests for core search/recall, runtime capture/recall, and MCP write/search flow.
+- Verified with:
+  - `pnpm exec tsc -p marvmem/tsconfig.json --noEmit`
+  - `pnpm exec tsc -p marvmem/tsconfig.json`
+  - `node --import tsx --test marvmem/test/*.test.ts`
+
+## Webchat Metadata Sanitization (2026-04-13)
+
+- [x] Centralize user-message display sanitization so envelope stripping, message-id hint stripping, and inbound metadata stripping share one code path.
+- [x] Apply the shared sanitizer to gateway chat history, webchat extraction, and transcript preview/title surfaces that render user text.
+- [x] Add focused regression tests for server sanitization, webchat rendering, and transcript previews; then run targeted vitest verification.
+
+## Review
+
+- Added `sanitizeUserChatTextForDisplay()` in the shared chat text layer so inbound metadata stripping now lives in the same display-path sanitizer as envelope and `message_id` hint cleanup.
+- Wired the shared sanitizer into gateway chat history sanitation, webchat message extraction, and transcript-derived title/preview helpers so user-visible surfaces stop diverging.
+- Added focused regressions for gateway sanitization, webchat extraction, and transcript previews, and also registered `ui/src/ui/chat/message-extract.test.ts` with the `unit` and `unit-fast` Vitest projects so the UI regression test actually runs.
+- Verified with:
+  - `pnpm vitest run src/core/gateway/chat-sanitize.test.ts ui/src/ui/chat/message-extract.test.ts src/core/gateway/session-utils.fs.test.ts`
+  - `pnpm tsgo`
+  - `pnpm exec oxfmt --check src/shared/chat-envelope.ts src/core/gateway/chat-sanitize.ts ui/src/ui/chat/message-extract.ts src/core/gateway/session-utils.fs.ts src/core/gateway/chat-sanitize.test.ts ui/src/ui/chat/message-extract.test.ts src/core/gateway/session-utils.fs.test.ts vitest.config.ts tasks/todo.md Plan/2026-04-13-webchat-metadata-sanitization.md`
+
+## Local Model Provider Review Fixes (2026-04-12)
+
+- [x] Rework provider-config hot reload so provider changes rebuild runtime model state instead of only clearing availability cache.
+- [x] Route `models.providers.*.timeoutMs` through embedded OpenAI-compatible execution so provider timeouts apply to real inference requests.
+- [x] Restore session model resolution so manual selection wins over stale persisted runtime model for display/selection surfaces.
+- [x] Add focused regression tests for reload behavior, provider timeout resolution, and session model precedence.
+
+## Review
+
+- Hot reload for `models.providers.*` now invalidates the gateway model catalog, clears stale model availability entries, regenerates `models.json`, forces a runtime model registry refresh, and updates the long-lived refresh loop to use the new config instead of the startup snapshot.
+- Embedded model execution now resolves provider-level `timeoutMs` from `models.providers.*` and applies it at the actual `runEmbeddedAttempt()` boundary, so configured local/custom provider timeouts affect real inference requests instead of only discovery/warmup.
+- Session display/model resolution now treats manual selection state, including legacy override fields, as the source of truth ahead of stale persisted runtime model fields; the status surface was aligned to the same precedence.
+- Verified with:
+  - `pnpm vitest run src/core/gateway/config-reload.test.ts src/core/gateway/server-reload-handlers.test.ts src/core/gateway/session-utils.test.ts src/auto-reply/support/status.test.ts src/agents/pi-embedded-runner/provider-timeout.test.ts src/agents/model/runtime-model-registry.test.ts`
+  - `pnpm tsgo`
+
+## Model Management Code Audit (2026-04-06)
+
+- [x] Inventory all model-management entrypoints across config, registration, routing, switching, and display.
+- [x] Trace the runtime flow from configured defaults through registry/pool resolution and fallback behavior.
+- [x] Summarize the current architecture, overlapping responsibilities, and likely sources of routing confusion.
+
+## Review
+
+- The model-management system is split across several layers with overlapping names: static config/schema (`core/config`), models.json generation and provider discovery (`src/agents/model/models-config*`), merged catalog/registry (`model-catalog`, `runtime-model-registry`), runtime candidate filtering (`model-pool` + availability state), execution-time failover (`model-fallback`), session/manual overrides (`core/session/model-selection-state`, `model-overrides`, `session-status-tool`, `self-settings-session`), and multiple display surfaces (`status`, `session_status`, `self_inspecting`).
+- The biggest source of confusion is that several different concepts all answer “what model are we using?” with different data: configured default model, model allowlist/selections, runtime pool head candidate, session manual override, last-run persisted runtime model, subagent auto-route recommendation, and the actual fallback winner after a failed attempt.
+- Auth/onboarding writes model state in more than one place: provider config under `models.providers`, default model under `agents.defaults.model`, picker allowlist under `models.selections`, aliases/params under `models.metadata`, and then forces a runtime registry refresh so the pool can change immediately.
+- Manual switching is split between global config mutation (`marv models set`, fallback list commands, picker helpers) and session-scoped mutation (`session_status model=...`, `self_settings_session model=...`). Session switching writes both the new manual-selection state and legacy `providerOverride`/`modelOverride` fields for compatibility, then clears stale runtime fields.
+- Verification for this task was code-audit only. No product code changes were made beyond this local task note, and no tests were needed/run.
+
+## Model Pool Refactor Design (2026-04-06)
+
+- [x] Re-anchor the desired architecture around a single product-level provider list and models pool.
+- [x] Compare implementation approaches for unifying picker, autorouting, session switching, and footer display around the models pool.
+- [x] Present the proposed design for approval before implementation.
+
+## Review
+
+- Chose the “single runtime models pool” direction: provider list and provider model list stay as product/config sources, while all runtime selection surfaces converge on one pool view.
+- Locked the user’s key behavioral rules into the design:
+  - provider auth/config adds that provider’s full model list into the pool by default
+  - pool inventory is ordered high-to-low by capability for inspection and fallback traversal
+  - main user sessions still default to a lightweight/fast model unless the user manually changes it
+  - manual session selection outranks autorouting, and footer display must show the session’s current model immediately after each switch
+- Next step is implementation planning only; no product code has been changed yet for this refactor.
+
+## Model Pool Refactor Implementation Plan (2026-04-06)
+
+- [in progress] Write a concrete implementation plan under `Plan/` covering data model, runtime resolution order, display semantics, and verification.
+- [pending] Hand off the implementation plan summary for approval before coding.
+
+## Review
+
+- In progress.
+
+## Prompt Cache Optimization Plan Review (2026-04-06)
+
+- [x] Read `Plan/prompt-cache-optimization.md` and verify its key assumptions against the current system-prompt and Anthropic payload wiring.
+- [x] Append concrete review notes to the end of the plan document.
+- [x] Run a quick format/verification pass on the touched markdown files and capture the result below.
+
+## Review
+
+- Reviewed the plan against the current `system-prompt.ts`, `extra-params.ts`, and the Anthropic provider payload builder in `@mariozechner/pi-ai`.
+- Appended targeted notes covering the main cross-provider leakage risk for the boundary marker, the Anthropic OAuth vs API-key payload shape difference, and the validation gap around wrapper composition.
+- No product code was changed for this task; only local planning notes were updated.
+- Verified with `pnpm exec oxfmt --check Plan/prompt-cache-optimization.md tasks/todo.md` after formatting the initial markdown wrap issue in the plan note.
+
 ## Cron Mutation Escalation Prompt Fix (2026-04-05)
 
 - [x] Confirm whether cron add/update/remove are still hard-gated or whether the issue is model guidance.
