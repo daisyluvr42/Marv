@@ -254,11 +254,9 @@ export async function runConfigGet(opts: { path: string; json?: boolean; runtime
     const parsedPath = parseRequiredPath(opts.path);
     const snapshot = await loadConfigSnapshot(runtime, { allowInvalid: true });
     const source =
-      snapshot.valid && snapshot.config
-        ? snapshot.config
-        : typeof snapshot.resolved === "object" && snapshot.resolved
-          ? snapshot.resolved
-          : snapshot.parsed;
+      typeof snapshot.resolved === "object" && snapshot.resolved
+        ? snapshot.resolved
+        : snapshot.parsed;
     const res = getAtPath(source, parsedPath);
     if (!res.found) {
       runtime.error(danger(`Config path not found: ${opts.path}`));

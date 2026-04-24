@@ -523,6 +523,9 @@ export function applyModelFallbacksFromSelection(cfg: MarvConfig, selection: str
       : existingModel && typeof existingModel === "object"
         ? existingModel.primary
         : undefined;
+  if (!existingPrimary) {
+    return cfg;
+  }
 
   const fallbacks = normalized.filter((key) => key !== resolvedKey);
   return {

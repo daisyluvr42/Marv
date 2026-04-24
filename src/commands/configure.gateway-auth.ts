@@ -86,7 +86,7 @@ export async function promptAuthConfig(
       config: next,
       prompter,
       runtime,
-      setDefaultModel: true,
+      setDefaultModel: false,
     });
     next = applied.config;
   } else {

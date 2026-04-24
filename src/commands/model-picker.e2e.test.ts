@@ -250,4 +250,20 @@ describe("applyModelFallbacksFromSelection", () => {
       fallbacks: ["openai/gpt-5.2"],
     });
   });
+
+  it("does not create a default model when only picker selections exist", () => {
+    const config = {
+      models: {
+        selections: {
+          anthropic: ["anthropic/claude-opus-4-6", "anthropic/claude-sonnet-4-6"],
+        },
+      },
+    } as MarvConfig;
+
+    const next = applyModelFallbacksFromSelection(config, [
+      "anthropic/claude-opus-4-6",
+      "anthropic/claude-sonnet-4-6",
+    ]);
+    expect(next.agents?.defaults?.model).toBeUndefined();
+  });
 });

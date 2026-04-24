@@ -419,6 +419,8 @@ describe("applyAuthChoice", () => {
       provider: "anthropic",
       mode: "api_key",
     });
+    expect(result.config.agents?.defaults?.model).toBeUndefined();
+    expect(result.agentModelOverride).toBe("anthropic/claude-sonnet-4-6");
 
     expect((await readAuthProfile("anthropic:default"))?.key).toBe("");
     expect((await readAuthProfile("anthropic:default"))?.key).not.toBe("undefined");

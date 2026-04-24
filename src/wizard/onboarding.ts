@@ -645,7 +645,7 @@ async function stepAuthAndModel(
       config: nextConfig,
       prompter: ctx.prompter,
       runtime: ctx.runtime,
-      setDefaultModel: true,
+      setDefaultModel: false,
       opts: {
         tokenProvider: ctx.opts.tokenProvider,
         token: ctx.opts.authChoice === "apiKey" && ctx.opts.token ? ctx.opts.token : undefined,

@@ -205,6 +205,28 @@ describe("config cli", () => {
   });
 
   describe("config get with invalid config", () => {
+    it("reads stored config instead of runtime defaults", async () => {
+      const resolved: MarvConfig = {
+        agents: { defaults: {} },
+      };
+      const runtimeMerged: MarvConfig = {
+        agents: {
+          defaults: {
+            model: { primary: "anthropic/claude-sonnet-4-6" },
+          },
+        },
+      };
+      setSnapshot(resolved, runtimeMerged);
+
+      await expect(runConfigCommand(["config", "get", "agents.defaults.model"])).rejects.toThrow(
+        "__exit__:1",
+      );
+
+      expect(mockError).toHaveBeenCalledWith(
+        expect.stringContaining("Config path not found: agents.defaults.model"),
+      );
+    });
+
     it("still shows stored values for inspection when the config is invalid", async () => {
       mockReadConfigFileSnapshot.mockResolvedValueOnce({
         path: "/tmp/marv.json",
