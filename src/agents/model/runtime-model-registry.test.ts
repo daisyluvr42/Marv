@@ -34,10 +34,15 @@ vi.mock("./model-catalog.js", () => ({
 }));
 
 import type { MarvConfig } from "../../core/config/config.js";
-import { refreshRuntimeModelRegistry } from "./runtime-model-registry.js";
+import {
+  __resetRuntimeModelRegistryRefreshLoopForTest,
+  refreshRuntimeModelRegistry,
+  startRuntimeModelRegistryRefreshLoop,
+} from "./runtime-model-registry.js";
 
 describe("runtime-model-registry", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "marv-runtime-model-registry-"));
     fetchWithPrivateNetworkAccessMock.mockReset();
     loadModelCatalogMock.mockReset();
@@ -45,6 +50,8 @@ describe("runtime-model-registry", () => {
   });
 
   afterEach(() => {
+    __resetRuntimeModelRegistryRefreshLoopForTest();
+    vi.useRealTimers();
     if (stateDir) {
       fs.rmSync(stateDir, { recursive: true, force: true });
       stateDir = "";
@@ -87,5 +94,47 @@ describe("runtime-model-registry", () => {
         contextWindow: 128_000,
       }),
     );
+  });
+
+  it("uses the latest config after the refresh loop is reconfigured", async () => {
+    vi.setSystemTime(new Date("2026-04-12T00:00:00Z"));
+    fetchWithPrivateNetworkAccessMock.mockResolvedValue({
+      response: new Response(JSON.stringify({ data: [{ id: "foo-local-model" }] }), {
+        status: 200,
+      }),
+      release: async () => {},
+    });
+
+    const firstConfig = {
+      models: {
+        providers: {
+          vllm: {
+            baseUrl: "http://127.0.0.1:8000/v1",
+            models: [],
+          },
+        },
+      },
+    } as MarvConfig;
+    const secondConfig = {
+      models: {
+        providers: {
+          vllm: {
+            baseUrl: "http://127.0.0.1:9000/v1",
+            models: [],
+          },
+        },
+      },
+    } as MarvConfig;
+
+    startRuntimeModelRegistryRefreshLoop({ cfg: firstConfig });
+    await vi.waitFor(() => expect(fetchWithPrivateNetworkAccessMock).toHaveBeenCalledTimes(1));
+
+    startRuntimeModelRegistryRefreshLoop({ cfg: secondConfig });
+    await vi.advanceTimersByTimeAsync(8 * 24 * 60 * 60 * 1000);
+
+    const lastCall = fetchWithPrivateNetworkAccessMock.mock.calls.at(-1)?.[0] as
+      | { url?: string }
+      | undefined;
+    expect(lastCall?.url).toBe("http://127.0.0.1:9000/v1/models");
   });
 });

@@ -65,9 +65,10 @@ export const ModelProviderSchema = z
     api: ModelApiSchema.optional(),
     headers: z.record(z.string(), z.string()).optional(),
     authHeader: z.boolean().optional(),
+    timeoutMs: z.number().int().min(1000).max(600000).optional(),
     models: z.array(ModelDefinitionSchema),
   })
-  .strict();
+  .passthrough();
 
 export const ConfiguredModelCatalogEntrySchema = z
   .object({

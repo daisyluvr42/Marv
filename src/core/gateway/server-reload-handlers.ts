@@ -88,6 +88,41 @@ export function createGatewayReloadHandlers(params: {
       });
     }
 
+    if (plan.reloadModelAvailability) {
+      const [
+        { clearAllRuntimeModelAvailability },
+        { ensureMarvModelsJson },
+        { refreshRuntimeModelRegistry, startRuntimeModelRegistryRefreshLoop },
+        { invalidateGatewayModelCatalogCache },
+      ] = await Promise.all([
+        import("../../agents/model/model-availability-state.js"),
+        import("../../agents/model/models-config.js"),
+        import("../../agents/model/runtime-model-registry.js"),
+        import("./server-model-catalog.js"),
+      ]);
+
+      invalidateGatewayModelCatalogCache();
+      const cleared = clearAllRuntimeModelAvailability();
+      if (cleared > 0) {
+        params.logReload.info(
+          `cleared ${cleared} model availability entries after provider config change`,
+        );
+      }
+      try {
+        await ensureMarvModelsJson(nextConfig);
+        await refreshRuntimeModelRegistry({
+          cfg: nextConfig,
+          force: true,
+        });
+      } catch (err) {
+        params.logReload.warn(`model runtime reload failed: ${String(err)}`);
+      }
+      startRuntimeModelRegistryRefreshLoop({
+        cfg: nextConfig,
+        log: { warn: (message) => params.logReload.warn(message) },
+      });
+    }
+
     if (plan.restartBrowserControl) {
       if (state.browserControl) {
         await state.browserControl.stop().catch(() => {});

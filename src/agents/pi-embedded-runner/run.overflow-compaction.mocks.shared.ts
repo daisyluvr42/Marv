@@ -1,7 +1,9 @@
 import { vi } from "vitest";
 
 vi.mock("../auth-profiles.js", () => ({
+  ensureAuthProfileStore: vi.fn(() => ({ profiles: {} })),
   isProfileInCooldown: vi.fn(() => false),
+  listProfilesForProvider: vi.fn(() => []),
   markAuthProfileFailure: vi.fn(async () => {}),
   markAuthProfileGood: vi.fn(async () => {}),
   markAuthProfileUsed: vi.fn(async () => {}),
@@ -87,6 +89,9 @@ vi.mock("../model/model-auth.js", () => ({
     profileId: "test-profile",
     source: "test",
   })),
+  getCustomProviderApiKey: vi.fn(() => undefined),
+  resolveEnvApiKey: vi.fn(() => undefined),
+  resolveProviderConfig: vi.fn((cfg, provider) => cfg?.models?.providers?.[provider]),
   resolveAuthProfileOrder: vi.fn(() => []),
 }));
 

@@ -66,6 +66,8 @@ export type ModelProviderConfig = {
   api?: ModelApi;
   headers?: Record<string, string>;
   authHeader?: boolean;
+  /** Per-provider timeout in milliseconds for discovery and warmup requests (1000-600000). */
+  timeoutMs?: number;
   models: ModelDefinitionConfig[];
 };
 

@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import type { ThinkLevel } from "../../auto-reply/support/thinking.js";
+import type { MarvConfig } from "../../core/config/config.js";
 import {
   getDiagnosticSessionState,
   type ToolCallRecord,
@@ -31,11 +32,12 @@ import { FailoverError, resolveFailoverStatus } from "../failover-error.js";
 import {
   ensureAuthProfileStore,
   getApiKeyForModel,
+  resolveProviderConfig,
   resolveAuthProfileOrder,
   type ResolvedProviderAuth,
 } from "../model/model-auth.js";
 import { resolveRuntimeModelPlan } from "../model/model-pool.js";
-import { normalizeProviderId } from "../model/model-selection.js";
+import { normalizeProviderId } from "../model/model-resolve.js";
 import { ensureMarvModelsJson } from "../model/models-config.js";
 import {
   formatBillingErrorMessage,
@@ -203,6 +205,18 @@ function resolveTaskTitle(prompt: string, fallback: string): string {
     return fallback;
   }
   return compact.length > 96 ? `${compact.slice(0, 93)}...` : compact;
+}
+
+function resolveEmbeddedRunTimeoutMs(params: {
+  cfg?: MarvConfig;
+  provider: string;
+  timeoutMs: number;
+}): number {
+  const configuredTimeoutMs = resolveProviderConfig(params.cfg, params.provider)?.timeoutMs;
+  if (typeof configuredTimeoutMs !== "number" || !Number.isFinite(configuredTimeoutMs)) {
+    return params.timeoutMs;
+  }
+  return Math.max(params.timeoutMs, Math.floor(configuredTimeoutMs));
 }
 
 function mergeExtraSystemPrompt(base: string | undefined, taskPrelude: string): string | undefined {
@@ -776,7 +790,11 @@ export async function runEmbeddedPiAgent(
             toolResultFormat: resolvedToolResultFormat,
             execOverrides: params.execOverrides,
             bashElevated: params.bashElevated,
-            timeoutMs: params.timeoutMs,
+            timeoutMs: resolveEmbeddedRunTimeoutMs({
+              cfg: params.config,
+              provider,
+              timeoutMs: params.timeoutMs,
+            }),
             runId: params.runId,
             abortSignal: params.abortSignal,
             shouldEmitToolResult: params.shouldEmitToolResult,

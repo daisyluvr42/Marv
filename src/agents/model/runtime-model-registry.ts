@@ -9,7 +9,8 @@ import { resolveApiKeyForProvider } from "./model-auth.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
 import { loadModelCatalog } from "./model-catalog.js";
-import { normalizeProviderId, parseModelRef } from "./model-selection.js";
+import { normalizeProviderId, parseModelRef } from "./model-resolve.js";
+import { LOCAL_DISCOVERY_TIMEOUT_MS } from "./models-config.providers.js";
 
 const REGISTRY_VERSION = 1;
 const REGISTRY_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -19,6 +20,11 @@ const REGISTRY_DIRNAME = "runtime";
 const LOCAL_PROVIDERS = new Set(["local", "ollama", "vllm", "lmstudio", "localai", "llamacpp"]);
 const LOCAL_PROVIDER_DEFAULT_CONTEXT_WINDOW = 128_000;
 let refreshTimer: NodeJS.Timeout | null = null;
+let refreshLoopConfig: {
+  cfg: MarvConfig;
+  agentDir?: string;
+  log?: { warn: (message: string) => void };
+} | null = null;
 
 export type RuntimeRegistryModelStatus = "active" | "deprecated" | "removed";
 export type RuntimeRegistryModelSource = "baseline_catalog" | "official_api";
@@ -368,16 +374,28 @@ function resolveLocalProviderBaseUrl(cfg: MarvConfig, provider: string): string 
   return undefined;
 }
 
+/** Resolve the configured timeoutMs for a local provider. */
+function resolveLocalProviderTimeoutMs(cfg: MarvConfig, provider: string): number | undefined {
+  const providers = cfg.models?.providers ?? {};
+  for (const [key, entry] of Object.entries(providers)) {
+    if (normalizeProviderId(key) === provider && entry?.timeoutMs) {
+      return entry.timeoutMs;
+    }
+  }
+  return undefined;
+}
+
 /** Fetch models from an Ollama instance via /api/tags. */
 async function fetchOllamaModels(
   baseUrl: string,
   provider: string,
+  timeoutMs?: number,
 ): Promise<RuntimeRegistryModel[]> {
   // Strip /v1 suffix if present (users often configure the OpenAI-compat URL).
   const apiBase = baseUrl.replace(/\/v1$/i, "");
   const { response, release } = await fetchWithPrivateNetworkAccess({
     url: `${apiBase}/api/tags`,
-    timeoutMs: 5_000,
+    timeoutMs: timeoutMs ?? LOCAL_DISCOVERY_TIMEOUT_MS,
     auditContext: "runtime-model-registry.ollama",
   });
   try {
@@ -409,12 +427,13 @@ async function fetchOllamaModels(
 async function fetchOpenAICompatibleLocalModels(
   baseUrl: string,
   provider: string,
+  timeoutMs?: number,
 ): Promise<RuntimeRegistryModel[]> {
   // Ensure the URL ends with /v1/models.
   const url = baseUrl.replace(/\/v1\/?$/, "");
   const { response, release } = await fetchWithPrivateNetworkAccess({
     url: `${url}/v1/models`,
-    timeoutMs: 5_000,
+    timeoutMs: timeoutMs ?? LOCAL_DISCOVERY_TIMEOUT_MS,
     auditContext: `runtime-model-registry.${provider}`,
   });
   try {
@@ -590,11 +609,12 @@ export async function refreshRuntimeModelRegistry(params?: {
     if (!baseUrl) {
       continue;
     }
+    const providerTimeoutMs = resolveLocalProviderTimeoutMs(cfg, localProvider);
     try {
       const fetched =
         localProvider === "ollama"
-          ? await fetchOllamaModels(baseUrl, localProvider)
-          : await fetchOpenAICompatibleLocalModels(baseUrl, localProvider);
+          ? await fetchOllamaModels(baseUrl, localProvider, providerTimeoutMs)
+          : await fetchOpenAICompatibleLocalModels(baseUrl, localProvider, providerTimeoutMs);
       if (fetched.length > 0) {
         models = mergeProviderModels({
           base: models,
@@ -644,21 +664,38 @@ export function resolveRuntimeRegistryPathForDisplay(): string {
   return resolveRegistryPath();
 }
 
+export function __resetRuntimeModelRegistryRefreshLoopForTest(): void {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+  refreshLoopConfig = null;
+}
+
 export function startRuntimeModelRegistryRefreshLoop(params: {
   cfg: MarvConfig;
   agentDir?: string;
   log?: { warn: (message: string) => void };
 }): void {
+  refreshLoopConfig = {
+    cfg: params.cfg,
+    agentDir: params.agentDir,
+    log: params.log,
+  };
   if (refreshTimer) {
     return;
   }
   const runRefresh = () => {
+    const current = refreshLoopConfig;
+    if (!current) {
+      return;
+    }
     void refreshRuntimeModelRegistry({
-      cfg: params.cfg,
-      agentDir: params.agentDir,
+      cfg: current.cfg,
+      agentDir: current.agentDir,
       force: false,
     }).catch((error) => {
-      params.log?.warn?.(`[model-registry] refresh failed: ${String(error)}`);
+      current.log?.warn?.(`[model-registry] refresh failed: ${String(error)}`);
     });
   };
   runRefresh();

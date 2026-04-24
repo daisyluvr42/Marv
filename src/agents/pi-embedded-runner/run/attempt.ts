@@ -33,8 +33,8 @@ import { DEFAULT_CONTEXT_TOKENS } from "../../defaults.js";
 import { resolveMarvDocsPath } from "../../docs-path.js";
 import { isTimeoutError } from "../../failover-error.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
-import { resolveModelAuthMode } from "../../model/model-auth.js";
-import { resolveDefaultModelForAgent } from "../../model/model-selection.js";
+import { resolveModelAuthMode, resolveProviderConfig } from "../../model/model-auth.js";
+import { resolveDefaultModelForAgent } from "../../model/model-resolve.js";
 import { createOllamaStreamFn, resolveOllamaNativeBaseUrl } from "../../ollama-stream.js";
 import { toClientToolDefinitions } from "../../pi-tool-definition-adapter.js";
 import { buildSystemPromptParams } from "../../prompt/system-prompt-params.js";
@@ -159,8 +159,15 @@ export function injectHistoryImagesIntoMessages(
   return didMutate;
 }
 
+/** Default timeout for Ollama model warmup. Large models (50GB+) can take 60-120s to load. */
+const OLLAMA_WARMUP_TIMEOUT_MS = 120_000;
+
 /** @internal Exported for testing only */
-export async function warmOllamaModel(params: { baseUrl: string; modelId: string }): Promise<void> {
+export async function warmOllamaModel(params: {
+  baseUrl: string;
+  modelId: string;
+  timeoutMs?: number;
+}): Promise<void> {
   const { response, release } = await fetchWithPrivateNetworkAccess({
     url: `${resolveOllamaNativeBaseUrl(params.baseUrl)}/api/generate`,
     init: {
@@ -175,7 +182,7 @@ export async function warmOllamaModel(params: { baseUrl: string; modelId: string
         keep_alive: "60m",
       }),
     },
-    timeoutMs: 15_000,
+    timeoutMs: params.timeoutMs ?? OLLAMA_WARMUP_TIMEOUT_MS,
     auditContext: "agent.ollama.warmup",
   });
   try {
@@ -710,7 +717,7 @@ export async function runEmbeddedAttempt(
       // for reliable streaming + tool calling support (#11828).
       if (params.model.api === "ollama") {
         // Use the resolved model baseUrl first so custom provider aliases work.
-        const providerConfig = params.config?.models?.providers?.[params.model.provider];
+        const providerConfig = resolveProviderConfig(params.config, params.model.provider);
         const modelBaseUrl =
           typeof params.model.baseUrl === "string" ? params.model.baseUrl.trim() : "";
         const providerBaseUrl =
@@ -720,6 +727,7 @@ export async function runEmbeddedAttempt(
           await warmOllamaModel({
             baseUrl: ollamaBaseUrl,
             modelId: params.modelId,
+            timeoutMs: providerConfig?.timeoutMs,
           });
         } catch (error) {
           console.warn(

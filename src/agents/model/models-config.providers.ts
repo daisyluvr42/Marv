@@ -35,6 +35,9 @@ import { discoverVeniceModels, VENICE_BASE_URL } from "./venice-models.js";
 type ModelsConfig = NonNullable<MarvConfig["models"]>;
 export type ProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
 
+/** Default timeout for local model discovery (Ollama, vLLM, etc.). Large models may need time to cold-start. */
+export const LOCAL_DISCOVERY_TIMEOUT_MS = 30_000;
+
 const MINIMAX_PORTAL_BASE_URL = "https://api.minimax.io/anthropic";
 const MINIMAX_DEFAULT_MODEL_ID = "MiniMax-M2.1";
 const MINIMAX_DEFAULT_VISION_MODEL_ID = "MiniMax-VL-01";
@@ -190,7 +193,10 @@ export function resolveOllamaApiBase(configuredBaseUrl?: string): string {
   return trimmed.replace(/\/v1$/i, "");
 }
 
-async function discoverOllamaModels(baseUrl?: string): Promise<ModelDefinitionConfig[]> {
+async function discoverOllamaModels(
+  baseUrl?: string,
+  timeoutMs?: number,
+): Promise<ModelDefinitionConfig[]> {
   // Skip Ollama discovery in test environments
   if (process.env.VITEST || process.env.NODE_ENV === "test") {
     return [];
@@ -199,7 +205,7 @@ async function discoverOllamaModels(baseUrl?: string): Promise<ModelDefinitionCo
     const apiBase = resolveOllamaApiBase(baseUrl);
     const { response, release } = await fetchWithPrivateNetworkAccess({
       url: `${apiBase}/api/tags`,
-      timeoutMs: 5000,
+      timeoutMs: timeoutMs ?? LOCAL_DISCOVERY_TIMEOUT_MS,
       auditContext: "models.discovery.ollama",
     });
     try {
@@ -238,6 +244,7 @@ async function discoverOllamaModels(baseUrl?: string): Promise<ModelDefinitionCo
 async function discoverVllmModels(
   baseUrl: string,
   apiKey?: string,
+  timeoutMs?: number,
 ): Promise<ModelDefinitionConfig[]> {
   // Skip vLLM discovery in test environments
   if (process.env.VITEST || process.env.NODE_ENV === "test") {
@@ -254,7 +261,7 @@ async function discoverVllmModels(
       init: {
         headers: trimmedApiKey ? { Authorization: `Bearer ${trimmedApiKey}` } : undefined,
       },
-      timeoutMs: 5000,
+      timeoutMs: timeoutMs ?? LOCAL_DISCOVERY_TIMEOUT_MS,
       auditContext: "models.discovery.vllm",
     });
     try {
@@ -555,8 +562,11 @@ async function buildVeniceProvider(): Promise<ProviderConfig> {
   };
 }
 
-async function buildOllamaProvider(configuredBaseUrl?: string): Promise<ProviderConfig> {
-  const models = await discoverOllamaModels(configuredBaseUrl);
+async function buildOllamaProvider(
+  configuredBaseUrl?: string,
+  timeoutMs?: number,
+): Promise<ProviderConfig> {
+  const models = await discoverOllamaModels(configuredBaseUrl, timeoutMs);
   return {
     baseUrl: resolveOllamaApiBase(configuredBaseUrl),
     api: "ollama",
@@ -594,9 +604,10 @@ function buildTogetherProvider(): ProviderConfig {
 async function buildVllmProvider(params?: {
   baseUrl?: string;
   apiKey?: string;
+  timeoutMs?: number;
 }): Promise<ProviderConfig> {
   const baseUrl = (params?.baseUrl?.trim() || VLLM_BASE_URL).replace(/\/+$/, "");
-  const models = await discoverVllmModels(baseUrl, params?.apiKey);
+  const models = await discoverVllmModels(baseUrl, params?.apiKey, params?.timeoutMs);
   return {
     baseUrl,
     api: "openai-completions",
@@ -761,8 +772,11 @@ export async function resolveImplicitProviders(params: {
     resolveEnvApiKeyVarName("ollama") ??
     resolveApiKeyFromProfiles({ provider: "ollama", store: authStore });
   if (ollamaKey) {
-    const ollamaBaseUrl = params.explicitProviders?.ollama?.baseUrl;
-    providers.ollama = { ...(await buildOllamaProvider(ollamaBaseUrl)), apiKey: ollamaKey };
+    const ollamaExplicit = params.explicitProviders?.ollama;
+    providers.ollama = {
+      ...(await buildOllamaProvider(ollamaExplicit?.baseUrl, ollamaExplicit?.timeoutMs)),
+      apiKey: ollamaKey,
+    };
   }
 
   // vLLM provider - OpenAI-compatible local server (opt-in via env/profile).
@@ -776,7 +790,10 @@ export async function resolveImplicitProviders(params: {
         ? (process.env[vllmEnvVar]?.trim() ?? "")
         : (vllmProfileKey ?? "");
       providers.vllm = {
-        ...(await buildVllmProvider({ apiKey: discoveryApiKey || undefined })),
+        ...(await buildVllmProvider({
+          apiKey: discoveryApiKey || undefined,
+          timeoutMs: params.explicitProviders?.vllm?.timeoutMs,
+        })),
         apiKey: vllmKey,
       };
     }

@@ -102,6 +102,12 @@ describe("buildGatewayReloadPlan", () => {
     expect(plan.restartChannels).toEqual(expected);
   });
 
+  it("hot-reloads model runtime state when provider config changes", () => {
+    const plan = buildGatewayReloadPlan(["models.providers.local-qwen.baseUrl"]);
+    expect(plan.restartGateway).toBe(false);
+    expect(plan.reloadModelAvailability).toBe(true);
+  });
+
   it("treats gateway.remote as no-op", () => {
     const plan = buildGatewayReloadPlan(["gateway.remote.url"]);
     expect(plan.restartGateway).toBe(false);
