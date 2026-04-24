@@ -25,7 +25,7 @@ const AWS_ACCESS_KEY_ENV = "AWS_ACCESS_KEY_ID";
 const AWS_SECRET_KEY_ENV = "AWS_SECRET_ACCESS_KEY";
 const AWS_PROFILE_ENV = "AWS_PROFILE";
 
-function resolveProviderConfig(
+export function resolveProviderConfig(
   cfg: MarvConfig | undefined,
   provider: string,
 ): ModelProviderConfig | undefined {

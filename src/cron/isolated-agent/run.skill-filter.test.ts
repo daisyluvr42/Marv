@@ -37,7 +37,7 @@ vi.mock("../../agents/model/model-catalog.js", () => ({
   loadModelCatalog: vi.fn().mockResolvedValue({ models: [] }),
 }));
 
-vi.mock("../../agents/model/model-selection.js", () => ({
+vi.mock("../../agents/model/model-resolve.js", () => ({
   getModelRefStatus: vi.fn().mockReturnValue({ allowed: false }),
   isCliProvider: vi.fn().mockReturnValue(false),
   resolveAllowedModelRef: vi.fn().mockReturnValue({ ref: { provider: "openai", model: "gpt-4" } }),

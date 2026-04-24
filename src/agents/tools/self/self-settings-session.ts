@@ -17,7 +17,7 @@ import { resolveAgentIdFromSessionKey } from "../../../routing/session-key.js";
 import { resolveAgentDir } from "../../agent-scope.js";
 import { ensureAuthProfileStore } from "../../auth-profiles.js";
 import { loadModelCatalog } from "../../model/model-catalog.js";
-import { normalizeProviderId, resolveDefaultModelForAgent } from "../../model/model-selection.js";
+import { normalizeProviderId, resolveDefaultModelForAgent } from "../../model/model-resolve.js";
 import {
   refreshRuntimeModelRegistry,
   resolveRuntimeRegistryPathForDisplay,

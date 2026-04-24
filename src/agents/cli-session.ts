@@ -1,5 +1,5 @@
 import type { SessionEntry } from "../core/config/sessions.js";
-import { normalizeProviderId } from "./model/model-selection.js";
+import { normalizeProviderId } from "./model/model-resolve.js";
 
 export function getCliSessionId(
   entry: SessionEntry | undefined,

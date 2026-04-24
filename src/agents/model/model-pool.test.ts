@@ -7,7 +7,7 @@ import {
   resolveRuntimeModelPlan,
   resolveThinkingModelTier,
 } from "./model-pool.js";
-import { resolveSelectedModelRefs } from "./model-selections.js";
+import { resolveSelectedModelRefs } from "./model-selections-store.js";
 
 const readRuntimeModelRegistryMock = vi.fn((): unknown => null);
 const listConfiguredProvidersMock = vi.fn(

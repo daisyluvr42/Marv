@@ -3,7 +3,7 @@ import {
   parseModelRef,
   resolveConfiguredModelRef,
   resolveModelRefFromString,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { ConfiguredEntry } from "./list.types.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, modelKey } from "./shared.js";

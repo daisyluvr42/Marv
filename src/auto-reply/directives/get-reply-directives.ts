@@ -1,4 +1,4 @@
-import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
+import type { ModelAliasIndex } from "../../agents/model/model-resolve.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/sandbox.js";
 import type { SkillCommandSpec } from "../../agents/skills.js";
 import type { ExecToolDefaults } from "../../agents/tools/bash/bash-tools.js";

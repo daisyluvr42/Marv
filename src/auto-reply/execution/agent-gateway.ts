@@ -62,7 +62,7 @@ export interface AgentErrorHelpers {
 
 export interface AgentModelResolution {
   /** Check whether a provider string refers to a CLI-backed provider. */
-  isCliProvider: typeof import("../../agents/model/model-selection.js").isCliProvider;
+  isCliProvider: typeof import("../../agents/model/model-resolve.js").isCliProvider;
 
   /** Lookup the context-window token limit for a model. */
   lookupContextTokens: typeof import("../../agents/context.js").lookupContextTokens;
@@ -71,7 +71,7 @@ export interface AgentModelResolution {
   loadModelCatalog: typeof import("../../agents/model/model-catalog.js").loadModelCatalog;
 
   /** Check if there are explicit model selections configured. */
-  hasConfiguredModelSelections: typeof import("../../agents/model/model-selections.js").hasConfiguredModelSelections;
+  hasConfiguredModelSelections: typeof import("../../agents/model/model-selections-store.js").hasConfiguredModelSelections;
 
   /** Resolve the auth mode for a provider (api-key / oauth / etc.). */
   resolveModelAuthMode: typeof import("../../agents/model/model-auth.js").resolveModelAuthMode;
@@ -83,19 +83,19 @@ export interface AgentModelResolution {
   applyThinkingModelPreferences: typeof import("../../agents/model/model-pool.js").applyThinkingModelPreferences;
 
   /** Build the set of allowed model keys from config + catalog. */
-  buildAllowedModelSet: typeof import("../../agents/model/model-selection.js").buildAllowedModelSet;
+  buildAllowedModelSet: typeof import("../../agents/model/model-resolve.js").buildAllowedModelSet;
 
   /** Canonical key for a provider/model pair. */
-  modelKey: typeof import("../../agents/model/model-selection.js").modelKey;
+  modelKey: typeof import("../../agents/model/model-resolve.js").modelKey;
 
   /** Normalize a provider ID string. */
-  normalizeProviderId: typeof import("../../agents/model/model-selection.js").normalizeProviderId;
+  normalizeProviderId: typeof import("../../agents/model/model-resolve.js").normalizeProviderId;
 
   /** Resolve a raw model string into a structured ref. */
-  resolveModelRefFromString: typeof import("../../agents/model/model-selection.js").resolveModelRefFromString;
+  resolveModelRefFromString: typeof import("../../agents/model/model-resolve.js").resolveModelRefFromString;
 
   /** Resolve the default thinking level for a model from catalog. */
-  resolveThinkingDefault: typeof import("../../agents/model/model-selection.js").resolveThinkingDefault;
+  resolveThinkingDefault: typeof import("../../agents/model/model-resolve.js").resolveThinkingDefault;
 }
 
 // ---------------------------------------------------------------------------

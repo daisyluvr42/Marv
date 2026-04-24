@@ -43,8 +43,8 @@ vi.mock("../../agents/gateway.js", async () => {
   const piHelpers = await vi.importActual<
     typeof import("../../agents/runner/pi-embedded-helpers.js")
   >("../../agents/runner/pi-embedded-helpers.js");
-  const modelSel = await vi.importActual<typeof import("../../agents/model/model-selection.js")>(
-    "../../agents/model/model-selection.js",
+  const modelSel = await vi.importActual<typeof import("../../agents/model/model-resolve.js")>(
+    "../../agents/model/model-resolve.js",
   );
   const usageModule =
     await vi.importActual<typeof import("../../agents/usage.js")>("../../agents/usage.js");

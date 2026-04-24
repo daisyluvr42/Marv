@@ -17,7 +17,7 @@ import {
   saveAuthProfileStore,
 } from "./auth-profiles.js";
 import { getApiKeyForModel, requireApiKey } from "./model/model-auth.js";
-import { normalizeProviderId, parseModelRef } from "./model/model-selection.js";
+import { normalizeProviderId, parseModelRef } from "./model/model-resolve.js";
 import { ensureMarvModelsJson } from "./model/models-config.js";
 import { discoverAuthStorage, discoverModels } from "./model/pi-model-discovery.js";
 

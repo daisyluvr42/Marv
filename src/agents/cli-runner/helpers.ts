@@ -10,7 +10,7 @@ import type { CliBackendConfig } from "../../core/config/types.js";
 import { buildTtsSystemPromptHint } from "../../tts/tts.js";
 import { isRecord } from "../../utils.js";
 import { buildModelAliasLines } from "../model/model-alias-lines.js";
-import { resolveDefaultModelForAgent } from "../model/model-selection.js";
+import { resolveDefaultModelForAgent } from "../model/model-resolve.js";
 import { buildSystemPromptParams } from "../prompt/system-prompt-params.js";
 import { buildAgentSystemPrompt } from "../prompt/system-prompt.js";
 import type { EmbeddedContextFile } from "../runner/pi-embedded-helpers.js";

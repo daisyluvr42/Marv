@@ -14,7 +14,7 @@ import {
   summarizeContextPollution,
 } from "../../context-pollution-cleanup.js";
 import { resolveRuntimeModelPlan } from "../../model/model-pool.js";
-import { resolveDefaultModelForAgent } from "../../model/model-selection.js";
+import { resolveDefaultModelForAgent } from "../../model/model-resolve.js";
 import {
   readRuntimeModelRegistry,
   resolveRuntimeRegistryPathForDisplay,

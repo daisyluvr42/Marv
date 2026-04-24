@@ -29,6 +29,7 @@ import {
 } from "../../shared/subagents-format.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { AGENT_LANE_SUBAGENT } from "../lanes.js";
+import { modelKey } from "../model/model-resolve.js";
 import { abortEmbeddedPiRun } from "../runner/pi-embedded.js";
 import { optionalStringEnum } from "../schema/typebox.js";
 import { getSubagentDepthFromSessionStore } from "../subagent-depth.js";
@@ -94,7 +95,7 @@ function resolveModelRef(entry?: SessionEntry) {
     return model;
   }
   if (model && provider) {
-    return `${provider}/${model}`;
+    return modelKey(provider, model);
   }
   if (model) {
     return model;

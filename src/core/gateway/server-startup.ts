@@ -4,7 +4,7 @@ import {
   getModelRefStatus,
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import {
   ensureRuntimeModelRegistry,
   startRuntimeModelRegistryRefreshLoop,

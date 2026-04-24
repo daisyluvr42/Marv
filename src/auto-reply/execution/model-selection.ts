@@ -3,7 +3,7 @@ import type {
   RuntimeConfiguredModel,
   RuntimeModelCapability,
 } from "../../agents/model/model-pool.js";
-import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
+import type { ModelAliasIndex } from "../../agents/model/model-resolve.js";
 
 const {
   models: {

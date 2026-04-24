@@ -1,4 +1,4 @@
-import { type ModelRef, normalizeProviderId } from "../../agents/model/model-selection.js";
+import { type ModelRef, normalizeProviderId } from "../../agents/model/model-resolve.js";
 import type { MarvConfig } from "../../core/config/config.js";
 
 export type ModelPickerCatalogEntry = {

@@ -17,8 +17,11 @@ import {
   comparePoolModelPreference,
   normalizeProviderId,
   parseModelRef,
-} from "./model-selection.js";
-import { resolveProviderFamilyProviders, resolveSelectedModelRefs } from "./model-selections.js";
+} from "./model-resolve.js";
+import {
+  resolveProviderFamilyProviders,
+  resolveSelectedModelRefs,
+} from "./model-selections-store.js";
 import {
   listConfiguredProviders,
   readRuntimeModelRegistry,

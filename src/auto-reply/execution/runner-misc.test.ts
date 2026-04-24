@@ -16,8 +16,8 @@ const runWithModelFallbackMock = vi.fn();
 const runtimeErrorMock = vi.fn();
 
 vi.mock("../../agents/gateway.js", async () => {
-  const modelSel = await vi.importActual<typeof import("../../agents/model/model-selection.js")>(
-    "../../agents/model/model-selection.js",
+  const modelSel = await vi.importActual<typeof import("../../agents/model/model-resolve.js")>(
+    "../../agents/model/model-resolve.js",
   );
   const gateway = {
     runner: {
@@ -710,7 +710,7 @@ describe("runReplyAgent claude-cli routing", () => {
 
     expect(runCliAgentMock).toHaveBeenCalledTimes(1);
     expect(runEmbeddedPiAgentMock).not.toHaveBeenCalled();
-    expect(lifecyclePhases).toEqual(["start", "end"]);
+    expect(lifecyclePhases).toEqual(["model_selected", "start", "end"]);
     expect(result).toMatchObject({ text: "ok" });
   });
 });

@@ -1,13 +1,14 @@
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../../agents/defaults.js";
 import { loadModelCatalog } from "../../../agents/model/model-catalog.js";
+import { resolveRuntimeModelPlan } from "../../../agents/model/model-pool.js";
 import {
   buildAllowedModelSet,
   buildModelAliasIndex,
   normalizeProviderId,
   resolveConfiguredModelRef,
   resolveModelRefFromString,
-} from "../../../agents/model/model-selection.js";
-import { resolveSelectedModelRefs } from "../../../agents/model/model-selections.js";
+} from "../../../agents/model/model-resolve.js";
+import { resolveSelectedModelRefs } from "../../../agents/model/model-selections-store.js";
 import {
   buildModelsKeyboard,
   buildProviderKeyboard,
@@ -99,26 +100,29 @@ export async function buildModelsProviderData(cfg: MarvConfig): Promise<ModelsPr
     }
   };
 
-  for (const entry of allowed.allowedCatalog) {
-    add(entry.provider, entry.id);
+  // Pool candidates are the single source of truth for selectable models.
+  // Fall back to static sources only when the pool is empty (e.g. no providers configured yet).
+  const plan = resolveRuntimeModelPlan({ cfg });
+  if (plan.candidates.length > 0) {
+    for (const c of plan.candidates) {
+      add(c.provider, c.model);
+    }
+  } else {
+    for (const entry of allowed.allowedCatalog) {
+      add(entry.provider, entry.id);
+    }
+    for (const ref of resolveSelectedModelRefs({
+      cfg,
+      defaultProvider: resolvedDefault.provider,
+    })) {
+      addRawModelRef(ref);
+    }
+    for (const raw of Object.keys(cfg.models?.metadata ?? {})) {
+      addRawModelRef(raw);
+    }
+    add(resolvedDefault.provider, resolvedDefault.model);
+    addModelConfigEntries();
   }
-
-  for (const ref of resolveSelectedModelRefs({
-    cfg,
-    defaultProvider: resolvedDefault.provider,
-  })) {
-    addRawModelRef(ref);
-  }
-
-  // Include metadata-only refs that aren't in the curated catalog.
-  for (const raw of Object.keys(cfg.models?.metadata ?? {})) {
-    addRawModelRef(raw);
-  }
-
-  // Ensure configured defaults/fallbacks/image models show up even when the
-  // curated catalog doesn't know about them (custom providers, dev builds, etc.).
-  add(resolvedDefault.provider, resolvedDefault.model);
-  addModelConfigEntries();
 
   const providers = [...byProvider.keys()].toSorted();
 

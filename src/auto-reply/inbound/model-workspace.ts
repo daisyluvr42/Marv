@@ -4,7 +4,7 @@ import {
   resolveSessionAgentId,
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
-import { resolveModelRefFromString } from "../../agents/model/model-selection.js";
+import { resolveModelRefFromString } from "../../agents/model/model-resolve.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { type MarvConfig, loadConfig } from "../../core/config/config.js";

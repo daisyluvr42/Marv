@@ -11,7 +11,7 @@ import {
   modelKey,
   resolveDefaultModelForAgent,
   resolveModelRefFromString,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import { normalizeGroupActivation } from "../../auto-reply/inbound/group-activation.js";
 import { normalizeQueueDropPolicy, normalizeQueueMode } from "../../auto-reply/queue/normalize.js";
 import {

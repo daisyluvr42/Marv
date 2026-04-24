@@ -1,5 +1,5 @@
 import type { RuntimeConfiguredModel } from "../../agents/model/model-pool.js";
-import type { ModelAliasIndex } from "../../agents/model/model-selection.js";
+import type { ModelAliasIndex } from "../../agents/model/model-resolve.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import type { TurnContext } from "../support/templating.js";

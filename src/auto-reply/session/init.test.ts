@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildModelAliasIndex } from "../../agents/model/model-selection.js";
+import { buildModelAliasIndex } from "../../agents/model/model-resolve.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import { saveSessionStore } from "../../core/config/sessions.js";
@@ -14,8 +14,8 @@ import { prependSystemEvents } from "./updates.js";
 import { persistSessionUsageUpdate } from "./usage.js";
 
 vi.mock("../../agents/gateway.js", async () => {
-  const modelSel = await vi.importActual<typeof import("../../agents/model/model-selection.js")>(
-    "../../agents/model/model-selection.js",
+  const modelSel = await vi.importActual<typeof import("../../agents/model/model-resolve.js")>(
+    "../../agents/model/model-resolve.js",
   );
   const gateway = {
     runner: {

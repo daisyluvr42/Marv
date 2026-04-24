@@ -6,6 +6,7 @@ import {
   executeWithApiKeyRotation,
 } from "../agents/api-key-rotation.js";
 import { requireApiKey, resolveApiKeyForProvider } from "../agents/model/model-auth.js";
+import { modelKey } from "../agents/model/model-resolve.js";
 import type { TurnContext } from "../auto-reply/support/templating.js";
 import { applyTemplate } from "../auto-reply/support/templating.js";
 import type { MarvConfig } from "../core/config/config.js";
@@ -328,7 +329,7 @@ export function formatDecisionSummary(decision: MediaUnderstandingDecision): str
   const chosen = decision.attachments.find((entry) => entry.chosen)?.chosen;
   const provider = chosen?.provider?.trim();
   const model = chosen?.model?.trim();
-  const modelLabel = provider ? (model ? `${provider}/${model}` : provider) : undefined;
+  const modelLabel = provider ? (model ? modelKey(provider, model) : provider) : undefined;
   const reason = decision.attachments
     .flatMap((entry) => entry.attempts.map((attempt) => attempt.reason).filter(Boolean))
     .find(Boolean);

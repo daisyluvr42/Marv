@@ -1,5 +1,6 @@
 import type { Message, ReactionTypeEmoji } from "@grammyjs/types";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import { modelKey } from "../../agents/model/model-resolve.js";
 import { hasControlCommand } from "../../auto-reply/commands/detection.js";
 import { buildCommandsPaginationKeyboard } from "../../auto-reply/commands/handlers/info.js";
 import { buildModelsProviderData } from "../../auto-reply/commands/handlers/models.js";
@@ -231,13 +232,13 @@ export const registerTelegramHandlers = ({
     });
     if (storedOverride) {
       return storedOverride.provider
-        ? `${storedOverride.provider}/${storedOverride.model}`
+        ? modelKey(storedOverride.provider, storedOverride.model)
         : storedOverride.model;
     }
     const provider = entry?.modelProvider?.trim();
     const model = entry?.model?.trim();
     if (provider && model) {
-      return `${provider}/${model}`;
+      return modelKey(provider, model);
     }
     const modelCfg = cfg.agents?.defaults?.model;
     return typeof modelCfg === "string" ? modelCfg : modelCfg?.primary;
@@ -978,7 +979,7 @@ export const registerTelegramHandlers = ({
           const syntheticMessage = buildSyntheticTextMessage({
             base: callbackMessage,
             from: callback.from,
-            text: `/model ${provider}/${model}`,
+            text: `/model ${modelKey(provider, model)}`,
           });
           await processMessage(buildSyntheticContext(ctx, syntheticMessage), [], storeAllowFrom, {
             forceWasMentioned: true,

@@ -1,6 +1,6 @@
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { parseModelRef } from "../agents/model/model-selection.js";
+import { modelKey, parseModelRef } from "../agents/model/model-resolve.js";
 import { buildSoulContent, writeSoulFile } from "../agents/soul.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolvePrimaryModel } from "../commands/model-default.js";
@@ -100,11 +100,11 @@ async function validateConfiguredModelEarly(params: {
 
   const progress = params.prompter.progress("Model check");
   try {
-    progress.update(`Checking ${parsed.provider}/${parsed.model}…`);
+    progress.update(`Checking ${modelKey(parsed.provider, parsed.model)}…`);
     const summary = await runAuthProbes({
       cfg: params.config,
       providers: [parsed.provider],
-      modelCandidates: [`${parsed.provider}/${parsed.model}`],
+      modelCandidates: [modelKey(parsed.provider, parsed.model)],
       options: {
         provider: parsed.provider,
         timeoutMs: 8_000,
@@ -116,7 +116,7 @@ async function validateConfiguredModelEarly(params: {
     if (ok) {
       await params.prompter.note(
         [
-          `Validated model: ${ok.model ?? `${parsed.provider}/${parsed.model}`}`,
+          `Validated model: ${ok.model ?? modelKey(parsed.provider, parsed.model)}`,
           describeProbeSummary(summary),
         ].join("\n"),
         "Model ready",
@@ -127,7 +127,7 @@ async function validateConfiguredModelEarly(params: {
     const firstFailure = summary.results[0];
     await params.prompter.note(
       [
-        `Could not validate ${parsed.provider}/${parsed.model} yet.`,
+        `Could not validate ${modelKey(parsed.provider, parsed.model)} yet.`,
         describeProbeSummary(summary),
         firstFailure?.error ? `Reason: ${firstFailure.error}` : undefined,
         `Check later: ${formatCliCommand("marv models list --probe")}`,
@@ -139,7 +139,7 @@ async function validateConfiguredModelEarly(params: {
   } catch (error) {
     await params.prompter.note(
       [
-        `Could not validate ${parsed.provider}/${parsed.model} yet.`,
+        `Could not validate ${modelKey(parsed.provider, parsed.model)} yet.`,
         error instanceof Error ? error.message : String(error),
         `Check later: ${formatCliCommand("marv models list --probe")}`,
       ].join("\n"),

@@ -6,7 +6,7 @@ import {
   resolveAuthProfileOrder,
 } from "../auth-profiles.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
-import { normalizeProviderId } from "./model-selection.js";
+import { normalizeProviderId } from "./model-resolve.js";
 
 function formatApiKeySnippet(apiKey: string): string {
   const compact = apiKey.replace(/\s+/g, "");

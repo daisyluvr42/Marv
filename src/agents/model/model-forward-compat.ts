@@ -1,7 +1,7 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
 import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
 import { normalizeModelCompat } from "./model-compat.js";
-import { normalizeProviderId } from "./model-selection.js";
+import { normalizeProviderId } from "./model-resolve.js";
 import type { ModelRegistry } from "./pi-model-discovery.js";
 
 const OPENAI_CODEX_GPT_54_MODEL_ID = "gpt-5.4-codex";

@@ -1,6 +1,6 @@
 import type { MarvConfig } from "../../core/config/config.js";
 import type { AuthProfileConfig } from "../../core/config/types.js";
-import { findNormalizedProviderKey, normalizeProviderId } from "../model/model-selection.js";
+import { findNormalizedProviderKey, normalizeProviderId } from "../model/model-resolve.js";
 import { dedupeProfileIds, listProfilesForProvider } from "./profiles.js";
 import type { AuthProfileIdRepairResult, AuthProfileStore } from "./types.js";
 

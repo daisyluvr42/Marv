@@ -7,7 +7,7 @@ import {
   getModelRefStatus,
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
-} from "../agents/model/model-selection.js";
+} from "../agents/model/model-resolve.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { MarvConfig } from "../core/config/config.js";
 import { CONFIG_PATH, readConfigFileSnapshot, writeConfigFile } from "../core/config/config.js";

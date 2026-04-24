@@ -33,15 +33,15 @@ import { resolveRuntimeModelPlan, applyThinkingModelPreferences } from "./model/
 // ---------------------------------------------------------------------------
 // Model resolution
 // ---------------------------------------------------------------------------
-import { isCliProvider } from "./model/model-selection.js";
+import { isCliProvider } from "./model/model-resolve.js";
 import {
   buildAllowedModelSet,
   modelKey,
   normalizeProviderId,
   resolveModelRefFromString,
   resolveThinkingDefault,
-} from "./model/model-selection.js";
-import { hasConfiguredModelSelections } from "./model/model-selections.js";
+} from "./model/model-resolve.js";
+import { hasConfiguredModelSelections } from "./model/model-selections-store.js";
 import { runCliAgent } from "./runner/cli-runner.js";
 // ---------------------------------------------------------------------------
 // Error helpers

@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "./model/model-selection.js";
+import { normalizeProviderId } from "./model/model-resolve.js";
 import { isAntigravityClaude, isGoogleModelApi } from "./pi-embedded-helpers/google.js";
 import type { ToolCallIdMode } from "./tools/meta/tool-call-id.js";
 

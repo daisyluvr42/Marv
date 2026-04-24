@@ -18,7 +18,7 @@ import {
   resolveConfiguredModelRef,
   resolveHooksGmailModel,
   resolveThinkingDefault,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import { runCliAgent } from "../../agents/runner/cli-runner.js";
 import type { MessagingToolSend } from "../../agents/runner/pi-embedded-messaging.js";
 import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";

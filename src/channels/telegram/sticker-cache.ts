@@ -7,7 +7,7 @@ import {
   loadModelCatalog,
   modelSupportsVision,
 } from "../../agents/model/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../agents/model/model-selection.js";
+import { resolveDefaultModelForAgent } from "../../agents/model/model-resolve.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { STATE_DIR } from "../../core/config/paths.js";
 import { logVerbose } from "../../globals.js";

@@ -34,7 +34,7 @@ import {
   modelKey,
   resolveDefaultModelForAgent,
   resolveModelRefFromString,
-} from "../model/model-selection.js";
+} from "../model/model-resolve.js";
 import type { AnyAgentTool } from "./common.js";
 import { readStringParam } from "./common.js";
 import {

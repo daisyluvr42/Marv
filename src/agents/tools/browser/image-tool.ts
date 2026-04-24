@@ -9,7 +9,7 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../defaults.js";
 import { minimaxUnderstandImage } from "../../model/minimax-vlm.js";
 import { getApiKeyForModel, requireApiKey, resolveEnvApiKey } from "../../model/model-auth.js";
 import { runWithImageModelFallback } from "../../model/model-fallback.js";
-import { resolveConfiguredModelRef } from "../../model/model-selection.js";
+import { resolveConfiguredModelRef } from "../../model/model-resolve.js";
 import { ensureMarvModelsJson } from "../../model/models-config.js";
 import { discoverAuthStorage, discoverModels } from "../../model/pi-model-discovery.js";
 import type { SandboxFsBridge } from "../../sandbox/fs-bridge.js";

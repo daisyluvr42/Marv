@@ -1,6 +1,6 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { buildModelAliasIndex, modelKey } from "../agents/model/model-selection.js";
-import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections.js";
+import { buildModelAliasIndex, modelKey } from "../agents/model/model-resolve.js";
+import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections-store.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { ModelProviderConfig } from "../core/config/types.models.js";
 import { fetchWithPrivateNetworkAccess } from "../infra/net/private-network-fetch.js";

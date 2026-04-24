@@ -6,7 +6,7 @@ import {
   normalizeProviderId,
   resolveConfiguredModelRef,
   resolveModelRefFromString,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import { buildBrowseProvidersButton } from "../../channels/telegram/model-buttons.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";

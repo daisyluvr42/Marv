@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseModelRef } from "../../agents/model/model-selection.js";
+import { parseModelRef } from "../../agents/model/model-resolve.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { getFreePortBlockWithPermissionFallback } from "../../test-utils/ports.js";
 import { GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";

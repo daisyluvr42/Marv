@@ -1,11 +1,11 @@
 import { DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { clearProviderFailureStates } from "../agents/model/model-availability-state.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
-import { normalizeProviderId, parseModelRef } from "../agents/model/model-selection.js";
+import { normalizeProviderId, parseModelRef } from "../agents/model/model-resolve.js";
 import {
   replaceSelectedModelRefsForProviderFamily,
   resolveProviderFamilyProviders,
-} from "../agents/model/model-selections.js";
+} from "../agents/model/model-selections-store.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 

@@ -7,6 +7,7 @@ import {
   TUI,
 } from "@mariozechner/pi-tui";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { modelKey } from "../agents/model/model-resolve.js";
 import { loadConfig } from "../core/config/config.js";
 import type { ExecApprovalRequest } from "../infra/exec-approvals.js";
 import {
@@ -585,7 +586,7 @@ export async function runTui(opts: TuiOptions) {
     const agentLabel = formatAgentLabel(currentAgentId);
     const modelLabel = sessionInfo.model
       ? sessionInfo.modelProvider
-        ? `${sessionInfo.modelProvider}/${sessionInfo.model}`
+        ? modelKey(sessionInfo.modelProvider, sessionInfo.model)
         : sessionInfo.model
       : "unknown";
     const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);

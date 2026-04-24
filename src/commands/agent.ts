@@ -20,7 +20,7 @@ import {
   modelKey,
   normalizeModelRef,
   resolveThinkingDefault,
-} from "../agents/model/model-selection.js";
+} from "../agents/model/model-resolve.js";
 import { runCliAgent } from "../agents/runner/cli-runner.js";
 import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
 import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";

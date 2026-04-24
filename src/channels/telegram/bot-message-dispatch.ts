@@ -5,7 +5,7 @@ import {
   loadModelCatalog,
   modelSupportsVision,
 } from "../../agents/model/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../agents/model/model-selection.js";
+import { resolveDefaultModelForAgent } from "../../agents/model/model-resolve.js";
 import { EmbeddedBlockChunker } from "../../agents/runner/pi-embedded-block-chunker.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/delivery/provider-dispatcher.js";
 import { clearHistoryEntriesIfEnabled } from "../../auto-reply/session/history.js";

@@ -23,8 +23,8 @@ import {
   normalizeProviderId,
   parseModelRef,
   resolveConfiguredModelRef,
-} from "./model-selection.js";
-import { pruneUnsupportedModelFromSelections } from "./model-selections.js";
+} from "./model-resolve.js";
+import { pruneUnsupportedModelFromSelections } from "./model-selections-store.js";
 
 type ModelCandidate = {
   provider: string;

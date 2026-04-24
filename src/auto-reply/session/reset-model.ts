@@ -5,7 +5,7 @@ import {
   normalizeProviderId,
   resolveModelRefFromString,
   type ModelAliasIndex,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import type { SessionEntry } from "../../core/config/sessions.js";
 import { updateSessionStore } from "../../core/config/sessions.js";

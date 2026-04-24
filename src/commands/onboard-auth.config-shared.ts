@@ -1,4 +1,4 @@
-import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections.js";
+import { syncProviderSelectionsFromProviderConfig } from "../agents/model/model-selections-store.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type {
   ModelApi,

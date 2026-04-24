@@ -8,7 +8,7 @@ import {
   type RuntimeModelAvailabilityEntry,
 } from "../../agents/model/model-availability-state.js";
 import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
-import { normalizeProviderId } from "../../agents/model/model-selection.js";
+import { normalizeProviderId } from "../../agents/model/model-resolve.js";
 import { loadConfig, type MarvConfig } from "../../core/config/config.js";
 import { fetchWithPrivateNetworkAccess } from "../../infra/net/private-network-fetch.js";
 import type { RuntimeEnv } from "../../runtime.js";

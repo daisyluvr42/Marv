@@ -1,6 +1,6 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
 import { resolveForwardCompatModel } from "../../agents/model/model-forward-compat.js";
-import { parseModelRef } from "../../agents/model/model-selection.js";
+import { parseModelRef } from "../../agents/model/model-resolve.js";
 import type { ModelRegistry } from "../../agents/model/pi-model-discovery.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { resolveConfiguredEntries } from "./list.configured.js";

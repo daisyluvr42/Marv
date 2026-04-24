@@ -17,7 +17,7 @@ import {
   buildModelAliasIndex,
   parseModelRef,
   resolveModelRefFromString,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { withProgressTotals } from "../../cli/progress.js";
 import { CONFIG_PATH, loadConfig } from "../../core/config/config.js";

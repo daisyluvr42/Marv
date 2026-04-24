@@ -1,3 +1,4 @@
+import { modelKey } from "../agents/model/model-resolve.js";
 import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/prompt/identity.js";
 import {
   extractShortModelName,
@@ -35,7 +36,7 @@ export function createReplyPrefixContext(params: {
     // Mutate the object directly instead of reassigning to ensure closures see updates.
     prefixContext.provider = ctx.provider;
     prefixContext.model = extractShortModelName(ctx.model);
-    prefixContext.modelFull = `${ctx.provider}/${ctx.model}`;
+    prefixContext.modelFull = modelKey(ctx.provider, ctx.model);
     prefixContext.thinkingLevel = ctx.thinkLevel ?? "off";
   };
 

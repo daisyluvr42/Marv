@@ -6,7 +6,7 @@ import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
 import { buildModelAliasLines } from "../model/model-alias-lines.js";
 import { normalizeModelCompat } from "../model/model-compat.js";
 import { resolveForwardCompatModel } from "../model/model-forward-compat.js";
-import { normalizeProviderId } from "../model/model-selection.js";
+import { normalizeProviderId } from "../model/model-resolve.js";
 import {
   discoverAuthStorage,
   discoverModels,

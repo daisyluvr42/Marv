@@ -1,6 +1,6 @@
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import { resolveConfiguredModelRef } from "../agents/model/model-selection.js";
+import { resolveConfiguredModelRef } from "../agents/model/model-resolve.js";
 import { loadConfig } from "../core/config/config.js";
 import {
   loadSessionStore,

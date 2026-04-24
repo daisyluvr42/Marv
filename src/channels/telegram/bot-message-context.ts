@@ -4,7 +4,7 @@ import {
   loadModelCatalog,
   modelSupportsVision,
 } from "../../agents/model/model-catalog.js";
-import { resolveDefaultModelForAgent } from "../../agents/model/model-selection.js";
+import { resolveDefaultModelForAgent } from "../../agents/model/model-resolve.js";
 import { resolveAckReaction } from "../../agents/prompt/identity.js";
 import { hasControlCommand } from "../../auto-reply/commands/detection.js";
 import { normalizeCommandBody } from "../../auto-reply/commands/registry.js";

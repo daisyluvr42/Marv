@@ -9,11 +9,11 @@ import {
   modelKey,
   normalizeProviderId,
   resolveConfiguredModelRef,
-} from "../agents/model/model-selection.js";
+} from "../agents/model/model-resolve.js";
 import {
   replaceSelectedModelRefsByProvider,
   resolveSelectedModelRefs,
-} from "../agents/model/model-selections.js";
+} from "../agents/model/model-selections-store.js";
 import type { MarvConfig } from "../core/config/config.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
 import { formatTokenK } from "./models/shared.js";

@@ -4,7 +4,7 @@ import {
   buildModelAliasIndex,
   modelKey,
   resolveModelRefFromString,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import {
   type MarvConfig,

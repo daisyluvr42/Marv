@@ -15,7 +15,7 @@ import {
   findNormalizedProviderValue,
   normalizeProviderId,
   parseModelRef,
-} from "../../agents/model/model-selection.js";
+} from "../../agents/model/model-resolve.js";
 import { runEmbeddedPiAgent } from "../../agents/runner/pi-embedded.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import type { MarvConfig } from "../../core/config/config.js";

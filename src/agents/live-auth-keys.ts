@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "./model/model-selection.js";
+import { normalizeProviderId } from "./model/model-resolve.js";
 
 const KEY_SPLIT_RE = /[\s,;]+/g;
 const GOOGLE_LIVE_SINGLE_KEY = "MARV_LIVE_GEMINI_KEY";

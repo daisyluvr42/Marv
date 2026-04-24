@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "../../agents/model/model-selection.js";
+import { normalizeProviderId } from "../../agents/model/model-resolve.js";
 import {
   type AuthChoiceGroup,
   type AuthChoiceOption,

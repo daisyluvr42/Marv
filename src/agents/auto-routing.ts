@@ -6,7 +6,7 @@ import type {
   AutoRoutingThresholds,
 } from "../core/config/types.agent-defaults.js";
 import { resolveAgentConfig } from "./agent-scope.js";
-import type { ThinkLevel } from "./model/model-selection.js";
+import type { ThinkLevel } from "./model/model-resolve.js";
 
 export type AutoRoutingResult = {
   complexity: AutoRoutingComplexity;

@@ -11,7 +11,7 @@ import {
   ANTIGRAVITY_OPUS_46_FORWARD_COMPAT_CANDIDATES,
   resolveForwardCompatModel,
 } from "../../agents/model/model-forward-compat.js";
-import { normalizeProviderId } from "../../agents/model/model-selection.js";
+import { normalizeProviderId } from "../../agents/model/model-resolve.js";
 import { ensureMarvModelsJson } from "../../agents/model/models-config.js";
 import type { ModelRegistry } from "../../agents/model/pi-model-discovery.js";
 import { discoverAuthStorage, discoverModels } from "../../agents/model/pi-model-discovery.js";

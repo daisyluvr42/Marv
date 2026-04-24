@@ -1,7 +1,7 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { resolveSessionAgentIds } from "../../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../../agents/bootstrap-files.js";
-import { resolveDefaultModelForAgent } from "../../../agents/model/model-selection.js";
+import { resolveDefaultModelForAgent } from "../../../agents/model/model-resolve.js";
 import { buildSystemPromptParams } from "../../../agents/prompt/system-prompt-params.js";
 import { buildAgentSystemPrompt } from "../../../agents/prompt/system-prompt.js";
 import type { EmbeddedContextFile } from "../../../agents/runner/pi-embedded-helpers.js";

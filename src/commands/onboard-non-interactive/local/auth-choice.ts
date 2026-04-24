@@ -1,5 +1,5 @@
 import { upsertAuthProfile } from "../../../agents/auth-profiles.js";
-import { normalizeProviderId } from "../../../agents/model/model-selection.js";
+import { normalizeProviderId } from "../../../agents/model/model-resolve.js";
 import { parseDurationMs } from "../../../cli/parse-duration.js";
 import type { MarvConfig } from "../../../core/config/config.js";
 import { upsertSharedEnvVar } from "../../../infra/env-file.js";

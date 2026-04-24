@@ -1,6 +1,6 @@
 import { formatCliCommand } from "../../cli/command-format.js";
 import type { MarvConfig } from "../../core/config/config.js";
-import { normalizeProviderId } from "../model/model-selection.js";
+import { normalizeProviderId } from "../model/model-resolve.js";
 import { listProfilesForProvider } from "./profiles.js";
 import { suggestOAuthProfileIdForLegacyDefault } from "./repair.js";
 import type { AuthProfileStore } from "./types.js";
