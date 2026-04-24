@@ -7,6 +7,7 @@ import { resolveMarvPackageRoot } from "../../infra/marv-root.js";
 import { readPackageName, readPackageVersion } from "../../infra/package-json.js";
 import { trimLogTail } from "../../infra/restart-sentinel.js";
 import { parseSemver } from "../../infra/runtime-guard.js";
+import { DEV_BRANCH } from "../../infra/update/update-channels.js";
 import { fetchNpmTagVersion } from "../../infra/update/update-check.js";
 import {
   detectGlobalInstallManagerByPresence,
@@ -209,7 +210,17 @@ export async function ensureGitCheckout(params: {
   if (!dirExists) {
     return await runUpdateStep({
       name: "git clone",
-      argv: ["git", "clone", MARV_REPO_URL, params.dir],
+      argv: [
+        "git",
+        "clone",
+        "--depth",
+        "50",
+        "--single-branch",
+        "--branch",
+        DEV_BRANCH,
+        MARV_REPO_URL,
+        params.dir,
+      ],
       timeoutMs: params.timeoutMs,
       progress: params.progress,
     });
@@ -225,7 +236,17 @@ export async function ensureGitCheckout(params: {
 
     return await runUpdateStep({
       name: "git clone",
-      argv: ["git", "clone", MARV_REPO_URL, params.dir],
+      argv: [
+        "git",
+        "clone",
+        "--depth",
+        "50",
+        "--single-branch",
+        "--branch",
+        DEV_BRANCH,
+        MARV_REPO_URL,
+        params.dir,
+      ],
       cwd: params.dir,
       timeoutMs: params.timeoutMs,
       progress: params.progress,

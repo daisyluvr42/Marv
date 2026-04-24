@@ -407,6 +407,38 @@ describe("update-cli", () => {
     expect(installCall).toBeTruthy();
   });
 
+  it("uses a shallow single-branch clone when switching package installs to dev", async () => {
+    const tempDir = await createCaseDir("marv-dev-checkout");
+    const envSnapshot = captureEnv(["MARV_GIT_DIR"]);
+    try {
+      process.env.MARV_GIT_DIR = tempDir;
+      mockPackageInstallStatus("/test/package-root");
+      readPackageName.mockResolvedValue("agentmarv");
+      vi.mocked(runGatewayUpdate).mockResolvedValue({
+        status: "ok",
+        mode: "git",
+        steps: [],
+        durationMs: 100,
+      });
+
+      await updateCommand({ channel: "dev", restart: false });
+
+      expect(vi.mocked(runCommandWithTimeout).mock.calls[0]?.[0]).toEqual([
+        "git",
+        "clone",
+        "--depth",
+        "50",
+        "--single-branch",
+        "--branch",
+        "main",
+        "https://github.com/daisyluvr42/Marv.git",
+        tempDir,
+      ]);
+    } finally {
+      envSnapshot.restore();
+    }
+  });
+
   it("uses stored beta channel when configured", async () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValue({
       ...baseSnapshot,
