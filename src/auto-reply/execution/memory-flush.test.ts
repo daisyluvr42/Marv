@@ -81,7 +81,8 @@ describe("resolveMemoryFlushPromptForRun", () => {
     expect(prompt).toContain("2026-02-16");
     expect(prompt).toContain("memory_write");
     expect(prompt).toContain("Current time:");
-    expect(prompt).toContain("(America/New_York)");
+    expect(prompt).toContain("America/New_York");
+    expect(prompt).toContain("local date 2026-02-16");
   });
 
   it("does not append a duplicate current time line", () => {

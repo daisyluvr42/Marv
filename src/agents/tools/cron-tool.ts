@@ -232,6 +232,7 @@ SCHEDULE TYPES (schedule.kind):
   { "kind": "cron", "expr": "<cron-expression>", "tz": "<optional-timezone>" }
 
 ISO timestamps without an explicit timezone are treated as UTC.
+For cron schedules created from local-time requests (daily morning, weekly review, etc.), set schedule.tz to the user's/local timezone shown in Current time; do not omit it.
 
 PAYLOAD TYPES (payload.kind):
 - "systemEvent": Injects text as system event into session

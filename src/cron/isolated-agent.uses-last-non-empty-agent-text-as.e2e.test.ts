@@ -7,6 +7,9 @@ import type { CronJob } from "./types.js";
 
 vi.mock("../agents/runner/pi-embedded.js", () => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
+  isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
+  isEmbeddedPiRunStreaming: vi.fn().mockReturnValue(false),
+  queueEmbeddedPiMessage: vi.fn().mockReturnValue(false),
   runEmbeddedPiAgent: vi.fn(),
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
 }));
@@ -101,6 +104,7 @@ type RunCronTurnOptions = {
   jobPayload?: CronJob["payload"];
   message?: string;
   mockTexts?: string[] | null;
+  schedule?: CronJob["schedule"];
   sessionKey?: string;
   storeEntries?: Record<string, Record<string, unknown>>;
   storePath?: string;
@@ -116,10 +120,14 @@ async function runCronTurn(home: string, options: RunCronTurnOptions = {}) {
   }
 
   const jobPayload = options.jobPayload ?? DEFAULT_AGENT_TURN_PAYLOAD;
+  const job = makeJob(jobPayload);
+  if (options.schedule) {
+    job.schedule = options.schedule;
+  }
   const res = await runCronIsolatedAgentTurn({
     cfg: makeCfg(home, storePath, options.cfgOverrides),
     deps,
-    job: makeJob(jobPayload),
+    job,
     message:
       options.message ?? (jobPayload.kind === "agentTurn" ? jobPayload.message : DEFAULT_MESSAGE),
     sessionKey: options.sessionKey ?? DEFAULT_SESSION_KEY,
@@ -210,10 +218,32 @@ describe("runCronIsolatedAgentTurn", () => {
     });
   });
 
+  it("uses the cron schedule timezone for current-time context", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-24T23:30:00.000Z"));
+    try {
+      await withTempHome(async (home) => {
+        await runCronTurn(home, {
+          jobPayload: DEFAULT_AGENT_TURN_PAYLOAD,
+          schedule: { kind: "cron", expr: "0 7 * * *", tz: "Asia/Shanghai" },
+        });
+
+        const call = vi.mocked(runEmbeddedPiAgent).mock.calls.at(-1)?.[0] as {
+          prompt?: string;
+        };
+        const line = call?.prompt?.split("\n")[1] ?? "";
+        expect(line).toContain("Asia/Shanghai");
+        expect(line).toContain("local date 2026-04-25");
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("uses agentId for workspace, session key, and store paths", async () => {
     await withTempHome(async (home) => {
       const deps = makeDeps();
-      const opsWorkspace = path.join(home, "ops-workspace");
+      const opsWorkspace = path.join(home, ".marv", "workspace-ops");
       mockEmbeddedOk();
 
       const cfg = makeCfg(
@@ -386,6 +416,11 @@ describe("runCronIsolatedAgentTurn", () => {
           hooks: {
             gmail: {
               model: "openrouter/meta-llama/llama-3.3-70b:free",
+            },
+          },
+          models: {
+            selections: {
+              anthropic: ["anthropic/claude-opus-4-5"],
             },
           },
         },

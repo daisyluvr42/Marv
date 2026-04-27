@@ -477,3 +477,22 @@
 - `models list` now merges configured keyless `baseUrl` provider models into the registry-backed output instead of hiding them whenever runtime discovery omits `/v1/models` metadata.
 - The availability/auth sync path now treats those configured local providers as usable without requiring an API key, so a fresh reload keeps them visible instead of marking them missing.
 - Added focused regression coverage in `models list` and auth-sync tests for the config-backed fallback path.
+
+## Cron Report Date Accuracy Plan (2026-04-25)
+
+- [x] Trace the isolated cron prompt path that supplies current time to scheduled report runs.
+- [x] Make cron runs use the cron schedule timezone when building the current-time prompt context.
+- [x] Add focused regression coverage for a morning cron whose schedule timezone is already on the next local day while UTC is still the previous day.
+- [x] Run targeted verification and record the results.
+
+## Review
+
+- Isolated cron agent runs now build `Current time` from the job's cron `schedule.tz` when present, so a morning report scheduled in `Asia/Shanghai` sees the local date instead of the previous UTC date.
+- The current-time line now includes an explicit `local date YYYY-MM-DD`, which gives scheduled report prompts an unambiguous date even around midnight/timezone boundaries.
+- The cron tool description now tells agents to set `schedule.tz` for local-time recurring jobs like daily morning reports.
+- Verified with:
+  - `pnpm vitest run --config vitest.e2e.config.ts src/cron/isolated-agent.uses-last-non-empty-agent-text-as.e2e.test.ts`
+  - `pnpm vitest run src/auto-reply/execution/memory-flush.test.ts`
+  - `pnpm tsgo`
+  - `pnpm exec oxlint --type-aware src/agents/current-time.ts src/cron/isolated-agent/run.ts src/cron/isolated-agent.uses-last-non-empty-agent-text-as.e2e.test.ts src/agents/tools/cron-tool.ts src/auto-reply/execution/memory-flush.test.ts`
+  - `pnpm exec oxfmt --check src/agents/current-time.ts src/cron/isolated-agent/run.ts src/cron/isolated-agent.uses-last-non-empty-agent-text-as.e2e.test.ts src/agents/tools/cron-tool.ts src/auto-reply/execution/memory-flush.test.ts tasks/todo.md`

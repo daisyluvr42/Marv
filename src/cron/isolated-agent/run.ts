@@ -101,6 +101,23 @@ function resolveCronDeliveryBestEffort(job: CronJob): boolean {
   return false;
 }
 
+function resolveCronRunTimeConfig(cfg: MarvConfig, job: CronJob): MarvConfig {
+  const scheduleTimezone = job.schedule.kind === "cron" ? job.schedule.tz?.trim() : "";
+  if (!scheduleTimezone) {
+    return cfg;
+  }
+  return {
+    ...cfg,
+    agents: {
+      ...cfg.agents,
+      defaults: {
+        ...cfg.agents?.defaults,
+        userTimezone: scheduleTimezone,
+      },
+    },
+  };
+}
+
 async function resolveCronAnnounceSessionKey(params: {
   cfg: MarvConfig;
   agentId: string;
@@ -366,7 +383,10 @@ export async function runCronIsolatedAgentTurn(params: {
     sessionKey: params.job.sessionKey,
   });
 
-  const { formattedTime, timeLine } = resolveCronStyleNow(params.cfg, now);
+  const { formattedTime, timeLine } = resolveCronStyleNow(
+    resolveCronRunTimeConfig(params.cfg, params.job),
+    now,
+  );
   const base = `[cron:${params.job.id} ${params.job.name}] ${params.message}`.trim();
 
   // SECURITY: Wrap external hook content with security boundaries to prevent prompt injection
