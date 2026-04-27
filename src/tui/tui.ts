@@ -778,8 +778,8 @@ export async function runTui(opts: TuiOptions) {
       selector.onSelect = (item) => {
         client
           .resolveExecApproval({
-            approvalId: payload.id,
-            action: item.value as "allow-once" | "allow-always" | "deny",
+            id: payload.id,
+            decision: item.value as "allow-once" | "allow-always" | "deny",
           })
           .catch((err) => {
             chatLog.addSystem(`approval resolution failed: ${String(err)}`);
@@ -790,8 +790,8 @@ export async function runTui(opts: TuiOptions) {
       selector.onCancel = () => {
         client
           .resolveExecApproval({
-            approvalId: payload.id,
-            action: "deny",
+            id: payload.id,
+            decision: "deny",
           })
           .catch(() => {});
         closeOverlay();

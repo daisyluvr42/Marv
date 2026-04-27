@@ -4,6 +4,7 @@ const loadConfig = vi.fn();
 const resolveGatewayPort = vi.fn();
 const pickPrimaryTailnetIPv4 = vi.fn();
 const pickPrimaryLanIPv4 = vi.fn();
+const gatewayRequest = vi.fn();
 
 const originalEnvToken = process.env.MARV_GATEWAY_TOKEN;
 const originalEnvPassword = process.env.MARV_GATEWAY_PASSWORD;
@@ -25,7 +26,46 @@ vi.mock("../core/gateway/net.js", () => ({
   pickPrimaryLanIPv4,
 }));
 
-const { resolveGatewayConnection } = await import("./gateway-chat.js");
+vi.mock("../core/gateway/client.js", () => ({
+  GatewayClient: class {
+    start() {}
+    stop() {}
+    async request(method: string, params?: unknown) {
+      return await gatewayRequest(method, params);
+    }
+  },
+}));
+
+const { GatewayChatClient, resolveGatewayConnection } = await import("./gateway-chat.js");
+
+describe("GatewayChatClient", () => {
+  beforeEach(() => {
+    loadConfig.mockReset();
+    resolveGatewayPort.mockReset();
+    pickPrimaryTailnetIPv4.mockReset();
+    pickPrimaryLanIPv4.mockReset();
+    gatewayRequest.mockReset();
+    loadConfig.mockReturnValue({ gateway: { mode: "local" } });
+    resolveGatewayPort.mockReturnValue(4242);
+    pickPrimaryTailnetIPv4.mockReturnValue(undefined);
+    pickPrimaryLanIPv4.mockReturnValue(undefined);
+    gatewayRequest.mockResolvedValue({ ok: true });
+  });
+
+  it("resolves exec approvals with the gateway schema", async () => {
+    const client = new GatewayChatClient({});
+
+    await client.resolveExecApproval({
+      id: "approval-1",
+      decision: "allow-once",
+    });
+
+    expect(gatewayRequest).toHaveBeenCalledWith("exec.approval.resolve", {
+      id: "approval-1",
+      decision: "allow-once",
+    });
+  });
+});
 
 describe("resolveGatewayConnection", () => {
   beforeEach(() => {

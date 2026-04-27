@@ -227,8 +227,8 @@ export class GatewayChatClient {
   }
 
   async resolveExecApproval(opts: {
-    approvalId: string;
-    action: "allow-once" | "allow-always" | "deny";
+    id: string;
+    decision: "allow-once" | "allow-always" | "deny";
   }) {
     return await this.client.request("exec.approval.resolve", opts);
   }
