@@ -1,6 +1,6 @@
 {
   "name": "@marv/zalouser",
-  "version": "2026.4.24",
+  "version": "2026.4.27",
   "description": "Marv Zalo Personal Account plugin via zca-cli",
   "type": "module",
   "dependencies": {

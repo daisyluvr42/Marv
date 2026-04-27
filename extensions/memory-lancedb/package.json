@@ -1,6 +1,6 @@
 {
   "name": "@marv/memory-lancedb",
-  "version": "2026.4.24",
+  "version": "2026.4.27",
   "private": true,
   "description": "Marv LanceDB-backed long-term memory plugin with auto-recall/capture",
   "type": "module",

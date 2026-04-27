@@ -4,6 +4,18 @@ Docs: https://github.com/daisyluvr42/Marv/tree/main/docs
 
 ## Unreleased
 
+## 2026.4.27
+
+### Changes
+
+- Models: honor configured primary and fallback routes consistently across agent runs, followups, status output, and session execution.
+- Local Models: when a configured local model endpoint is temporarily unavailable, fall back to the next configured model without deleting the local selection.
+
+### Fixes
+
+- Cron: use a job's cron timezone when building scheduled-run time context and include an explicit local date for daily reports.
+- Models: treat connection and unavailable-model failures as fallbackable runtime errors, while keeping public custom `baseUrl` providers distinct from local/private endpoints.
+
 ## 2026.4.24
 
 ### Fixes

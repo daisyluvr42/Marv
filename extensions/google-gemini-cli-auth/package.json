@@ -1,6 +1,6 @@
 {
   "name": "@marv/google-gemini-cli-auth",
-  "version": "2026.4.24",
+  "version": "2026.4.27",
   "private": true,
   "description": "Marv Gemini CLI OAuth provider plugin",
   "type": "module",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.4.27
+
+### Changes
+
+- Version alignment with core Marv release numbers.
+
 ## 2026.4.24
 
 ### Changes
