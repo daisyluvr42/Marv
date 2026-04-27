@@ -18,6 +18,7 @@ import {
   parseModelRef,
   resolveModelRefFromString,
 } from "../../agents/model/model-resolve.js";
+import { resolveOrderedModelRoutePlan } from "../../agents/model/model-route.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { withProgressTotals } from "../../cli/progress.js";
 import { CONFIG_PATH, loadConfig } from "../../core/config/config.js";
@@ -71,6 +72,11 @@ export async function modelsStatusCommand(
   const agentId = resolveKnownAgentId({ cfg, rawAgentId: opts.agent });
   const agentDir = agentId ? resolveAgentDir(cfg, agentId) : resolveMarvAgentDir();
   const runtimePlan = resolveRuntimeModelPlan({ cfg, agentId, agentDir });
+  const orderedRoute = resolveOrderedModelRoutePlan({
+    cfg,
+    agentId,
+    includeDefaultWhenEmpty: true,
+  });
   if (runtimePlan.candidates.length === 0 && runtimePlan.configured.length > 0) {
     const reasons = runtimePlan.configured
       .map((m) => `  ${m.ref}: ${m.availabilityReason ?? "unknown"}`)
@@ -79,13 +85,17 @@ export async function modelsStatusCommand(
       `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
     );
   }
-  const resolved = runtimePlan.candidates[0] ?? {
-    provider: DEFAULT_PROVIDER,
-    model: DEFAULT_MODEL,
-  };
+  const resolved = orderedRoute.entries[0] ??
+    runtimePlan.candidates[0] ?? {
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+    };
 
   const resolvedLabel = `${resolved.provider}/${resolved.model}`;
   const defaultLabel = resolvedLabel;
+  const routeLabel = orderedRoute.hasConfiguredRoute
+    ? orderedRoute.entries.map((entry) => entry.ref).join(" -> ")
+    : undefined;
   const aliases = Object.entries(cfg.models?.metadata ?? {}).reduce<Record<string, string>>(
     (acc, [key, entry]) => {
       const alias = typeof entry?.alias === "string" ? entry.alias.trim() : undefined;
@@ -318,6 +328,9 @@ export async function modelsStatusCommand(
           modelPool: runtimePlan.poolName,
           defaultModel: defaultLabel,
           resolvedDefault: resolvedLabel,
+          ...(routeLabel
+            ? { configuredRoute: orderedRoute.entries.map((entry) => entry.ref) }
+            : {}),
           runtimeCandidates: runtimePlan.candidates.map((entry) => ({
             ref: entry.ref,
             location: entry.location,
@@ -397,12 +410,17 @@ export async function modelsStatusCommand(
     )}`,
   );
   runtime.log(
-    `${labelWithSource("Default", agentId ? "model-pool" : undefined)}${colorize(
+    `${labelWithSource("Default", orderedRoute.hasConfiguredRoute ? undefined : "model-pool")}${colorize(
       rich,
       theme.muted,
       ":",
     )} ${colorize(rich, theme.success, displayDefault)}`,
   );
+  if (routeLabel) {
+    runtime.log(
+      `${label("Route")}${colorize(rich, theme.muted, ":")} ${colorize(rich, theme.info, routeLabel)}`,
+    );
+  }
   runtime.log(
     `${label("Pool")}${colorize(rich, theme.muted, ":")} ${colorize(
       rich,

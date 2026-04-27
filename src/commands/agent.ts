@@ -11,16 +11,13 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
 import { AGENT_LANE_SUBAGENT } from "../agents/lanes.js";
 import { loadModelCatalog } from "../agents/model/model-catalog.js";
 import { runWithModelFallback } from "../agents/model/model-fallback.js";
-import {
-  resolveDefaultSessionModelCandidate,
-  resolveRuntimeModelPlan,
-} from "../agents/model/model-pool.js";
+import { resolveRuntimeModelPlan } from "../agents/model/model-pool.js";
 import {
   isCliProvider,
-  modelKey,
   normalizeModelRef,
   resolveThinkingDefault,
 } from "../agents/model/model-resolve.js";
+import { resolveOrderedModelRoutePlan } from "../agents/model/model-route.js";
 import { runCliAgent } from "../agents/runner/cli-runner.js";
 import { runEmbeddedPiAgent } from "../agents/runner/pi-embedded.js";
 import { buildWorkspaceSkillSnapshot } from "../agents/skills.js";
@@ -224,16 +221,12 @@ export async function agentCommand(
     ensureBootstrapFiles: !agentCfg?.skipBootstrap,
   });
   const workspaceDir = workspace.dir;
-  const configuredPlan = resolveRuntimeModelPlan({ cfg, agentId: sessionAgentId, agentDir });
-  if (configuredPlan.candidates.length === 0 && configuredPlan.configured.length > 0) {
-    const reasons = configuredPlan.configured
-      .map((m) => `  ${m.ref}: ${m.availabilityReason ?? "unknown"}`)
-      .join("\n");
-    process.stderr.write(
-      `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
-    );
-  }
-  const configuredModel = configuredPlan.candidates[0] ?? {
+  const configuredRoute = resolveOrderedModelRoutePlan({
+    cfg,
+    agentId: sessionAgentId,
+    includeDefaultWhenEmpty: true,
+  });
+  const configuredModel = configuredRoute.entries[0] ?? {
     provider: DEFAULT_PROVIDER,
     model: DEFAULT_MODEL,
   };
@@ -399,7 +392,11 @@ export async function agentCommand(
         `Warning: all configured models are unavailable, falling back to ${DEFAULT_PROVIDER}/${DEFAULT_MODEL}:\n${reasons}\n`,
       );
     }
-    const configuredDefaultRef = resolveDefaultSessionModelCandidate(runtimePlan.candidates) ?? {
+    const orderedDefaultRoute = resolveOrderedModelRoutePlan({
+      cfg,
+      agentId: sessionAgentId,
+    });
+    const configuredDefaultRef = orderedDefaultRoute.entries[0] ?? {
       provider: runtimePlan.candidates[0]?.provider ?? DEFAULT_PROVIDER,
       model: runtimePlan.candidates[0]?.model ?? DEFAULT_MODEL,
     };
@@ -416,59 +413,7 @@ export async function agentCommand(
     const selectionState = resolveSessionModelSelectionState(sessionEntry);
     const storedModelOverride =
       selectionState.mode === "manual" ? selectionState.manualModelRef : undefined;
-    let allowedModelKeys = new Set<string>(
-      runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
-    );
     let modelCatalog: Awaited<ReturnType<typeof loadModelCatalog>> | null = null;
-
-    if (sessionEntry && sessionStore && sessionKey && storedModelOverride) {
-      if (storedModelOverride) {
-        const slash = storedModelOverride.indexOf("/");
-        const overrideProvider =
-          slash > 0
-            ? storedModelOverride.slice(0, slash)
-            : sessionEntry.providerOverride?.trim() || defaultProvider;
-        const overrideModel =
-          slash > 0 ? storedModelOverride.slice(slash + 1) : storedModelOverride;
-        const normalizedOverride = normalizeModelRef(overrideProvider, overrideModel);
-        const key = modelKey(normalizedOverride.provider, normalizedOverride.model);
-        if (
-          !isCliProvider(normalizedOverride.provider, cfg) &&
-          allowedModelKeys.size > 0 &&
-          !allowedModelKeys.has(key)
-        ) {
-          // Do NOT silently rewrite the user's manual model selection back to
-          // the default. If the override is missing from the runtime candidate
-          // set (e.g. config drift, disabled/unsupported provider, or a local
-          // provider model id that no longer matches `/v1/models`), fail fast
-          // with an explicit error that tells the operator why and where to
-          // look. Silent rewrites can reroute sessions to a different provider
-          // without the operator noticing.
-          const selectedRef = `${normalizedOverride.provider}/${normalizedOverride.model}`;
-          const configuredMatch = runtimePlan.configured.find(
-            (c) => modelKey(c.provider, c.model) === key,
-          );
-          let reasonSuffix = " (not configured for this agent's model pool)";
-          if (configuredMatch) {
-            if (configuredMatch.availabilityReason) {
-              reasonSuffix = `: ${configuredMatch.availabilityReason}`;
-            } else if (!configuredMatch.enabled) {
-              reasonSuffix = " (disabled)";
-            } else if (!configuredMatch.available) {
-              reasonSuffix = " (unavailable)";
-            } else {
-              reasonSuffix = " (not an allowed candidate for this run)";
-            }
-          }
-          throw new Error(
-            `Selected model "${selectedRef}" is not available${reasonSuffix}. ` +
-              `Run \`marv models list\` / \`marv models status\` to reconcile, ` +
-              `then switch with \`marv models set <provider>/<model>\` or clear ` +
-              `the manual selection.`,
-          );
-        }
-      }
-    }
 
     if (storedModelOverride) {
       const slash = storedModelOverride.indexOf("/");
@@ -478,15 +423,8 @@ export async function agentCommand(
           : sessionEntry?.providerOverride?.trim() || defaultProvider;
       const candidateModel = slash > 0 ? storedModelOverride.slice(slash + 1) : storedModelOverride;
       const normalizedStored = normalizeModelRef(candidateProvider, candidateModel);
-      const key = modelKey(normalizedStored.provider, normalizedStored.model);
-      if (
-        isCliProvider(normalizedStored.provider, cfg) ||
-        allowedModelKeys.size === 0 ||
-        allowedModelKeys.has(key)
-      ) {
-        provider = normalizedStored.provider;
-        model = normalizedStored.model;
-      }
+      provider = normalizedStored.provider;
+      model = normalizedStored.model;
     }
     if (sessionEntry) {
       const authProfileId = sessionEntry.authProfileOverride;
@@ -555,9 +493,15 @@ export async function agentCommand(
         opts.replyChannel ?? opts.channel,
       );
       const spawnedBy = opts.spawnedBy ?? sessionEntry?.spawnedBy;
-      const activeFallbacks = runtimePlan.candidates
-        .map((entry) => entry.ref)
-        .filter((ref) => ref !== `${provider}/${model}`);
+      const activeRoute = resolveOrderedModelRoutePlan({
+        cfg,
+        agentId: sessionAgentId,
+        primary: { provider, model },
+      });
+      const activeFallbacks =
+        activeRoute.hasConfiguredRoute && activeRoute.entries.length > 1
+          ? activeRoute.entries.slice(1).map((entry) => entry.ref)
+          : undefined;
       // Auto-routing is subagent-only; main session uses the user's chosen model.
       const routedThinking: ThinkLevel | undefined = undefined;
 
@@ -569,6 +513,7 @@ export async function agentCommand(
         provider,
         model,
         agentDir,
+        agentId: sessionAgentId,
         fallbacksOverride: activeFallbacks,
         run: async (providerOverride, modelOverride) => {
           const isFallbackRetry = fallbackAttemptIndex > 0;
@@ -626,6 +571,18 @@ export async function agentCommand(
       result = fallbackResult.result;
       fallbackProvider = fallbackResult.provider;
       fallbackModel = fallbackResult.model;
+      if (fallbackResult.notice) {
+        result = {
+          ...result,
+          payloads: [
+            ...(result.payloads ?? []),
+            {
+              text: fallbackResult.notice,
+            },
+          ],
+        };
+        process.stderr.write(`${fallbackResult.notice}\n`);
+      }
       if (!lifecycleEnded) {
         emitAgentEvent({
           runId,

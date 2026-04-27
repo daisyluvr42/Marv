@@ -100,7 +100,7 @@ async function expectFallsBackToHaiku(params: {
 }
 
 describe("runWithModelFallback", () => {
-  it("normalizes openai gpt-5.3 codex to openai-codex before running", async () => {
+  it("preserves explicit openai gpt-5.3 codex provider before running", async () => {
     const cfg = makeCfg();
     const run = vi.fn().mockResolvedValueOnce("ok");
 
@@ -113,7 +113,7 @@ describe("runWithModelFallback", () => {
 
     expect(result.result).toBe("ok");
     expect(run).toHaveBeenCalledTimes(1);
-    expect(run).toHaveBeenCalledWith("openai-codex", "gpt-5.3-codex");
+    expect(run).toHaveBeenCalledWith("openai", "gpt-5.3-codex");
   });
 
   it("does not fall back on non-auth errors", async () => {
@@ -167,12 +167,157 @@ describe("runWithModelFallback", () => {
     });
   });
 
-  it("falls back on credential validation errors", async () => {
-    await expectFallsBackToHaiku({
+  it("routes assigned models through the configured primary before configured fallbacks", async () => {
+    const cfg = makeCfg();
+    const calls: Array<{ provider: string; model: string }> = [];
+
+    const result = await runWithModelFallback({
+      cfg,
       provider: "anthropic",
       model: "claude-opus-4",
-      firstError: new Error('No credentials found for profile "anthropic:default".'),
+      run: async (provider, model) => {
+        calls.push({ provider, model });
+        if (calls.length === 1) {
+          throw new Error('No credentials found for profile "anthropic:default".');
+        }
+        return "ok";
+      },
     });
+
+    expect(result.result).toBe("ok");
+    expect(calls).toEqual([
+      { provider: "anthropic", model: "claude-opus-4" },
+      { provider: "openai", model: "gpt-4.1-mini" },
+    ]);
+  });
+
+  it("continues through the configured route until a model succeeds", async () => {
+    const cfg = makeCfg();
+    const calls: Array<{ provider: string; model: string }> = [];
+
+    const result = await runWithModelFallback({
+      cfg,
+      provider: "anthropic",
+      model: "claude-opus-4",
+      run: async (provider, model) => {
+        calls.push({ provider, model });
+        if (calls.length < 3) {
+          throw Object.assign(new Error("nope"), { status: 401 });
+        }
+        return "ok";
+      },
+    });
+
+    expect(result.result).toBe("ok");
+    expect(calls).toEqual([
+      { provider: "anthropic", model: "claude-opus-4" },
+      { provider: "openai", model: "gpt-4.1-mini" },
+      { provider: "anthropic", model: "claude-haiku-3-5" },
+    ]);
+  });
+
+  it("falls back on local connection errors without mutating model selections", async () => {
+    const cfg = makeCfg({
+      agents: {
+        defaults: {
+          model: {
+            primary: "lmstudio/qwen-local",
+            fallbacks: ["openai/gpt-4.1-mini"],
+          },
+        },
+      },
+      models: {
+        providers: {
+          lmstudio: {
+            baseUrl: "http://127.0.0.1:1234/v1",
+            models: [
+              {
+                id: "qwen-local",
+                name: "Qwen Local",
+                reasoning: false,
+                input: ["text"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: 131_072,
+                maxTokens: 16_384,
+              },
+            ],
+          },
+        },
+        selections: {
+          lmstudio: ["lmstudio/qwen-local"],
+          openai: ["openai/gpt-4.1-mini"],
+        },
+      },
+    });
+
+    const result = await runWithModelFallback({
+      cfg,
+      provider: "lmstudio",
+      model: "qwen-local",
+      run: async (provider, model) => {
+        if (provider === "lmstudio") {
+          throw Object.assign(new Error("Connection error."), { code: "ECONNREFUSED" });
+        }
+        expect(model).toBe("gpt-4.1-mini");
+        return "ok";
+      },
+    });
+
+    expect(result.result).toBe("ok");
+    expect(result.provider).toBe("openai");
+    expect(result.notice).toContain("Local model lmstudio/qwen-local is unavailable");
+    expect(cfg.models?.selections?.lmstudio).toEqual(["lmstudio/qwen-local"]);
+  });
+
+  it("does not label public baseUrl provider failures as local", async () => {
+    const cfg = makeCfg({
+      agents: {
+        defaults: {
+          model: {
+            primary: "custom-cloud/cloud-model",
+            fallbacks: ["openai/gpt-4.1-mini"],
+          },
+        },
+      },
+      models: {
+        providers: {
+          "custom-cloud": {
+            baseUrl: "https://api.example.com/v1",
+            models: [
+              {
+                id: "cloud-model",
+                name: "Cloud Model",
+                reasoning: false,
+                input: ["text"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: 131_072,
+                maxTokens: 16_384,
+              },
+            ],
+          },
+        },
+        selections: {
+          "custom-cloud": ["custom-cloud/cloud-model"],
+          openai: ["openai/gpt-4.1-mini"],
+        },
+      },
+    });
+
+    const result = await runWithModelFallback({
+      cfg,
+      provider: "custom-cloud",
+      model: "cloud-model",
+      run: async (provider) => {
+        if (provider === "custom-cloud") {
+          throw Object.assign(new Error("Connection error."), { code: "ECONNRESET" });
+        }
+        return "ok";
+      },
+    });
+
+    expect(result.result).toBe("ok");
+    expect(result.provider).toBe("openai");
+    expect(result.notice).toBeUndefined();
   });
 
   it("skips providers when all profiles are in cooldown", async () => {

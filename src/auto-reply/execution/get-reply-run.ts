@@ -575,7 +575,7 @@ export async function runPreparedReply(
       skillsSnapshot,
       provider,
       model,
-      modelCandidates: modelState.candidates.map((entry) => entry.ref),
+      modelCandidates: modelState.candidateRefs,
       authProfileId,
       authProfileIdSource,
       thinkLevel: params.autoRoutingThinking

@@ -10,13 +10,13 @@ import {
   findReasoningModelForProvider,
   loadModelCatalog,
 } from "../../agents/model/model-catalog.js";
-import { resolveRuntimeModelPlan } from "../../agents/model/model-pool.js";
 import {
   buildModelAliasIndex,
   type ModelAliasIndex,
   modelKey,
   resolveModelRefFromString,
 } from "../../agents/model/model-resolve.js";
+import { resolveOrderedModelRoutePlan } from "../../agents/model/model-route.js";
 import type { MarvConfig } from "../../core/config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
 import { applyVerboseOverride } from "../../core/session/level-overrides.js";
@@ -296,52 +296,18 @@ export function resolveDefaultModel(params: { cfg: MarvConfig; agentId?: string 
   defaultModel: string;
   aliasIndex: ModelAliasIndex;
 } {
-  const runtimePlan = resolveRuntimeModelPlan({
+  const routePlan = resolveOrderedModelRoutePlan({
     cfg: params.cfg,
     agentId: params.agentId,
+    includeDefaultWhenEmpty: true,
   });
 
-  let defaultProvider: string;
-  let defaultModel: string;
-
-  if (runtimePlan.candidates.length > 0) {
-    // Use the top candidate from the model pool.
-    defaultProvider = runtimePlan.candidates[0].provider;
-    defaultModel = runtimePlan.candidates[0].model;
-  } else {
-    // Pool is empty — fall back to the explicitly configured primary model
-    // (agents.defaults.model.primary) before hard-coding Anthropic.
-    const configuredPrimary = resolveConfiguredPrimaryModel(params.cfg);
-    defaultProvider = configuredPrimary.provider;
-    defaultModel = configuredPrimary.model;
-  }
+  const defaultProvider = routePlan.entries[0]?.provider ?? "anthropic";
+  const defaultModel = routePlan.entries[0]?.model ?? "claude-sonnet-4-5";
 
   const aliasIndex = buildModelAliasIndex({
     cfg: params.cfg,
     defaultProvider,
   });
   return { defaultProvider, defaultModel, aliasIndex };
-}
-
-/** Parse the user's configured agents.defaults.model.primary into provider/model. */
-function resolveConfiguredPrimaryModel(cfg: MarvConfig): {
-  provider: string;
-  model: string;
-} {
-  const modelCfg = cfg.agents?.defaults?.model;
-  const raw =
-    typeof modelCfg === "string"
-      ? modelCfg
-      : typeof modelCfg === "object" && modelCfg !== null
-        ? modelCfg.primary
-        : undefined;
-  if (typeof raw === "string" && raw.includes("/")) {
-    const slashIdx = raw.indexOf("/");
-    return {
-      provider: raw.slice(0, slashIdx),
-      model: raw.slice(slashIdx + 1),
-    };
-  }
-  // Ultimate fallback.
-  return { provider: "anthropic", model: "claude-sonnet-4-5" };
 }

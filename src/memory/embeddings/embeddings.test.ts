@@ -3,10 +3,25 @@ import * as authModule from "../../agents/model/model-auth.js";
 import { DEFAULT_GEMINI_EMBEDDING_MODEL } from "./embeddings-gemini.js";
 import { createEmbeddingProvider, DEFAULT_LOCAL_MODEL } from "./embeddings.js";
 
+const fetchWithPrivateNetworkAccessMock = vi.hoisted(() =>
+  vi.fn(async (params: { url: string; init?: RequestInit }) => {
+    const response = await globalThis.fetch(params.url, params.init);
+    return {
+      response,
+      finalUrl: params.url,
+      release: vi.fn(),
+    };
+  }),
+);
+
 vi.mock("../../agents/model/model-auth.js", async () => {
   const { createModelAuthMockModule } = await import("../../test-utils/model-auth-mock.js");
   return createModelAuthMockModule();
 });
+
+vi.mock("../../infra/net/private-network-fetch.js", () => ({
+  fetchWithPrivateNetworkAccess: fetchWithPrivateNetworkAccessMock,
+}));
 
 const importNodeLlamaCppMock = vi.fn();
 vi.mock("./node-llama.js", () => ({
@@ -23,6 +38,14 @@ const createFetchMock = () =>
 afterEach(() => {
   vi.resetAllMocks();
   vi.unstubAllGlobals();
+  fetchWithPrivateNetworkAccessMock.mockImplementation(async (params) => {
+    const response = await globalThis.fetch(params.url, params.init);
+    return {
+      response,
+      finalUrl: params.url,
+      release: vi.fn(),
+    };
+  });
 });
 
 function requireProvider(result: Awaited<ReturnType<typeof createEmbeddingProvider>>) {

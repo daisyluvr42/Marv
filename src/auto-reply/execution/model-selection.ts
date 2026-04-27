@@ -4,6 +4,7 @@ import type {
   RuntimeModelCapability,
 } from "../../agents/model/model-pool.js";
 import type { ModelAliasIndex } from "../../agents/model/model-resolve.js";
+import { resolveOrderedModelRoutePlan } from "../../agents/model/model-route.js";
 
 const {
   models: {
@@ -22,8 +23,7 @@ const {
   constants: { DEFAULT_CONTEXT_TOKENS },
 } = agents;
 import type { MarvConfig } from "../../core/config/config.js";
-import { type SessionEntry, updateSessionStore } from "../../core/config/sessions.js";
-import { applyModelOverrideToSessionEntry } from "../../core/session/model-overrides.js";
+import type { SessionEntry } from "../../core/config/sessions.js";
 import { resolveSessionModelSelectionState } from "../../core/session/model-selection-state.js";
 import { resolveThreadParentSessionKey } from "../../core/session/session-key-utils.js";
 import type { ThinkLevel } from "../directives/directives.js";
@@ -42,6 +42,7 @@ type ModelSelectionState = {
   model: string;
   poolName: string;
   candidates: RuntimeConfiguredModel[];
+  candidateRefs: string[];
   allowedModelKeys: Set<string>;
   allowedModelCatalog: ModelCatalog;
   resetModelOverride: boolean;
@@ -329,6 +330,10 @@ export async function createModelSelectionState(params: {
       requiredCapabilities,
     },
   });
+  const configuredRoute = resolveOrderedModelRoutePlan({
+    cfg,
+    agentId: params.agentId,
+  });
 
   const hasModelMetadata = Boolean(
     cfg.models?.metadata && Object.keys(cfg.models.metadata).length > 0,
@@ -358,35 +363,13 @@ export async function createModelSelectionState(params: {
     allowedModelCatalog = allowed.allowedCatalog;
     allowedModelKeys = allowed.allowedKeys;
   }
-  if (runtimePlan.candidates.length > 0) {
-    allowedModelKeys = new Set(
-      runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
-    );
+  if (runtimePlan.candidates.length > 0 || configuredRoute.entries.length > 0) {
+    allowedModelKeys = new Set([
+      ...configuredRoute.entries.map((entry) => entry.ref),
+      ...runtimePlan.candidates.map((entry) => modelKey(entry.provider, entry.model)),
+    ]);
   } else if (hasConfiguredModelSelections(cfg)) {
     allowedModelKeys = new Set();
-  }
-
-  if (sessionEntry && sessionStore && sessionKey && hasStoredOverride) {
-    const overrideProvider = sessionEntry.providerOverride?.trim() || defaultProvider;
-    const overrideModel = sessionEntry.modelOverride?.trim();
-    if (overrideModel) {
-      const key = modelKey(overrideProvider, overrideModel);
-      if (allowedModelKeys.size > 0 && !allowedModelKeys.has(key)) {
-        const { updated } = applyModelOverrideToSessionEntry({
-          entry: sessionEntry,
-          selection: { provider: defaultProvider, model: defaultModel, isDefault: true },
-        });
-        if (updated) {
-          sessionStore[sessionKey] = sessionEntry;
-          if (storePath) {
-            await updateSessionStore(storePath, (store) => {
-              store[sessionKey] = sessionEntry;
-            });
-          }
-        }
-        resetModelOverride = updated;
-      }
-    }
   }
 
   const storedOverride = resolveStoredModelOverride({
@@ -401,21 +384,26 @@ export async function createModelSelectionState(params: {
   const skipStoredOverride = params.hasResolvedHeartbeatModelOverride === true;
   if (storedOverride?.model && !skipStoredOverride) {
     const candidateProvider = storedOverride.provider || defaultProvider;
-    const key = modelKey(candidateProvider, storedOverride.model);
-    if (allowedModelKeys.size === 0 || allowedModelKeys.has(key)) {
-      provider = candidateProvider;
-      model = storedOverride.model;
-    }
+    provider = candidateProvider;
+    model = storedOverride.model;
   } else {
-    const reorderedCandidates = applyThinkingModelPreferences({
-      candidates: runtimePlan.candidates,
-      thinkingModels: agentCfg?.thinkingModels,
-      thinkLevel: params.thinkLevelHint,
-    });
-    const automaticCandidate = reorderedCandidates[0];
-    if (automaticCandidate) {
-      provider = automaticCandidate.provider;
-      model = automaticCandidate.model;
+    const configuredCandidate = configuredRoute.hasConfiguredRoute
+      ? configuredRoute.entries[0]
+      : undefined;
+    if (configuredCandidate) {
+      provider = configuredCandidate.provider;
+      model = configuredCandidate.model;
+    } else {
+      const reorderedCandidates = applyThinkingModelPreferences({
+        candidates: runtimePlan.candidates,
+        thinkingModels: agentCfg?.thinkingModels,
+        thinkLevel: params.thinkLevelHint,
+      });
+      const automaticCandidate = reorderedCandidates[0];
+      if (automaticCandidate) {
+        provider = automaticCandidate.provider;
+        model = automaticCandidate.model;
+      }
     }
   }
 
@@ -456,11 +444,26 @@ export async function createModelSelectionState(params: {
     return defaultThinkingLevel;
   };
 
+  const selectedRoute = resolveOrderedModelRoutePlan({
+    cfg,
+    agentId: params.agentId,
+    primary: { provider, model },
+  });
+  const candidateRefs = selectedRoute.hasConfiguredRoute
+    ? selectedRoute.entries.map((entry) => entry.ref)
+    : [
+        modelKey(provider, model),
+        ...runtimePlan.candidates
+          .map((entry) => modelKey(entry.provider, entry.model))
+          .filter((ref) => ref !== modelKey(provider, model)),
+      ];
+
   return {
     provider,
     model,
     poolName: runtimePlan.poolName,
     candidates: runtimePlan.candidates,
+    candidateRefs,
     allowedModelKeys,
     allowedModelCatalog,
     resetModelOverride,

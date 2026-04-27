@@ -41,6 +41,7 @@ import {
   resolveModelRefFromString,
   resolveThinkingDefault,
 } from "./model/model-resolve.js";
+import { resolveOrderedModelRoutePlan } from "./model/model-route.js";
 import { hasConfiguredModelSelections } from "./model/model-selections-store.js";
 import { runCliAgent } from "./runner/cli-runner.js";
 // ---------------------------------------------------------------------------
@@ -102,6 +103,7 @@ const _gateway: AgentGateway = {
     hasConfiguredModelSelections,
     resolveModelAuthMode,
     resolveRuntimeModelPlan,
+    resolveOrderedModelRoutePlan,
     applyThinkingModelPreferences,
     buildAllowedModelSet,
     modelKey,

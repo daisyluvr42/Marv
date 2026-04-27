@@ -48,6 +48,7 @@ import {
   type ReplyPayload,
 } from "../support/types.js";
 import {
+  appendUsageLine,
   buildEmbeddedRunBaseParams,
   buildEmbeddedRunContexts,
   resolveModelFallbackOptions,
@@ -430,6 +431,12 @@ export async function runAgentTurnWithFallback(params: {
       runResult = fallbackResult.result;
       fallbackProvider = fallbackResult.provider;
       fallbackModel = fallbackResult.model;
+      if (fallbackResult.notice) {
+        runResult = {
+          ...runResult,
+          payloads: appendUsageLine(runResult.payloads ?? [], fallbackResult.notice),
+        };
+      }
 
       // Some embedded runs surface context overflow as an error payload instead of throwing.
       // Treat those as a session-level failure and auto-recover by starting a fresh session.

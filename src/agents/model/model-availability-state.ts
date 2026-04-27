@@ -193,6 +193,7 @@ export function markRuntimeModelReady(ref: string): void {
 export function markRuntimeModelFailure(params: {
   ref: string;
   error: unknown;
+  persist?: boolean;
 }): RuntimeModelAvailabilityStatus {
   const described = describeFailoverError(params.error);
   const message = described.message.trim();
@@ -205,6 +206,10 @@ export function markRuntimeModelFailure(params: {
     status = "auth_invalid";
   }
   const retryAfter = resolveRetryAfter({ status, reason: described.reason, now });
+
+  if (params.persist === false) {
+    return status;
+  }
 
   const store = readStore();
   store.models[params.ref] = {

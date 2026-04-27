@@ -45,6 +45,7 @@ describe("agent-runner-utils", () => {
       provider: run.provider,
       model: run.model,
       agentDir: run.agentDir,
+      agentId: run.agentId,
       fallbacksOverride: ["openai/fallback-model"],
     });
   });

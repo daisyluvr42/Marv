@@ -407,20 +407,18 @@ describe("gateway sessions patch", () => {
     expect(res.error.message).toContain("invalid model");
   });
 
-  test("returns specific error when model catalog is unavailable", async () => {
+  test("allows a valid model patch when model catalog is unavailable", async () => {
     const store: Record<string, SessionEntry> = {};
     const res = await applySessionsPatchToStore({
       cfg: {} as MarvConfig,
       store,
       storeKey: "agent:main:main",
       patch: { key: "agent:main:main", model: "anthropic/claude-sonnet-4-6" },
-      // omit loadGatewayModelCatalog to trigger UNAVAILABLE
+      // omit loadGatewayModelCatalog; catalog is only needed for thinking-level sync.
     });
-    expect(res.ok).toBe(false);
-    if (res.ok) {
-      return;
-    }
-    expect(res.error.message).toContain("model catalog unavailable");
+    expect(res.ok).toBe(true);
+    expect(store["agent:main:main"]?.providerOverride).toBe("anthropic");
+    expect(store["agent:main:main"]?.modelOverride).toBe("claude-sonnet-4-6");
   });
 
   test("allows target agent own model for subagent session even when missing from global allowlist", async () => {

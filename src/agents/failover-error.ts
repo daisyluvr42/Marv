@@ -4,6 +4,10 @@ import { classifyFailoverReason, type FailoverReason } from "./runner/pi-embedde
 const TIMEOUT_HINT_RE =
   /timeout|timed out|deadline exceeded|context deadline exceeded|stop reason:\s*abort|reason:\s*abort|unhandled stop reason:\s*abort/i;
 const ABORT_TIMEOUT_RE = /request was aborted|request aborted/i;
+const CONNECTION_UNAVAILABLE_RE =
+  /connection error|connection refused|failed to connect|fetch failed|network error|name not resolved|no route to host|host unreachable|connection terminated|socket hang up/i;
+const UNSUPPORTED_MODEL_RE =
+  /unknown model|model does not exist|model not found|invalid model|unsupported model|model has been deprecated|no access to model|do not have access to model|not authorized to access this model|not available for your account|access to the requested model is denied/i;
 
 export class FailoverError extends Error {
   readonly reason: FailoverReason;
@@ -105,12 +109,31 @@ export function resolveFailoverReasonFromError(err: unknown): FailoverReason | n
   if (status === 408) {
     return "timeout";
   }
+  if (status === 404 || status === 410) {
+    return "unknown";
+  }
+  if (typeof status === "number" && status >= 500 && status < 600) {
+    return "timeout";
+  }
   if (status === 400) {
     return "format";
   }
 
   const code = (extractErrorCode(err) ?? "").toUpperCase();
-  if (["ETIMEDOUT", "ESOCKETTIMEDOUT", "ECONNRESET", "ECONNABORTED"].includes(code)) {
+  if (
+    [
+      "ETIMEDOUT",
+      "ESOCKETTIMEDOUT",
+      "ECONNRESET",
+      "ECONNABORTED",
+      "ECONNREFUSED",
+      "ENOTFOUND",
+      "EHOSTUNREACH",
+      "ENETUNREACH",
+      "UND_ERR_CONNECT_TIMEOUT",
+      "UND_ERR_SOCKET",
+    ].includes(code)
+  ) {
     return "timeout";
   }
   if (isTimeoutError(err)) {
@@ -120,6 +143,12 @@ export function resolveFailoverReasonFromError(err: unknown): FailoverReason | n
   const message = getErrorMessage(err);
   if (!message) {
     return null;
+  }
+  if (CONNECTION_UNAVAILABLE_RE.test(message)) {
+    return "timeout";
+  }
+  if (UNSUPPORTED_MODEL_RE.test(message)) {
+    return "unknown";
   }
   return classifyFailoverReason(message);
 }

@@ -15,7 +15,7 @@ import {
 import type { FailoverReason } from "../runner/pi-embedded-helpers.js";
 import { isLikelyContextOverflowError } from "../runner/pi-embedded-helpers.js";
 import { markRuntimeModelFailure, markRuntimeModelReady } from "./model-availability-state.js";
-import { resolveRuntimeModelPlan } from "./model-pool.js";
+import { isRuntimeLocalProvider, resolveRuntimeModelPlan } from "./model-pool.js";
 import {
   buildConfiguredSelectionKeys,
   modelKey,
@@ -24,20 +24,21 @@ import {
   parseModelRef,
   resolveConfiguredModelRef,
 } from "./model-resolve.js";
-import { pruneUnsupportedModelFromSelections } from "./model-selections-store.js";
+import { resolveOrderedModelRoutePlan } from "./model-route.js";
 
 type ModelCandidate = {
   provider: string;
   model: string;
 };
 
-type FallbackAttempt = {
+export type FallbackAttempt = {
   provider: string;
   model: string;
   error: string;
   reason?: FailoverReason;
   status?: number;
   code?: string;
+  local?: boolean;
 };
 
 /**
@@ -97,7 +98,26 @@ type ModelFallbackRunResult<T> = {
   provider: string;
   model: string;
   attempts: FallbackAttempt[];
+  notice?: string;
 };
+
+function formatLocalModelFallbackNotice(params: {
+  attempts: FallbackAttempt[];
+  provider: string;
+  model: string;
+}): string | undefined {
+  const localRefs = [
+    ...new Set(
+      params.attempts
+        .filter((attempt) => attempt.local)
+        .map((attempt) => `${attempt.provider}/${attempt.model}`),
+    ),
+  ];
+  if (localRefs.length === 0) {
+    return undefined;
+  }
+  return `Local model ${localRefs.join(", ")} is unavailable; temporarily used ${params.provider}/${params.model}. Start the local model server and Marv will try the configured order again next run.`;
+}
 
 function throwFallbackFailureSummary(params: {
   attempts: FallbackAttempt[];
@@ -152,6 +172,7 @@ function resolveFallbackCandidates(params: {
   cfg: MarvConfig | undefined;
   provider: string;
   model: string;
+  agentId?: string;
   /** Optional explicit fallback refs; when provided, uses this ordered list after the primary. */
   fallbacksOverride?: string[];
 }): ModelCandidate[] {
@@ -178,8 +199,21 @@ function resolveFallbackCandidates(params: {
     for (const raw of params.fallbacksOverride) {
       const resolved = parseModelRef(String(raw ?? ""), defaultProvider);
       if (resolved) {
-        addCandidate(resolved, true);
+        addCandidate(resolved, false);
       }
+    }
+    return candidates;
+  }
+
+  const configuredRoute = resolveOrderedModelRoutePlan({
+    cfg: params.cfg,
+    agentId: params.agentId,
+    primary: normalizedPrimary,
+    defaultProvider,
+  });
+  if (configuredRoute.hasConfiguredRoute) {
+    for (const entry of configuredRoute.entries.slice(1)) {
+      addCandidate({ provider: entry.provider, model: entry.model }, false);
     }
     return candidates;
   }
@@ -247,6 +281,7 @@ export async function runWithModelFallback<T>(params: {
   provider: string;
   model: string;
   agentDir?: string;
+  agentId?: string;
   /** Optional explicit fallback refs; when provided, uses this ordered list after the primary. */
   fallbacksOverride?: string[];
   run: (provider: string, model: string) => Promise<T>;
@@ -256,6 +291,7 @@ export async function runWithModelFallback<T>(params: {
     cfg: params.cfg,
     provider: params.provider,
     model: params.model,
+    agentId: params.agentId,
     fallbacksOverride: params.fallbacksOverride,
   });
   const authStore = params.cfg
@@ -291,6 +327,7 @@ export async function runWithModelFallback<T>(params: {
   for (let i = 0; i < candidates.length; i += 1) {
     const candidate = candidates[i];
     const candidateProviderKey = normalizeProviderId(candidate.provider);
+    const isLocalCandidate = isRuntimeLocalProvider(candidate.provider, params.cfg);
 
     // Skip if ALL models from this provider have been rate-limited in this run.
     if (isProviderFullyRateLimited(candidateProviderKey)) {
@@ -299,6 +336,7 @@ export async function runWithModelFallback<T>(params: {
         model: candidate.model,
         error: `Provider ${candidate.provider} fully rate-limited (all models exhausted)`,
         reason: "rate_limit",
+        local: isLocalCandidate,
       });
       continue;
     }
@@ -332,6 +370,7 @@ export async function runWithModelFallback<T>(params: {
             model: candidate.model,
             error: `Provider ${candidate.provider} is in cooldown (all profiles unavailable)`,
             reason: "rate_limit",
+            local: isLocalCandidate,
           });
           continue;
         }
@@ -341,11 +380,17 @@ export async function runWithModelFallback<T>(params: {
     try {
       const result = await params.run(candidate.provider, candidate.model);
       markRuntimeModelReady(modelKey(candidate.provider, candidate.model));
+      const notice = formatLocalModelFallbackNotice({
+        attempts,
+        provider: candidate.provider,
+        model: candidate.model,
+      });
       return {
         result,
         provider: candidate.provider,
         model: candidate.model,
         attempts,
+        ...(notice ? { notice } : {}),
       };
     } catch (err) {
       if (shouldRethrowAbort(err)) {
@@ -373,10 +418,12 @@ export async function runWithModelFallback<T>(params: {
         reason: described.reason,
         status: described.status,
         code: described.code,
+        local: isLocalCandidate,
       });
-      const failureStatus = markRuntimeModelFailure({
+      markRuntimeModelFailure({
         ref: modelKey(candidate.provider, candidate.model),
         error: normalized,
+        persist: !isLocalCandidate,
       });
 
       // Per-model rate-limit tracking: mark this specific model as rate-limited.
@@ -390,16 +437,6 @@ export async function runWithModelFallback<T>(params: {
             (rateLimitedCountPerProvider.get(candidateProviderKey) ?? 0) + 1,
           );
         }
-      }
-
-      // Hard rejection: prune unsupported models from pool selections
-      // so they don't appear in /models picker or future fallback lists.
-      if (failureStatus === "unsupported" && params.cfg) {
-        pruneUnsupportedModelFromSelections({
-          cfg: params.cfg,
-          provider: candidate.provider,
-          model: candidate.model,
-        });
       }
 
       await params.onError?.({

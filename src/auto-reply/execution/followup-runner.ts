@@ -28,7 +28,7 @@ import type { OriginatingChannelType } from "../support/templating.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../support/tokens.js";
 import { isHeartbeatRun, resolveReplyAckBehavior } from "../support/types.js";
 import type { GetReplyOptions, ReplyPayload } from "../support/types.js";
-import { resolveRunAuthProfile } from "./utils.js";
+import { appendUsageLine, resolveRunAuthProfile } from "./utils.js";
 
 export function createFollowupRunner(params: {
   opts?: GetReplyOptions;
@@ -136,6 +136,7 @@ export function createFollowupRunner(params: {
           provider: queued.run.provider,
           model: queued.run.model,
           agentDir: queued.run.agentDir,
+          agentId: queued.run.agentId,
           fallbacksOverride:
             queued.run.modelCandidates && queued.run.modelCandidates.length > 1
               ? queued.run.modelCandidates.slice(1)
@@ -192,6 +193,12 @@ export function createFollowupRunner(params: {
         runResult = fallbackResult.result;
         fallbackProvider = fallbackResult.provider;
         fallbackModel = fallbackResult.model;
+        if (fallbackResult.notice) {
+          runResult = {
+            ...runResult,
+            payloads: appendUsageLine(runResult.payloads ?? [], fallbackResult.notice),
+          };
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         defaultRuntime.error?.(`Followup agent failed before reply: ${message}`);

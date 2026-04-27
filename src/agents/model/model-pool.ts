@@ -7,6 +7,7 @@ import type {
   ThinkingModelTier,
   ThinkingModelsConfig,
 } from "../../core/config/types.js";
+import { isBlockedHostname, isPrivateIpAddress } from "../../infra/net/ssrf.js";
 import { resolveAgentConfig, resolveDefaultAgentId } from "../agent-scope.js";
 import { ensureAuthProfileStore, listProfilesForProvider } from "../auth-profiles.js";
 import { getCustomProviderApiKey, resolveEnvApiKey } from "./model-auth.js";
@@ -29,6 +30,34 @@ import {
 } from "./runtime-model-registry.js";
 
 const LOCAL_PROVIDERS = new Set(["ollama", "vllm", "lmstudio", "localai", "llamacpp"]);
+
+function isLocalProviderBaseUrl(baseUrl?: string): boolean {
+  const trimmed = baseUrl?.trim();
+  if (!trimmed) {
+    return false;
+  }
+  try {
+    const host = new URL(trimmed).hostname;
+    return isBlockedHostname(host) || isPrivateIpAddress(host);
+  } catch {
+    return false;
+  }
+}
+
+export function isRuntimeLocalProvider(provider: string, cfg?: MarvConfig): boolean {
+  const normalizedProvider = normalizeProviderId(provider);
+  if (LOCAL_PROVIDERS.has(normalizedProvider)) {
+    return true;
+  }
+  const providerEntries = cfg?.models?.providers ?? {};
+  for (const [key, providerEntry] of Object.entries(providerEntries)) {
+    if (normalizeProviderId(key) !== normalizedProvider) {
+      continue;
+    }
+    return isLocalProviderBaseUrl(providerEntry?.baseUrl);
+  }
+  return false;
+}
 
 export type RuntimeModelCapability = "text" | "vision" | "coding" | "tools";
 
@@ -67,9 +96,8 @@ function inferLocation(
   if (LOCAL_PROVIDERS.has(normalizeProviderId(provider))) {
     return "local";
   }
-  // Custom providers with a baseUrl are typically local/private-network servers
-  // and should be prioritized like local models in the candidate pool.
-  if (providerConfig?.baseUrl) {
+  // Custom providers on loopback/private network behave like local models.
+  if (isLocalProviderBaseUrl(providerConfig?.baseUrl)) {
     return "local";
   }
   return "cloud";

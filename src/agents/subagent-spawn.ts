@@ -7,8 +7,6 @@ import type { SubagentAnnounceMode } from "../shared/subagent-metadata.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
-import { getRuntimeModelAvailability } from "./model/model-availability-state.js";
-import { resolveEffectiveModel } from "./model/model-effective.js";
 import { resolveSubagentSpawnModelSelection } from "./model/model-resolve.js";
 import { buildSubagentSystemPrompt } from "./subagent-announce.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
@@ -165,20 +163,6 @@ export async function spawnSubagentDirect(
     modelOverride,
     role,
   });
-
-  // If the resolved model is known-unavailable, substitute with the best
-  // available candidate from the pool.  The downstream agent execution
-  // already has runWithModelFallback protection, but picking a better
-  // initial model avoids a wasted first attempt + fallback latency.
-  if (resolvedModel) {
-    const avail = getRuntimeModelAvailability(resolvedModel);
-    if (avail && (avail.status === "unsupported" || avail.status === "auth_invalid")) {
-      const effective = resolveEffectiveModel({ cfg, agentId: targetAgentId });
-      if (effective) {
-        resolvedModel = effective.ref;
-      }
-    }
-  }
 
   const resolvedThinkingDefaultRaw =
     readStringParam(targetAgentConfig?.subagents ?? {}, "thinking") ??

@@ -145,6 +145,7 @@ export function resolveModelFallbackOptions(run: FollowupRun["run"]) {
     provider: run.provider,
     model: run.model,
     agentDir: run.agentDir,
+    agentId: run.agentId,
     fallbacksOverride: plannedFallbacks,
   };
 }

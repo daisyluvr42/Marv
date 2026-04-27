@@ -14,6 +14,7 @@ vi.mock("../auth-profiles.js", () => ({
 // Mock model-pool to avoid deep dependency chain through runtime-model-registry.
 // Return candidates matching the test configs' fallback models.
 vi.mock("./model-pool.js", () => ({
+  isRuntimeLocalProvider: vi.fn().mockReturnValue(false),
   resolveRuntimeModelPlan: vi.fn().mockImplementation(({ cfg }: { cfg: unknown }) => {
     const defaults = (cfg as Record<string, unknown>)?.agents as
       | Record<string, unknown>

@@ -79,6 +79,9 @@ export interface AgentModelResolution {
   /** Resolve a runtime model plan (pool, candidates, capabilities). */
   resolveRuntimeModelPlan: typeof import("../../agents/model/model-pool.js").resolveRuntimeModelPlan;
 
+  /** Resolve the ordered configured route used by runtime fallback. */
+  resolveOrderedModelRoutePlan: typeof import("../../agents/model/model-route.js").resolveOrderedModelRoutePlan;
+
   /** Reorder model candidates by thinking-model preferences. */
   applyThinkingModelPreferences: typeof import("../../agents/model/model-pool.js").applyThinkingModelPreferences;
 
